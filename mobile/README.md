@@ -215,7 +215,7 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
 | `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
-| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
+| `mobile-release` | tag `mobile-v…` ou à la main, version calculée seule (`MAJEUR.MINEUR` de `pubspec.yaml` + numéro de build) | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, production**, chaque IPA → **TestFlight puis App Store**, avec les notes de `release-notes/` ; les six paquets dans Artifacts |
 | `mobile-release-android` | à la main | **Android seul** (11/10/2026) : la moitié Android de `mobile-release`, mêmes étapes (ancres YAML partagées), sans certificat, profil ni intégration Apple : AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; pour le premier envoi Google Play avant Apple, puis quand seul Google Play doit recevoir une version |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =

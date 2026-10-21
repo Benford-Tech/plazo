@@ -26,11 +26,11 @@
 # 11/10/2026, « unifie le pipeline »: ONE release workflow builds the six packages of a version and sends them
 # to the stores, instead of four workflows (one per store and per app):
 #   mobile-check    → by hand only: checks + DEBUG Android APKs of the two apps, to install and try.
-#   mobile-release  → tag `mobile-vX.Y.Z` (= the `version:` of mobile/pubspec.yaml, checked) or by hand:
+#   mobile-release  → tag `mobile-v*` (any name) or by hand; the version is computed (MAJOR.MINOR of pubspec.yaml + build number):
 #                     the checks once, then for Plazo AND Plazo Pro: signed AAB + APK (Android) and signed
 #                     IPA (iOS), all four with the SAME version and build number; then every AAB goes to
 #                     Google Play (production track, 21/10/2026) and every IPA to App Store Connect (TestFlight,
-#                     then App Review and release), both with the notes of mobile/release-notes/<version>/, each
+#                     then App Review and release), both with the notes of mobile/release-notes/, each
 #                     upload attempted even when another failed, the build red if any did (last step).
 #   mobile-release-android → by hand (11/10/2026, « un build Android seul pour le Play Store »): the same
 #                     Android half of mobile-release (same steps, through the anchors below), without Apple:
@@ -110,7 +110,7 @@ definitions:
     ONESIGNAL_APP_ID_PLAZO: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
     ONESIGNAL_APP_ID_PLAZO_PRO: 89a1124f-3ba0-481e-b9f1-545d254e435d
     # Google Play (21/10/2026, « les pipelines doivent publier en production avec release note »): the production
-    # track, sent for Google's review and then released by itself, with the notes of release-notes/<version>/.
+    # track, sent for Google's review and then released by itself, with the notes of release-notes/<app>.txt.
     # "internal" / "true" still work for a test build (Start new build › Environment variables).
     PLAY_TRACK: production
     PLAY_SUBMIT_AS_DRAFT: "false"
@@ -156,11 +156,10 @@ definitions:
       name: Calculer la version (la même pour tous les paquets, jamais en dessous d'un store)
       script: |
         set -e
-        VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
-        # A tag names the version it publishes: mobile-v1.2.0 must match `version: 1.2.0+…` in pubspec.yaml.
-        if [ -n "$CM_TAG" ] && [ "$CM_TAG" != "mobile-v$VERSION_NAME" ]; then
-          echo "ERREUR: le tag $CM_TAG ne correspond pas à la version $VERSION_NAME de pubspec.yaml"; exit 1
-        fi
+        # Automatic version (21/10/2026, « les versions se mettent à jour automatiquement »): MAJOR.MINOR from
+        # pubspec.yaml (`version: 1.0.0+1` → 1.0, changed by hand only for a big step), the build number below as the
+        # third number: every build publishes a new, higher version (1.0.131, 1.0.132…) without touching any file.
+        BASE=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//' | cut -d. -f1,2)
         # The Play key under its CLI name, or under the name Yoon's app uses (13/10/2026: one service account for both).
         export GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS="${GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS:-${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS:-}}"
         NEXT=$((PROJECT_BUILD_NUMBER + 100))
@@ -177,6 +176,7 @@ definitions:
         for LAST in "$PLAY_PLAZO" "$PLAY_PRO" "$TF_PLAZO" "$TF_PRO"; do
           [ "$LAST" -ge "$NEXT" ] && NEXT=$((LAST + 1))
         done
+        VERSION_NAME="$BASE.$NEXT"
         echo "Version: $VERSION_NAME ($NEXT) — Google Play $PLAY_PLAZO / $PLAY_PRO, TestFlight $TF_PLAZO / $TF_PRO"
         echo "NEXT=$NEXT" >> "$CM_ENV"
         echo "VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
@@ -188,11 +188,11 @@ definitions:
         [ -n "$STRIPE_MERCHANT_ID" ] && add_define STRIPE_MERCHANT_ID "$STRIPE_MERCHANT_ID"
         echo "COMMON_DEFINES=$COMMON_DEFINES" >> "$CM_ENV"
         : > "$CM_BUILD_DIR/publish-status.txt"
-        # Release notes (21/10/2026): one text per app for this version, mobile/release-notes/<version>/<app>.txt, in
-        # French. A version without its notes stops here, before 40 minutes of builds: never stale notes from the last
-        # version. 500 characters at most (Google Play's limit; the App Store takes 4 000).
+        # Release notes (21/10/2026): one text per app, mobile/release-notes/<app>.txt, in French, kept up to date with
+        # the app (what changes since the last version). Missing or empty stops here, before 40 minutes of builds.
+        # 500 characters at most (Google Play's limit; the App Store takes 4 000).
         for SLUG in plazo plazo-pro; do
-          NOTES="release-notes/$VERSION_NAME/$SLUG.txt"
+          NOTES="release-notes/$SLUG.txt"
           [ -s "$NOTES" ] || { echo "ERREUR: notes de version absentes : mobile/$NOTES (texte en français de ce qui change pour $SLUG)"; exit 1; }
           python3 - "$NOTES" "$CM_BUILD_DIR/release-notes-$SLUG" <<'PY'
         import json, sys
@@ -220,8 +220,8 @@ definitions:
           fi
           DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
           echo "── $SLUG (Android, $VERSION_NAME+$NEXT)"
-          flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
-          flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
+          flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES
+          flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES
           mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/$SLUG-v$VERSION_NAME-$NEXT.aab"
           mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$SLUG-v$VERSION_NAME-$NEXT.apk"
         done
@@ -332,7 +332,7 @@ workflows:
         #   TESTFLIGHT_BETA_GROUPS: "Group A, Group B"
         # (beta group names, separated by commas). Absent = no beta review: Codemagic refuses an empty value.
         # App Store (21/10/2026): every IPA is also submitted for App Review as version $VERSION_NAME, with the notes
-        # of release-notes/<version>/ as « What's new » (fr-FR), and released by itself once approved.
+        # of release-notes/<app>.txt as « What's new » (fr-FR), and released by itself once approved.
         # APP_STORE_SUBMIT "false" = TestFlight only; APP_STORE_RELEASE_TYPE MANUAL = release by hand after approval.
         APP_STORE_SUBMIT: "true"
         APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
@@ -413,7 +413,7 @@ workflows:
             esac
             DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
             echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
-            flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES \
+            flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES \
               --export-options-plist="$HOME/export_options_$FLAVOR.plist"
             # The IPA just exported is the one not yet named after its app.
             for IPA in build/ios/ipa/*.ipa; do

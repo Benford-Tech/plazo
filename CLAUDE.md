@@ -1162,7 +1162,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   13/10/2026, le compte de service créé pour Yoon (projet Google Cloud `yoon-beige`), dont la clé JSON se colle aussi dans le
   groupe `mobile_secrets` de l'app `plazo` sous le nom de Yoon, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (lu par `codemagic.yaml`
   à défaut de `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` ; Codemagic ne copie pas un secret d'une app à l'autre)) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
-  store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
+  store et par app) : tag `mobile-v…` ou manuel (version calculée seule depuis le 21/10/2026) ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
   (compteur Codemagic + 100, jamais sous le dernier des quatre stores) ; `ios_signing` par Reference name (certificat
   `thempo-distribution`, profils `plazo_app_store` et `plazo_pro_app_store`, un `bundle_identifier` automatique ne prenant
@@ -1174,9 +1174,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **publication en production (21/10/2026, « les pipelines doivent
   publier en production avec release note »)** : Google Play piste `production` sans brouillon, App Store : TestFlight puis
   revue et sortie dès l'accord (`APP_STORE_SUBMIT`, `APP_STORE_RELEASE_TYPE` `AFTER_APPROVAL`, `--cancel-previous-submissions`,
-  30 min d'attente du traitement par app, `max_build_duration` 180), notes de version en français par app et par version dans
-  `mobile/release-notes/<version>/plazo.txt|plazo-pro.txt` (500 caractères au plus, « Nouveautés » fr-FR des deux stores ;
-  absentes ou trop longues → arrêt avant les builds) ; **`mobile-release-android` (11/10/2026,
+  30 min d'attente du traitement par app, `max_build_duration` 180), notes de version en français par app dans
+  `mobile/release-notes/plazo.txt|plazo-pro.txt`, à tenir à jour avec chaque changement des apps (500 caractères au plus,
+  « Nouveautés » fr-FR des deux stores ; absentes ou trop longues → arrêt avant les builds) ; **version calculée seule**
+  (« les versions se mettent à jour automatiquement ») : `MAJEUR.MINEUR` de `pubspec.yaml` + le numéro de build
+  (`--build-name`, ex. 1.0.131), le tag `mobile-v…` ne fait plus que lancer la publication ; **`mobile-release-android` (11/10/2026,
   « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
   ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
   lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
