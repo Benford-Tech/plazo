@@ -29,6 +29,8 @@ import '../bloc/shuttle_waves_bloc.dart';
 import '../widgets/live_shuttles_card.dart';
 import '../widgets/shuttle_waves_card.dart';
 import '../widgets/vehicle_sheet.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// R4, the driver's "Navette" screen: the trip in progress (position shared), two sides (T-A,
 /// 04/10/2026): the returns to pick up at the airport grouped by terminal with their flight status,
@@ -74,7 +76,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
   Widget build(BuildContext context) {
     // The vehicle of the day taken or given back meanwhile (Plus › Mon véhicule): the one-tap start follows.
     final auth = context.read<ProAuthBloc?>();
-    final page = _page(context);
+    final page = TutorialSpot(tutorial: Tutorials.proShuttle, child: _page(context));
     if (auth == null) return page;
     return BlocListener<ProAuthBloc, ProAuthState>(
       bloc: auth,
@@ -104,7 +106,10 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             return Column(
               children: [
                 // F-A: three bands that the travellers move through as the driver ticks them.
-                _BandBar(state: state, onChanged: (b) => bloc.add(ShuttleBandChanged(b))),
+                KeyedSubtree(
+                  key: const Key('shuttle-bands'),
+                  child: _BandBar(state: state, onChanged: (b) => bloc.add(ShuttleBandChanged(b))),
+                ),
                 Expanded(
                   child: RefreshIndicator(
                     color: AppColors.accent,
@@ -141,6 +146,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
     return [
       // V-A: the day's waves; "Démarrer ce trajet" preselects the wave's travellers below.
       ShuttleWavesCard(
+        key: const Key('shuttle-waves'),
         running: state.running,
         onStart: (wave) => bloc.add(ShuttleWaveChosen(direction: wave.direction, stopId: wave.stopId, reservationIds: wave.members.map((m) => m.reservationId).toList())),
       ),

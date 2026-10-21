@@ -26,6 +26,8 @@ import '../../data/models/public_models.dart';
 import '../bloc/search/search_bloc.dart';
 import '../widgets/dates_pill.dart';
 import '../widgets/stay_sheet.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// "Rechercher" in the mockup's composition (T-A, 05/10/2026): a greeting, the title in Playfair, the
 /// dates and "Rechercher" in a white card, then the map of the chosen stay with its floating pills
@@ -40,6 +42,10 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
 
   @override
   Widget build(BuildContext context) {
+    return TutorialSpot(tutorial: Tutorials.search, child: _page(context));
+  }
+
+  Widget _page(BuildContext context) {
     return Scaffold(
       body: BlocListener<SearchBloc, SearchState>(
         listenWhen: (a, b) => a.submitted != b.submitted,
@@ -142,6 +148,7 @@ class _Home extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       DatesPill(
+                        key: const Key('search-dates'),
                         arrivalAt: state.arrivalAt,
                         returnAt: state.returnAt,
                         errorText: dateError == null ? null : translateErrorCode(dateError),

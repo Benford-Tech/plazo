@@ -11,6 +11,8 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../../core/helpers/posts.dart';
+import '../../../../shared/tutorials/tutorials_page.dart';
 
 /// "Plus" of Plazo Pro: who is signed in, the shuttle, the notifications, the parking plan
 /// (managers), sign out, version. Team, account and settings arrive at step 4.
@@ -104,6 +106,16 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'vehicle_day.mine'.tr(args: [staff?.vehicle?.title ?? 'vehicle_day.none_short'.tr()]),
               onTap: () => context.router.push(const ProVehicleRoute()),
             ),
+          _Tile(
+            key: const Key('pmore-tutorials'),
+            icon: Icons.school_outlined,
+            label: 'tutorials.title'.tr(),
+            onTap: () => TutorialsPage.open(
+              context,
+              activePost: staff?.activePost ?? 'agent',
+              posts: staff == null ? const [] : posts.where(staff.allowedPosts.contains).toList(),
+            ),
+          ),
           _Tile(
             key: const Key('pmore-account'),
             icon: Icons.person_outline_rounded,

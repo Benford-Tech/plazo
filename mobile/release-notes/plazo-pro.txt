@@ -5,3 +5,4 @@ Première version de Plazo Pro, pour les équipes des parkings d'aéroport.
 • Navette : embarquer en un geste, retours triés par heure d'atterrissage.
 • Contrat et état des lieux avec photos.
 • Code du jour pour rejoindre l'équipe d'un parking.
+• Tutoriels par poste, à revoir dans Plus › Tutoriels.

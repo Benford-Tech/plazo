@@ -4,3 +4,4 @@ Première version de Plazo.
 • Le jour du départ, prévenez le parking de votre arrivée et suivez la navette en direct.
 • Au retour, suivez votre vol et l'arrivée de la navette, et retrouvez votre voiture.
 • Selon le parking, commandez un lavage ou une recharge pour votre voiture.
+• Des tutoriels à la première ouverture, à revoir dans Plus › Tutoriels.

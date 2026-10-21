@@ -26,6 +26,8 @@ import '../../data/models/planning_model.dart';
 import '../bloc/pro_today_bloc.dart';
 import '../widgets/date_strip.dart';
 import '../widgets/today_row.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// The staff's day: Arrivées / Retours (tabs on a phone, two columns on a wide screen), live
 /// statuses polled every 12 s, the approaching traveller first with a mini map.
@@ -37,7 +39,7 @@ class ProTodayPage extends StatelessWidget implements AutoRouteWrapper {
   Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
-  Widget build(BuildContext context) => const ProTodayView();
+  Widget build(BuildContext context) => const TutorialSpot(tutorial: Tutorials.proToday, child: ProTodayView());
 }
 
 /// The day's planning and, for the live strip (P-A), the running shuttles.
@@ -213,7 +215,11 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                   onSee: () => _see(state),
                   onClose: () => context.read<ProTodayBloc>().add(const ProTodayBannerDismissed()),
                 ),
-              if (widget.only == null) _ModeBar(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
+              if (widget.only == null)
+                KeyedSubtree(
+                  key: const Key('today-modes'),
+                  child: _ModeBar(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
+                ),
               if (dashboard)
                 Expanded(child: DashboardView(revenue: can(context.watch<ProAuthBloc>().state.staff?.role, 'revenue:view')))
               else ...[
@@ -268,8 +274,24 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                         return ListenableBuilder(
                           listenable: Listenable.merge([onTrip, running]),
                           builder: (context, _) => widget.only == TodaySide.arrivals
-                              ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now, board: _boardAction(state, onTrip.value, running.value, false), onBoard: _onBoard)
-                              : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now, board: _boardAction(state, onTrip.value, running.value, true), onBoard: _onBoard),
+                              ? _Column(
+                                  title: 'pro.arrivals'.tr(),
+                                  rows: state.arrivals,
+                                  isReturn: false,
+                                  state: state,
+                                  now: _now,
+                                  board: _boardAction(state, onTrip.value, running.value, false),
+                                  onBoard: _onBoard,
+                                )
+                              : _Column(
+                                  title: 'pro.returns'.tr(),
+                                  rows: state.returns,
+                                  isReturn: true,
+                                  state: state,
+                                  now: _now,
+                                  board: _boardAction(state, onTrip.value, running.value, true),
+                                  onBoard: _onBoard,
+                                ),
                         );
                       },
                     ),

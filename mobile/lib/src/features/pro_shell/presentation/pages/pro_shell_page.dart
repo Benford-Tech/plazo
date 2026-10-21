@@ -6,6 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/helpers/posts.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_service.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// Plazo Pro (N-A, 04/10/2026): four tabs. Since R-C (04/10/2026) they follow the post held for the
 /// day (driver: Navette · Arrivées · Retours · Plus; valet: Parking · Aujourd'hui · Places · Plus;
@@ -25,34 +28,43 @@ class ProShellPage extends StatelessWidget {
       routes: [for (final t in tabs) t.route],
       builder: (context, child) {
         final router = context.tabsRouter;
-        return Scaffold(
-          // Edge-to-edge (Android 15+): in landscape the 3-button bar or the cutout sits on a side; the tab bodies keep
-          // clear of it (the app bars and the NavigationBar pad themselves).
-          body: SafeArea(top: false, bottom: false, child: child),
-          bottomNavigationBar: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              backgroundColor: AppColors.surface,
-              indicatorColor: AppColors.tint,
-              height: 64,
-              labelTextStyle: WidgetStateProperty.resolveWith(
-                (s) => AppText.body(
-                  size: 11.5,
-                  weight: s.contains(WidgetState.selected) ? 700 : 500,
-                  color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted,
+        // Plus › Tutoriels shows a screen's bubbles again on its tab.
+        TutorialService.instance.openTab = (tab) {
+          final i = tabs.indexWhere((t) => t.key == tab);
+          if (i < 0) return false;
+          router.setActiveIndex(i);
+          return true;
+        };
+        // The carousel of the post of the day, the first time it is held on this phone.
+        return TutorialSpot(
+          tutorial: Tutorials.welcomeFor(post),
+          child: Scaffold(
+            // Edge-to-edge (Android 15+): in landscape the 3-button bar or the cutout sits on a side; the tab bodies keep
+            // clear of it (the app bars and the NavigationBar pad themselves).
+            body: SafeArea(top: false, bottom: false, child: child),
+            bottomNavigationBar: NavigationBarTheme(
+              data: NavigationBarThemeData(
+                backgroundColor: AppColors.surface,
+                indicatorColor: AppColors.tint,
+                height: 64,
+                labelTextStyle: WidgetStateProperty.resolveWith(
+                  (s) => AppText.body(
+                    size: 11.5,
+                    weight: s.contains(WidgetState.selected) ? 700 : 500,
+                    color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted,
+                  ),
                 ),
+                iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted)),
               ),
-              iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted)),
-            ),
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.line)),
-              ),
-              child: NavigationBar(
-                selectedIndex: router.activeIndex,
-                onDestinationSelected: router.setActiveIndex,
-                destinations: [
-                  for (final t in tabs) NavigationDestination(key: Key(t.key), icon: Icon(t.icon), label: 'pro_tabs.${t.label}'.tr()),
-                ],
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: AppColors.line)),
+                ),
+                child: NavigationBar(
+                  selectedIndex: router.activeIndex,
+                  onDestinationSelected: router.setActiveIndex,
+                  destinations: [for (final t in tabs) NavigationDestination(key: Key(t.key), icon: Icon(t.icon), label: 'pro_tabs.${t.label}'.tr())],
+                ),
               ),
             ),
           ),

@@ -33,6 +33,8 @@ import '../bloc/booking_bloc.dart';
 import '../bloc/car_location_bloc.dart';
 import '../widgets/booking_card.dart';
 import '../widgets/car_location_card.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// A traveller's booking, opened from "Mes réservations", from the link of the confirmation (deep
 /// link /ma-reservation/REF?cle=TOKEN, the same as the site's), or right after booking
@@ -93,110 +95,129 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
           context.read<StayShuttlesBloc>().add(StayShuttlesOpened(state.reference!));
         }
       },
-      child: Scaffold(
-        appBar: AppBar(
-          titleSpacing: NavigationToolbar.kMiddleSpacing,
-          title: Text('trips.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
-          leading: BackButton(
-            onPressed: () => context.router.canPop() ? context.router.maybePop() : context.router.replaceAll([const AppShellRoute(children: [TripsTabRoute()])]),
+      child: TutorialSpot(
+        tutorial: Tutorials.booking,
+        child: Scaffold(
+          appBar: AppBar(
+            titleSpacing: NavigationToolbar.kMiddleSpacing,
+            title: Text('trips.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
+            leading: BackButton(
+              onPressed: () => context.router.canPop()
+                  ? context.router.maybePop()
+                  : context.router.replaceAll([
+                      const AppShellRoute(children: [TripsTabRoute()]),
+                    ]),
+            ),
           ),
-        ),
-        body: SafeArea(
-          top: false,
-          child: BlocBuilder<BookingBloc, BookingState>(
-            builder: (context, booking) {
-              if (booking.booking == null) {
-                if (booking.viewState.isError) return _Error(message: booking.errorMessage);
-                return const Center(child: CircularProgressIndicator(color: AppColors.accent));
-              }
-              final b = booking.booking!;
-              return RefreshIndicator(
-                color: AppColors.accent,
-                onRefresh: () async {
-                  context.read<BookingBloc>().add(const BookingRefreshed());
-                  context.read<ArrivalBloc>().add(const ArrivalRefreshRequested());
-                  context.read<ReturnBloc>().add(const ReturnRefreshRequested());
-                  context.read<StayShuttlesBloc>().add(const StayShuttlesRefreshRequested());
-                },
-                child: BlocBuilder<ArrivalBloc, ArrivalState>(
-                  buildWhen: (a, b) => a.openKind != b.openKind,
-                  builder: (context, arrival) {
-                    final kind = arrival.openKind;
-                    final confirmed = (confirmee == '1' || paiement == 'retour') && b.status == 'upcoming';
-                    final title = switch (kind) {
-                      ArrivalKind.outbound => 'booking.title_drop_today'.tr(),
-                      ArrivalKind.returnTrip => 'booking.title_return_today'.tr(),
-                      null => 'booking.title_default'.tr(),
-                    };
-                    return ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        if (confirmed) ConfirmedHero(booking: b),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (!confirmed) ...[
-                                Row(
-                                  children: [
-                                    Expanded(child: Semantics(header: true, child: Text(title, style: AppText.title(size: 24)))),
-                                    StatusBadge.status(b.status, paid: b.payment?.status == 'paid'),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                              if (b.status == 'cancelled') ...[_CancelledBanner(booking: b), const SizedBox(height: 12)],
-                              BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),
-                              const SizedBox(height: 10),
-                              PaymentSummary(booking: b),
-                              if (b.status == 'pending_payment') ...[
-                                const SizedBox(height: 12),
-                                GradientButton(
-                                  key: const Key('booking-finish-payment'),
-                                  label: 'trips.finish_payment'.tr(),
-                                  onPressed: () => context.router.push(PaymentRoute(reference: b.reference)),
-                                ),
-                              ],
-                              const SizedBox(height: 12),
-                              // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
-                              if (kind == ArrivalKind.returnTrip) const ReturnBlock() else const ArrivalBlock(),
-                              // Where the car is parked (06/10/2026): from the drop-off to the return day's own screen.
-                              if (kind != ArrivalKind.returnTrip && CarLocationCard.relevant(b)) ...[
-                                const SizedBox(height: 12),
-                                CarLocationCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
-                              ],
-                              // « Contrat signé et état des lieux » (19/10/2026): the contract to sign, the reports to check.
-                              if (travellerPaperworkRelevant(b.status))
-                                TravellerPaperworkBlock(key: ValueKey('paperwork-${b.reference}-${b.status}'), reference: b.reference),
-                              // Services for the car (21/10/2026): a wash or a charge, before or after the drop-off.
-                              if (travellerExtrasRelevant(b.status)) TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
-                              // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
-                              BlocBuilder<ReturnBloc, ReturnState>(
-                                buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
-                                builder: (context, ret) => ret.data?.shuttle != null
-                                    ? const SizedBox.shrink()
-                                    : const Padding(padding: EdgeInsets.only(top: 12), child: StayShuttlesBlock()),
-                              ),
-                              const SizedBox(height: 4),
-                              BookingActions(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
-                              if (b.parking.phone != null && b.active) ...[
-                                const SizedBox(height: 4),
-                                OutlineAction(
-                                  icon: Icons.call_rounded,
-                                  label: '${'manage.call'.tr()} · ${formatPhone(b.parking.phone!)}',
-                                  onPressed: () => locator<LinkService>().open(Uri(scheme: 'tel', path: b.parking.phone!.replaceAll(RegExp(r'[^\d+]'), ''))),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
+          body: SafeArea(
+            top: false,
+            child: BlocBuilder<BookingBloc, BookingState>(
+              builder: (context, booking) {
+                if (booking.booking == null) {
+                  if (booking.viewState.isError) return _Error(message: booking.errorMessage);
+                  return const Center(child: CircularProgressIndicator(color: AppColors.accent));
+                }
+                final b = booking.booking!;
+                return RefreshIndicator(
+                  color: AppColors.accent,
+                  onRefresh: () async {
+                    context.read<BookingBloc>().add(const BookingRefreshed());
+                    context.read<ArrivalBloc>().add(const ArrivalRefreshRequested());
+                    context.read<ReturnBloc>().add(const ReturnRefreshRequested());
+                    context.read<StayShuttlesBloc>().add(const StayShuttlesRefreshRequested());
                   },
-                ),
-              );
-            },
+                  child: BlocBuilder<ArrivalBloc, ArrivalState>(
+                    buildWhen: (a, b) => a.openKind != b.openKind,
+                    builder: (context, arrival) {
+                      final kind = arrival.openKind;
+                      final confirmed = (confirmee == '1' || paiement == 'retour') && b.status == 'upcoming';
+                      final title = switch (kind) {
+                        ArrivalKind.outbound => 'booking.title_drop_today'.tr(),
+                        ArrivalKind.returnTrip => 'booking.title_return_today'.tr(),
+                        null => 'booking.title_default'.tr(),
+                      };
+                      return ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          if (confirmed) ConfirmedHero(booking: b),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (!confirmed) ...[
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Semantics(header: true, child: Text(title, style: AppText.title(size: 24))),
+                                      ),
+                                      StatusBadge.status(b.status, paid: b.payment?.status == 'paid'),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                if (b.status == 'cancelled') ...[_CancelledBanner(booking: b), const SizedBox(height: 12)],
+                                KeyedSubtree(
+                                  key: const Key('booking-card'),
+                                  child: BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),
+                                ),
+                                const SizedBox(height: 10),
+                                PaymentSummary(booking: b),
+                                if (b.status == 'pending_payment') ...[
+                                  const SizedBox(height: 12),
+                                  GradientButton(
+                                    key: const Key('booking-finish-payment'),
+                                    label: 'trips.finish_payment'.tr(),
+                                    onPressed: () => context.router.push(PaymentRoute(reference: b.reference)),
+                                  ),
+                                ],
+                                const SizedBox(height: 12),
+                                // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
+                                if (kind == ArrivalKind.returnTrip)
+                                  const KeyedSubtree(key: Key('booking-return'), child: ReturnBlock())
+                                else
+                                  const KeyedSubtree(key: Key('booking-arrival'), child: ArrivalBlock()),
+                                // Where the car is parked (06/10/2026): from the drop-off to the return day's own screen.
+                                if (kind != ArrivalKind.returnTrip && CarLocationCard.relevant(b)) ...[
+                                  const SizedBox(height: 12),
+                                  CarLocationCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
+                                ],
+                                // « Contrat signé et état des lieux » (19/10/2026): the contract to sign, the reports to check.
+                                if (travellerPaperworkRelevant(b.status))
+                                  TravellerPaperworkBlock(key: ValueKey('paperwork-${b.reference}-${b.status}'), reference: b.reference),
+                                // Services for the car (21/10/2026): a wash or a charge, before or after the drop-off.
+                                if (travellerExtrasRelevant(b.status))
+                                  KeyedSubtree(
+                                    key: const Key('booking-extras'),
+                                    child: TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
+                                  ),
+                                // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
+                                BlocBuilder<ReturnBloc, ReturnState>(
+                                  buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
+                                  builder: (context, ret) => ret.data?.shuttle != null
+                                      ? const SizedBox.shrink()
+                                      : const Padding(padding: EdgeInsets.only(top: 12), child: StayShuttlesBlock()),
+                                ),
+                                const SizedBox(height: 4),
+                                BookingActions(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
+                                if (b.parking.phone != null && b.active) ...[
+                                  const SizedBox(height: 4),
+                                  OutlineAction(
+                                    icon: Icons.call_rounded,
+                                    label: '${'manage.call'.tr()} · ${formatPhone(b.parking.phone!)}',
+                                    onPressed: () => locator<LinkService>().open(Uri(scheme: 'tel', path: b.parking.phone!.replaceAll(RegExp(r'[^\d+]'), ''))),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -298,10 +319,7 @@ class PaymentSummary extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(label, style: AppText.muted(size: 14.5))),
-              Text(
-                formatEuros(b.priceCents!),
-                style: AppText.strong(size: 16).copyWith(decoration: struck ? TextDecoration.lineThrough : null),
-              ),
+              Text(formatEuros(b.priceCents!), style: AppText.strong(size: 16).copyWith(decoration: struck ? TextDecoration.lineThrough : null)),
             ],
           ),
         if (nightPart != null) Text(nightPart, key: const Key('booking-night-fee'), textAlign: TextAlign.end, style: AppText.muted(size: 13)),

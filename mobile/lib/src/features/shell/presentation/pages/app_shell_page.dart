@@ -7,6 +7,9 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_service.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// One app (decision): three tabs, Rechercher / Mes réservations / Plus. The staff's space opens
 /// from "Plus" (or /pro links), unchanged.
@@ -24,36 +27,52 @@ class AppShellPage extends StatelessWidget {
         routes: const [SearchTabRoute(), TripsTabRoute(), MoreTabRoute()],
         builder: (context, child) {
           final tabs = context.tabsRouter;
-          return Scaffold(
-            // Edge-to-edge: in landscape the tabs keep clear of a side navigation bar or a cutout (their bars and the
-            // tab bar handle the top and the bottom).
-            body: SafeArea(top: false, bottom: false, child: child),
-            bottomNavigationBar: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                backgroundColor: AppColors.surface,
-                indicatorColor: AppColors.tint,
-                height: 64,
-                labelTextStyle: WidgetStateProperty.resolveWith(
-                  (s) => AppText.body(size: 11.5, weight: s.contains(WidgetState.selected) ? 700 : 500, color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted),
+          // Plus › Tutoriels shows a screen's bubbles again on its tab.
+          TutorialService.instance.openTab = (tab) {
+            final i = const ['tab-search', 'tab-trips', 'tab-more'].indexOf(tab);
+            if (i < 0) return false;
+            tabs.setActiveIndex(i);
+            return true;
+          };
+          return TutorialSpot(
+            tutorial: Tutorials.welcome,
+            child: Scaffold(
+              // Edge-to-edge: in landscape the tabs keep clear of a side navigation bar or a cutout (their bars and the
+              // tab bar handle the top and the bottom).
+              body: SafeArea(top: false, bottom: false, child: child),
+              bottomNavigationBar: NavigationBarTheme(
+                data: NavigationBarThemeData(
+                  backgroundColor: AppColors.surface,
+                  indicatorColor: AppColors.tint,
+                  height: 64,
+                  labelTextStyle: WidgetStateProperty.resolveWith(
+                    (s) => AppText.body(
+                      size: 11.5,
+                      weight: s.contains(WidgetState.selected) ? 700 : 500,
+                      color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted,
+                    ),
+                  ),
+                  iconTheme: WidgetStateProperty.resolveWith(
+                    (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted),
+                  ),
                 ),
-                iconTheme: WidgetStateProperty.resolveWith(
-                  (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted),
-                ),
-              ),
-              child: DecoratedBox(
-                decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
-                child: NavigationBar(
-                  selectedIndex: tabs.activeIndex,
-                  onDestinationSelected: (i) {
-                    // Back to a tab: its bookings are read again.
-                    if (i == 1) trips.add(const TripsLoaded(quiet: true));
-                    tabs.setActiveIndex(i);
-                  },
-                  destinations: [
-                    NavigationDestination(key: const Key('tab-search'), icon: const Icon(Icons.search_rounded), label: 'tabs.search'.tr()),
-                    NavigationDestination(key: const Key('tab-trips'), icon: const Icon(Icons.confirmation_number_rounded), label: 'tabs.trips'.tr()),
-                    NavigationDestination(key: const Key('tab-more'), icon: const Icon(Icons.more_horiz_rounded), label: 'tabs.more'.tr()),
-                  ],
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: AppColors.line)),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: tabs.activeIndex,
+                    onDestinationSelected: (i) {
+                      // Back to a tab: its bookings are read again.
+                      if (i == 1) trips.add(const TripsLoaded(quiet: true));
+                      tabs.setActiveIndex(i);
+                    },
+                    destinations: [
+                      NavigationDestination(key: const Key('tab-search'), icon: const Icon(Icons.search_rounded), label: 'tabs.search'.tr()),
+                      NavigationDestination(key: const Key('tab-trips'), icon: const Icon(Icons.confirmation_number_rounded), label: 'tabs.trips'.tr()),
+                      NavigationDestination(key: const Key('tab-more'), icon: const Icon(Icons.more_horiz_rounded), label: 'tabs.more'.tr()),
+                    ],
+                  ),
                 ),
               ),
             ),

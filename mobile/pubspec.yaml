@@ -62,6 +62,8 @@ dependencies:
   crypto: ^3.0.6
   share_plus: ^13.2.1
   image_picker: ^1.2.4
+  # Tutorials (21/10/2026): which ones were seen, on this phone only.
+  shared_preferences: ^2.5.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -79,7 +81,6 @@ dev_dependencies:
   json_serializable: ^6.14.1
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
-  shared_preferences: ^2.5.5
   flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
