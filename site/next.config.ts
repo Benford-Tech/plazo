@@ -17,6 +17,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   turbopack: { root: repositoryRoot },
   outputFileTracingRoot: repositoryRoot,
+  // Vercel optimises images itself: sharp and its native libraries (about 45 MB) never run in our functions.
+  outputFileTracingExcludes: { "*": ["node_modules/sharp/**", "node_modules/@img/**"] },
   poweredByHeader: false,
   // The repository keeps its own agent instructions (CLAUDE.md at the root): no generated copies here.
   agentRules: false,
