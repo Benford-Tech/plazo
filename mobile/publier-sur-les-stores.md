@@ -40,7 +40,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 | --- | --- | --- |
 | GitHub Actions `Mobile CI` | chaque PR et push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test` (gratuit) |
 | Codemagic `mobile-check` | à la main | les mêmes vérifications + APK **debug** des deux apps, à installer pour essayer |
-| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat du compte), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
+| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat du compte), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, production** (21/10/2026), chaque IPA → **TestFlight** puis **revue App Store** et sortie dès l'accord d'Apple, avec les **notes de version** de `mobile/release-notes/<version>/` (voir son README ; sans elles le build s'arrête) ; les six fichiers dans **Artifacts** |
 | Codemagic `mobile-release-android` | à la main | **Android seul**, les mêmes étapes que la moitié Android de `mobile-release` : les vérifications, AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; les quatre fichiers dans **Artifacts**. Ni certificat ni profil Apple |
 
 - **Version** = le `version:` de `mobile/pubspec.yaml` (ex. `1.0.0`). Le tag doit la reprendre : `mobile-v1.0.0`, sinon le
@@ -243,7 +243,12 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    tests internes.
 8. [ ] **Démarrer le premier déploiement** : **Tests internes**, la version enregistrée › **Vérifier la version** ›
    **Démarrer le déploiement**.
-9. [ ] **`PLAY_SUBMIT_AS_DRAFT` à `"false"`** (dans `codemagic.yaml`) quand les deux apps ont une première version
+9. [x] **Production (21/10/2026, « les pipelines doivent publier en production avec release note »)** : `PLAY_TRACK`
+   `production` et `PLAY_SUBMIT_AS_DRAFT` `"false"` ; côté Apple `APP_STORE_SUBMIT` `"true"` et `APP_STORE_RELEASE_TYPE`
+   `AFTER_APPROVAL` (`MANUAL` pour sortir à la main). Pour un build de test, les remettre à `internal` / `"true"` /
+   `"false"` dans **Start new build › Environment variables**. La première version en production demande la fiche du store
+   complète (textes, captures, confidentialité, classification, accès de revue de Plazo Pro) : sinon l'envoi est refusé et le
+   bilan le dit. Ancienne consigne : **`PLAY_SUBMIT_AS_DRAFT` à `"false"`** (dans `codemagic.yaml`) quand les deux apps ont une première version
    déployée : le dire à Claude. D'ici là, chaque build arrive en **brouillon** dans Tests internes : ouvrir la version,
    **Démarrer le déploiement**.
 10. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
