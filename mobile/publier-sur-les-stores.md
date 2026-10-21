@@ -252,9 +252,11 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    déployée : le dire à Claude. D'ici là, chaque build arrive en **brouillon** dans Tests internes : ouvrir la version,
    **Démarrer le déploiement**.
 10. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
-   demande la clé JSON d'un compte de service **Firebase**. Plazo n'a pas encore de projet Firebase : en créer un
-   (« plazo »), y ajouter les deux apps Android (`com.benfordtech.plazo` et `com.benfordtech.plazopro`), puis **Paramètres du projet ›
-   Comptes de service › Générer une nouvelle clé privée** et la déposer dans les deux apps OneSignal.
+   demande la clé JSON d'un compte de service **Firebase**. Projet Firebase de Plazo : `plazo-eac2e` (nom affiché
+   « Plazo-Pro », il sert aux deux apps), compte joannysimpore@gmail.com ; apps Android déclarées le 21/10/2026 :
+   `com.benfordtech.plazo` et `com.benfordtech.plazopro` (les anciennes `com.benfordtech.parking_app…` ne servent plus).
+   Reste à faire à la main : console Firebase › `plazo-eac2e` › **Paramètres du projet › Comptes de service › Générer une
+   nouvelle clé privée**, puis déposer ce JSON dans les deux apps OneSignal (jamais dans le dépôt ni dans une conversation).
 
 
 ### Avertissements de la Play Console sur le build 114 (15/10/2026)
