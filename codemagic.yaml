@@ -265,7 +265,7 @@ definitions:
             [ "$TRY" = 1 ] && { echo "Nouvel essai de $NAME dans 60 s"; sleep 60; }
           done
           if [ -n "$SENT" ]; then
-            echo "OK  Google Play  $NAME ($PLAY_TRACK)" >> ""$CM_BUILD_DIR/publish-status.txt"
+            echo "OK  Google Play  $NAME ($PLAY_TRACK)" >> "$CM_BUILD_DIR/publish-status.txt"
           else
             echo "KO  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
           fi
@@ -280,6 +280,14 @@ definitions:
           exit 1
         fi
         [ -s "$CM_BUILD_DIR/publish-status.txt" ] || { echo "ERREUR: aucun envoi tenté"; exit 1; }
+        # Every package must have its line (21/10/2026, build 6ad917b9: a broken upload step wrote none and the bilan
+        # stayed green while nothing reached Google Play).
+        EXPECTED=$(ls build/app/outputs/bundle/*/*.aab build/ios/ipa/*.ipa 2>/dev/null | wc -l)
+        WRITTEN=$(grep -c '^\(OK\|KO\)' "$CM_BUILD_DIR/publish-status.txt" || true)
+        if [ "$WRITTEN" -lt "$EXPECTED" ]; then
+          echo "ERREUR: $EXPECTED paquets construits, $WRITTEN envois rapportés : une étape d'envoi s'est arrêtée avant la fin"
+          exit 1
+        fi
 
 # ── Workflows ──────────────────────────────────────────────────────────────────────────────────
 workflows:
