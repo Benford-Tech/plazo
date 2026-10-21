@@ -75,9 +75,21 @@ describe('rules', () => {
       tonight: { count: 83, bookable: 100 },
       moves: [{ time: '05:30', kind: 'arrival', customer: 'C. Exemple', source: 'Allopark', detail: 'vol AF7641' }],
       movesTotal: 15,
-      revenue: { yesterdayCents: 61200, yesterdayCount: 11, monthLabel: 'Octobre', monthCents: 894000, commissionCents: 131200, netCents: 762800, withoutAmount: 3 },
+      revenue: {
+        yesterdayCents: 61200,
+        yesterdayCount: 11,
+        monthLabel: 'Octobre',
+        monthCents: 894000,
+        commissionCents: 131200,
+        netCents: 762800,
+        withoutAmount: 3,
+      },
       integrations: [{ label: 'Onepark · aucun mail depuis 4 jours', tone: 'warn', badge: 'À voir' }],
-      links: { dashboard: 'https://site.example/pro/', unsubscribe: 'https://site.example/api/public/morning-email/unsubscribe/x.y', settings: 'https://site.example/pro/mon-compte' },
+      links: {
+        dashboard: 'https://site.example/pro/',
+        unsubscribe: 'https://site.example/api/public/morning-email/unsubscribe/x.y',
+        settings: 'https://site.example/pro/mon-compte',
+      },
     };
     const message = morningEmail(digest);
     expect(message.subject).toBe('Parking <Fictif> · jeudi 22 oct. : 14 arrivées, 1 retour');
@@ -133,10 +145,16 @@ describe('the setting and the link', () => {
   it('reads and changes the setting', async () => {
     const res = await api().get('/api/internal/notifications/preferences').set(auth(op.token));
     expect(res.body.morningEmail).toEqual({ enabled: true, hour: 7, email: op.manager.email });
-    const patched = await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ morningEmail: { enabled: false, hour: 8 } });
+    const patched = await api()
+      .patch('/api/internal/notifications/preferences')
+      .set(auth(op.token))
+      .send({ morningEmail: { enabled: false, hour: 8 } });
     expect(patched.status).toBe(200);
     expect(patched.body.morningEmail).toEqual({ enabled: false, hour: 8, email: op.manager.email });
-    const bad = await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ morningEmail: { hour: 4 } });
+    const bad = await api()
+      .patch('/api/internal/notifications/preferences')
+      .set(auth(op.token))
+      .send({ morningEmail: { hour: 4 } });
     expect(bad.status).toBe(400);
   });
 

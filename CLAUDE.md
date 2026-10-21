@@ -1423,11 +1423,16 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   `#1E5E2E` pour les titres et le « live », états en pastels (`AppStatus`), barre d'app blanche, Archivo Narrow pour les
   titres et JetBrains Mono pour les heures et les chiffres (jusqu'au 05/10/2026 : direction B noir `#0B0B0C` et jaune `#F5C400`). Les couleurs, rayons et polices sont des constantes choisies
   à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`). Écran de connexion :
-  **choix A du 21/10/2026 (« Refais le design », maquettes https://claude.ai/artifact/WqN5FFVZCtig7hdvuZv69U)** : bandeau vert
-  foncé avec le nom sur une plaque citron et « PRO » en citron, « Bonjour, prêt pour le service ? » et les rôles, puis une
-  feuille claire arrondie jusqu'en bas (Apple ou Google, e-mail, mot de passe, « Se connecter » citron, encart « Nouveau dans
-  l'équipe ? » qui renvoie au code du jour, mot de passe perdu) ; icônes de la barre d'état claires ; remplace la direction
-  C-C « Tableau des vols » (04/10/2026, grille sous un voile) ; rien ne nomme un parking avant la connexion (l'app sert
+  **choix B du 21/10/2026 (« revois la page de connexion de plazo pro », puis « revoi le design sur web aussi », maquettes
+  https://claude.ai/artifact/2hNzBfHaph589Vdhjing8h, « Un champ à la fois » ; remplace le choix A du matin, bandeau vert foncé
+  et « Bonjour, prêt pour le service ? »)** : écran citron plein avec le nom en citron sur une plaque vert foncé et « PRO »,
+  « Le parking, de l'arrivée au retour. », puis une feuille blanche qui demande une chose à la fois (deux points d'étape) :
+  « Votre adresse e-mail » et « Continuer » (une adresse sans @ refusée sur place), Apple sur iPhone ou Google sur Android sous
+  « ou », lien « Nouveau ? J'ai un code du jour » (feuille qui explique : Apple ou Google, puis le code du jour) ; puis « Votre
+  mot de passe », l'adresse avec « Changer d'adresse e-mail », « Se connecter » et le mot de passe perdu. Icônes de la barre
+  d'état foncées. Même écran sur l'espace pro web (`LoginPage.tsx` : panneau citron à gauche et panneau blanc de 440 px à
+  droite, l'un sous l'autre sur téléphone ; champ d'adresse caché à l'étape 2 pour les gestionnaires de mots de passe ;
+  « Inscrire mon parking » et « Essayer la démo » sous le panneau). Rien ne nomme un parking avant la connexion (l'app sert
   plusieurs parkings).
 - **App Plazo voyageur (Flutter)** : **direction T-A « Parking » (choix T-A + F-A du 05/10/2026, d'après la maquette de Joanny)** :
   fond gris clair `#ECECEE`, cartes blanches très arrondies (22 px) à ombre douce, **plus d'en-tête orange** (barre sur le

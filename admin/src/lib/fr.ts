@@ -372,6 +372,15 @@ export const fr = {
     passwordChanged: "Mot de passe modifié. Reconnectez-vous.",
     noAccount: "Pas encore de compte ?",
     signup: "Inscrire mon parking",
+    // Choice B of 21/10/2026 (« Un champ à la fois »), as in Plazo Pro.
+    tagline: "Le parking, de l'arrivée au retour.",
+    emailTitle: "Votre adresse e-mail",
+    passwordTitle: "Votre mot de passe",
+    next: "Continuer",
+    changeEmail: "Changer d'adresse e-mail",
+    invalidEmail: "Adresse e-mail invalide.",
+    help: "Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.",
+    step: (n: number) => `Étape ${n} sur 2`,
   },
   signup: {
     title: "Inscrire mon parking",
