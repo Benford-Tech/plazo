@@ -2032,7 +2032,7 @@
     "my_photos_sent_on": "{} photo(s) envoyée(s) au parking le {}."
   },
   "extras": {
-    "title": "Services pour votre voiture",
+    "title": "Services additionnels",
     "intro": "Faits par l'équipe du parking avant votre retour.",
     "booking_intro": "Faits par l'équipe du parking pendant votre séjour, payés avec la réservation.",
     "one_charge_hint": "Une recharge à la fois : hybride ou électrique, selon votre voiture.",
@@ -2099,7 +2099,7 @@
       "refused": "Remboursé : le client est prévenu."
     },
     "settings": {
-      "title": "Services pour la voiture",
+      "title": "Services additionnels",
       "intro": "Les clients les commandent dans l'app Plazo, à la réservation ou après le dépôt, et les paient en ligne.",
       "lead": "Commande possible jusqu'à … avant le retour",
       "lead_invalid": "Entre 0 et 168 heures.",

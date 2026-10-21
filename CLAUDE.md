@@ -472,14 +472,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      incomplet », vers le filtre), sous-titre de la tuile « À traiter » « · N sans prix », carte « Les compléter · N » avec les trois
      plus proches d'aujourd'hui à saisir sur place (`Dashboard.noPrice { count, next }`, `ReservationService.noPrice`). Plazo Pro :
      libellé de l'alerte seulement.
-   - **Services pour la voiture (21/10/2026, « pouvoir demander un service lavage intérieur et shampouineuse, 50 € ; recharge
+   - **Services additionnels (21/10/2026, nommés « Services pour la voiture » jusqu'au renommage du même jour, « pouvoir demander un service lavage intérieur et shampouineuse, 50 € ; recharge
      hybride, 15 € ; recharge électrique, 30 € via Plazo même après avoir déposé son véhicule », direction A des maquettes
      https://claude.ai/artifact/AydgcS9sKMY5LWRHAb5LH1, « oui à tout », app Plazo seulement)** : chaque parking active ses
      services et ses prix (`parking_extras`, `kind` `interior_wash` · `hybrid_charge` · `ev_charge`, 1 € à 1 000 €, rien de
      proposé tant que le gérant ne l'active pas, prix par défaut 50 / 15 / 30 €) et le délai `Parking.extrasLeadHours` (24 h,
      0 à 168) ; `domain/extras.ts` (`orderRefusal` : réservation Plazo payée, statut à venir, sur place ou parti en navette,
      avant le délai, une commande active par service, une seule recharge) ; `ExtraService`. Le voyageur commande dans Plazo
-     (carte « Services pour votre voiture » de Ma réservation, feuille de paiement Stripe ; `GET/POST /public/bookings/:ref/extras`,
+     (carte « Services additionnels » de Ma réservation, feuille de paiement Stripe ; `GET/POST /public/bookings/:ref/extras`,
      `…/:id/sync`, `DELETE …/:id`) ou avec la réservation (`extras` de `POST /public/bookings`, payé dans le même paiement :
      `Reservation.extrasChargedCents` en plus de `chargedCents`, `PublicBooking.extrasCents`, mails « dont N € de services ») ;
      chaque commande `reservation_extras` (migration `reservation_extras` : nom et montants figés, commission Plazo au taux du
@@ -491,7 +491,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `bookingChanges`), alerte `extras_due` du tableau de bord (retour dans les 36 h, « à surveiller » à 6 h). Reversement de
      la part du loueur à la date de la réservation, une fois fait (`ExtraService.runPayouts` dans `cron/payouts`). Équipe :
      `GET/PUT /internal/parkings/:id/extras` (gérants), `GET /internal/reservations/:id/extras`, `POST …/:extraId/done|refuse`.
-     Espace pro web : carte « Services pour la voiture » de Parking › Réglages, bloc « Services commandés » de la fiche et de la
+     Espace pro web : carte « Services additionnels » de Parking › Réglages, bloc « Services commandés » de la fiche et de la
      fiche opérationnelle ; Plazo Pro : même bloc sur la fiche, réglages dans Plus › Réglages. Conditions générales (article 11).
      Le chiffre d'affaires ne compte pas encore les services.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées

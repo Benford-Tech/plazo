@@ -39,7 +39,7 @@ abstract class ExtraSettingsState with _$ExtraSettingsState {
   }) = _ExtraSettingsState;
 }
 
-/// « Services pour la voiture » in Plus › Réglages du parking (managers, 21/10/2026).
+/// « Services additionnels » in Plus › Réglages du parking (managers, 21/10/2026).
 class ExtraSettingsBloc extends Bloc<ExtraSettingsEvent, ExtraSettingsState> {
   ExtraSettingsBloc(this._settings) : super(const ExtraSettingsState()) {
     on<ExtraSettingsStarted>(_onStarted);
