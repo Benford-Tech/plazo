@@ -297,8 +297,8 @@ workflows:
     name: Plazo + Plazo Pro — APK, AAB, IPA → Google Play + App Store (production, notes de version)
     instance_type: mac_mini_m2
     # Two Android apps (~12 min each with the cache) and two iOS apps (~20 min each), checks once, then up to
-    # 30 min per app waiting for Apple to process the build before submitting it for review.
-    max_build_duration: 180
+    # 20 min waiting for Apple to process the two builds (side by side) before submitting them. 120 = Codemagic's maximum.
+    max_build_duration: 120
     working_directory: mobile
     integrations:
       # Teams › Personal account › Integrations › Developer Portal: the App Store Connect API key of the Apple team (shared with
@@ -427,25 +427,33 @@ workflows:
       - name: App Store Connect — envoi des deux IPA (TestFlight puis revue App Store, notes de version)
         ignore_failure: true
         script: |
-          FLAGS=""
+          # Codemagic caps a build at 120 min: both IPAs are uploaded first without waiting, so Apple processes them
+          # side by side, then each is submitted (no second upload), the first submission's wait covering both.
+          SUBMIT=""
           if [ "$APP_STORE_SUBMIT" = "true" ]; then
-            # Waits for Apple's processing (30 min at most), then creates or updates the App Store version and
-            # submits it, replacing a submission of an older build still waiting.
-            FLAGS="--app-store --platform IOS --version-string $VERSION_NAME --release-type $APP_STORE_RELEASE_TYPE --cancel-previous-submissions --max-build-processing-wait 30"
-            [ -n "$TESTFLIGHT_BETA_GROUPS" ] && FLAGS="$FLAGS --testflight"
-            [ -n "$TESTFLIGHT_BETA_GROUPS" ] && { IFS=','; for GROUP in $TESTFLIGHT_BETA_GROUPS; do FLAGS="$FLAGS --beta-group \"$(echo "$GROUP" | sed 's/^ *//; s/ *$//')\""; done; unset IFS; }
-          elif [ -n "$TESTFLIGHT_BETA_GROUPS" ]; then
-            FLAGS="--testflight"
-            IFS=','; for GROUP in $TESTFLIGHT_BETA_GROUPS; do FLAGS="$FLAGS --beta-group \"$(echo "$GROUP" | sed 's/^ *//; s/ *$//')\""; done; unset IFS
-          else
-            # No beta review: nothing to wait for once Apple has the file.
-            FLAGS="--max-build-processing-wait 0"
+            # Creates or updates the App Store version and submits it, replacing a submission of an older build still waiting.
+            SUBMIT="--app-store --platform IOS --version-string $VERSION_NAME --release-type $APP_STORE_RELEASE_TYPE --cancel-previous-submissions"
           fi
+          if [ -n "$TESTFLIGHT_BETA_GROUPS" ]; then
+            SUBMIT="$SUBMIT --testflight"
+            IFS=','; for GROUP in $TESTFLIGHT_BETA_GROUPS; do SUBMIT="$SUBMIT --beta-group \"$(echo "$GROUP" | sed 's/^ *//; s/ *$//')\""; done; unset IFS
+          fi
+          UPLOADED=""
           for IPA in build/ios/ipa/*.ipa; do
             NAME=$(basename "$IPA" .ipa)
+            if app-store-connect publish --path "$IPA" --max-build-processing-wait 0; then
+              UPLOADED="$UPLOADED $IPA"
+              [ -n "$SUBMIT" ] || echo "OK  TestFlight   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            else
+              echo "KO  TestFlight   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            fi
+          done
+          [ -n "$SUBMIT" ] || exit 0
+          WHERE="TestFlight (relecture)"; [ "$APP_STORE_SUBMIT" = "true" ] && WHERE="App Store"
+          for IPA in $UPLOADED; do
+            NAME=$(basename "$IPA" .ipa)
             SLUG="${NAME%-v$VERSION_NAME-$NEXT}"
-            WHERE="TestFlight"; [ "$APP_STORE_SUBMIT" = "true" ] && WHERE="App Store"
-            if eval app-store-connect publish --path "\"$IPA\"" $FLAGS \
+            if eval app-store-connect publish --path "\"$IPA\"" --skip-package-upload --max-build-processing-wait 20 $SUBMIT \
               --locale fr-FR --whats-new "\"@file:$CM_BUILD_DIR/release-notes-$SLUG.txt\""; then
               echo "OK  $WHERE   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
             else
