@@ -177,7 +177,7 @@ une décision de Joanny. Cocher au fur et à mesure.
   du parking, ou facture Plazo avec mandat de facturation.
 - [ ] **Apps** : identifiants décidés le 11/10/2026, `com.benfordtech.plazo` et `com.benfordtech.plazopro` (iOS et Android ;
   Plazo Pro créée sur Google Play) ; un seul
-  workflow `mobile-release` (tag `mobile-vX.Y.Z` ou à la main) construit et envoie les six paquets des deux apps ; il
+  workflow `mobile-release` (tag `mobile-v…` ou à la main, version calculée seule) construit et envoie les six paquets des deux apps ; il
   faut la clé d'import Android et les deux profils Apple dans Codemagic avant son premier lancement. `mobile-release-android`
   (à la main, 11/10/2026) fait la moitié Google Play seule, sans Apple : il sert au premier envoi sur Google Play.
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
