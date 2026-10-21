@@ -322,11 +322,11 @@
     "boarding_check_in_anonymous": "Pointé à l'embarquement"
   },
   "pro": {
-    "login_eyebrow": "Espace du personnel",
     "login_roles": "Gérants, agents, chauffeurs, voituriers",
-    "login_title": "Bienvenue",
-    "login_intro": "Connectez-vous, puis rejoignez votre parking avec le code du jour.",
     "login_help": "Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.",
+    "login_hello": "Bonjour,\nprêt pour le service ?",
+    "login_new_title": "Nouveau dans l'équipe ?",
+    "login_new_body": "Connectez-vous, puis tapez le code du jour que votre gérant vous donne.",
     "email": "Adresse email",
     "password": "Mot de passe",
     "login": "Se connecter",

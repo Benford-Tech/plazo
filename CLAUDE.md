@@ -1347,8 +1347,12 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   `#1E5E2E` pour les titres et le « live », états en pastels (`AppStatus`), barre d'app blanche, Archivo Narrow pour les
   titres et JetBrains Mono pour les heures et les chiffres (jusqu'au 05/10/2026 : direction B noir `#0B0B0C` et jaune `#F5C400`). Les couleurs, rayons et polices sont des constantes choisies
   à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`). Écran de connexion :
-  direction **C-C « Tableau des vols »** (04/10/2026) : grille d'affichage sous un voile noir, formulaire dans une carte bordée de
-  jaune ; rien ne nomme un parking avant la connexion (l'app sert plusieurs parkings).
+  **choix A du 21/10/2026 (« Refais le design », maquettes https://claude.ai/artifact/WqN5FFVZCtig7hdvuZv69U)** : bandeau vert
+  foncé avec le nom sur une plaque citron et « PRO » en citron, « Bonjour, prêt pour le service ? » et les rôles, puis une
+  feuille claire arrondie jusqu'en bas (Apple ou Google, e-mail, mot de passe, « Se connecter » citron, encart « Nouveau dans
+  l'équipe ? » qui renvoie au code du jour, mot de passe perdu) ; icônes de la barre d'état claires ; remplace la direction
+  C-C « Tableau des vols » (04/10/2026, grille sous un voile) ; rien ne nomme un parking avant la connexion (l'app sert
+  plusieurs parkings).
 - **App Plazo voyageur (Flutter)** : **direction T-A « Parking » (choix T-A + F-A du 05/10/2026, d'après la maquette de Joanny)** :
   fond gris clair `#ECECEE`, cartes blanches très arrondies (22 px) à ombre douce, **plus d'en-tête orange** (barre sur le
   fond gris, logo ou titre brun), une seule carte orange `#FF6600` par écran (parking recommandé, bouton d'action), pilules

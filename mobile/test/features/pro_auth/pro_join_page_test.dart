@@ -111,7 +111,8 @@ void main() {
       setUp(() {
         get = MockGet();
         // The API answers a little later than the first frame.
-        when(() => get(any())).thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50), () => const Right<Failure, OnboardingModel>(onboarding)));
+        when(() => get(any()))
+            .thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50), () => const Right<Failure, OnboardingModel>(onboarding)));
         whenListen(
           auth,
           const Stream<ProAuthState>.empty(),
@@ -123,7 +124,9 @@ void main() {
         if (locator.isRegistered<ProJoinBloc>()) await locator.unregister<ProJoinBloc>();
       });
 
-      testWidgets('wrappedRoute : le bloc part de la réponse de la connexion, Prénom et Nom préremplis dès la première image', (tester) async {
+      testWidgets('wrappedRoute : le bloc part de la réponse de la connexion, Prénom et Nom préremplis dès la première image', (
+        tester,
+      ) async {
         // The API never answers here: only the sign-in's answer can fill the form.
         when(() => get(any())).thenAnswer((_) => Completer<Either<Failure, OnboardingModel>>().future);
         locator.registerFactoryParam<ProJoinBloc, OnboardingModel?, void>(
@@ -161,7 +164,9 @@ void main() {
       });
     });
 
-    testWidgets('Apple sans nom (déjà autorisé une fois) : Prénom et Nom à remplir ; code faux : le message de la maquette', (tester) async {
+    testWidgets('Apple sans nom (déjà autorisé une fois) : Prénom et Nom à remplir ; code faux : le message de la maquette', (
+      tester,
+    ) async {
       await pumpJoin(
         tester,
         const ProJoinState(
@@ -194,7 +199,9 @@ void main() {
       verify(() => join.add(any(that: isA<ProJoinCancelRequested>()))).called(1);
     });
 
-    testWidgets('inscription rétablie au démarrage, connexions de l’API pas encore lues : « Confirmer avec Apple » quand même', (tester) async {
+    testWidgets('inscription rétablie au démarrage, connexions de l’API pas encore lues : « Confirmer avec Apple » quand même', (
+      tester,
+    ) async {
       await pumpJoin(
         tester,
         ProJoinState(identity: identity, request: request('pending')),
@@ -245,7 +252,9 @@ void main() {
 
     testWidgets('iPhone : « Continuer avec Apple » en premier, l’e-mail dessous', (tester) async {
       await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut, providers: ProvidersModel(apple: true)));
-      expect(find.text('Connectez-vous, puis rejoignez votre parking avec le code du jour.'), findsOneWidget);
+      // Choice A of 21/10/2026: the greeting on the green band, the newcomers' word at the bottom of the sheet.
+      expect(find.text('Bonjour,\nprêt pour le service ?'), findsOneWidget);
+      expect(find.text('Connectez-vous, puis tapez le code du jour que votre gérant vous donne.'), findsOneWidget);
       expect(find.byKey(const Key('pro-login-apple')), findsOneWidget);
       expect(find.byKey(const Key('pro-login-google')), findsNothing);
       expect(find.text('ou avec votre e-mail'), findsOneWidget);
@@ -269,6 +278,16 @@ void main() {
       expect(find.byKey(const Key('pro-login-google')), findsNothing);
       expect(find.text('ou avec votre e-mail'), findsNothing);
       expect(find.byKey(const Key('pro-login')), findsOneWidget);
+    });
+
+    testWidgets('21/10/2026 (choix A) : tient sur un petit téléphone, la feuille défile avec Apple', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2, 568 * 2);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut, providers: ProvidersModel(apple: true)));
+      expect(tester.takeException(), isNull);
+      await tester.dragUntilVisible(find.byKey(const Key('pro-login-newcomer')), find.byType(SingleChildScrollView), const Offset(0, -200));
+      expect(find.text("Nouveau dans l'équipe ?"), findsOneWidget);
     });
   });
 }
