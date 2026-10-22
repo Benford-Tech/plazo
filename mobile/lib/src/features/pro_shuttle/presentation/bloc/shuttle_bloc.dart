@@ -58,6 +58,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     on<ShuttleStopChanged>((event, emit) => emit(state.copyWith(stopId: state.running ? state.stopId : event.stopId)));
     on<ShuttleBoardRequested>((event, emit) => _board(event.boarding, emit));
     on<ShuttlePassengerToggled>(_onToggled);
+    on<ShuttleSlotToggled>(_onSlotToggled);
     on<ShuttleVehicleChosen>((event, emit) => emit(state.copyWith(vehicle: event.vehicle)));
     on<ShuttleDayVehicleChanged>(_onDayVehicleChanged);
     on<ShuttleWaveChosen>(_onWaveChosen);
@@ -123,7 +124,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     );
     await _loadPickups(emit, initial: true);
     // Opened from a booking's sheet: that traveller is selected when the list offers them.
-    final wanted = event.boarding ?? (event.reservationId == null ? null : ShuttleBoarding.only(direction: state.direction, reservationId: event.reservationId!));
+    final wanted =
+        event.boarding ?? (event.reservationId == null ? null : ShuttleBoarding.only(direction: state.direction, reservationId: event.reservationId!));
     if (wanted != null) await _board(wanted, emit);
     // The planning's requests from now on, and the one made before this list opened (the tab was not built yet).
     final boarding = _boarding;
@@ -146,13 +148,28 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   void _onDayVehicleChanged(ShuttleDayVehicleChanged event, Emitter<ShuttleState> emit) {
     final today = event.vehicleId == null ? null : state.vehicles.where((v) => v.inService && v.id == event.vehicleId).firstOrNull;
     if (today?.id == state.dayVehicleId) return;
-    emit(state.copyWith(dayVehicleId: today?.id, vehicle: today == null ? state.vehicle : TripVehicleChoice(vehicleId: today.id)));
+    emit(
+      state.copyWith(
+        dayVehicleId: today?.id,
+        vehicle: today == null ? state.vehicle : TripVehicleChoice(vehicleId: today.id),
+      ),
+    );
   }
 
   /// Switching sides clears the selection (and the rows pinned from the planning) and loads that side's list.
   Future<void> _onDirectionChanged(ShuttleDirectionChanged event, Emitter<ShuttleState> emit) async {
     if (state.running || event.direction == state.direction) return;
-    emit(state.copyWith(direction: event.direction, selected: const {}, pinnedDepartures: const [], pinnedPickups: const [], errorCode: null, unpinned: const [], actionState: ViewState.idle));
+    emit(
+      state.copyWith(
+        direction: event.direction,
+        selected: const {},
+        pinnedDepartures: const [],
+        pinnedPickups: const [],
+        errorCode: null,
+        unpinned: const [],
+        actionState: ViewState.idle,
+      ),
+    );
     await _loadPickups(emit, initial: !state.loaded);
   }
 
@@ -212,16 +229,36 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     final dropoff = boarding.direction == 'dropoff';
     // The trip of each listed row of this traveller (none listed: empty).
     final trips = dropoff
-        ? [for (final r in state.departureRows) if (r.reservationId == id) r.tripId]
-        : [for (final r in state.pickupRows) if (r.reservationId == id) r.tripId];
+        ? [
+            for (final r in state.departureRows)
+              if (r.reservationId == id) r.tripId,
+          ]
+        : [
+            for (final r in state.pickupRows)
+              if (r.reservationId == id) r.tripId,
+          ];
     // The planning knows the traveller's stop by its id only: its name groups the row under that stop.
     final departure = boarding.departure;
     final pickup = boarding.pickup;
     if (trips.isEmpty && dropoff && departure != null) {
-      emit(state.copyWith(pinnedDepartures: [...state.pinnedDepartures, departure.copyWith(stopName: departure.stopName ?? _stopName(departure.stopId))]));
+      emit(
+        state.copyWith(
+          pinnedDepartures: [
+            ...state.pinnedDepartures,
+            departure.copyWith(stopName: departure.stopName ?? _stopName(departure.stopId)),
+          ],
+        ),
+      );
     }
     if (trips.isEmpty && !dropoff && pickup != null) {
-      emit(state.copyWith(pinnedPickups: [...state.pinnedPickups, pickup.copyWith(stopName: pickup.stopName ?? _stopName(pickup.stopId))]));
+      emit(
+        state.copyWith(
+          pinnedPickups: [
+            ...state.pinnedPickups,
+            pickup.copyWith(stopName: pickup.stopName ?? _stopName(pickup.stopId)),
+          ],
+        ),
+      );
     }
     if (_boardable().contains(id)) {
       emit(state.copyWith(band: 0, selected: {...state.selected, id}, errorCode: null, unpinned: const [], actionState: ViewState.idle));
@@ -237,9 +274,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
 
   /// The travellers the current list lets board a trip: not on another trip; to the terminal, the expected ones too
   /// (14/10/2026: the server checks them in when the trip starts).
-  Set<String> _boardable() => state.direction == 'dropoff'
-      ? state.selectableDepartures.map((r) => r.reservationId).toSet()
-      : state.selectable.map((r) => r.reservationId).toSet();
+  Set<String> _boardable() =>
+      state.direction == 'dropoff' ? state.selectableDepartures.map((r) => r.reservationId).toSet() : state.selectable.map((r) => r.reservationId).toSet();
 
   /// Tells the planning who rides a running trip (« Embarquer » is not offered for them), as far as the lists know, and
   /// whether the driver's own trip runs (not offered at all).
@@ -258,8 +294,6 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   /// and (F-A) the travellers away or back today.
   Future<void> _loadPickups(Emitter<ShuttleState> emit, {required bool initial}) async {
     final direction = state.direction;
-    final away = staying;
-    if (away != null) (await away(NoParams())).fold((_) {}, (data) => emit(state.copyWith(staying: data)));
     if (direction == 'dropoff') {
       final result = await _departures(NoParams());
       // The driver switched sides meanwhile: this answer would sort the other side's selection.
@@ -284,6 +318,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         },
       );
       _shareTrips();
+      await _loadOtherSide(emit, direction);
       return;
     }
     final result = await _pickups(NoParams());
@@ -296,10 +331,33 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         final ids = pickups.rows.map((r) => r.reservationId).toSet();
         final pinned = state.pinnedPickups.where((r) => !ids.contains(r.reservationId)).toList();
         ids.addAll(pinned.map((r) => r.reservationId));
-        emit(state.copyWith(viewState: ViewState.success, pickups: pickups, pinnedPickups: pinned, selected: state.selected.where(ids.contains).toSet(), now: _clock()));
+        emit(
+          state.copyWith(
+            viewState: ViewState.success,
+            pickups: pickups,
+            pinnedPickups: pinned,
+            selected: state.selected.where(ids.contains).toSet(),
+            now: _clock(),
+          ),
+        );
       },
     );
     _shareTrips();
+    await _loadOtherSide(emit, direction);
+  }
+
+  /// B (22/10/2026): the other side's list too, for its tab's count (« Aller · 5 », « Retour · 4 »); a failure keeps
+  /// the count it had.
+  Future<void> _loadOtherSide(Emitter<ShuttleState> emit, String shown) async {
+    if (shown == 'dropoff') {
+      final result = await _pickups(NoParams());
+      if (state.direction != shown || emit.isDone) return;
+      result.fold((_) {}, (pickups) => emit(state.copyWith(pickups: pickups)));
+    } else {
+      final result = await _departures(NoParams());
+      if (state.direction != shown || emit.isDone) return;
+      result.fold((_) {}, (departures) => emit(state.copyWith(departures: departures)));
+    }
   }
 
   void _onToggled(ShuttlePassengerToggled event, Emitter<ShuttleState> emit) {
@@ -318,6 +376,16 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         pinnedPickups: state.pinnedPickups.where((r) => r.reservationId != event.reservationId).toList(),
       ),
     );
+  }
+
+  /// A whole slot ticked (the ones that can board), or unticked when all of them already are.
+  void _onSlotToggled(ShuttleSlotToggled event, Emitter<ShuttleState> emit) {
+    if (state.running) return;
+    final boardable = _boardable();
+    final ids = event.reservationIds.where(boardable.contains).toSet();
+    if (ids.isEmpty) return;
+    final all = ids.every(state.selected.contains);
+    emit(state.copyWith(selected: all ? state.selected.difference(ids) : {...state.selected, ...ids}));
   }
 
   Future<void> _onStartRequested(ShuttleStartRequested event, Emitter<ShuttleState> emit) async {
@@ -350,23 +418,35 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         reservationIds: state.selected.toList(),
         vehicle: state.vehicle ?? const TripVehicleChoice(),
         direction: state.direction,
-        stopId: state.stopId,
+        // 22/10/2026: where the ticked travellers go (their bookings' stop), not a stop the driver picks.
+        stopId: state.selectedStopId,
       ),
     );
-    await result.fold((failure) async {
-      final code = _code(failure);
-      emit(state.copyWith(actionState: ViewState.error, errorCode: code));
-      // One of the travellers cannot board (cancelled, gone, on another trip): find which, or the next tap fails too.
-      if (code == 'invalid_passengers' || code == 'already_on_trip') await _dropStalePins(emit);
-    }, (trip) async {
-      _lastSentAt = null;
-      if (trip.sharePosition) _startTracking();
-      emit(
-        state.copyWith(actionState: ViewState.success, trip: trip, tracking: trip.sharePosition, selected: const {}, pinnedDepartures: const [], pinnedPickups: const [], band: 1),
-      );
-      _shareTrips();
-      await _loadPickups(emit, initial: false);
-    });
+    await result.fold(
+      (failure) async {
+        final code = _code(failure);
+        emit(state.copyWith(actionState: ViewState.error, errorCode: code));
+        // One of the travellers cannot board (cancelled, gone, on another trip): find which, or the next tap fails too.
+        if (code == 'invalid_passengers' || code == 'already_on_trip') await _dropStalePins(emit);
+      },
+      (trip) async {
+        _lastSentAt = null;
+        if (trip.sharePosition) _startTracking();
+        emit(
+          state.copyWith(
+            actionState: ViewState.success,
+            trip: trip,
+            tracking: trip.sharePosition,
+            selected: const {},
+            pinnedDepartures: const [],
+            pinnedPickups: const [],
+            band: 1,
+          ),
+        );
+        _shareTrips();
+        await _loadPickups(emit, initial: false);
+      },
+    );
   }
 
   /// A start refused for one of the travellers: the list read again drops the cancelled ones and marks the ones on

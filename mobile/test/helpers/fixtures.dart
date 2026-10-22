@@ -160,6 +160,8 @@ PickupRowModel pickup(
   String? terminal = 'Terminal 1',
   DateTime? atMeetingPointAt,
   String? tripId,
+  String? stopId,
+  String? stopName,
 }) => PickupRowModel(
   reservationId: id,
   reference: 'R$id',
@@ -172,6 +174,8 @@ PickupRowModel pickup(
   terminal: terminal,
   atMeetingPointAt: atMeetingPointAt,
   tripId: tripId,
+  stopId: stopId,
+  stopName: stopName,
 );
 
 StaffTripModel staffTrip({DateTime? startedAt, List<TripPassengerModel> passengers = const []}) {

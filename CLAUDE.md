@@ -729,7 +729,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
      Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
-   - Décision **F-A du 06/10/2026 (« Ma tournée »)** : l'onglet Navette de Plazo Pro et le mode chauffeur du web en trois
+   - Décision **F-A du 06/10/2026 (« Ma tournée »)**, remplacée par B le 22/10/2026 (ci-dessous) : l'onglet Navette de Plazo Pro et le mode chauffeur du web en trois
      bandes À emmener · En route · En séjour (retours : À récupérer · En route · Rendus) ; `leaveAt` sur `PickupRow` et
      `DepartureRow`, `DepartureRow.expected` (attendu ; grisé jusqu'au 14/10/2026), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
      `ShuttleState.band`, `_BandBar` ; `ShuttleTripsPanel` onglets `band-0/1/2`.
@@ -760,6 +760,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`ShuttleTripsPanel`, `?sens=dropoff&reservation=` accepte un client attendu et l'épingle, refus « trajet déjà en cours »
      pendant son propre trajet ; `lib/boarding.ts`), « Embarquer » dans `NextStep` ; app : `ShuttleBoarding` /
      `ShuttleBoardingRequests` (bascule vers l'onglet Navette), une demande arrivée pendant un départ en cours attend son issue.
+   - Décision **B « Aller / Retour » (22/10/2026, « le workflow n'est pas bon. j'ai une liste de personnes selon un planning
+     d'arrivée. Je les sélectionne. et je vais les déposer à la gare. pareil au retour » ; maquettes
+     https://claude.ai/artifact/4hCVXX8zhe94z4Ax1dqXBZ)** : l'onglet Navette de Plazo Pro et le mode chauffeur du web ont trois
+     onglets **Aller · N** (les clients à conduire), **Retour · N** (ceux à aller chercher) et **En route · N**, chaque liste par
+     créneau de 15 min de l'heure de départ conseillée (« 14:30 · départ conseillé », « Tout cocher » / « Tout décocher » par
+     créneau, les sans heure en dernier) ; plus de sens ni de desserte à choisir avant de partir : **la destination vient de chaque
+     réservation** (`Reservation.stopId`, « Desserte » ; l'aéroport sinon), écrite sur la ligne (« vers Gare TGV », « à
+     l'aéroport »), et le bouton la dit d'après les personnes cochées (« Partir vers Gare TGV · 6 pers. », « Aller chercher à
+     l'aéroport · 3 pers. », « Partir · 5 pers. · 2 destinations » ; le trajet part avec `stopId` = la desserte commune, nulle
+     pour un mélange) ; « En route vers Gare TGV · position partagée », « N pers. à bord » / « à récupérer », fins « Clients déposés
+     · retour au parking » / « Tout le monde est à bord · retour au parking » ; « client(s) » devient « pers. » (navettes en cours
+     aussi) ; pendant un trajet, l'autre onglet attend sa fin. Retirés : « Départs · terminal » / « Retours · aéroport », les puces
+     de desserte, la carte « Ligne du jour » de l'onglet (la page Navettes du web la garde), les bandes « En séjour » / « Rendus »
+     (`GET /internal/shuttle/staying` n'est plus lu par les apps). App : `ShuttleState.slots/selectedStopId/selectedDestinations`,
+     `ShuttleSlotToggled`, `startLabel` ; web : `slotsOf`, `SlotHeader`, onglets `tab-go|back|route`. Serveur inchangé.
    - Décisions **R-B + I-C du 07/10/2026 (« suivi des navettes réglable », règle 1)** : `Parking.shuttleTracking` `off` | `team` |
      `everyone` (`team` par défaut pour un nouveau parking ; les parkings existants et ceux de démonstration à `everyone`),
      `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`), `domain/shuttle-tracking.ts` ; bloc « Suivi des navettes »

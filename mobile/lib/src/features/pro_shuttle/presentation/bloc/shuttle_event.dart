@@ -52,6 +52,12 @@ class ShuttlePassengerToggled extends ShuttleEvent {
   final String reservationId;
 }
 
+/// B (22/10/2026): « Tout cocher » / « Tout décocher » of a time slot.
+class ShuttleSlotToggled extends ShuttleEvent {
+  const ShuttleSlotToggled(this.reservationIds);
+  final List<String> reservationIds;
+}
+
 /// "Démarrer ce trajet" on a wave (V-A): its direction, stop and travellers are taken over.
 class ShuttleWaveChosen extends ShuttleEvent {
   const ShuttleWaveChosen({required this.direction, this.stopId, required this.reservationIds});

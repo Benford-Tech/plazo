@@ -36,6 +36,7 @@ abstract class ShuttleState with _$ShuttleState {
 
     /// The stop served by the next trip; null: the airport.
     String? stopId,
+
     /// The driver's running trip (null: none).
     StaffTripModel? trip,
     @Default({}) Set<String> selected,
@@ -43,11 +44,14 @@ abstract class ShuttleState with _$ShuttleState {
 
     /// The vehicle of the day the driver holds (V-A), in service: the trip starts in one tap, without the sheet.
     String? dayVehicleId,
+
     /// Positions are being watched and sent.
     @Default(false) bool tracking,
     LocationAccess? locationProblem,
+
     /// The trip just ended (by the driver, the 90 minutes, or elsewhere).
     @Default(false) bool endedNotice,
+
     /// The latest local position (memory only, never shown on a map here).
     GeoPosition? lastPosition,
     String? errorCode,
@@ -91,7 +95,8 @@ abstract class ShuttleState with _$ShuttleState {
   ShuttleVehicleModel? get chosenVehicle => vehicle?.vehicleId == null ? null : vehicles.where((v) => v.id == vehicle!.vehicleId).firstOrNull;
 
   /// Ticked travellers still expected (to the terminal): the server checks them in when the trip starts.
-  List<DepartureRowModel> get selectedNotCheckedIn => dropoff ? departureRows.where((r) => selected.contains(r.reservationId) && r.status == 'upcoming').toList() : const [];
+  List<DepartureRowModel> get selectedNotCheckedIn =>
+      dropoff ? departureRows.where((r) => selected.contains(r.reservationId) && r.status == 'upcoming').toList() : const [];
 
   /// Passengers of the running trip checked in at its boarding: their cars wait for the valet in « À ranger ».
   int get checkedInAtBoarding => trip?.running ?? false ? trip!.passengers.where((p) => p.checkedInAtBoarding).length : 0;
@@ -115,18 +120,91 @@ abstract class ShuttleState with _$ShuttleState {
       }
       final groups = [
         for (final e in map.entries)
-          TourGroup(stop: e.key, leaveAt: e.value.map((r) => r.leaveAt).whereType<DateTime>().fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a), departures: e.value),
+          TourGroup(
+            stop: e.key,
+            leaveAt: e.value.map((r) => r.leaveAt).whereType<DateTime>().fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a),
+            departures: e.value,
+          ),
       ];
       groups.sort((a, b) => (a.leaveAt ?? DateTime(2100)).compareTo(b.leaveAt ?? DateTime(2100)));
       return groups;
     }
-    return [for (final g in groups) TourGroup(stop: g.terminal ?? '', leaveAt: g.rows.map((r) => r.leaveAt).whereType<DateTime>().fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a), pickups: g.rows)];
+    return [
+      for (final g in groups)
+        TourGroup(
+          stop: g.terminal ?? '',
+          leaveAt: g.rows.map((r) => r.leaveAt).whereType<DateTime>().fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a),
+          pickups: g.rows,
+        ),
+    ];
+  }
+
+  /// B (22/10/2026, « Aller · Retour · En route »): the tab shown, from the side and the band.
+  int get tab => band == 1 ? 2 : (dropoff ? 0 : 1);
+
+  /// The counts of the three tabs (null: that list not read yet).
+  int? get goCount => departures == null ? null : departureRows.length;
+  int? get backCount => pickups == null ? null : pickupRows.length;
+
+  /// The rows ticked on the current side.
+  List<({String? stopId, String? stopName})> get _selectedStops => dropoff
+      ? [
+          for (final r in departureRows)
+            if (selected.contains(r.reservationId)) (stopId: r.stopId, stopName: r.stopName),
+        ]
+      : [
+          for (final r in pickupRows)
+            if (selected.contains(r.reservationId)) (stopId: r.stopId, stopName: r.stopName),
+        ];
+
+  /// Where the ticked travellers go (or wait): each booking's own stop (« Desserte »), the airport when it has none. The
+  /// driver no longer picks it (22/10/2026).
+  List<String?> get selectedDestinations => _selectedStops.map((s) => s.stopId).toSet().toList();
+
+  /// The trip's stop: the one all the ticked travellers share; none (the airport) for a mix or the airport.
+  String? get selectedStopId {
+    final ids = selectedDestinations;
+    return ids.length == 1 ? ids.single : null;
+  }
+
+  /// The name of that single destination (null: the airport, or a mix).
+  String? get selectedStopName => selectedStopId == null ? null : _selectedStops.firstWhere((s) => s.stopId == selectedStopId).stopName;
+
+  /// B: the current side's travellers by time slot (15 minutes, from the advised leave time), soonest first; the ones
+  /// without a time last.
+  List<TourSlot> get slots {
+    DateTime? bucket(DateTime? t) => t == null ? null : DateTime(t.year, t.month, t.day, t.hour, t.minute - t.minute % 15);
+    final keys = <DateTime?>{};
+    final departuresBy = <DateTime?, List<DepartureRowModel>>{};
+    final pickupsBy = <DateTime?, List<PickupRowModel>>{};
+    if (dropoff) {
+      for (final r in departureRows) {
+        final k = bucket(r.leaveAt?.toLocal());
+        keys.add(k);
+        departuresBy.putIfAbsent(k, () => []).add(r);
+      }
+    } else {
+      for (final r in pickupRows) {
+        final k = bucket(r.leaveAt?.toLocal());
+        keys.add(k);
+        pickupsBy.putIfAbsent(k, () => []).add(r);
+      }
+    }
+    final ordered = keys.toList()..sort((a, b) => (a ?? DateTime(2100)).compareTo(b ?? DateTime(2100)));
+    DateTime? first(Iterable<DateTime?> times) => times.whereType<DateTime>().fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a);
+    return [
+      for (final k in ordered)
+        TourSlot(
+          leaveAt: first([...?departuresBy[k]?.map((r) => r.leaveAt), ...?pickupsBy[k]?.map((r) => r.leaveAt)]),
+          departures: departuresBy[k] ?? const [],
+          pickups: pickupsBy[k] ?? const [],
+        ),
+    ];
   }
 
   /// F-A: travellers of the first band (the expected ones included), of the running trip, of the third band.
   int get bandCount1 => dropoff ? departureRows.length : pickupRows.length;
   int get bandCount2 => trip?.running ?? false ? trip!.passengers.length : 0;
-  int get bandCount3 => dropoff ? (staying?.days.fold<int>(0, (n, d) => n + d.rows.length) ?? 0) : (staying?.returnedToday.length ?? 0);
 
   MeetingPointModel? get meetingPoint => trip?.meetingPoint ?? pickups?.meetingPoint;
 
@@ -150,6 +228,16 @@ abstract class ShuttleState with _$ShuttleState {
     final left = t.expiresAt.difference(now);
     return left.isNegative ? Duration.zero : left;
   }
+}
+
+/// B (22/10/2026): one time slot of « Aller » or « Retour » and its travellers.
+class TourSlot {
+  const TourSlot({this.leaveAt, this.departures = const [], this.pickups = const []});
+  final DateTime? leaveAt;
+  final List<DepartureRowModel> departures;
+  final List<PickupRowModel> pickups;
+
+  List<String> get ids => [...departures.map((r) => r.reservationId), ...pickups.map((r) => r.reservationId)];
 }
 
 /// F-A: one stop of the first band ("Terminal 1 · départ conseillé 10:05") and its travellers.

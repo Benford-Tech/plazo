@@ -75,7 +75,7 @@ void main() {
     await show(tester, LiveShuttlesState(now: t0, data: live), const LiveShuttlesCard());
     expect(find.text('Navettes en cours · 2'), findsOneWidget);
     expect(find.text('Vito blanc · Karim → aéroport'), findsOneWidget);
-    expect(find.textContaining('3 client(s) · à 2,1 km de la desserte'), findsOneWidget);
+    expect(find.textContaining('3 pers. · à 2,1 km de la desserte'), findsOneWidget);
     expect(find.text('Navette · Léa → Gare TGV'), findsOneWidget);
     expect(find.textContaining('position en attente'), findsOneWidget);
     expect(find.byKey(const Key('live-bus-t1')), findsOneWidget);

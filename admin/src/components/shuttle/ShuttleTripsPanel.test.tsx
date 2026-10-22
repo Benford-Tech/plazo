@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/lib/api";
-import type { DepartureRow, LiveShuttles, PickupRow, Reservation, StaffTrip, StayingRow } from "@/lib/types";
+import type { DepartureRow, LiveShuttles, PickupRow, Reservation, StaffTrip } from "@/lib/types";
 import ShuttleTripsPanel from "./ShuttleTripsPanel";
 
 const auth = vi.hoisted(() => ({ user: { id: "me", name: "Karim Benali", role: "driver", vehicle: null } as Record<string, unknown> }));
@@ -17,7 +17,6 @@ const api = vi.hoisted(() => ({
   getCurrentTrip: vi.fn(),
   getPickups: vi.fn(),
   getDepartures: vi.fn(),
-  getStaying: vi.fn(),
   getVehicles: vi.fn(),
   getStops: vi.fn(),
   startTrip: vi.fn(),
@@ -75,21 +74,6 @@ const departure = (id: string, name: string, passengers: number, over: Partial<D
   stopName: null,
   tripId: null,
   leaveAt: "2026-10-06T09:30:00Z",
-  ...over,
-});
-const stayingRow = (id: string, name: string, over: Partial<StayingRow> = {}): StayingRow => ({
-  reservationId: id,
-  reference: id.toUpperCase(),
-  customerName: name,
-  passengers: 2,
-  plate: "AB-123-CD",
-  status: "shuttled_out",
-  returnAt: "2026-10-08T16:40:00Z",
-  returnFlight: "AF 7642",
-  flight: flight({ status: "scheduled", landedAt: null }),
-  spot: "A-07",
-  stopName: null,
-  returnedAt: null,
   ...over,
 });
 const trip = (over: Partial<StaffTrip> = {}): StaffTrip => ({
@@ -187,12 +171,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     });
     api.getDepartures.mockReset().mockResolvedValue({
       serverTime: live.serverTime,
-      rows: [departure("d1", "Marco Rossi", 4), departure("d2", "Nadia Roux", 1, { status: "upcoming", arrivedAt: null, spot: null, arrivalAt: "2026-10-06T08:30:00Z", stopName: "Gare TGV", expected: true })],
-    });
-    api.getStaying.mockReset().mockResolvedValue({
-      serverTime: live.serverTime,
-      days: [{ date: "2026-10-08", rows: [stayingRow("s1", "Camille Martin")] }],
-      returnedToday: [stayingRow("s2", "Yanis Benali", { status: "back_at_parking", returnedAt: "2026-10-06T07:50:00Z", returnAt: "2026-10-06T07:30:00Z" })],
+      rows: [departure("d1", "Marco Rossi", 4), departure("d2", "Nadia Roux", 1, { status: "upcoming", arrivedAt: null, spot: null, arrivalAt: "2026-10-06T08:30:00Z", stopId: "gare", stopName: "Gare TGV", expected: true })],
     });
     api.getVehicles.mockReset().mockResolvedValue({ data: [{ id: "v1", model: "Vito", colour: "blanc", plate: "GH-789-IJ", seats: 8, inService: true, driverId: "me", driverName: "Karim Benali" }] });
     api.getStops.mockReset().mockResolvedValue({ data: [airport, station] });
@@ -204,46 +183,60 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     Object.defineProperty(window.navigator, "geolocation", { configurable: true, value: undefined });
   });
 
-  it("liste les retours par terminal avec leur état, puis démarre le trajet avec le véhicule et la desserte", async () => {
+  it("« Retour » (B, 22/10/2026) : les clients à aller chercher avec leur état, la desserte de chacun, puis le trajet part vers elle", async () => {
+    api.getPickups.mockResolvedValue({
+      serverTime: live.serverTime,
+      meetingPoint: { lat: 45.72, lng: 5.08, source: "airport", label: "Terminal 1 · Porte 12" },
+      rows: [
+        pickup("r1", "Camille Martin", 2, { atMeetingPointAt: "2026-10-06T08:10:00Z" }),
+        pickup("r2", "Paul Dupont", 3, { flight: flight({ status: "delayed", landedAt: null, estimatedAt: "2026-10-06T08:40:00Z" }), stopId: "gare", stopName: "Gare TGV" }),
+        pickup("r3", "Lan Nguyen", 1, { tripId: "other" }),
+      ],
+    });
     renderPanel();
-    expect(await screen.findByText("À récupérer · Terminal 1")).toBeInTheDocument();
-    expect(screen.getByText("À récupérer · Terminal 2")).toBeInTheDocument();
-    // F-A: the three bands with their counts; the first band carries the advised leave time of each stop.
-    expect(screen.getByRole("tab", { name: "À récupérer · 3" })).toHaveAttribute("aria-selected", "true");
+    // « Aller · Retour · En route », with the counts of both lists; the pick-ups open first.
+    expect(await screen.findByRole("tab", { name: "Retour · 3" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Aller · 2" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "En route · 0" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Rendus · 1" })).toBeInTheDocument();
+    expect(screen.queryByTestId("stop-choice")).not.toBeInTheDocument();
     expect(screen.getByText("Point de rendez-vous : Terminal 1 · Porte 12")).toBeInTheDocument();
-    // Grouped by terminal: Terminal 1 (Camille, Lan), then Terminal 2 (Paul).
     const rows = screen.getAllByTestId("pickup-row");
     expect(within(rows[0]).getByText("Au point de RDV 10:10")).toBeInTheDocument();
-    expect(within(rows[1]).getByText("Sur un trajet")).toBeInTheDocument();
-    expect(within(rows[1]).getAllByRole("button")[0]).toBeDisabled();
-    expect(within(rows[2]).getByText("Retardé · 10:40")).toBeInTheDocument();
-    expect(screen.getByText("Sélectionnez des clients")).toBeInTheDocument();
+    expect(rows[0]).toHaveTextContent("à l'aéroport");
+    expect(within(rows[1]).getByText("Retardé · 10:40")).toBeInTheDocument();
+    expect(rows[1]).toHaveTextContent("à Gare TGV");
+    expect(within(rows[2]).getByText("Sur un trajet")).toBeInTheDocument();
+    expect(within(rows[2]).getAllByRole("button")[0]).toBeDisabled();
+    expect(screen.getByText("Cochez les personnes à récupérer")).toBeInTheDocument();
 
+    // Two destinations ticked: the button says so; one left: the trip goes there.
     await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
-    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
-    expect(screen.getByTestId("selected-summary")).toHaveTextContent("2 voyageurs · 5 pass. cochés");
-    await userEvent.click(screen.getByRole("button", { name: /Gare TGV/ }));
-    expect(screen.getByText("Desserte : Gare TGV")).toBeInTheDocument();
-    expect(screen.getByText("Dépose minute, sortie 2")).toBeInTheDocument();
+    await userEvent.click(within(rows[1]).getAllByRole("button")[0]);
+    expect(screen.getByRole("button", { name: "Aller chercher 5 pers. · 2 destinations" })).toBeInTheDocument();
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
     await userEvent.click(within(screen.getByTestId("vehicle-picker")).getByRole("button", { name: /Vito blanc/ }));
 
     api.startTrip.mockResolvedValue({ trip: trip({ stop: station, passengers: [] }) });
-    await userEvent.click(screen.getByRole("button", { name: "Partir à l'aéroport · 2 clients" }));
-    await waitFor(() => expect(api.startTrip).toHaveBeenCalledWith({ reservationIds: ["r1", "r2"], direction: "pickup", stopId: "gare", vehicleId: "v1", vehicle: null }));
-    expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers l'aéroport · position partagée");
+    await userEvent.click(screen.getByRole("button", { name: "Aller chercher à Gare TGV · 3 pers." }));
+    await waitFor(() => expect(api.startTrip).toHaveBeenCalledWith({ reservationIds: ["r2"], direction: "pickup", stopId: "gare", vehicleId: "v1", vehicle: null }));
+    expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers Gare TGV · position partagée");
     expect(screen.getByRole("tab", { name: "En route · 0" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("Aucune navette en route pour le moment.")).toBeInTheDocument();
     expect(screen.getByText("Ce navigateur ne donne pas la position : le trajet est visible sans sa position.")).toBeInTheDocument();
-    // Back on the first band, the trip stays reachable.
-    await userEvent.click(screen.getByRole("tab", { name: /À récupérer/ }));
+    // Back on « Retour », the trip stays reachable; « Aller » waits for its end.
+    await userEvent.click(screen.getByRole("tab", { name: /Retour/ }));
     expect(screen.getByTestId("go-route")).toBeInTheDocument();
-    // "Rendus": who came back today.
-    await userEvent.click(screen.getByRole("tab", { name: /Rendus/ }));
-    expect(screen.getByText("Revenus aujourd'hui")).toBeInTheDocument();
-    expect(screen.getByTestId("staying-row")).toHaveTextContent("Yanis Benali");
-    expect(screen.getByTestId("staying-row")).toHaveTextContent("De retour au parking");
+    expect(screen.getByRole("tab", { name: /Aller/ })).toBeDisabled();
+  });
+
+  it("« Tout cocher » prend tout le créneau, « Tout décocher » le rend", async () => {
+    renderPanel("/navettes?sens=dropoff");
+    await screen.findAllByTestId("departure-row");
+    expect(screen.getAllByTestId("slot")).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Tout cocher" }));
+    expect(screen.getByRole("button", { name: "Partir · 5 pers. · 2 destinations" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tout décocher" }));
+    expect(screen.getByText("Cochez les personnes qui montent")).toBeInTheDocument();
   });
 
   it("refuse plus de passagers que de places et explique l'erreur du serveur", async () => {
@@ -251,7 +244,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel();
     const rows = await screen.findAllByTestId("pickup-row");
     await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
-    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[1]).getAllByRole("button")[0]);
     await userEvent.click(await screen.findByRole("button", { name: /Clio/ }));
     expect(screen.getByText("5 passagers pour 1 places : choisissez un autre véhicule ou moins de clients.")).toBeInTheDocument();
   });
@@ -274,38 +267,33 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     api.sendTripPosition.mockResolvedValue({ trip: trip({ direction: "dropoff" }) });
     renderPanel();
     await screen.findAllByTestId("pickup-row");
-    await userEvent.click(screen.getByRole("tab", { name: /Départs · terminal/ }));
+    await userEvent.click(screen.getByRole("tab", { name: /Aller/ }));
     const departureRows = await screen.findAllByTestId("departure-row");
     const row = departureRows[0];
-    expect(within(row).getByText("Arrivé 08:25 · Place A12")).toBeInTheDocument();
-    // F-A: grouped by stop with the advised leave time; « Embarquer en un geste »: the expected traveller is tickable too.
-    expect(screen.getByRole("tab", { name: "À emmener · 2" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("À conduire au terminal")).toBeInTheDocument();
-    expect(screen.getByText("À conduire · Gare TGV")).toBeInTheDocument();
-    expect(screen.getAllByText("Départ conseillé 11:30")).toHaveLength(2);
+    expect(within(row).getByText("Arrivé 08:25 · vers l'aéroport · Place A12")).toBeInTheDocument();
+    // B: one slot per advised leave time, the destination on each line; « Embarquer en un geste »: the expected traveller
+    // is tickable too.
+    expect(screen.getByRole("tab", { name: "Aller · 2" })).toHaveAttribute("aria-selected", "true");
+    expect(departureRows[1]).toHaveTextContent("vers Gare TGV");
+    expect(screen.getByText("11:30")).toBeInTheDocument();
+    expect(screen.getByText("départ conseillé")).toBeInTheDocument();
     expect(within(row).getByText("Sur place")).toBeInTheDocument();
     expect(within(departureRows[1]).getByText("Attendu 10:30")).toBeInTheDocument();
     expect(within(departureRows[1]).getAllByRole("button")[0]).toBeEnabled();
     await userEvent.click(within(row).getAllByRole("button")[0]);
     expect(screen.queryByTestId("not-checked-in")).not.toBeInTheDocument();
     api.startTrip.mockResolvedValue({ trip: trip({ direction: "dropoff", passengers: [{ reservationId: "d1", reference: "D1", customerName: "Marco Rossi", passengers: 4, plate: "CD-456-EF", terminal: null, arrivedAt: "2026-10-06T06:25:00Z", checkedInAtBoarding: false }] }) });
-    await userEvent.click(screen.getByRole("button", { name: "Embarquer et partir · 1 client" }));
-    expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers le terminal");
+    await userEvent.click(screen.getByRole("button", { name: "Partir vers l'aéroport · 4 pers." }));
+    expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers l'aéroport");
+    expect(screen.getByTestId("trip-running")).toHaveTextContent("4 pers. à bord");
     expect(screen.queryByTestId("checked-in-note")).not.toBeInTheDocument();
     await waitFor(() => expect(api.sendTripPosition).toHaveBeenCalledWith("t1", expect.objectContaining({ lat: 45.71, lng: 5.05, accuracy: 12 })));
-
-    // "En séjour": the travellers dropped at the terminal, by return day.
-    await userEvent.click(screen.getByRole("tab", { name: /En séjour/ }));
-    expect(screen.getByText("jeu. 8 · 1 retour")).toBeInTheDocument();
-    expect(screen.getByTestId("staying-row")).toHaveTextContent("Camille Martin · AF 7642 · 18:40");
-    expect(screen.getByTestId("staying-row")).toHaveTextContent("Parti en navette");
-    await userEvent.click(screen.getByRole("tab", { name: /En route/ }));
 
     api.endTrip.mockResolvedValue({ trip: trip({ direction: "dropoff", status: "ended" }) });
     await userEvent.click(screen.getByTestId("end-trip"));
     expect(await screen.findByRole("status")).toHaveTextContent("Trajet terminé");
     expect(api.endTrip).toHaveBeenCalledWith("t1");
-    expect(screen.getByRole("tab", { name: /À emmener/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /Aller/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("montre les navettes de l'équipe et laisse un gérant terminer un trajet oublié", async () => {
@@ -337,7 +325,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await userEvent.click(await screen.findByRole("tab", { name: /En route/ }));
     const row = await screen.findByTestId("live-trip");
     expect(row).toHaveTextContent("Karim Benali");
-    expect(row).toHaveTextContent("3 clients");
+    expect(row).toHaveTextContent("3 pers.");
     expect(row).toHaveTextContent("Aéroport dans 6 min");
     await userEvent.click(within(row).getByRole("button", { name: "Terminer ce trajet" }));
     expect(window.confirm).toHaveBeenCalledWith("Terminer le trajet de Karim Benali ? Sa position ne sera plus partagée.");
@@ -383,7 +371,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
         passengers: [passenger("d1", "Chloé Moreau"), passenger("d2", "Vincent Blanc", { arrivedAt: "2026-10-06T07:47:00Z", checkedInAtBoarding: true })],
       }),
     });
-    await userEvent.click(screen.getByRole("button", { name: "Embarquer et partir · 2 clients" }));
+    await userEvent.click(screen.getByRole("button", { name: "Partir vers l'aéroport · 3 pers." }));
     await waitFor(() => expect(api.startTrip).toHaveBeenCalledWith({ reservationIds: ["d1", "d2"], direction: "dropoff", stopId: null, vehicleId: "v1", vehicle: null }));
     const running = await screen.findByTestId("trip-running");
     const items = within(running).getAllByRole("listitem");
@@ -418,24 +406,23 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel("/navettes?sens=dropoff&reservation=d2");
     const rows = await screen.findAllByTestId("departure-row");
     await waitFor(() => expect(rows[1]).toHaveAttribute("aria-selected", "true"));
-    expect(screen.getByRole("button", { name: "Embarquer et partir · 1 client" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Partir vers Gare TGV · 1 pers." })).toBeInTheDocument();
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
     expect(api.getReservation).not.toHaveBeenCalled();
     // Unticked, then « Embarquer » again from the card while another traveller is ticked: both are.
     await userEvent.click(within(rows[1]).getAllByRole("button")[0]);
     await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
     await userEvent.click(screen.getByText("embarquer-d2"));
-    expect(await screen.findByRole("button", { name: "Embarquer et partir · 2 clients" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Partir · 5 pers. · 2 destinations" })).toBeInTheDocument();
   });
 
   it("« Embarquer » ouvert côté retours : la page passe aux départs avec ce client coché", async () => {
     renderPanel();
     await screen.findAllByTestId("pickup-row");
-    await userEvent.click(screen.getByRole("tab", { name: /Rendus/ }));
+    await userEvent.click(screen.getByRole("tab", { name: /En route/ }));
     await userEvent.click(screen.getByText("embarquer-d2"));
-    expect(await screen.findByRole("button", { name: "Embarquer et partir · 1 client" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Départs · terminal/ })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "À emmener · 2" })).toHaveAttribute("aria-selected", "true");
+    expect(await screen.findByRole("button", { name: "Partir vers Gare TGV · 1 pers." })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aller · 2" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getAllByTestId("departure-row")[1]).toHaveAttribute("aria-selected", "true");
   });
 
@@ -449,7 +436,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     expect(pinned).toHaveAttribute("aria-selected", "true");
     expect(within(pinned).getByText(/^Attendu /)).toBeInTheDocument();
     expect(screen.getByTestId("not-checked-in")).toHaveTextContent("Sarah Cohen n'est pas encore pointé");
-    expect(screen.getByTestId("selected-summary")).toHaveTextContent("1 voyageur · 3 pass. coché");
+    expect(screen.getByRole("button", { name: "Partir vers l'aéroport · 3 pers." })).toBeInTheDocument();
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
     // Unticked, the pinned traveller leaves the list.
     await userEvent.click(within(pinned).getAllByRole("button")[0]);
@@ -461,20 +448,20 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel("/navettes?sens=dropoff&reservation=r7");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Ce client ne peut pas embarquer maintenant : il est déjà parti, annulé ou attendu un autre jour."));
     expect(screen.getAllByTestId("departure-row")).toHaveLength(2);
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
   });
   it("« Récupérer » depuis une réservation : le client de la liste est coché, un autre absent n'est rien", async () => {
     renderPanel("/navettes?sens=pickup&reservation=r2");
-    await waitFor(() => expect(screen.getAllByTestId("pickup-row")[2]).toHaveAttribute("aria-selected", "true"));
+    await waitFor(() => expect(screen.getAllByTestId("pickup-row")[1]).toHaveAttribute("aria-selected", "true"));
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
-    expect(screen.getByRole("button", { name: "Partir à l'aéroport · 1 client" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Aller chercher à l'aéroport · 3 pers." })).toBeInTheDocument();
   });
 
   it("« Récupérer » pour un client que la liste ne tient pas : la demande est consommée sans rien cocher", async () => {
     renderPanel("/navettes?sens=pickup&reservation=zz");
     await screen.findAllByTestId("pickup-row");
     await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/));
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
     expect(toast.error).not.toHaveBeenCalled();
   });
 
@@ -500,7 +487,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await screen.findAllByTestId("pickup-row");
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Un des clients est déjà sur un trajet en cours."));
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
   });
 
   it("dit pourquoi la réservation demandée ne se lit pas, et n'insiste pas", async () => {
@@ -509,7 +496,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Élément introuvable."));
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
     expect(screen.getAllByTestId("departure-row")).toHaveLength(2);
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
   });
 
   it("un départ refusé relit la liste : le client épinglé annulé et celui pris par un autre trajet perdent leur coche", async () => {
@@ -517,7 +504,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel("/navettes?sens=dropoff&reservation=r7");
     await waitFor(() => expect(screen.getAllByTestId("departure-row")).toHaveLength(3));
     await userEvent.click(within(screen.getAllByTestId("departure-row")[0]).getAllByRole("button")[0]);
-    expect(screen.getByRole("button", { name: "Embarquer et partir · 2 clients" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Partir vers l'aéroport · 7 pers." })).toBeInTheDocument();
 
     // Meanwhile the desk cancelled Sarah Cohen and another driver took Marco Rossi.
     api.getReservation.mockResolvedValue(booking({ status: "cancelled" }));
@@ -526,11 +513,11 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
       rows: [departure("d1", "Marco Rossi", 4, { tripId: "other" }), departure("d2", "Nadia Roux", 1, { status: "upcoming", arrivedAt: null, spot: null, arrivalAt: "2026-10-06T08:30:00Z", expected: true })],
     });
     api.startTrip.mockRejectedValue(new ApiError(422, "Invalid passengers", "invalid_passengers"));
-    await userEvent.click(screen.getByRole("button", { name: "Embarquer et partir · 2 clients" }));
+    await userEvent.click(screen.getByRole("button", { name: "Partir vers l'aéroport · 7 pers." }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste."));
     await waitFor(() => expect(screen.getAllByTestId("departure-row")).toHaveLength(2));
     expect(screen.getAllByTestId("departure-row").some(r => r.hasAttribute("data-pinned"))).toBe(false);
-    await waitFor(() => expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument());
     // The traveller added by hand is named (Marco Rossi, on the list, shows « Sur un trajet »).
     expect(toast.error).toHaveBeenCalledWith("Sarah Cohen, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.");
     expect(toast.error).toHaveBeenCalledTimes(2);
@@ -545,16 +532,16 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel("/navettes?sens=dropoff&reservation=r7");
     await waitFor(() => expect(screen.getAllByTestId("departure-row")).toHaveLength(3));
     await userEvent.click(screen.getByText("embarquer-r8"));
-    expect(await screen.findByRole("button", { name: "Embarquer et partir · 2 clients" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Partir vers l'aéroport · 4 pers." })).toBeInTheDocument();
     expect(screen.getAllByTestId("departure-row").filter(r => r.hasAttribute("data-pinned"))).toHaveLength(2);
 
     // Both were cancelled meanwhile.
     bookings.r7 = booking({ status: "cancelled" });
     bookings.r8 = { ...bookings.r8, status: "cancelled" } as Reservation;
     api.startTrip.mockRejectedValue(new ApiError(422, "Invalid passengers", "invalid_passengers"));
-    await userEvent.click(screen.getByRole("button", { name: "Embarquer et partir · 2 clients" }));
+    await userEvent.click(screen.getByRole("button", { name: "Partir vers l'aéroport · 4 pers." }));
     await waitFor(() => expect(screen.getAllByTestId("departure-row")).toHaveLength(2));
-    await waitFor(() => expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument());
     // Both bookings, read again together, are named in one message.
     expect(toast.error.mock.calls.map(([text]) => text as string).filter(text => text.includes("à la main"))).toEqual([
       "Sarah Cohen et Paul Durand, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations.",
@@ -573,8 +560,8 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     });
     api.startTrip.mockRejectedValue(new ApiError(409, "Already on trip", "already_on_trip"));
     const reads = api.getReservation.mock.calls.length;
-    await userEvent.click(screen.getByRole("button", { name: "Embarquer et partir · 2 clients" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Embarquer et partir · 1 client" })).toBeInTheDocument());
+    await userEvent.click(screen.getByRole("button", { name: "Partir vers l'aéroport · 7 pers." }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Partir vers l'aéroport · 3 pers." })).toBeInTheDocument());
     await waitFor(() => expect(api.getReservation.mock.calls.length).toBeGreaterThan(reads));
     const pinned = screen.getAllByTestId("departure-row").find(r => r.hasAttribute("data-pinned"))!;
     expect(pinned).toHaveAttribute("aria-selected", "true");
@@ -591,7 +578,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     api.getReservation.mockResolvedValue(booking({ status: "cancelled" }));
     await client.invalidateQueries({ queryKey: ["reservation", "r7"] });
     await waitFor(() => expect(screen.getAllByTestId("departure-row")).toHaveLength(2));
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
     expect(toast.error).not.toHaveBeenCalled();
   });
 
@@ -613,7 +600,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await screen.findAllByTestId("departure-row");
     // The list is read, my trip not yet: the request waits.
     expect(screen.getByTestId("where")).toHaveTextContent("reservation=d2");
-    expect(screen.queryByTestId("selected-summary")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("start-trip-button")).not.toBeInTheDocument();
     current({ trip: trip({ direction: "dropoff", passengers: [] }) });
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Un trajet est déjà en cours : terminez-le avant d'en démarrer un autre."));
     await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/));
@@ -625,7 +612,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     // The trip as this page saw it a minute ago; it was ended in Plazo Pro since.
     client.setQueryData(["shuttle-current"], { trip: trip() }, { updatedAt: Date.now() - 60_000 });
     renderPanel("/navettes?sens=dropoff&reservation=d2", client);
-    await waitFor(() => expect(screen.getByRole("button", { name: "Embarquer et partir · 1 client" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Partir vers Gare TGV · 1 pers." })).toBeInTheDocument());
     expect(screen.getAllByTestId("departure-row")[1]).toHaveAttribute("aria-selected", "true");
     expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/);
     expect(toast.error).not.toHaveBeenCalled();
@@ -635,7 +622,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     api.getCurrentTrip.mockResolvedValue({ trip: trip() });
     renderPanel();
     await screen.findByTestId("trip-running");
-    await userEvent.click(screen.getByRole("tab", { name: /Rendus/ }));
+    await userEvent.click(screen.getByRole("tab", { name: /Retour/ }));
     await userEvent.click(screen.getByText("embarquer-d2"));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Un trajet est déjà en cours : terminez-le avant d'en démarrer un autre."));
     await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent(/^\/navettes$/));

@@ -35,13 +35,40 @@ function frenchList(items: string[]): string {
 }
 
 /** What deleting an operator takes with it, in words: « son parking, sa fiche, ses tarifs, ses 3 réservations et … ». */
-function deletionSummary(counts: { parkings: number; listings?: number; reservations: number; staff: number }): string {
+function deletionSummary(counts: {
+  parkings: number;
+  listings?: number;
+  reservations: number;
+  staff: number;
+}): string {
   const listings = counts.listings ?? 0;
   const parts = [
-    ...(counts.parkings === 0 ? [] : [counts.parkings > 1 ? `ses ${counts.parkings} parkings` : "son parking"]),
-    ...(listings === 0 ? [] : listings > 1 ? [`ses ${listings} fiches`, "leurs tarifs"] : ["sa fiche", "ses tarifs"]),
-    ...(counts.reservations === 0 ? [] : [counts.reservations === 1 ? "sa réservation" : `ses ${counts.reservations} réservations`]),
-    ...(counts.staff === 0 ? [] : [counts.staff > 1 ? `les ${counts.staff} comptes de son équipe` : "le compte de son gérant"]),
+    ...(counts.parkings === 0
+      ? []
+      : [
+          counts.parkings > 1
+            ? `ses ${counts.parkings} parkings`
+            : "son parking",
+        ]),
+    ...(listings === 0
+      ? []
+      : listings > 1
+        ? [`ses ${listings} fiches`, "leurs tarifs"]
+        : ["sa fiche", "ses tarifs"]),
+    ...(counts.reservations === 0
+      ? []
+      : [
+          counts.reservations === 1
+            ? "sa réservation"
+            : `ses ${counts.reservations} réservations`,
+        ]),
+    ...(counts.staff === 0
+      ? []
+      : [
+          counts.staff > 1
+            ? `les ${counts.staff} comptes de son équipe`
+            : "le compte de son gérant",
+        ]),
   ];
   if (parts.length < 2) return parts[0] ?? "ses données";
   return `${parts.slice(0, -1).join(", ")} et ${parts[parts.length - 1]}`;
@@ -128,12 +155,18 @@ export const fr = {
     already_signed: "Ce contrat est déjà signé.",
     not_pending: "Ce contrat n'attend plus de signature.",
     // The prospects' demo (21/10/2026).
-    demo_read_only: "Pas dans la démo : l'équipe, les mots de passe, les paiements et les envois vers l'extérieur sont simulés.",
-    demo_link_expired: "Ce lien de démo a expiré. Vous pouvez entrer dans la démo sans lien.",
-    demo_link_unknown: "Ce lien de démo n'existe pas. Vous pouvez entrer dans la démo sans lien.",
-    view_as_cannot_sign: "Seul un gérant du parking peut signer son contrat, pas la plateforme en consultation.",
-    file_unavailable: "Le fichier du contrat est indisponible pour l'instant. Réessayez dans quelques minutes.",
-    email_unavailable: "Aucun e-mail n'a pu partir : vérifiez l'envoi des e-mails et les gérants du parking.",
+    demo_read_only:
+      "Pas dans la démo : l'équipe, les mots de passe, les paiements et les envois vers l'extérieur sont simulés.",
+    demo_link_expired:
+      "Ce lien de démo a expiré. Vous pouvez entrer dans la démo sans lien.",
+    demo_link_unknown:
+      "Ce lien de démo n'existe pas. Vous pouvez entrer dans la démo sans lien.",
+    view_as_cannot_sign:
+      "Seul un gérant du parking peut signer son contrat, pas la plateforme en consultation.",
+    file_unavailable:
+      "Le fichier du contrat est indisponible pour l'instant. Réessayez dans quelques minutes.",
+    email_unavailable:
+      "Aucun e-mail n'a pu partir : vérifiez l'envoi des e-mails et les gérants du parking.",
     photos_unavailable: "Le stockage des fichiers n'est pas configuré.",
     payload_too_large: "Fichier trop lourd.",
     unauthorized: "Votre session a expiré. Reconnectez-vous.",
@@ -168,7 +201,8 @@ export const fr = {
     invalid_slug:
       "Lettres minuscules, chiffres et tirets seulement (ex. parking-demo).",
     slug_taken: "Cette adresse est déjà prise par un autre parking.",
-    slug_reserved: "Cette adresse est réservée au site Plazo : choisissez-en une autre.",
+    slug_reserved:
+      "Cette adresse est réservée au site Plazo : choisissez-en une autre.",
     unknown_airport: "Aéroport inconnu.",
     invalid_url: "Adresse web invalide (http:// ou https://).",
     invalid_service: "Service inconnu.",
@@ -179,7 +213,8 @@ export const fr = {
     duplicate_days: "Deux forfaits ont la même durée.",
     // Night fees (12/10/2026).
     same_time: "Le début et la fin de la nuit doivent être différents.",
-    fee_required: "Indiquez au moins un montant de frais de nuit : dépôt ou retour.",
+    fee_required:
+      "Indiquez au moins un montant de frais de nuit : dépôt ou retour.",
     // S-C files (07/10/2026).
     file_occupied: "Cette file contient des voitures : videz-la d'abord.",
     file_full: "Cette file est complète.",
@@ -306,13 +341,16 @@ export const fr = {
       "C'est votre seule façon de vous connecter : gardez-la, ou définissez d'abord un mot de passe.",
     reauth_failed: "La confirmation a échoué. Réessayez.",
     trip_running: "Un trajet de navette est en cours : terminez-le d'abord.",
-    provider_unavailable: "Cette connexion n'est pas disponible pour le moment.",
-    provider_unreachable: "Le service de connexion ne répond pas. Réessayez dans un instant.",
+    provider_unavailable:
+      "Cette connexion n'est pas disponible pour le moment.",
+    provider_unreachable:
+      "Le service de connexion ne répond pas. Réessayez dans un instant.",
     identity_invalid: "La connexion n'a pas pu être vérifiée. Réessayez.",
     account_disabled: "Ce compte est désactivé. Parlez-en à votre gérant.",
     // Prospection (18/10/2026).
     prospect_exists: "Ce prospect est déjà dans la liste.",
-    suppressed: "Cette adresse a demandé à ne plus être contactée : elle ne peut pas être ajoutée.",
+    suppressed:
+      "Cette adresse a demandé à ne plus être contactée : elle ne peut pas être ajoutée.",
     prospecting_unavailable:
       "L'envoi n'est pas configuré sur le serveur (Brevo, expéditeur, adresse du site) : rien n'est parti.",
     unsubscribed: "Ce prospect s'est désinscrit : il ne change plus d'état.",
@@ -327,15 +365,27 @@ export const fr = {
   demo: {
     badge: "Démo",
     title: "Essayez Plazo Pro sur un parking fictif",
-    intro: "Parking des Cèdres · 120 places · 3 navettes. Les réservations bougent en direct, rien n'est réel.",
+    intro:
+      "Parking des Cèdres · 120 places · 3 navettes. Les réservations bougent en direct, rien n'est réel.",
     welcome: (company: string) => `Bonjour ${company} : voici votre démo.`,
-    linkExpired: "Ce lien a expiré : vous pouvez tout de même entrer dans la démo.",
-    linkUnknown: "Ce lien n'est pas reconnu : vous pouvez tout de même entrer dans la démo.",
+    linkExpired:
+      "Ce lien a expiré : vous pouvez tout de même entrer dans la démo.",
+    linkUnknown:
+      "Ce lien n'est pas reconnu : vous pouvez tout de même entrer dans la démo.",
     chooseRole: "Dans quel rôle voulez-vous l'essayer ?",
     roles: {
-      manager: { label: "Gérant", hint: "Tableau de bord, chiffre d'affaires, plan du parking" },
-      agent: { label: "Accueil", hint: "Arrivées, mails des comparateurs, réservations" },
-      driver: { label: "Chauffeur", hint: "Qui emmener, qui récupérer, la navette en direct" },
+      manager: {
+        label: "Gérant",
+        hint: "Tableau de bord, chiffre d'affaires, plan du parking",
+      },
+      agent: {
+        label: "Accueil",
+        hint: "Arrivées, mails des comparateurs, réservations",
+      },
+      driver: {
+        label: "Chauffeur",
+        hint: "Qui emmener, qui récupérer, la navette en direct",
+      },
       valet: { label: "Voiturier", hint: "Où ranger chaque voiture, les clés" },
     },
     enter: "Entrer dans la démo",
@@ -344,16 +394,24 @@ export const fr = {
     banner: "Démo",
     bannerNote: "données fictives · remise à zéro cette nuit",
     quit: "Quitter",
-    simulated: "Les gestes qui écrivent à l'extérieur (SMS, e-mails, paiements, équipe) sont simulés.",
+    simulated:
+      "Les gestes qui écrivent à l'extérieur (SMS, e-mails, paiements, équipe) sont simulés.",
     tryTitle: "À essayer",
     tryBody: {
-      manager: "Ouvrez « Chiffre d'affaires » pour voir ce que vous prennent les comparateurs, puis complétez une réservation sans prix.",
-      agent: "Ouvrez les réservations du jour, puis « Mails » pour voir comment Plazo lit les confirmations des comparateurs.",
-      driver: "Ouvrez « Navettes » : les clients à emmener et à récupérer s'y ajoutent au fil de la journée.",
-      valet: "Ouvrez « Parking » puis « Occupation » : rangez une arrivée dans la file proposée.",
+      manager:
+        "Ouvrez « Chiffre d'affaires » pour voir ce que vous prennent les comparateurs, puis complétez une réservation sans prix.",
+      agent:
+        "Ouvrez les réservations du jour, puis « Mails » pour voir comment Plazo lit les confirmations des comparateurs.",
+      driver:
+        "Ouvrez « Navettes » : les clients à emmener et à récupérer s'y ajoutent au fil de la journée.",
+      valet:
+        "Ouvrez « Parking » puis « Occupation » : rangez une arrivée dans la file proposée.",
     } as Record<string, string>,
     tryLink: {
-      manager: { to: "/chiffre-affaires", label: "Ouvrir le chiffre d'affaires" },
+      manager: {
+        to: "/chiffre-affaires",
+        label: "Ouvrir le chiffre d'affaires",
+      },
       agent: { to: "/reservations", label: "Ouvrir les réservations" },
       driver: { to: "/navettes", label: "Ouvrir les navettes" },
       valet: { to: "/parking/occupation", label: "Ouvrir l'occupation" },
@@ -479,18 +537,24 @@ export const fr = {
     basis: { arrival: "jour d'arrivée", booked: "jour de réservation" },
     cancelledOut: "annulées exclues",
     total: (period: string) => `Total ${period}`,
-    span: (from: string, to: string) => (from === to ? `le ${from}` : `du ${from} au ${to}`),
+    span: (from: string, to: string) =>
+      from === to ? `le ${from}` : `du ${from} au ${to}`,
     bookings: "Réservations",
-    bookingsSub: (missing: number) => (missing === 0 ? "toutes avec un montant" : `dont ${missing} sans montant`),
+    bookingsSub: (missing: number) =>
+      missing === 0 ? "toutes avec un montant" : `dont ${missing} sans montant`,
     average: "Panier moyen",
-    averageSub: (days: number | null) => (days === null ? "—" : `${days.toLocaleString("fr-FR")} jours en moyenne`),
+    averageSub: (days: number | null) =>
+      days === null ? "—" : `${days.toLocaleString("fr-FR")} jours en moyenne`,
     byChannel: "Par canal",
     channel: "Canal",
     count: "Réservations",
     amount: "Chiffre d'affaires",
     share: "Part",
     noRevenue: "Aucune réservation avec un montant sur cette période.",
-    missing: (n: number) => (n === 1 ? "1 réservation sans montant n'est pas comptée." : `${n} réservations sans montant ne sont pas comptées.`),
+    missing: (n: number) =>
+      n === 1
+        ? "1 réservation sans montant n'est pas comptée."
+        : `${n} réservations sans montant ne sont pas comptées.`,
     complete: "Les compléter",
     hide: "Masquer",
     missingTitle: "Réservations sans montant",
@@ -500,13 +564,15 @@ export const fr = {
     saved: "Montant enregistré",
     invalidAmount: "Montant invalide",
     byDay: "Jour par jour",
-    dayLabel: (date: string, amount: string, count: number) => `${date} : ${amount}, ${count} réservation${count > 1 ? "s" : ""}`,
+    dayLabel: (date: string, amount: string, count: number) =>
+      `${date} : ${amount}, ${count} réservation${count > 1 ? "s" : ""}`,
     export: "Exporter en CSV",
     exporting: "Export…",
     todayMark: "aujourd'hui",
     // Dashboard tile (CA-A).
     tile: (month: string) => `Chiffre d'affaires · ${month}`,
-    tileSub: (today: string, week: string, count: number) => `Aujourd'hui ${today} · 7 jours ${week} · ${count} réservation${count > 1 ? "s" : ""}`,
+    tileSub: (today: string, week: string, count: number) =>
+      `Aujourd'hui ${today} · 7 jours ${week} · ${count} réservation${count > 1 ? "s" : ""}`,
     tileMissing: (n: number) => `${n} sans montant`,
     // Choice A of 20/10/2026: gross − commissions = net.
     tileGross: "Encaissé par les clients",
@@ -518,12 +584,15 @@ export const fr = {
     view: "Afficher",
     views: { gross: "Brut", net: "Net de commissions" },
     totalNet: (period: string) => `Vous gardez ${period}`,
-    netSub: (paid: string, commission: string) => `payé ${paid} · commissions − ${commission}`,
-    grossSub: (commission: string) => `dont ${commission} de commissions des comparateurs`,
+    netSub: (paid: string, commission: string) =>
+      `payé ${paid} · commissions − ${commission}`,
+    grossSub: (commission: string) =>
+      `dont ${commission} de commissions des comparateurs`,
     commission: "Commission",
     net: "Net",
     rateLabel: (name: string) => `Taux de commission de ${name} en %`,
-    rateHint: (from: string) => `Un taux changé ici vaut pour les réservations faites à partir du ${from}.`,
+    rateHint: (from: string) =>
+      `Un taux changé ici vaut pour les réservations faites à partir du ${from}.`,
     rateSaved: (name: string) => `Taux de ${name} enregistré`,
     noRate: "sans taux",
     plazoCommission: "commission Plazo · Reversements",
@@ -539,7 +608,8 @@ export const fr = {
     since: "À partir du",
     thisMonth: "Résa. ce mois",
     rateLabel: (name: string) => `Pourcentage de ${name}`,
-    fixedLabel: (name: string) => `Frais fixes par réservation de ${name}, en euros`,
+    fixedLabel: (name: string) =>
+      `Frais fixes par réservation de ${name}, en euros`,
     sinceLabel: (name: string) => `Date d'effet du taux de ${name}`,
     save: "Enregistrer",
     saved: (name: string) => `Taux de ${name} enregistré`,
@@ -548,22 +618,28 @@ export const fr = {
     none: "Aucun taux : ses réservations comptent sans commission.",
     remove: "Retirer",
     removed: "Taux retiré",
-    removeTitle: (name: string, since: string) => `Retirer le taux de ${name} du ${since} ?`,
+    removeTitle: (name: string, since: string) =>
+      `Retirer le taux de ${name} du ${since} ?`,
     removeBody: "Les réservations qu'il couvrait reprennent le taux d'avant.",
-    footnote: "Un comparateur apparaît ici dès sa première réservation. Sans taux, ses réservations comptent sans commission.",
+    footnote:
+      "Un comparateur apparaît ici dès sa première réservation. Sans taux, ses réservations comptent sans commission.",
     example: "Exemple",
-    exampleLine: (price: string, rate: string, amount: string, net: string) => `Réservation de ${price} − ${rate} = ${amount} : vous gardez ${net}`,
+    exampleLine: (price: string, rate: string, amount: string, net: string) =>
+      `Réservation de ${price} − ${rate} = ${amount} : vous gardez ${net}`,
     invalidRate: "Pourcentage invalide (ex. 18 ou 17,5).",
     invalidFixed: "Montant invalide (ex. 1,50).",
     // The booking's sheet (C).
     line: (name: string) => `Commission ${name}`,
     keep: "Vous gardez",
-    fromRate: (name: string, since: string) => `Taux de ${name} du ${since}, réglé dans Parking › Réglages.`,
-    noneSet: (name: string) => `Aucun taux réglé pour ${name} : rien n'est retenu.`,
+    fromRate: (name: string, since: string) =>
+      `Taux de ${name} du ${since}, réglé dans Parking › Réglages.`,
+    noneSet: (name: string) =>
+      `Aucun taux réglé pour ${name} : rien n'est retenu.`,
     override: "Fixée pour cette réservation.",
     change: "Changer pour cette réservation",
     reset: "Revenir au taux du comparateur",
-    overrideTitle: "Commission de cette réservation (promotion, accord ponctuel)",
+    overrideTitle:
+      "Commission de cette réservation (promotion, accord ponctuel)",
     overrideRate: "Taux en %",
     overrideAmount: "ou montant en €",
     overrideSaved: "Commission enregistrée",
@@ -575,7 +651,8 @@ export const fr = {
   noPrice: {
     filter: (n: number) => `Sans prix · ${n}`,
     filterOff: "Toutes",
-    filterHint: "Ces réservations ne comptent ni dans votre chiffre d'affaires ni dans vos commissions.",
+    filterHint:
+      "Ces réservations ne comptent ni dans votre chiffre d'affaires ni dans vos commissions.",
     toFill: "Prix à saisir",
     input: (reference: string) => `Prix payé de ${reference} en euros`,
     save: "OK",
@@ -586,7 +663,8 @@ export const fr = {
     none: "Toutes les réservations ont un prix.",
     cardTitle: (n: number) => `Les compléter · ${n}`,
     cardAll: (n: number) => (n === 1 ? "Voir la réservation" : `Voir les ${n}`),
-    alertDetail: (n: number) => `${n} réservation${n > 1 ? "s" : ""} · le chiffre d'affaires est incomplet`,
+    alertDetail: (n: number) =>
+      `${n} réservation${n > 1 ? "s" : ""} · le chiffre d'affaires est incomplet`,
     alertAction: "Les compléter",
     toTreatSub: (sub: string, n: number) => `${sub} · ${n} sans prix`,
   },
@@ -649,7 +727,8 @@ export const fr = {
       importAt: (ago: string) => `dernier ${ago}`,
       importNever: "jamais",
       // 16/10/2026: a mail that needed Claude could not be read within the hour.
-      importReadingOutage: (cause: InboundReadingOutageCause) => `Lecture par Claude en panne : ${readingOutageCause[cause]}`,
+      importReadingOutage: (cause: InboundReadingOutageCause) =>
+        `Lecture par Claude en panne : ${readingOutageCause[cause]}`,
     },
     alerts: {
       title: "À traiter maintenant",
@@ -678,8 +757,14 @@ export const fr = {
         extras_due: "Services à faire avant le retour",
       } satisfies Record<AlertKind, string>,
       // 21/10/2026: « Camille Martin · Lavage intérieur et shampouineuse · retour 18:40 ».
-      extrasDetail: (name: string | null, services: string | null, returnTime: string | null) =>
-        [name, services, returnTime ? `retour ${returnTime}` : null].filter(Boolean).join(" · "),
+      extrasDetail: (
+        name: string | null,
+        services: string | null,
+        returnTime: string | null,
+      ) =>
+        [name, services, returnTime ? `retour ${returnTime}` : null]
+          .filter(Boolean)
+          .join(" · "),
       // 13/10/2026: « Julie Martin », « Julie Martin et 2 autres », or the count alone.
       joinDetail: (count: number, name: string | null) =>
         name
@@ -933,7 +1018,8 @@ export const fr = {
       messageCopied: "Message copié : collez-le dans un SMS ou un mail.",
       copyFailed: "Copie impossible : sélectionnez le texte et copiez-le.",
       // The API refuses every code of a demo, suspended or archived operator (`accepting: false`).
-      notAccepting: "Ce parking n'accepte pas de nouvelles demandes (démonstration, suspendu ou archivé).",
+      notAccepting:
+        "Ce parking n'accepte pas de nouvelles demandes (démonstration, suspendu ou archivé).",
     },
     requests: {
       title: "Demandes en attente",
@@ -951,15 +1037,32 @@ export const fr = {
       dialogTitle: (name: string) => `Accepter ${name}`,
       sentAt: (when: string) => `demande envoyée ${when}`,
       roleLabel: "Son rôle",
-      roleHelp: "Préréglé sur le poste demandé ; le rôle se change ensuite dans l'équipe.",
+      roleHelp:
+        "Préréglé sur le poste demandé ; le rôle se change ensuite dans l'équipe.",
       // `phrase`: the role inside a sentence (« Accepter comme agent d'accueil »).
       roles: {
-        agent: { label: "Accueil", phrase: "agent d'accueil", help: "Réservations, arrivées, retours" },
-        driver: { label: "Chauffeur", phrase: "chauffeur", help: "La navette, les arrivées et retours" },
-        valet: { label: "Voiturier", phrase: "voiturier", help: "Placer et sortir les voitures, les clés" },
-      } satisfies Record<JoinRole, { label: string; phrase: string; help: string }>,
+        agent: {
+          label: "Accueil",
+          phrase: "agent d'accueil",
+          help: "Réservations, arrivées, retours",
+        },
+        driver: {
+          label: "Chauffeur",
+          phrase: "chauffeur",
+          help: "La navette, les arrivées et retours",
+        },
+        valet: {
+          label: "Voiturier",
+          phrase: "voiturier",
+          help: "Placer et sortir les voitures, les clés",
+        },
+      } satisfies Record<
+        JoinRole,
+        { label: string; phrase: string; help: string }
+      >,
       confirm: (phrase: string) => `Accepter comme ${phrase}`,
-      accepted: (name: string, phrase: string) => `${name} a rejoint l'équipe comme ${phrase}.`,
+      accepted: (name: string, phrase: string) =>
+        `${name} a rejoint l'équipe comme ${phrase}.`,
       cancel: "Annuler",
       // Worded for this screen (describeError's texts).
       errors: {
@@ -984,8 +1087,10 @@ export const fr = {
     morning: {
       section: "NOTIFICATIONS",
       title: "Mail du matin",
-      intro: "Chaque jour, le planning, le chiffre d'affaires et l'état des intégrations dans votre boîte mail.",
-      introStaff: "Chaque jour, le planning et l'état des intégrations dans votre boîte mail.",
+      intro:
+        "Chaque jour, le planning, le chiffre d'affaires et l'état des intégrations dans votre boîte mail.",
+      introStaff:
+        "Chaque jour, le planning et l'état des intégrations dans votre boîte mail.",
       hour: "Heure d'envoi",
       hourHint: "Heure du parking, de 05:00 à 10:00.",
       to: "Envoyé à",
@@ -1356,7 +1461,8 @@ export const fr = {
     descriptionHelp:
       "Les 160 premiers caractères servent de description dans Google.",
     // Both numbers formatted alike (« 1 500 / 2 000 », same space).
-    descriptionCount: (n: number) => `${n.toLocaleString("fr-FR")} / ${(2000).toLocaleString("fr-FR")}`,
+    descriptionCount: (n: number) =>
+      `${n.toLocaleString("fr-FR")} / ${(2000).toLocaleString("fr-FR")}`,
     // 09/10/2026: Claude writes the « Présentation » from the parking's real data (nothing saved).
     writing: {
       write: "Rédiger avec Claude",
@@ -1478,7 +1584,8 @@ export const fr = {
     nightHelp: (start: string, end: string) =>
       `Un dépôt ou un retour réservé entre ${start} et ${end} ajoute ces frais au séjour. Le voyageur les voit compris dans le prix total, avec une ligne « Frais de nuit ». ${start} compte comme la nuit, ${end} non.`,
     nightScope: `Seulement pour les réservations faites sur ${PRODUCT.name} : les réservations des comparateurs et celles saisies par l'équipe gardent leur prix.`,
-    nightOff: "Ajoutez des frais quand un dépôt ou un retour est réservé pendant les heures de nuit du parking.",
+    nightOff:
+      "Ajoutez des frais quand un dépôt ou un retour est réservé pendant les heures de nuit du parking.",
     nightErrors: {
       same_time: "Choisissez une fin différente du début.",
       invalid_fee: "Montant invalide (ex. 15,00), 1 000 € au plus.",
@@ -1782,8 +1889,10 @@ export const fr = {
     noFree: "Aucune place libre sur ce séjour.",
     release: "Libérer la place",
     clickBar: "Cliquez un séjour pour le déplacer.",
-    moved: (plate: string, code: string) => `${plate || "Véhicule"} placé en ${code}`,
-    released: (plate: string) => (plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place"),
+    moved: (plate: string, code: string) =>
+      `${plate || "Véhicule"} placé en ${code}`,
+    released: (plate: string) =>
+      plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place",
     spotTaken: "Cette place est déjà prise sur ces dates.",
     openBooking: "Ouvrir la réservation",
   },
@@ -1903,13 +2012,16 @@ export const fr = {
     flight: (flight: string) => `vol ${flight}`,
     move: "Déplacer",
     release: "Libérer la place",
-    placed: (plate: string, code: string) => `${plate || "Véhicule"} placé en ${code}`,
-    released: (plate: string) => (plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place"),
+    placed: (plate: string, code: string) =>
+      `${plate || "Véhicule"} placé en ${code}`,
+    released: (plate: string) =>
+      plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place",
     keysSaved: "Crochet enregistré",
     openBooking: "Ouvrir la réservation",
     freeSpot: "Place libre",
     clickSpot: "Cliquez une place sur le plan pour voir qui l'occupe.",
-    bookedFor: (plate: string, date: string) => `${plate || "Véhicule"} attendu le ${date}`,
+    bookedFor: (plate: string, date: string) =>
+      `${plate || "Véhicule"} attendu le ${date}`,
     // « Embarquer en un geste » (14/10/2026): the traveller was checked in by the driver as they boarded.
     boardingCheckIn: (driver: string | null) =>
       driver
@@ -1937,7 +2049,8 @@ export const fr = {
       blockedBy: (plates: string) => `Bloquée par ${plates}`,
       takeOut: "Retirer de la file",
       removed: (plate: string) => `${plate || "Voiture"} retirée de sa file`,
-      placed: (plate: string, code: string) => `${plate || "Voiture"} rangée en ${code}`,
+      placed: (plate: string, code: string) =>
+        `${plate || "Voiture"} rangée en ${code}`,
       place: "Ranger",
       placeIn: (code: string) => `Ranger en ${code}`,
       otherFile: "Autre file…",
@@ -2288,19 +2401,22 @@ export const fr = {
       colDemo: "Démo",
       demoCreate: "Créer un lien de démo",
       demoCreating: "Création…",
-      demoOpened: (n: number, when: string | null) => `Ouverte ${n} fois${when ? ` · ${when}` : ""}`,
+      demoOpened: (n: number, when: string | null) =>
+        `Ouverte ${n} fois${when ? ` · ${when}` : ""}`,
       demoNotOpened: "Pas encore ouverte",
       demoValidUntil: (day: string) => `Lien valable jusqu'au ${day}`,
       demoExpired: "Lien expiré",
       demoRenew: "Nouveau lien",
       demoPanelTitle: (company: string) => `Lien de démo pour ${company}`,
-      demoPanelNote: "Ouvre la démo sans compte, valable 14 jours. Vous voyez quand elle est ouverte ; la relance peut l'inclure ({lien_demo}).",
+      demoPanelNote:
+        "Ouvre la démo sans compte, valable 14 jours. Vous voyez quand elle est ouverte ; la relance peut l'inclure ({lien_demo}).",
       demoCopy: "Copier",
       demoCopied: "Lien copié.",
       demoClose: "Fermer",
       demoShow: "Voir le lien",
       title: "Prospection",
-      intro: "Parkings d'aéroport à faire venir sur Plazo. Les réponses arrivent dans votre boîte mail.",
+      intro:
+        "Parkings d'aéroport à faire venir sur Plazo. Les réponses arrivent dans votre boîte mail.",
       importCsv: "Importer un CSV",
       add: "+ Ajouter un prospect",
       notConfigured:
@@ -2329,7 +2445,8 @@ export const fr = {
       regionUncheckAll: "Tout décocher dans la région",
       regionManual: "choisie à la main",
       regionAuto: "Automatique (d'après l'aéroport)",
-      regionHelp: "Par défaut, la région de l'aéroport. Choisissez-en une si le parking n'en dépend pas.",
+      regionHelp:
+        "Par défaut, la région de l'aéroport. Choisissez-en une si le parking n'en dépend pas.",
       colParking: "Parking",
       colContact: "Contact",
       colAirport: "Aéroport",
@@ -2337,19 +2454,31 @@ export const fr = {
       colNext: "Prochain envoi",
       selectAll: "Tout choisir",
       selectOne: (name: string) => `Choisir ${name}`,
-      chosen: (n: number) => (n === 0 ? "Aucun prospect choisi" : `${n} prospect${n > 1 ? "s" : ""} choisi${n > 1 ? "s" : ""}`),
-      empty: "Aucun prospect pour le moment : importez un fichier CSV ou ajoutez-en un.",
+      chosen: (n: number) =>
+        n === 0
+          ? "Aucun prospect choisi"
+          : `${n} prospect${n > 1 ? "s" : ""} choisi${n > 1 ? "s" : ""}`,
+      empty:
+        "Aucun prospect pour le moment : importez un fichier CSV ou ajoutez-en un.",
       emptyFilter: "Aucun prospect dans cette vue.",
       states: {
         to_contact: "À contacter",
         waiting: "En attente",
-        contacted: ["Mail 1 envoyé", "Mail 1 envoyé", "Relance envoyée", "Dernier envoyé"],
+        contacted: [
+          "Mail 1 envoyé",
+          "Mail 1 envoyé",
+          "Relance envoyée",
+          "Dernier envoyé",
+        ],
         replied: "A répondu",
         interested: "Intéressé",
         not_interested: "Pas intéressé",
         unsubscribed: "Désinscrit",
       },
-      stepShort: { 1: "Mail 1", 2: "Relance", 3: "Dernier" } as Record<number, string>,
+      stepShort: { 1: "Mail 1", 2: "Relance", 3: "Dernier" } as Record<
+        number,
+        string
+      >,
       next: {
         stopped: "— arrêté",
         finished: "— terminé",
@@ -2358,34 +2487,50 @@ export const fr = {
       },
       failed: (n: number) => `Envoi refusé ${n} fois`,
       // The panel « Envoyer à N prospects ».
-      panelTitle: (n: number) => (n === 0 ? "Envoyer à des prospects" : `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`),
+      panelTitle: (n: number) =>
+        n === 0
+          ? "Envoyer à des prospects"
+          : `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
       today: (sent: number, cap: number) => `${sent} / ${cap} aujourd'hui`,
       pickSome: "Cochez les prospects à contacter dans la liste.",
       sequence: "La séquence",
-      stepTitle: { 1: "1 · Premier contact", 2: "2 · Relance", 3: "3 · Dernier message" } as Record<number, string>,
+      stepTitle: {
+        1: "1 · Premier contact",
+        2: "2 · Relance",
+        3: "3 · Dernier message",
+      } as Record<number, string>,
       stepWhen: (delay: number) => (delay === 0 ? "J0" : `J+${delay}`),
       stepOff: "Désactivé",
       editSteps: "Modifier les mails",
       previewFor: (name: string) => `Aperçu pour ${name}`,
       previewSample: "Aperçu",
-      footerNote: "Ajouté en bas de chaque mail : qui écrit (Benford Tech) et « Ne plus recevoir de messages de Plazo ».",
+      footerNote:
+        "Ajouté en bas de chaque mail : qui écrit (Benford Tech) et « Ne plus recevoir de messages de Plazo ».",
       variables: "Variables :",
-      rules: "Une relance ne part jamais à qui a répondu ou s'est désinscrit. Envoi du lundi au vendredi, de 9 h à 18 h.",
+      rules:
+        "Une relance ne part jamais à qui a répondu ou s'est désinscrit. Envoi du lundi au vendredi, de 9 h à 18 h.",
       sendTest: "M'envoyer un test",
       testSent: (email: string) => `Test envoyé à ${email}.`,
       send: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
-      notEligible: (n: number) => `${n} déjà contacté${n > 1 ? "s" : ""} ou fermé${n > 1 ? "s" : ""} : ignoré${n > 1 ? "s" : ""}.`,
+      notEligible: (n: number) =>
+        `${n} déjà contacté${n > 1 ? "s" : ""} ou fermé${n > 1 ? "s" : ""} : ignoré${n > 1 ? "s" : ""}.`,
       confirmTitle: "Envoyer la séquence",
       confirm: (n: number, remaining: number) =>
         `Le premier mail part maintenant pour ${Math.min(n, remaining)} prospect${Math.min(n, remaining) > 1 ? "s" : ""}` +
-        (n > remaining ? `, les ${n - remaining} autres au prochain créneau (plafond du jour)` : "") +
+        (n > remaining
+          ? `, les ${n - remaining} autres au prochain créneau (plafond du jour)`
+          : "") +
         ". Les relances suivront d'elles-mêmes.",
       confirmYes: "Envoyer",
       sent: (sent: number, queued: number, failed: number) =>
         [
-          sent ? `${sent} mail${sent > 1 ? "s" : ""} envoyé${sent > 1 ? "s" : ""}` : "Aucun mail envoyé",
+          sent
+            ? `${sent} mail${sent > 1 ? "s" : ""} envoyé${sent > 1 ? "s" : ""}`
+            : "Aucun mail envoyé",
           queued ? `${queued} en attente du prochain créneau` : "",
-          failed ? `${failed} refusé${failed > 1 ? "s" : ""} par Brevo (nouvel essai dans une heure)` : "",
+          failed
+            ? `${failed} refusé${failed > 1 ? "s" : ""} par Brevo (nouvel essai dans une heure)`
+            : "",
         ]
           .filter(Boolean)
           .join(" · ") + ".",
@@ -2400,10 +2545,12 @@ export const fr = {
       invite: "Inviter sur Plazo",
       edit: "Modifier",
       remove: "Supprimer",
-      removeConfirm: (name: string) => `Supprimer ${name} de la liste ? Son historique d'envoi part avec lui.`,
+      removeConfirm: (name: string) =>
+        `Supprimer ${name} de la liste ? Son historique d'envoi part avec lui.`,
       unsubscribeConfirm: (name: string) =>
         `Désinscrire ${name} ? Son adresse ne pourra plus jamais être contactée ni réimportée.`,
-      stopConfirm: (name: string) => `Arrêter les relances de ${name} ? Son état ne change pas.`,
+      stopConfirm: (name: string) =>
+        `Arrêter les relances de ${name} ? Son état ne change pas.`,
       updated: "Prospect mis à jour.",
       removed: "Prospect supprimé.",
       // The form.
@@ -2430,10 +2577,17 @@ export const fr = {
         "Première ligne : les noms des colonnes. Reconnues : parking, prénom, nom, e-mail, ville, aéroport, région (facultative, sinon celle de l'aéroport), téléphone, notes (séparateur ; ou ,). Seulement des adresses professionnelles que vous avez le droit d'utiliser.",
       importFile: "Fichier CSV",
       importReading: "Lecture…",
-      importMissing: (cols: string[]) => `Colonne manquante : ${cols.join(", ")}.`,
-      importIgnored: (cols: string[]) => `Colonnes ignorées : ${cols.join(", ")}.`,
+      importMissing: (cols: string[]) =>
+        `Colonne manquante : ${cols.join(", ")}.`,
+      importIgnored: (cols: string[]) =>
+        `Colonnes ignorées : ${cols.join(", ")}.`,
       importEmpty: "Le fichier ne contient aucune ligne.",
-      importCounts: (c: { new: number; duplicate: number; suppressed: number; invalid: number }) =>
+      importCounts: (c: {
+        new: number;
+        duplicate: number;
+        suppressed: number;
+        invalid: number;
+      }) =>
         `${c.new} à ajouter · ${c.duplicate} déjà dans la liste · ${c.suppressed} désinscrit${c.suppressed > 1 ? "s" : ""} · ${c.invalid} en erreur`,
       outcomes: {
         new: "À ajouter",
@@ -2443,10 +2597,12 @@ export const fr = {
       },
       importRow: "Ligne",
       importSubmit: (n: number) => `Importer ${n} prospect${n > 1 ? "s" : ""}`,
-      imported: (n: number) => `${n} prospect${n > 1 ? "s" : ""} importé${n > 1 ? "s" : ""}.`,
+      imported: (n: number) =>
+        `${n} prospect${n > 1 ? "s" : ""} importé${n > 1 ? "s" : ""}.`,
       // The editor.
       editorTitle: "Modifier les mails",
-      editorHelp: "Les relances partent N jours après le premier contact. Une relance éteinte est sautée.",
+      editorHelp:
+        "Les relances partent N jours après le premier contact. Une relance éteinte est sautée.",
       subject: "Objet",
       body: "Message",
       delay: "Jours après le premier contact",
@@ -2454,8 +2610,10 @@ export const fr = {
       dailyCap: "Mails par jour au plus",
       testStep: "M'envoyer ce mail",
       saved: "Mails enregistrés.",
-      senderLine: (name: string, email: string) => `Expéditeur : ${name} <${email}>`,
-      replyLine: (email: string | null) => (email ? `Réponses à : ${email}` : "Réponses à : votre adresse"),
+      senderLine: (name: string, email: string) =>
+        `Expéditeur : ${name} <${email}>`,
+      replyLine: (email: string | null) =>
+        email ? `Réponses à : ${email}` : "Réponses à : votre adresse",
     },
     notifications: {
       title: "Notifications",
@@ -2555,11 +2713,18 @@ export const fr = {
       deleteTitle: "Supprimer définitivement ce loueur ?",
       confirmDelete: (
         name: string,
-        counts: { parkings: number; listings?: number; reservations: number; staff: number },
+        counts: {
+          parkings: number;
+          listings?: number;
+          reservations: number;
+          staff: number;
+        },
         options: { canArchive: boolean },
       ) =>
         `${name} sera effacé avec ${deletionSummary(counts)}. Cette action est définitive${
-          options.canArchive ? " : pour le garder sans qu'il apparaisse, archivez-le." : "."
+          options.canArchive
+            ? " : pour le garder sans qu'il apparaisse, archivez-le."
+            : "."
         }`,
       deleteConfirm: "Supprimer définitivement",
       paidKeptArchived:
@@ -2642,7 +2807,8 @@ export const fr = {
       upTo: (days: number, price: string) => `Jusqu'à ${days} j : ${price}`,
       // 12/10/2026: everything a traveller can be charged.
       extraDay: (price: string) => `Jour en plus : ${price}`,
-      night: (start: string, end: string) => `Frais de nuit de ${start} à ${end} :`,
+      night: (start: string, end: string) =>
+        `Frais de nuit de ${start} à ${end} :`,
       nightArrival: (price: string) => `dépôt ${price}`,
       nightReturn: (price: string) => `retour ${price}`,
       noNight: "Sans frais de nuit.",
@@ -2848,7 +3014,7 @@ export const shuttleTripsFr = {
   live: {
     title: "Navettes en cours",
     none: "Aucune navette en route pour le moment.",
-    passengers: (n: number) => `${n} client${n > 1 ? "s" : ""}`,
+    passengers: (n: number) => `${n} pers.`,
     since: (time: string) => `partie à ${time}`,
     noPosition: "position en attente",
     toStop: (name: string, min: number) => `${name} dans ${min} min`,
@@ -2858,19 +3024,17 @@ export const shuttleTripsFr = {
       `Terminer le trajet de ${driver} ? Sa position ne sera plus partagée.`,
   },
   running: {
-    pickup: "En route vers l'aéroport · position partagée",
-    dropoff: "En route vers le terminal · position partagée",
+    // 22/10/2026: the real place (« Gare TGV », « l'aéroport »).
+    to: (where: string) => `En route vers ${where} · position partagée`,
     // R-B: the parking turned the tracking off.
-    pickupNoShare: "En route vers l'aéroport · suivi désactivé",
-    dropoffNoShare: "En route vers le terminal · suivi désactivé",
-    stop: (name: string) => `Desserte : ${name}`,
+    toNoShare: (where: string) => `En route vers ${where} · suivi désactivé`,
     leftAt: (time: string) => `Parti à ${time}`,
     vehicle: (v: string) => `Véhicule : ${v}`,
-    passengers: (n: number) =>
-      `${n} client${n > 1 ? "s" : ""} suivent votre trajet`,
+    peopleGo: (n: number) => `${n} pers. à bord`,
+    peopleBack: (n: number) => `${n} pers. à récupérer`,
     left: (m: number) => `arrêt automatique dans ${m} min`,
-    endPickup: "Clients récupérés · retour parking",
-    endDropoff: "Clients déposés · retour parking",
+    endBack: "Tout le monde est à bord · retour au parking",
+    endGo: "Clients déposés · retour au parking",
     ended:
       "Trajet terminé : votre position n'est plus partagée et a été effacée.",
     locationDenied:
@@ -2881,25 +3045,40 @@ export const shuttleTripsFr = {
   },
   start: {
     title: "Démarrer un trajet",
-    introPickup:
-      "Vos clients de retour, à récupérer à l'aéroport. Démarrez le trajet : ils suivent votre position.",
+    // B (22/10/2026): « Aller » and « Retour » by time slot, the destination from each booking.
+    introBack:
+      "Les clients à aller chercher, dans l'ordre de leur retour. Cochez ceux que vous récupérez, puis partez : ils suivent votre position.",
     // « Embarquer en un geste » (14/10/2026): the expected travellers board too, checked in as the trip starts.
-    introDropoff:
-      "Vos clients du jour, à conduire au terminal, pointés ou non. Embarquez-les : ils suivent votre position.",
+    introGo:
+      "Les clients à conduire, dans l'ordre du planning. Cochez ceux qui montent, même « Attendu », puis partez : ils suivent votre position.",
     direction: {
-      pickup: "Retours · aéroport",
-      dropoff: "Départs · terminal",
+      pickup: "Retour",
+      dropoff: "Aller",
     } satisfies Record<ShuttleDirection, string>,
-    stop: "Desserte",
-    airport: "Aéroport",
+    tabGo: (n: number | null) => (n === null ? "Aller" : `Aller · ${n}`),
+    tabBack: (n: number | null) => (n === null ? "Retour" : `Retour · ${n}`),
+    theAirport: "l'aéroport",
+    slotLeave: "départ conseillé",
+    slotNoTime: "Sans heure",
+    slotAll: "Tout cocher",
+    slotNone: "Tout décocher",
+    toDest: (where: string) => `vers ${where}`,
+    atDest: (where: string) => `à ${where}`,
+    startGo: (where: string, people: number) =>
+      `Partir vers ${where} · ${people} pers.`,
+    startBack: (where: string, people: number) =>
+      `Aller chercher à ${where} · ${people} pers.`,
+    startGoMany: (people: number, n: number) =>
+      `Partir · ${people} pers. · ${n} destinations`,
+    startBackMany: (people: number, n: number) =>
+      `Aller chercher ${people} pers. · ${n} destinations`,
+    noneGo: "Cochez les personnes qui montent",
+    noneBack: "Cochez les personnes à récupérer",
     meetingPoint: (label: string) => `Point de rendez-vous : ${label}`,
     meetingPointNone:
       "Point de rendez-vous : l'aéroport (à définir dans Parking › Réglages).",
-    toPickUp: (terminal: string) => `À récupérer · ${terminal}`,
-    noTerminal: "Terminal",
-    toDropOff: "À conduire au terminal",
-    emptyPickup: "Aucun retour à récupérer pour le moment.",
-    emptyDropoff: "Aucun client n'attend la navette pour le moment.",
+    emptyPickup: "Personne à aller chercher pour le moment.",
+    emptyDropoff: "Personne à conduire pour le moment.",
     pax: (n: number) => `${n} pass.`,
     flight: (n: string) => `vol ${n}`,
     gate: (g: string) => `Porte ${g}`,
@@ -2907,15 +3086,7 @@ export const shuttleTripsFr = {
     arrivalPlanned: (t: string) => `Arrivée prévue ${t}`,
     /** F-A (06/10/2026): the driver's tour in three bands. */
     tourTitle: "Ma tournée",
-    bandTake: (n: number) => `À emmener · ${n}`,
-    bandFetch: (n: number) => `À récupérer · ${n}`,
     bandRoute: (n: number) => `En route · ${n}`,
-    bandStay: (n: number) => `En séjour · ${n}`,
-    bandBack: (n: number) => `Rendus · ${n}`,
-    bandTakeName: "À emmener",
-    bandFetchName: "À récupérer",
-    leaveAt: (time: string) => `Départ conseillé ${time}`,
-    toDropOffStop: (stop: string) => `À conduire · ${stop}`,
     expectedAt: (t: string) => `Attendu ${t}`,
     onSite: "Sur place",
     /** Checked in as they boarded this trip (« Embarquer en un geste »). */
@@ -2941,17 +3112,9 @@ export const shuttleTripsFr = {
     /** Opened from a booking's « Embarquer » for a traveller who cannot board now. */
     cannotBoard:
       "Ce client ne peut pas embarquer maintenant : il est déjà parti, annulé ou attendu un autre jour.",
-    routeNone: (band: string) =>
-      `Aucun trajet en cours. Cochez des voyageurs dans « ${band} » puis partez.`,
+    routeNone:
+      "Aucun trajet en cours. Cochez des personnes dans « Aller » ou « Retour », puis partez.",
     routePassengers: "Passagers du trajet",
-    stayNone:
-      "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
-    stayDay: (day: string, n: number) =>
-      `${day} · ${n} retour${n > 1 ? "s" : ""}`,
-    backToday: "Revenus aujourd'hui",
-    backNone: "Personne n'est encore revenu aujourd'hui.",
-    selectedSummary: (travellers: number, passengers: number) =>
-      `${travellers} voyageur${travellers > 1 ? "s" : ""} · ${passengers} pass. coché${travellers > 1 ? "s" : ""}`,
     spot: (code: string) => `Place ${code}`,
     badge: {
       onTrip: "Sur un trajet",
@@ -2976,15 +3139,6 @@ export const shuttleTripsFr = {
     vehicleHelp: "Vos clients verront ce véhicule et votre prénom.",
     tooMany: (p: number, seats: number) =>
       `${p} passagers pour ${seats} places : choisissez un autre véhicule ou moins de clients.`,
-    none: "Sélectionnez des clients",
-    pickup: (n: number) =>
-      n === 1
-        ? "Partir à l'aéroport · 1 client"
-        : `Partir à l'aéroport · ${n} clients`,
-    dropoff: (n: number) =>
-      n === 1
-        ? "Embarquer et partir · 1 client"
-        : `Embarquer et partir · ${n} clients`,
     starting: "Démarrage…",
     needsStatus:
       "Seuls les chauffeurs, voituriers, agents et gérants peuvent démarrer un trajet.",
@@ -3073,7 +3227,11 @@ export const inboundFr = {
     "Le plus simple : donnez votre adresse Plazo à chaque comparateur, comme adresse de notification des réservations. Les mails arrivent directement dans Plazo, sans règle dans votre messagerie. Gardez votre adresse habituelle à côté si l'espace partenaire le permet.",
   comparators: {
     title: "Vos comparateurs",
-    columns: { provider: "Comparateur", last: "Dernier mail reçu par Plazo", arrival: "Arrive" },
+    columns: {
+      provider: "Comparateur",
+      last: "Dernier mail reçu par Plazo",
+      arrival: "Arrive",
+    },
     never: "Aucun mail reçu",
     last: (ago: string, what: string) => (what ? `${ago} · ${what}` : ago),
     lastStatus: {
@@ -3098,12 +3256,14 @@ export const inboundFr = {
     hide: "Masquer",
     steps: (provider: string) =>
       `Dans votre espace partenaire ${provider}, cherchez l'adresse e-mail qui reçoit les réservations (souvent dans « Mon compte », « Notifications » ou « Contact ») et ajoutez votre adresse Plazo. Gardez la vôtre à côté si l'espace le permet.`,
-    ask: (provider: string) => `Vous ne trouvez pas ? Demandez-le à ${provider} avec ce message :`,
+    ask: (provider: string) =>
+      `Vous ne trouvez pas ? Demandez-le à ${provider} avec ce message :`,
     message: (address: string) =>
       `Bonjour,\n\nPourriez-vous ajouter l'adresse ${address} aux destinataires des confirmations de réservation de notre parking ? Nous gardons aussi notre adresse habituelle.\n\nMerci !`,
     copyMessage: "Copier le message",
     messageCopied: "Message copié",
-    fallback: "Un comparateur ne permet pas de changer l'adresse ? Reliez plutôt votre boîte mail : elle transférera ses mails.",
+    fallback:
+      "Un comparateur ne permet pas de changer l'adresse ? Reliez plutôt votre boîte mail : elle transférera ses mails.",
   },
   // A (14/10/2026): a rule that forwards every email brings the parking's own emails; Plazo sets them aside.
   unexpected: {
@@ -3201,8 +3361,10 @@ export const inboundFr = {
       } satisfies Record<InboundPageOutcome, string>,
       open: "Ouvrir la page Allopark",
       // 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): Plazo analyses the mail again by itself.
-      retryAt: (time: string, attempt: number, of: number) => `Nouvel essai automatique vers ${time} (${attempt} sur ${of})`,
-      retrySoon: (attempt: number, of: number) => `Nouvel essai automatique dans quelques minutes (${attempt} sur ${of})`,
+      retryAt: (time: string, attempt: number, of: number) =>
+        `Nouvel essai automatique vers ${time} (${attempt} sur ${of})`,
+      retrySoon: (attempt: number, of: number) =>
+        `Nouvel essai automatique dans quelques minutes (${attempt} sur ${of})`,
       retriesDone: (count: number) =>
         `Plazo a réessayé ${count} fois sans trouver la réservation : ouvrez la page Allopark ou relancez l'analyse.`,
     },
@@ -3229,7 +3391,8 @@ export const inboundFr = {
     missingBadge: "manquant",
     /** The server refused a complete mail at import (codes of `missing` that are not fields). */
     refused: (reasons: string) => `Réservation refusée à l'import : ${reasons}`,
-    refusal: (code: string) => fr.errors[code as keyof typeof fr.errors] ?? code,
+    refusal: (code: string) =>
+      fr.errors[code as keyof typeof fr.errors] ?? code,
     field: {
       arrivalAt: "date d'arrivée",
       returnAt: "date de retour",
@@ -3257,7 +3420,8 @@ export const inboundFr = {
       manualOn: "réservation",
       reason: {
         reservation_closed: "La réservation est close.",
-        already_arrived: "La voiture est déjà arrivée : la date d'arrivée n'a pas été changée.",
+        already_arrived:
+          "La voiture est déjà arrivée : la date d'arrivée n'a pas été changée.",
         no_room: "Plus de place aux nouvelles dates.",
         plazo_booking: "Réservation faite sur Plazo.",
         invalid_stay: "Les nouvelles dates ne forment pas un séjour valable.",
@@ -3265,18 +3429,22 @@ export const inboundFr = {
         ambiguous: "Plusieurs réservations correspondent : à faire à la main.",
         unknown_booking: "Aucune réservation de Plazo ne porte ce numéro.",
       } satisfies Record<InboundChangeReason, string>,
-      nothingDone: "Plazo n'a rien changé : faites ces changements vous-même si besoin.",
+      nothingDone:
+        "Plazo n'a rien changé : faites ces changements vous-même si besoin.",
       // 21/10/2026 (« apprends à traiter les annulations ParkVia »): the same block for a comparator's cancellation.
       cancelApplied: "Annulation appliquée à la réservation",
       cancelUpToDate: "Réservation déjà annulée",
       cancelManual: "Annulation à faire à la main",
       cancelReason: {
         reservation_closed: "La réservation est close.",
-        already_arrived: "La voiture est déjà au parking : Plazo ne l'annule pas.",
+        already_arrived:
+          "La voiture est déjà au parking : Plazo ne l'annule pas.",
         unknown_booking: "Aucune réservation de Plazo ne porte ce numéro.",
-        ambiguous: "Plusieurs réservations portent ce numéro : à faire à la main.",
+        ambiguous:
+          "Plusieurs réservations portent ce numéro : à faire à la main.",
       } as Partial<Record<InboundChangeReason, string>>,
-      cancelNothingDone: "Plazo n'a rien annulé : vérifiez la réservation vous-même.",
+      cancelNothingDone:
+        "Plazo n'a rien annulé : vérifiez la réservation vous-même.",
       none: "Aucun changement : la réservation était déjà à jour.",
       empty: "—",
     },
@@ -3302,14 +3470,14 @@ export const inboundFr = {
           : "Réservation créée depuis ce mail.",
       duplicate: "Cette réservation existait déjà : le mail y est rattaché.",
       /** 20/10/2026: Onepark's daily summary, which completes the bookings it lists. */
-      handled: "Récapitulatif lu : les réservations qu'il liste sont complétées.",
+      handled:
+        "Récapitulatif lu : les réservations qu'il liste sont complétées.",
       /** 10/10/2026 (« C'est une modification »). */
       changed: (ref: string | null) =>
         ref
           ? `Modification appliquée à la réservation ${ref}.`
           : "Modification appliquée à la réservation.",
-      changeLeft:
-        "Analyse relancée : la modification reste à faire à la main.",
+      changeLeft: "Analyse relancée : la modification reste à faire à la main.",
       /** 21/10/2026: a comparator's cancellation applied, or left to the staff. */
       cancelled: (ref: string | null) =>
         ref
@@ -3370,7 +3538,8 @@ export const inboundWizardFr = {
   copied: "Copié",
   preparing: "Préparation de votre adresse…",
   addressLabel: "Votre adresse Plazo",
-  detected: (provider: string, email: string) => `${provider}, détecté d'après ${email}`,
+  detected: (provider: string, email: string) =>
+    `${provider}, détecté d'après ${email}`,
   change: "Changer",
   choose: {
     title: "Sur quelle messagerie recevez-vous les mails des comparateurs ?",
@@ -3385,9 +3554,11 @@ export const inboundWizardFr = {
   lead: {
     gmail:
       "Trois réglages dans Gmail, sur un ordinateur : l'application Gmail ne crée pas de filtre. Chaque bouton ouvre Gmail à la bonne page, dans un nouvel onglet. Plazo coche chaque étape dès qu'il la voit.",
-    outlook: "Une règle dans Outlook sur le web, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
+    outlook:
+      "Une règle dans Outlook sur le web, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
     ovh: "Un filtre dans le webmail OVH, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
-    other: "Une règle dans votre messagerie, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
+    other:
+      "Une règle dans votre messagerie, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
   } satisfies Record<MailProvider, string>,
   state: { done: "Fait", waiting: "En attente" },
   open: {
@@ -3414,7 +3585,8 @@ export const inboundWizardFr = {
       copyCode: "Copier le code",
       // 08/10/2026: Gmail's email no longer puts the code in its subject; its acceptance link confirms as well.
       openLink: "Confirmer par le lien",
-      linkOnly: "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
+      linkOnly:
+        "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
       workspace:
         "Google Workspace : si « Ajouter une adresse de transfert » n'apparaît pas, l'administrateur de votre domaine doit autoriser le transfert.",
     },
@@ -3479,7 +3651,10 @@ export const inboundWizardFr = {
         {
           text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**.",
         },
-        { text: "Condition : l'expéditeur est l'un des comparateurs :", copy: "sender" },
+        {
+          text: "Condition : l'expéditeur est l'un des comparateurs :",
+          copy: "sender",
+        },
         {
           text: "Action : transférer une copie à votre adresse Plazo :",
           copy: "address",
@@ -3488,7 +3663,10 @@ export const inboundWizardFr = {
       ] satisfies WizardLine[],
       note: "Vous ne trouvez pas ? Envoyez ces étapes à la personne qui gère votre messagerie, avec le lien en bas de cette fenêtre.",
     },
-  } satisfies Record<Exclude<MailProvider, "gmail">, { title: string; lines: WizardLine[]; note: string }>,
+  } satisfies Record<
+    Exclude<MailProvider, "gmail">,
+    { title: string; lines: WizardLine[]; note: string }
+  >,
   test: {
     title: "Tester avec un ancien mail",
     lines: [
@@ -3499,7 +3677,8 @@ export const inboundWizardFr = {
       { text: "Elle doit devenir une réservation en quelques secondes." },
     ] satisfies WizardLine[],
     ok: "C'est relié. Les prochaines réservations des comparateurs arriveront toutes seules dans le planning.",
-    toCheck: "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
+    toCheck:
+      "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
     openToCheck: "Voir les mails à vérifier",
   },
   seen: {
@@ -3508,7 +3687,8 @@ export const inboundWizardFr = {
     confirmation: "Gmail connaît l'adresse Plazo",
     confirmationAt: (when: string) => `Code de confirmation reçu ${when}`,
     comparator: "Mail d'un comparateur arrivé seul",
-    comparatorWaiting: "Coché dès qu'un mail d'Allopark, Onepark, Parclick ou ParkMundo arrive sans être transféré à la main.",
+    comparatorWaiting:
+      "Coché dès qu'un mail d'Allopark, Onepark, Parclick ou ParkMundo arrive sans être transféré à la main.",
     comparatorAt: (provider: string, when: string) => `${provider} · ${when}`,
     booking: "Une réservation créée",
     bookingWaiting: "La preuve que tout fonctionne de bout en bout.",
@@ -3528,7 +3708,8 @@ export const inboundWizardFr = {
     } satisfies Record<InboundEmailStatus, string>,
   },
   unexpected: {
-    gmail: "Dans Gmail › Transfert et POP/IMAP, cochez « Désactiver le transfert ».",
+    gmail:
+      "Dans Gmail › Transfert et POP/IMAP, cochez « Désactiver le transfert ».",
     other: "Dans votre messagerie, ne gardez que la règle des comparateurs.",
   },
   done: {
@@ -3546,7 +3727,8 @@ export const inboundWizardFr = {
     address: (address: string) => `Transférer une copie à : ${address}`,
     gmailCode:
       "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche. Une fois l'adresse validée, laisse « Désactiver le transfert » coché dans Transfert et POP/IMAP : seul le filtre transfère.",
-    outro: "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
+    outro:
+      "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
   },
 };
 
@@ -3733,13 +3915,18 @@ export const contractFr = {
   manage: "Contrat",
   hide: "Fermer",
   cardTitle: (name: string) => `Contrat de ${name}`,
-  status: { pending: "En attente de signature", signed: "Signé", superseded: "Remplacé" } as Record<string, string>,
+  status: {
+    pending: "En attente de signature",
+    signed: "Signé",
+    superseded: "Remplacé",
+  } as Record<string, string>,
   fileLine: (name: string, size: string, date: string, by: string | null) =>
     `${name} · ${size} · déposé le ${date}${by ? ` par ${by}` : ""}`,
   view: "Voir le PDF",
   replace: "Remplacer",
   remove: "Retirer",
-  removeConfirm: (v: number) => `Retirer la version ${v} ? Le gérant ne la verra plus. Ce contrat n'a pas été signé.`,
+  removeConfirm: (v: number) =>
+    `Retirer la version ${v} ? Le gérant ne la verra plus. Ce contrat n'a pas été signé.`,
   removeTitle: "Retirer ce contrat",
   removed: "Contrat retiré.",
   signerExpected: "Signataire attendu",
@@ -3752,7 +3939,11 @@ export const contractFr = {
   reminded: "E-mail renvoyé aux gérants.",
   history: "Historique",
   historyLine: (c: { version: number; status: string }) =>
-    c.status === "signed" ? `v${c.version} signée` : c.status === "pending" ? `v${c.version} déposée, en attente de signature` : `v${c.version} remplacée avant signature`,
+    c.status === "signed"
+      ? `v${c.version} signée`
+      : c.status === "pending"
+        ? `v${c.version} déposée, en attente de signature`
+        : `v${c.version} remplacée avant signature`,
   signedBy: (name: string) => `par ${name}`,
   signedPdf: "PDF signé",
   proof: "Preuve",
@@ -3770,7 +3961,8 @@ export const contractFr = {
     empty: "Le fichier est vide.",
     too_large: "Le PDF dépasse 4 Mo.",
     not_a_pdf: "Ce fichier n'est pas un PDF.",
-    pdf_encrypted: "Ce PDF est protégé par un mot de passe : déposez une version sans protection.",
+    pdf_encrypted:
+      "Ce PDF est protégé par un mot de passe : déposez une version sans protection.",
     pdf_unreadable: "Ce PDF est illisible.",
     payload_too_large: "Le PDF dépasse 4 Mo.",
   } as Record<string, string>,
@@ -3779,22 +3971,27 @@ export const contractFr = {
   banner: (product: string) => `Votre contrat ${product} est prêt à signer.`,
   bannerAction: "Le lire et le signer",
   pageTitle: "Mon contrat",
-  noneYet: (product: string) => `${product} n'a pas encore déposé de contrat pour votre parking. Vous serez prévenu par e-mail.`,
+  noneYet: (product: string) =>
+    `${product} n'a pas encore déposé de contrat pour votre parking. Vous serez prévenu par e-mail.`,
   download: "Télécharger le PDF",
   previewTitle: "Aperçu du contrat",
   previewLoading: "Chargement du contrat…",
   previewFallback: "L'aperçu ne s'affiche pas dans ce navigateur :",
   signTitle: "Signer le contrat",
-  depositedBy: (product: string, date: string) => `Déposé par ${product} le ${date}. Seul un gérant du parking peut le signer.`,
+  depositedBy: (product: string, date: string) =>
+    `Déposé par ${product} le ${date}. Seul un gérant du parking peut le signer.`,
   nameLabel: "Votre nom complet, comme signature",
-  acceptLabel: (operator: string) => `J'ai lu le contrat en entier et je l'accepte au nom de ${operator}. « Lu et approuvé ».`,
+  acceptLabel: (operator: string) =>
+    `J'ai lu le contrat en entier et je l'accepte au nom de ${operator}. « Lu et approuvé ».`,
   sign: "Signer le contrat",
   signing: "Signature…",
-  signConfirm: (name: string) => `Vous signez ce contrat au nom de votre parking, sous le nom « ${name} ». Cette signature vous engage.`,
+  signConfirm: (name: string) =>
+    `Vous signez ce contrat au nom de votre parking, sous le nom « ${name} ». Cette signature vous engage.`,
   signConfirmTitle: "Signer le contrat",
   signedToast: "Contrat signé. Une copie part par e-mail.",
   proofNote: `${PRODUCT.name} garde votre nom, la date et l'heure, votre adresse IP, votre navigateur et l'empreinte du PDF signé.`,
-  viewAsNote: "En consultation, la plateforme lit le contrat mais ne le signe pas : seul un gérant du parking le peut.",
+  viewAsNote:
+    "En consultation, la plateforme lit le contrat mais ne le signe pas : seul un gérant du parking le peut.",
   signErrors: {
     required: "Tapez votre nom complet.",
     full_name: "Tapez votre prénom et votre nom.",
@@ -3814,8 +4011,7 @@ export const contractFr = {
   },
   downloadSigned: "Télécharger le PDF signé",
   downloadProof: "Télécharger la preuve de signature",
-  signedNote:
-    `Le PDF signé est le contrat d'origine, plus une dernière page « Signature » avec ces informations. ${PRODUCT.name} garde les deux ; personne ne peut les modifier.`,
+  signedNote: `Le PDF signé est le contrat d'origine, plus une dernière page « Signature » avec ces informations. ${PRODUCT.name} garde les deux ; personne ne peut les modifier.`,
   previous: "Versions précédentes",
 };
 
@@ -3823,14 +4019,17 @@ export const contractFr = {
 export const extrasFr = {
   settings: {
     title: "Services additionnels",
-    intro: "Vos clients les commandent dans l'app Plazo, avec leur réservation ou plus tard, même après avoir déposé leur voiture. Ils les paient en ligne.",
+    intro:
+      "Vos clients les commandent dans l'app Plazo, avec leur réservation ou plus tard, même après avoir déposé leur voiture. Ils les paient en ligne.",
     offered: (label: string) => `Proposer : ${label}`,
     priceLabel: (label: string) => `Prix : ${label}`,
     defaultPrice: (price: string) => `Prix conseillé : ${price}`,
     leadHours: "Commande possible jusqu'à",
     leadHoursUnit: "h avant le retour",
-    commission: "Commission Plazo prise sur chaque service, comme sur les séjours. Votre part vous est reversée avec la réservation, une fois le service fait.",
-    refundNote: "Un service pas fait au moment de rendre la voiture est remboursé au client.",
+    commission:
+      "Commission Plazo prise sur chaque service, comme sur les séjours. Votre part vous est reversée avec la réservation, une fois le service fait.",
+    refundNote:
+      "Un service pas fait au moment de rendre la voiture est remboursé au client.",
     save: "Enregistrer",
     saved: "Services enregistrés",
     errors: {
@@ -3850,8 +4049,10 @@ export const extrasFr = {
       refused: "Pas possible · remboursé",
       refunded: "Remboursé",
     },
-    doneLine: (when: string, by: string | null) => `Fait ${when}${by ? ` par ${by}` : ""}`,
-    refusedLine: (reason: string | null) => (reason ? `Motif : ${reason}` : "Remboursé au client"),
+    doneLine: (when: string, by: string | null) =>
+      `Fait ${when}${by ? ` par ${by}` : ""}`,
+    refusedLine: (reason: string | null) =>
+      reason ? `Motif : ${reason}` : "Remboursé au client",
     done: "Fait",
     refuse: "Pas possible",
     reasonLabel: "Pourquoi ? (facultatif)",

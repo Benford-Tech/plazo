@@ -139,13 +139,16 @@ void main() {
 
   test('ouvert depuis une fiche (C-B) : le côté et le client sont présélectionnés', () async {
     final bloc = build()..add(const ShuttleStarted(direction: 'dropoff', reservationId: 'a1'));
-    await bloc.stream.firstWhere((s) => s.departures != null);
+    await bloc.stream.firstWhere((s) => s.selected.isNotEmpty);
     expect(bloc.state.direction, 'dropoff');
     expect(bloc.state.selected, {'a1'});
+    // B (22/10/2026): the other side is read too, for its tab's count.
+    expect(bloc.state.backCount, 3);
     await bloc.close();
     // A traveller the list does not offer (already on a trip, gone) stays unselected.
     final other = build()..add(const ShuttleStarted(direction: 'pickup', reservationId: 'nope'));
-    await other.stream.firstWhere((s) => s.pickups != null);
+    await other.stream.firstWhere((s) => s.pickups != null && s.departures != null);
+    await settle();
     expect(other.state.direction, 'pickup');
     expect(other.state.selected, isEmpty);
     await other.close();
@@ -305,7 +308,7 @@ void main() {
     expect(bloc.state.trip, isNull);
     await bloc.close();
   });
-  test('V-A · le véhicule du jour passe devant l’habituel ; D-A · la desserte choisie part avec le trajet', () async {
+  test('V-A · le véhicule du jour passe devant l’habituel ; la desserte des clients cochés part avec le trajet (22/10/2026)', () async {
     when(() => vehicles(any())).thenAnswer(
       (_) async => const Right([
         ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', seats: 8, driverId: 'me'),
@@ -318,16 +321,35 @@ void main() {
         ShuttleStopModel(id: 's1', kind: 'station', name: 'Gare TGV', lat: 45.7209, lng: 5.0756),
       ]),
     );
+    when(() => pickups(any())).thenAnswer(
+      (_) async => Right(
+        PickupsModel(
+          serverTime: now,
+          meetingPoint: meetingT1,
+          rows: [
+            pickup('r1', 'Camille Martin', flight: landedFlight()),
+            pickup('g1', 'Paul Roux', stopId: 's1', stopName: 'Gare TGV'),
+            pickup('g2', 'Inès Blanc', passengers: 1, stopId: 's1', stopName: 'Gare TGV'),
+          ],
+        ),
+      ),
+    );
     final bloc = build()..add(const ShuttleStarted(staffId: 'me', vehicleId: 'v3'));
     await bloc.stream.firstWhere((s) => s.pickups != null);
     expect(bloc.state.vehicle?.vehicleId, 'v3');
-    expect(bloc.state.hasStopChoice, isTrue);
-    expect(bloc.state.stopId, isNull, reason: 'the airport by default');
 
-    bloc.add(const ShuttleStopChanged('s1'));
+    // Ticked travellers who wait at the station: the trip goes there; with one from the airport, nowhere in particular.
+    bloc.add(const ShuttlePassengerToggled('g1'));
+    bloc.add(const ShuttlePassengerToggled('g2'));
+    await settle();
+    expect(bloc.state.selectedStopId, 's1');
+    expect(bloc.state.selectedStopName, 'Gare TGV');
     bloc.add(const ShuttlePassengerToggled('r1'));
     await settle();
-    expect(bloc.state.chosenStop?.name, 'Gare TGV');
+    expect(bloc.state.selectedDestinations.length, 2);
+    expect(bloc.state.selectedStopId, isNull);
+    bloc.add(const ShuttlePassengerToggled('r1'));
+    await settle();
     when(() => start(any())).thenAnswer((invocation) async {
       final params = invocation.positionalArguments.single as StartTripParams;
       expect(params.stopId, 's1');
@@ -336,10 +358,6 @@ void main() {
     });
     bloc.add(const ShuttleStartRequested());
     await bloc.stream.firstWhere((s) => s.trip != null);
-    // No changing the stop while the trip runs.
-    bloc.add(const ShuttleStopChanged(null));
-    await settle();
-    expect(bloc.state.stopId, 's1');
     verify(() => start(any())).called(1);
     await bloc.close();
   });
@@ -762,7 +780,8 @@ void main() {
 
     bloc.add(const ShuttlePassengerToggled('r1'));
     bloc.add(const ShuttleDirectionChanged('dropoff'));
-    await bloc.stream.firstWhere((s) => s.departures != null);
+    await bloc.stream.firstWhere((s) => s.dropoff);
+    await settle();
     expect(bloc.state.dropoff, isTrue);
     expect(bloc.state.selected, isEmpty, reason: 'switching sides clears the selection');
     expect(bloc.state.selectableDepartures.map((r) => r.reservationId), ['a1']);
