@@ -5,11 +5,12 @@ import { NightFee, nightFeesForStay, nightRule, nightSettingsOf } from '@/domain
 import { enabledOffersFrom } from '@/domain/extras';
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { travellersSeePosition } from '@/domain/shuttle-tracking';
+import { isTestOperatorName } from '@/domain/test-feed';
 import { exceedsCalendarDays, parseInstant } from '@/domain/time';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { CapacityService } from './capacity.service';
-import { OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
+import { type OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
 import { LatLng, ParkingLocationService } from './parking-location.service';
 
 const MAX_STAY_DAYS = 90;
@@ -17,14 +18,23 @@ const MAX_STAY_DAYS = 90;
 type ListingWithParking = Listing & {
   parking: Parking & {
     pricingTiers: { days: number; priceCents: number }[];
-    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'>;
+    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo' | 'name'>;
   };
 };
 type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
 
 /** Operator fields the public pages need: how it takes payments, and whether it is a demo. */
-const PUBLIC_OPERATOR_FIELDS = OPERATOR_PAYMENT_FIELDS;
+// Spelled out, not spread from OPERATOR_PAYMENT_FIELDS: through an import cycle that constant can still be undefined when
+// this module loads (22/10/2026).
+const PUBLIC_OPERATOR_FIELDS = {
+  commissionBps: true,
+  stripeAccountId: true,
+  stripeAccountLive: true,
+  stripePayoutsEnabled: true,
+  isDemo: true,
+  name: true,
+} as const satisfies Record<keyof typeof OPERATOR_PAYMENT_FIELDS | 'name', true>;
 
 /** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
 export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;
@@ -104,7 +114,9 @@ export class PublicService {
       // Entrance of the parking for the site's map; null when unknown (listed, not drawn).
       location: locations.get(listing.parkingId) ?? null,
       // Fictional parking of the demo seed: shown like the others, with a small "Démo" badge.
-      isDemo: listing.parking.operator.isDemo,
+      // The platform's test parking (« Plazo (tests) ») is shown like a demo: kept out of the sitemap, the guides and Google
+      // (22/10/2026, Search Console listed « Parking test Plazo »).
+      isDemo: listing.parking.operator.isDemo || isTestOperatorName(listing.parking.operator.name),
       // R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT").
       liveShuttle: liveShuttle(listing),
     };
