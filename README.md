@@ -248,7 +248,7 @@ une décision de Joanny. Cocher au fur et à mesure.
   textes légaux passent en version du 15/10/2026. **Restent, à donner par Joanny** : le capital social (Kbis ou statuts),
   un téléphone de l'éditeur (obligatoire dans les mentions légales ; publié, donc plutôt une ligne de la société qu'un
   portable personnel), le médiateur de la consommation (adhésion obligatoire, nom, adresse et site), l'orthographe du nom
-  si c'est « Simporé » (les registres écrivent SIMPORE), et une adresse support réelle (aujourd'hui `support@example.com`).
+  si c'est « Simporé » (les registres écrivent SIMPORE) ; l'adresse support est réelle depuis le 22/10/2026 (`contact@plazo.fr`).
   Claude les pose ; seule l'adresse support demande ensuite `dart run tool/sync_product.dart`. L'adresse support sert
   aussi à `/suppression-compte` (13/10/2026), l'URL de suppression de compte donnée à Google Play : sans elle, la page
   affiche « [à compléter] » à qui n'a plus l'app.
@@ -257,7 +257,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   service client (publiée sur chaque page : une ligne de la société plutôt qu'un portable personnel), par ex. `"04 78 00 00 00"`,
   et `support.hours` avec une phrase qui se lit seule sous le numéro et après « Notre équipe vous répond », par ex. `"Du lundi au
   vendredi, de 9 h à 18 h"` (sans point final). Seul le site les lit ; le numéro passe aussi dans les données structurées.
-- [ ] **Adresse du service client réelle** (`product.json` › `supportEmail`, aujourd'hui `support@example.com`) : elle ouvre la
+- [x] **Adresse du service client réelle** (22/10/2026 : `product.json` › `supportEmail` = `contact@plazo.fr`, reçue par le relais
+  `email-worker/` qui la renvoie à `FALLBACK_ADDRESS`, comme toute adresse de `plazo.fr` qui n'est pas celle d'un parking) : elle ouvre la
   tuile « Par écrit », le lien « Nous contacter » et le formulaire `/contact`, dont l'API envoie chaque message à cette adresse
   par Brevo, avec le visiteur en adresse de réponse (la boîte doit exister et être lue). Ensuite `dart run tool/sync_product.dart`
   dans `mobile/`, et avancer les trois dates de version de `site/src/lib/legal.ts` (l'adresse figure dans les trois textes, et

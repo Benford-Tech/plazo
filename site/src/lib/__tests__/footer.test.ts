@@ -22,12 +22,12 @@ const all: FooterSource = {
 };
 
 describe("footer config (A, 15/10/2026)", () => {
-  it("product.json has the footer keys, empty until Joanny gives them", () => {
+  it("product.json has the footer keys, empty until Joanny gives them, and the real support address (22/10/2026)", () => {
     expect(SUPPORT).toEqual({ phone: "", hours: "", responseTime: "" });
     expect(SOCIAL).toEqual({ instagram: "", facebook: "", linkedin: "" });
     expect(NEWSLETTER).toBe(false);
-    // Today: nothing to show but the payment row and the legal line.
-    expect(footerConfig()).toMatchObject({ phone: null, contactForm: null, social: [], newsletter: false });
+    // Today: the contact form (contact@plazo.fr), the payment row and the legal line.
+    expect(footerConfig()).toMatchObject({ phone: null, contactForm: { responseTime: null }, social: [], newsletter: false });
   });
 
   it("hides every block whose facts are not given (placeholder support address included)", () => {

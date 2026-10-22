@@ -77,8 +77,8 @@ describe('règles pures', () => {
     expect(isRealSupportEmail('support@EXAMPLE.org')).toBe(false);
     expect(isRealSupportEmail('')).toBe(false);
     expect(isRealSupportEmail('pas une adresse')).toBe(false);
-    // product.json still holds the placeholder: the form stays closed until the real address is set.
-    expect(isRealSupportEmail(SUPPORT_EMAIL)).toBe(false);
+    // product.json holds the real address since 22/10/2026 (contact@plazo.fr): the form is open.
+    expect(isRealSupportEmail(SUPPORT_EMAIL)).toBe(true);
   });
 
   it('lit la liste et le modèle Brevo de la lettre (entiers positifs), sinon rien', () => {
@@ -203,6 +203,7 @@ describe('POST /api/public/contact', () => {
 
   it('409 contact_unavailable tant que l’adresse est celle d’exemple de product.json, ou sans Brevo', async () => {
     brevoOn();
+    contactService.settings.supportEmail = 'support@example.com';
     let res = await contact(form());
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('contact_unavailable');
