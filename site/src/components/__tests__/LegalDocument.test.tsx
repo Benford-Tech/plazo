@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { LegalDocument } from "../LegalDocument";
-import { termsDoc, legalNoticeDoc } from "@/lib/legal";
+import { termsDoc, legalNoticeDoc, TERMS_VERSION } from "@/lib/legal";
 
 describe("LegalDocument", () => {
   it("shows the title, the version, the contents and every section, without the old draft notice", () => {
@@ -10,7 +10,7 @@ describe("LegalDocument", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Conditions générales" })).toBeInTheDocument();
     expect(screen.queryByText(/valider avec un juriste/)).not.toBeInTheDocument();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
-    expect(screen.getByText("Version du 20 octobre 2026")).toBeInTheDocument();
+    expect(screen.getByText(`Version du ${TERMS_VERSION}`)).toBeInTheDocument();
     const contents = screen.getByRole("navigation", { name: "Sommaire" });
     expect(contents.querySelectorAll("a")).toHaveLength(doc.sections.length);
     for (const s of doc.sections) expect(screen.getByRole("heading", { level: 2, name: s.title })).toBeInTheDocument();

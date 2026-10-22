@@ -5,5 +5,5 @@ abstract final class Product {
   static const name = 'Plazo';
   static const proName = 'Plazo Pro';
   static const tagline = 'Gestion de parkings d\'aéroport';
-  static const supportEmail = 'support@example.com';
+  static const supportEmail = 'contact@plazo.fr';
 }

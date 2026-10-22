@@ -933,7 +933,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `site` sur le reste), la liaison site → API et le Cron ; `git.deploymentEnabled` coupe les prévisualisations des branches
   `claude/*` (08/10/2026 : le plan Hobby plafonne à 100 déploiements par 24 h, chaque push en consommait un).
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
-  lu par le serveur, l'espace pro et le site), et `company` : la société éditrice, lue par le site seul (pages légales et
+  lu par le serveur, l'espace pro et le site ; `supportEmail` = `contact@plazo.fr` depuis le 22/10/2026, « configure avec brevo une
+  adresse mail contact@plazo.fr » : reçue par le relais `email-worker/` et renvoyée à `FALLBACK_ADDRESS`, envoyée par Brevo), et `company` : la société éditrice, lue par le site seul (pages légales et
   `/suppression-compte`) ; un champ vide s'affiche « [à compléter] » (sauf dans le pied de page, qui l'omet) ; `support`
   (`phone`, `hours`, `responseTime`), `social` (`instagram`, `facebook`, `linkedin`) et `newsletter` (booléen) : pied de page A
   du 15/10/2026, lus par le site, chaque bloc caché tant que sa valeur est vide. **Benford Tech** (15/10/2026, d'après les registres

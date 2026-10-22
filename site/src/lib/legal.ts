@@ -34,9 +34,9 @@ export interface LegalDoc {
  * - Privacy: 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
-export const TERMS_VERSION = "21 octobre 2026";
-export const NOTICE_VERSION = "15 octobre 2026";
-export const PRIVACY_VERSION = "21 octobre 2026";
+export const TERMS_VERSION = "22 octobre 2026";
+export const NOTICE_VERSION = "22 octobre 2026";
+export const PRIVACY_VERSION = "22 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
