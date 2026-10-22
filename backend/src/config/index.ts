@@ -204,8 +204,10 @@ export function googleClientIds(): string[] {
 }
 
 /** Which sign-in buttons the app may show. */
-export function identityProviders(): { apple: boolean; google: boolean } {
-  return { apple: appleSignInSettings() !== null, google: googleClientIds().length > 0 };
+export function identityProviders(): { apple: boolean; google: boolean; googleClientId: string | null } {
+  // googleClientId (22/10/2026): the Web client, first of GOOGLE_CLIENT_IDS, for the pro space's Google button (public).
+  const google = googleClientIds();
+  return { apple: appleSignInSettings() !== null, google: google.length > 0, googleClientId: google[0] ?? null };
 }
 
 /** The secret of the daily join codes, derived from SECRET_KEY (no variable of its own). */

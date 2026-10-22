@@ -67,6 +67,10 @@
 #                                               Android: the « Web application » OAuth client ID of the Google
 #                                               Cloud project « Plazo » (public, the same as GOOGLE_CLIENT_IDS on
 #                                               Vercel); absent = Plazo Pro Android without the Google button
+#     GOOGLE_IOS_CLIENT_ID                    = optional (22/10/2026), Plazo Pro « Continuer avec Google » on
+#                                               iPhone: the « iOS » OAuth client ID of the same project, bundle ID
+#                                               com.benfordtech.plazopro (public); with GOOGLE_SERVER_CLIENT_ID, its
+#                                               reversed form is added as the URL scheme; absent = no button on iPhone
 #   Sign in with Apple (Plazo Pro, 13/10/2026): nothing to set here. Once the capability is enabled on the App ID
 #   com.benfordtech.plazopro and the profile « plazo_pro_app_store » regenerated and fetched again under the same
 #   reference name, mobile-release sees it in the profile, adds the entitlement for that build and turns the Apple
@@ -430,6 +434,21 @@ workflows:
               traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"; EXTRA="" ;;
               pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"; EXTRA="${APPLE_SIGN_IN_DEFINE:-}" ;;
             esac
+            # Plazo Pro « Continuer avec Google » on iPhone (22/10/2026): the iOS client's reversed id is the URL scheme
+            # Google comes back to (Info.plist is shared, and Plazo is built first), the two client ids go to the app.
+            if [ "$FLAVOR" = "pro" ]; then
+              if [ -n "${GOOGLE_SERVER_CLIENT_ID:-}" ] && [ -n "${GOOGLE_IOS_CLIENT_ID:-}" ]; then
+                REVERSED="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+                /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" ios/Runner/Info.plist >/dev/null 2>&1 || true
+                /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" -c "Add :CFBundleURLTypes:0 dict" \
+                  -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED" \
+                  ios/Runner/Info.plist
+                EXTRA="$EXTRA --dart-define=GOOGLE_SERVER_CLIENT_ID=$GOOGLE_SERVER_CLIENT_ID --dart-define=GOOGLE_IOS_CLIENT_ID=$GOOGLE_IOS_CLIENT_ID"
+                echo "Google : bouton « Continuer avec Google » activé sur l'iPhone ($REVERSED)"
+              else
+                echo "ATTENTION: GOOGLE_SERVER_CLIENT_ID ou GOOGLE_IOS_CLIENT_ID absent : Plazo Pro iPhone sans « Continuer avec Google »"
+              fi
+            fi
             DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
             echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
             flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES \

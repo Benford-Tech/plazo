@@ -41,11 +41,11 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /internal/auth/providers:
  *   get:
- *     summary: Which sign-in buttons the app may show ({ apple, google }); Apple needs its key, Google a client ID
+ *     summary: Which sign-in buttons the app may show ({ apple, google, googleClientId }); Apple needs its key, Google a client ID
  *     tags: [Onboarding]
  *     security: []
  *     responses:
- *       200: { description: "{ apple: boolean, google: boolean }" }
+ *       200: { description: "{ apple: boolean, google: boolean, googleClientId: string | null } (the Web client, for the pro space's button)" }
  * /internal/auth/apple:
  *   post:
  *     summary: Sign in with Apple — a member's session, or an onboarding session to join a parking

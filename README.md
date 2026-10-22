@@ -305,8 +305,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   profil `plazo_pro_app_store` régénéré puis rechargé dans Codemagic sous le même nom, clé « Sign in with Apple » (.p8) dans
   Vercel (`APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`), domaine et adresse d'envoi déclarés pour les adresses relais ;
   Google : projet Google Cloud « Plazo », écran de consentement publié, client « Application Web » (Vercel
-  `GOOGLE_CLIENT_IDS`, Codemagic `GOOGLE_SERVER_CLIENT_ID`) et deux clients Android (SHA-1 de la clé de signature Play et de
-  la clé d'import). D'ici là, les boutons restent cachés et les comptes e-mail marchent comme avant.
+  `GOOGLE_CLIENT_IDS`, Codemagic `GOOGLE_SERVER_CLIENT_ID`, origine `https://www.plazo.fr` pour l'espace pro web) et deux
+  clients Android (SHA-1 de la clé de signature Play et de la clé d'import), plus un client iOS pour l'iPhone (Codemagic
+  `GOOGLE_IOS_CLIENT_ID`, 22/10/2026). D'ici là, les boutons restent cachés et les comptes e-mail marchent comme avant.
 - [ ] Client n°1 : inscription libre (`/pro/inscription`) ou invitation (Plateforme › Loueurs), e-mail confirmé, fiche
   envoyée puis validée (Plateforme › Annonces), canal SMS réglé (Mon compte › SMS aux voyageurs, « Téléphone du parking »),
   Stripe Express relié avant le premier reversement, pushs activés par chaque membre dans Plazo Pro (Plus › Notifications),

@@ -36,8 +36,9 @@ class IdentitySignInFailed implements Exception {
   String toString() => 'IdentitySignInFailed($reason)';
 }
 
-/// Plazo Pro sign-in (13/10/2026): Apple on iPhone, Google on Android, never on the web (the store screenshots drive
-/// the email form). Each one only when the build carries its setting (APPLE_SIGN_IN, GOOGLE_SERVER_CLIENT_ID).
+/// Plazo Pro sign-in (13/10/2026): Apple on iPhone, Google on Android and, since 22/10/2026, on iPhone too; never on the
+/// web build (the store screenshots drive the email form). Each one only when the build carries its setting
+/// (APPLE_SIGN_IN; GOOGLE_SERVER_CLIENT_ID, plus GOOGLE_IOS_CLIENT_ID on iPhone).
 abstract class IdentitySignInService {
   bool get appleSupported;
   bool get googleSupported;
@@ -61,10 +62,16 @@ String newRawNonce([Random? random]) {
 String sha256Hex(String input) => sha256.convert(utf8.encode(input)).toString();
 
 class NativeIdentitySignInService implements IdentitySignInService {
-  NativeIdentitySignInService({this._appleEnabled = AppConstants.appleSignIn, this._googleServerClientId = AppConstants.googleServerClientId, this._platform});
+  NativeIdentitySignInService({
+    this._appleEnabled = AppConstants.appleSignIn,
+    this._googleServerClientId = AppConstants.googleServerClientId,
+    this._googleIosClientId = AppConstants.googleIosClientId,
+    this._platform,
+  });
 
   final bool _appleEnabled;
   final String _googleServerClientId;
+  final String _googleIosClientId;
   final TargetPlatform? _platform;
   Future<void>? _googleReady;
 
@@ -74,7 +81,8 @@ class NativeIdentitySignInService implements IdentitySignInService {
   bool get appleSupported => !kIsWeb && _appleEnabled && _target == TargetPlatform.iOS;
 
   @override
-  bool get googleSupported => !kIsWeb && _googleServerClientId.isNotEmpty && _target == TargetPlatform.android;
+  bool get googleSupported =>
+      !kIsWeb && _googleServerClientId.isNotEmpty && (_target == TargetPlatform.android || (_target == TargetPlatform.iOS && _googleIosClientId.isNotEmpty));
 
   @override
   Future<AppleCredential> apple() async {
@@ -104,7 +112,11 @@ class NativeIdentitySignInService implements IdentitySignInService {
 
   /// Google's setup, once per run; a failed one (Play Services busy…) is tried again at the next tap.
   Future<void> _google() =>
-      _googleReady ??= GoogleSignIn.instance.initialize(serverClientId: _googleServerClientId).catchError((Object error, StackTrace stack) {
+      // On iPhone the iOS client signs in; the ID token is still issued for the Web client (serverClientId), the audience
+      // the API checks.
+      _googleReady ??= GoogleSignIn.instance
+          .initialize(clientId: _target == TargetPlatform.iOS ? _googleIosClientId : null, serverClientId: _googleServerClientId)
+          .catchError((Object error, StackTrace stack) {
         _googleReady = null;
         Error.throwWithStackTrace(error, stack);
       });

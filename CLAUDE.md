@@ -1300,7 +1300,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
   https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et
-  « Continuer avec Google » sur Android (l'e-mail et le mot de passe restent pour tous ; l'espace pro web garde le mot de passe seul),
+  « Continuer avec Google » sur Android (l'e-mail et le mot de passe restent pour tous ; **22/10/2026, « ajoute la connexion
+  google »** : Google aussi sur iPhone, `GOOGLE_IOS_CLIENT_ID` de Codemagic qui ajoute le schéma d'URL inversé, et sur l'espace pro
+  web : bouton de Google (Google Identity Services, `lib/google-identity.ts`, `GoogleSignInButton`) sous « ou » de la connexion et
+  carte « Connexion » de Mon compte (`SignInMethodsCard` : lier Google, délier Apple ou Google), client Web donné par
+  `GET /internal/auth/providers` › `googleClientId` ; un compte Google relié à aucun membre est renvoyé vers Plazo Pro et sa session
+  d'accueil fermée ; origine `https://www.plazo.fr` à déclarer dans le client Web de Google Cloud),
   puis le **code du jour** du loueur : 10 caractères Crockford (`domain/join-code.ts` : HMAC de `SECRET_KEY` sur loueur + jour local du
   premier parking, affiché `XXXXX-XXXXX`, O lu 0, I et L lus 1, U refusé), **qui change seul à minuit** (ni bouton ni interrupteur) ;
   le code crée une **demande** que **un gérant accepte** (rôle Accueil, Chauffeur ou Voiturier, préréglé sur le poste demandé, jamais

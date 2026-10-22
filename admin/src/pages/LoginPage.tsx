@@ -1,9 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { PRODUCT } from "@/lib/product";
 import { cn } from "@/lib/utils";
@@ -34,10 +37,11 @@ function StepDots({ step }: { step: 0 | 1 }) {
  * The pro space's sign-in. Choice B of 21/10/2026 (« revois la page de connexion », then « revoi le design sur web aussi »,
  * mockups https://claude.ai/artifact/2hNzBfHaph589Vdhjing8h): the lime screen with the pro wordmark, and a white panel that
  * asks one thing at a time, the email address and then the password, as in Plazo Pro. Side by side on a wide screen, the
- * panel under the lime band on a phone.
+ * panel under the lime band on a phone. « Continuer avec Google » under « ou » on the first step (22/10/2026), when the API
+ * has a Google client: a Google account linked to a member signs in; one in no team is sent to Plazo Pro's code of the day.
  */
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const passwordChanged = new URLSearchParams(location.search).get("motdepasse") === "modifie";
@@ -46,6 +50,8 @@ export default function LoginPage() {
   const [passwordStep, setPasswordStep] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const providers = useQuery({ queryKey: ["auth-providers"], queryFn: adminApi.authProviders, staleTime: 3600_000, retry: false });
+  const googleClientId = providers.data?.google ? (providers.data.googleClientId ?? null) : null;
   if (isAuthenticated) return <Navigate to="/" replace />;
 
   const next = (e: React.FormEvent) => {
@@ -74,6 +80,26 @@ export default function LoginPage() {
     } catch (err) {
       setError(describeError(err));
       setPassword("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const withGoogle = async (idToken: string) => {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const result = await adminApi.googleSignIn(idToken);
+      if (result.status === "signed_in") {
+        signIn(result.tokenData, result.user);
+        navigate("/", { replace: true });
+        return;
+      }
+      // A Google account in no team: joining is done in Plazo Pro; the unused onboarding session is closed.
+      void adminApi.onboardingLogout(result.onboardingToken).catch(() => undefined);
+      setError(fr.login.googleNotMember);
+    } catch (err) {
+      setError(describeError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -110,9 +136,19 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
-              <Button type="submit" className="h-11 w-full text-base">
+              <Button type="submit" className="h-11 w-full text-base" disabled={isSubmitting}>
                 {fr.login.next}
               </Button>
+              {googleClientId && (
+                <>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground" aria-hidden>
+                    <span className="h-px flex-1 bg-border" />
+                    {fr.login.or}
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                  <GoogleSignInButton clientId={googleClientId} onIdToken={withGoogle} disabled={isSubmitting} />
+                </>
+              )}
             </form>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

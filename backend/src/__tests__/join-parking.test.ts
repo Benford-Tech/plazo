@@ -100,9 +100,13 @@ const pushes = () =>
 
 describe('connexion avec Apple ou Google', () => {
   it('dit quels boutons montrer', async () => {
-    expect((await api().get('/api/internal/auth/providers')).body).toEqual({ apple: true, google: true });
+    expect((await api().get('/api/internal/auth/providers')).body).toEqual({
+      apple: true,
+      google: true,
+      googleClientId: 'autre-client.apps.googleusercontent.com',
+    });
     removeFakeProviders();
-    expect((await api().get('/api/internal/auth/providers')).body).toEqual({ apple: false, google: false });
+    expect((await api().get('/api/internal/auth/providers')).body).toEqual({ apple: false, google: false, googleClientId: null });
   });
 
   it('Apple : une identité inconnue reçoit une session d’accueil, son nom est gardé', async () => {

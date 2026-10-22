@@ -57,6 +57,18 @@ export interface Staff {
 export type IdentityProvider = "apple" | "google";
 export type SignInMethod = "password" | IdentityProvider;
 
+/** GET /internal/auth/providers (googleClientId: 22/10/2026, absent from an older API). */
+export interface AuthProviders {
+  apple: boolean;
+  google: boolean;
+  googleClientId?: string | null;
+}
+
+/** POST /internal/auth/google: a member signed in, or a Google account in no team yet (onboarding, Plazo Pro only). */
+export type IdentitySignIn =
+  | { status: "signed_in"; tokenData: TokenData; user: Staff }
+  | { status: "onboarding"; onboardingToken: string };
+
 /** The roles a person can be given when a manager accepts their request (never « Gérant »). */
 export type JoinRole = Exclude<StaffRole, "manager">;
 

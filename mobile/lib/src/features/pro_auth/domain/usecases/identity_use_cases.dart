@@ -32,8 +32,8 @@ Future<Either<Failure, T>> _native<T>(Future<T> Function() ask) async {
 Future<Either<Failure, R>> _andThen<T, R>(Either<Failure, T> first, Future<Either<Failure, R>> Function(T value) next) =>
     first.fold((failure) async => Left<Failure, R>(failure), next);
 
-/// The sign-ins this phone offers (13/10/2026): Apple on an iPhone built with the capability, Google on Android
-/// with the client id, each one only when the API can verify it. Nothing is asked when the phone offers none.
+/// The sign-ins this phone offers (13/10/2026): Apple on an iPhone built with the capability, Google on Android and
+/// iPhone (22/10/2026) with the client ids, each one only when the API can verify it. Nothing is asked when the phone offers none.
 class GetProvidersUseCase with UseCase<ProvidersModel, NoParams> {
   GetProvidersUseCase(this._repository, this._signIn);
   final OnboardingRepository _repository;

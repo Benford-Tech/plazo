@@ -286,7 +286,8 @@ se retrouvent avec l'action **`mapping`** du workflow GitHub « Codemagic build 
 
 ## 3 bis. Connexion avec Apple et Google dans Plazo Pro (13/10/2026)
 
-Plazo Pro propose « Continuer avec Apple » sur iPhone et « Continuer avec Google » sur Android ; la personne tape ensuite le
+Plazo Pro propose « Continuer avec Apple » sur iPhone et « Continuer avec Google » sur Android et, depuis le 22/10/2026, sur
+iPhone et sur l'espace pro web (plazo.fr/pro) ; la personne tape ensuite le
 code du jour de son parking et un gérant accepte sa demande. Le code est livré ; chaque bouton n'apparaît qu'une fois ses
 réglages faits ci-dessous. Tant qu'ils ne le sont pas, les builds marchent comme avant, sans le bouton (l'étape « Sign in with
 Apple » de `mobile-release` le dit dans son journal).
@@ -328,6 +329,14 @@ Apple » de `mobile-release` le dit dans son journal).
    SHA-1 du « Certificat de la clé d'importation » (même page), pour les APK installés directement depuis Codemagic.
 5. [ ] **Redeploy** Vercel, puis lancer `mobile-release` ou `mobile-release-android` : le journal ne doit plus dire
    « GOOGLE_SERVER_CLIENT_ID absent ».
+6. [ ] **Espace pro web** (22/10/2026) : dans le client **Web application** du point 3 › **Authorized JavaScript origins**,
+   ajouter `https://www.plazo.fr` (et `http://localhost:8080` pour les essais en local) › **Save**. Le bouton Google de
+   plazo.fr/pro/login et de Mon compte utilise ce même client (l'API le donne à la page) ; sans l'origine, Google affiche
+   « origin_mismatch ». Un compte Google relié à aucun membre est renvoyé vers Plazo Pro et le code du jour.
+7. [ ] **iPhone** (22/10/2026) : **Clients** › **Create client** › **iOS**, Bundle ID `com.benfordtech.plazopro` (Team ID
+   `3BX4795V2Y`) : son **Client ID** (public) va dans Codemagic, groupe `mobile_secrets` de l'app `plazo`, sous le nom
+   `GOOGLE_IOS_CLIENT_ID`. Le build iOS de Plazo Pro ajoute alors l'adresse de retour de Google (`com.googleusercontent.apps.…`)
+   et le bouton ; sans lui, le journal dit « Plazo Pro iPhone sans « Continuer avec Google » ».
 
 **Revue** : les relecteurs ne peuvent pas recevoir un code du jour. Le compte de revue (point 0.5 de `fiches-stores.md`)
 reste un compte e-mail et mot de passe ; les notes de revue peuvent expliquer que le gérant de revue voit le code dans
