@@ -75,6 +75,12 @@ export const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
 ).replace(/\/+$/, '');
 
+// Plazo Pro on the stores, for the operator's invitation email (22/10/2026). The Google Play page follows from the
+// package name; Apple's review is still running, so the App Store link is given only once Apple has published the app
+// (PLAZO_PRO_APP_STORE_URL, e.g. https://apps.apple.com/fr/app/plazo-pro/id…) and the email says so until then.
+export const PLAZO_PRO_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.benfordtech.plazopro';
+export const PLAZO_PRO_APP_STORE_URL = (process.env.PLAZO_PRO_APP_STORE_URL || '').trim().replace(/\/+$/, '') || null;
+
 // « La lettre Plazo » (footer A, 15/10/2026): the Brevo list the travellers join and the template of Brevo's double opt-in
 // email (it must hold Brevo's {{ doubleoptin }} link). Read on every call so that tests can set them. Without both (positive
 // integers, as Brevo numbers them) and BREVO_API_KEY, POST /public/newsletter answers 409 `newsletter_unavailable`.

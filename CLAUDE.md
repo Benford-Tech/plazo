@@ -971,6 +971,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `…/unarchive`, `GET …/operators?view=archived` (+ `counts`), « Réactiver » désarchive ; Loueurs : pilules « Loueurs · Archivés »
   (`?vue=archives`), « Archiver » sur un loueur suspendu, « Désarchiver » ; les annonces d'un loueur archivé quittent Annonces ;
   rappels, suivi des vols et préparation des files l'ignorent (pas les reversements) ; `DemoSeedService.archive` archive aussi.
+  **Mail d'invitation (22/10/2026, « inclure le lien de l'env de démo, les liens stores, la validation Apple en cours »)** :
+  `invitationEmail` (`domain/account-messages.ts`) ajoute, sous le bouton « Choisir mon mot de passe », un paragraphe et trois liens :
+  « Essayer la démo » (`siteUrl('/pro/demo')`), « Plazo Pro sur Google Play (Android) » (`PLAZO_PRO_PLAY_STORE_URL`, déduit du
+  nom de paquet) et « Plazo Pro sur l'App Store (iPhone) » : le lien `PLAZO_PRO_APP_STORE_URL` (variable Vercel à poser dès
+  qu'Apple a publié l'app), sinon la mention « validation par Apple en cours, le lien vous sera envoyé dès qu'elle est
+  publiée » ; « Renvoyer l'invitation » envoie le même mail ; test `account-messages.test.ts`.
   **« Ouvrir son espace » pendant l'invitation (09/10/2026, « pouvoir commencer à modifier un parking en cours
   d'invitation »)** : le bouton est aussi proposé à côté de « Renvoyer l'invitation » ; la plateforme prépare réglages, plan,
   fiche et tarifs (écritures tracées `view_as.write`), le gérant les retrouve en acceptant ; la colonne Annonce montre la

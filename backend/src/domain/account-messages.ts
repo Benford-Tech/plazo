@@ -31,19 +31,57 @@ function layout(productName: string, title: string, body: string): string {
 </body></html>`;
 }
 
-function message(productName: string, subject: string, heading: string, lines: string[], action?: { label: string; url: string }): EmailMessage {
+type Link = { label: string; url: string | null; note?: string };
+
+/** Links after the button: « Plazo Pro sur Google Play : https://… » ; a link not yet available shows its note instead. */
+function links(items: Link[]): string {
+  const rows = items.map(
+    l =>
+      `<li style="margin:6px 0">${escapeHtml(l.label)} : ${
+        l.url
+          ? `<a href="${escapeHtml(l.url)}" style="color:${COLORS.ink};word-break:break-all">${escapeHtml(l.url)}</a>`
+          : `<span style="color:${COLORS.soft}">${escapeHtml(l.note ?? '')}</span>`
+      }</li>`,
+  );
+  return `<ul style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.5">${rows.join('')}</ul>`;
+}
+
+function message(
+  productName: string,
+  subject: string,
+  heading: string,
+  lines: string[],
+  action?: { label: string; url: string },
+  extra?: { lines: string[]; links: Link[] },
+): EmailMessage {
   const html = layout(
     productName,
     subject,
     `<h1 style="margin:0 0 4px;font-size:22px;text-transform:uppercase;letter-spacing:.03em">${escapeHtml(heading)}</h1>
 ${lines.map(paragraph).join('\n')}
-${action ? button(action.label, action.url) : ''}`,
+${action ? button(action.label, action.url) : ''}
+${extra ? `${extra.lines.map(paragraph).join('\n')}\n${links(extra.links)}` : ''}`,
   );
-  const text = [heading, '', ...lines, ...(action ? ['', `${action.label} : ${action.url}`] : []), '', `— ${productName}`].join('\n');
+  const text = [
+    heading,
+    '',
+    ...lines,
+    ...(action ? ['', `${action.label} : ${action.url}`] : []),
+    ...(extra ? ['', ...extra.lines, ...extra.links.map(l => `- ${l.label} : ${l.url ?? l.note ?? ''}`)] : []),
+    '',
+    `— ${productName}`,
+  ].join('\n');
   return { subject, html, text };
 }
 
-export function invitationEmail(productName: string, data: { operatorName: string; url: string; days: number }): EmailMessage {
+/**
+ * The manager's invitation (22/10/2026: with the demo of the pro space and Plazo Pro on the stores; the App Store link
+ * comes once Apple has published the app, the email says the review is running until then).
+ */
+export function invitationEmail(
+  productName: string,
+  data: { operatorName: string; url: string; days: number; demoUrl: string | null; playStoreUrl: string; appStoreUrl: string | null },
+): EmailMessage {
   return message(
     productName,
     `Votre espace ${productName} pour ${data.operatorName}`,
@@ -53,6 +91,20 @@ export function invitationEmail(productName: string, data: { operatorName: strin
       `Choisissez votre mot de passe pour y accéder. Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
     ],
     { label: 'Choisir mon mot de passe', url: data.url },
+    {
+      lines: [
+        `Avant de vous lancer, vous pouvez découvrir ${productName} sur un parking fictif, sans rien enregistrer. Votre équipe utilisera ensuite l'application ${productName} Pro sur son téléphone : planning, navette, parking et réservations.`,
+      ],
+      links: [
+        ...(data.demoUrl ? [{ label: 'Essayer la démo', url: data.demoUrl }] : []),
+        { label: `${productName} Pro sur Google Play (Android)`, url: data.playStoreUrl },
+        {
+          label: `${productName} Pro sur l'App Store (iPhone)`,
+          url: data.appStoreUrl,
+          note: "validation par Apple en cours, le lien vous sera envoyé dès qu'elle est publiée",
+        },
+      ],
+    },
   );
 }
 

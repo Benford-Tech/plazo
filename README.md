@@ -488,6 +488,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` sur Vercel (les deux App ID sont aussi écrits dans
    `codemagic.yaml`, `vars: ONESIGNAL_APP_ID` de chaque workflow : rien à créer dans Codemagic) ;
    sans elles l'API passe par l'app du personnel, qui ne connaît pas les téléphones des voyageurs.
+   Le mail d'invitation d'un loueur (22/10/2026) donne la démo, Plazo Pro sur Google Play et, dès qu'Apple a publié l'app,
+   sur l'App Store : poser alors `PLAZO_PRO_APP_STORE_URL` sur Vercel (sans elle, le mail dit que la validation Apple est en cours).
    « Prévenir de son arrivée » n'a besoin d'aucune nouvelle tâche planifiée : les signaux de plus de 2 h sont terminés
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.
