@@ -70,40 +70,54 @@ void main() {
   const airport = ShuttleStopModel(kind: 'airport', name: 'Terminal 1 · Porte 12', lat: 45.7205, lng: 5.0817, builtIn: true);
   const station = ShuttleStopModel(id: 's1', kind: 'station', name: 'Gare Saint-Exupéry TGV', lat: 45.7209, lng: 5.0756, instructions: 'Dépose-minute, côté parvis.');
 
-  testWidgets('D-A · dessertes : les puces n’apparaissent qu’avec une gare ; choisir la gare remplace le point de rendez-vous', (tester) async {
-    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport]));
-    expect(find.byKey(const Key('stop-choice')), findsNothing);
+  testWidgets('B (22/10/2026) · la destination vient de chaque réservation : écrite sur la ligne, dans le bouton, plusieurs destinations', (tester) async {
+    final departures = DeparturesModel(
+      serverTime: t0,
+      rows: [
+        DepartureRowModel(reservationId: 'd1', reference: 'D1', customerName: 'Bastien Faure', passengers: 4, plate: 'CD-456-EF', status: 'arrived', arrivalAt: t0, arrivedAt: t0, stopId: 's1', stopName: 'Gare TGV', leaveAt: t0),
+        DepartureRowModel(reservationId: 'd2', reference: 'D2', customerName: 'Nora Perrin', passengers: 2, plate: 'EF-789-GH', status: 'arrived', arrivalAt: t0, arrivedAt: t0, stopId: 's1', stopName: 'Gare TGV', leaveAt: t0),
+        DepartureRowModel(reservationId: 'd3', reference: 'D3', customerName: 'Léa Martin', passengers: 1, plate: 'GH-123-JK', status: 'arrived', arrivalAt: t0, arrivedAt: t0, leaveAt: t0),
+      ],
+    );
+    final state = ShuttleState(now: t0, direction: 'dropoff', departures: departures, pickups: pickupsModel, stops: const [airport, station], selected: const {'d1', 'd2'});
+    await show(tester, state);
+    expect(find.text('Aller · 3'), findsOneWidget);
+    expect(find.text('Retour · 3'), findsOneWidget);
+    expect(find.byKey(const Key('stop-choice')), findsNothing, reason: 'no stop to pick any more');
+    expect(find.byKey(const Key('direction-toggle')), findsNothing);
+    // Two lines and the button.
+    expect(find.textContaining('vers Gare TGV'), findsNWidgets(3));
+    expect(find.textContaining('vers l\'aéroport'), findsOneWidget);
+    expect(find.text('Partir vers Gare TGV · 6 pers.'), findsOneWidget);
     bloc = MockShuttleBloc();
-    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport, station]));
-    expect(find.byKey(const Key('stop-choice')), findsOneWidget);
-    expect(find.text('Aéroport'), findsOneWidget);
-    expect(find.text('Gare Saint-Exupéry TGV'), findsOneWidget);
-    expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('stop-s1')));
-    expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttleStopChanged>().having((e) => e.stopId, 'stopId', 's1'));
-    bloc = MockShuttleBloc();
-    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport, station], stopId: 's1'));
-    expect(find.text('Desserte : Gare Saint-Exupéry TGV'), findsOneWidget);
-    expect(find.text('Dépose-minute, côté parvis.'), findsOneWidget);
-    expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsNothing);
+    await show(tester, state.copyWith(selected: const {'d1', 'd3'}));
+    expect(find.text('Partir · 5 pers. · 2 destinations'), findsOneWidget);
+    // « Tout cocher » takes the whole slot.
+    await tester.tap(find.text('Tout cocher'));
+    expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttleSlotToggled>().having((e) => e.reservationIds, 'ids', ['d1', 'd2', 'd3']));
+    // « Retour » loads the other side.
+    await tester.tap(find.byKey(const Key('band-1')));
+    final events = verify(() => bloc.add(captureAny())).captured;
+    expect(events[0], isA<ShuttleDirectionChanged>().having((e) => e.direction, 'direction', 'pickup'));
+    expect(events[1], isA<ShuttleBandChanged>().having((e) => e.band, 'band', 0));
   });
 
   testWidgets('R4 · liste : badges au point de RDV / atterri / vol prévu, sélection, « Partir à l’aéroport · 2 clients »', (tester) async {
     await show(tester, ShuttleState(now: t0, pickups: pickupsModel, selected: const {'r1', 'r2'}));
-    expect(find.text('À récupérer · Terminal 1'), findsOneWidget);
+    expect(find.text('Retour · 3'), findsOneWidget);
     expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsOneWidget);
     expect(find.text('Camille Martin · 2 pass.'), findsOneWidget);
     expect(find.textContaining('Au point de RDV '), findsOneWidget);
     expect(find.textContaining('Atterri '), findsWidgets);
     expect(find.textContaining('Vol prévu '), findsOneWidget);
-    expect(find.text('Partir à l\'aéroport · 2 clients'), findsOneWidget);
+    expect(find.text('Aller chercher à l\'aéroport · 3 pers.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('pickup-r3')));
     expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttlePassengerToggled>().having((e) => e.reservationId, 'id', 'r3'));
   });
 
   testWidgets('R4 · le choix du véhicule puis le démarrage', (tester) async {
     await show(tester, ShuttleState(now: t0, pickups: pickupsModel, selected: const {'r1'}, vehicles: const [ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', plate: 'GH-456-JK')]));
-    expect(find.text('Partir à l\'aéroport · 1 client'), findsOneWidget);
+    expect(find.text('Aller chercher à l\'aéroport · 2 pers.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('start-trip')));
     await tester.pumpAndSettle();
     expect(find.text('Votre navette'), findsOneWidget);
@@ -133,11 +147,11 @@ void main() {
     final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]);
     // F-A: the started trip opens the "En route" band, with the passengers and "Clients récupérés".
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), pickups: pickupsModel, trip: trip, tracking: true, band: 1));
-    expect(find.text('À récupérer · 3'), findsOneWidget);
+    expect(find.text('Retour · 3'), findsOneWidget);
     expect(find.text('En route · 1'), findsOneWidget);
-    expect(find.text('Rendus · 0'), findsOneWidget);
     expect(find.byKey(const Key('trip-running')), findsOneWidget);
     expect(find.text('En route vers l\'aéroport · position partagée'), findsOneWidget);
+    expect(find.textContaining('2 pers. à récupérer'), findsOneWidget);
     // 14/10/2026: « Parti à 09:47 · Vito blanc GH-456-JK », as the validated mockup.
     expect(find.text('Parti à ${hhmm(t0)} · Mercedes Vito blanche GH-456-JK'), findsOneWidget);
     expect(find.textContaining('arrêt automatique dans 1 h 25'), findsOneWidget);
@@ -151,7 +165,9 @@ void main() {
     bloc = MockShuttleBloc();
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), pickups: pickupsModel, trip: trip, tracking: true, band: 0));
     expect(find.text('Sur un trajet'), findsOneWidget);
-    await tester.tap(find.byKey(const Key('band-1')));
+    // While the trip runs, « Aller » waits for its end; « En route » opens it.
+    await tester.tap(find.byKey(const Key('band-0')));
+    await tester.tap(find.byKey(const Key('band-2')));
     expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttleBandChanged>().having((e) => e.band, 'band', 1));
   });
 
@@ -164,18 +180,16 @@ void main() {
       ],
     );
     await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, selected: const {'d1'}));
-    expect(find.text('À emmener · 2'), findsOneWidget);
-    expect(find.text('En séjour · 0'), findsOneWidget);
-    expect(find.text('À conduire au terminal'), findsOneWidget);
-    expect(find.text('À conduire · Gare TGV'), findsOneWidget);
-    expect(find.textContaining('Départ conseillé '), findsNWidgets(2));
+    expect(find.text('Aller · 2'), findsOneWidget);
+    // B (22/10/2026): one slot per advised leave time, the destination on each line.
+    expect(find.textContaining('départ conseillé'), findsNWidgets(2));
+    expect(find.textContaining('vers Gare TGV'), findsOneWidget);
     expect(find.byKey(const Key('on-site-d1')), findsOneWidget);
     expect(find.text('Attendu ${hhmm(t0.add(const Duration(minutes: 50)))}'), findsOneWidget);
     final pill = tester.widget<StatusBadge>(find.byKey(const Key('expected-d2')));
     expect(pill.tone, BadgeTone.warn);
     expect(find.ancestor(of: find.byKey(const Key('departure-d2')), matching: find.byType(Opacity)), findsNothing, reason: 'no greyed look any more');
-    expect(find.text('1 voyageur · 4 pass. coché'), findsOneWidget);
-    expect(find.text('Embarquer et partir · 1 client'), findsOneWidget);
+    expect(find.text('Partir vers l\'aéroport · 4 pers.'), findsOneWidget);
     expect(find.byKey(const Key('not-checked-in')), findsNothing);
     // An expected traveller is ticked like the others.
     await tester.tap(find.byKey(const Key('departure-d2')));
@@ -193,7 +207,7 @@ void main() {
     );
     await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, selected: const {'d1', 'd2'}));
     expect(find.text('Vincent Blanc n\'est pas encore pointé : il passera « Sur place » à l\'embarquement.'), findsOneWidget);
-    expect(find.text('Embarquer et partir · 2 clients'), findsOneWidget);
+    expect(find.text('Partir vers l\'aéroport · 3 pers.'), findsOneWidget);
     bloc = MockShuttleBloc();
     await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, selected: const {'d1', 'd2', 'd3'}));
     expect(find.text('2 clients ne sont pas encore pointés : ils passeront « Sur place » à l\'embarquement.'), findsOneWidget);
@@ -291,21 +305,5 @@ void main() {
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), pickups: pickupsModel, trip: pickupTrip, tracking: true, band: 1));
     expect(find.byKey(const Key('route-on-site-r1')), findsNothing);
     expect(find.byKey(const Key('checked-in-note')), findsNothing);
-  });
-
-  testWidgets('F-A · En séjour : les déposés rangés par jour de retour ; Rendus côté retours', (tester) async {
-    final row = StayingRowModel(reservationId: 's1', reference: 'S1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD', status: 'shuttled_out', returnAt: t0.add(const Duration(days: 2)), returnFlight: 'AF 7642', spot: 'A-07');
-    final staying = StayingModel(serverTime: t0, days: [StayingDayModel(date: '2026-10-05', rows: [row])], returnedToday: [row.copyWith(status: 'back_at_parking', returnedAt: t0)]);
-    await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: DeparturesModel(serverTime: t0), staying: staying, band: 2));
-    expect(find.text('En séjour · 1'), findsOneWidget);
-    expect(find.textContaining('· 1 retour'), findsOneWidget);
-    expect(find.byKey(const Key('staying-s1')), findsOneWidget);
-    expect(find.textContaining('AF 7642'), findsOneWidget);
-    expect(find.text('A-07'), findsOneWidget);
-    bloc = MockShuttleBloc();
-    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, staying: staying, band: 2));
-    expect(find.text('Rendus · 1'), findsOneWidget);
-    expect(find.text('Revenus aujourd\'hui'), findsOneWidget);
-    expect(find.text('De retour au parking'), findsOneWidget);
   });
 }

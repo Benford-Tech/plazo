@@ -1156,7 +1156,7 @@
     "group_leave": "Départ conseillé {}",
     "group_terminal": "Terminal",
     "expected_at": "Attendu {}",
-    "route_none": "Aucun trajet en cours. Cochez des voyageurs dans « {} » puis partez.",
+    "route_none": "Aucun trajet en cours. Cochez des personnes dans « Aller » ou « Retour », puis partez.",
     "route_passengers": "Passagers du trajet",
     "stay_none": "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
     "stay_day": "{} · {} retours",
@@ -1181,7 +1181,35 @@
     "checked_in_note_one": "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « Arrivées à placer », avec ses clés.",
     "checked_in_note_many": "{} voitures pointées à l'embarquement : le voiturier les retrouve dans « Arrivées à placer », avec leurs clés.",
     "unpinned_one": "{}, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.",
-    "unpinned_many": "{}, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations."
+    "unpinned_many": "{}, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations.",
+    "tab_go": "Aller",
+    "tab_back": "Retour",
+    "intro_go": "Les clients à conduire, dans l'ordre du planning. Cochez ceux qui montent, même « Attendu », puis partez : ils suivent votre position.",
+    "intro_go_no_share": "Les clients à conduire, dans l'ordre du planning. Cochez ceux qui montent, même « Attendu », puis partez. Le suivi des navettes est désactivé : votre position n'est pas partagée.",
+    "intro_back": "Les clients à aller chercher, dans l'ordre de leur retour. Cochez ceux que vous récupérez, puis partez : ils suivent votre position.",
+    "intro_back_no_share": "Les clients à aller chercher, dans l'ordre de leur retour. Cochez ceux que vous récupérez, puis partez. Le suivi des navettes est désactivé : votre position n'est pas partagée.",
+    "empty_go": "Personne à conduire pour le moment.",
+    "empty_back": "Personne à aller chercher pour le moment.",
+    "slot_leave": "départ conseillé",
+    "slot_no_time": "Sans heure",
+    "slot_all": "Tout cocher",
+    "slot_none": "Tout décocher",
+    "to_dest": "vers {}",
+    "at_dest": "à {}",
+    "start_none_go": "Cochez les personnes qui montent",
+    "start_none_back": "Cochez les personnes à récupérer",
+    "start_go": "Partir vers {} · {} pers.",
+    "start_back": "Aller chercher à {} · {} pers.",
+    "start_go_many": "Partir · {} pers. · {} destinations",
+    "start_back_many": "Aller chercher {} pers. · {} destinations",
+    "see_trip": "Voir le trajet en cours",
+    "running_to": "En route vers {} · position partagée",
+    "running_to_no_share": "En route vers {} · suivi désactivé",
+    "end_go": "Clients déposés · retour au parking",
+    "end_back": "Tout le monde est à bord · retour au parking",
+    "running_people_go": "{} pers. à bord",
+    "running_people_back": "{} pers. à récupérer",
+    "the_airport": "l'aéroport"
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",
@@ -1309,7 +1337,7 @@
     "vehicle_default": "Navette",
     "to_airport": "aéroport",
     "to_terminal": "terminal",
-    "passengers": "{} client(s)",
+    "passengers": "{} pers.",
     "to_stop_distance": "à {} de la desserte",
     "no_position": "position en attente",
     "since": "partie à {}"
@@ -2146,7 +2174,7 @@
       "pro_welcome_manager": "Le poste de gérant",
       "pro_today": "Le tableau de bord",
       "pro_reservations": "Les réservations",
-      "pro_shuttle": "Ma tournée de navette",
+      "pro_shuttle": "Ma tournée : aller et retour",
       "pro_occupation": "Le parking et les voitures à placer"
     },
     "where": {
@@ -2199,11 +2227,11 @@
       "s1_title": "Votre poste : chauffeur",
       "s1_body": "Trois onglets pour la journée : Navette, Arrivées et Retours. « Plus » garde le reste.",
       "s2_title": "Embarquer en un geste",
-      "s2_body": "Cochez les clients qui montent, même « Attendu », puis « Embarquer et partir ». Le trajet part avec votre véhicule du jour.",
-      "s3_title": "Les retours, vol par vol",
-      "s3_body": "Les vols de retour sont suivis : les clients à récupérer se trient par heure d'atterrissage, avec le point de rendez-vous.",
+      "s2_body": "Dans « Aller », cochez les clients qui montent, même « Attendu », puis partez : la destination vient de leur réservation (terminal, gare…).",
+      "s3_title": "Le retour, pareil",
+      "s3_body": "Dans « Retour », les clients à aller chercher, dans l'ordre de leur retour. Les vols sont suivis : l'heure bouge avec l'atterrissage.",
       "s4_title": "Votre véhicule du jour",
-      "s4_body": "Choisissez-le dans Plus › Mon véhicule. À l'arrivée, terminez le trajet : chaque client passe à l'étape suivante."
+      "s4_body": "Choisissez-le dans Plus › Mon véhicule. À l'arrivée, « Clients déposés » ou « Tout le monde est à bord » : chacun passe à l'étape suivante."
     },
     "pro_welcome_valet": {
       "s1_title": "Votre poste : voiturier",
@@ -2252,14 +2280,12 @@
       "s3_body": "Pour un client au téléphone ou au comptoir. Les mails des comparateurs, eux, arrivent seuls."
     },
     "pro_shuttle": {
-      "s1_title": "Votre tournée en trois bandes",
-      "s1_body": "Les clients passent d'une bande à l'autre : à emmener ou à récupérer, en route, puis en séjour ou rendus.",
-      "s2_title": "La ligne du jour",
-      "s2_body": "Les départs prévus, par vague. « Démarrer ce trajet » coche les clients de la vague.",
-      "s3_title": "Dans quel sens ?",
-      "s3_body": "« Départs · terminal » : les clients à conduire au terminal. « Retours · aéroport » : ceux qui atterrissent, à récupérer.",
-      "s4_title": "Embarquer et partir",
-      "s4_body": "Cochez les clients qui montent, même « Attendu », puis partez avec votre véhicule du jour."
+      "s1_title": "Aller, Retour, En route",
+      "s1_body": "« Aller » : les clients à conduire. « Retour » : ceux à aller chercher. « En route » : votre trajet en cours.",
+      "s2_title": "Dans l'ordre du planning",
+      "s2_body": "Chaque heure regroupe les clients à prendre ensemble, avec leur destination. « Tout cocher » prend tout le créneau.",
+      "s3_title": "Partir",
+      "s3_body": "Le bouton dit où vous allez, d'après les personnes cochées : « Partir vers Gare TGV · 6 pers. ». Il part avec votre véhicule du jour."
     },
     "pro_occupation": {
       "s1_title": "Retrouver une voiture",

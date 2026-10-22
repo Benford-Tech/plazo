@@ -6,18 +6,13 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import {
-  ArrowDownToLine,
-  ArrowUpFromLine,
   BusFront,
   Check,
   CircleCheck,
   Circle,
-  Clock,
   Info,
   MapPin,
   Navigation,
-  TrainFront,
-  Plane,
 } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-context";
@@ -30,13 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { canBoardDropoff, departureRowOf } from "@/lib/boarding";
-import { shortDay, timeAgo, timeOf } from "@/lib/datetime";
-import {
-  describeError,
-  errorMessage,
-  fr,
-  shuttleTripsFr as t,
-} from "@/lib/fr";
+import { timeAgo, timeOf } from "@/lib/datetime";
+import { describeError, errorMessage, fr, shuttleTripsFr as t } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import { shuttleTone } from "@/lib/shuttle-icon";
 import { ShuttleIcon } from "./ShuttleIcon";
@@ -47,10 +37,8 @@ import type {
   PickupRow,
   Reservation,
   ShuttleDirection,
-  ShuttleStop,
   ShuttleVehicle,
   StaffTrip,
-  StayingRow,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -68,12 +56,36 @@ type VehicleChoice =
   | { kind: "known"; id: string }
   | { kind: "free"; model: string; colour: string; plate: string };
 
-/** F-A: the earliest advised leave time of a group of rows. */
-const earliestLeave = (list: { leaveAt?: string }[]) =>
-  list
-    .map((r) => r.leaveAt)
-    .filter((x): x is string => !!x)
-    .sort()[0] ?? null;
+/**
+ * B (22/10/2026): the rows by time slot of the planning (15 minutes, from the advised leave time), soonest first, the
+ * ones without a time last; each slot keeps its earliest leave time.
+ */
+function slotsOf<R extends { leaveAt?: string }>(
+  rows: R[],
+): { key: string; leaveAt: string | null; rows: R[] }[] {
+  const map = new Map<string, R[]>();
+  for (const row of rows) {
+    // Sorts after every date (plain comparison: a collation would put punctuation first).
+    let key = "9999-no-time";
+    if (row.leaveAt) {
+      const d = new Date(row.leaveAt);
+      d.setMinutes(d.getMinutes() - (d.getMinutes() % 15), 0, 0);
+      key = d.toISOString();
+    }
+    map.set(key, [...(map.get(key) ?? []), row]);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, list]) => ({
+      key,
+      leaveAt:
+        list
+          .map((r) => r.leaveAt)
+          .filter((x): x is string => !!x)
+          .sort()[0] ?? null,
+      rows: list,
+    }));
+}
 
 /**
  * The bookings pinned from « Embarquer », as read (undefined until then), and when each was last read or failed to be
@@ -89,22 +101,6 @@ const vehicleLabel = (v: {
   colour: string | null;
   plate: string | null;
 }) => [v.model, v.colour, v.plate].filter(Boolean).join(" · ");
-
-function StopIcon({
-  stop,
-  className,
-}: {
-  stop: ShuttleStop;
-  className?: string;
-}) {
-  const IconC =
-    stop.kind === "airport"
-      ? Plane
-      : stop.kind === "station"
-        ? TrainFront
-        : MapPin;
-  return <IconC className={className} aria-hidden="true" />;
-}
 
 /** "Atterri 10:02 · en chemin" and the like: the badge of a traveller to pick up. */
 function pickupBadge(
@@ -297,19 +293,18 @@ function RunningCard({
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
         </span>
-        {trip.sharePosition === false
-          ? trip.direction === "dropoff"
-            ? r.dropoffNoShare
-            : r.pickupNoShare
-          : trip.direction === "dropoff"
-            ? r.dropoff
-            : r.pickup}
+        {/* 22/10/2026: the real place (« En route vers Gare TGV »), not « le terminal ». */}
+        {(trip.sharePosition === false ? r.toNoShare : r.to)(
+          trip.stop && !trip.stop.builtIn ? trip.stop.name : t.start.theAirport,
+        )}
       </p>
       <p className="mt-1 font-mono text-xs text-muted-foreground">
         {r.leftAt(timeOf(trip.startedAt))} ·{" "}
-        {trip.stop && !trip.stop.builtIn && <>{r.stop(trip.stop.name)} · </>}
         {vehicle && <>{r.vehicle(vehicle)} · </>}
-        {r.passengers(trip.passengers.length)} · {r.left(left)}
+        {(dropoff ? r.peopleGo : r.peopleBack)(
+          trip.passengers.reduce((n, p) => n + p.passengers, 0),
+        )}{" "}
+        · {r.left(left)}
       </p>
       {problem === "denied" && (
         <p className="mt-2 rounded-lg border border-bad bg-bad-soft px-3 py-2 text-[13px] text-bad-text">
@@ -368,7 +363,7 @@ function RunningCard({
         className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full border border-lime-deep font-semibold text-lime-deep hover:bg-panel-2 disabled:opacity-50"
       >
         <Check className="h-4 w-4" aria-hidden="true" />
-        {trip.direction === "dropoff" ? r.endDropoff : r.endPickup}
+        {dropoff ? r.endGo : r.endBack}
       </button>
     </section>
   );
@@ -516,6 +511,8 @@ function PickupTile({
   const badge = pickupBadge(row, onTrip);
   const f = row.flight;
   const details = [
+    // 22/10/2026: where this traveller waits (their booking's stop, the airport by default).
+    s.atDest(row.stopName ?? s.theAirport),
     f.gate ? s.gate(f.gate) : null,
     f.number ? s.flight(f.number) : null,
   ]
@@ -594,6 +591,8 @@ function DepartureTile({
     row.arrivedAt
       ? s.arrivedAt(timeOf(row.arrivedAt))
       : s.arrivalPlanned(timeOf(row.arrivalAt)),
+    // 22/10/2026: where this traveller goes (their booking's stop, the airport by default).
+    s.toDest(row.stopName ?? s.theAirport),
     row.spot ? s.spot(row.spot) : null,
   ]
     .filter(Boolean)
@@ -647,71 +646,46 @@ function DepartureTile({
   );
 }
 
-/** F-A: "Terminal 1" with, under it, "Départ conseillé 10:05" (the earliest leave time of the group). */
-function GroupHeader({
-  title,
+/** B: « 14:30 départ conseillé » and « Tout cocher » / « Tout décocher » for the slot. */
+function SlotHeader({
   leaveAt,
+  allSelected,
+  enabled,
+  onToggle,
 }: {
-  title: string;
   leaveAt: string | null;
+  allSelected: boolean;
+  enabled: boolean;
+  onToggle: () => void;
 }) {
+  const s = t.start;
   return (
-    <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">
-      {title}
-      {leaveAt && (
-        <span className="ml-2 inline-flex items-center gap-1 font-sans text-xs font-semibold text-lime-deep">
-          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-          {t.start.leaveAt(timeOf(leaveAt))}
-        </span>
+    <div className="mb-1.5 flex items-center gap-2 px-1">
+      <h3 className="flex-1 font-mono text-[17px] font-semibold text-lime-deep">
+        {leaveAt ? timeOf(leaveAt) : s.slotNoTime}
+        {leaveAt && (
+          <span className="ml-2 font-sans text-xs font-medium text-muted-foreground">
+            {s.slotLeave}
+          </span>
+        )}
+      </h3>
+      {enabled && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="min-h-9 rounded-full px-2.5 text-[13px] font-semibold text-lime-deep hover:bg-panel-2"
+        >
+          {allSelected ? s.slotNone : s.slotAll}
+        </button>
       )}
-    </h3>
-  );
-}
-
-/** F-A: a traveller away (band "En séjour") or back today (band "Rendus"): spot, name, return flight and time, status. */
-function StayingTile({ row }: { row: StayingRow }) {
-  const details = [
-    row.returnFlight ?? row.stopName,
-    timeOf(row.returnedAt ?? row.returnAt),
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  return (
-    <li
-      data-testid="staying-row"
-      className="flex items-center gap-3 rounded-xl border border-panel-line bg-panel px-3 py-2"
-    >
-      {row.spot && (
-        <span className="rounded-md bg-panel-2 px-1.5 py-0.5 font-mono text-xs font-bold">
-          {row.spot}
-        </span>
-      )}
-      <Link
-        to={`/reservations/${row.reservationId}`}
-        className="min-w-0 flex-1 truncate text-[14px] font-semibold hover:underline"
-      >
-        {row.customerName}{" "}
-        <span className="font-normal text-muted-foreground">· {details}</span>
-      </Link>
-      <Plate value={row.plate} size="sm" />
-      <Badge
-        tone={
-          row.status === "shuttled_out" || row.status === "return_requested"
-            ? "info"
-            : "ok"
-        }
-      >
-        {fr.status[row.status as keyof typeof fr.status] ?? row.status}
-      </Badge>
-      <CardLink id={row.reservationId} />
-    </li>
+    </div>
   );
 }
 
 /**
- * The driver's screen on the web (06/10/2026), the same as the Navette tab of Plazo Pro: the team's
- * shuttles on the road, my trip in progress (position shared by the browser), and "Démarrer un
- * trajet" for the returns to fetch at the airport or the arrived travellers to drop at the terminal.
+ * The driver's screen on the web (06/10/2026), the same as the Navette tab of Plazo Pro. B (22/10/2026): « Aller » (the
+ * travellers to take, by time slot of the planning), « Retour » (the ones to fetch) and « En route » (the team's shuttles,
+ * my trip with its position shared by the browser); the destination is each booking's own stop, nothing to pick first.
  */
 export default function ShuttleTripsPanel() {
   const confirm = useConfirm();
@@ -719,6 +693,7 @@ export default function ShuttleTripsPanel() {
   const queryClient = useQueryClient();
   const mayDrive = can(user?.role, "reservations:status");
   const mayManage = can(user?.role, "reservations:manage");
+  const s0 = t.start;
   const [now, setNow] = useState(() => Date.now());
   // Opened from a booking's card (C-A): "?sens=dropoff&reservation=…" preselects the side and the traveller.
   const [params, setParams] = useSearchParams();
@@ -727,7 +702,6 @@ export default function ShuttleTripsPanel() {
   const [direction, setDirection] = useState<ShuttleDirection>(
     wantedSide === "dropoff" ? "dropoff" : "pickup",
   );
-  const [stopId, setStopId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   // Travellers added from a booking's « Embarquer » whom the drop-off list does not hold (an early or late one).
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
@@ -742,8 +716,8 @@ export default function ShuttleTripsPanel() {
     dayVehicleId ? { kind: "known", id: dayVehicleId } : null,
   );
   const [endedNotice, setEndedNotice] = useState(false);
-  // F-A: the band shown; a trip starting opens "En route", its end goes back to the first band.
-  const [band, setBand] = useState<0 | 1 | 2>(0);
+  // The list or « En route »; a trip starting opens « En route », its end goes back to the list.
+  const [band, setBand] = useState<0 | 1>(0);
   const [problem, setProblem] = useState<"denied" | "unavailable" | null>(null);
 
   useEffect(() => {
@@ -769,30 +743,20 @@ export default function ShuttleTripsPanel() {
   const pickups = useQuery({
     queryKey: ["shuttle-pickups"],
     queryFn: adminApi.getPickups,
-    enabled: mayDrive && direction === "pickup",
+    // B: both lists, for the counts of « Aller » and « Retour ».
+    enabled: mayDrive,
     refetchInterval: LIST_POLL_MS,
   });
   const departures = useQuery({
     queryKey: ["shuttle-departures"],
     queryFn: adminApi.getDepartures,
-    enabled: mayDrive && direction === "dropoff",
+    enabled: mayDrive,
     refetchInterval: LIST_POLL_MS,
   });
   const vehicles = useQuery({
     queryKey: ["shuttle-vehicles"],
     queryFn: adminApi.getVehicles,
     enabled: mayDrive,
-  });
-  const stops = useQuery({
-    queryKey: ["shuttle-stops"],
-    queryFn: adminApi.getStops,
-    enabled: mayDrive,
-  });
-  const staying = useQuery({
-    queryKey: ["shuttle-staying"],
-    queryFn: adminApi.getStaying,
-    enabled: mayDrive,
-    refetchInterval: LIST_POLL_MS,
   });
 
   const trip = current.data?.trip ?? null;
@@ -982,9 +946,7 @@ export default function ShuttleTripsPanel() {
     if (wanted || running || !listLoaded) return;
     const ids = new Set(tickable.split(","));
     const keep = (list: string[]) =>
-      list.every((id) => ids.has(id))
-        ? list
-        : list.filter((id) => ids.has(id));
+      list.every((id) => ids.has(id)) ? list : list.filter((id) => ids.has(id));
     // After a refused start, the travellers added by hand that leave the selection are named (as in Plazo Pro).
     const refused = refusal.current;
     const gone = refused
@@ -1005,8 +967,7 @@ export default function ShuttleTripsPanel() {
       refused.names.has(id) ? [pinnedReadAt[i] ?? 0] : [],
     );
     const listRead =
-      Math.max(listQuery.dataUpdatedAt, listQuery.errorUpdatedAt) >=
-      refused.at;
+      Math.max(listQuery.dataUpdatedAt, listQuery.errorUpdatedAt) >= refused.at;
     if (left.length === 0 || (listRead && left.every((at) => at >= refused.at)))
       refusal.current = null;
   }, [
@@ -1032,7 +993,8 @@ export default function ShuttleTripsPanel() {
       adminApi.startTrip({
         reservationIds: selected,
         direction,
-        stopId,
+        // 22/10/2026: where the ticked travellers go (their bookings' stop), not a stop the driver picks.
+        stopId: selectedStopId,
         vehicleId: vehicle?.kind === "known" ? vehicle.id : null,
         vehicle:
           vehicle?.kind === "free" && vehicle.model.trim()
@@ -1088,8 +1050,6 @@ export default function ShuttleTripsPanel() {
     onError: (error) => toast.error(describeError(error)),
   });
 
-  const stopList = stops.data?.data ?? [];
-  const chosenStop = stopList.find((s) => s.id === stopId) ?? null;
   const vehicleList = vehicles.data?.data ?? [];
   const selectedPassengers = rows
     .filter((r) => selected.includes(r.reservationId))
@@ -1101,57 +1061,83 @@ export default function ShuttleTripsPanel() {
           (r) => selected.includes(r.reservationId) && r.status === "upcoming",
         )
       : [];
-  const groups = useMemo(() => {
-    if (direction !== "pickup") return [];
-    const map = new Map<string, PickupRow[]>();
-    for (const row of pickups.data?.rows ?? []) {
-      const key = row.terminal ?? t.start.noTerminal;
-      map.set(key, [...(map.get(key) ?? []), row]);
-    }
-    return [...map.entries()].map(([terminal, list]) => ({
-      title: t.start.toPickUp(terminal),
-      leaveAt: earliestLeave(list),
-      list,
-    }));
-  }, [direction, pickups.data]);
-  // F-A: the arrived travellers by stop ("À conduire au terminal", "À conduire · Gare TGV"), soonest leave time first.
-  const dropoffGroups = useMemo(() => {
-    if (direction !== "dropoff") return [];
-    const map = new Map<string, DepartureRow[]>();
-    for (const row of departureRows) {
-      const key = row.stopName ?? "";
-      map.set(key, [...(map.get(key) ?? []), row]);
-    }
-    return [...map.entries()]
-      .map(([stop, list]) => ({
-        title: stop ? t.start.toDropOffStop(stop) : t.start.toDropOff,
-        leaveAt: earliestLeave(list),
-        list,
-      }))
-      .sort((a, b) => (a.leaveAt ?? "9").localeCompare(b.leaveAt ?? "9"));
-  }, [direction, departureRows]);
-  const stayingDays = staying.data?.days ?? [];
-  const returnedToday = staying.data?.returnedToday ?? [];
-  const counts: [number, number, number] = [
-    rows.length,
-    running && trip ? trip.passengers.length : 0,
-    direction === "dropoff"
-      ? stayingDays.reduce((n, d) => n + d.rows.length, 0)
-      : returnedToday.length,
-  ];
-  const bandLabels = [
-    direction === "dropoff"
-      ? t.start.bandTake(counts[0])
-      : t.start.bandFetch(counts[0]),
-    t.start.bandRoute(counts[1]),
-    direction === "dropoff"
-      ? t.start.bandStay(counts[2])
-      : t.start.bandBack(counts[2]),
+  // Where the ticked travellers go: one stop for all, else none (the airport, or a mix).
+  const selectedRows = rows.filter((r) => selected.includes(r.reservationId));
+  const destinations = [...new Set(selectedRows.map((r) => r.stopId ?? ""))];
+  const selectedStopId =
+    destinations.length === 1 && destinations[0] ? destinations[0] : null;
+  const selectedStopName =
+    selectedRows.find((r) => r.stopId === selectedStopId)?.stopName ?? null;
+  const slots = useMemo(() => slotsOf<PickupRow | DepartureRow>(rows), [rows]);
+  const counts = {
+    go: departures.data ? departureRows.length : null,
+    back: pickups.data ? pickups.data.rows.length : null,
+    route: running && trip ? trip.passengers.length : 0,
+  };
+  const tabs: {
+    key: string;
+    label: string;
+    active: boolean;
+    locked: boolean;
+    open: () => void;
+  }[] = [
+    {
+      key: "go",
+      label: s0.tabGo(counts.go),
+      active: band === 0 && direction === "dropoff",
+      locked: !!running && trip?.direction !== "dropoff",
+      open: () => openSide("dropoff"),
+    },
+    {
+      key: "back",
+      label: s0.tabBack(counts.back),
+      active: band === 0 && direction === "pickup",
+      locked: !!running && trip?.direction !== "pickup",
+      open: () => openSide("pickup"),
+    },
+    {
+      key: "route",
+      label: s0.bandRoute(counts.route),
+      active: band === 1,
+      locked: false,
+      open: () => setBand(1),
+    },
   ];
   const listError = direction === "pickup" ? pickups.error : departures.error;
   const listLoading =
     direction === "pickup" ? pickups.isPending : departures.isPending;
 
+  // « Aller » / « Retour »: that side, a new selection (a trip running keeps its side).
+  function openSide(side: ShuttleDirection) {
+    setBand(0);
+    if (side === direction) return;
+    setDirection(side);
+    setSelected([]);
+    setPinnedIds([]);
+  }
+  const toggleSlot = (ids: string[]) => {
+    const free = ids.filter((id) =>
+      rows.some((r) => r.reservationId === id && !r.tripId),
+    );
+    if (free.length === 0) return;
+    const all = free.every((id) => selected.includes(id));
+    setSelected((list) =>
+      all
+        ? list.filter((id) => !free.includes(id))
+        : [...list, ...free.filter((id) => !list.includes(id))],
+    );
+  };
+  const startLabel = () => {
+    const people = selectedPassengers;
+    if (destinations.length > 1)
+      return direction === "dropoff"
+        ? s0.startGoMany(people, destinations.length)
+        : s0.startBackMany(people, destinations.length);
+    const where = selectedStopName ?? s0.theAirport;
+    return direction === "dropoff"
+      ? s0.startGo(where, people)
+      : s0.startBack(where, people);
+  };
   const toggle = (id: string) => {
     // A traveller pinned from a booking leaves with their tick.
     if (selected.includes(id))
@@ -1206,70 +1192,9 @@ export default function ShuttleTripsPanel() {
         {s.title}
       </h2>
       {notices}
-      {!running && (
-        <p className="px-1 text-[13px] text-muted-foreground">
-          {direction === "dropoff" ? s.introDropoff : s.introPickup}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-2 px-1" role="tablist">
-        {(["pickup", "dropoff"] as const).map((d) => {
-          const IconC = d === "pickup" ? ArrowDownToLine : ArrowUpFromLine;
-          return (
-            <button
-              key={d}
-              type="button"
-              role="tab"
-              aria-selected={direction === d}
-              disabled={running}
-              onClick={() => {
-                setDirection(d);
-                setSelected([]);
-                setPinnedIds([]);
-              }}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-60",
-                direction === d
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-panel-line bg-panel text-muted-foreground hover:bg-panel-2",
-              )}
-            >
-              <IconC className="h-4 w-4" aria-hidden="true" />
-              {s.direction[d]}
-            </button>
-          );
-        })}
-        {stopList.length > 1 && (
-          <span
-            className="ml-auto flex flex-wrap items-center gap-1.5"
-            data-testid="stop-choice"
-          >
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {s.stop}
-            </span>
-            {stopList.map((stop) => {
-              const selectedStop = stop.id === stopId;
-              return (
-                <button
-                  key={stop.id ?? "airport"}
-                  type="button"
-                  aria-pressed={selectedStop}
-                  disabled={running}
-                  onClick={() => setStopId(stop.id)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-full border px-2.5 py-1 font-mono text-xs font-semibold disabled:opacity-60",
-                    selectedStop
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-panel-line bg-panel hover:bg-panel-2",
-                  )}
-                >
-                  <StopIcon stop={stop} className="h-3.5 w-3.5" />
-                  {stop.builtIn ? s.airport : stop.name}
-                </button>
-              );
-            })}
-          </span>
-        )}
-      </div>
+      <p className="px-1 text-[13px] text-muted-foreground">
+        {direction === "dropoff" ? s.introGo : s.introBack}
+      </p>
 
       {direction === "pickup" && (
         <p className="flex items-start gap-1.5 px-1 text-[13px]">
@@ -1278,16 +1203,7 @@ export default function ShuttleTripsPanel() {
             aria-hidden="true"
           />
           <span>
-            {chosenStop && !chosenStop.builtIn ? (
-              <>
-                <b>{t.running.stop(chosenStop.name)}</b>
-                {chosenStop.instructions && (
-                  <span className="block text-muted-foreground">
-                    {chosenStop.instructions}
-                  </span>
-                )}
-              </>
-            ) : pickups.data?.meetingPoint?.label ? (
+            {pickups.data?.meetingPoint?.label ? (
               <b>{s.meetingPoint(pickups.data.meetingPoint.label)}</b>
             ) : (
               <span className="text-muted-foreground">
@@ -1308,62 +1224,52 @@ export default function ShuttleTripsPanel() {
         <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">
           {direction === "pickup" ? s.emptyPickup : s.emptyDropoff}
         </p>
-      ) : direction === "pickup" ? (
-        groups.map((group) => (
-          <div key={group.title}>
-            <GroupHeader title={group.title} leaveAt={group.leaveAt} />
-            <ul className="space-y-1.5">
-              {group.list.map((row) => (
-                <PickupTile
-                  key={row.reservationId}
-                  row={row}
-                  selected={selected.includes(row.reservationId)}
-                  onTrip={
-                    !!running &&
-                    !!trip?.passengers.some(
-                      (p) => p.reservationId === row.reservationId,
-                    )
-                  }
-                  selectable={!running && !row.tripId}
-                  onToggle={() => toggle(row.reservationId)}
-                />
-              ))}
-            </ul>
-          </div>
-        ))
       ) : (
-        dropoffGroups.map((group) => (
-          <div key={group.title}>
-            <GroupHeader title={group.title} leaveAt={group.leaveAt} />
-            <ul className="space-y-1.5">
-              {group.list.map((row) => (
-                <DepartureTile
-                  key={row.reservationId}
-                  row={row}
-                  selected={selected.includes(row.reservationId)}
-                  onTrip={
+        slots.map((slot) => {
+          const ids = slot.rows.map((r) => r.reservationId);
+          return (
+            <div key={slot.key} data-testid="slot">
+              <SlotHeader
+                leaveAt={slot.leaveAt}
+                allSelected={ids.every((id) => selected.includes(id))}
+                enabled={!running}
+                onToggle={() => toggleSlot(ids)}
+              />
+              <ul className="space-y-1.5">
+                {slot.rows.map((row) => {
+                  const onTrip =
                     !!running &&
                     !!trip?.passengers.some(
                       (p) => p.reservationId === row.reservationId,
-                    )
-                  }
-                  selectable={!running && !row.tripId}
-                  pinned={pinnedRowIds.has(row.reservationId)}
-                  onToggle={() => toggle(row.reservationId)}
-                />
-              ))}
-            </ul>
-          </div>
-        ))
+                    );
+                  return direction === "pickup" ? (
+                    <PickupTile
+                      key={row.reservationId}
+                      row={row as PickupRow}
+                      selected={selected.includes(row.reservationId)}
+                      onTrip={onTrip}
+                      selectable={!running && !row.tripId}
+                      onToggle={() => toggle(row.reservationId)}
+                    />
+                  ) : (
+                    <DepartureTile
+                      key={row.reservationId}
+                      row={row as DepartureRow}
+                      selected={selected.includes(row.reservationId)}
+                      onTrip={onTrip}
+                      selectable={!running && !row.tripId}
+                      pinned={pinnedRowIds.has(row.reservationId)}
+                      onToggle={() => toggle(row.reservationId)}
+                    />
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })
       )}
       {!running && selected.length > 0 && (
         <>
-          <p
-            data-testid="selected-summary"
-            className="px-1 text-center text-[13px] text-muted-foreground"
-          >
-            {s.selectedSummary(selected.length, selectedPassengers)}
-          </p>
           {notCheckedIn.length > 0 && (
             <p
               data-testid="not-checked-in"
@@ -1386,17 +1292,13 @@ export default function ShuttleTripsPanel() {
             className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
           >
             <BusFront className="h-5 w-5" aria-hidden="true" />
-            {start.isPending
-              ? s.starting
-              : direction === "dropoff"
-                ? s.dropoff(selected.length)
-                : s.pickup(selected.length)}
+            {start.isPending ? s.starting : startLabel()}
           </button>
         </>
       )}
       {!running && selected.length === 0 && rows.length > 0 && (
         <p className="px-1 text-center text-[13px] text-muted-foreground">
-          {s.none}
+          {direction === "dropoff" ? s.noneGo : s.noneBack}
         </p>
       )}
       {running && (
@@ -1431,59 +1333,11 @@ export default function ShuttleTripsPanel() {
           data-testid="route-none"
           className="rounded-xl border border-panel-line bg-panel p-4 text-center text-sm text-muted-foreground"
         >
-          {s.routeNone(
-            direction === "dropoff" ? s.bandTakeName : s.bandFetchName,
-          )}
+          {s.routeNone}
         </p>
       )}
     </>
   );
-
-  // Band 3: "En séjour" by return day on the drop-off side, "Rendus" today on the pick-up side.
-  const stayBand =
-    direction === "dropoff" ? (
-      stayingDays.length === 0 ? (
-        <p
-          data-testid="stay-none"
-          className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground"
-        >
-          {s.stayNone}
-        </p>
-      ) : (
-        stayingDays.map((day) => (
-          <div key={day.date}>
-            <h3 className="mb-1.5 px-1 font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {s.stayDay(shortDay(day.date), day.rows.length)}
-            </h3>
-            <ul className="space-y-1.5">
-              {day.rows.map((row) => (
-                <StayingTile key={row.reservationId} row={row} />
-              ))}
-            </ul>
-          </div>
-        ))
-      )
-    ) : (
-      <div>
-        <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">
-          {s.backToday}
-        </h3>
-        {returnedToday.length === 0 ? (
-          <p
-            data-testid="back-none"
-            className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground"
-          >
-            {s.backNone}
-          </p>
-        ) : (
-          <ul className="space-y-1.5">
-            {returnedToday.map((row) => (
-              <StayingTile key={row.reservationId} row={row} />
-            ))}
-          </ul>
-        )}
-      </div>
-    );
 
   return (
     <div className="space-y-3">
@@ -1500,32 +1354,33 @@ export default function ShuttleTripsPanel() {
           data-testid="start-trip"
           className="space-y-3"
         >
-          {/* F-A: three bands that the travellers move through as the driver ticks them. */}
+          {/* B: « Aller · Retour · En route ». */}
           <div
             role="tablist"
             aria-label={s.tourTitle}
             className="grid grid-cols-3 gap-1.5 rounded-xl border border-panel-line bg-panel p-1.5"
           >
-            {bandLabels.map((label, i) => (
+            {tabs.map((tab) => (
               <button
-                key={label}
+                key={tab.key}
                 type="button"
                 role="tab"
-                data-testid={`band-${i}`}
-                aria-selected={band === i}
-                onClick={() => setBand(i as 0 | 1 | 2)}
+                data-testid={`tab-${tab.key}`}
+                aria-selected={tab.active}
+                disabled={tab.locked}
+                onClick={tab.open}
                 className={cn(
-                  "truncate rounded-full px-2 py-2 text-[13px] font-semibold",
-                  band === i
+                  "truncate rounded-full px-2 py-2 text-[13px] font-semibold disabled:opacity-40",
+                  tab.active
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-panel-2",
                 )}
               >
-                {label}
+                {tab.label}
               </button>
             ))}
           </div>
-          {band === 0 ? tourBand : band === 1 ? routeBand : stayBand}
+          {band === 0 ? tourBand : routeBand}
         </section>
       )}
     </div>

@@ -142,8 +142,7 @@ abstract final class Tutorials {
     tab: 'ptab-shuttle',
     steps: [
       TutorialStep(targets: ['shuttle-bands']),
-      TutorialStep(targets: ['shuttle-waves']),
-      TutorialStep(targets: ['direction-toggle']),
+      TutorialStep(targets: ['slot-0']),
       TutorialStep(targets: ['start-trip']),
     ],
   );
