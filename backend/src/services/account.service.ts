@@ -1,7 +1,14 @@
 import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { BCRYPT_ROUNDS, EMAIL_VERIFICATION_TTL_HOURS, INVITATION_TTL_DAYS, PRODUCT_NAME } from '@/config';
+import {
+  BCRYPT_ROUNDS,
+  EMAIL_VERIFICATION_TTL_HOURS,
+  INVITATION_TTL_DAYS,
+  PLAZO_PRO_APP_STORE_URL,
+  PLAZO_PRO_PLAY_STORE_URL,
+  PRODUCT_NAME,
+} from '@/config';
 import prisma from '@/database';
 import { existingAccountEmail, invitationEmail, verificationEmail } from '@/domain/account-messages';
 import { AcceptInvitationDto, SignupDto } from '@/dtos/auth.dto';
@@ -161,7 +168,14 @@ export class AccountService {
       staff,
       'invitation',
       `staff ${staff.id}`,
-      invitationEmail(PRODUCT_NAME, { operatorName, url, days: INVITATION_TTL_DAYS }),
+      invitationEmail(PRODUCT_NAME, {
+        operatorName,
+        url,
+        days: INVITATION_TTL_DAYS,
+        demoUrl: this.notifications.siteUrl('/pro/demo'),
+        playStoreUrl: PLAZO_PRO_PLAY_STORE_URL,
+        appStoreUrl: PLAZO_PRO_APP_STORE_URL,
+      }),
     );
     return { emailSent: sent, expiresAt, ...(sent ? {} : { inviteUrl: url }) };
   }
