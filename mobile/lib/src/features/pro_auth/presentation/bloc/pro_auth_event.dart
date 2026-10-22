@@ -46,7 +46,7 @@ class ProAuthSessionExpired extends ProAuthEvent {
   const ProAuthSessionExpired();
 }
 
-/// The sign-ins this phone offers (Apple on iPhone, Google on Android, and the API's keys).
+/// The sign-ins this phone offers (Apple on iPhone, Google on Android and iPhone, and the API's keys).
 class ProAuthProvidersRequested extends ProAuthEvent {
   const ProAuthProvidersRequested();
 }

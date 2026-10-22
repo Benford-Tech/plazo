@@ -37,6 +37,11 @@ abstract final class AppConstants {
   /// secret). Empty: no Google button.
   static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
+  /// Google sign-in on iPhone (22/10/2026): the « iOS » OAuth client id of the same Google Cloud project, for the bundle
+  /// com.benfordtech.plazopro (public; codemagic.yaml adds its reversed form as the URL scheme Google returns to). Empty:
+  /// no Google button on iPhone.
+  static const googleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+
   /// « Rejoindre un parking »: the waiting screen asks the API every 10 s whether a manager answered.
   static const joinPollInterval = Duration(seconds: 10);
 

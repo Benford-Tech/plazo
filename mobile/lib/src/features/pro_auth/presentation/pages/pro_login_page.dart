@@ -17,7 +17,7 @@ import '../bloc/pro_auth_bloc.dart';
 /// connexion », mockups https://claude.ai/artifact/2hNzBfHaph589Vdhjing8h, « Un champ à la fois »; replaces choice A of the
 /// morning): a full lime screen with the pro wordmark, then a white sheet that asks one thing at a time: the email
 /// address, then the password on a second step (« Changer d'adresse e-mail » goes back). Apple on an iPhone, Google on
-/// Android (13/10/2026), when the build and the API allow it, sit under the email step; « Nouveau ? J'ai un code du
+/// Android (13/10/2026) and on an iPhone (22/10/2026), when the build and the API allow it, sit under the email step; « Nouveau ? J'ai un code du
 /// jour » explains how to join a parking. The app serves many car parks: nothing names one before the sign-in.
 @RoutePage()
 class ProLoginPage extends StatefulWidget {

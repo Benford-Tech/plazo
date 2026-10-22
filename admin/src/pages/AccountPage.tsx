@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { MorningEmailCard } from "@/components/account/MorningEmailCard";
+import { SignInMethodsCard } from "@/components/account/SignInMethodsCard";
 import { TravellerSms } from "@/components/account/TravellerSms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +153,7 @@ export default function AccountPage() {
           </form>
         </CardContent>
       </Card>
+      <SignInMethodsCard />
       <TravellerSms />
     </>
   );

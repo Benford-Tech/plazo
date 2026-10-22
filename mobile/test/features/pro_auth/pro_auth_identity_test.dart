@@ -492,7 +492,10 @@ void main() {
       expect(NativeIdentitySignInService(appleEnabled: true, platform: TargetPlatform.android).appleSupported, isFalse);
       expect(NativeIdentitySignInService(googleServerClientId: 'web.apps.googleusercontent.com', platform: TargetPlatform.android).googleSupported, isTrue);
       expect(NativeIdentitySignInService(googleServerClientId: '', platform: TargetPlatform.android).googleSupported, isFalse);
-      expect(NativeIdentitySignInService(googleServerClientId: 'x', platform: TargetPlatform.iOS).googleSupported, isFalse);
+      // iPhone (22/10/2026): the Web client and the iOS client are both needed.
+      expect(NativeIdentitySignInService(googleServerClientId: 'x', googleIosClientId: '', platform: TargetPlatform.iOS).googleSupported, isFalse);
+      expect(NativeIdentitySignInService(googleServerClientId: '', googleIosClientId: 'ios', platform: TargetPlatform.iOS).googleSupported, isFalse);
+      expect(NativeIdentitySignInService(googleServerClientId: 'x', googleIosClientId: 'ios', platform: TargetPlatform.iOS).googleSupported, isTrue);
     });
 
     test('nonce : aléatoire, et son SHA-256 en hexadécimal pour Apple', () {

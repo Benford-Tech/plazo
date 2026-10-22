@@ -81,6 +81,9 @@ import type {
   ReservationInput,
   ReservationStatus,
   Staff,
+  AuthProviders,
+  IdentityProvider,
+  IdentitySignIn,
   StaffRole,
   JoinCode,
   JoinRequest,
@@ -316,6 +319,22 @@ export const adminApi = {
       body: json({ email, password }),
     }),
   logout: () => apiRequest<void>("/internal/auth/logout", { method: "POST" }),
+  /** 22/10/2026: which sign-ins the API verifies, with the Web client ID for Google's button. */
+  authProviders: () => apiRequest<AuthProviders>("/internal/auth/providers"),
+  /** « Continuer avec Google »: a member's session, or an onboarding one (a Google account in no team yet). */
+  googleSignIn: (idToken: string) =>
+    apiRequest<IdentitySignIn>("/internal/auth/google", { method: "POST", body: json({ idToken }) }),
+  /** Ends the onboarding session the web cannot use (joining a team is done in Plazo Pro). */
+  onboardingLogout: (onboardingToken: string) =>
+    apiRequest<void>("/internal/auth/onboarding/logout", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${onboardingToken}` },
+    }),
+  /** Mon compte › Connexion: link one's Google account, or unlink Apple / Google. */
+  linkGoogle: (idToken: string) =>
+    apiRequest<{ user: Staff }>("/internal/staff/me/identities/google", { method: "POST", body: json({ idToken }) }),
+  unlinkIdentity: (provider: IdentityProvider) =>
+    apiRequest<{ user: Staff }>(`/internal/staff/me/identities/${provider}`, { method: "DELETE" }),
   /** 21/10/2026: the prospects' demo in a role, with the prospect's own link when there is one. */
   enterDemo: (role: DemoRole, token?: string) =>
     apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/demo", {

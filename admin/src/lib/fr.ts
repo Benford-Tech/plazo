@@ -439,6 +439,13 @@ export const fr = {
     invalidEmail: "Adresse e-mail invalide.",
     help: "Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.",
     step: (n: number) => `Étape ${n} sur 2`,
+    or: "ou",
+    googleNotMember:
+      "Ce compte Google n'est lié à aucun parking. Connectez-vous avec votre e-mail puis liez Google dans Mon compte, ou rejoignez une équipe avec le code du jour dans l'app Plazo Pro.",
+  },
+  // « Continuer avec Google » (22/10/2026).
+  google: {
+    unavailable: "La connexion avec Google ne se charge pas. Vérifiez votre connexion ou utilisez votre e-mail.",
   },
   signup: {
     title: "Inscrire mon parking",
@@ -1073,6 +1080,18 @@ export const fr = {
     },
   },
   account: {
+    // Mon compte › Connexion (22/10/2026).
+    signIn: {
+      title: "Connexion",
+      password: "E-mail et mot de passe",
+      provider: { apple: "Apple", google: "Google" } as Record<"apple" | "google", string>,
+      unlink: "Délier",
+      unlinkTitle: (provider: string) => `Ne plus se connecter avec ${provider} ?`,
+      unlinkMessage: "Vous pourrez le lier de nouveau à tout moment.",
+      linkGoogleHelp: "Liez votre compte Google pour vous connecter en un clic, ici et dans Plazo Pro.",
+      linked: "Compte Google lié.",
+      unlinked: "Connexion retirée.",
+    },
     title: "Mon compte",
     // 09/10/2026: one's own first and last name.
     nameTitle: "Votre nom",
