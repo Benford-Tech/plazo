@@ -251,6 +251,18 @@ describe('API publique', () => {
     expect(raw).not.toMatch(/operatorId|parkingId|totalCapacity|email/);
   });
 
+  it('montre le parking de test de la plateforme comme une démo, pour le garder hors du sitemap et de Google', async () => {
+    const test = await publishedOperator('Plazo', 'parking-test-plazo');
+    await prisma.operator.update({ where: { id: test.operator.id }, data: { name: 'Plazo (tests)' } });
+    await publishedOperator('Parking A', 'parking-a');
+    const res = await api().get('/api/public/airports/lyon-saint-exupery');
+    const bySlug = Object.fromEntries(res.body.listings.map((l: { slug: string; isDemo: boolean }) => [l.slug, l.isDemo]));
+    expect(bySlug).toEqual({ 'parking-test-plazo': true, 'parking-a': false });
+    expect(JSON.stringify(res.body)).not.toContain('Plazo (tests)');
+    const one = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-test-plazo');
+    expect(one.body.parking.isDemo).toBe(true);
+  });
+
   it('cherche par séjour : prix total, disponibles d’abord puis les moins chers', async () => {
     await publishedOperator('Cher', 'cher', { tiers: [{ days: 7, priceCents: 9000 }], extraDayPriceCents: 1000 });
     await publishedOperator('Malin', 'malin');
