@@ -1309,7 +1309,7 @@ export default function ShuttleTripsPanel() {
           className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-lime-deep font-semibold text-lime-deep hover:bg-panel-2"
         >
           <BusFront className="h-4 w-4" aria-hidden="true" />
-          {s.bandRoute(counts[1])}
+          {s.bandRoute(counts.route)}
         </button>
       )}
     </>
