@@ -445,7 +445,8 @@ export const fr = {
   },
   // « Continuer avec Google » (22/10/2026).
   google: {
-    unavailable: "La connexion avec Google ne se charge pas. Vérifiez votre connexion ou utilisez votre e-mail.",
+    unavailable:
+      "La connexion avec Google ne se charge pas. Vérifiez votre connexion ou utilisez votre e-mail.",
   },
   signup: {
     title: "Inscrire mon parking",
@@ -833,6 +834,9 @@ export const fr = {
       toStop: (name: string, min: number) => `${name} dans ${min} min`,
       toParking: (min: number) => `parking dans ${min} min`,
       noPosition: "position inconnue",
+      // Direction B (23/10/2026): the plates on the map.
+      noPositionShort: "sans position",
+      persons: (n: number) => `${n} pers.`,
       open: "Ouvrir les retours",
       shuttle: (n: number) => `Navette ${String(n).padStart(2, "0")}`,
       since: (at: Date) =>
@@ -1084,11 +1088,16 @@ export const fr = {
     signIn: {
       title: "Connexion",
       password: "E-mail et mot de passe",
-      provider: { apple: "Apple", google: "Google" } as Record<"apple" | "google", string>,
+      provider: { apple: "Apple", google: "Google" } as Record<
+        "apple" | "google",
+        string
+      >,
       unlink: "Délier",
-      unlinkTitle: (provider: string) => `Ne plus se connecter avec ${provider} ?`,
+      unlinkTitle: (provider: string) =>
+        `Ne plus se connecter avec ${provider} ?`,
       unlinkMessage: "Vous pourrez le lier de nouveau à tout moment.",
-      linkGoogleHelp: "Liez votre compte Google pour vous connecter en un clic, ici et dans Plazo Pro.",
+      linkGoogleHelp:
+        "Liez votre compte Google pour vous connecter en un clic, ici et dans Plazo Pro.",
       linked: "Compte Google lié.",
       unlinked: "Connexion retirée.",
     },

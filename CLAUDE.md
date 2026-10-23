@@ -1441,7 +1441,17 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   « Tableau de bord » (`/pro/`, `GET /api/internal/dashboard`) : cinq tuiles (Sur le parking, Arrivées, Retours,
   Navettes, À traiter), bandeau d'état des services (vols, SMS, notifications, paiements, import), liste « À traiter
   maintenant » (urgent → à surveiller → à faire), véhicules sur le parking avec place et clés, carte IGN des navettes en
-  direct (`GET /internal/shuttle/live`). **Tuile Paiements (07/10/2026, « les paiements sont centralisés »)** : OK « en ligne, encaissés par Plazo » si
+  direct (`GET /internal/shuttle/live`). **Carte des navettes, direction B « Halo et trajets » (23/10/2026, « sur la carte
+  rend la localisation du parking plus visible et fais apparaître la navette », choix « WEB B » des maquettes
+  https://claude.ai/artifact/QepufQmAXnWzkBB3buUdvB)** : `LiveShuttlesMap` (tableau de bord et page Navettes) : le parking
+  est un disque vert foncé « P » de 52 px à bord citron avec un halo citron qui respire (`.plazo-live-halo`, coupé en
+  `prefers-reduced-motion`) et son nom en pilule citron ; chaque navette qui a une position est un rond blanc de 48 px bordé
+  de la couleur de son sens, minibus tourné, chevron de cap sur le bord, pilule « Karim · 3 pers. » avec le point vert
+  (position récente) ou ambre ; son trajet est tracé en deux morceaux (`lib/live-map.ts`, `tripLines` : parking → navette en
+  trait plein, navette → desserte en pointillé, couches GeoJSON MapLibre) ; les dessertes sont des ronds blancs avec leur
+  icône (avion, train, épingle) et leur nom, « Terminal 1 dans 7 min » en pilule colorée quand une navette y va
+  (`stopEta`) ; **une navette sans position apparaît toujours** : fantôme gris en pointillé à côté du parking, « Nadia ·
+  partie à 14:02 · sans position » (`ghosts`). Plazo Pro garde l'ancienne carte pour l'instant. **Tuile Paiements (07/10/2026, « les paiements sont centralisés »)** : OK « en ligne, encaissés par Plazo » si
   `services.stripe.online` (clés Stripe de la plateforme + commission, `PaymentService.modeFor`), sinon Off ; le compte Stripe
   du loueur n'y apparaît pas (il ne sert qu'aux reversements, page Reversements), web et app. Le planning passe à `/pro/planning`. **Fiche opérationnelle (C-A, 06/10/2026)** :
   `ReservationQuickCard` (tiroir, `QuickCardProvider` dans `App.tsx`, `useQuickCard().open(id)`) ouverte depuis les lignes du
