@@ -1,0 +1,85 @@
+name: Android APKs (à installer)
+
+# Plazo and Plazo Pro as release APKs to install by hand on an Android phone (23/10/2026, « Les apk »: Codemagic answered
+# 402 « Billing error » to a new build, its free minutes being spent). Built here, on GitHub's free runners, for real
+# phones (arm64 and arm), against the production API (the apps' default) with the public OneSignal app IDs of
+# codemagic.yaml, so that notifications work. Signed with this runner's debug key (no key.properties here): not the Play
+# Store's signature, so an app installed from Google Play must be uninstalled first, and the next run's APK cannot update
+# this one (another debug key). « Continuer avec Google » is left out: Google only accepts the store and upload keys'
+# fingerprints. The APKs come back as the run's artifact « plazo-apks », kept 14 days.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branche ou tag à construire"
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apks-${{ inputs.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apks:
+    name: APK de Plazo et Plazo Pro
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-java@v4
+        with:
+          # Same Java as codemagic.yaml (android/app/build.gradle.kts compiles for 17).
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            mobile/android/*.gradle*
+            mobile/android/app/*.gradle*
+            mobile/android/gradle/wrapper/gradle-wrapper.properties
+      - uses: subosito/flutter-action@v2
+        with:
+          # Same Flutter as codemagic.yaml and mobile-ci.yml.
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+      - name: Dépendances de l'app
+        run: flutter pub get
+      - name: APK release de Plazo et Plazo Pro
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/apks"
+          mkdir -p "$OUT"
+          # MAJOR.MINOR of pubspec.yaml and the run number, as the store builds do with Codemagic's.
+          BASE=$(sed -n 's/^version: *\([0-9]*\.[0-9]*\).*/\1/p' pubspec.yaml)
+          VERSION="$BASE.${{ github.run_number }}"
+          for FLAVOR in traveller pro; do
+            case "$FLAVOR" in
+              traveller) SLUG=plazo; ONESIGNAL=dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3 ;;
+              pro) SLUG=plazo-pro; ONESIGNAL=89a1124f-3ba0-481e-b9f1-545d254e435d ;;
+            esac
+            flutter build apk --release --flavor "$FLAVOR" --target-platform android-arm64,android-arm \
+              --build-name="$VERSION" --build-number="${{ github.run_number }}" \
+              --dart-define=APP_FLAVOR="$FLAVOR" --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL"
+            cp "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "$OUT/$SLUG-v$VERSION.apk"
+          done
+          ls -lh "$OUT"
+          {
+            echo "### APK à installer"
+            echo
+            echo "Version $VERSION, dans l'artefact **plazo-apks** (14 jours) :"
+            for APK in "$OUT"/*.apk; do echo "- $(basename "$APK") ($(du -h "$APK" | cut -f1))"; done
+            echo
+            echo "Signés avec une clé de test : désinstaller d'abord l'app venue de Google Play."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plazo-apks
+          path: ${{ runner.temp }}/apks/*.apk
+          retention-days: 14
