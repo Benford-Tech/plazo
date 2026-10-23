@@ -151,7 +151,7 @@ describe('réception : comment le mail est arrivé, et les mails écartés (14/1
         allopark,
       ),
     );
-    expect(direct.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(direct.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0, setAside: 0 });
     // A Gmail filter forwards Onepark's email (no importer reads this one: it waits).
     await relay(
       address,
@@ -221,7 +221,7 @@ describe('réception : comment le mail est arrivé, et les mails écartés (14/1
         ),
       );
     const first = await personal(1, 'Dîner samedi', 'On se voit à 20 h ?');
-    expect(first.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 1 });
+    expect(first.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0, setAside: 1 });
     await personal(2, 'Photos des vacances', 'Les voici.');
     const set = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id, status: 'ignored' } });
     expect(set).toHaveLength(2);

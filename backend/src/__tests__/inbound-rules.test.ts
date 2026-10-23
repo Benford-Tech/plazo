@@ -350,7 +350,7 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
         From: { Name: 'Onepark', Address: 'noreply@onepark.co' },
         Subject: 'Nouvelle réservation',
       });
-      expect((await post([shortItem])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      expect((await post([shortItem])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0, setAside: 0 });
       expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, channelDetail: 'Onepark' } })).toMatchObject({
         customerFirstName: 'camille',
         customerLastName: 'exemple',
@@ -371,13 +371,13 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
       claudeIs(mode);
 
       // Allopark's notice of a new booking: imported with what its page shows.
-      expect((await post([confirmation(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      expect((await post([confirmation(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0, setAside: 0 });
       const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
       expect(booking).toMatchObject({ externalReference: REF, plate: 'GK-318-PX', passengers: 3 });
 
       // The modification of the 16/10 (its body a confirmation's, « est confirmée »): the page now shows a later return.
       allopark = url => (url.includes(`reference=${REF}`) ? pageOf(REF, '2026-10-05 18:00') : '<html></html>');
-      expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0, setAside: 0 });
       expect((await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).returnAt.toISOString()).toBe('2026-10-05T16:00:00.000Z');
       expect(await latest(op.operator.id)).toMatchObject({
         status: 'imported',
@@ -393,12 +393,18 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
       });
 
       // The same forwarded by hand (« TR: »): the booking is up to date, a duplicate.
-      expect((await post([forwardedByHand(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+      expect((await post([forwardedByHand(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0, setAside: 0 });
       expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id, reading: { kind: 'modification' } });
 
       // A modification of a booking Plazo did not have: created from its page.
       allopark = url => (url.includes('reference=AL-500000002') ? pageOf('AL-500000002').replace(/GK-318-PX/g, 'HJ-222-KL') : '<html></html>');
-      expect((await post([modification(op.address, 'AL-500000002')])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      expect((await post([modification(op.address, 'AL-500000002')])).body).toEqual({
+        received: 1,
+        imported: 1,
+        toCheck: 0,
+        ignored: 0,
+        setAside: 0,
+      });
       expect(await prisma.reservation.findFirstOrThrow({ where: { externalReference: 'AL-500000002' } })).toMatchObject({ plate: 'HJ-222-KL' });
 
       // Onepark's notice: imported by its reader.
@@ -409,7 +415,7 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
             item(op.address, '', { RawHtmlBody: onepark, From: { Name: 'Onepark', Address: 'noreply@onepark.co' }, Subject: 'Nouvelle réservation' }),
           ])
         ).body,
-      ).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      ).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0, setAside: 0 });
       // A cancellation and a customer's reply: shown with their kind, nothing done.
       await post([item(op.address, `Allopark\nVotre réservation ${REF} a été annulée.`, { Subject: `Annulation de votre réservation ${REF}` })]);
       expect(await latest(op.operator.id)).toMatchObject({
@@ -478,7 +484,7 @@ describe('une panne de Claude (16/10/2026, « Your credit balance is too low »)
   it('un mail inconnu attend avec la cause, la boîte et le tableau de bord la disent, le relais le relit dès que Claude répond', async () => {
     const op = await connected();
     claudeIs('credit');
-    expect((await post([parkos(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    expect((await post([parkos(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0, setAside: 0 });
     expect(create).toHaveBeenCalledTimes(1);
     const first = await latest(op.operator.id);
     expect(first).toMatchObject({ status: 'unrecognised', reading: { outage: { cause: 'credit', at: expect.any(String) } } });

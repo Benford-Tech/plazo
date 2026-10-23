@@ -86,6 +86,14 @@ describe("email()", () => {
     expect(refused.setReject).toHaveBeenCalledWith("No mailbox for contact@plazo.fr");
   });
 
+  it("mail personnel d'un parking écarté par Plazo (setAside) : jamais envoyé à l'adresse de secours, ni refusé", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 0, toCheck: 0, ignored: 0, setAside: 1 }))));
+    const msg = message(alloparkForwarded);
+    await worker.email(msg, { ...env, FALLBACK_ADDRESS: "secours@example.com" });
+    expect(msg.forward).not.toHaveBeenCalled();
+    expect(msg.setReject).not.toHaveBeenCalled();
+  });
+
   it("adresse de secours non vérifiée chez Cloudflare : le renvoi échoue, le mail est refusé avec son motif, le Worker ne plante pas", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 0, toCheck: 0, ignored: 1 }))));
     const msg = message(alloparkForwarded, "contact@plazo.fr");
