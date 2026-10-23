@@ -1149,7 +1149,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `contactPoint` une fois configurés. Relecture : la destination est fixe (`supportEmail`), le visiteur n'est qu'en Reply-To, nom
   nettoyé des caractères qui font une liste d'adresses (`replyToName`) ; la lettre répond 202 même au-delà de 3 demandes par jour
   pour une boîte (`newsletterAddressKey` : sous-adresses `+…` et points de Gmail ramenés à la même boîte), et un refus de Brevo qui
-  nomme le modèle ou la redirection (modèle inactif) répond 502 `newsletter_failed` au lieu d'un faux succès. Politique de confidentialité (formulaire envoyé par e-mail au service client, pas gardé
+  nomme le modèle ou la redirection (modèle inactif) répond 502 `newsletter_failed` au lieu d'un faux succès. **Mail du formulaire de
+  contact mis à niveau (23/10/2026, « mets à niveau le mail de contact »)** : `contactEmail` (`domain/contact.ts`) prend la forme des
+  mails du loueur, aux couleurs du site : plaque orange « Plazo » et libellé « Formulaire de contact », titre « Nouveau message
+  de <nom> », lignes Nom · E-mail · Réservation · Envoyé le, le message dans un encart, bouton orange « Répondre à <nom> »
+  (`mailto:` avec l'objet « Re: votre message à Plazo · <référence> »), rappel que répondre au mail écrit au visiteur (Reply-To). Politique de confidentialité (formulaire envoyé par e-mail au service client, pas gardé
   au-delà ; lettre chez Brevo, double confirmation, gardée jusqu'à la désinscription en un clic, puis marquée désinscrite chez
   Brevo) et conditions générales (le
   formulaire à côté de l'adresse du service client, dès qu'elle est réelle) mises à jour.
