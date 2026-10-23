@@ -75,6 +75,22 @@ describe('variables des mails', () => {
     expect(withDemo.html).toContain('href="https://site.example/pro/demo/AbCd2345EfGh"');
     expect(withDemo.html).toContain('Voir la démo de Plazo');
     expect(withDemo.text).toContain('Votre démo : https://site.example/pro/demo/AbCd2345EfGh');
+    // The store badges (« avec les liens des apps sur le store »): Google Play linked, the App Store greyed until published.
+    const withStores = prospectEmail({
+      productName: 'Plazo',
+      company,
+      senderName: 'Équipe Plazo',
+      step: { subject: 'S', body: 'Message' },
+      values,
+      unsubscribeUrl: 'https://site.example/u/x',
+      stores: { badgesBase: 'https://site.example', playStoreUrl: 'https://play.google.com/store/apps/details?id=x', appStoreUrl: null },
+    });
+    expect(withStores.html).toContain('src="https://site.example/badges/google-play-fr.png"');
+    expect(withStores.html).toContain('href="https://play.google.com/store/apps/details?id=x"');
+    expect(withStores.html).toContain('src="https://site.example/badges/app-store-fr-soon.png"');
+    expect(withStores.text).toContain('Plazo Pro sur Google Play (Android) : https://play.google.com/store/apps/details?id=x');
+    expect(withStores.text).toContain("Plazo Pro sur l'App Store (iPhone) : Validation par Apple en cours");
+    expect(mail.html).not.toContain('badges/');
     // An address in the text is a link too, its trailing punctuation left out.
     const typed = prospectEmail({
       ...withDemo,

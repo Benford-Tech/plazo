@@ -2,7 +2,7 @@ import { ProspectDemoService } from './prospect-demo.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { PRODUCT_COMPANY, PRODUCT_NAME, prospectingSettings } from '@/config';
+import { PLAZO_PRO_APP_STORE_URL, PLAZO_PRO_PLAY_STORE_URL, PRODUCT_COMPANY, PRODUCT_NAME, prospectingSettings } from '@/config';
 import prisma, { Prisma, Prospect, ProspectStatus } from '@/database';
 import {
   capDayStart,
@@ -125,6 +125,11 @@ export class ProspectingService {
     const given = Buffer.from(token.slice(dot + 1));
     const expected = Buffer.from(this.signature(id));
     return given.length === expected.length && timingSafeEqual(given, expected) ? id : null;
+  }
+
+  /** Plazo Pro's store badges (23/10/2026): the site serves the images; the App Store link once Apple has published. */
+  private stores() {
+    return { badgesBase: this.notifications.siteUrl(''), playStoreUrl: PLAZO_PRO_PLAY_STORE_URL, appStoreUrl: PLAZO_PRO_APP_STORE_URL };
   }
 
   public unsubscribeUrl(id: string): string {
@@ -611,6 +616,7 @@ export class ProspectingService {
       step,
       values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
       unsubscribeUrl: this.unsubscribeUrl(id),
+      stores: this.stores(),
     });
     const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
     const result = await this.notifications.emailProspect({ email: prospect.email, ...(name ? { name } : {}) }, message, {
@@ -702,6 +708,7 @@ export class ProspectingService {
       step: { subject, body },
       values,
       unsubscribeUrl: this.notifications.siteUrl('/api/public/prospecting/unsubscribe/test') ?? '',
+      stores: this.stores(),
     });
     const result = await this.notifications.emailProspect(
       { email: actor.email },

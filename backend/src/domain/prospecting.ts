@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml } from './account-messages';
 import { EmailMessage } from './booking-messages';
 import { parseRegion, RegionKey } from './prospect-regions';
 import { addDays, localDate, localDateTime, parseInstant } from './time';
@@ -214,6 +215,8 @@ export function prospectEmail(input: {
   step: Pick<SequenceStep, 'subject' | 'body'>;
   values: TemplateValues;
   unsubscribeUrl: string;
+  /** 23/10/2026 (« avec les liens des apps sur le store »): Plazo Pro's badges under the signature; none without the site's address. */
+  stores?: { badgesBase: string | null; playStoreUrl: string; appStoreUrl: string | null };
 }): EmailMessage {
   const subject = renderSubject(input.step.subject, input.values);
   const body = renderTemplate(input.step.body, input.values).trim();
@@ -227,7 +230,14 @@ export function prospectEmail(input: {
   const who = publisher ? `${input.productName} est édité par ${publisher}.` : '';
   const stop = `Ne plus recevoir de messages de ${input.productName}`;
 
-  const text = [body, signature, '--', why, who, `${stop} : ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
+  const stores = input.stores;
+  const storeLines = stores
+    ? [
+        `${input.productName} Pro sur Google Play (Android) : ${stores.playStoreUrl}`,
+        `${input.productName} Pro sur l'App Store (iPhone) : ${stores.appStoreUrl ?? APPLE_REVIEW_NOTE}`,
+      ].join('\n')
+    : '';
+  const text = [body, signature, storeLines, '--', why, who, `${stop} : ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
 
   // 23/10/2026 (« mets à niveau le mail de prospection »): the operators' emails' shape (light ground, white card, the
   // Plazo plate), the text itself kept as the sender's own words; a « Voir la démo » button when the step gives the
@@ -247,7 +257,11 @@ export function prospectEmail(input: {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.tint}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid ${C.line};border-radius:14px">
 <tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${C.lime};color:${C.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(input.productName)}</span></td></tr>
-<tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}</td></tr>
+<tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}${
+    stores?.badgesBase
+      ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">L'application de l'équipe, ${escapeHtml(input.productName)} Pro :</p>${storeBadgesHtml(proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }))}`
+      : ''
+  }</td></tr>
 </table>
 <p style="max-width:600px;margin:16px auto 0;font-size:12px;line-height:1.5;color:${C.soft};text-align:left">${escapeHtml(why)}${who ? ` ${escapeHtml(who)}` : ''}</p>
 <p style="max-width:600px;margin:8px auto 0;font-size:12px;text-align:left"><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${C.deep}">${escapeHtml(stop)}</a></p>

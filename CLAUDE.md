@@ -1036,7 +1036,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   section 11 « Prospection des parkings ». **Gabarit mis à niveau (23/10/2026, « mets à niveau le mail de prospection »)** : `prospectEmail` prend la forme
   des mails du loueur (fond clair, carte blanche, plaque citron « Plazo »), le texte de l'étape gardé tel quel en paragraphes
   (adresses tapées rendues cliquables, `linkify`), un bouton citron « Voir la démo de Plazo » quand l'étape porte `{lien_demo}`,
-  la signature, puis sous la carte la raison, l'éditeur et le lien de désinscription ; la version texte est inchangée.
+  la signature, puis **les badges des stores de Plazo Pro** (« avec les liens des apps sur le store », même jour : `proStoreBadges` et
+  `storeBadgesHtml` partagés avec l'invitation, `ProspectingService.stores()` ; Google Play cliquable, App Store grisé tant que
+  `PLAZO_PRO_APP_STORE_URL` manque ; deux lignes dans la version texte), puis sous la carte la raison, l'éditeur et le lien de
+  désinscription.
   **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
   « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
   l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le
