@@ -61,6 +61,29 @@ describe('variables des mails', () => {
     );
     expect(mail.text).toContain("Vous recevez ce message à l'adresse professionnelle de Parking Alpha");
     expect(mail.text).toContain('Ne plus recevoir de messages de Plazo : https://site.example/api/public/prospecting/unsubscribe/abc.def');
+    // 23/10/2026: the operators' template; the demo button only when the step carries the prospect's link.
+    expect(mail.html).toContain('>Plazo</span>');
+    expect(mail.html).not.toContain('Voir la démo');
+    const withDemo = prospectEmail({
+      productName: 'Plazo',
+      company,
+      senderName: 'Équipe Plazo',
+      step: { subject: 'Démo', body: 'Votre démo : {lien_demo}' },
+      values: { ...values, lien_demo: 'https://site.example/pro/demo/AbCd2345EfGh' },
+      unsubscribeUrl: 'https://site.example/u/abc.def',
+    });
+    expect(withDemo.html).toContain('href="https://site.example/pro/demo/AbCd2345EfGh"');
+    expect(withDemo.html).toContain('Voir la démo de Plazo');
+    expect(withDemo.text).toContain('Votre démo : https://site.example/pro/demo/AbCd2345EfGh');
+    // An address in the text is a link too, its trailing punctuation left out.
+    const typed = prospectEmail({
+      ...withDemo,
+      ...{ productName: 'Plazo', company, senderName: 'Équipe Plazo', values, unsubscribeUrl: 'https://site.example/u/x' },
+      step: { subject: 'S', body: 'Voir https://exemple.fr/page?a=1&b=2, puis.' },
+    } as any);
+    expect(typed.html).toContain(
+      '<a href="https://exemple.fr/page?a=1&amp;b=2" style="color:#1E5E2E">https://exemple.fr/page?a=1&amp;b=2</a>, puis.',
+    );
   });
 });
 
