@@ -67,7 +67,9 @@
 .cap-label-length {
   font-size: 17px;
   color: #a3e635;
-  text-shadow: 0 0 3px #0f2a14, 0 0 6px #0f2a14;
+  text-shadow:
+    0 0 3px #0f2a14,
+    0 0 6px #0f2a14;
 }
 .cap-label-vertex {
   font-family: "JetBrains Mono", monospace;
@@ -135,4 +137,25 @@
 .plazo-popup .maplibregl-popup-tip {
   border-top-color: #ffffff;
   border-bottom-color: #ffffff;
+}
+
+/* Live shuttles map, direction B (23/10/2026): the lime halo of the parking breathes. */
+@keyframes plazo-live-halo {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.plazo-live-halo {
+  animation: plazo-live-halo 2.4s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .plazo-live-halo {
+    animation: none;
+    opacity: 0.35;
+  }
 }
