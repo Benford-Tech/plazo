@@ -211,12 +211,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   `track-return-flights` toutes les 10 minutes de 05:00 à 23:50 dès que le plan de suivi des vols le permet. Depuis le
   08/10/2026, `remind-tomorrow`, `track-return-flights` et `payouts` répondent 500 quand tout ce qui a été tenté a échoué
   (rien n'est parti, aucun vol lu, aucun virement) : l'alerte « on failure » suffit.
-- [ ] GitHub › Settings › Environments › Production (Claude n'y a pas accès : l'API des environnements lui est fermée) :
-  secret `INBOUND_EMAIL_SECRET` (le déploiement du 08/10 à 16:08 a
-  signalé « not set in the Production environment » : le Worker garde celui posé à la main, mais chaque déploiement doit
-  le reposer) et variable `FALLBACK_ADDRESS` (posée sur Vercel par erreur le 08/10 : elle n'y est lue par rien ; une boîte
-  Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs), puis relancer le job `deploy` de
-  « Email worker CI » et vérifier que `env.FALLBACK_ADDRESS` apparaît dans sa sortie.
+- [x] GitHub › Settings › Environments › Production : secret `INBOUND_EMAIL_SECRET` et variable `FALLBACK_ADDRESS` (23/10/2026 :
+  l'adresse Gmail de Joanny, destination vérifiée dans Email Routing ; le déploiement de 12:17 UTC montre
+  `env.FALLBACK_ADDRESS` et pose le secret). Lien Git de Cloudflare (Workers Builds) débranché, vérifié le même jour.
 - [ ] Cloudflare › DNS : `www` et l'apex sont **proxiés** (nuage orange : `server: cloudflare` sur www.plazo.fr) ; passer les
   deux en « DNS only » (nuage gris) vers les cibles affichées dans Vercel › Settings › Domains (un CNAME pour `www`, des
   enregistrements A pour l'apex), pour que Vercel (pare-feu, journaux) voie les vraies adresses. Depuis le 08/10/2026 l'API
