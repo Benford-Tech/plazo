@@ -40,7 +40,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 | --- | --- | --- |
 | GitHub Actions `Mobile CI` | chaque PR et push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test` (gratuit) |
 | Codemagic `mobile-check` | à la main | les mêmes vérifications + APK **debug** des deux apps, à installer pour essayer |
-| Codemagic `mobile-release` | tag `mobile-v…` ou à la main ; **version calculée seule** (`MAJEUR.MINEUR` de `pubspec.yaml` + numéro de build, ex. 1.0.131, 21/10/2026) | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB signés (APK avec `BUILD_APK=true` ; clé du groupe `plazo_android_signing`) et IPA signé (certificat du compte), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, production** (21/10/2026), chaque IPA → **TestFlight** puis **revue App Store** et sortie dès l'accord d'Apple, avec les **notes de version** de `mobile/release-notes/plazo.txt` et `plazo-pro.txt` (voir son README ; sans elles le build s'arrête) ; les six fichiers dans **Artifacts** |
+| GitHub Actions `Mobile release (Google Play + App Store)` (23/10/2026) | tag `mobile-v…` ou à la main (Actions › Run workflow : stores, piste Google Play, brouillon, revue Apple, APK) | **le même pipeline que `mobile-release` de Codemagic, sur GitHub** : voir « GitHub Actions » ci-dessous |
+| Codemagic `mobile-release` | à la main (le tag part sur GitHub Actions depuis le 23/10/2026) ; **version calculée seule** (`MAJEUR.MINEUR` de `pubspec.yaml` + numéro de build, ex. 1.0.131, 21/10/2026) | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB signés (APK avec `BUILD_APK=true` ; clé du groupe `plazo_android_signing`) et IPA signé (certificat du compte), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, production** (21/10/2026), chaque IPA → **TestFlight** puis **revue App Store** et sortie dès l'accord d'Apple, avec les **notes de version** de `mobile/release-notes/plazo.txt` et `plazo-pro.txt` (voir son README ; sans elles le build s'arrête) ; les six fichiers dans **Artifacts** |
 | Codemagic `mobile-release-android` | à la main | **Android seul**, les mêmes étapes que la moitié Android de `mobile-release` : les vérifications, AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; les quatre fichiers dans **Artifacts**. Ni certificat ni profil Apple |
 
 - **Version** = le `version:` de `mobile/pubspec.yaml` (ex. `1.0.0`). Le tag doit la reprendre : `mobile-v1.0.0`, sinon le
@@ -71,6 +72,50 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
   ([discussion codemagic-ci-cd #3570](https://github.com/orgs/codemagic-ci-cd/discussions/3570)), d'où `xcode: 26.5`
   dans `env_versions_android` de `codemagic.yaml`, à remettre en `latest` plus tard. Codemagic annule de lui-même un
   build en attente depuis 5 h, l'action `cancel` l'annule avant.
+
+## GitHub Actions : le même pipeline sans Codemagic (23/10/2026)
+
+Le 23/10/2026, Codemagic a répondu « Billing error » (402) à un nouveau build : « Refais le pipeline codemagic dans github
+avec la publication sur les deux stores ». Le workflow `.github/workflows/mobile-release.yml` refait `mobile-release` sur
+GitHub Actions, avec les mêmes outils de publication (les outils en ligne de commande de Codemagic, un paquet libre) :
+
+1. **Version et notes** (Linux) : `MAJEUR.MINEUR` de `pubspec.yaml` + un numéro de build au-dessus du dernier des quatre
+   stores (et au-dessus des numéros de Codemagic) ; notes de `mobile/release-notes/` vérifiées (1 à 500 caractères).
+2. **Android** (Linux) : AAB signés des deux apps (APK si demandé), envoyés à Google Play (piste choisie, production par
+   défaut) avec les notes ; paquets et `mapping.txt` dans l'artefact `android-<version>` (30 jours).
+3. **iOS** (macOS 26, Xcode 26.6) : certificat et profils App Store récupérés chez Apple, IPA signés des deux apps envoyés
+   à App Store Connect (TestFlight, puis revue App Store et sortie dès l'accord, sauf choix contraire) avec les notes ;
+   IPA et dSYM dans l'artefact `ios-<version>`.
+
+Chaque envoi est tenté même si un autre échoue ; le résumé du passage liste les envois, et un job finit en rouge si l'un des
+siens a échoué. Lancer : un tag `mobile-v…` (les deux stores, production, revue Apple), ou **Actions › Mobile release ›
+Run workflow** (stores, piste, brouillon, revue, APK au choix).
+
+**Coût** : sur un dépôt privé, une minute macOS compte pour dix minutes gratuites de GitHub (2 000 par mois sur l'offre
+gratuite) : le job iOS, environ 35 minutes, en consomme environ 350. Android et la préparation comptent normalement.
+
+### À poser une fois : l'environnement « stores »
+
+GitHub › dépôt `Benford-Tech/plazo` › **Settings › Environments › New environment** › `stores`. On peut y cocher
+**Required reviewers** (soi-même) pour valider chaque publication avant qu'elle parte. Puis, dans cet environnement,
+**sans jamais coller ces valeurs dans une conversation** :
+
+| Secret | D'où il vient |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | le fichier `plazo-upload.jks` (artefact du workflow « Android keystore », rangé dans le gestionnaire de mots de passe) en base64, en une ligne : sur Mac `base64 -i plazo-upload.jks \| pbcopy`, ou mieux sans presse-papiers `gh secret set ANDROID_KEYSTORE_BASE64 --env stores --repo Benford-Tech/plazo < <(base64 -i plazo-upload.jks)`. Le job ouvre la clé avant de construire et affiche son empreinte publique : un base64 coupé s'arrête là |
+| `ANDROID_KEYSTORE_PASSWORD` | `plazo-upload-password.txt` (le même mot de passe pour le fichier et la clé, alias `upload`) |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | le fichier JSON entier de la clé du compte de service Google Play (celui de Yoon, projet `yoon-beige`, déjà ouvert aux deux apps) ; si le fichier n'est plus là : Google Cloud › IAM › Comptes de service › ce compte › Clés › Ajouter une clé › JSON |
+| `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_IDENTIFIER`, `APP_STORE_CONNECT_PRIVATE_KEY` | App Store Connect › Users and Access › Integrations › App Store Connect API › Team Keys › **+**, rôle **App Manager** : l'Issuer ID (en haut de la page), le Key ID, et tout le contenu du fichier `.p8` (téléchargeable une seule fois) |
+| `IOS_CERTIFICATE_PRIVATE_KEY` | la clé privée RSA (PEM, « -----BEGIN … PRIVATE KEY----- ») du certificat **Apple Distribution**. Celle du certificat de Codemagic (`thempo-distribution`) n'en sort pas : si on ne l'a pas ailleurs, en créer une (`openssl genrsa -out plazo_distribution.key 2048` sur son ordinateur), la mettre ici, puis lancer une fois le workflow avec **ios_create_signing** coché : il crée un certificat pour cette clé et les profils App Store des deux apps (Apple accepte **3** certificats de distribution par équipe : en supprimer un inutilisé dans Certificates s'il y en a déjà 3). Ranger la clé dans le gestionnaire de mots de passe |
+
+| Variable (publique) | Valeur |
+| --- | --- |
+| `GOOGLE_SERVER_CLIENT_ID` | le client OAuth « Application Web » (section 3 bis) : « Continuer avec Google » dans Plazo Pro |
+| `GOOGLE_IOS_CLIENT_ID` | le client OAuth « iOS » (section 3 bis, point 7) : « Continuer avec Google » sur iPhone |
+| `API_BASE_URL`, `SITE_URL`, `STRIPE_MERCHANT_ID` | facultatives, comme sur Codemagic |
+
+Sign in with Apple suit le profil comme sur Codemagic : le bouton Apple n'apparaît que si le profil App Store de Plazo Pro
+porte la capacité. Codemagic ne se déclenche plus sur les tags : un tag ne publie qu'une fois, par GitHub.
 
 ## 0. À décider avant de commencer
 

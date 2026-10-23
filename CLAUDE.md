@@ -1255,6 +1255,18 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   sont dans AndroidX, Flutter et Stripe, le décodage d'images dans OneSignal (images de notification, jamais envoyées), et
   le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
   détail dans `mobile/publier-sur-les-stores.md`.
+  **Pipeline des stores sur GitHub Actions (23/10/2026, « Refais le pipeline codemagic dans github avec la publication sur les
+  deux stores » ; Codemagic répondait 402 « Billing error »)** : `.github/workflows/mobile-release.yml` « Mobile release (Google
+  Play + App Store) », tag `mobile-v…` ou à la main (stores, piste Google Play, brouillon, revue Apple et sortie, APK,
+  `ios_create_signing`) : `prepare` (version `MAJEUR.MINEUR` + numéro au-dessus des quatre stores et de Codemagic, run + 300 ;
+  notes de version vérifiées), `android` (Ubuntu, clé d'import ouverte par `keytool` avant le build, AAB signés → Google Play),
+  `ios` (macos-26, Xcode 26.6, `app-store-connect fetch-signing-files` + `keychain` + `xcode-project use-profiles`, Sign in with
+  Apple selon le profil, schéma d'URL Google, IPA → TestFlight puis revue) ; outils Codemagic (`codemagic-cli-tools` 0.70.0) ;
+  secrets et variables de l'environnement GitHub `stores` (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`, `APP_STORE_CONNECT_ISSUER_ID` / `_KEY_IDENTIFIER` / `_PRIVATE_KEY`,
+  `IOS_CERTIFICATE_PRIVATE_KEY` ; variables `GOOGLE_SERVER_CLIENT_ID`, `GOOGLE_IOS_CLIENT_ID`…), pas à pas dans
+  `mobile/publier-sur-les-stores.md` ; Codemagic ne se déclenche plus sur les tags. `android-apks.yml` (même jour) : APK
+  release des deux apps signés avec une clé de debug, à installer à la main.
   **Tutoriels (21/10/2026, « des tutoriels à afficher à la première connexion et à souhait pour Plazo et Plazo Pro », choix
   A + B des maquettes https://claude.ai/artifact/GmDEYEEhFy9ETAB5A43jjL)** : **A** carrousel de bienvenue plein écran (4 pages,
   « Passer », « C'est parti ») au premier lancement de Plazo, et dans Plazo Pro un par poste du jour (« CHAUFFEUR · 2 / 4 »),
