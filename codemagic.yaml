@@ -19,6 +19,10 @@
 #     group « mobile_secrets » being the Google Play service account key.
 # NO SECRET IN THIS FILE. Step by step: mobile/publier-sur-les-stores.md.
 #
+# 23/10/2026 (« Refais le pipeline codemagic dans github avec la publication sur les deux stores », Codemagic answering
+# 402 « Billing error »): the same release runs on GitHub Actions, .github/workflows/mobile-release.yml (tag `mobile-v*`
+# or by hand), with the same Codemagic CLI tools; this file stays for builds started by hand on Codemagic.
+#
 # The repository is a monorepo: Codemagic reads this file at the repository root and every workflow runs in
 # mobile/ (working_directory). The checks of every push run on GitHub Actions (.github/workflows/mobile-ci.yml,
 # free), not here: the account's 500 free Codemagic minutes a month are kept for the store builds.
@@ -26,7 +30,7 @@
 # 11/10/2026, « unifie le pipeline »: ONE release workflow builds the six packages of a version and sends them
 # to the stores, instead of four workflows (one per store and per app):
 #   mobile-check    → by hand only: checks + DEBUG Android APKs of the two apps, to install and try.
-#   mobile-release  → tag `mobile-v*` (any name) or by hand; the version is computed (MAJOR.MINOR of pubspec.yaml + build number):
+#   mobile-release  → by hand (the tag `mobile-v*` goes to GitHub Actions since 23/10/2026, see below); the version is computed (MAJOR.MINOR of pubspec.yaml + build number):
 #                     the checks once, then for Plazo AND Plazo Pro: signed AAB + APK (Android) and signed
 #                     IPA (iOS), all four with the SAME version and build number; then every AAB goes to
 #                     Google Play (production track, 21/10/2026) and every IPA to App Store Connect (TestFlight,
@@ -360,13 +364,8 @@ workflows:
         APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
     # No cache (21/10/2026): on build 6ace256e (13/10/2026) saving it took 8 of the 42 minutes (« Cleaning up ») and the
     # restore found nothing; the Gradle and pub downloads it would spare cost less than that.
-    triggering:
-      events:
-        - tag
-      tag_patterns:
-        - pattern: 'mobile-v*'
-          include: true
-      cancel_previous_builds: true
+    # No triggering since 23/10/2026: a tag `mobile-v*` starts the GitHub workflow .github/workflows/mobile-release.yml
+    # (Codemagic answered 402 « Billing error »); this workflow stays for a build started by hand, never both on one tag.
     scripts:
       - *android_key_properties
       - *release_version

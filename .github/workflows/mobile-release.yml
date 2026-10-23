@@ -1,0 +1,505 @@
+name: Mobile release (Google Play + App Store)
+
+# The store pipeline of Plazo and Plazo Pro on GitHub Actions (23/10/2026, « Refais le pipeline codemagic dans github avec
+# la publication sur les deux stores »: Codemagic answered 402 « Billing error » to new builds). The same steps as the
+# mobile-release workflow of codemagic.yaml, with the same Codemagic CLI tools (google-play, app-store-connect, keychain,
+# xcode-project: an open-source pip package that runs anywhere):
+#   prepare → one version for the four packages (MAJOR.MINOR of pubspec.yaml + a build number above the last of the four
+#             store listings), the release notes of mobile/release-notes/ checked (1 to 500 characters);
+#   android → Ubuntu: signed AAB of both apps (and APK if asked) → Google Play, with the notes;
+#   ios     → macOS: signed IPA of both apps → App Store Connect (TestFlight, then App Review and release), with the notes.
+# Each upload is attempted even when another failed; a job ends red if one of its uploads did. Packages and status come
+# back as artifacts. Started by a tag `mobile-v*` (both stores) or by hand (Actions › this workflow › Run workflow).
+#
+# Secrets and variables live in the GitHub environment « stores » (Settings › Environments): step by step in
+# mobile/publier-sur-les-stores.md, section « GitHub Actions ». NO SECRET IN THIS FILE.
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD  Plazo's upload key (plazo-upload.jks of android-keystore.yml,
+#                                                      alias « upload », one password for the file and the key)
+#   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON                   the Google Play service account key (the one Codemagic used)
+#   APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
+#                                                      an App Store Connect API key (Users and Access › Integrations),
+#                                                      role App Manager, the .p8 file's content
+#   IOS_CERTIFICATE_PRIVATE_KEY                        the RSA private key (PEM) of the Apple Distribution certificate
+#   variables (public): GOOGLE_SERVER_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, API_BASE_URL, SITE_URL, STRIPE_MERCHANT_ID
+#
+# Cost: Linux minutes count once, macOS minutes ten times against the account's free minutes on a private repository
+# (the iOS job takes about 35 minutes).
+on:
+  push:
+    tags:
+      - 'mobile-v*'
+  workflow_dispatch:
+    inputs:
+      stores:
+        description: "Stores"
+        type: choice
+        options: [both, android, ios]
+        default: both
+      play_track:
+        description: "Google Play : piste (production, beta, alpha, internal)"
+        type: choice
+        options: [production, beta, alpha, internal]
+        default: production
+      play_draft:
+        description: "Google Play : envoyer en brouillon (à publier à la main dans la Play Console)"
+        type: boolean
+        default: false
+      app_store_submit:
+        description: "App Store : soumettre à la revue d'Apple (sinon TestFlight seulement)"
+        type: boolean
+        default: true
+      app_store_release:
+        description: "App Store : sortie après l'accord d'Apple"
+        type: choice
+        options: [AFTER_APPROVAL, MANUAL]
+        default: AFTER_APPROVAL
+      build_apk:
+        description: "Construire aussi les APK signés (à installer à la main)"
+        type: boolean
+        default: false
+      ios_create_signing:
+        description: "iOS : créer le certificat et les profils manquants avec IOS_CERTIFICATE_PRIVATE_KEY (une fois ; Apple en permet 3)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# One release at a time: a second one waits (never cancelled half-way through an upload).
+concurrency:
+  group: mobile-release
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.47.6
+  # Identifiers of the two apps (android/app/build.gradle.kts, ios/Runner.xcodeproj).
+  ANDROID_APPLICATION_ID_PLAZO: com.benfordtech.plazo
+  ANDROID_APPLICATION_ID_PLAZO_PRO: com.benfordtech.plazopro
+  IOS_BUNDLE_ID_PLAZO: com.benfordtech.plazo
+  IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.plazopro
+  # Numeric Apple ID of each app in App Store Connect (App Information › Apple ID).
+  APP_STORE_APP_ID_PLAZO: "6821635235"
+  APP_STORE_APP_ID_PLAZO_PRO: "6821635650"
+  # OneSignal apps (public, the same as ONESIGNAL_TRAVELLER_APP_ID / ONESIGNAL_APP_ID on Vercel).
+  ONESIGNAL_APP_ID_PLAZO: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
+  ONESIGNAL_APP_ID_PLAZO_PRO: 89a1124f-3ba0-481e-b9f1-545d254e435d
+  # What a tag does (both stores, production, submitted); Run workflow can change each.
+  STORES: ${{ inputs.stores || 'both' }}
+  PLAY_TRACK: ${{ inputs.play_track || 'production' }}
+  PLAY_DRAFT: ${{ inputs.play_draft && 'true' || 'false' }}
+  APP_STORE_SUBMIT: ${{ (github.event_name == 'push' || inputs.app_store_submit) && 'true' || 'false' }}
+  APP_STORE_RELEASE_TYPE: ${{ inputs.app_store_release || 'AFTER_APPROVAL' }}
+  BUILD_APK: ${{ inputs.build_apk && 'true' || 'false' }}
+  IOS_CREATE_SIGNING: ${{ inputs.ios_create_signing && 'true' || 'false' }}
+  # The Codemagic CLI tools (google-play, app-store-connect, keychain, xcode-project), pinned.
+  CODEMAGIC_CLI_TOOLS: codemagic-cli-tools==0.70.0
+
+jobs:
+  prepare:
+    name: Version et notes de version
+    runs-on: ubuntu-latest
+    environment: stores
+    outputs:
+      next: ${{ steps.version.outputs.next }}
+      version_name: ${{ steps.version.outputs.version_name }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Outils de publication (Codemagic CLI tools)
+        run: pip install --quiet "$CODEMAGIC_CLI_TOOLS"
+      - name: Notes de version (fr-FR, 1 à 500 caractères)
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/notes"
+          for SLUG in plazo plazo-pro; do
+            NOTES="release-notes/$SLUG.txt"
+            [ -s "$NOTES" ] || { echo "::error::notes de version absentes : mobile/$NOTES (texte en français de ce qui change pour $SLUG)"; exit 1; }
+            python3 - "$NOTES" "$RUNNER_TEMP/notes/release-notes-$SLUG" <<'PY'
+          import json, sys
+          text = open(sys.argv[1], encoding="utf-8").read().strip()
+          if not text or len(text) > 500:
+              sys.exit(f"::error::{sys.argv[1]} : {len(text)} caractères, 1 à 500 attendus (limite de Google Play)")
+          open(sys.argv[2] + ".txt", "w", encoding="utf-8").write(text)
+          json.dump([{"language": "fr-FR", "text": text}], open(sys.argv[2] + ".json", "w", encoding="utf-8"), ensure_ascii=False)
+          PY
+            echo "Notes de version $SLUG :"; cat "$RUNNER_TEMP/notes/release-notes-$SLUG.txt"; echo
+          done
+      - name: Calculer la version (la même pour les quatre paquets, jamais en dessous d'un store)
+        id: version
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          # MAJOR.MINOR from pubspec.yaml (`version: 1.0.0+1` → 1.0, changed by hand only for a big step), the build
+          # number as the third number: every release is a new, higher version (1.0.231, 1.0.232…).
+          BASE=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//' | cut -d. -f1,2)
+          # Above Codemagic's numbers (its counter + 100, about 130 in October 2026), then above every store listing.
+          NEXT=$(( ${{ github.run_number }} + 300 ))
+          number() { case "$1" in ''|*[!0-9]*) echo 0 ;; *) echo "$1" ;; esac; }
+          latest_play() {
+            [ -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS" ] || { echo 0; return; }
+            google-play get-latest-build-number --package-name "$1" 2>/dev/null | tail -1 || echo 0
+          }
+          latest_testflight() {
+            [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] || { echo 0; return; }
+            app-store-connect get-latest-testflight-build-number "$1" 2>/dev/null | tail -1 || echo 0
+          }
+          PLAY_PLAZO=$(number "$(latest_play "$ANDROID_APPLICATION_ID_PLAZO")")
+          PLAY_PRO=$(number "$(latest_play "$ANDROID_APPLICATION_ID_PLAZO_PRO")")
+          TF_PLAZO=$(number "$(latest_testflight "$APP_STORE_APP_ID_PLAZO")")
+          TF_PRO=$(number "$(latest_testflight "$APP_STORE_APP_ID_PLAZO_PRO")")
+          for LAST in "$PLAY_PLAZO" "$PLAY_PRO" "$TF_PLAZO" "$TF_PRO"; do
+            [ "$LAST" -ge "$NEXT" ] && NEXT=$((LAST + 1))
+          done
+          VERSION_NAME="$BASE.$NEXT"
+          echo "Version $VERSION_NAME ($NEXT) — Google Play $PLAY_PLAZO / $PLAY_PRO, TestFlight $TF_PLAZO / $TF_PRO"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Version $VERSION_NAME ($NEXT)"
+            echo
+            echo "Stores : $STORES · Google Play : $PLAY_TRACK$([ "$PLAY_DRAFT" = true ] && echo ' (brouillon)') · App Store : $([ "$APP_STORE_SUBMIT" = true ] && echo "revue, sortie $APP_STORE_RELEASE_TYPE" || echo 'TestFlight seulement')"
+            echo
+            echo "Derniers builds : Google Play $PLAY_PLAZO / $PLAY_PRO, TestFlight $TF_PLAZO / $TF_PRO"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes/
+          retention-days: 7
+
+  android:
+    name: Android → Google Play
+    needs: prepare
+    if: ${{ (inputs.stores || 'both') != 'ios' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: stores
+    env:
+      NEXT: ${{ needs.prepare.outputs.next }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
+      GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      GOOGLE_SERVER_CLIENT_ID: ${{ vars.GOOGLE_SERVER_CLIENT_ID }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      SITE_URL: ${{ vars.SITE_URL }}
+      STRIPE_MERCHANT_ID: ${{ vars.STRIPE_MERCHANT_ID }}
+      # R8 needs room.
+      JAVA_TOOL_OPTIONS: "-Xmx5g"
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes
+      - uses: actions/setup-java@v4
+        with:
+          # android/app/build.gradle.kts compiles for 17, as on Codemagic.
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            mobile/android/*.gradle*
+            mobile/android/app/*.gradle*
+            mobile/android/gradle/wrapper/gradle-wrapper.properties
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Outils de publication (Codemagic CLI tools)
+        run: pip install --quiet "$CODEMAGIC_CLI_TOOLS"
+      - name: Clé d'import (key.properties)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] \
+            || { echo "::error::secrets ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD absents de l'environnement « stores » (mobile/publier-sur-les-stores.md)"; exit 1; }
+          KEYSTORE="$RUNNER_TEMP/plazo-upload.jks"
+          # Spaces and line breaks of a pasted base64 are dropped before decoding.
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r\t' | base64 --decode > "$KEYSTORE"
+          # The key must open with its password under the alias « upload » (android-keystore.yml): a truncated paste
+          # stops here, before 20 minutes of builds. Its public fingerprint is printed to compare with the Play Console.
+          keytool -list -v -keystore "$KEYSTORE" -alias upload -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null \
+            | grep -E 'SHA1:|SHA256:' \
+            || { echo "::error::la clé d'import ne s'ouvre pas (base64 coupé, mauvais mot de passe ou alias autre que « upload »)"; exit 1; }
+          cat > android/key.properties <<EOF
+          storeFile=$KEYSTORE
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=upload
+          keyPassword=$ANDROID_KEYSTORE_PASSWORD
+          EOF
+      - name: Dépendances et nom du produit
+        run: |
+          flutter pub get
+          dart run tool/sync_product.dart --check
+      - name: AAB (et APK) des deux apps, signés et versionnés
+        run: |
+          set -euo pipefail
+          COMMON=()
+          [ -n "$API_BASE_URL" ] && COMMON+=(--dart-define=API_BASE_URL="$API_BASE_URL")
+          [ -n "$SITE_URL" ] && COMMON+=(--dart-define=SITE_URL="$SITE_URL")
+          [ -n "$STRIPE_MERCHANT_ID" ] && COMMON+=(--dart-define=STRIPE_MERCHANT_ID="$STRIPE_MERCHANT_ID")
+          for FLAVOR in traveller pro; do
+            EXTRA=()
+            case "$FLAVOR" in
+              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              pro)
+                SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"
+                # Plazo Pro « Continuer avec Google » on Android needs the Web client ID (empty: no button).
+                if [ -n "$GOOGLE_SERVER_CLIENT_ID" ]; then
+                  EXTRA+=(--dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID")
+                else
+                  echo "::warning::GOOGLE_SERVER_CLIENT_ID absent : Plazo Pro Android sans « Continuer avec Google »"
+                fi
+                ;;
+            esac
+            DEFINES=(--dart-define=APP_FLAVOR="$FLAVOR" --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL" "${COMMON[@]}" "${EXTRA[@]}")
+            echo "── $SLUG (Android, $VERSION_NAME+$NEXT)"
+            flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" "${DEFINES[@]}"
+            mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/$SLUG-v$VERSION_NAME-$NEXT.aab"
+            if [ "$BUILD_APK" = "true" ]; then
+              flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" "${DEFINES[@]}"
+              mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$SLUG-v$VERSION_NAME-$NEXT.apk"
+            fi
+          done
+          ls -1 build/app/outputs/bundle/*/*.aab build/app/outputs/flutter-apk/*-v*.apk 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ needs.prepare.outputs.version_name }}
+          path: |
+            mobile/build/app/outputs/bundle/*/*.aab
+            mobile/build/app/outputs/flutter-apk/*-v*.apk
+            mobile/build/app/outputs/mapping/*/mapping.txt
+          retention-days: 30
+      - name: Google Play — envoi des deux AAB
+        run: |
+          set -uo pipefail
+          STATUS="$RUNNER_TEMP/publish-status.txt"
+          : > "$STATUS"
+          DRAFT=()
+          [ "$PLAY_DRAFT" = "true" ] && DRAFT=(--draft)
+          for AAB in build/app/outputs/bundle/*/*.aab; do
+            NAME=$(basename "$AAB" .aab)
+            SLUG="${NAME%-v$VERSION_NAME-$NEXT}"
+            if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS" ]; then
+              echo "KO  Google Play  $NAME (secret GOOGLE_PLAY_SERVICE_ACCOUNT_JSON absent)" >> "$STATUS"
+              continue
+            fi
+            # Two tries: a change made in the Play Console during the upload cancels the API's edit.
+            SENT=""
+            for TRY in 1 2; do
+              if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" \
+                --release-notes "@file:$RUNNER_TEMP/notes/release-notes-$SLUG.json" "${DRAFT[@]}"; then
+                SENT=yes
+                break
+              fi
+              [ "$TRY" = 1 ] && { echo "Nouvel essai de $NAME dans 60 s"; sleep 60; }
+            done
+            if [ -n "$SENT" ]; then echo "OK  Google Play  $NAME ($PLAY_TRACK)" >> "$STATUS"; else echo "KO  Google Play  $NAME" >> "$STATUS"; fi
+          done
+          { echo "### Google Play"; echo; sed 's/^/- /' "$STATUS"; } >> "$GITHUB_STEP_SUMMARY"
+          cat "$STATUS"
+          ! grep -q '^KO' "$STATUS"
+
+  ios:
+    name: iOS → App Store Connect
+    needs: prepare
+    if: ${{ (inputs.stores || 'both') != 'android' }}
+    runs-on: macos-26
+    timeout-minutes: 120
+    environment: stores
+    env:
+      NEXT: ${{ needs.prepare.outputs.next }}
+      VERSION_NAME: ${{ needs.prepare.outputs.version_name }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+      CERTIFICATE_PRIVATE_KEY: ${{ secrets.IOS_CERTIFICATE_PRIVATE_KEY }}
+      GOOGLE_SERVER_CLIENT_ID: ${{ vars.GOOGLE_SERVER_CLIENT_ID }}
+      GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      SITE_URL: ${{ vars.SITE_URL }}
+      STRIPE_MERCHANT_ID: ${{ vars.STRIPE_MERCHANT_ID }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          # The image's default (26.6, July 2026); Codemagic built with 26.5.
+          xcode-version: '26.6'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Outils de publication (Codemagic CLI tools)
+        run: pip install --quiet "$CODEMAGIC_CLI_TOOLS"
+      - name: Signature — certificat et profils App Store des deux apps
+        run: |
+          set -euo pipefail
+          for VAR in APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_PRIVATE_KEY CERTIFICATE_PRIVATE_KEY; do
+            [ -n "${!VAR}" ] || { echo "::error::secret ${VAR/CERTIFICATE_PRIVATE_KEY/IOS_CERTIFICATE_PRIVATE_KEY} absent de l'environnement « stores » (mobile/publier-sur-les-stores.md)"; exit 1; }
+          done
+          keychain initialize
+          # The Apple Distribution certificate whose private key is given, and the App Store profile of each bundle id
+          # made with it. --create only when asked (ios_create_signing): it makes a certificate for that key when Apple
+          # has none (3 distribution certificates per team at most) and the profiles that are missing.
+          CREATE=()
+          [ "$IOS_CREATE_SIGNING" = "true" ] && CREATE=(--create)
+          for BID in "$IOS_BUNDLE_ID_PLAZO" "$IOS_BUNDLE_ID_PLAZO_PRO"; do
+            app-store-connect fetch-signing-files "$BID" --platform IOS --type IOS_APP_STORE \
+              --certificate-key=@env:CERTIFICATE_PRIVATE_KEY "${CREATE[@]}" \
+              || { echo "::error::pas de certificat ni de profil App Store pour $BID avec cette clé : relancer avec « ios_create_signing » coché (mobile/publier-sur-les-stores.md)"; exit 1; }
+          done
+          keychain add-certificates
+      - name: Sign in with Apple (Plazo Pro) selon son profil App Store
+        run: |
+          set -euo pipefail
+          # Plazo Pro shows « Continuer avec Apple » only when its App Store profile carries the capability: then the
+          # entitlement is added for this build only and the IPA gets APPLE_SIGN_IN=true.
+          ENTITLEMENTS="ios/Runner/RunnerPro.entitlements"
+          FOUND=""
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO_PRO")
+                /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.applesignin" "$DECODED" >/dev/null 2>&1 && FOUND="$PROFILE"
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          if [ -n "$FOUND" ]; then
+            /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.applesignin" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+            /usr/libexec/PlistBuddy -c "Add :com.apple.developer.applesignin array" -c "Add :com.apple.developer.applesignin:0 string Default" "$ENTITLEMENTS"
+            echo "APPLE_SIGN_IN_DEFINE=--dart-define=APPLE_SIGN_IN=true" >> "$GITHUB_ENV"
+            echo "Sign in with Apple : capacité présente, bouton « Continuer avec Apple » activé"
+          else
+            echo "::warning::le profil App Store de Plazo Pro n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple"
+          fi
+      - name: Dépendances
+        run: flutter pub get
+      - name: Profils dans le projet Xcode (un export options plist par app)
+        run: |
+          set -euo pipefail
+          PLIST="$RUNNER_TEMP/export_options.plist"
+          xcode-project use-profiles --export-options-plist "$PLIST"
+          for BID in "$IOS_BUNDLE_ID_PLAZO" "$IOS_BUNDLE_ID_PLAZO_PRO"; do
+            /usr/libexec/PlistBuddy -c "Print :provisioningProfiles:$BID" "$PLIST" >/dev/null 2>&1 \
+              || { echo "::error::aucun profil App Store pour $BID (App Store Connect › Profiles, fait avec le certificat de IOS_CERTIFICATE_PRIVATE_KEY)"; exit 1; }
+          done
+          cp "$PLIST" "$RUNNER_TEMP/export_options_traveller.plist"
+          /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO_PRO" "$RUNNER_TEMP/export_options_traveller.plist"
+          cp "$PLIST" "$RUNNER_TEMP/export_options_pro.plist"
+          /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO" "$RUNNER_TEMP/export_options_pro.plist"
+      - name: IPA des deux apps, signés et versionnés
+        run: |
+          set -euo pipefail
+          mkdir -p build/ios/dsym
+          COMMON=()
+          [ -n "$API_BASE_URL" ] && COMMON+=(--dart-define=API_BASE_URL="$API_BASE_URL")
+          [ -n "$SITE_URL" ] && COMMON+=(--dart-define=SITE_URL="$SITE_URL")
+          [ -n "$STRIPE_MERCHANT_ID" ] && COMMON+=(--dart-define=STRIPE_MERCHANT_ID="$STRIPE_MERCHANT_ID")
+          for FLAVOR in traveller pro; do
+            EXTRA=()
+            case "$FLAVOR" in
+              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              pro)
+                SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"
+                [ -n "${APPLE_SIGN_IN_DEFINE:-}" ] && EXTRA+=("$APPLE_SIGN_IN_DEFINE")
+                # « Continuer avec Google » on iPhone: the iOS client's reversed id is the URL scheme Google comes back
+                # to (Info.plist is shared, and Plazo is built first).
+                if [ -n "$GOOGLE_SERVER_CLIENT_ID" ] && [ -n "$GOOGLE_IOS_CLIENT_ID" ]; then
+                  REVERSED="com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID%.apps.googleusercontent.com}"
+                  /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" ios/Runner/Info.plist >/dev/null 2>&1 || true
+                  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" -c "Add :CFBundleURLTypes:0 dict" \
+                    -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED" \
+                    ios/Runner/Info.plist
+                  EXTRA+=(--dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID" --dart-define=GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID")
+                else
+                  echo "::warning::GOOGLE_SERVER_CLIENT_ID ou GOOGLE_IOS_CLIENT_ID absent : Plazo Pro iPhone sans « Continuer avec Google »"
+                fi
+                ;;
+            esac
+            echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
+            flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" \
+              --dart-define=APP_FLAVOR="$FLAVOR" --dart-define=ONESIGNAL_APP_ID="$ONESIGNAL" "${COMMON[@]}" "${EXTRA[@]}" \
+              --export-options-plist="$RUNNER_TEMP/export_options_$FLAVOR.plist"
+            # The IPA just exported is the one not yet named after its app.
+            for IPA in build/ios/ipa/*.ipa; do
+              case "$IPA" in *"-v$VERSION_NAME-$NEXT.ipa") ;; *) mv "$IPA" "build/ios/ipa/$SLUG-v$VERSION_NAME-$NEXT.ipa" ;; esac
+            done
+            cp -R build/ios/archive/*.xcarchive/dSYMs "build/ios/dsym/$SLUG-v$VERSION_NAME-$NEXT"
+          done
+          ls -1 build/ios/ipa/*.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-${{ needs.prepare.outputs.version_name }}
+          path: |
+            mobile/build/ios/ipa/*.ipa
+            mobile/build/ios/dsym/
+          retention-days: 30
+      - name: App Store Connect — envoi des deux IPA (TestFlight puis revue App Store)
+        run: |
+          set -uo pipefail
+          STATUS="$RUNNER_TEMP/publish-status.txt"
+          : > "$STATUS"
+          # Both IPAs are uploaded first without waiting, so Apple processes them side by side, then each is submitted.
+          UPLOADED=()
+          for IPA in build/ios/ipa/*.ipa; do
+            NAME=$(basename "$IPA" .ipa)
+            if app-store-connect publish --path "$IPA" --max-build-processing-wait 0; then
+              UPLOADED+=("$IPA")
+              [ "$APP_STORE_SUBMIT" = "true" ] || echo "OK  TestFlight  $NAME" >> "$STATUS"
+            else
+              echo "KO  TestFlight  $NAME" >> "$STATUS"
+            fi
+          done
+          if [ "$APP_STORE_SUBMIT" = "true" ]; then
+            for IPA in "${UPLOADED[@]}"; do
+              NAME=$(basename "$IPA" .ipa)
+              SLUG="${NAME%-v$VERSION_NAME-$NEXT}"
+              # Creates or updates the App Store version and submits it, replacing an older submission still waiting.
+              if app-store-connect publish --path "$IPA" --skip-package-upload --max-build-processing-wait 30 \
+                --app-store --platform IOS --version-string "$VERSION_NAME" --release-type "$APP_STORE_RELEASE_TYPE" \
+                --cancel-previous-submissions --locale fr-FR --whats-new "@file:$RUNNER_TEMP/notes/release-notes-$SLUG.txt"; then
+                echo "OK  App Store  $NAME" >> "$STATUS"
+              else
+                echo "KO  App Store  $NAME" >> "$STATUS"
+              fi
+            done
+          fi
+          { echo "### App Store Connect"; echo; sed 's/^/- /' "$STATUS"; } >> "$GITHUB_STEP_SUMMARY"
+          cat "$STATUS"
+          [ -s "$STATUS" ] && ! grep -q '^KO' "$STATUS"
+      - name: Trousseau supprimé
+        if: always()
+        run: keychain use-login || true
