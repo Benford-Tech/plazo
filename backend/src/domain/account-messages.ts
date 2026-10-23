@@ -35,7 +35,10 @@ function layout(productName: string, title: string, body: string): string {
 
 type Link = { label: string; url: string | null; note?: string };
 
-/** Links after the button: « Plazo Pro sur Google Play : https://… » ; a link not yet available shows its note instead. */
+/** An official store badge: the image (absolute URL, served by the site) and the store page; no page = greyed, with its note. */
+export type StoreBadge = { label: string; imageUrl: string; url: string | null; note?: string; width: number; height: number };
+
+/** Links after the button: « Essayer la démo : https://… » ; a link not yet available shows its note instead. */
 function links(items: Link[]): string {
   const rows = items.map(
     l =>
@@ -48,13 +51,23 @@ function links(items: Link[]): string {
   return `<ul style="margin:12px 0 0;padding-left:20px;font-size:14px;line-height:1.5">${rows.join('')}</ul>`;
 }
 
+/** The store badges side by side (23/10/2026, « mets les liens derrière des icônes officielles des stores »). */
+function badges(items: StoreBadge[]): string {
+  const cells = items.map(b => {
+    const img = `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.label)}" width="${b.width}" height="${b.height}" style="display:block;width:${b.width}px;height:${b.height}px;border:0">`;
+    const note = b.note ? `<div style="margin-top:6px;font-size:12px;color:${COLORS.soft};line-height:1.4">${escapeHtml(b.note)}</div>` : '';
+    return `<td valign="top" style="padding:0 16px 8px 0">${b.url ? `<a href="${escapeHtml(b.url)}" style="display:inline-block">${img}</a>` : img}${note}</td>`;
+  });
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:16px 0 0"><tr>${cells.join('')}</tr></table>`;
+}
+
 function message(
   productName: string,
   subject: string,
   heading: string,
   lines: string[],
   action?: { label: string; url: string },
-  extra?: { lines: string[]; links: Link[] },
+  extra?: { lines: string[]; links: Link[]; badges?: StoreBadge[] },
 ): EmailMessage {
   const html = layout(
     productName,
@@ -62,28 +75,72 @@ function message(
     `<h1 style="margin:0 0 4px;font-size:22px;color:${COLORS.deep}">${escapeHtml(heading)}</h1>
 ${lines.map(paragraph).join('\n')}
 ${action ? button(action.label, action.url) : ''}
-${extra ? `${extra.lines.map(paragraph).join('\n')}\n${links(extra.links)}` : ''}`,
+${extra ? `${extra.lines.map(paragraph).join('\n')}\n${extra.links.length ? links(extra.links) : ''}${extra.badges?.length ? badges(extra.badges) : ''}` : ''}`,
   );
   const text = [
     heading,
     '',
     ...lines,
     ...(action ? ['', `${action.label} : ${action.url}`] : []),
-    ...(extra ? ['', ...extra.lines, ...extra.links.map(l => `- ${l.label} : ${l.url ?? l.note ?? ''}`)] : []),
+    ...(extra
+      ? [
+          '',
+          ...extra.lines,
+          ...extra.links.map(l => `- ${l.label} : ${l.url ?? l.note ?? ''}`),
+          ...(extra.badges ?? []).map(b => `- ${b.label} : ${b.url ?? b.note ?? ''}`),
+        ]
+      : []),
     '',
     `— ${productName}`,
   ].join('\n');
   return { subject, html, text };
 }
 
+/** Paths of the official store badges under the site (`site/public/badges/`). */
+export const STORE_BADGE_PATHS = {
+  googlePlay: '/badges/google-play-fr.png',
+  appStore: '/badges/app-store-fr.png',
+  appStoreSoon: '/badges/app-store-fr-soon.png',
+};
+
+const APPLE_REVIEW_NOTE = "Validation par Apple en cours : le lien vous sera envoyé dès que l'app est publiée.";
+
 /**
  * The manager's invitation (22/10/2026: with the demo of the pro space and Plazo Pro on the stores; the App Store link
- * comes once Apple has published the app, the email says the review is running until then).
+ * comes once Apple has published the app, the email says the review is running until then). 23/10/2026: the stores are
+ * official badges (images served by the site, `badgesBase`), the App Store one greyed and without link until then; without
+ * a site URL, plain links.
  */
 export function invitationEmail(
   productName: string,
-  data: { operatorName: string; url: string; days: number; demoUrl: string | null; playStoreUrl: string; appStoreUrl: string | null },
+  data: {
+    operatorName: string;
+    url: string;
+    days: number;
+    demoUrl: string | null;
+    playStoreUrl: string;
+    appStoreUrl: string | null;
+    badgesBase: string | null;
+  },
 ): EmailMessage {
+  const stores: Link[] = [
+    { label: `${productName} Pro sur Google Play (Android)`, url: data.playStoreUrl },
+    { label: `${productName} Pro sur l'App Store (iPhone)`, url: data.appStoreUrl, note: APPLE_REVIEW_NOTE },
+  ];
+  const badgeRow: StoreBadge[] | undefined = data.badgesBase
+    ? [
+        // Google's file keeps its own margin; shown so that the badge itself is as tall as Apple's.
+        { label: stores[0].label, url: data.playStoreUrl, imageUrl: `${data.badgesBase}${STORE_BADGE_PATHS.googlePlay}`, width: 155, height: 60 },
+        {
+          label: stores[1].label,
+          url: data.appStoreUrl,
+          imageUrl: `${data.badgesBase}${data.appStoreUrl ? STORE_BADGE_PATHS.appStore : STORE_BADGE_PATHS.appStoreSoon}`,
+          note: data.appStoreUrl ? undefined : APPLE_REVIEW_NOTE,
+          width: 142,
+          height: 45,
+        },
+      ]
+    : undefined;
   return message(
     productName,
     `Votre espace ${productName} pour ${data.operatorName}`,
@@ -97,15 +154,8 @@ export function invitationEmail(
       lines: [
         `Avant de vous lancer, vous pouvez découvrir ${productName} sur un parking fictif, sans rien enregistrer. Votre équipe utilisera ensuite l'application ${productName} Pro sur son téléphone : planning, navette, parking et réservations.`,
       ],
-      links: [
-        ...(data.demoUrl ? [{ label: 'Essayer la démo', url: data.demoUrl }] : []),
-        { label: `${productName} Pro sur Google Play (Android)`, url: data.playStoreUrl },
-        {
-          label: `${productName} Pro sur l'App Store (iPhone)`,
-          url: data.appStoreUrl,
-          note: "validation par Apple en cours, le lien vous sera envoyé dès qu'elle est publiée",
-        },
-      ],
+      links: [...(data.demoUrl ? [{ label: 'Essayer la démo', url: data.demoUrl }] : []), ...(badgeRow ? [] : stores)],
+      badges: badgeRow,
     },
   );
 }

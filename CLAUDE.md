@@ -981,7 +981,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (23/10/2026, « mets à jour le template »)** : les mails du loueur (`account-messages.ts` : invitation, confirmation d'adresse,
   fiche, contrat) passent du noir et jaune de la direction B à C-B (fond `#EEF0EE`, carte blanche arrondie, plaque citron
   « Plazo » et « PRO » vert foncé, bouton citron en pilule, titres et liens vert foncé) ; test envoyé à Joanny par Brevo
-  (gabarit transactionnel n° 1 « Plazo · Invitation du loueur (test du 23/10/2026) », à supprimer ou garder comme aperçu).
+  (gabarit transactionnel n° 1 « Plazo · Invitation du loueur (test du 23/10/2026) », à supprimer ou garder comme aperçu). **Badges officiels des stores (23/10/2026, « mets les liens derrière des icônes officielles des stores »)** : les deux
+  liens des stores sont les badges « Disponible sur Google Play » et « Télécharger dans l'App Store » (PNG dans `site/public/badges/`,
+  servis par le site, `badgesBase` = `siteUrl('')` ; `StoreBadge`, `STORE_BADGE_PATHS`), côte à côte sous le lien de la démo ; sans
+  adresse App Store, le badge Apple est grisé, sans lien, avec la mention sous lui ; sans adresse du site, liens en texte.
   **« Ouvrir son espace » pendant l'invitation (09/10/2026, « pouvoir commencer à modifier un parking en cours
   d'invitation »)** : le bouton est aussi proposé à côté de « Renvoyer l'invitation » ; la plateforme prépare réglages, plan,
   fiche et tarifs (écritures tracées `view_as.write`), le gérant les retrouve en acceptant ; la colonne Annonce montre la
