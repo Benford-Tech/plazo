@@ -977,7 +977,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   « Essayer la démo » (`siteUrl('/pro/demo')`), « Plazo Pro sur Google Play (Android) » (`PLAZO_PRO_PLAY_STORE_URL`, déduit du
   nom de paquet) et « Plazo Pro sur l'App Store (iPhone) » : le lien `PLAZO_PRO_APP_STORE_URL` (variable Vercel à poser dès
   qu'Apple a publié l'app), sinon la mention « validation par Apple en cours, le lien vous sera envoyé dès qu'elle est
-  publiée » ; « Renvoyer l'invitation » envoie le même mail ; test `account-messages.test.ts`.
+  publiée » ; « Renvoyer l'invitation » envoie le même mail ; test `account-messages.test.ts`. **Gabarit aux couleurs de l'espace pro
+  (23/10/2026, « mets à jour le template »)** : les mails du loueur (`account-messages.ts` : invitation, confirmation d'adresse,
+  fiche, contrat) passent du noir et jaune de la direction B à C-B (fond `#EEF0EE`, carte blanche arrondie, plaque citron
+  « Plazo » et « PRO » vert foncé, bouton citron en pilule, titres et liens vert foncé) ; test envoyé à Joanny par Brevo
+  (gabarit transactionnel n° 1 « Plazo · Invitation du loueur (test du 23/10/2026) », à supprimer ou garder comme aperçu).
   **« Ouvrir son espace » pendant l'invitation (09/10/2026, « pouvoir commencer à modifier un parking en cours
   d'invitation »)** : le bouton est aussi proposé à côté de « Renvoyer l'invitation » ; la plateforme prépare réglages, plan,
   fiche et tarifs (écritures tracées `view_as.write`), le gérant les retrouve en acceptant ; la colonne Annonce montre la

@@ -5,7 +5,9 @@ import { EmailMessage } from './booking-messages';
  * platform's decisions on their listing. Pure functions; the product name and links are passed in.
  */
 
-const COLORS = { ink: '#0B0B0C', yellow: '#F5C400', soft: '#5d5d58', line: '#e4e4df', tint: '#f3f3f0' };
+// The pro space's colours (direction C-B « Opérations », 05/10/2026; until 23/10/2026 the template wore the black and
+// amber of direction B): light ground, white card, lime for the button with dark green text, dark green for the accents.
+const COLORS = { ink: '#1A1D1A', soft: '#6B7280', line: '#E4E6E2', tint: '#EEF0EE', lime: '#A3E635', limeInk: '#0F2A14', deep: '#1E5E2E' };
 
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -13,7 +15,7 @@ const escapeHtml = (value: string) =>
 const paragraph = (text: string) => `<p style="margin:12px 0 0;font-size:15px;line-height:1.5">${escapeHtml(text)}</p>`;
 
 function button(label: string, url: string): string {
-  return `<p style="margin:24px 0 8px"><a href="${escapeHtml(url)}" style="display:inline-block;background:${COLORS.yellow};color:${COLORS.ink};text-decoration:none;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:12px 20px">${escapeHtml(label)}</a></p>
+  return `<p style="margin:24px 0 8px"><a href="${escapeHtml(url)}" style="display:inline-block;background:${COLORS.lime};color:${COLORS.limeInk};text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px">${escapeHtml(label)}</a></p>
 <p style="margin:0;font-size:12px;color:${COLORS.soft};word-break:break-all">${escapeHtml(url)}</p>`;
 }
 
@@ -22,8 +24,8 @@ function layout(productName: string, title: string, body: string): string {
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:${COLORS.tint};font-family:Helvetica,Arial,sans-serif;color:${COLORS.ink}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.tint}"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid ${COLORS.line}">
-<tr><td style="background:${COLORS.ink};padding:16px 24px;color:${COLORS.yellow};font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:18px">${escapeHtml(productName)} pro</td></tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid ${COLORS.line};border-radius:14px">
+<tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${COLORS.lime};color:${COLORS.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(productName)}</span> <span style="color:${COLORS.deep};font-weight:700;letter-spacing:.08em;font-size:12px;vertical-align:middle">PRO</span></td></tr>
 <tr><td style="padding:24px">${body}</td></tr>
 </table>
 <p style="max-width:560px;margin:16px auto 0;font-size:12px;color:${COLORS.soft}">Cet email vous est envoyé par ${escapeHtml(productName)} au sujet de votre espace professionnel.</p>
@@ -39,7 +41,7 @@ function links(items: Link[]): string {
     l =>
       `<li style="margin:6px 0">${escapeHtml(l.label)} : ${
         l.url
-          ? `<a href="${escapeHtml(l.url)}" style="color:${COLORS.ink};word-break:break-all">${escapeHtml(l.url)}</a>`
+          ? `<a href="${escapeHtml(l.url)}" style="color:${COLORS.deep};word-break:break-all">${escapeHtml(l.url)}</a>`
           : `<span style="color:${COLORS.soft}">${escapeHtml(l.note ?? '')}</span>`
       }</li>`,
   );
@@ -57,7 +59,7 @@ function message(
   const html = layout(
     productName,
     subject,
-    `<h1 style="margin:0 0 4px;font-size:22px;text-transform:uppercase;letter-spacing:.03em">${escapeHtml(heading)}</h1>
+    `<h1 style="margin:0 0 4px;font-size:22px;color:${COLORS.deep}">${escapeHtml(heading)}</h1>
 ${lines.map(paragraph).join('\n')}
 ${action ? button(action.label, action.url) : ''}
 ${extra ? `${extra.lines.map(paragraph).join('\n')}\n${links(extra.links)}` : ''}`,
