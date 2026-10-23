@@ -175,6 +175,7 @@ export class AccountService {
         demoUrl: this.notifications.siteUrl('/pro/demo'),
         playStoreUrl: PLAZO_PRO_PLAY_STORE_URL,
         appStoreUrl: PLAZO_PRO_APP_STORE_URL,
+        badgesBase: this.notifications.siteUrl(''),
       }),
     );
     return { emailSent: sent, expiresAt, ...(sent ? {} : { inviteUrl: url }) };
