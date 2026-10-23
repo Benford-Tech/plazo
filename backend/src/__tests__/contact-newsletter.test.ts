@@ -109,6 +109,9 @@ describe('règles pures', () => {
     expect(mail.text).toContain('Réservation : non indiquée');
     expect(mail.text).toContain('Ligne 1\n<script>alert(1)</script>');
     expect(mail.text).toContain(`Envoyé le : ${formatSentAt(sentAt)}`);
+    // 23/10/2026: a « Répondre » button on the visitor's address, the name escaped in the title.
+    expect(mail.html).toContain('href="mailto:lea%40example.com?subject=Re%3A%20votre%20message%20%C3%A0%20Plazo"');
+    expect(mail.html).toContain('Nouveau message de Léa &lt;b&gt;');
     expect(formatSentAt(sentAt)).toBe('jeudi 15 octobre 2026 à 14:05');
   });
 
