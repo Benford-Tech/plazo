@@ -344,13 +344,18 @@ export class InboundEmailService {
   public alloparkPage = Container.get(AlloparkPageService);
   public mailProviders = Container.get(MailProviderService);
 
-  /** The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it. */
-  public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number }> {
-    const result = { received: 0, imported: 0, toCheck: 0, ignored: 0 };
+  /**
+   * The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it.
+   * `ignored` counts the emails no parking takes (the relay sends them to its fallback address); `setAside` counts a
+   * parking's own emails set aside unread, which must never reach that address (23/10/2026: it is a person's mailbox).
+   */
+  public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number; setAside: number }> {
+    const result = { received: 0, imported: 0, toCheck: 0, ignored: 0, setAside: 0 };
     for (const item of payload.items ?? []) {
       result.received += 1;
       const outcome = await this.receiveItem(item);
       if (outcome === 'ignored') result.ignored += 1;
+      else if (outcome === 'set_aside') result.setAside += 1;
       else if (outcome === 'imported') result.imported += 1;
       else if (TO_CHECK.includes(outcome)) result.toCheck += 1;
     }
@@ -358,7 +363,7 @@ export class InboundEmailService {
   }
 
   /** One email of the relay's payload: stored with what became of it. */
-  private async receiveItem(item: InboundItem): Promise<InboundEmailStatus | 'ignored'> {
+  private async receiveItem(item: InboundItem): Promise<InboundEmailStatus | 'ignored' | 'set_aside'> {
     const slug = inboundSlugOf(recipientsOf(item), INBOUND_EMAIL_DOMAIN);
     if (!slug) return 'ignored';
     const operator = await prisma.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true, status: true } });
@@ -393,7 +398,7 @@ export class InboundEmailService {
     // unread (no Claude) and kept without sender, subject or text, only to warn the manager in the setup wizard.
     if (item.AutoForwarded && !fromIsComparator && !looksLikeBooking(item.Subject ?? null, text)) {
       await prisma.inboundEmail.create({ data: { operatorId: operator.id, status: 'ignored', delivery } });
-      return 'ignored';
+      return 'set_aside';
     }
     const base = {
       operatorId: operator.id,

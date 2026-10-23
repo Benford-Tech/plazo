@@ -51,7 +51,8 @@ export default {
       });
       if (!response.ok) failure = `Plazo answered ${response.status}`;
       else {
-        // Plazo answers { received, imported, toCheck, ignored }: ignored means no parking has this address.
+        // Plazo answers { received, imported, toCheck, ignored, setAside }: ignored means no parking has this address (a
+        // parking's own email set aside is counted in setAside, and never goes to the fallback address).
         const result = (await response.json().catch(() => null)) as { ignored?: number } | null;
         unknown = (result?.ignored ?? 0) > 0;
       }
