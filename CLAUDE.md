@@ -1033,7 +1033,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   français écrit « 07 21 17 75 90 », `displayPhone` ; rien sans lui), prospects saisis à la main ou importés
   d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables (par défaut, depuis le 19/10/2026, à la voix d'une équipe de développeurs : « nous »,
   faits vérifiables seulement, ni années d'expérience ni nombre de clients ; `defaultSteps`). Politique de confidentialité :
-  section 11 « Prospection des parkings ».
+  section 11 « Prospection des parkings ». **Gabarit mis à niveau (23/10/2026, « mets à niveau le mail de prospection »)** : `prospectEmail` prend la forme
+  des mails du loueur (fond clair, carte blanche, plaque citron « Plazo »), le texte de l'étape gardé tel quel en paragraphes
+  (adresses tapées rendues cliquables, `linkify`), un bouton citron « Voir la démo de Plazo » quand l'étape porte `{lien_demo}`,
+  la signature, puis sous la carte la raison, l'éditeur et le lien de désinscription ; la version texte est inchangée.
   **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
   « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
   l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le

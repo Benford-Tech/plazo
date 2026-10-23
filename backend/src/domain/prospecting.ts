@@ -200,6 +200,11 @@ export function displayPhone(phone: string): string {
   return /^0[1-9]\d{8}$/.test(digits) ? digits.replace(/(\d{2})(?=\d)/g, '$1 ') : raw;
 }
 
+/** An address typed in the text becomes a link (the text is already escaped: `&amp;` stays part of the address). */
+function linkify(escaped: string): string {
+  return escaped.replace(/https?:\/\/[^\s<]+?(?=[.,;:!?)]*(?:\s|$))/g, url => `<a href="${url}" style="color:#1E5E2E">${url}</a>`);
+}
+
 export function prospectEmail(input: {
   productName: string;
   company: Publisher;
@@ -224,18 +229,30 @@ export function prospectEmail(input: {
 
   const text = [body, signature, '--', why, who, `${stop} : ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
 
+  // 23/10/2026 (« mets à niveau le mail de prospection »): the operators' emails' shape (light ground, white card, the
+  // Plazo plate), the text itself kept as the sender's own words; a « Voir la démo » button when the step gives the
+  // prospect's demo link, so that the link is a tap and not only a URL in the text.
+  const C = { ink: '#1A1D1A', soft: '#6B7280', line: '#E4E6E2', tint: '#EEF0EE', lime: '#A3E635', limeInk: '#0F2A14', deep: '#1E5E2E' };
+  const demoUrl = input.values.lien_demo.trim();
   const paragraphs = body
     .split(/\n{2,}/)
-    .map(p => `<p style="margin:0 0 14px">${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .map(p => `<p style="margin:0 0 14px">${linkify(escapeHtml(p)).replace(/\n/g, '<br>')}</p>`)
     .join('');
-  const html =
-    '<!doctype html><html lang="fr"><body style="margin:0;padding:24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1A1D1A">' +
-    `<div style="max-width:600px">${paragraphs}` +
-    (signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : '') +
-    '<hr style="border:0;border-top:1px solid #E4E6E2;margin:24px 0 12px">' +
-    `<p style="margin:0 0 8px;font-size:12px;color:#6B7280">${escapeHtml(why)}${who ? ` ${escapeHtml(who)}` : ''}</p>` +
-    `<p style="margin:0;font-size:12px"><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#1E5E2E">${escapeHtml(stop)}</a></p>` +
-    '</div></body></html>';
+  const demoButton = demoUrl
+    ? `<p style="margin:4px 0 18px"><a href="${escapeHtml(demoUrl)}" style="display:inline-block;background:${C.lime};color:${C.limeInk};text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px">Voir la démo de ${escapeHtml(input.productName)}</a></p>`
+    : '';
+  const html = `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(subject)}</title></head>
+<body style="margin:0;padding:0;background:${C.tint};font-family:Helvetica,Arial,sans-serif;color:${C.ink}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.tint}"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid ${C.line};border-radius:14px">
+<tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${C.lime};color:${C.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(input.productName)}</span></td></tr>
+<tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}</td></tr>
+</table>
+<p style="max-width:600px;margin:16px auto 0;font-size:12px;line-height:1.5;color:${C.soft};text-align:left">${escapeHtml(why)}${who ? ` ${escapeHtml(who)}` : ''}</p>
+<p style="max-width:600px;margin:8px auto 0;font-size:12px;text-align:left"><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:${C.deep}">${escapeHtml(stop)}</a></p>
+</td></tr></table>
+</body></html>`;
   return { subject, text, html };
 }
 
