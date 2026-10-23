@@ -52,7 +52,7 @@ function links(items: Link[]): string {
 }
 
 /** The store badges side by side (23/10/2026, « mets les liens derrière des icônes officielles des stores »). */
-function badges(items: StoreBadge[]): string {
+export function storeBadgesHtml(items: StoreBadge[]): string {
   const cells = items.map(b => {
     const img = `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.label)}" width="${b.width}" height="${b.height}" style="display:block;width:${b.width}px;height:${b.height}px;border:0">`;
     const note = b.note ? `<div style="margin-top:6px;font-size:12px;color:${COLORS.soft};line-height:1.4">${escapeHtml(b.note)}</div>` : '';
@@ -75,7 +75,7 @@ function message(
     `<h1 style="margin:0 0 4px;font-size:22px;color:${COLORS.deep}">${escapeHtml(heading)}</h1>
 ${lines.map(paragraph).join('\n')}
 ${action ? button(action.label, action.url) : ''}
-${extra ? `${extra.lines.map(paragraph).join('\n')}\n${extra.links.length ? links(extra.links) : ''}${extra.badges?.length ? badges(extra.badges) : ''}` : ''}`,
+${extra ? `${extra.lines.map(paragraph).join('\n')}\n${extra.links.length ? links(extra.links) : ''}${extra.badges?.length ? storeBadgesHtml(extra.badges) : ''}` : ''}`,
   );
   const text = [
     heading,
@@ -103,7 +103,29 @@ export const STORE_BADGE_PATHS = {
   appStoreSoon: '/badges/app-store-fr-soon.png',
 };
 
-const APPLE_REVIEW_NOTE = "Validation par Apple en cours : le lien vous sera envoyé dès que l'app est publiée.";
+export const APPLE_REVIEW_NOTE = "Validation par Apple en cours : le lien vous sera envoyé dès que l'app est publiée.";
+
+/** The two store badges of Plazo Pro (23/10/2026): Google Play linked, the App Store greyed and noted until Apple publishes. */
+export function proStoreBadges(productName: string, stores: { badgesBase: string; playStoreUrl: string; appStoreUrl: string | null }): StoreBadge[] {
+  return [
+    // Google's file keeps its own margin; shown so that the badge itself is as tall as Apple's.
+    {
+      label: `${productName} Pro sur Google Play (Android)`,
+      url: stores.playStoreUrl,
+      imageUrl: `${stores.badgesBase}${STORE_BADGE_PATHS.googlePlay}`,
+      width: 155,
+      height: 60,
+    },
+    {
+      label: `${productName} Pro sur l'App Store (iPhone)`,
+      url: stores.appStoreUrl,
+      imageUrl: `${stores.badgesBase}${stores.appStoreUrl ? STORE_BADGE_PATHS.appStore : STORE_BADGE_PATHS.appStoreSoon}`,
+      note: stores.appStoreUrl ? undefined : APPLE_REVIEW_NOTE,
+      width: 142,
+      height: 45,
+    },
+  ];
+}
 
 /**
  * The manager's invitation (22/10/2026: with the demo of the pro space and Plazo Pro on the stores; the App Store link
@@ -128,18 +150,7 @@ export function invitationEmail(
     { label: `${productName} Pro sur l'App Store (iPhone)`, url: data.appStoreUrl, note: APPLE_REVIEW_NOTE },
   ];
   const badgeRow: StoreBadge[] | undefined = data.badgesBase
-    ? [
-        // Google's file keeps its own margin; shown so that the badge itself is as tall as Apple's.
-        { label: stores[0].label, url: data.playStoreUrl, imageUrl: `${data.badgesBase}${STORE_BADGE_PATHS.googlePlay}`, width: 155, height: 60 },
-        {
-          label: stores[1].label,
-          url: data.appStoreUrl,
-          imageUrl: `${data.badgesBase}${data.appStoreUrl ? STORE_BADGE_PATHS.appStore : STORE_BADGE_PATHS.appStoreSoon}`,
-          note: data.appStoreUrl ? undefined : APPLE_REVIEW_NOTE,
-          width: 142,
-          height: 45,
-        },
-      ]
+    ? proStoreBadges(productName, { badgesBase: data.badgesBase, playStoreUrl: data.playStoreUrl, appStoreUrl: data.appStoreUrl })
     : undefined;
   return message(
     productName,
