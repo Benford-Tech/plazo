@@ -8,6 +8,7 @@ import 'package:parking_app/src/services/link_service.dart';
 import 'package:parking_app/src/services/payment_sheet_service.dart';
 import 'package:parking_app/src/services/location_service.dart';
 import 'package:parking_app/src/services/secure_storage_service.dart';
+import 'package:parking_app/src/shared/child_seats/child_seats.dart';
 
 /// An API error as the repositories receive it (code, fields, details).
 class ApiError implements Exception {
@@ -139,6 +140,10 @@ class FakeBookingDataSource implements BookingDataSource {
 
   @override
   Future<PublicBookingModel> clearCar({required String reference}) => _next('clearCar', () => booking(reference: reference));
+
+  @override
+  Future<PublicBookingModel> updateChildSeats({required String reference, required ChildSeats seats}) =>
+      _next('childSeats', () => booking(reference: reference).copyWith(childSeats: seats));
 
   @override
   Future<PaymentIntentModel> paymentIntent({required String reference}) => _next(

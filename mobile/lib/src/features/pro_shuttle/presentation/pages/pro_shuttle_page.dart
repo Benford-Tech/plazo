@@ -10,9 +10,11 @@ import '../../../../core/helpers/plate.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/widgets/child_seat_widgets.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/live_dot.dart';
@@ -222,7 +224,9 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${p.customerName} · ${'shuttle.pax'.tr(args: ['${p.passengers}'])}', style: AppText.strong(size: 14.5)),
+                      Text(_peopleLine(p.customerName, p.passengers, p.childSeats), style: AppText.strong(size: 14.5)),
+                      // 24/10/2026: the seats installed for this traveller.
+                      if (p.childSeats.any) ...[const SizedBox(height: 4), ChildSeatPills(seats: p.childSeats)],
                       // To the terminal, every passenger is on site; the ones checked in at boarding show when.
                       if (state.trip!.dropoff) ...[
                         const SizedBox(height: 4),
@@ -531,6 +535,11 @@ class _StartBar extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                 ],
+                // 24/10/2026: the child seats to install before leaving, summed over the ticked travellers.
+                if (state.selectedChildSeats.any) ...[
+                  ChildSeatsLoadBanner(key: const Key('child-seats-load'), seats: state.selectedChildSeats),
+                  const SizedBox(height: 8),
+                ],
                 GradientButton(
                   key: const Key('start-trip'),
                   icon: Icons.directions_bus_rounded,
@@ -689,7 +698,7 @@ class _PickupTile extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Expanded(
-                    child: Text('${row.customerName} · ${'shuttle.pax'.tr(args: ['${row.passengers}'])}', style: AppText.strong(size: 14.5)),
+                    child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5)),
                   ),
                   const SizedBox(width: 8),
                   // Never wider than half the card: a long badge scales down instead of overflowing.
@@ -710,6 +719,8 @@ class _PickupTile extends StatelessWidget {
                   FrenchPlate(row.plate, size: 11),
                 ],
               ),
+              // 24/10/2026: the child seats to load for this traveller.
+              if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
               // E (06/10/2026): what the traveller signalled today.
               if (row.notice != null) ...[
                 const SizedBox(height: 6),
@@ -777,7 +788,7 @@ class _DepartureTile extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   Expanded(
-                    child: Text('${row.customerName} · ${'shuttle.pax'.tr(args: ['${row.passengers}'])}', style: AppText.strong(size: 14.5)),
+                    child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5)),
                   ),
                   const SizedBox(width: 8),
                   if (onTrip || row.tripId != null)
@@ -801,12 +812,20 @@ class _DepartureTile extends StatelessWidget {
                   FrenchPlate(row.plate, size: 11),
                 ],
               ),
+              // 24/10/2026: the child seats to load for this traveller.
+              if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
             ],
           ),
         ),
       ),
     );
   }
+}
+
+/// « Camille Martin · 3 pass. · dont 1 enfant » (24/10/2026): the children count in the passengers.
+String _peopleLine(String name, int passengers, ChildSeats seats) {
+  final line = '$name · ${'shuttle.pax'.tr(args: ['$passengers'])}';
+  return seats.any ? '$line · ${childSeatsChildren(seats)}' : line;
 }
 
 /// Flight planned / landed / at the meeting point (the badges of the approved frame).

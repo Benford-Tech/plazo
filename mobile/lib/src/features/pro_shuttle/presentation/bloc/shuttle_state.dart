@@ -88,6 +88,14 @@ abstract class ShuttleState with _$ShuttleState {
     return total;
   }
 
+  /// 24/10/2026: the child seats to load for the ticked travellers (« À charger avant de partir »).
+  ChildSeats get selectedChildSeats => ChildSeats.sum([
+    for (final r in pickupRows)
+      if (selected.contains(r.reservationId)) r.childSeats,
+    for (final r in departureRows)
+      if (selected.contains(r.reservationId)) r.childSeats,
+  ]);
+
   /// « Embarquer et partir » starts at once with the chosen vehicle: the driver holds a vehicle of the day in service.
   bool get oneTapStart => dayVehicleId != null;
 

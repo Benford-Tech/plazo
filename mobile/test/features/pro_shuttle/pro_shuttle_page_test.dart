@@ -12,6 +12,7 @@ import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/shuttle_w
 import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/shuttle_bloc.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import 'package:parking_app/src/features/return_day/data/models/return_model.dart';
+import 'package:parking_app/src/shared/child_seats/child_seats.dart';
 import 'package:parking_app/src/shared/widgets/status_badge.dart';
 
 import '../../helpers/fixtures.dart';
@@ -100,6 +101,41 @@ void main() {
     final events = verify(() => bloc.add(captureAny())).captured;
     expect(events[0], isA<ShuttleDirectionChanged>().having((e) => e.direction, 'direction', 'pickup'));
     expect(events[1], isA<ShuttleBandChanged>().having((e) => e.band, 'band', 0));
+  });
+
+  testWidgets('Sièges auto (24/10/2026) : « dont N enfants », pastilles par sorte, « À charger avant de partir » pour les cochés', (tester) async {
+    final departures = DeparturesModel(
+      serverTime: t0,
+      rows: [
+        DepartureRowModel(reservationId: 'd1', reference: 'D1', customerName: 'Bastien Faure', passengers: 4, plate: 'CD-456-EF', status: 'arrived', arrivalAt: t0, arrivedAt: t0, leaveAt: t0, childSeats: const ChildSeats(infant: 1, booster: 1)),
+        DepartureRowModel(reservationId: 'd2', reference: 'D2', customerName: 'Nora Perrin', passengers: 3, plate: 'EF-789-GH', status: 'arrived', arrivalAt: t0, arrivedAt: t0, leaveAt: t0, childSeats: const ChildSeats(booster: 2)),
+        DepartureRowModel(reservationId: 'd3', reference: 'D3', customerName: 'Léa Martin', passengers: 1, plate: 'GH-123-JK', status: 'arrived', arrivalAt: t0, arrivedAt: t0, leaveAt: t0),
+      ],
+    );
+    await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, pickups: pickupsModel, selected: const {'d1'}));
+    expect(find.text('Bastien Faure · 4 pass. · dont 2 enfants'), findsOneWidget);
+    expect(find.text('Nora Perrin · 3 pass. · dont 2 enfants'), findsOneWidget);
+    expect(find.text('Léa Martin · 1 pass.'), findsOneWidget);
+    expect(find.text('Siège bébé'), findsOneWidget);
+    expect(find.text('Réhausseur'), findsOneWidget);
+    expect(find.text('2 réhausseurs'), findsOneWidget);
+    expect(find.byKey(const Key('child-seat-pill-toddler')), findsNothing);
+    // Only the ticked traveller's seats are to load.
+    expect(find.byKey(const Key('child-seats-load')), findsOneWidget);
+    expect(find.text('À charger avant de partir'), findsOneWidget);
+    expect(find.text('1 siège bébé (dos à la route) · 1 réhausseur'), findsOneWidget);
+    bloc = MockShuttleBloc();
+    await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, pickups: pickupsModel, selected: const {'d1', 'd2'}));
+    expect(find.text('1 siège bébé (dos à la route) · 3 réhausseurs'), findsOneWidget);
+    bloc = MockShuttleBloc();
+    await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, pickups: pickupsModel, selected: const {'d3'}));
+    expect(find.byKey(const Key('child-seats-load')), findsNothing);
+    // On the road: the pills under each passenger.
+    bloc = MockShuttleBloc();
+    final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'd1', reference: 'D1', customerName: 'Bastien Faure', passengers: 4, plate: 'CD-456-EF', childSeats: ChildSeats(toddler: 1))]);
+    await show(tester, ShuttleState(now: t0, direction: 'dropoff', departures: departures, pickups: pickupsModel, trip: trip, tracking: true, band: 1));
+    expect(find.text('Bastien Faure · 4 pass. · dont 1 enfant'), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('route-d1')), matching: find.text('Siège 1 à 4 ans')), findsOneWidget);
   });
 
   testWidgets('R4 · liste : badges au point de RDV / atterri / vol prévu, sélection, « Partir à l’aéroport · 2 clients »', (tester) async {

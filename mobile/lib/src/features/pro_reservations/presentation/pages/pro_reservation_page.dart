@@ -13,6 +13,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../services/link_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
@@ -131,6 +132,7 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
       vehicleModel: r.vehicleModel,
       vehicleColour: r.vehicleColour,
       priceCents: r.priceCents,
+      childSeats: r.childSeats,
     );
   }
 }
@@ -183,6 +185,8 @@ class _Sheet extends StatelessWidget {
               ),
             if (r.returnFlight != null) ('res.return_flight'.tr(), r.returnFlight!),
             ('res.passengers'.tr(), '${r.passengers}'),
+            // 24/10/2026: « Sièges auto · 1 siège bébé · 1 réhausseur », once asked.
+            if (r.childSeats.any) ('child_seats.title'.tr(), childSeatsSummary(r.childSeats)),
             ('res.channel_label'.tr(), r.channelDetail != null ? '$channel · ${r.channelDetail}' : channel),
             if (r.externalReference != null) ('res.external_reference'.tr(), r.externalReference!),
             if (r.priceCents != null) ('res.price'.tr(), '${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €'),

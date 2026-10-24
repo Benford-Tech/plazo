@@ -113,7 +113,9 @@ class ProReservationFormBloc extends Bloc<ProReservationFormEvent, ProReservatio
     final names = state.id == null || !input.sameNameAs(_initial);
     // An edit sends the price only once changed (null when emptied): never a Plazo booking's.
     final price = state.id != null && !state.priceLocked && input.priceCents != _initial.priceCents;
-    final result = await _save(SaveReservationParams(id: state.id, input: input, names: names, price: price));
+    // 24/10/2026: likewise, an edit sends the child seats only once changed.
+    final seats = state.id != null && input.childSeats != _initial.childSeats;
+    final result = await _save(SaveReservationParams(id: state.id, input: input, names: names, price: price, seats: seats));
     result.fold(
       (f) => emit(state.copyWith(saveState: ViewState.error, errorCode: f.fields?.isNotEmpty == true ? null : _code(f), fieldErrors: f.fields ?? const {})),
       (r) => emit(state.copyWith(saveState: ViewState.success, saved: r)),

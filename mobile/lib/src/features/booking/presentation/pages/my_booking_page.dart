@@ -33,6 +33,7 @@ import '../bloc/booking_bloc.dart';
 import '../bloc/car_location_bloc.dart';
 import '../widgets/booking_card.dart';
 import '../widgets/car_location_card.dart';
+import '../widgets/child_seats_card.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
@@ -161,6 +162,11 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                   key: const Key('booking-card'),
                                   child: BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),
                                 ),
+                                // « Sièges auto » (24/10/2026): the child seats for the shuttle, changeable while expected.
+                                if (ChildSeatsCard.relevant(b)) ...[
+                                  const SizedBox(height: 10),
+                                  ChildSeatsCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
+                                ],
                                 const SizedBox(height: 10),
                                 PaymentSummary(booking: b),
                                 if (b.status == 'pending_payment') ...[

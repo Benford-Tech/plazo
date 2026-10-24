@@ -2,6 +2,7 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/extensions/repositories_extensions.dart';
 import '../../../../core/utils/either.dart';
 import '../../../../services/location_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../data/datasources/booking_data_source.dart';
 import '../../data/models/public_booking_model.dart';
 
@@ -12,6 +13,7 @@ abstract class BookingRepository {
   Future<Either<Failure, PublicBookingModel>> updateFlight({required String reference, required String? flight});
   Future<Either<Failure, PublicBookingModel>> locateCar({required String reference, required GeoPosition position, String? note});
   Future<Either<Failure, PublicBookingModel>> clearCar({required String reference});
+  Future<Either<Failure, PublicBookingModel>> updateChildSeats({required String reference, required ChildSeats seats});
   Future<Either<Failure, PaymentIntentModel>> paymentIntent({required String reference});
   Future<Either<Failure, CheckoutModel>> checkout({required String reference});
   Future<Either<Failure, PublicBookingModel>> release({required String reference});
@@ -46,6 +48,10 @@ class BookingRepositoryImpl implements BookingRepository {
 
   @override
   Future<Either<Failure, PublicBookingModel>> clearCar({required String reference}) => _dataSource.clearCar(reference: reference).makeRequest();
+
+  @override
+  Future<Either<Failure, PublicBookingModel>> updateChildSeats({required String reference, required ChildSeats seats}) =>
+      _dataSource.updateChildSeats(reference: reference, seats: seats).makeRequest();
 
   @override
   Future<Either<Failure, PaymentIntentModel>> paymentIntent({required String reference}) =>

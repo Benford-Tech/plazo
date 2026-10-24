@@ -50,6 +50,9 @@ _PublicBookingModel _$PublicBookingModelFromJson(
   cancellableUntil: json['cancellableUntil'] as String?,
   canCancel: json['canCancel'] as bool? ?? false,
   canEditFlight: json['canEditFlight'] as bool? ?? false,
+  childSeats: json['childSeats'] == null
+      ? ChildSeats.none
+      : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
@@ -83,6 +86,7 @@ Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
       'cancellableUntil': instance.cancellableUntil,
       'canCancel': instance.canCancel,
       'canEditFlight': instance.canEditFlight,
+      'childSeats': instance.childSeats,
     };
 
 _BookingPaymentModel _$BookingPaymentModelFromJson(Map<String, dynamic> json) =>

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../shared/child_seats/child_seats.dart';
+
 part 'reservation_models.freezed.dart';
 part 'reservation_models.g.dart';
 
@@ -73,6 +75,9 @@ abstract class ReservationModel with _$ReservationModel {
 
     /// 14/10/2026: the arrival recorded by the driver at boarding (null: checked in at the desk, or not yet).
     BoardingCheckInModel? boardingCheckIn,
+
+    /// 24/10/2026: the child car seats asked for the shuttle (none from an older API).
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _ReservationModel;
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) => _$ReservationModelFromJson(json);
@@ -147,6 +152,9 @@ abstract class ReservationInput with _$ReservationInput {
     String? externalReference,
     int? priceCents,
     @Default(false) bool force,
+
+    /// 24/10/2026: the child car seats for the shuttle; an edit sends them only once changed (`seats` of [toBody]).
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _ReservationInput;
 
   factory ReservationInput.fromJson(Map<String, dynamic> json) => _$ReservationInputFromJson(json);
@@ -155,15 +163,19 @@ abstract class ReservationInput with _$ReservationInput {
   /// so that the API names the field. [names] false leaves the first and last name out of an edit: a one-word name
   /// (an older booking, a comparator's email) is stored with an empty last name, and an edit that does not touch the
   /// name must not require one (09/10/2026, as the pro space does). [price] true puts the amount in an edit, null to
-  /// clear it (10/10/2026): only once changed, so that an untouched price is never sent.
-  Map<String, dynamic> toBody({bool patch = false, bool names = true, bool price = false}) {
+  /// clear it (10/10/2026): only once changed, so that an untouched price is never sent. [seats] true puts the child
+  /// seats in an edit (24/10/2026), likewise only once changed; a creation always sends them.
+  Map<String, dynamic> toBody({bool patch = false, bool names = true, bool price = false, bool seats = false}) {
     final json = toJson();
     json.removeWhere((k, v) => v == null || (v is String && v.trim().isEmpty && !_keptWhenEmpty.contains(k)));
     if (!force) json.remove('force');
+    // A plain map rather than the object (the same body whatever encodes it).
+    json['childSeats'] = childSeats.toJson();
     if (patch) {
       json.remove('externalReference');
       json.remove('priceCents');
       if (price) json['priceCents'] = priceCents;
+      if (!seats) json.remove('childSeats');
       if (!names) {
         json.remove('customerFirstName');
         json.remove('customerLastName');

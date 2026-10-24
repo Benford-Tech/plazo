@@ -13,6 +13,7 @@ import 'package:parking_app/src/features/search/domain/repositories/public_repos
 import 'package:parking_app/src/features/search/domain/usecases/public_use_cases.dart';
 import 'package:parking_app/src/services/link_service.dart';
 import 'package:parking_app/src/services/secure_storage_service.dart';
+import 'package:parking_app/src/shared/child_seats/child_seats.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
@@ -109,6 +110,20 @@ void main() {
       expect(names('J.', 'Dupont'), isEmpty);
     });
 
+    test('sièges auto (24/10/2026) : les enfants comptent dans les passagers ; envoyés seulement quand il y en a', () async {
+      expect(validateBookingDraft(valid.copyWith(childSeats: const ChildSeats(infant: 1))), isEmpty);
+      expect(validateBookingDraft(valid.copyWith(childSeats: const ChildSeats(infant: 1, booster: 1))), {'childSeats': 'child_seats_exceed_passengers'});
+      expect(validateBookingDraft(valid.copyWith(childSeats: const ChildSeats(toddler: 5), passengers: 9)), {'childSeats': 'child_seats_range'});
+      api.answer('create', CreatedBookingModel(reference: 'R7KQ2M', manageToken: 't', booking: booking(status: 'pending_payment', paymentMode: 'online')));
+      final bloc = makeBloc()..add(const BookingFormStarted());
+      await bloc.stream.firstWhere((s) => s.parkingResponse != null);
+      bloc.add(BookingFormSubmitted(valid.copyWith(childSeats: const ChildSeats(booster: 1))));
+      await bloc.stream.firstWhere((s) => s.created != null);
+      expect(api.lastInput!.toJson(), containsPair('childSeats', {'infant': 0, 'toddler': 0, 'booster': 1}));
+      expect(const BookingInput(airport: 'a', parking: 'p', arrivalAt: 'x', returnAt: 'y', customerFirstName: 'C', customerLastName: 'M', customerPhone: '06', customerEmail: 'c@m.fr', plate: 'AB-123-CD', passengers: 2, acceptTerms: true, childSeats: ChildSeats.none).toJson().containsKey('childSeats'), isFalse);
+      await bloc.close();
+    });
+
     test('envoi : plaque formatée, vol en capitales, clé d’idempotence ; jamais de prix', () async {
       api.answer('create', CreatedBookingModel(reference: 'R7KQ2M', manageToken: 't', booking: booking(status: 'pending_payment', paymentMode: 'online')));
       final bloc = makeBloc()..add(const BookingFormStarted());
@@ -178,6 +193,38 @@ void main() {
       expect(find.text('Champ obligatoire.'), findsNWidgets(5));
       expect(find.text('Merci d\'accepter les conditions pour réserver.'), findsOneWidget);
       expect(api.calls, isNot(contains('create')));
+    });
+
+    testWidgets('sièges auto (24/10/2026) : « Des enfants à bord ? », les compteurs, la ligne du récapitulatif et l’erreur', (tester) async {
+      drafts.save(valid);
+      await pump(tester);
+      final card = find.byKey(const Key('booking-child-seats'));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text('Des enfants à bord ?'), findsOneWidget);
+      expect(find.text('Le parking prépare les sièges dans la navette'), findsOneWidget);
+      expect(find.byKey(const Key('child-seat-more-infant')), findsNothing, reason: 'the steppers wait for the switch');
+      await tester.tap(find.byKey(const Key('child-seats-switch')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const Key('child-seat-more-booster')), 200, scrollable: find.byType(Scrollable).first);
+      expect(find.text("Les enfants comptent dans les passagers. Sièges prêtés à l'aller comme au retour, gratuit."), findsOneWidget);
+      await tester.tap(find.byKey(const Key('child-seat-more-infant')));
+      await tester.pumpAndSettle();
+      // The recap, at the top, says the passengers and the seats.
+      expect(find.text('2 passagers · 1 siège bébé'), findsOneWidget);
+      // Two seats for two passengers: no adult left.
+      await tester.tap(find.byKey(const Key('child-seat-more-booster')));
+      await tester.pumpAndSettle();
+      expect(find.text('2 passagers · 1 siège bébé · 1 réhausseur'), findsOneWidget);
+      await tester.scrollUntilVisible(find.byKey(const Key('booking-submit')), 300, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.byKey(const Key('booking-submit')));
+      await tester.pumpAndSettle();
+      expect(api.calls, isNot(contains('create')));
+      expect(find.text('Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.'), findsOneWidget);
+      // Switched off, nothing is asked any more: the recap line goes.
+      await tester.scrollUntilVisible(find.byKey(const Key('child-seats-switch')), -300, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.byKey(const Key('child-seats-switch')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('booking-child-seats-recap')), findsNothing);
     });
 
     testWidgets('frais de nuit : « Forfait 8 jours », « Frais de nuit · dépôt à 23:30 », puis le total', (tester) async {

@@ -10,6 +10,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => ForgetBookingUseCase(locator()))
     ..registerLazySingleton(() => CreateBookingUseCase(locator()))
     ..registerLazySingleton(() => UpdateFlightUseCase(locator()))
+    ..registerLazySingleton(() => UpdateChildSeatsUseCase(locator()))
     ..registerLazySingleton(() => LocateCarUseCase(locator()))
     ..registerLazySingleton(() => ClearCarUseCase(locator()))
     ..registerLazySingleton(() => CancelBookingUseCase(locator()))

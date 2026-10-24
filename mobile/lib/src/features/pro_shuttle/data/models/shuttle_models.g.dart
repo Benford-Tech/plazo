@@ -31,6 +31,9 @@ _PickupRowModel _$PickupRowModelFromJson(Map<String, dynamic> json) =>
       leaveAt: json['leaveAt'] == null
           ? null
           : DateTime.parse(json['leaveAt'] as String),
+      childSeats: json['childSeats'] == null
+          ? ChildSeats.none
+          : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
@@ -50,6 +53,7 @@ Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
       'tripId': instance.tripId,
       'notice': instance.notice,
       'leaveAt': instance.leaveAt?.toIso8601String(),
+      'childSeats': instance.childSeats,
     };
 
 _PickupsModel _$PickupsModelFromJson(Map<String, dynamic> json) =>
@@ -125,6 +129,9 @@ _DepartureRowModel _$DepartureRowModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['leaveAt'] as String),
       expected: json['expected'] as bool? ?? false,
+      childSeats: json['childSeats'] == null
+          ? ChildSeats.none
+          : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$DepartureRowModelToJson(_DepartureRowModel instance) =>
@@ -143,6 +150,7 @@ Map<String, dynamic> _$DepartureRowModelToJson(_DepartureRowModel instance) =>
       'tripId': instance.tripId,
       'leaveAt': instance.leaveAt?.toIso8601String(),
       'expected': instance.expected,
+      'childSeats': instance.childSeats,
     };
 
 _DeparturesModel _$DeparturesModelFromJson(Map<String, dynamic> json) =>
@@ -177,6 +185,9 @@ _TripPassengerModel _$TripPassengerModelFromJson(Map<String, dynamic> json) =>
       arrivedAt: json['arrivedAt'] == null
           ? null
           : DateTime.parse(json['arrivedAt'] as String),
+      childSeats: json['childSeats'] == null
+          ? ChildSeats.none
+          : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$TripPassengerModelToJson(_TripPassengerModel instance) =>
@@ -189,6 +200,7 @@ Map<String, dynamic> _$TripPassengerModelToJson(_TripPassengerModel instance) =>
       'terminal': instance.terminal,
       'checkedInAtBoarding': instance.checkedInAtBoarding,
       'arrivedAt': instance.arrivedAt?.toIso8601String(),
+      'childSeats': instance.childSeats,
     };
 
 _StaffTripModel _$StaffTripModelFromJson(Map<String, dynamic> json) =>
