@@ -94,6 +94,6 @@ void main() {
     await tester.tap(find.byKey(const Key('child-seat-more-booster')));
     await tester.pump();
     expect(seats, const ChildSeats(infant: 3, booster: 1));
-    expect(find.descendant(of: find.byKey(const Key('child-seat-count-infant')), matching: find.text('3')), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('child-seat-count-infant'))).data, '3');
   });
 }

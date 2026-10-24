@@ -85,7 +85,15 @@ class ChildSeatPills extends StatelessWidget {
                 children: [
                   ChildSeatIcon(size: size + 2, color: AppStatus.okText),
                   const SizedBox(width: 4),
-                  Text(childSeatBadge(kind, seats.of(kind)), style: AppText.strong(size: size, color: AppStatus.okText)),
+                  // Narrow tiles (the driver's rows beside a plate) must not overflow: the label gives way.
+                  Flexible(
+                    child: Text(
+                      childSeatBadge(kind, seats.of(kind)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.strong(size: size, color: AppStatus.okText),
+                    ),
+                  ),
                 ],
               ),
             ),

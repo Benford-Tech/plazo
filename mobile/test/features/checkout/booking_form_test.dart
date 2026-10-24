@@ -209,11 +209,15 @@ void main() {
       expect(find.text("Les enfants comptent dans les passagers. Sièges prêtés à l'aller comme au retour, gratuit."), findsOneWidget);
       await tester.tap(find.byKey(const Key('child-seat-more-infant')));
       await tester.pumpAndSettle();
-      // The recap, at the top, says the passengers and the seats.
+      // The recap, at the top of the (lazy) list, says the passengers and the seats.
+      final recap = find.byKey(const Key('booking-child-seats-recap'));
+      await tester.scrollUntilVisible(recap, -300, scrollable: find.byType(Scrollable).first);
       expect(find.text('2 passagers · 1 siège bébé'), findsOneWidget);
       // Two seats for two passengers: no adult left.
+      await tester.scrollUntilVisible(find.byKey(const Key('child-seat-more-booster')), 300, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.byKey(const Key('child-seat-more-booster')));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(recap, -300, scrollable: find.byType(Scrollable).first);
       expect(find.text('2 passagers · 1 siège bébé · 1 réhausseur'), findsOneWidget);
       await tester.scrollUntilVisible(find.byKey(const Key('booking-submit')), 300, scrollable: find.byType(Scrollable).first);
       await tester.tap(find.byKey(const Key('booking-submit')));
