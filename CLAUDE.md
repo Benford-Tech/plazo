@@ -775,6 +775,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de desserte, la carte « Ligne du jour » de l'onglet (la page Navettes du web la garde), les bandes « En séjour » / « Rendus »
      (`GET /internal/shuttle/staying` n'est plus lu par les apps). App : `ShuttleState.slots/selectedStopId/selectedDestinations`,
      `ShuttleSlotToggled`, `startLabel` ; web : `slotsOf`, `SlotHeader`, onglets `tab-go|back|route`. Serveur inchangé.
+   - **Sièges auto pour la navette (24/10/2026, « Pouvoir signaler qu'on a besoin de siège auto pour la navette », choix « B et B »
+     des maquettes https://claude.ai/artifact/LwPrcpvfmH7G2dqLXyfmZg : par tranche d'âge, côté voyageur comme côté chauffeur)** :
+     `Reservation.childSeatInfant/childSeatToddler/childSeatBooster` (migration `child_seats`, CHECK 0 à 4 chacun),
+     `domain/child-seats.ts` (`ChildSeats { infant, toddler, booster }`, bébé jusqu'à 12 mois = siège dos à la route, 1 à 4 ans =
+     siège enfant, 4 à 10 ans = réhausseur ; `childSeatsRefusal` : moins de sièges que de passagers, les enfants comptent dans les
+     passagers, `child_seats_exceed_passengers` / `child_seats_range` ; `childSeatsSummary` « 1 siège bébé · 2 réhausseurs »,
+     `sumChildSeats` pour « À charger avant de partir »). API : `childSeats` sur `PublicBooking`, la fiche et la liste du
+     personnel, `PickupRow`, `DepartureRow` et les passagers d'un trajet ; `POST /public/bookings`, `POST/PATCH
+     /internal/reservations` acceptent `childSeats` (`ChildSeatsDto`, PATCH : absent = inchangé) ; le voyageur change les siens
+     par `PUT /public/bookings/:ref/child-seats` tant que la réservation est « Attendu » (409 `child_seats_locked`, tracé
+     `reservation.updated` `by: 'traveller'`) ; mail de confirmation : ligne « Sièges auto : 1 siège bébé, 1 réhausseur (installés
+     dans la navette, aller et retour) ». Gratuit, sans réglage du parking ; aucun import ne le lit. Site et app Plazo : carte
+     « Des enfants à bord ? » (interrupteur, trois compteurs) sous Passagers, récapitulatif, bloc « Sièges auto » de Ma réservation
+     avec « Modifier » ; espace pro web et Plazo Pro : bloc du formulaire, ligne de la fiche, pastilles « Siège bébé · Siège 1 à
+     4 ans · Réhausseur » et « dont N enfants » sur les lignes Aller / Retour / En route du chauffeur, bandeau « À charger avant de
+     partir » au-dessus de « Partir ». Tests `child-seats.test.ts`, `public-booking.test.ts`, `shuttle-day.test.ts`.
    - Décisions **R-B + I-C du 07/10/2026 (« suivi des navettes réglable », règle 1)** : `Parking.shuttleTracking` `off` | `team` |
      `everyone` (`team` par défaut pour un nouveau parking ; les parkings existants et ceux de démonstration à `everyone`),
      `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`), `domain/shuttle-tracking.ts` ; bloc « Suivi des navettes »
