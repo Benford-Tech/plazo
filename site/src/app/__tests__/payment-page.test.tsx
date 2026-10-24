@@ -74,6 +74,16 @@ describe("payment step (step 2)", () => {
     expect(screen.getByText("Vous allez être redirigé vers la page de paiement sécurisée Stripe.")).toBeInTheDocument();
   });
 
+  it("child seats (24/10/2026): « N passagers · … » in the recap when some are asked, nothing otherwise", async () => {
+    booking.mockResolvedValue({ ...held, passengers: 3, childSeats: { infant: 1, toddler: 0, booster: 1 } });
+    await renderPage();
+    expect(screen.getByText("3 passagers · 1 siège bébé · 1 réhausseur")).toBeInTheDocument();
+    booking.mockResolvedValue({ ...held, childSeats: { infant: 0, toddler: 0, booster: 0 } });
+    document.body.innerHTML = "";
+    await renderPage();
+    expect(screen.queryByText(/passager/)).not.toBeInTheDocument();
+  });
+
   it("shows both booked hours, and no detail lines without a night fee", async () => {
     booking.mockResolvedValue(held);
     await renderPage();

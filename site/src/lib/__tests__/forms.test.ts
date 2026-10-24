@@ -24,6 +24,7 @@ const booking: PublicBooking = {
   car: null,
   outbound: null,
   passengers: 3,
+  childSeats: { infant: 1, toddler: 0, booster: 1 },
   cancellationPolicy: "free_24h",
   cancellableUntil: "2026-10-02T08:00",
   canCancel: false,
@@ -44,8 +45,16 @@ describe("booking form refilled from a booking (« Modifier » on the payment st
       vehicleModel: "Peugeot 308",
       vehicleColour: "grise",
       customerNote: "Siège bébé",
+      childSeatsInfant: "1",
+      childSeatsToddler: "0",
+      childSeatsBooster: "1",
       acceptTerms: "on",
     });
+  });
+
+  it("asks no child seat for a booking without any (or from an older API)", () => {
+    expect(bookingFormValues({ ...booking, childSeats: undefined })).toMatchObject({ childSeatsInfant: "0", childSeatsToddler: "0", childSeatsBooster: "0" });
+    expect(bookingFormValues({ ...booking, childSeats: { infant: 0, toddler: 0, booster: 0 } })).toMatchObject({ childSeatsInfant: "0", childSeatsToddler: "0", childSeatsBooster: "0" });
   });
 
   it("splits the full name of a booking from an older API (first word, then the rest)", () => {

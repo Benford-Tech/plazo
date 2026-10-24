@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { ChildSeatIcon, ChildSeatSteppers } from "./ChildSeatsFields";
 import { FieldError } from "./FieldError";
 import { PlateInput } from "./PlateInput";
+import { childSeatsFromValues, childSeatsProblem, hasChildSeats } from "@/lib/child-seats";
 import { formatDay } from "@/lib/dates";
 import { EMPTY_FORM, type FormState } from "@/lib/forms";
 import { errorMessage, fr, texts } from "@/lib/fr";
+import type { ChildSeats } from "@/lib/types";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -40,8 +43,16 @@ export function BookingForm({
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const alertRef = useRef<HTMLDivElement>(null);
+  const seatsRef = useRef<HTMLDivElement>(null);
   const v = state.values;
   const f = state.fields;
+  // Child seats (24/10/2026): the block is on when the refilled form asked for some; the passengers are watched
+  // for the rule « fewer seats than passengers » (children count in the passengers).
+  const [seatsOn, setSeatsOn] = useState(() => hasChildSeats(childSeatsFromValues(initialState.values)));
+  const [seats, setSeats] = useState<ChildSeats>(() => childSeatsFromValues(initialState.values));
+  const [passengers, setPassengers] = useState(initialState.values.passengers || "1");
+  const seatsProblem = seatsOn ? childSeatsProblem(seats, Number(passengers)) : null;
+  const seatsError = seatsProblem ?? (state.error === "child_seats_exceed_passengers" ? state.error : null);
 
   useEffect(() => {
     if (state.error) alertRef.current?.focus();
@@ -64,7 +75,18 @@ export function BookingForm({
   const t = texts(online);
 
   return (
-    <form action={formAction} className="flex flex-col gap-[18px]" noValidate>
+    <form
+      action={formAction}
+      className="flex flex-col gap-[18px]"
+      noValidate
+      onSubmit={e => {
+        // The seats rule is known here: no round trip for it.
+        if (seatsProblem) {
+          e.preventDefault();
+          seatsRef.current?.focus();
+        }
+      }}
+    >
       {HIDDEN_FIELDS.map(name => (
         <input key={name} type="hidden" name={name} value={stay[name]} />
       ))}
@@ -182,7 +204,7 @@ export function BookingForm({
             <label htmlFor="b-passengers" className="label">
               {fr.booking.passengers}
             </label>
-            <select {...field("passengers")} defaultValue={v.passengers || "1"} className="field">
+            <select {...field("passengers")} value={passengers} onChange={e => setPassengers(e.target.value)} className="field">
               {Array.from({ length: 9 }, (_, i) => String(i + 1)).map(n => (
                 <option key={n} value={n}>
                   {n}
@@ -191,6 +213,47 @@ export function BookingForm({
             </select>
             <FieldError id="b-passengers-error" code={f.passengers} />
           </div>
+        </div>
+        {/* Child seats for the shuttle (24/10/2026, direction B « par âge »). */}
+        <div ref={seatsRef} tabIndex={-1} className="-mt-1 flex flex-col gap-1.5 outline-none" data-testid="child-seats">
+          <div className={`rounded-field border px-3.5 py-3 ${seatsError ? "border-danger" : "border-line"}`}>
+            <div className="flex items-center gap-3">
+              <span aria-hidden="true" className="flex size-10 flex-none items-center justify-center rounded-field bg-tint text-ink">
+                <ChildSeatIcon className="size-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p id="b-childSeats-title" className="text-[15px] font-bold leading-snug">
+                  {fr.booking.childSeats.title}
+                </p>
+                <p className="text-[13px] leading-snug text-soft">{fr.booking.childSeats.subtitle}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={seatsOn}
+                aria-labelledby="b-childSeats-title"
+                aria-describedby={seatsError ? "b-childSeats-error" : "b-childSeats-hint"}
+                onClick={() => setSeatsOn(on => !on)}
+                className="-mr-1 flex h-11 w-14 flex-none cursor-pointer items-center justify-center"
+              >
+                <span className={`relative block h-7 w-12 rounded-full transition-colors ${seatsOn ? "bg-accent" : "bg-line"}`}>
+                  <span className={`absolute top-0.5 block size-6 rounded-full bg-white shadow-pin transition-transform ${seatsOn ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+                </span>
+              </button>
+            </div>
+            {seatsOn && (
+              <div className="mt-2 border-t border-line-soft">
+                <ChildSeatSteppers value={seats} onChange={setSeats} idPrefix="b-childSeats" withFields />
+              </div>
+            )}
+          </div>
+          {seatsError ? (
+            <FieldError id="b-childSeats-error" code={seatsError} />
+          ) : (
+            <p id="b-childSeats-hint" className="text-[13px] leading-snug text-soft">
+              {fr.booking.childSeats.hint}
+            </p>
+          )}
         </div>
         <div className="grid gap-4 md:grid-cols-2 md:gap-3">
           <div>

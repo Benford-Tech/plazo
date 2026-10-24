@@ -53,6 +53,38 @@ async function renderPage() {
   return render(ui);
 }
 
+describe("Ma réservation: child seats for the shuttle (direction B, 24/10/2026)", () => {
+  beforeEach(() => {
+    booking.mockReset();
+    redirect.mockClear();
+  });
+
+  it("« Attendu »: the seats asked in the recap and the « Sièges auto » card with « Modifier »", async () => {
+    booking.mockResolvedValue({ ...returned, status: "upcoming", passengers: 3, childSeats: { infant: 1, toddler: 0, booster: 1 } });
+    await renderPage();
+    expect(screen.getByText("Passagers").nextElementSibling).toHaveTextContent("3 · 1 siège bébé · 1 réhausseur");
+    const card = screen.getByTestId("child-seats-card");
+    expect(card).toHaveTextContent("Sièges auto");
+    expect(card).toHaveTextContent("1 siège bébé · 1 réhausseur");
+    expect(screen.getByRole("button", { name: "Modifier" })).toBeInTheDocument();
+  });
+
+  it("a stay in progress: the seats are shown, no longer editable; a closed stay has no card", async () => {
+    booking.mockResolvedValue({ ...returned, status: "arrived", childSeats: { infant: 0, toddler: 0, booster: 0 } });
+    await renderPage();
+    expect(screen.getByTestId("child-seats-card")).toHaveTextContent("Aucun siège demandé");
+    expect(screen.queryByRole("button", { name: "Modifier" })).not.toBeInTheDocument();
+    expect(screen.getByText("Passagers").nextElementSibling).toHaveTextContent(/^1$/);
+  });
+
+  it("a closed stay (or an older API): no card, the recap unchanged", async () => {
+    booking.mockResolvedValue({ ...returned, childSeats: undefined });
+    await renderPage();
+    expect(screen.queryByTestId("child-seats-card")).not.toBeInTheDocument();
+    expect(screen.getByText("Passagers").nextElementSibling).toHaveTextContent(/^1$/);
+  });
+});
+
 describe("Ma réservation: night fees (direction B, 12/10/2026)", () => {
   beforeEach(() => {
     booking.mockReset();

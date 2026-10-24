@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { api, ApiError } from "./api";
+import { CHILD_SEAT_FIELDS, childSeatsFromValues, hasChildSeats } from "./child-seats";
 import { encodeQueryValue } from "./dates";
 import { type FormState, manageHref, paymentHref } from "./forms";
 import { resumeCookie, secureCookies } from "./manage-access";
@@ -46,6 +47,10 @@ const BOOKING_FIELDS = [
   "vehicleModel",
   "vehicleColour",
   "customerNote",
+  // Child seats for the shuttle (24/10/2026): the three counts of the « Des enfants à bord ? » block.
+  CHILD_SEAT_FIELDS.infant,
+  CHILD_SEAT_FIELDS.toddler,
+  CHILD_SEAT_FIELDS.booster,
 ] as const;
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9-]{16,64}$/;
@@ -59,6 +64,8 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
   // Every rule (required fields, formats, terms) is checked by the API, which reports all fields at once.
   const passengers = values.passengers ? Number(values.passengers) : 1;
   const idempotencyKey = text(formData, "idempotencyKey");
+  // Sent only when a seat is asked: the API keeps a booking without any (the block was off or left at zero).
+  const childSeats = childSeatsFromValues(values);
 
   let created: CreatedBooking;
   try {
@@ -78,6 +85,7 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
       vehicleModel: values.vehicleModel || undefined,
       vehicleColour: values.vehicleColour || undefined,
       customerNote: values.customerNote || undefined,
+      childSeats: hasChildSeats(childSeats) ? childSeats : undefined,
       acceptTerms: values.acceptTerms === "on",
       // Same key for every submission of this page: a retry returns the booking already made.
       idempotencyKey: IDEMPOTENCY_KEY_RE.test(idempotencyKey) ? idempotencyKey : undefined,

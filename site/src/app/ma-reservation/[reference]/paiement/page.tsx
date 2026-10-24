@@ -8,6 +8,7 @@ import { PriceLines } from "@/components/PriceLines";
 import { StayTiles } from "@/components/StayTiles";
 import { api, ApiError } from "@/lib/api";
 import { editBookingAction, payAction } from "@/lib/actions";
+import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
 import { manageHref } from "@/lib/forms";
 import { fr } from "@/lib/fr";
 import { REFERENCE_RE } from "@/lib/manage-access";
@@ -91,6 +92,14 @@ export default async function PaymentPage({ params }: PageProps<"/ma-reservation
               </span>
               <b className="flex-none text-ink tabular-nums">{formatPhone(b.customerPhone)}</b>
             </div>
+            {/* Child seats for the shuttle (24/10/2026): « 3 passagers · 1 siège bébé » when some are asked. */}
+            {hasChildSeats(b.childSeats) && (
+              <p className={row}>
+                <span>
+                  {fr.pay.passengers(b.passengers)} · {childSeatsSummary(b.childSeats)}
+                </span>
+              </p>
+            )}
             {b.priceCents !== null && (
               <PriceLines
                 days={b.days}
