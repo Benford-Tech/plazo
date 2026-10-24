@@ -132,6 +132,19 @@ export interface ParkingResponse {
   offer: Offer | null;
 }
 
+/**
+ * Child car seats for the shuttle (24/10/2026, direction B « par âge »): how many children of each age group ride
+ * along; the parking installs the seats, both ways, for free. Children count in `passengers` (one adult at least).
+ */
+export interface ChildSeats {
+  /** Up to 12 months: rear-facing seat. */
+  infant: number;
+  /** 1 to 4 years: child seat. */
+  toddler: number;
+  /** 4 to 10 years: booster. */
+  booster: number;
+}
+
 export interface BookingInput {
   airport: string;
   parking: string;
@@ -150,6 +163,8 @@ export interface BookingInput {
   customerNote?: string;
   vehicleModel?: string;
   vehicleColour?: string;
+  /** Child seats for the shuttle; sent only when at least one is asked (each 0 to 4, fewer than `passengers`). */
+  childSeats?: Partial<ChildSeats>;
   /** Must be true; false gets the "terms_required" field error back. */
   acceptTerms: boolean;
   /** Random key of the booking form: sending it again returns the booking already made. */
@@ -206,6 +221,8 @@ export interface PublicBooking {
   car: CarLocation | null;
   outbound: { status: string | null; scheduledAt: string | null; estimatedAt: string | null; terminal: string | null; shuttleAt: string | null } | null;
   passengers: number;
+  /** Child seats for the shuttle (zeros when none); missing from an older API. */
+  childSeats?: ChildSeats;
   cancellationPolicy: CancellationPolicy;
   /** Local datetime until which the traveller may cancel online; null when non-refundable. */
   cancellableUntil: string | null;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CancelForm } from "@/components/CancelForm";
+import { ChildSeatsCard } from "@/components/ChildSeatsCard";
 import { FlightForm } from "@/components/FlightForm";
 import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
@@ -10,6 +11,7 @@ import { StayShuttles } from "@/components/StayShuttles";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
+import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
 import { formatDay, formatDateTimeAt, param, parseLocal } from "@/lib/dates";
 import { paymentHref } from "@/lib/forms";
 import { fr, texts } from "@/lib/fr";
@@ -242,7 +244,10 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
                 <span className="font-normal">{b.customerNote}</span>
               </Row>
             )}
-            <Row label={fr.manage.passengers}>{b.passengers}</Row>
+            <Row label={fr.manage.passengers}>
+              {b.passengers}
+              {hasChildSeats(b.childSeats) && <span className="font-normal text-soft"> · {childSeatsSummary(b.childSeats)}</span>}
+            </Row>
             {total && (
               <Row label={totalLabel}>
                 {b.status === "cancelled" && !refunded ? (
@@ -325,6 +330,9 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
               )}
             </section>
           )}
+
+          {/* Child seats for the shuttle (24/10/2026): editable while the booking is « Attendu ». */}
+          {active && <ChildSeatsCard reference={b.reference} token={token} seats={b.childSeats} passengers={b.passengers} editable={b.status === "upcoming"} />}
 
           {b.status === "upcoming" && (
             <section aria-labelledby="annuler" className="card flex flex-col gap-2.5 border-danger-line p-4 md:p-6">

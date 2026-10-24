@@ -1,3 +1,4 @@
+import { ChildSeats, childSeatsOf } from '@/domain/child-seats';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Prisma, ReservationStatus, ShuttleStop, ShuttleStopKind, ShuttleTracking, ShuttleTrip, ShuttleVehicle, Staff } from '@/database';
@@ -119,6 +120,8 @@ export interface PickupRow {
   reference: string;
   customerName: string;
   passengers: number;
+  /** Child car seats to load for this traveller (24/10/2026). */
+  childSeats: ChildSeats;
   plate: string;
   status: ReservationStatus;
   returnAt: string;
@@ -174,6 +177,8 @@ export interface DepartureRow {
   reference: string;
   customerName: string;
   passengers: number;
+  /** Child car seats to load for this traveller (24/10/2026). */
+  childSeats: ChildSeats;
   plate: string;
   status: ReservationStatus;
   arrivalAt: string;
@@ -241,6 +246,7 @@ export interface StaffTrip {
     reference: string;
     customerName: string;
     passengers: number;
+    childSeats: ChildSeats;
     plate: string;
     terminal: string | null;
     /** When the traveller was checked in ("Sur place"). */
@@ -569,6 +575,7 @@ export class ShuttleService {
         reference: r.reference,
         customerName: r.customerName,
         passengers: r.passengers,
+        childSeats: childSeatsOf(r),
         plate: r.plate,
         status: r.status,
         returnAt: r.returnAt.toISOString(),
@@ -641,6 +648,7 @@ export class ShuttleService {
       reference: r.reference,
       customerName: r.customerName,
       passengers: r.passengers,
+      childSeats: childSeatsOf(r),
       plate: r.plate,
       status: r.status,
       arrivalAt: r.arrivalAt.toISOString(),
@@ -1238,6 +1246,9 @@ export class ShuttleService {
                 reference: true,
                 customerName: true,
                 passengers: true,
+                childSeatInfant: true,
+                childSeatToddler: true,
+                childSeatBooster: true,
                 plate: true,
                 flightTerminal: true,
                 arrivedAt: true,
@@ -1268,6 +1279,7 @@ export class ShuttleService {
         reference: p.reservation.reference,
         customerName: p.reservation.customerName,
         passengers: p.reservation.passengers,
+        childSeats: childSeatsOf(p.reservation),
         plate: p.reservation.plate,
         terminal: terminalOf(p.reservation.flightTerminal, meeting),
         arrivedAt: iso(p.reservation.arrivedAt),

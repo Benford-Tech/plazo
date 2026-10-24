@@ -101,6 +101,21 @@ describe("ReservationQuickCard (C-A : la fiche opérationnelle)", () => {
     expect(await within(card).findByText("Rendu")).toBeInTheDocument();
   });
 
+  it("« Sièges auto » (24/10/2026) : la ligne avec le résumé quand la réservation en demande, rien sinon", async () => {
+    api.getReservation.mockResolvedValue(booking({ childSeats: { infant: 1, toddler: 0, booster: 1 } }));
+    renderHost();
+    await userEvent.click(screen.getByText("ouvrir"));
+    const card = await screen.findByTestId("quick-card");
+    expect(within(card).getByText("Sièges auto")).toBeInTheDocument();
+    expect(within(card).getByTestId("card-child-seats")).toHaveTextContent("1 siège bébé · 1 réhausseur");
+    await userEvent.click(within(card).getByRole("button", { name: "Fermer" }));
+    api.getReservation.mockResolvedValue(booking({ childSeats: { infant: 0, toddler: 0, booster: 0 } }));
+    await userEvent.click(screen.getByText("ouvrir"));
+    const again = await screen.findByTestId("quick-card");
+    await within(again).findByText("Camille Martin");
+    expect(within(again).queryByText("Sièges auto")).not.toBeInTheDocument();
+  });
+
   it("la prochaine étape mène à l'écran du geste, et les autres statuts restent dans le menu", async () => {
     api.getReservation.mockResolvedValue(booking({ status: "upcoming", spot: null, spotId: null, keyHook: null, nextStatuses: ["arrived", "cancelled", "no_show"] }));
     renderHost();

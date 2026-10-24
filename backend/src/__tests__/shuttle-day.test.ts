@@ -277,6 +277,44 @@ describe('tournée du chauffeur (F-A)', () => {
     const pickups = await api().get('/api/internal/shuttle/pickups').set(auth(driver.token));
     expect(pickups.body.rows[0].leaveAt).toEqual(expect.any(String));
   });
+
+  it('dit au chauffeur les sièges auto à charger (24/10/2026)', async () => {
+    const { op, reservation } = await setup();
+    const driver = await addStaff(op.token, 'driver');
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: {
+        status: 'upcoming',
+        arrivedAt: null,
+        arrivalAt: minutesFromNow(60),
+        returnAt: minutesFromNow(60 * 48),
+        passengers: 4,
+        childSeatInfant: 1,
+        childSeatBooster: 1,
+      },
+    });
+    const departures = await api().get('/api/internal/shuttle/departures').set(auth(driver.token));
+    expect(departures.body.rows[0].childSeats).toEqual({ infant: 1, toddler: 0, booster: 1 });
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { status: 'arrived', arrivalAt: minutesFromNow(-60), returnAt: minutesFromNow(120) },
+    });
+    const pickups = await api().get('/api/internal/shuttle/pickups').set(auth(driver.token));
+    expect(pickups.body.rows[0].childSeats).toEqual({ infant: 1, toddler: 0, booster: 1 });
+    // The staff sees and edits them on the booking; fewer seats than passengers.
+    const patched = await api()
+      .patch(`/api/internal/reservations/${reservation.id}`)
+      .set(auth(op.token))
+      .send({ childSeats: { toddler: 2 } });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data.childSeats).toEqual({ infant: 0, toddler: 2, booster: 0 });
+    const tooMany = await api()
+      .patch(`/api/internal/reservations/${reservation.id}`)
+      .set(auth(op.token))
+      .send({ childSeats: { toddler: 4 } });
+    expect(tooMany.status).toBe(400);
+    expect(tooMany.body.fields).toEqual({ childSeats: 'child_seats_exceed_passengers' });
+  });
 });
 
 describe('navettes en direct (P-A) et notifications (N-A)', () => {

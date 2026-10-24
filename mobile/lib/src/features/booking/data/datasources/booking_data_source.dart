@@ -1,6 +1,7 @@
 import '../../../../core/error/exceptions.dart';
 import '../../../../services/location_service.dart';
 import '../../../../services/secure_storage_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../client/booking_client.dart';
 import '../models/public_booking_model.dart';
 
@@ -11,6 +12,7 @@ abstract class BookingDataSource {
   Future<PublicBookingModel> updateFlight({required String reference, required String? flight});
   Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note});
   Future<PublicBookingModel> clearCar({required String reference});
+  Future<PublicBookingModel> updateChildSeats({required String reference, required ChildSeats seats});
   Future<PaymentIntentModel> paymentIntent({required String reference});
   Future<CheckoutModel> checkout({required String reference});
   Future<PublicBookingModel> release({required String reference});
@@ -74,6 +76,10 @@ class BookingDataSourceImpl implements BookingDataSource {
   @override
   Future<PublicBookingModel> clearCar({required String reference}) async =>
       client.clearCar(reference: reference.toUpperCase(), token: await _token(reference));
+
+  @override
+  Future<PublicBookingModel> updateChildSeats({required String reference, required ChildSeats seats}) async =>
+      client.updateChildSeats(reference: reference.toUpperCase(), token: await _token(reference), body: seats.toJson());
 
   @override
   Future<PaymentIntentModel> paymentIntent({required String reference}) async =>

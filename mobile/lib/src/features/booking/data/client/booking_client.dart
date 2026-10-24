@@ -35,6 +35,14 @@ abstract class BookingClient {
     @Body() required Map<String, dynamic> body,
   });
 
+  /// Child car seats for the shuttle (24/10/2026), while the booking is still expected.
+  @PUT('public/bookings/{reference}/child-seats')
+  Future<PublicBookingModel> updateChildSeats({
+    @Path('reference') required String reference,
+    @Header('x-booking-token') required String token,
+    @Body() required Map<String, dynamic> body,
+  });
+
   @DELETE('public/bookings/{reference}/car-location')
   Future<PublicBookingModel> clearCar({@Path('reference') required String reference, @Header('x-booking-token') required String token});
 

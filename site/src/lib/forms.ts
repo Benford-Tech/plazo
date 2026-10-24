@@ -1,3 +1,4 @@
+import { childSeatsToValues } from "./child-seats";
 import { splitName } from "./phone";
 import type { PublicBooking } from "./types";
 
@@ -36,6 +37,8 @@ export function bookingFormValues(booking: PublicBooking): Record<string, string
     vehicleModel: booking.vehicle?.model ?? "",
     vehicleColour: booking.vehicle?.colour ?? "",
     customerNote: booking.customerNote ?? "",
+    // The child seats asked (24/10/2026): the block opens again when there are some.
+    ...childSeatsToValues(booking.childSeats),
     acceptTerms: "on",
   };
 }

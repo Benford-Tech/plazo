@@ -113,6 +113,9 @@ Map<String, String> validateBookingDraft(BookingDraft d) {
   if (d.returnFlight.trim().length > 10) errors['returnFlight'] = 'invalid_flight';
   if (d.departureFlight.trim().length > 10) errors['departureFlight'] = 'invalid_flight';
   if (d.passengers < 1 || d.passengers > 9) errors['passengers'] = 'passengers_range';
+  // 24/10/2026: the children count in the passengers (one adult at least), 0 to 4 seats of each kind.
+  final seats = d.childSeats.refusal(d.passengers);
+  if (seats != null) errors['childSeats'] = seats;
   if (!d.acceptTerms) errors['acceptTerms'] = 'terms_required';
   return errors;
 }
@@ -185,6 +188,7 @@ class BookingFormBloc extends Bloc<BookingFormEvent, BookingFormState> {
         vehicleColour: draft.vehicleColour,
         extras: draft.extras,
         customerNote: draft.customerNote,
+        childSeats: draft.childSeats,
       ),
     );
     result.fold(

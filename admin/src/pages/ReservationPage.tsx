@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { ChildSeatIcon } from "@/components/ChildSeatIcon";
 import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
@@ -17,6 +18,7 @@ import {
   timeOf,
 } from "@/lib/datetime";
 import { describeError, errorMessage, fr, quickCardFr } from "@/lib/fr";
+import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
 import { centsToInput, euros, isPriceLocked, nightFeeOf, parseEuros } from "@/lib/pricing";
 import { dayLabel, formatRate, parsePercent } from "@/lib/commission";
 import { can } from "@/lib/roles";
@@ -412,6 +414,14 @@ export default function ReservationPage() {
                 </Info>
               )}
               <Info label={t.passengers}>{r.passengers}</Info>
+              {hasChildSeats(r.childSeats) && (
+                <Info label={t.childSeats.label}>
+                  <span className="inline-flex items-center gap-2">
+                    <ChildSeatIcon className="text-lime-deep" />
+                    {childSeatsSummary(r.childSeats)}
+                  </span>
+                </Info>
+              )}
               {(r.vehicleModel || r.vehicleColour) && (
                 <Info label={t.vehicleModel}>
                   {t.vehicleDetails(r.vehicleModel, r.vehicleColour)}

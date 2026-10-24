@@ -9,6 +9,7 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/utils/clock.dart';
 import '../../../../core/utils/use_case.dart';
 import '../../../../services/location_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';

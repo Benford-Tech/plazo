@@ -1,5 +1,20 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  ValidateIf,
+  ValidateNested,
+} from 'class-validator';
+import { ChildSeatsDto } from './child-seats.dto';
 import { ReservationChannel, ReservationStatus } from '@/database';
 import { PLATE_OPTIONAL_CHANNELS, PLATE_RE } from '@/domain/reservation';
 
@@ -123,6 +138,12 @@ export class CreateReservationDto {
   @IsString()
   @MaxLength(30, { message: 'too_long' })
   public vehicleColour?: string | null;
+
+  /** Child car seats for the shuttle (24/10/2026); on a PATCH, missing = unchanged, null = none. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChildSeatsDto)
+  public childSeats?: ChildSeatsDto | null;
 
   /** Booking number on the source channel (imports), unique per operator. */
   @IsOptional()
@@ -262,6 +283,12 @@ export class UpdateReservationDto {
   @IsString()
   @MaxLength(30, { message: 'too_long' })
   public vehicleColour?: string | null;
+
+  /** Child car seats for the shuttle (24/10/2026); on a PATCH, missing = unchanged, null = none. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChildSeatsDto)
+  public childSeats?: ChildSeatsDto | null;
 
   /**
    * 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »): the amount, in euro cents; null clears it.

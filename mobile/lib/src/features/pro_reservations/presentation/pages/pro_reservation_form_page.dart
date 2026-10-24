@@ -9,6 +9,7 @@ import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/widgets/child_seat_widgets.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/plate_field.dart';
 import '../../data/models/reservation_models.dart';
@@ -120,6 +121,8 @@ class _FormState extends State<_Form> {
           'price_locked' => 'res.price_locked'.tr(args: [Product.name]),
           _ => err('priceCents'),
         };
+        // 24/10/2026: the children count in the passengers.
+        final seatsError = e['childSeats'] == 'child_seats_exceed_passengers' ? 'child_seats.pro_exceed'.tr() : err('childSeats');
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: widget.editing ? 'res.edit_title'.tr() : 'res.new_title'.tr()),
           // Edge-to-edge (Android 15+): pushed above the shell, the form ends above the navigation bar (« Enregistrer »
@@ -246,6 +249,12 @@ class _FormState extends State<_Form> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // « Sièges auto pour la navette » (24/10/2026, direction B): one stepper per age group, under the passengers.
+                Text('child_seats.pro_form_title'.tr(), key: const Key('f-child-seats'), style: AppText.strong(size: 14)),
+                ChildSeatsEditor(seats: i.childSeats, onChanged: (s) => _set((x) => x.copyWith(childSeats: s))),
+                if (seatsError != null)
+                  Text(seatsError, key: const Key('f-child-seats-error'), style: AppText.body(size: 12.5, color: AppColors.danger)),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   key: const Key('f-channel'),

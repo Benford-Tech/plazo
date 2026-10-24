@@ -1,6 +1,18 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { ChevronDown, Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { ChildSeatIcon } from "@/components/ChildSeatIcon";
 import { adminApi, ApiError } from "@/lib/api";
+import {
+  CHILD_SEAT_KINDS,
+  CHILD_SEAT_LABELS,
+  type ChildSeats,
+  childSeatsTotal,
+  hasChildSeats,
+  MAX_CHILD_SEATS_PER_KIND,
+  NO_CHILD_SEATS,
+  sameChildSeats,
+} from "@/lib/child-seats";
 import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { nameParts } from "@/lib/names";
@@ -35,6 +47,8 @@ type Form = {
   vehicleColour: string;
   /** 10/10/2026: the amount in euros as typed ("26,00"), "" for none. */
   price: string;
+  /** « Sièges auto » (24/10/2026): the child seats to install in the shuttle. */
+  childSeats: ChildSeats;
 };
 
 const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
@@ -67,6 +81,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       vehicleColour: prefill.vehicleColour?.trim().slice(0, 30) ?? "",
       // 10/10/2026: the amount read in the email, to check or correct before saving.
       price: prefill.priceCents != null ? centsToInput(prefill.priceCents) : "",
+      childSeats: { ...NO_CHILD_SEATS },
     };
   }
   if (reservation) {
@@ -94,6 +109,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       vehicleModel: reservation.vehicleModel ?? "",
       vehicleColour: reservation.vehicleColour ?? "",
       price: reservation.priceCents != null ? centsToInput(reservation.priceCents) : "",
+      childSeats: { ...NO_CHILD_SEATS, ...(reservation.childSeats ?? {}) },
     };
   }
   return {
@@ -117,6 +133,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     vehicleModel: "",
     vehicleColour: "",
     price: "",
+    childSeats: { ...NO_CHILD_SEATS },
   };
 }
 
@@ -133,6 +150,84 @@ function Field({ id, label, error, help, children }: { id: string; label: string
       {children}
       {error ? <p className="mt-1 text-sm text-destructive">{errorMessage(error)}</p> : help && <p className="mt-1 text-sm text-muted-foreground">{help}</p>}
     </div>
+  );
+}
+
+/**
+ * « Sièges auto pour la navette » (24/10/2026, direction B « par âge »): a collapsible block under the passengers, one
+ * stepper per age group (0 to 4), opened by itself when the booking already asks for seats.
+ */
+function ChildSeatsBlock({
+  seats,
+  open,
+  onToggle,
+  onChange,
+  error,
+}: {
+  seats: ChildSeats;
+  open: boolean;
+  onToggle: () => void;
+  onChange: (seats: ChildSeats) => void;
+  error: string | null;
+}) {
+  const t = fr.reservation.childSeats;
+  const total = childSeatsTotal(seats);
+  const stepClass =
+    "flex h-11 w-11 shrink-0 items-center justify-center border border-border text-lime-deep hover:bg-accent disabled:opacity-40 disabled:hover:bg-transparent";
+  return (
+    <section data-testid="child-seats" className="border border-border">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="child-seats-steppers"
+        onClick={onToggle}
+        className="flex min-h-12 w-full items-center gap-2 px-3 text-left"
+      >
+        <ChildSeatIcon className="text-lime-deep" />
+        <span className={cn(labelClass, "mb-0 flex-1")}>{t.title}</span>
+        <span className="font-mono text-sm text-muted-foreground">{total > 0 ? total : t.none}</span>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
+      </button>
+      {open && (
+        <div id="child-seats-steppers" className="space-y-3 border-t border-border p-3">
+          <p className="text-sm text-muted-foreground">{t.help}</p>
+          {CHILD_SEAT_KINDS.map(kind => {
+            const l = CHILD_SEAT_LABELS[kind];
+            const n = seats[kind];
+            return (
+              <div key={kind} className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">{l.ages}</p>
+                  <p className="text-sm text-muted-foreground">{l.hint}</p>
+                </div>
+                <div className="flex items-center">
+                  <button type="button" aria-label={t.less(l.ages)} disabled={n === 0} onClick={() => onChange({ ...seats, [kind]: n - 1 })} className={stepClass}>
+                    <Minus className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <output data-testid={`child-seats-${kind}`} aria-label={l.ages} className="tabular w-10 text-center font-mono text-lg font-bold">
+                    {n}
+                  </output>
+                  <button
+                    type="button"
+                    aria-label={t.more(l.ages)}
+                    disabled={n >= MAX_CHILD_SEATS_PER_KIND}
+                    onClick={() => onChange({ ...seats, [kind]: n + 1 })}
+                    className={stepClass}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {error && (
+        <p role="alert" className="border-t border-border px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -165,6 +260,10 @@ export function ReservationForm({
   const priceLocked = !!reservation && isPriceLocked(reservation);
   const priceCents = form.price.trim() ? parseEuros(form.price) : null;
   const priceInvalid = !!form.price.trim() && priceCents === null;
+  // « Sièges auto » (24/10/2026): children count in the passengers, so a booking keeps at least one adult.
+  const seatsTotal = childSeatsTotal(form.childSeats);
+  const seatsExceed = seatsTotal > 0 && seatsTotal >= Number(form.passengers);
+  const [seatsOpen, setSeatsOpen] = useState(() => hasChildSeats(reservation?.childSeats));
 
   const arrivalAt = form.arrivalDate && form.arrivalTime ? `${form.arrivalDate}T${form.arrivalTime}` : "";
   const returnAt = form.returnDate && form.returnTime ? `${form.returnDate}T${form.returnTime}` : "";
@@ -212,6 +311,11 @@ export function ReservationForm({
         // The amount read in the email stays the comparator's, even if corrected here: its next change email keeps ours.
         ...(!reservation && prefill?.externalReference && prefill.priceCents != null ? { importedPriceCents: prefill.priceCents } : {}),
         ...(reservation && !priceLocked && priceCents !== reservation.priceCents ? { priceCents } : {}),
+        // The seats go with a creation; an edit sends them only once changed (null when they are all gone).
+        ...(!reservation ? { childSeats: form.childSeats } : {}),
+        ...(reservation && !sameChildSeats(form.childSeats, reservation.childSeats)
+          ? { childSeats: hasChildSeats(form.childSeats) ? form.childSeats : null }
+          : {}),
         force: force || undefined,
       };
       return reservation
@@ -238,6 +342,11 @@ export function ReservationForm({
         setFormError(null);
         if (priceInvalid) {
           setFieldErrors({ priceCents: "invalid_amount" });
+          return;
+        }
+        if (seatsExceed) {
+          setFieldErrors({ childSeats: "child_seats_exceed_passengers" });
+          setSeatsOpen(true);
           return;
         }
         save.mutate();
@@ -416,6 +525,14 @@ export function ReservationForm({
           />
         </Field>
       </div>
+
+      <ChildSeatsBlock
+        seats={form.childSeats}
+        open={seatsOpen}
+        onToggle={() => setSeatsOpen(o => !o)}
+        onChange={childSeats => setForm({ ...form, childSeats })}
+        error={seatsExceed ? t.childSeats.exceed : fieldErrors.childSeats ? errorMessage(fieldErrors.childSeats) : null}
+      />
 
       <fieldset>
         <legend className={labelClass}>{t.channel}</legend>

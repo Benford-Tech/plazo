@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { PublicBookingController } from '@/controllers/public-booking.controller';
+import { ChildSeatsDto } from '@/dtos/child-seats.dto';
 import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { bookingLimiter, lookupLimiter, lookupReferenceLimiter } from '@/middlewares/rateLimiter';
@@ -224,6 +225,8 @@ export class PublicBookingRoute implements Routes {
     this.router.post('/public/bookings/lookup', lookupLimiter, lookupReferenceLimiter, ValidationMiddleware(LookupBookingDto), this.bookings.lookup);
     this.router.get('/public/bookings/:reference', this.bookings.get);
     this.router.patch('/public/bookings/:reference/flight', ValidationMiddleware(UpdateBookingFlightDto), this.bookings.updateFlight);
+    // Child car seats for the shuttle (24/10/2026), changed by the traveller until the drop-off.
+    this.router.put('/public/bookings/:reference/child-seats', ValidationMiddleware(ChildSeatsDto), this.bookings.updateChildSeats);
     // Where the car is parked (06/10/2026), recorded by the traveller who parked it themselves.
     this.router.put('/public/bookings/:reference/car-location', ValidationMiddleware(CarLocationDto), this.bookings.locateCar);
     this.router.delete('/public/bookings/:reference/car-location', this.bookings.clearCarLocation);

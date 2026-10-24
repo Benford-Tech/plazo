@@ -84,6 +84,23 @@ describe("bookAction", () => {
     });
   });
 
+  it("sends the child seats asked for the shuttle, and nothing when none is asked", async () => {
+    createBooking.mockResolvedValue({ reference: "RAB234", manageToken: "tok_0123456789abcdefghij", booking: {} });
+    await bookAction(EMPTY_FORM, form({ ...filled, passengers: "3", childSeatsInfant: "1", childSeatsBooster: "1" })).catch(() => null);
+    expect(createBooking.mock.calls[0][0]).toMatchObject({ passengers: 3, childSeats: { infant: 1, toddler: 0, booster: 1 } });
+    await bookAction(EMPTY_FORM, form({ ...filled, childSeatsInfant: "0", childSeatsToddler: "0", childSeatsBooster: "0" })).catch(() => null);
+    expect(createBooking.mock.calls[1][0].childSeats).toBeUndefined();
+    // The block was off: no field at all.
+    await bookAction(EMPTY_FORM, form(filled)).catch(() => null);
+    expect(createBooking.mock.calls[2][0].childSeats).toBeUndefined();
+  });
+
+  it("keeps the child seats typed when the API refuses them", async () => {
+    createBooking.mockRejectedValue(new ApiError(400, "x", "child_seats_exceed_passengers"));
+    const state = await bookAction(EMPTY_FORM, form({ ...filled, passengers: "1", childSeatsInfant: "1" }));
+    expect(state).toMatchObject({ error: "child_seats_exceed_passengers", values: { childSeatsInfant: "1", passengers: "1" } });
+  });
+
   it("drops a malformed idempotency key", async () => {
     createBooking.mockResolvedValue({ reference: "RAB234", manageToken: "tok_0123456789abcdefghij", booking: {} });
     await bookAction(EMPTY_FORM, form({ ...filled, idempotencyKey: "x" })).catch(() => null);

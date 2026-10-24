@@ -3,6 +3,7 @@ import { PublicBooking } from '@/interfaces/booking.interface';
 import { cancellableUntil, canCancel, canEditFlight } from './booking';
 import { billableDays } from './pricing';
 import { carView } from './car-location';
+import { childSeatsOf } from './child-seats';
 import { nightFeeOf } from './night-fees';
 import { dropoffTimes } from './shuttle-waves';
 import { localDateTime } from './time';
@@ -88,6 +89,7 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     departureFlight: reservation.departureFlight,
     customerNote: reservation.customerNote,
     vehicle: { model: reservation.vehicleModel, colour: reservation.vehicleColour },
+    childSeats: childSeatsOf(reservation),
     outbound: outboundView(reservation, parking, tz),
     car: carView(reservation),
     passengers: reservation.passengers,

@@ -14,8 +14,10 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../services/link_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/child_seat_widgets.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/plate_field.dart';
 import '../../../extras/presentation/widgets/extra_widgets.dart';
@@ -74,6 +76,10 @@ class _BookingFormViewState extends State<BookingFormView> {
   /// Services for the car ticked in the recap (21/10/2026).
   List<String> _extras = const [];
 
+  /// Child car seats for the shuttle (24/10/2026): the switch « Des enfants à bord ? » and the counts.
+  ChildSeats _childSeats = ChildSeats.none;
+  bool _childrenAboard = false;
+
   /// Fields changed since the last submission: their old error is hidden.
   final _edited = <String>{};
   final _scroll = ScrollController();
@@ -95,6 +101,8 @@ class _BookingFormViewState extends State<BookingFormView> {
     _passengers = d.passengers;
     _terms = d.acceptTerms;
     _extras = d.extras;
+    _childSeats = d.childSeats;
+    _childrenAboard = d.childSeats.any;
   }
 
   /// Ticks or unticks a service; the two charges exclude each other (a car is one or the other).
@@ -138,6 +146,8 @@ class _BookingFormViewState extends State<BookingFormView> {
           vehicleColour: _vehicleColour.text,
           customerNote: _note.text,
           extras: state.extraOffers.isEmpty ? const [] : _extras,
+          // Switched off: nothing asked, whatever the counts said.
+          childSeats: _childrenAboard ? _childSeats : ChildSeats.none,
         ),
       ),
     );
@@ -179,7 +189,7 @@ class _BookingFormViewState extends State<BookingFormView> {
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                     children: [
                       if (state.online) ...[const BookingSteps(current: 1), const SizedBox(height: 14)],
-                      _Recap(state: state, total: total, extras: extras),
+                      _Recap(state: state, total: total, extras: extras, passengers: _passengers, childSeats: _childrenAboard ? _childSeats : ChildSeats.none),
                       if (state.online && state.extraOffers.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         _ExtrasPicker(state: state, selected: extras, onToggle: _toggleExtra, error: err('extras')),
@@ -289,6 +299,20 @@ class _BookingFormViewState extends State<BookingFormView> {
                         onChanged: (v) => setState(() {
                           _passengers = v ?? 1;
                           _edited.add('passengers');
+                        }),
+                      ),
+                      // 24/10/2026 (« Sièges auto », direction B): under the passengers, the children aboard by age group.
+                      _ChildSeatsCard(
+                        on: _childrenAboard,
+                        seats: _childSeats,
+                        error: err('childSeats'),
+                        onToggle: (v) => setState(() {
+                          _childrenAboard = v;
+                          _edited.add('childSeats');
+                        }),
+                        onChanged: (s) => setState(() {
+                          _childSeats = s;
+                          _edited.add('childSeats');
                         }),
                       ),
                       // E (06/10/2026): the vehicle (so the valet spots it) and a word for the parking.
@@ -437,11 +461,67 @@ class _ExtrasPicker extends StatelessWidget {
   }
 }
 
+/// « Des enfants à bord ? » (24/10/2026): a switch, then one stepper per age group and the note that the children count
+/// in the passengers (seats lent both ways, for free).
+class _ChildSeatsCard extends StatelessWidget {
+  const _ChildSeatsCard({required this.on, required this.seats, required this.onToggle, required this.onChanged, this.error});
+  final bool on;
+  final ChildSeats seats;
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<ChildSeats> onChanged;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      key: const Key('booking-child-seats'),
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          MergeSemantics(
+            child: Row(
+              children: [
+                const ChildSeatIcon(size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('child_seats.form_title'.tr(), style: AppText.strong(size: 15)),
+                      Text('child_seats.form_subtitle'.tr(), style: AppText.muted(size: 12.5)),
+                    ],
+                  ),
+                ),
+                Switch(key: const Key('child-seats-switch'), value: on, activeTrackColor: AppColors.accent, onChanged: onToggle),
+              ],
+            ),
+          ),
+          if (on) ...[
+            const Divider(height: 14, color: AppColors.line),
+            ChildSeatsEditor(seats: seats, onChanged: onChanged),
+            const SizedBox(height: 6),
+            Text('child_seats.note'.tr(), style: AppText.muted(size: 12.5)),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: 6),
+            Text(error!, key: const Key('child-seats-error'), style: AppText.body(size: 12.5, color: AppColors.danger)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _Recap extends StatelessWidget {
-  const _Recap({required this.state, required this.total, this.extras = const []});
+  const _Recap({required this.state, required this.total, this.extras = const [], this.passengers = 1, this.childSeats = ChildSeats.none});
   final BookingFormState state;
   final String total;
   final List<String> extras;
+
+  /// 24/10/2026: « 3 passagers · 1 siège bébé · 1 réhausseur » under the dates, once a seat is asked.
+  final int passengers;
+  final ChildSeats childSeats;
 
   @override
   Widget build(BuildContext context) {
@@ -457,6 +537,12 @@ class _Recap extends StatelessWidget {
           const SizedBox(height: 4),
           Text('${'manage.drop_off'.tr()} : ${formatDateTime(state.arrivalAt)}', style: AppText.muted()),
           Text('${'manage.pick_up'.tr()} : ${formatDateTime(state.returnAt)}', style: AppText.muted()),
+          if (childSeats.any)
+            Text(
+              '${passengers == 1 ? 'child_seats.passenger_one'.tr() : 'child_seats.passengers_many'.tr(args: ['$passengers'])} · ${childSeatsSummary(childSeats)}',
+              key: const Key('booking-child-seats-recap'),
+              style: AppText.muted(),
+            ),
           if (total.isNotEmpty) ...[
             const Divider(height: 18, color: AppColors.line),
             // Direction B (12/10/2026): with a night fee, « Forfait 8 jours » and « Frais de nuit · dépôt à 23:30 » come

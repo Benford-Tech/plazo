@@ -4,6 +4,7 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/utils/either.dart';
 import '../../../../core/utils/use_case.dart';
 import '../../../../services/location_service.dart';
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../data/models/public_booking_model.dart';
 import '../repositories/booking_repository.dart';
 
@@ -33,6 +34,24 @@ class UpdateFlightUseCase with UseCase<PublicBookingModel, UpdateFlightParams> {
   @override
   Future<Either<Failure, PublicBookingModel>> call(UpdateFlightParams params) =>
       _repository.updateFlight(reference: params.reference, flight: params.flight);
+}
+
+/// « Sièges auto » (24/10/2026): the child seats for the shuttle, while the booking is still expected.
+class UpdateChildSeatsParams extends Equatable {
+  const UpdateChildSeatsParams({required this.reference, required this.seats});
+  final String reference;
+  final ChildSeats seats;
+  @override
+  List<Object?> get props => [reference, seats];
+}
+
+class UpdateChildSeatsUseCase with UseCase<PublicBookingModel, UpdateChildSeatsParams> {
+  UpdateChildSeatsUseCase(this._repository);
+  final BookingRepository _repository;
+
+  @override
+  Future<Either<Failure, PublicBookingModel>> call(UpdateChildSeatsParams params) =>
+      _repository.updateChildSeats(reference: params.reference, seats: params.seats);
 }
 
 /// Cancel online, within the booking's terms (refunded in full when paid online).

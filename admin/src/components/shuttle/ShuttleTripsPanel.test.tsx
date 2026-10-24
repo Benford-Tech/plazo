@@ -239,6 +239,44 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     expect(screen.getByText("Cochez les personnes qui montent")).toBeInTheDocument();
   });
 
+  it("« Sièges auto » (24/10/2026) : « dont N enfants », une pastille par siège, et ce qu'il faut charger avant de partir", async () => {
+    api.getPickups.mockResolvedValue({
+      serverTime: live.serverTime,
+      meetingPoint: null,
+      rows: [
+        pickup("r1", "Camille Martin", 4, { childSeats: { infant: 1, toddler: 0, booster: 2 } }),
+        pickup("r2", "Paul Dupont", 3, { childSeats: { infant: 0, toddler: 1, booster: 0 } }),
+        pickup("r3", "Lan Nguyen", 1, { childSeats: { infant: 0, toddler: 0, booster: 0 } }),
+      ],
+    });
+    renderPanel();
+    const rows = await screen.findAllByTestId("pickup-row");
+    expect(rows[0]).toHaveTextContent("4 pass. · dont 3 enfants");
+    expect(within(rows[0]).getByTestId("child-seat-pills")).toHaveTextContent("Siège bébé2 réhausseurs");
+    expect(rows[1]).toHaveTextContent("dont 1 enfant");
+    expect(within(rows[1]).getByTestId("child-seat-pills")).toHaveTextContent("Siège 1 à 4 ans");
+    expect(within(rows[2]).queryByTestId("child-seat-pills")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("child-seats-to-load")).not.toBeInTheDocument();
+
+    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
+    expect(screen.queryByTestId("child-seats-to-load")).not.toBeInTheDocument();
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[1]).getAllByRole("button")[0]);
+    expect(screen.getByTestId("child-seats-to-load")).toHaveTextContent(
+      "À charger avant de partir1 siège bébé (dos à la route) · 1 siège 1 à 4 ans · 2 réhausseurs",
+    );
+  });
+
+  it("« En route » : les sièges de chaque passager du trajet", async () => {
+    api.getCurrentTrip.mockResolvedValue({
+      trip: trip({ passengers: [{ reservationId: "r1", reference: "R1", customerName: "Camille Martin", passengers: 2, plate: "AB-123-CD", terminal: null, childSeats: { infant: 0, toddler: 0, booster: 1 } }] }),
+    });
+    renderPanel();
+    const running = await screen.findByTestId("trip-running");
+    expect(running).toHaveTextContent("2 pass. · dont 1 enfant");
+    expect(within(running).getByTestId("child-seat-pills")).toHaveTextContent("Réhausseur");
+  });
+
   it("refuse plus de passagers que de places et explique l'erreur du serveur", async () => {
     api.getVehicles.mockResolvedValue({ data: [{ id: "v2", model: "Clio", colour: null, plate: null, seats: 1, inService: true, driverId: null, driverName: null }] });
     renderPanel();

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:parking_app/src/core/error/failure.dart';
 import 'package:parking_app/src/core/utils/either.dart';
 import 'package:parking_app/src/features/pro_reservations/data/models/reservation_models.dart';
 import 'package:parking_app/src/features/pro_reservations/domain/usecases/reservations_use_cases.dart';
 import 'package:parking_app/src/features/pro_reservations/presentation/bloc/pro_reservation_form_bloc.dart';
 import 'package:parking_app/src/features/pro_reservations/presentation/pages/pro_reservation_form_page.dart';
+import 'package:parking_app/src/shared/child_seats/child_seats.dart';
 
 import '../../helpers/pump_app.dart';
 
@@ -54,6 +56,27 @@ void main() {
     await tester.pump();
     expect(find.text('Montant invalide (ex. 45,50).'), findsOneWidget);
     verifyNever(() => save(any()));
+  });
+
+  testWidgets('sièges auto (24/10/2026) : les compteurs sous les passagers, envoyés à la modification une fois changés', (tester) async {
+    final save = await pumpForm(tester, imported.copyWith(passengers: 3));
+    when(() => save(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'validation_failed', fields: {'childSeats': 'child_seats_exceed_passengers'})));
+    expect(find.text('Sièges auto pour la navette'), findsOneWidget);
+    expect(find.byKey(const Key('f-child-seats')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('child-seat-more-infant')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('child-seat-more-booster')));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('f-save')));
+    await tester.tap(find.byKey(const Key('f-save')));
+    await tester.pumpAndSettle();
+    final params = verify(() => save(captureAny())).captured.single as SaveReservationParams;
+    expect(params.seats, isTrue);
+    expect(params.input.childSeats, const ChildSeats(infant: 1, booster: 1));
+    expect(params.input.toBody(patch: true, names: params.names, price: params.price, seats: params.seats), containsPair('childSeats', {'infant': 1, 'toddler': 0, 'booster': 1}));
+    expect(params.input.toBody(patch: true, names: params.names, price: params.price).containsKey('childSeats'), isFalse, reason: 'untouched seats are not sent');
+    expect(find.byKey(const Key('f-child-seats-error')), findsOneWidget);
+    expect(find.text('Les enfants comptent dans les passagers.'), findsOneWidget);
   });
 
   testWidgets('réservation payée sur Plazo : le prix est en lecture seule', (tester) async {

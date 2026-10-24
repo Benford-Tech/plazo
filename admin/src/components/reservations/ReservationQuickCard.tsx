@@ -21,9 +21,11 @@ import { Link } from "react-router-dom";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { NextStep } from "@/components/reservations/NextStep";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
+import { ChildSeatIcon } from "@/components/ChildSeatIcon";
 import { Plate } from "@/components/Plate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
+import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
 import { dateTimeShort, timeOf } from "@/lib/datetime";
 import { describeError, fr, quickCardFr as t } from "@/lib/fr";
 import type { Reservation } from "@/lib/types";
@@ -184,6 +186,15 @@ export function ReservationQuickCard({
                   </span>
                 )}
               </dd>
+              {hasChildSeats(r.childSeats) && (
+                <>
+                  <dt className="text-muted-foreground">{t.childSeats}</dt>
+                  <dd className="flex items-center gap-1.5" data-testid="card-child-seats">
+                    <ChildSeatIcon className="text-lime-deep" />
+                    {childSeatsSummary(r.childSeats)}
+                  </dd>
+                </>
+              )}
               <dt className="text-muted-foreground">{t.flight}</dt>
               <dd className="flex flex-wrap items-center gap-1.5 font-mono">
                 {r.returnFlight ? (

@@ -5,10 +5,12 @@ import { SECRET_KEY } from '@/config';
 import prisma, { Prisma, ReservationStatus } from '@/database';
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { BookingRecord, bookingPolicy, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { childSeatColumns, childSeatsOf, childSeatsRefusal, NO_CHILD_SEATS } from '@/domain/child-seats';
 import { customerNamesOf } from '@/domain/customer-name';
 import { nightSnapshot } from '@/domain/night-fees';
 import { formatPlate, HOLDING_STATUSES, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
 import { CreatePublicBookingDto, LookupBookingDto, CarLocationDto } from '@/dtos/public-booking.dto';
+import { ChildSeatsDto } from '@/dtos/child-seats.dto';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
@@ -63,6 +65,8 @@ export class PublicBookingService {
 
   /** Books a stay: price and availability recomputed under the parking lock, never overbooked. */
   public async create(data: CreatePublicBookingDto) {
+    const seatsRefusal = childSeatsRefusal({ ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) }, data.passengers);
+    if (seatsRefusal) throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid child seats', seatsRefusal);
     const key = data.idempotencyKey || null;
     if (key) {
       const replayed = await this.replay(key);
@@ -133,6 +137,7 @@ export class PublicBookingService {
             customerNote: data.customerNote?.trim() || null,
             vehicleModel: data.vehicleModel?.trim() || null,
             vehicleColour: data.vehicleColour?.trim() || null,
+            ...childSeatColumns(data.childSeats),
             // The total « tout compris »: grid price plus the night fees of the hours booked, frozen with it.
             priceCents: quote.priceCents,
             ...nightSnapshot(quote.nightFee),
@@ -274,6 +279,37 @@ export class PublicBookingService {
     if (booking.paymentStatus === null) throw notFound();
     await this.payments.releaseHold(booking.id);
     return toPublicBooking(await this.find(booking.id, prisma));
+  }
+
+  /**
+   * Child car seats for the shuttle (24/10/2026): changed by the traveller until the drop-off (status
+   * « Attendu »); 409 `child_seats_locked` afterwards.
+   */
+  public async updateChildSeats(reference: string, token: string | undefined, seats: ChildSeatsDto | null): Promise<PublicBooking> {
+    const before = await this.load(reference, token);
+    const next = { ...NO_CHILD_SEATS, ...(seats ?? {}) };
+    const refusal = childSeatsRefusal(next, before.passengers);
+    if (refusal) throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid child seats', refusal);
+    const locked = () => new HttpException(httpStatus.CONFLICT, 'The child seats can no longer be changed', 'child_seats_locked');
+    if (before.status !== 'upcoming') throw locked();
+    const current = childSeatsOf(before);
+    if (current.infant === next.infant && current.toddler === next.toddler && current.booster === next.booster) return toPublicBooking(before);
+    const after = await prisma.$transaction(async tx => {
+      const { count } = await tx.reservation.updateMany({ where: { id: before.id, status: 'upcoming' }, data: childSeatColumns(next) });
+      if (!count) throw locked();
+      await this.audit.record(
+        { id: null, operatorId: before.operatorId },
+        {
+          action: 'reservation.updated',
+          entityType: 'reservation',
+          entityId: before.id,
+          details: { childSeats: { from: { ...current }, to: { ...next } }, by: 'traveller' } as Prisma.InputJsonValue,
+        },
+        tx,
+      );
+      return this.find(before.id, tx);
+    });
+    return toPublicBooking(after);
   }
 
   /** Sets or clears the return flight, until the vehicle is handed back. */

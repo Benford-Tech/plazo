@@ -1,3 +1,5 @@
+import type { ChildSeats, PublicBooking } from "./types";
+
 /**
  * Browser-side calls to a booking's public routes (the manage token in the x-booking-token header,
  * as the server-side `api` does): the live blocks of "Ma réservation" poll and act from the page.
@@ -11,11 +13,11 @@ export class BookingClientError extends Error {
   }
 }
 
-export async function bookingRequest<T>(reference: string, path: string, token: string, body?: unknown): Promise<T> {
+export async function bookingRequest<T>(reference: string, path: string, token: string, body?: unknown, method?: "POST" | "PUT" | "PATCH"): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`/api/public/bookings/${encodeURIComponent(reference)}${path}`, {
-      method: body === undefined ? "GET" : "POST",
+      method: body === undefined ? "GET" : (method ?? "POST"),
       headers: { "x-booking-token": token, ...(body === undefined ? {} : { "content-type": "application/json" }) },
       body: body === undefined ? undefined : JSON.stringify(body),
       cache: "no-store",
@@ -34,6 +36,14 @@ export async function bookingRequest<T>(reference: string, path: string, token: 
     throw new BookingClientError(res.status, err.code ?? (err.fields ? Object.values(err.fields)[0] : null) ?? (res.status >= 500 ? "server_error" : "unknown"));
   }
   return data as T;
+}
+
+/**
+ * PUT /public/bookings/:ref/child-seats (24/10/2026): the child seats the traveller asks for the shuttle, while the
+ * booking is « Attendu » (409 `child_seats_locked` after; 400 `child_seats_exceed_passengers`). Answers the booking.
+ */
+export function updateChildSeats(reference: string, token: string, seats: ChildSeats): Promise<PublicBooking> {
+  return bookingRequest<PublicBooking>(reference, "/child-seats", token, seats, "PUT");
 }
 
 /** "14:05" in the parking's time (every parking is in France for now). */

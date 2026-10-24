@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../../return_day/data/models/return_model.dart';
 
@@ -34,6 +35,9 @@ abstract class PickupRowModel with _$PickupRowModel {
 
     /// F-A: when the shuttle should leave the parking to be at the meeting point in time.
     DateTime? leaveAt,
+
+    /// 24/10/2026: the child car seats to load for this traveller (none from an older API).
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _PickupRowModel;
 
   factory PickupRowModel.fromJson(Map<String, dynamic> json) => _$PickupRowModelFromJson(json);
@@ -108,6 +112,9 @@ abstract class DepartureRowModel with _$DepartureRowModel {
     /// when the trip starts (14/10/2026).
     DateTime? leaveAt,
     @Default(false) bool expected,
+
+    /// 24/10/2026: the child car seats to load for this traveller (none from an older API).
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _DepartureRowModel;
 
   factory DepartureRowModel.fromJson(Map<String, dynamic> json) => _$DepartureRowModelFromJson(json);
@@ -134,6 +141,9 @@ abstract class TripPassengerModel with _$TripPassengerModel {
     /// and when the arrival was recorded.
     @Default(false) bool checkedInAtBoarding,
     DateTime? arrivedAt,
+
+    /// 24/10/2026: the child car seats installed for this traveller.
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _TripPassengerModel;
 
   factory TripPassengerModel.fromJson(Map<String, dynamic> json) => _$TripPassengerModelFromJson(json);

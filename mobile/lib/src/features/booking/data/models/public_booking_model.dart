@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../shared/child_seats/child_seats.dart';
 import '../../../search/data/models/public_models.dart';
 
 part 'public_booking_model.freezed.dart';
@@ -56,6 +57,9 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     String? cancellableUntil,
     @Default(false) bool canCancel,
     @Default(false) bool canEditFlight,
+
+    /// 24/10/2026: the child car seats asked for the shuttle (none from an older API).
+    @Default(ChildSeats.none) ChildSeats childSeats,
   }) = _PublicBookingModel;
 
   const PublicBookingModel._();
@@ -167,6 +171,7 @@ class BookingInput {
     this.vehicleModel,
     this.vehicleColour,
     this.extras = const [],
+    this.childSeats,
   });
 
   final String airport;
@@ -194,6 +199,9 @@ class BookingInput {
   /// Services for the car asked with the booking (21/10/2026): their kinds, priced by the server.
   final List<String> extras;
 
+  /// Child car seats for the shuttle (24/10/2026); sent only when one is asked.
+  final ChildSeats? childSeats;
+
   Map<String, dynamic> toJson() => {
     'airport': airport,
     'parking': parking,
@@ -213,6 +221,7 @@ class BookingInput {
     if (vehicleModel != null && vehicleModel!.trim().isNotEmpty) 'vehicleModel': vehicleModel!.trim(),
     if (vehicleColour != null && vehicleColour!.trim().isNotEmpty) 'vehicleColour': vehicleColour!.trim(),
     if (extras.isNotEmpty) 'extras': extras,
+    if (childSeats != null && childSeats!.any) 'childSeats': childSeats!.toJson(),
   };
 }
 
