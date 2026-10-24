@@ -1,4 +1,5 @@
 import { Transform, Type } from 'class-transformer';
+import { ChildSeatsDto } from './child-seats.dto';
 import {
   ArrayMaxSize,
   Equals,
@@ -10,6 +11,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
   Matches,
   Max,
   MaxLength,
@@ -143,6 +145,12 @@ export class CreatePublicBookingDto {
   @IsString({ message: 'too_long' })
   @MaxLength(30, { message: 'too_long' })
   public vehicleColour?: string | null;
+
+  /** Child car seats for the shuttle (24/10/2026): per age group; missing or null = none. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChildSeatsDto)
+  public childSeats?: ChildSeatsDto | null;
 
   /** Services for the car asked with the booking (21/10/2026, Plazo app): interior_wash, hybrid_charge, ev_charge. */
   @IsOptional()

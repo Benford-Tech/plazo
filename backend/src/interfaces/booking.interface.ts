@@ -1,4 +1,5 @@
 import { CarLocation } from '@/domain/car-location';
+import { ChildSeats } from '@/domain/child-seats';
 import { CancellationPolicy, PaymentStatus, ReservationStatus } from '@/database';
 
 /**
@@ -55,6 +56,8 @@ export interface PublicBooking {
   /** E (06/10/2026): the traveller's message for the parking, and their vehicle. */
   customerNote: string | null;
   vehicle: { model: string | null; colour: string | null };
+  /** Child car seats for the shuttle (24/10/2026), per age group; all zero when none. */
+  childSeats: ChildSeats;
   /** Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then. */
   car: CarLocation | null;
   /** The outbound flight as tracked, and when the shuttle to the terminal is planned to leave (local). */

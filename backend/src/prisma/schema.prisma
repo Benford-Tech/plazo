@@ -774,6 +774,11 @@ model Reservation {
   customerNote            String?
   vehicleModel            String?
   vehicleColour           String?
+  // Child car seats for the shuttle (24/10/2026, direction B « par âge »): how many of each kind the
+  // parking installs, both ways. Children count in `passengers`. CHECK 0..4 each in the migration.
+  childSeatInfant         Int               @default(0)
+  childSeatToddler        Int               @default(0)
+  childSeatBooster        Int               @default(0)
   returnNoticeKind        ReturnNoticeKind?
   returnNoticeText        String?
   returnNoticeAt          DateTime?

@@ -1,3 +1,4 @@
+import { childSeatsSummary, hasChildSeats } from './child-seats';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { greetingName } from './customer-name';
 
@@ -97,6 +98,9 @@ function detailRows(booking: PublicBooking): [string, string][] {
     ...(booking.plate.trim() ? [['Véhicule', booking.plate] as [string, string]] : []),
     ['Passagers', String(booking.passengers)],
   ];
+  // 24/10/2026: the child seats the parking installs in the shuttle, both ways.
+  if (hasChildSeats(booking.childSeats))
+    rows.push(['Sièges auto', `${childSeatsSummary(booking.childSeats, ', ')} (installés dans la navette, aller et retour)`]);
   if (booking.departureFlight) rows.push(['Vol aller', booking.departureFlight]);
   if (booking.outbound?.shuttleAt) rows.push(['Navette aller', `vers le terminal, départ prévu vers ${booking.outbound.shuttleAt.slice(11, 16)}`]);
   if (booking.returnFlight) rows.push(['Vol retour', booking.returnFlight]);

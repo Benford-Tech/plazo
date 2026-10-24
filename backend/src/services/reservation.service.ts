@@ -24,6 +24,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { childSeatColumns, childSeatsOf, childSeatsRefusal, NO_CHILD_SEATS } from '@/domain/child-seats';
 import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
 import { ImportChange, ImportChangeReason, importChanges, nameWords, phoneKey, sameTraveller, withoutField } from '@/domain/import-change';
 import { REQUIRED_FOR_IMPORT } from '@/domain/inbound-email';
@@ -175,6 +176,8 @@ export class ReservationService {
     const returnFlight = this.normalizeFlight(data.returnFlight);
     const departureFlight = this.normalizeFlight(data.departureFlight, 'departureFlight');
     const stopId = await this.checkStop(parking.id, data.stopId);
+    const seatsRefusal = childSeatsRefusal({ ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) }, data.passengers);
+    if (seatsRefusal) throw fieldError('childSeats', seatsRefusal);
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
     // 15/10/2026: a comparator's booking may come without its plate (« Compléter » an email without it): stored ''.
@@ -210,6 +213,7 @@ export class ReservationService {
             customerNote: data.customerNote?.trim() || null,
             vehicleModel: data.vehicleModel?.trim() || null,
             vehicleColour: data.vehicleColour?.trim() || null,
+            ...childSeatColumns(data.childSeats),
             externalReference,
             priceCents: data.priceCents ?? null,
             // 10/10/2026: the amount read in the email (« Compléter »), kept apart from a price the staff corrected.
@@ -812,6 +816,10 @@ export class ReservationService {
       if (channel !== before.channel && !PLATE_OPTIONAL_CHANNELS.includes(channel) && !plateKey(plate ?? before.plate)) {
         throw fieldError('plate', 'required');
       }
+      // Child car seats (24/10/2026): fewer than the passengers, one adult at least.
+      const seats = data.childSeats === undefined ? childSeatsOf(before) : { ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) };
+      const seatsRefusal = childSeatsRefusal(seats, data.passengers ?? before.passengers);
+      if (seatsRefusal) throw fieldError('childSeats', seatsRefusal);
 
       const after = await tx.reservation.update({
         where: { id },
@@ -836,6 +844,7 @@ export class ReservationService {
           customerNote: data.customerNote === undefined ? undefined : data.customerNote?.trim() || null,
           vehicleModel: data.vehicleModel === undefined ? undefined : data.vehicleModel?.trim() || null,
           vehicleColour: data.vehicleColour === undefined ? undefined : data.vehicleColour?.trim() || null,
+          ...(data.childSeats === undefined ? {} : childSeatColumns(data.childSeats)),
           priceCents: priceChanged ? data.priceCents : undefined,
           overbooked: datesChanged ? full.length > 0 : undefined,
         },
@@ -846,7 +855,7 @@ export class ReservationService {
         { action: 'reservation.updated', entityType: 'reservation', entityId: id, details: columnChanges(before, after) as Prisma.InputJsonValue },
         tx,
       );
-      return after;
+      return { ...after, childSeats: childSeatsOf(after) };
     });
   }
 
@@ -1068,6 +1077,7 @@ export class ReservationService {
     const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
     return {
       ...reservation,
+      childSeats: childSeatsOf(reservation),
       // What the comparator takes and what the operator keeps (19/10/2026), for the managers only.
       commission: await this.commissionFor(actor, reservation),
       filePosition,

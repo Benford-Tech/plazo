@@ -156,6 +156,7 @@ describe('réservation sur le site', () => {
       vehicle: { model: 'Peugeot 308', colour: 'grise' },
       outbound: null,
       car: null,
+      childSeats: { infant: 0, toddler: 0, booster: 0 },
       passengers: 2,
       cancellationPolicy: 'free_24h',
       cancellableUntil: shift(inDays(5, '06:30'), -24),
@@ -549,6 +550,56 @@ describe('vol retour', () => {
     const res = await api().patch(`/api/public/bookings/${body.reference}/flight`).set(token(body.manageToken)).send({ returnFlight: 'AF1234' });
     expect(res.body.code).toBe('flight_locked');
     expect((await api().get(`/api/public/bookings/${body.reference}`).set(token(body.manageToken))).body.canEditFlight).toBe(false);
+  });
+});
+
+describe('sièges auto (24/10/2026)', () => {
+  const seats = (reference: string, key: string, body: object) =>
+    api().put(`/api/public/bookings/${reference}/child-seats`).set(token(key)).send(body);
+
+  it('se demandent à la réservation, par tranche d’âge, et figurent dans la confirmation', async () => {
+    const op = await publishedParking();
+    const before = { ...notifications.settings };
+    Object.assign(notifications.settings, {
+      apiKey: 'test-brevo-key',
+      emailFrom: 'Plazo Lyon <reservations@example.com>',
+      publicSiteUrl: 'https://site.example/',
+    });
+    const { body } = await book({ passengers: 4, childSeats: { infant: 1, booster: 1 } });
+    Object.assign(notifications.settings, before);
+    void op;
+    expect(body.booking.childSeats).toEqual({ infant: 1, toddler: 0, booster: 1 });
+    const saved = await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } });
+    expect(saved).toMatchObject({ childSeatInfant: 1, childSeatToddler: 0, childSeatBooster: 1 });
+    const email = fetchMock.mock.calls
+      .map(([url, init]) => ({ url, body: JSON.parse((init as RequestInit).body as string) }))
+      .find(c => c.url === 'https://api.brevo.com/v3/smtp/email');
+    expect(email?.body.textContent).toContain('Sièges auto : 1 siège bébé, 1 réhausseur');
+  });
+
+  it('refuse autant de sièges que de passagers, ou plus de 4 d’une sorte', async () => {
+    await publishedParking();
+    const res = await hold({ passengers: 2, childSeats: { infant: 1, toddler: 1 } });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('child_seats_exceed_passengers');
+    const many = await hold({ passengers: 8, childSeats: { booster: 5 } });
+    expect(many.status).toBe(400);
+    expect(many.body.fields).toEqual({ childSeats: 'invalid' });
+  });
+
+  it('se changent depuis Ma réservation jusqu’au dépôt', async () => {
+    await publishedParking();
+    const { body } = await book({ passengers: 3 });
+    expect(body.booking.childSeats).toEqual({ infant: 0, toddler: 0, booster: 0 });
+    expect((await seats(body.reference, body.manageToken, { toddler: 2 })).body.childSeats).toEqual({ infant: 0, toddler: 2, booster: 0 });
+    expect((await seats(body.reference, body.manageToken, { toddler: 3 })).body.code).toBe('child_seats_exceed_passengers');
+    expect((await seats(body.reference, 'x'.repeat(32), { toddler: 1 })).status).toBe(404);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', staffId: null } })).toBe(1);
+
+    await prisma.reservation.update({ where: { reference: body.reference }, data: { status: 'arrived' } });
+    const locked = await seats(body.reference, body.manageToken, { toddler: 1 });
+    expect(locked.status).toBe(409);
+    expect(locked.body.code).toBe('child_seats_locked');
   });
 });
 

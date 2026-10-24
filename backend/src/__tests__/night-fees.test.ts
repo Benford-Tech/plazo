@@ -236,6 +236,7 @@ describe('messages au voyageur', () => {
     returnFlight: null,
     departureFlight: null,
     customerNote: null,
+    childSeats: { infant: 0, toddler: 0, booster: 0 },
     vehicle: { model: null, colour: null },
     car: null,
     outbound: null,
