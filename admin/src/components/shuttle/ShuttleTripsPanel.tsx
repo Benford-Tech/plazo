@@ -19,12 +19,22 @@ import { useConfirm } from "@/components/ui/confirm-context";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
+import { ChildSeatIcon } from "@/components/ChildSeatIcon";
 import { Plate } from "@/components/Plate";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { canBoardDropoff, departureRowOf } from "@/lib/boarding";
+import {
+  CHILD_SEAT_KINDS,
+  type ChildSeats,
+  childSeatBadge,
+  childSeatsLoadLine,
+  childSeatsTotal,
+  hasChildSeats,
+  sumChildSeats,
+} from "@/lib/child-seats";
 import { timeAgo, timeOf } from "@/lib/datetime";
 import { describeError, errorMessage, fr, shuttleTripsFr as t } from "@/lib/fr";
 import { can } from "@/lib/roles";
@@ -125,6 +135,27 @@ function pickupBadge(
 }
 
 /** The team's running shuttles: the live map and one line per trip, with "Terminer" for whoever may close it. */
+/** « Sièges auto » (24/10/2026): « dont 2 enfants » after the people count. */
+function ChildrenCount({ seats }: { seats: ChildSeats | null | undefined }) {
+  const n = childSeatsTotal(seats);
+  return n > 0 ? <> · {t.start.children(n)}</> : null;
+}
+
+/** One green pill per kind of seat to install (« Siège bébé », « 2 réhausseurs »). */
+function ChildSeatPills({ seats }: { seats: ChildSeats | null | undefined }) {
+  if (!hasChildSeats(seats)) return null;
+  return (
+    <span data-testid="child-seat-pills" className="inline-flex flex-wrap gap-1">
+      {CHILD_SEAT_KINDS.filter((k) => seats![k] > 0).map((k) => (
+        <Badge key={k} tone="ok" className="gap-1">
+          <ChildSeatIcon className="h-3 w-3" />
+          {childSeatBadge(k, seats![k])}
+        </Badge>
+      ))}
+    </span>
+  );
+}
+
 function LiveTrips({
   live,
   now,
@@ -329,8 +360,10 @@ function RunningCard({
               {p.customerName}{" "}
               <span className="text-muted-foreground">
                 · {t.start.pax(p.passengers)}
+                <ChildrenCount seats={p.childSeats} />
               </span>
             </Link>
+            <ChildSeatPills seats={p.childSeats} />
             {p.terminal && (
               <span className="font-mono text-xs text-muted-foreground">
                 {p.terminal}
@@ -546,9 +579,11 @@ function PickupTile({
           {row.customerName}{" "}
           <span className="font-normal text-muted-foreground">
             · {s.pax(row.passengers)}
+            <ChildrenCount seats={row.childSeats} />
           </span>
         </span>
         <Badge tone={badge.tone}>{badge.text}</Badge>
+        <ChildSeatPills seats={row.childSeats} />
         {row.notice && (
           <Badge tone="warn">
             {row.notice.kind === "flight_delayed"
@@ -626,8 +661,10 @@ function DepartureTile({
           {row.customerName}{" "}
           <span className="font-normal text-muted-foreground">
             · {s.pax(row.passengers)}
+            <ChildrenCount seats={row.childSeats} />
           </span>
         </span>
+        <ChildSeatPills seats={row.childSeats} />
         {onTrip || row.tripId ? (
           <Badge tone="info">{s.badge.onTrip}</Badge>
         ) : row.status === "upcoming" ? (
@@ -1068,6 +1105,8 @@ export default function ShuttleTripsPanel() {
     destinations.length === 1 && destinations[0] ? destinations[0] : null;
   const selectedStopName =
     selectedRows.find((r) => r.stopId === selectedStopId)?.stopName ?? null;
+  // « Sièges auto » (24/10/2026): what to install in the shuttle for the ticked travellers.
+  const seatsToLoad = sumChildSeats(selectedRows.map((r) => r.childSeats));
   const slots = useMemo(() => slotsOf<PickupRow | DepartureRow>(rows), [rows]);
   const counts = {
     go: departures.data ? departureRows.length : null,
@@ -1284,6 +1323,19 @@ export default function ShuttleTripsPanel() {
             onChange={setVehicle}
             passengers={selectedPassengers}
           />
+          {hasChildSeats(seatsToLoad) && (
+            <div
+              data-testid="child-seats-to-load"
+              className="flex items-start gap-2 rounded-xl border border-ok/30 bg-ok-soft px-3 py-2 text-[13px]"
+            >
+              <ChildSeatIcon className="mt-0.5 text-ok-text" />
+              <p>
+                <b className="text-ok-text">{s.loadTitle}</b>
+                <br />
+                {childSeatsLoadLine(seatsToLoad)}
+              </p>
+            </div>
+          )}
           <button
             type="button"
             data-testid="start-trip-button"

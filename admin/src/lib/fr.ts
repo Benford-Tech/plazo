@@ -178,6 +178,9 @@ export const fr = {
     // 16/10/2026 (« relie les mail deja traité »): a mail read again after its stay; Plazo only links it to its booking.
     stay_over: "Séjour déjà terminé, Plazo ne la crée pas de lui-même.",
     passengers_range: "Entre 1 et 9 passagers.",
+    // « Sièges auto » (24/10/2026): fewer seats than passengers (one adult at least), 0 to 4 of each kind.
+    child_seats_exceed_passengers: "Les enfants comptent dans les passagers : il faut moins de sièges que de passagers.",
+    child_seats_range: "Entre 0 et 4 sièges de chaque sorte.",
     invalid_phone: "Numéro de téléphone invalide.",
     invalid_plate: "Plaque invalide.",
     invalid_flight: "Numéro de vol invalide (ex. TO 3627).",
@@ -1269,6 +1272,16 @@ export const fr = {
     stop: "Desserte",
     stopAirport: "Aéroport",
     passengers: "Passagers",
+    /** « Sièges auto » (24/10/2026, direction B « par âge »): the child seats to install in the shuttle. */
+    childSeats: {
+      label: "Sièges auto",
+      title: "Sièges auto pour la navette",
+      help: "Installés dans la navette, à l'aller comme au retour. Les enfants comptent dans les passagers.",
+      none: "Aucun",
+      exceed: "Les enfants comptent dans les passagers.",
+      less: (ages: string) => `Un ${ages} de moins`,
+      more: (ages: string) => `Un ${ages} de plus`,
+    },
     channel: "Canal",
     channelDetail: "Nom du comparateur",
     notes: "Notes",
@@ -3144,6 +3157,9 @@ export const shuttleTripsFr = {
       "Aucun trajet en cours. Cochez des personnes dans « Aller » ou « Retour », puis partez.",
     routePassengers: "Passagers du trajet",
     spot: (code: string) => `Place ${code}`,
+    /** « Sièges auto » (24/10/2026): « dont 2 enfants » after « 4 pers. », and the seats to load before leaving. */
+    children: (n: number) => (n === 1 ? "dont 1 enfant" : `dont ${n} enfants`),
+    loadTitle: "À charger avant de partir",
     badge: {
       onTrip: "Sur un trajet",
       atPoint: (t: string) => `Au point de RDV ${t}`,
@@ -3210,6 +3226,7 @@ export const quickCardFr = {
   carDirections: "itinéraire",
   stop: "Desserte",
   passengers: (n: number) => `${n} pass.`,
+  childSeats: "Sièges auto",
   notes: "Notes",
   customerNote: "Message du client",
   vehicle: "Véhicule",

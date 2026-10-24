@@ -1,4 +1,8 @@
 // Shapes returned by the backend (names follow the API).
+import type { ChildSeats } from "./child-seats";
+
+export type { ChildSeats };
+
 export type StaffRole = "manager" | "agent" | "driver" | "valet";
 
 export interface TokenObj {
@@ -267,6 +271,8 @@ export interface Reservation {
   stop?: { id: string; name: string; kind: ShuttleStopKind } | null;
   /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (GET /internal/reservations/:id). */
   boardingCheckIn?: BoardingCheckIn | null;
+  /** « Sièges auto » (24/10/2026): the child seats to install in the shuttle; missing from an older API. */
+  childSeats?: ChildSeats | null;
 }
 
 /**
@@ -452,6 +458,8 @@ export interface ReservationInput {
   priceCents?: number | null;
   /** The amount read in the comparator's email (« Compléter »), on creation only. */
   importedPriceCents?: number;
+  /** « Sièges auto » (24/10/2026): each 0 to 4, fewer than the passengers; on an edit, absent = unchanged, null = none. */
+  childSeats?: ChildSeats | null;
   force?: boolean;
 }
 
@@ -1154,6 +1162,8 @@ export interface PickupRow {
   notice?: ReturnNotice | null;
   /** F-A: when the shuttle should leave the parking (missing from an older API). */
   leaveAt?: string;
+  /** « Sièges auto » (24/10/2026): the child seats to load for this traveller. */
+  childSeats?: ChildSeats | null;
 }
 
 /** An arrived traveller waiting at the parking for the shuttle to the terminal (drop-off). */
@@ -1176,6 +1186,8 @@ export interface DepartureRow {
    */
   leaveAt?: string;
   expected?: boolean;
+  /** « Sièges auto » (24/10/2026): the child seats to load for this traveller. */
+  childSeats?: ChildSeats | null;
 }
 
 /** F-A: a traveller dropped at the terminal (or fetched back), kept on the driver's list until their return. */
@@ -1228,6 +1240,8 @@ export interface StaffTrip {
     arrivedAt?: string | null;
     /** « Embarquer en un geste » (14/10/2026): checked in as they boarded this trip (« Sur place · 09:47 »). */
     checkedInAtBoarding?: boolean;
+    /** « Sièges auto » (24/10/2026). */
+    childSeats?: ChildSeats | null;
   }[];
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;

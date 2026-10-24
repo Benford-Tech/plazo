@@ -132,6 +132,50 @@ describe("ReservationForm", () => {
     expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("customerName");
   });
 
+  it("« Sièges auto » (24/10/2026) : le bloc replié s'ouvre, les compteurs partent avec la création, jamais plus de sièges que de passagers", async () => {
+    createReservation.mockResolvedValue({ data: { id: "r1" } });
+    const onSaved = renderForm();
+    await fillStay();
+    expect(screen.queryByText("Siège dos à la route")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /Sièges auto pour la navette/ }));
+    expect(screen.getByText("Siège dos à la route")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Un 4 à 10 ans de plus" }));
+    expect(screen.getByTestId("child-seats-booster")).toHaveTextContent("1");
+    // One passenger and one seat: no adult left; the form says so and sends nothing.
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(screen.getByText("Les enfants comptent dans les passagers.")).toBeInTheDocument();
+    expect(createReservation).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Passagers"), { target: { value: "2" } });
+    expect(screen.queryByText("Les enfants comptent dans les passagers.")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createReservation.mock.calls[0][0]).toMatchObject({ passengers: 2, childSeats: { infant: 0, toddler: 0, booster: 1 } });
+  });
+
+  it("« Sièges auto » à la modification : ouvert quand il y en a, envoyé seulement s'il change, null quand ils partent tous", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ passengers: 3, childSeats: { infant: 1, toddler: 0, booster: 0 } }) });
+    expect(screen.getByTestId("child-seats-infant")).toHaveTextContent("1");
+    await userEvent.type(screen.getByLabelText("Vol retour"), "TO 3627");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("childSeats");
+
+    updateReservation.mockClear();
+    await userEvent.click(screen.getByRole("button", { name: "Un Bébé · jusqu'à 12 mois de moins" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(updateReservation).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).toMatchObject({ childSeats: null });
+  });
+
+  it("traduit le refus du serveur sur les sièges auto", async () => {
+    createReservation.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { childSeats: "child_seats_range" }));
+    renderForm();
+    await fillStay();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByText("Entre 0 et 4 sièges de chaque sorte.")).toBeInTheDocument();
+  });
+
   it("modifie une réservation au nom d'un seul mot sans exiger de nom ni renvoyer le nom", async () => {
     updateReservation.mockResolvedValue({ data: { id: "r9" } });
     const onSaved = renderForm(vi.fn(), { reservation: booked({ customerFirstName: "Dupont", customerLastName: "", customerName: "Dupont" }) });
