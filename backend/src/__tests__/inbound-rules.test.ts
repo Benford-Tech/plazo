@@ -227,6 +227,52 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
   });
 
+  it('une annulation Onepark dont le numéro est inconnu retrouve la réservation saisie à la main par le voyageur et le jour d’arrivée (25/10/2026)', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const from = { From: { Name: 'Onepark', Address: 'noreply@onepark.co' } };
+    // Typed by hand without Onepark's number: same phone, same name, arriving the 28 November (05:30 Paris = 04:30Z).
+    const typed = (reference: string, phone: string, name: [string, string]) =>
+      prisma.reservation.create({
+        data: {
+          operatorId: op.operator.id,
+          parkingId: op.parking.id,
+          reference,
+          channel: 'phone',
+          customerName: name.join(' '),
+          customerFirstName: name[0],
+          customerLastName: name[1],
+          customerPhone: phone,
+          plate: '',
+          plateKey: '',
+          arrivalAt: new Date('2026-11-28T04:30:00Z'),
+          returnAt: new Date('2026-12-03T04:30:00Z'),
+          passengers: 1,
+          status: 'upcoming',
+        },
+      });
+    const other = await typed('PZOTHER', '06 98 76 54 32', ['Jean', 'Martin']);
+    const booking = await typed('PZCAMIL', '06 12 34 56 78', ['Camille', 'Exemple']);
+    const cancellation = item(op.address, fixture('onepark-cancellation.txt'), { ...from, Subject: 'Annulation de la réservation #5900003' });
+    await post([cancellation]);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(after).toMatchObject({ status: 'cancelled', externalReference: '5900003' });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: other.id } })).status).toBe('upcoming');
+    expect(await latest(op.operator.id)).toMatchObject({
+      status: 'imported',
+      reservationId: booking.id,
+      change: { kind: 'cancellation', applied: true },
+    });
+
+    // Another traveller's notice the same day: nobody matches, left to the staff.
+    const unknown = fixture('onepark-cancellation.txt')
+      .replace(/5900003/g, '5900009')
+      .replace('+33 6 12 34 56 78', '+33 6 11 22 33 44');
+    await post([item(op.address, unknown, { ...from, Subject: 'Annulation de la réservation #5900009' })]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: other.id } })).status).toBe('upcoming');
+  });
+
   it('l’avis Park Hit (25/10/2026) : importé sans Claude, canal comparateur « Park Hit », vols sans compagnie dans les notes', async () => {
     const op = await connected();
     claudeIs('absent');

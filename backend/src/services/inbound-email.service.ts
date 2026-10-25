@@ -4,7 +4,7 @@ import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
 import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, readingOutageOf, toParsedBooking } from '@/domain/email-reading';
-import { COMPARATOR_PROVIDERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
+import { COMPARATOR_PROVIDERS, EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
 import { parseOneparkSummary } from '@/domain/importers/onepark';
@@ -894,10 +894,16 @@ export class InboundEmailService {
     const base = { provider: null, parsed: null, missing: [] as string[], reading: rules, pageLookup: null };
     let result: ImportCancellationResult;
     try {
-      result = await this.reservations.applyImportCancellation(input.operatorId, provider, reference, {
-        source: `${provider.toLowerCase()}_cancellation`,
-        inboundEmailId: input.emailId,
-      });
+      // 25/10/2026: the traveller and the arrival day the notice names, to find a booking without the number.
+      const traveller = input.text ? (EMAIL_IMPORTERS.find(i => i.provider === provider)?.parse(input.text) ?? null) : null;
+      result = await this.reservations.applyImportCancellation(
+        input.operatorId,
+        provider,
+        reference,
+        { source: `${provider.toLowerCase()}_cancellation`, inboundEmailId: input.emailId },
+        new Date(),
+        traveller,
+      );
     } catch (error) {
       logger.warn(`${label} cancellation not applied: ${error instanceof Error ? error.message : String(error)}`);
       return { ...base, status: 'unrecognised', reservationId: null, change: null };
