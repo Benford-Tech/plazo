@@ -17,12 +17,7 @@ import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { nameParts } from "@/lib/names";
 import { centsToInput, isPriceLocked, parseEuros } from "@/lib/pricing";
-import type {
-  ParsedBooking,
-  Reservation,
-  ReservationChannel,
-  ReservationInput,
-} from "@/lib/types";
+import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STAFF_CHANNELS: ReservationChannel[] = ["phone", "counter", "aggregator"];
@@ -56,24 +51,13 @@ type Form = {
   childSeats: ChildSeats;
 };
 
-const split = (local?: string) =>
-  local
-    ? { date: local.slice(0, 10), time: local.slice(11, 16) }
-    : { date: "", time: "" };
+const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
 
-function initialForm(
-  reservation?: Reservation,
-  defaultDate?: string,
-  prefill?: ParsedBooking,
-): Form {
+function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: ParsedBooking): Form {
   if (prefill) {
     const a = split(prefill.arrivalAt);
     const r = split(prefill.returnAt);
-    const name = nameParts(
-      prefill.customerFirstName,
-      prefill.customerLastName,
-      prefill.customerName,
-    );
+    const name = nameParts(prefill.customerFirstName, prefill.customerLastName, prefill.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
@@ -90,6 +74,7 @@ function initialForm(
       passengers: String(prefill.passengers ?? 1),
       channel: "aggregator",
       channelDetail: prefill.provider,
+      // 25/10/2026: Park Hit's flights typed without their airline, the customer's comment.
       notes: prefill.notes ?? "",
       customerNote: "",
       // 10/10/2026: the car the comparator gives (the form's limits: 40 and 30 characters).
@@ -103,11 +88,7 @@ function initialForm(
   if (reservation) {
     const a = localParts(reservation.arrivalAt);
     const r = localParts(reservation.returnAt);
-    const name = nameParts(
-      reservation.customerFirstName,
-      reservation.customerLastName,
-      reservation.customerName,
-    );
+    const name = nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
@@ -128,10 +109,7 @@ function initialForm(
       customerNote: reservation.customerNote ?? "",
       vehicleModel: reservation.vehicleModel ?? "",
       vehicleColour: reservation.vehicleColour ?? "",
-      price:
-        reservation.priceCents != null
-          ? centsToInput(reservation.priceCents)
-          : "",
+      price: reservation.priceCents != null ? centsToInput(reservation.priceCents) : "",
       childSeats: { ...NO_CHILD_SEATS, ...(reservation.childSeats ?? {}) },
     };
   }
@@ -160,35 +138,18 @@ function initialForm(
   };
 }
 
-const labelClass =
-  "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
+const labelClass = "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
 const inputClass =
   "h-12 w-full border border-border bg-card px-3 text-lg text-foreground outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive";
 
-function Field({
-  id,
-  label,
-  error,
-  help,
-  children,
-}: {
-  id: string;
-  label: string;
-  error?: string;
-  help?: string;
-  children: React.ReactNode;
-}) {
+function Field({ id, label, error, help, children }: { id: string; label: string; error?: string; help?: string; children: React.ReactNode }) {
   return (
     <div>
       <label htmlFor={id} className={labelClass}>
         {label}
       </label>
       {children}
-      {error ? (
-        <p className="mt-1 text-sm text-destructive">{errorMessage(error)}</p>
-      ) : (
-        help && <p className="mt-1 text-sm text-muted-foreground">{help}</p>
-      )}
+      {error ? <p className="mt-1 text-sm text-destructive">{errorMessage(error)}</p> : help && <p className="mt-1 text-sm text-muted-foreground">{help}</p>}
     </div>
   );
 }
@@ -225,24 +186,13 @@ function ChildSeatsBlock({
       >
         <ChildSeatIcon className="text-lime-deep" />
         <span className={cn(labelClass, "mb-0 flex-1")}>{t.title}</span>
-        <span className="font-mono text-sm text-muted-foreground">
-          {total > 0 ? total : t.none}
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform",
-            open && "rotate-180",
-          )}
-          aria-hidden="true"
-        />
+        <span className="font-mono text-sm text-muted-foreground">{total > 0 ? total : t.none}</span>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden="true" />
       </button>
       {open && (
-        <div
-          id="child-seats-steppers"
-          className="space-y-3 border-t border-border p-3"
-        >
+        <div id="child-seats-steppers" className="space-y-3 border-t border-border p-3">
           <p className="text-sm text-muted-foreground">{t.help}</p>
-          {CHILD_SEAT_KINDS.map((kind) => {
+          {CHILD_SEAT_KINDS.map(kind => {
             const l = CHILD_SEAT_LABELS[kind];
             const n = seats[kind];
             return (
@@ -252,20 +202,10 @@ function ChildSeatsBlock({
                   <p className="text-sm text-muted-foreground">{l.hint}</p>
                 </div>
                 <div className="flex items-center">
-                  <button
-                    type="button"
-                    aria-label={t.less(l.ages)}
-                    disabled={n === 0}
-                    onClick={() => onChange({ ...seats, [kind]: n - 1 })}
-                    className={stepClass}
-                  >
+                  <button type="button" aria-label={t.less(l.ages)} disabled={n === 0} onClick={() => onChange({ ...seats, [kind]: n - 1 })} className={stepClass}>
                     <Minus className="h-4 w-4" aria-hidden="true" />
                   </button>
-                  <output
-                    data-testid={`child-seats-${kind}`}
-                    aria-label={l.ages}
-                    className="tabular w-10 text-center font-mono text-lg font-bold"
-                  >
+                  <output data-testid={`child-seats-${kind}`} aria-label={l.ages} className="tabular w-10 text-center font-mono text-lg font-bold">
                     {n}
                   </output>
                   <button
@@ -284,10 +224,7 @@ function ChildSeatsBlock({
         </div>
       )}
       {error && (
-        <p
-          role="alert"
-          className="border-t border-border px-3 py-2 text-sm text-destructive"
-        >
+        <p role="alert" className="border-t border-border px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -308,26 +245,16 @@ export function ReservationForm({
   prefill?: ParsedBooking;
   onSaved: (reservation: Reservation) => void;
 }) {
-  const [form, setForm] = useState<Form>(() =>
-    initialForm(reservation, defaultDate, prefill),
-  );
+  const [form, setForm] = useState<Form>(() => initialForm(reservation, defaultDate, prefill));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [force, setForce] = useState(false);
   const t = fr.reservation;
   // A one-word name (older row, comparator email) is stored with an empty last name: an edit that leaves the name alone
   // must not require one, so the names are sent, and required, only on creation or once changed.
-  const initialName = reservation
-    ? nameParts(
-        reservation.customerFirstName,
-        reservation.customerLastName,
-        reservation.customerName,
-      )
-    : null;
+  const initialName = reservation ? nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName) : null;
   const nameRequired =
-    !initialName ||
-    form.customerFirstName.trim() !== initialName.firstName ||
-    form.customerLastName.trim() !== initialName.lastName;
+    !initialName || form.customerFirstName.trim() !== initialName.firstName || form.customerLastName.trim() !== initialName.lastName;
 
   // 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »): the amount can be set or corrected, never a
   // Plazo booking's; an edit sends it only when it changed (null when emptied).
@@ -337,58 +264,36 @@ export function ReservationForm({
   // « Sièges auto » (24/10/2026): children count in the passengers, so a booking keeps at least one adult.
   const seatsTotal = childSeatsTotal(form.childSeats);
   const seatsExceed = seatsTotal > 0 && seatsTotal >= Number(form.passengers);
-  const [seatsOpen, setSeatsOpen] = useState(() =>
-    hasChildSeats(reservation?.childSeats),
-  );
+  const [seatsOpen, setSeatsOpen] = useState(() => hasChildSeats(reservation?.childSeats));
 
-  const arrivalAt =
-    form.arrivalDate && form.arrivalTime
-      ? `${form.arrivalDate}T${form.arrivalTime}`
-      : "";
-  const returnAt =
-    form.returnDate && form.returnTime
-      ? `${form.returnDate}T${form.returnTime}`
-      : "";
+  const arrivalAt = form.arrivalDate && form.arrivalTime ? `${form.arrivalDate}T${form.arrivalTime}` : "";
+  const returnAt = form.returnDate && form.returnTime ? `${form.returnDate}T${form.returnTime}` : "";
   const datesReady = !!arrivalAt && !!returnAt && returnAt > arrivalAt;
 
   // Debounced capacity preview.
   const [stay, setStay] = useState<{ a: string; r: string } | null>(null);
   useEffect(() => {
-    const handle = setTimeout(
-      () => setStay(datesReady ? { a: arrivalAt, r: returnAt } : null),
-      300,
-    );
+    const handle = setTimeout(() => setStay(datesReady ? { a: arrivalAt, r: returnAt } : null), 300);
     return () => clearTimeout(handle);
   }, [arrivalAt, returnAt, datesReady]);
   // D-A: the stops besides the airport; the field only shows when the parking has some.
   const stops = useQuery({ queryKey: ["stops"], queryFn: adminApi.getStops });
-  const customStops = (stops.data?.data ?? []).filter(
-    (s) => !s.builtIn && s.id,
-  );
+  const customStops = (stops.data?.data ?? []).filter(s => !s.builtIn && s.id);
   const capacity = useQuery({
     queryKey: ["capacity", stay?.a, stay?.r, reservation?.id],
     queryFn: () => adminApi.previewCapacity(stay!.a, stay!.r, reservation?.id),
     enabled: !!stay,
   });
   const fullNights = capacity.data?.fullNights ?? [];
-  const minFree = capacity.data?.nights.length
-    ? Math.min(...capacity.data.nights.map((n) => n.free))
-    : null;
+  const minFree = capacity.data?.nights.length ? Math.min(...capacity.data.nights.map(n => n.free)) : null;
   useEffect(() => setForce(false), [stay?.a, stay?.r]);
 
   const save = useMutation({
     mutationFn: () => {
-      const names = {
-        customerFirstName: form.customerFirstName.trim(),
-        customerLastName: form.customerLastName.trim(),
-      };
-      const input: Omit<
-        ReservationInput,
-        "customerFirstName" | "customerLastName"
-      > = {
+      const names = { customerFirstName: form.customerFirstName.trim(), customerLastName: form.customerLastName.trim() };
+      const input: Omit<ReservationInput, "customerFirstName" | "customerLastName"> = {
         channel: form.channel,
-        channelDetail:
-          form.channel === "aggregator" ? form.channelDetail || null : null,
+        channelDetail: form.channel === "aggregator" ? form.channelDetail || null : null,
         arrivalAt,
         returnAt,
         passengers: Number(form.passengers),
@@ -402,76 +307,38 @@ export function ReservationForm({
         customerNote: form.customerNote.trim() || null,
         vehicleModel: form.vehicleModel.trim() || null,
         vehicleColour: form.vehicleColour.trim() || null,
-        ...(!reservation && prefill?.externalReference
-          ? { externalReference: prefill.externalReference }
-          : {}),
+        ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
         ...(!reservation && priceCents !== null ? { priceCents } : {}),
         // The amount read in the email stays the comparator's, even if corrected here: its next change email keeps ours.
-        ...(!reservation &&
-        prefill?.externalReference &&
-        prefill.priceCents != null
-          ? { importedPriceCents: prefill.priceCents }
-          : {}),
-        ...(reservation && !priceLocked && priceCents !== reservation.priceCents
-          ? { priceCents }
-          : {}),
+        ...(!reservation && prefill?.externalReference && prefill.priceCents != null ? { importedPriceCents: prefill.priceCents } : {}),
+        ...(reservation && !priceLocked && priceCents !== reservation.priceCents ? { priceCents } : {}),
         // The seats go with a creation; an edit sends them only once changed (null when they are all gone).
         ...(!reservation ? { childSeats: form.childSeats } : {}),
-        ...(reservation &&
-        !sameChildSeats(form.childSeats, reservation.childSeats)
-          ? {
-              childSeats: hasChildSeats(form.childSeats)
-                ? form.childSeats
-                : null,
-            }
+        ...(reservation && !sameChildSeats(form.childSeats, reservation.childSeats)
+          ? { childSeats: hasChildSeats(form.childSeats) ? form.childSeats : null }
           : {}),
         force: force || undefined,
       };
       return reservation
-        ? adminApi.updateReservation(reservation.id, {
-            ...input,
-            ...(nameRequired ? names : {}),
-          })
+        ? adminApi.updateReservation(reservation.id, { ...input, ...(nameRequired ? names : {}) })
         : adminApi.createReservation({ ...input, ...names });
     },
     onSuccess: ({ data }) => onSaved(data),
     onError: (err: Error) => {
       setFieldErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
-      setFormError(
-        err instanceof ApiError && err.code === "validation_failed"
-          ? null
-          : describeError(err),
-      );
-      if (err instanceof ApiError && err.code === "overbooked")
-        capacity.refetch();
+      setFormError(err instanceof ApiError && err.code === "validation_failed" ? null : describeError(err));
+      if (err instanceof ApiError && err.code === "overbooked") capacity.refetch();
     },
   });
 
-  const set =
-    (key: keyof Form) =>
-    (
-      e: React.ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >,
-    ) =>
-      setForm({ ...form, [key]: e.target.value });
-  const missingDates = !arrivalAt
-    ? fieldErrors.arrivalAt
-    : !returnAt
-      ? fieldErrors.returnAt
-      : undefined;
-  const nights = useMemo(
-    () =>
-      form.arrivalDate && form.returnDate
-        ? nightsBetween(form.arrivalDate, form.returnDate)
-        : null,
-    [form.arrivalDate, form.returnDate],
-  );
+  const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [key]: e.target.value });
+  const missingDates = !arrivalAt ? fieldErrors.arrivalAt : !returnAt ? fieldErrors.returnAt : undefined;
+  const nights = useMemo(() => (form.arrivalDate && form.returnDate ? nightsBetween(form.arrivalDate, form.returnDate) : null), [form.arrivalDate, form.returnDate]);
 
   return (
     <form
       className="space-y-5"
-      onSubmit={(e) => {
+      onSubmit={e => {
         e.preventDefault();
         setFormError(null);
         if (priceInvalid) {
@@ -519,55 +386,29 @@ export function ReservationForm({
               onChange={set(timeKey)}
               className="tabular h-10 w-full bg-transparent font-mono text-lg font-bold text-lime-deep outline-none [color-scheme:dark]"
             />
-            {fieldErrors[`${key}At`] && (
-              <p className="text-sm text-destructive">
-                {errorMessage(fieldErrors[`${key}At`])}
-              </p>
-            )}
+            {fieldErrors[`${key}At`] && <p className="text-sm text-destructive">{errorMessage(fieldErrors[`${key}At`])}</p>}
           </div>
         ))}
       </fieldset>
-      {missingDates && (
-        <p className="text-sm text-destructive">{errorMessage(missingDates)}</p>
-      )}
+      {missingDates && <p className="text-sm text-destructive">{errorMessage(missingDates)}</p>}
 
       {fullNights.length > 0 ? (
-        <div
-          role="alert"
-          className="space-y-2 bg-primary p-3 text-primary-foreground"
-        >
-          <p className="text-lg font-bold uppercase">
-            {t.full(fullNights.map(shortDay).join(", "))}
-          </p>
-          <p className="font-semibold">
-            {capacity.data?.canForce ? t.fullHelp : t.fullNoForce}
-          </p>
+        <div role="alert" className="space-y-2 bg-primary p-3 text-primary-foreground">
+          <p className="text-lg font-bold uppercase">{t.full(fullNights.map(shortDay).join(", "))}</p>
+          <p className="font-semibold">{capacity.data?.canForce ? t.fullHelp : t.fullNoForce}</p>
           {capacity.data?.canForce && (
             <label className="flex min-h-11 items-center gap-3 font-bold">
-              <input
-                type="checkbox"
-                checked={force}
-                onChange={(e) => setForce(e.target.checked)}
-                className="h-5 w-5 accent-black"
-              />
+              <input type="checkbox" checked={force} onChange={e => setForce(e.target.checked)} className="h-5 w-5 accent-black" />
               {t.force}
             </label>
           )}
         </div>
       ) : (
-        minFree !== null && (
-          <p className="border border-border px-3 py-2 text-muted-foreground">
-            {t.available(minFree)}
-          </p>
-        )
+        minFree !== null && <p className="border border-border px-3 py-2 text-muted-foreground">{t.available(minFree)}</p>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          id="customerFirstName"
-          label={t.customerFirstName}
-          error={fieldErrors.customerFirstName}
-        >
+        <Field id="customerFirstName" label={t.customerFirstName} error={fieldErrors.customerFirstName}>
           <input
             id="customerFirstName"
             required={nameRequired}
@@ -579,11 +420,7 @@ export function ReservationForm({
             className={inputClass}
           />
         </Field>
-        <Field
-          id="customerLastName"
-          label={t.customerLastName}
-          error={fieldErrors.customerLastName}
-        >
+        <Field id="customerLastName" label={t.customerLastName} error={fieldErrors.customerLastName}>
           <input
             id="customerLastName"
             required={nameRequired}
@@ -597,11 +434,7 @@ export function ReservationForm({
         </Field>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          id="customerPhone"
-          label={t.customerPhone}
-          error={fieldErrors.customerPhone}
-        >
+        <Field id="customerPhone" label={t.customerPhone} error={fieldErrors.customerPhone}>
           <input
             id="customerPhone"
             type="tel"
@@ -612,11 +445,7 @@ export function ReservationForm({
             className={cn(inputClass, "tabular font-mono")}
           />
         </Field>
-        <Field
-          id="customerEmail"
-          label={t.customerEmail}
-          error={fieldErrors.customerEmail}
-        >
+        <Field id="customerEmail" label={t.customerEmail} error={fieldErrors.customerEmail}>
           <input
             id="customerEmail"
             type="email"
@@ -628,10 +457,7 @@ export function ReservationForm({
         </Field>
         <Field id="plate" label={t.plate} error={fieldErrors.plate}>
           <div className="flex h-12 items-stretch overflow-hidden rounded-[4px] border-[1.5px] border-[#F3F3F0]">
-            <span
-              aria-hidden="true"
-              className="flex w-5 items-end justify-center bg-plate-band pb-1 text-xs font-bold text-white"
-            >
+            <span aria-hidden="true" className="flex w-5 items-end justify-center bg-plate-band pb-1 text-xs font-bold text-white">
               F
             </span>
             <input
@@ -639,11 +465,7 @@ export function ReservationForm({
               // 15/10/2026: a comparator's booking may come without its plate (« Compléter »: read on arrival); a plate,
               // once typed, is never erased (the server refuses it), nor does a booking without one move to the phone or the
               // counter without it.
-              required={
-                !!reservation?.plate.trim() ||
-                (form.channel !== "aggregator" &&
-                  form.channel !== reservation?.channel)
-              }
+              required={!!reservation?.plate.trim() || (form.channel !== "aggregator" && form.channel !== reservation?.channel)}
               autoCapitalize="characters"
               value={form.plate}
               onChange={set("plate")}
@@ -654,12 +476,7 @@ export function ReservationForm({
           </div>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            id="departureFlight"
-            label={t.departureFlight}
-            error={fieldErrors.departureFlight}
-            help={t.departureFlightHelp}
-          >
+          <Field id="departureFlight" label={t.departureFlight} error={fieldErrors.departureFlight} help={t.departureFlightHelp}>
             <input
               id="departureFlight"
               autoCapitalize="characters"
@@ -670,12 +487,7 @@ export function ReservationForm({
               className={cn(inputClass, "tabular font-mono uppercase")}
             />
           </Field>
-          <Field
-            id="returnFlight"
-            label={t.returnFlight}
-            error={fieldErrors.returnFlight}
-            help={t.returnFlightHelp}
-          >
+          <Field id="returnFlight" label={t.returnFlight} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
             <input
               id="returnFlight"
               autoCapitalize="characters"
@@ -689,15 +501,9 @@ export function ReservationForm({
         </div>
         {customStops.length > 0 && (
           <Field id="stopId" label={t.stop} error={fieldErrors.stopId}>
-            <select
-              id="stopId"
-              value={form.stopId}
-              onChange={set("stopId")}
-              aria-invalid={!!fieldErrors.stopId}
-              className={inputClass}
-            >
+            <select id="stopId" value={form.stopId} onChange={set("stopId")} aria-invalid={!!fieldErrors.stopId} className={inputClass}>
               <option value="">{t.stopAirport}</option>
-              {customStops.map((s) => (
+              {customStops.map(s => (
                 <option key={s.id!} value={s.id!}>
                   {s.name}
                 </option>
@@ -705,11 +511,7 @@ export function ReservationForm({
             </select>
           </Field>
         )}
-        <Field
-          id="passengers"
-          label={t.passengers}
-          error={fieldErrors.passengers}
-        >
+        <Field id="passengers" label={t.passengers} error={fieldErrors.passengers}>
           <input
             id="passengers"
             type="number"
@@ -728,21 +530,15 @@ export function ReservationForm({
       <ChildSeatsBlock
         seats={form.childSeats}
         open={seatsOpen}
-        onToggle={() => setSeatsOpen((o) => !o)}
-        onChange={(childSeats) => setForm({ ...form, childSeats })}
-        error={
-          seatsExceed
-            ? t.childSeats.exceed
-            : fieldErrors.childSeats
-              ? errorMessage(fieldErrors.childSeats)
-              : null
-        }
+        onToggle={() => setSeatsOpen(o => !o)}
+        onChange={childSeats => setForm({ ...form, childSeats })}
+        error={seatsExceed ? t.childSeats.exceed : fieldErrors.childSeats ? errorMessage(fieldErrors.childSeats) : null}
       />
 
       <fieldset>
         <legend className={labelClass}>{t.channel}</legend>
         <div className="flex gap-1.5">
-          {STAFF_CHANNELS.map((c) => (
+          {STAFF_CHANNELS.map(c => (
             <button
               key={c}
               type="button"
@@ -750,9 +546,7 @@ export function ReservationForm({
               onClick={() => setForm({ ...form, channel: c })}
               className={cn(
                 "h-11 flex-1 font-semibold uppercase tracking-wide",
-                form.channel === c
-                  ? "bg-foreground text-background"
-                  : "border border-border hover:bg-accent",
+                form.channel === c ? "bg-foreground text-background" : "border border-border hover:bg-accent",
               )}
             >
               {fr.channels[c]}
@@ -761,26 +555,11 @@ export function ReservationForm({
         </div>
       </fieldset>
       {form.channel === "aggregator" && (
-        <Field
-          id="channelDetail"
-          label={t.channelDetail}
-          error={fieldErrors.channelDetail}
-        >
-          <input
-            id="channelDetail"
-            value={form.channelDetail}
-            onChange={set("channelDetail")}
-            placeholder="Parkos, Onepark…"
-            className={inputClass}
-          />
+        <Field id="channelDetail" label={t.channelDetail} error={fieldErrors.channelDetail}>
+          <input id="channelDetail" value={form.channelDetail} onChange={set("channelDetail")} placeholder="Parkos, Onepark…" className={inputClass} />
         </Field>
       )}
-      <Field
-        id="price"
-        label={t.pricePaid}
-        error={fieldErrors.priceCents}
-        help={priceLocked ? t.priceLocked : t.priceHelp}
-      >
+      <Field id="price" label={t.pricePaid} error={fieldErrors.priceCents} help={priceLocked ? t.priceLocked : t.priceHelp}>
         <div className="flex items-center gap-2">
           <input
             id="price"
@@ -791,10 +570,7 @@ export function ReservationForm({
             disabled={priceLocked}
             placeholder="0,00"
             aria-invalid={!!fieldErrors.priceCents}
-            className={cn(
-              inputClass,
-              "tabular w-40 text-right font-mono disabled:opacity-60",
-            )}
+            className={cn(inputClass, "tabular w-40 text-right font-mono disabled:opacity-60")}
           />
           <span aria-hidden="true" className="text-lg text-muted-foreground">
             €
@@ -802,71 +578,27 @@ export function ReservationForm({
         </div>
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field
-          id="vehicleModel"
-          label={t.vehicleModel}
-          error={fieldErrors.vehicleModel}
-        >
-          <input
-            id="vehicleModel"
-            value={form.vehicleModel}
-            onChange={set("vehicleModel")}
-            maxLength={40}
-            placeholder="Peugeot 308"
-            className={inputClass}
-          />
+        <Field id="vehicleModel" label={t.vehicleModel} error={fieldErrors.vehicleModel}>
+          <input id="vehicleModel" value={form.vehicleModel} onChange={set("vehicleModel")} maxLength={40} placeholder="Peugeot 308" className={inputClass} />
         </Field>
-        <Field
-          id="vehicleColour"
-          label={t.vehicleColour}
-          error={fieldErrors.vehicleColour}
-        >
-          <input
-            id="vehicleColour"
-            value={form.vehicleColour}
-            onChange={set("vehicleColour")}
-            maxLength={30}
-            placeholder="grise"
-            className={inputClass}
-          />
+        <Field id="vehicleColour" label={t.vehicleColour} error={fieldErrors.vehicleColour}>
+          <input id="vehicleColour" value={form.vehicleColour} onChange={set("vehicleColour")} maxLength={30} placeholder="grise" className={inputClass} />
         </Field>
       </div>
-      <Field
-        id="customerNote"
-        label={t.customerNote}
-        error={fieldErrors.customerNote}
-      >
-        <textarea
-          id="customerNote"
-          rows={2}
-          maxLength={300}
-          value={form.customerNote}
-          onChange={set("customerNote")}
-          className={cn(inputClass, "h-auto py-2 text-base")}
-        />
+      <Field id="customerNote" label={t.customerNote} error={fieldErrors.customerNote}>
+        <textarea id="customerNote" rows={2} maxLength={300} value={form.customerNote} onChange={set("customerNote")} className={cn(inputClass, "h-auto py-2 text-base")} />
       </Field>
       <Field id="notes" label={t.notes} error={fieldErrors.notes}>
-        <textarea
-          id="notes"
-          rows={2}
-          value={form.notes}
-          onChange={set("notes")}
-          className={cn(inputClass, "h-auto py-2 text-base")}
-        />
+        <textarea id="notes" rows={2} value={form.notes} onChange={set("notes")} className={cn(inputClass, "h-auto py-2 text-base")} />
       </Field>
 
       {formError && (
-        <p
-          role="alert"
-          className="border border-destructive px-3 py-2 text-destructive"
-        >
+        <p role="alert" className="border border-destructive px-3 py-2 text-destructive">
           {formError}
         </p>
       )}
       <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
-        <span className="text-lg uppercase text-muted-foreground">
-          {nights ? t.nights(nights) : ""}
-        </span>
+        <span className="text-lg uppercase text-muted-foreground">{nights ? t.nights(nights) : ""}</span>
         <button
           type="submit"
           disabled={save.isPending || (fullNights.length > 0 && !force)}
