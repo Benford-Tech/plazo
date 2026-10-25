@@ -1,5 +1,6 @@
 import { importedPlate } from '../reservation';
 import { alloparkImporter } from './allopark';
+import { bookingSheetImporter, OWN_SITE_PROVIDER } from './booking-sheet';
 import { isCancellationOrChange } from './common';
 import { oneparkImporter } from './onepark';
 import { parclickImporter } from './parclick';
@@ -8,8 +9,19 @@ import { parkviaImporter } from './parkvia';
 import { EmailImporter, ParsedBooking } from './types';
 
 // One entry per aggregator whose confirmation emails we can read (09/10/2026: Allopark, Onepark, Parclick, ParkMundo;
-// what none of them reads, Claude reads: L-A).
-export const EMAIL_IMPORTERS: EmailImporter[] = [alloparkImporter, oneparkImporter, parclickImporter, parkmundoImporter, parkviaImporter];
+// what none of them reads, Claude reads: L-A). 25/10/2026: the booking sheet of the parking's own site last (no brand).
+export const EMAIL_IMPORTERS: EmailImporter[] = [
+  alloparkImporter,
+  oneparkImporter,
+  parclickImporter,
+  parkmundoImporter,
+  parkviaImporter,
+  bookingSheetImporter,
+];
+
+/** The comparators (the parking's own site left out): the Mails entrants block, the morning email. */
+export const COMPARATOR_PROVIDERS: string[] = EMAIL_IMPORTERS.map(i => i.provider).filter(p => p !== OWN_SITE_PROVIDER);
+export { OWN_SITE_PROVIDER } from './booking-sheet';
 
 /** Who to forward (G-B): one line per comparator and sender address. */
 export const IMPORT_SENDERS: { provider: string; address: string }[] = EMAIL_IMPORTERS.flatMap(i =>

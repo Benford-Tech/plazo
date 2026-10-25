@@ -15,7 +15,7 @@ import {
   STATUS_TRANSITIONS,
   statusSideEffects,
 } from '@/domain/reservation';
-import { ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
+import { OWN_SITE_PROVIDER, ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
 import type { OneparkSummaryStay } from '@/domain/importers/onepark';
 import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
@@ -257,7 +257,8 @@ export class ReservationService {
     const flights = importedFlights(parsed);
     logUnreadableFlights(flights, parsed.provider);
     const { returnFlight, departureFlight } = flights;
-    const notes = notesWithLines(null, unreadableFlightLines(flights, parsed.provider));
+    // 25/10/2026: a booking sheet's own lines (a flight typed without its airline, the customer's comment) go first.
+    const notes = notesWithLines(parsed.notes?.trim() || null, unreadableFlightLines(flights, parsed.provider));
     const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
     const plate = importedPlate(parsed.plate) ?? '';
     const key = plateKey(plate);
@@ -274,8 +275,9 @@ export class ReservationService {
           reference,
           operatorId,
           parkingId: parking.id,
-          channel: 'aggregator',
-          channelDetail: parsed.provider,
+          // 25/10/2026: the parking's own booking engine (its sheet, or Claude reading « Site du parking ») is no comparator.
+          channel: parsed.provider === OWN_SITE_PROVIDER ? 'website' : 'aggregator',
+          channelDetail: parsed.provider === OWN_SITE_PROVIDER ? null : parsed.provider,
           ...stay,
           passengers: parsed.passengers ?? 1,
           ...names,

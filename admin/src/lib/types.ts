@@ -47,7 +47,11 @@ export interface Staff {
   emailVerified?: boolean;
   /** Set while a platform admin views an operator's space ("Ouvrir son espace"). */
   /** platformAccount: the platform's own account (« Plazo (tests) »), whose team can be managed in consultation. */
-  viewAs?: { operatorId: string; operatorName: string; platformAccount?: boolean } | null;
+  viewAs?: {
+    operatorId: string;
+    operatorName: string;
+    platformAccount?: boolean;
+  } | null;
   /** Team list (13/10/2026): how the member signs in to Plazo Pro (missing from an older API). */
   signIn?: SignInMethod[];
   /** Session user (13/10/2026): whether a usable password is set, and the linked Apple / Google identities. */
@@ -102,7 +106,12 @@ export interface JoinRequest {
   expiresAt: string;
 }
 
-export type JoinRequestStatus = "pending" | "accepted" | "refused" | "cancelled" | "expired";
+export type JoinRequestStatus =
+  | "pending"
+  | "accepted"
+  | "refused"
+  | "cancelled"
+  | "expired";
 
 /** A request as its author sees it (answer of the refusal). */
 export interface JoinRequestView {
@@ -514,6 +523,8 @@ export interface ParsedBooking {
   /** 09/10/2026: the car, as the comparator gives it (Onepark, ParkMundo, Allopark's booking page). */
   vehicleModel?: string;
   vehicleColour?: string;
+  /** 25/10/2026: lines for the notes (a flight typed without its airline, the customer's comment on a booking sheet). */
+  notes?: string;
 }
 
 /** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
@@ -531,7 +542,12 @@ export type InboundEmailStatus =
   | "ignored";
 
 /** C (14/10/2026): how a comparator's emails reach Plazo (domain/inbound-comparators.ts on the server). */
-export type ComparatorArrival = "direct" | "forwarded" | "manual" | "unknown" | "none";
+export type ComparatorArrival =
+  | "direct"
+  | "forwarded"
+  | "manual"
+  | "unknown"
+  | "none";
 
 export interface InboundComparator {
   provider: string;
@@ -567,11 +583,21 @@ export interface InboundSettings {
   /** C (14/10/2026): one line per comparator (missing from an older API). */
   comparators?: InboundComparator[];
   /** A (14/10/2026): what Plazo saw of the setup, latest first. */
-  progress?: { confirmationAt: string | null; comparatorMailAt: string | null; comparator: string | null; bookingAt: string | null };
+  progress?: {
+    confirmationAt: string | null;
+    comparatorMailAt: string | null;
+    comparator: string | null;
+    bookingAt: string | null;
+  };
   /** A: the emails a too-wide rule sent on these 7 days, set aside without their content. */
   unexpected?: { count: number; lastAt: string | null };
   /** A: the mail service the wizard opens on, and the address it was read from. */
-  mailProvider?: { id: MailProviderId; business: boolean; email: string; source: "forwarding" | "account" } | null;
+  mailProvider?: {
+    id: MailProviderId;
+    business: boolean;
+    email: string;
+    source: "forwarding" | "account";
+  } | null;
 }
 
 export interface InboundRecent {
@@ -669,7 +695,11 @@ export interface InboundChange {
   reservationId: string | null;
   /** The booking's Plazo reference. */
   reference: string | null;
-  changes: { field: InboundChangeField; from: string | number | null; to: string | number | null }[];
+  changes: {
+    field: InboundChangeField;
+    from: string | number | null;
+    to: string | number | null;
+  }[];
   at: string;
   /** 21/10/2026: `cancellation` for a comparator's cancellation (ParkVia) Plazo applied or left to the staff. */
   kind?: "cancellation";
@@ -679,7 +709,11 @@ export interface InboundChange {
  * The Allopark booking page of a mail: `read` (its fields completed the mail), `protected` (Allopark asked for an
  * anti-robot check, which Plazo never passes), `unavailable` (no answer) or `not_found` (no page showed this booking).
  */
-export type InboundPageOutcome = "read" | "protected" | "unavailable" | "not_found";
+export type InboundPageOutcome =
+  | "read"
+  | "protected"
+  | "unavailable"
+  | "not_found";
 
 export interface InboundPageLookup {
   outcome: InboundPageOutcome;
@@ -692,14 +726,24 @@ export interface InboundPageLookup {
  * What « Relancer l'analyse » came to: a booking created or found, an Allopark change applied (`changed`, 10/10/2026),
  * or the mail still waiting.
  */
-export type InboundReanalysisOutcome = "imported" | "changed" | "duplicate" | "incomplete" | "unrecognised" | "handled";
+export type InboundReanalysisOutcome =
+  | "imported"
+  | "changed"
+  | "duplicate"
+  | "incomplete"
+  | "unrecognised"
+  | "handled";
 
 export interface InboundReanalysis {
   email: InboundEmail;
   outcome: InboundReanalysisOutcome;
 }
 
-export type InboundReadingKind = "booking" | "modification" | "cancellation" | "other";
+export type InboundReadingKind =
+  | "booking"
+  | "modification"
+  | "cancellation"
+  | "other";
 
 export interface InboundReading {
   kind: InboundReadingKind;
@@ -718,7 +762,14 @@ export interface InboundReading {
 }
 
 /** 16/10/2026: why Claude could not read a mail (the server's `ReadingOutageCause`). */
-export type InboundReadingOutageCause = "credit" | "auth" | "rate_limit" | "overloaded" | "timeout" | "network" | "other";
+export type InboundReadingOutageCause =
+  | "credit"
+  | "auth"
+  | "rate_limit"
+  | "overloaded"
+  | "timeout"
+  | "network"
+  | "other";
 
 export interface InboundReadingOutage {
   cause: InboundReadingOutageCause;
@@ -908,9 +959,20 @@ export interface OperatorDeletion {
   id: string;
   name: string;
   deletable: boolean;
-  reason: "cannot_delete_platform" | "not_suspended" | "has_payments" | "payment_in_progress" | null;
+  reason:
+    | "cannot_delete_platform"
+    | "not_suspended"
+    | "has_payments"
+    | "payment_in_progress"
+    | null;
   /** `listings`: missing from an older API. */
-  counts: { parkings: number; listings?: number; reservations: number; staff: number; paidReservations: number };
+  counts: {
+    parkings: number;
+    listings?: number;
+    reservations: number;
+    staff: number;
+    paidReservations: number;
+  };
 }
 
 export interface PlatformOperators {
@@ -1632,23 +1694,56 @@ export interface RevenueReport {
   averageDays: number | null;
   withoutAmount: number;
   byChannel: RevenueChannel[];
-  byDay: { date: string; count: number; totalCents: number; netCents: number }[];
+  byDay: {
+    date: string;
+    count: number;
+    totalCents: number;
+    netCents: number;
+  }[];
   /** Bookings of the period without an amount (50 at most), to complete. */
-  missing: { id: string; reference: string; customerName: string; arrivalAt: string; channel: ReservationChannel; detail: string | null }[];
+  missing: {
+    id: string;
+    reference: string;
+    customerName: string;
+    arrivalAt: string;
+    channel: ReservationChannel;
+    detail: string | null;
+  }[];
 }
 
 export interface RevenueSummary {
   today: string;
-  month: { from: string; to: string; totalCents: number; commissionCents?: number; netCents?: number; count: number; withoutAmount: number };
+  month: {
+    from: string;
+    to: string;
+    totalCents: number;
+    commissionCents?: number;
+    netCents?: number;
+    count: number;
+    withoutAmount: number;
+  };
   todayCents: number;
   weekCents: number;
   /** What each channel took this month (20/10/2026); missing from an older API. */
-  commissions?: { label: string; comparatorKey: string | null; rateBp: number | null; amountCents: number; count: number; missingRate: boolean }[];
+  commissions?: {
+    label: string;
+    comparatorKey: string | null;
+    rateBp: number | null;
+    amountCents: number;
+    count: number;
+    missingRate: boolean;
+  }[];
 }
 
 // ---- Prospection (Plateforme › Prospection, 18/10/2026) ----------------------------------------------------------------
 
-export type ProspectStatus = "to_contact" | "contacted" | "replied" | "interested" | "not_interested" | "unsubscribed";
+export type ProspectStatus =
+  | "to_contact"
+  | "contacted"
+  | "replied"
+  | "interested"
+  | "not_interested"
+  | "unsubscribed";
 
 export interface Prospect {
   id: string;
@@ -1747,11 +1842,20 @@ export interface ProspectingSettings {
   configured: boolean;
 }
 
-export type ProspectImportOutcome = "new" | "duplicate" | "suppressed" | "invalid";
+export type ProspectImportOutcome =
+  | "new"
+  | "duplicate"
+  | "suppressed"
+  | "invalid";
 
 export interface ProspectImportReport {
   dryRun: boolean;
-  results: { row: number; outcome: ProspectImportOutcome; email?: string; fields?: Record<string, string> }[];
+  results: {
+    row: number;
+    outcome: ProspectImportOutcome;
+    email?: string;
+    fields?: Record<string, string>;
+  }[];
   counts: Record<ProspectImportOutcome, number>;
   created: number;
 }

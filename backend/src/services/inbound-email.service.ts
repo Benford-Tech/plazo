@@ -4,7 +4,7 @@ import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
 import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, readingOutageOf, toParsedBooking } from '@/domain/email-reading';
-import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
+import { COMPARATOR_PROVIDERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
 import { parseOneparkSummary } from '@/domain/importers/onepark';
@@ -1024,7 +1024,7 @@ export class InboundEmailService {
         select: { parsed: true, receivedAt: true },
       }),
     ]);
-    const providers = EMAIL_IMPORTERS.map(i => i.provider);
+    const providers = COMPARATOR_PROVIDERS;
     const automatic = latestAutomatic(received, providers);
     const counts = Object.fromEntries(Object.values(InboundEmailStatus).map(status => [status, 0])) as Record<InboundEmailStatus, number>;
     for (const g of grouped) counts[g.status] = g._count._all;

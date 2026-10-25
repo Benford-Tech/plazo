@@ -4,7 +4,7 @@ import { Container, Service } from 'typedi';
 import { inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Staff } from '@/database';
 import { sourceLabel } from '@/domain/booking-digest';
-import { EMAIL_IMPORTERS } from '@/domain/importers';
+import { COMPARATOR_PROVIDERS } from '@/domain/importers';
 import { comparatorStates } from '@/domain/inbound-comparators';
 import {
   COMPARATOR_QUIET_DAYS,
@@ -302,11 +302,7 @@ export class MorningEmailService {
         badge: toCheck ? `${toCheck} à traiter` : 'OK',
       });
       const timezone = dashboard.parking.timezone;
-      for (const state of comparatorStates(
-        recent,
-        EMAIL_IMPORTERS.map(i => i.provider),
-        now,
-      )) {
+      for (const state of comparatorStates(recent, COMPARATOR_PROVIDERS, now)) {
         if (!state.lastReceivedAt) continue;
         const last = new Date(state.lastReceivedAt);
         const days = Math.floor((now.getTime() - last.getTime()) / DAY);

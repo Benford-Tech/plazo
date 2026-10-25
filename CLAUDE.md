@@ -149,7 +149,24 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (« Annulation appliquée à la réservation … », `InboundEmail.change.kind: 'cancellation'`, ligne « Statut : Attendu → Annulé »),
      déjà annulée → doublon rattaché ; laissée à l'équipe, rien changé (« Annulation à faire à la main ») pour une voiture déjà
      au parking (`already_arrived`), une réservation close, inconnue (`unknown_booking`) ou plusieurs ; fixture
-     `parkvia-cancellation.txt` ; un mail reçu avant le 21/10/2026 se traite par « Relancer l'analyse », en plus d'`allopark.ts` (qui lit aussi la confirmation
+     `parkvia-cancellation.txt` ; un mail reçu avant le 21/10/2026 se traite par « Relancer l'analyse » ; **annulations Onepark
+     appliquées (25/10/2026, « mail pas compris »)** : l'avis d'annulation que Onepark envoie au parking (titre « Annulation de la
+     réservation #5908369 », « Une réservation Onepark a été annulée sur votre parking », `isOneparkCancellation`, règle
+     `onepark.cancellation`, numéro « Numéro de réservation : … ») suit le même chemin que celui de ParkVia (`comparatorCancellation`
+     → `applyImportCancellation`, source `onepark_cancellation`, note « Annulée par Onepark (mail d'annulation). ») ; les mêmes mots
+     ailleurs ou écrits par celui qui transfère : `onepark.cancellation-wording`, rien d'appliqué ; fixture `onepark-cancellation.txt` ;
+     **fiche de réservation du site du parking (25/10/2026, « celui ci aussi »)** : `importers/booking-sheet.ts` lit la fiche « Clé :
+     valeur » séparée par « ; » ou des sauts de ligne qu'un moteur de réservation envoie au parking (« Réservation : F2006A65BCF7 »,
+     Prénom, Nom, Type de véhicule, Nombre de voyageurs, Date et Heure de dépôt / de récupération, Adresse mail, Téléphone du client,
+     Immatriculation, Coût de la réservation, Commentaires, Numéro de vol aller / retour), reconnue à sa seule mise en page
+     (`sheetFields`, référence, dates, plaque ou téléphone ; aucune marque : expéditeur inconnu) ; provider `OWN_SITE_PROVIDER` =
+     « Site du parking », qui n'est pas un comparateur : `createFromImport` écrit le canal `website` sans `channelDetail` (aussi quand
+     Claude lit « Site du parking »), « Compléter » du web préremplit ce canal, `COMPARATOR_PROVIDERS` (bloc Mails entrants, mail
+     du matin) l'exclut ; `Comparator` de `inbound-kind.ts` l'accepte (règle `site.booking`, résumé « Réservation du site du parking
+     F2006… ») ; un vol donné sans compagnie (« 7841 », que `formatFlight` lirait « 78 41 ») n'est jamais pris pour un numéro de vol :
+     `ParsedBooking.notes` (« Vol aller indiqué sur la fiche : 7841 (sans compagnie) », « Commentaire du client : … ») passe dans les
+     notes de la réservation ; fixture `booking-sheet.txt`, tests `import-comparators.test.ts`, `inbound-rules.test.ts` ; si cette
+     fiche venait en fait d'un comparateur, lui donner un nom et un canal comparateur se fait sur la réservation, en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
      `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
      une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est
@@ -230,7 +247,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `inbound_change`, effacé avec le texte et au rattachement) ; boîte de réception : bloc « Modification appliquée à la
      réservation … » ou « Modification à faire à la main · réservation … » avec une ligne par changement (« Date de retour :
      13 déc. 20:30 → 15 déc. 18:00 »), pastille « Modification », « À faire à la main » en ambre ; « Relancer l'analyse » →
-     résultat `changed`. Les annulations ne sont toujours pas appliquées.
+     résultat `changed`. Les annulations d'Allopark ne sont toujours pas appliquées (celles de ParkVia et d'Onepark le sont, par leur avis propre).
      **Suite (10/10/2026, « Tu n'as pas récupéré le prix pour la modif »)** : un vol qu'un import ne sait pas lire (le voyageur
      a tapé « U2AB3C » chez Allopark) ne bloque plus la réservation : `createFromImport` et `applyImportChange` la créent ou
      la changent sans ce vol (prix compris), le texte part dans les notes (« Vol retour indiqué par Allopark : … (numéro non
@@ -320,7 +337,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Confirmation de votre réservation AL-… » et le même corps ; un autre mail Allopark avec référence = réservation à confirmer
      (`allopark.reference`, comme avant) ; Onepark, Parclick, ParkMundo : annulations et modifications par les mêmes mots
      (`TEXT_CANCELLATION`, `TEXT_CHANGE`, `cancellationIn`, `changeIn`, `SUBJECT_CANCELLATION_STRICT` dans `importers/common.ts` ;
-     jamais appliquées : une annulation Onepark qui garde son tableau n'est plus importée), réservation = mise en page de leur
+     jamais appliquées, sauf l'avis d'annulation propre à Onepark depuis le 25/10/2026, voir plus haut : une annulation Onepark qui garde son tableau n'est plus importée), réservation = mise en page de leur
      lecteur ; une réponse (« Re: », « RE : », « AW: », « SV: ») à propos d'un comparateur = autre mail ; le reste (autre
      comparateur, site du parking, client) = inconnu. Traitement (`InboundEmailService.analyse`) : annulation, autre mail,
      modification hors Allopark → « À traiter » avec leur genre, sans Claude ni page ; modification Allopark sûre → page de la

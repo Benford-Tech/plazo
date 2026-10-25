@@ -227,6 +227,42 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
   });
 
+  it('la fiche de réservation du site du parking (25/10/2026) : importée sans Claude, canal « site du parking », vols sans compagnie dans les notes', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const sheet = item(op.address, fixture('booking-sheet.txt'), {
+      From: { Name: 'Réservations', Address: 'resa@parking-exemple.fr' },
+      Subject: 'Nouvelle réservation',
+    });
+    expect((await post([sheet])).body).toMatchObject({ imported: 1 });
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, externalReference: 'F2000000ABCD' } });
+    expect(booking).toMatchObject({
+      status: 'upcoming',
+      channel: 'website',
+      channelDetail: null,
+      customerFirstName: 'Camille',
+      customerLastName: 'Exemple',
+      customerPhone: '+33612345678',
+      customerEmail: 'camille@example.com',
+      plate: 'AB-123-CD',
+      priceCents: 3200,
+      passengers: 1,
+      vehicleModel: 'Peugeot 208 Verte-Jaune',
+      departureFlight: null,
+      returnFlight: null,
+      notes: 'Vol aller indiqué sur la fiche : 7841 (sans compagnie)\nVol retour indiqué sur la fiche : 7842 (sans compagnie)',
+    });
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', reservationId: booking.id, provider: 'Site du parking' });
+    expect(row.reading).toMatchObject({ kind: 'booking', provider: 'Site du parking', rule: 'site.booking', source: 'rules' });
+    // The same sheet again: its reference finds the booking.
+    await post([sheet]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
+    // The Mails entrants block lists the comparators only.
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    expect(settings.body.comparators.map((c: { provider: string }) => c.provider)).not.toContain('Site du parking');
+  });
+
   it('le récapitulatif Onepark (20/10/2026) complète la plaque et le numéro, garde la plaque de l’équipe et laisse à l’équipe ce qui diffère', async () => {
     const op = await connected();
     claudeIs('absent');
