@@ -155,6 +155,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `onepark.cancellation`, numéro « Numéro de réservation : … ») suit le même chemin que celui de ParkVia (`comparatorCancellation`
      → `applyImportCancellation`, source `onepark_cancellation`, note « Annulée par Onepark (mail d'annulation). ») ; les mêmes mots
      ailleurs ou écrits par celui qui transfère : `onepark.cancellation-wording`, rien d'appliqué ; fixture `onepark-cancellation.txt` ;
+     **retrouvée par le voyageur (25/10/2026, l'avis #5908369 « À faire à la main », `unknown_booking` en production : la
+     réservation avait été saisie sans le numéro)** : quand aucune réservation ne porte le numéro, `applyImportCancellation` (ParkVia
+     et Onepark) cherche la réservation du voyageur que l'avis nomme (champs lus par l'importateur du comparateur : plaque si les
+     deux en ont une, sinon téléphone et un mot du nom, `sameTraveller`) arrivant le même jour local, sans référence (ou avec un
+     numéro qui ne nomme aucun comparateur), ni annulée ni non venue (`cancellationByTraveller`) : une seule → annulée et le
+     numéro lui est ajouté ; plusieurs → `ambiguous` ; aucune → `unknown_booking` ;
      **Park Hit (25/10/2026, « celui ci aussi », puis « pas compris par plazo » avec l'expéditeur `noreply@parkhit.com`)** :
      `importers/parkhit.ts` lit l'avis « Park Hit: Nouvelle réservation F2006A65BCF7 » au parking, une fiche « Clé : valeur » à
      raison d'un champ par ligne terminé par « ; » (Réservation, Prénom, Nom, Type de véhicule, Nombre de voyageurs, Date et

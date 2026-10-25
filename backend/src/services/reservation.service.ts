@@ -988,17 +988,26 @@ export class ReservationService {
     reference: string,
     origin: { source: string; inboundEmailId?: string | null },
     now: Date = new Date(),
+    traveller: ParsedBooking | null = null,
   ): Promise<ImportCancellationResult> {
-    const candidates = await prisma.reservation.findMany({
-      where: {
-        operatorId,
-        AND: [STAFF_VISIBLE, { OR: [{ channelDetail: null }, { channelDetail: { equals: provider, mode: 'insensitive' } }] }],
-        externalReference: { equals: reference, mode: 'insensitive' },
-        channel: { not: 'plazo' },
-      },
+    const byProvider: Prisma.ReservationWhereInput = {
+      operatorId,
+      AND: [STAFF_VISIBLE, { OR: [{ channelDetail: null }, { channelDetail: { equals: provider, mode: 'insensitive' } }] }],
+      channel: { not: 'plazo' },
+    };
+    let candidates = await prisma.reservation.findMany({
+      where: { ...byProvider, externalReference: { equals: reference, mode: 'insensitive' } },
       select: { id: true },
       take: 2,
     });
+    // 25/10/2026 (« Annulation de la réservation #5908369 » left to the staff, unknown_booking): a booking Plazo has
+    // without the comparator's number (typed by hand, or imported from a notice without it) is found by the traveller the
+    // notice names and the arrival day it gives, as the Onepark summary does; it takes the number when cancelled.
+    let unreferenced = false;
+    if (!candidates.length && traveller) {
+      candidates = await this.cancellationByTraveller(byProvider, operatorId, traveller);
+      unreferenced = candidates.length > 0;
+    }
     if (!candidates.length) return { outcome: 'left', reason: 'unknown_booking', reservation: null };
     if (candidates.length > 1) return { outcome: 'left', reason: 'ambiguous', reservation: null };
     const result = await prisma.$transaction(async tx => {
@@ -1013,7 +1022,12 @@ export class ReservationService {
       const notes = [before.notes?.trim(), `[${stamp}] Annulée par ${provider} (mail d'annulation).`].filter(Boolean).join('\n');
       const after = await tx.reservation.update({
         where: { id: before.id },
-        data: { status: 'cancelled', ...statusSideEffects(before, 'cancelled', now), notes },
+        data: {
+          status: 'cancelled',
+          ...statusSideEffects(before, 'cancelled', now),
+          notes,
+          ...(unreferenced && !before.externalReference ? { externalReference: reference.trim().toUpperCase() } : {}),
+        },
       });
       await this.audit.record(
         { id: null, operatorId },
@@ -1039,6 +1053,42 @@ export class ReservationService {
       await this.push.notifyBookingCancelled(result.reservation, localDateTime(result.reservation.arrivalAt, parking?.timezone ?? 'Europe/Paris'));
     }
     return result;
+  }
+
+  /**
+   * The bookings a comparator's cancellation notice is about when none carries its number: the same traveller
+   * (sameTraveller: the plate when both have one, else the phone and a word of the name) arriving the same local day of
+   * the parking, without a reference (or with a number that names no comparator), neither cancelled nor a no-show. Two
+   * at most: one is the booking, two make it ambiguous. Nothing without an arrival day or a traveller to compare.
+   */
+  private async cancellationByTraveller(
+    where: Prisma.ReservationWhereInput,
+    operatorId: string,
+    traveller: ParsedBooking,
+  ): Promise<{ id: string }[]> {
+    const key = plateKey(importedPlate(traveller.plate) ?? '');
+    const phone = traveller.customerPhone ? phoneKey(traveller.customerPhone) : '';
+    if ((!key && phone.length < 6) || !traveller.arrivalAt) return [];
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    const arrivalAt = parking ? parseInstant(traveller.arrivalAt, parking.timezone) : null;
+    if (!parking || !arrivalAt) return [];
+    const day = dayBounds(localDate(arrivalAt, parking.timezone), parking.timezone);
+    const rows = await prisma.reservation.findMany({
+      where: {
+        ...where,
+        arrivalAt: { gte: day.start, lt: day.end },
+        status: { notIn: ['cancelled', 'no_show'] },
+        ...(key ? { plateKey: { in: [key, ''] } } : {}),
+      },
+      select: { id: true, externalReference: true, plateKey: true, customerPhone: true, customerName: true },
+      orderBy: { arrivalAt: 'asc' },
+    });
+    const incoming = { plateKey: key, customerPhone: traveller.customerPhone ?? '', customerName: importedNames(traveller).customerName };
+    return rows
+      .filter(r => !r.externalReference || !/\p{L}/u.test(r.externalReference))
+      .filter(r => sameTraveller(r, incoming))
+      .slice(0, 2)
+      .map(r => ({ id: r.id }));
   }
 
   /**
