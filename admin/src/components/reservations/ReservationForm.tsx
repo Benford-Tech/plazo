@@ -88,11 +88,8 @@ function initialForm(
       departureFlight: prefill.departureFlight ?? "",
       stopId: "",
       passengers: String(prefill.passengers ?? 1),
-      // 25/10/2026: the parking's own booking sheet (« Site du parking ») is no comparator.
-      channel:
-        prefill.provider === "Site du parking" ? "website" : "aggregator",
-      channelDetail:
-        prefill.provider === "Site du parking" ? "" : prefill.provider,
+      channel: "aggregator",
+      channelDetail: prefill.provider,
       notes: prefill.notes ?? "",
       customerNote: "",
       // 10/10/2026: the car the comparator gives (the form's limits: 40 and 30 characters).

@@ -3,17 +3,18 @@ import { euroCents, numericDateTime, PLATE, stripAccents } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
 /**
- * 25/10/2026 (« celui ci aussi »): the booking sheet a parking's own booking engine sends to the parking, as « Clé :
- * valeur » fields separated by « ; » or line breaks (sample of the client n°1: « Réservation : F2006A65BCF7; Prénom :
+ * 25/10/2026 (« celui ci aussi », then « pas compris par plazo »): Park Hit's notice to the parking (« Park Hit: Nouvelle
+ * réservation F2006A65BCF7 », from noreply@parkhit.com), as « Clé : valeur » fields, one per line, each ended by « ; »
+ * (sample of the client n°1: « Réservation : F2006A65BCF7; Prénom :
  * …; Nom : …; Nombre de véhicules : 1; Type de véhicule : Peugeot 208 Verte-Jaune; Nombre de voyageurs : 1; Date de
  * dépôt : 31/10/2026; Heure de dépôt : 13:45; Date de récupération : 04/11/2026; Heure de récupération : 11:45; Adresse
  * mail : …; Téléphone du client : +33…; Immatriculation : …; Coût de la réservation : 32,00€; Montant déjà payé : 32,00€;
  * Restant à payer : 0,00€; Mode de paiement : CB; Commentaires : ; Numéro de vol aller : 7841; Numéro de vol retour :
- * 7842; »). No brand names it: its layout is its signature, and its booking is the parking's own (channel `website`).
- * The flights come without their airline (« 7841 »): kept for the staff in the notes, never read as a flight number
- * (formatFlight would make « 78 41 » of it).
+ * 7842; »). The body never names Park Hit (only the subject and the sender do): its layout is its signature, so a
+ * forward by hand is read too. The flights come without their airline (« 7841 »): kept for the staff in the notes,
+ * never read as a flight number (formatFlight would make « 78 41 » of it).
  */
-export const OWN_SITE_PROVIDER = 'Site du parking';
+export const PARKHIT_PROVIDER = 'Park Hit';
 
 const KEYS = {
   reference: 'reservation',
@@ -61,9 +62,9 @@ function flightOf(value: string | undefined): { flight?: string; typed?: string 
   return /^\d+$/.test(typed) || !formatFlight(typed) ? { typed } : { flight: typed };
 }
 
-export const bookingSheetImporter: EmailImporter = {
-  provider: OWN_SITE_PROVIDER,
-  senders: [],
+export const parkhitImporter: EmailImporter = {
+  provider: PARKHIT_PROVIDER,
+  senders: ['parkhit'],
 
   detect(text) {
     const fields = sheetFields(text);
@@ -78,7 +79,7 @@ export const bookingSheetImporter: EmailImporter = {
   parse(text) {
     const fields = sheetFields(text);
     const get = (key: string) => fields.get(key)?.trim() || undefined;
-    const booking: ParsedBooking = { provider: OWN_SITE_PROVIDER };
+    const booking: ParsedBooking = { provider: PARKHIT_PROVIDER };
     booking.externalReference = get(KEYS.reference)?.toUpperCase();
     booking.customerFirstName = get(KEYS.firstName);
     booking.customerLastName = get(KEYS.lastName);

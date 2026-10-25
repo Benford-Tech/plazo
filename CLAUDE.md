@@ -155,18 +155,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `onepark.cancellation`, numéro « Numéro de réservation : … ») suit le même chemin que celui de ParkVia (`comparatorCancellation`
      → `applyImportCancellation`, source `onepark_cancellation`, note « Annulée par Onepark (mail d'annulation). ») ; les mêmes mots
      ailleurs ou écrits par celui qui transfère : `onepark.cancellation-wording`, rien d'appliqué ; fixture `onepark-cancellation.txt` ;
-     **fiche de réservation du site du parking (25/10/2026, « celui ci aussi »)** : `importers/booking-sheet.ts` lit la fiche « Clé :
-     valeur » séparée par « ; » ou des sauts de ligne qu'un moteur de réservation envoie au parking (« Réservation : F2006A65BCF7 »,
-     Prénom, Nom, Type de véhicule, Nombre de voyageurs, Date et Heure de dépôt / de récupération, Adresse mail, Téléphone du client,
-     Immatriculation, Coût de la réservation, Commentaires, Numéro de vol aller / retour), reconnue à sa seule mise en page
-     (`sheetFields`, référence, dates, plaque ou téléphone ; aucune marque : expéditeur inconnu) ; provider `OWN_SITE_PROVIDER` =
-     « Site du parking », qui n'est pas un comparateur : `createFromImport` écrit le canal `website` sans `channelDetail` (aussi quand
-     Claude lit « Site du parking »), « Compléter » du web préremplit ce canal, `COMPARATOR_PROVIDERS` (bloc Mails entrants, mail
-     du matin) l'exclut ; `Comparator` de `inbound-kind.ts` l'accepte (règle `site.booking`, résumé « Réservation du site du parking
-     F2006… ») ; un vol donné sans compagnie (« 7841 », que `formatFlight` lirait « 78 41 ») n'est jamais pris pour un numéro de vol :
-     `ParsedBooking.notes` (« Vol aller indiqué sur la fiche : 7841 (sans compagnie) », « Commentaire du client : … ») passe dans les
-     notes de la réservation ; fixture `booking-sheet.txt`, tests `import-comparators.test.ts`, `inbound-rules.test.ts` ; si cette
-     fiche venait en fait d'un comparateur, lui donner un nom et un canal comparateur se fait sur la réservation, en plus d'`allopark.ts` (qui lit aussi la confirmation
+     **Park Hit (25/10/2026, « celui ci aussi », puis « pas compris par plazo » avec l'expéditeur `noreply@parkhit.com`)** :
+     `importers/parkhit.ts` lit l'avis « Park Hit: Nouvelle réservation F2006A65BCF7 » au parking, une fiche « Clé : valeur » à
+     raison d'un champ par ligne terminé par « ; » (Réservation, Prénom, Nom, Type de véhicule, Nombre de voyageurs, Date et
+     Heure de dépôt / de récupération, Adresse mail, Téléphone du client, Immatriculation, Coût de la réservation, Commentaires,
+     Numéro de vol aller / retour ; `sheetFields`), reconnue à sa mise en page (le corps ne nomme jamais Park Hit : un transfert
+     à la main est lu aussi) ou à son expéditeur et son objet (`BRANDS`, `/park\s*hit/`, référence de l'objet) ; comparateur
+     « Park Hit » (`PARKHIT_PROVIDER`, `Comparator`, `KNOWN_COMPARATORS`, expéditeur `parkhit` du filtre de transfert, règle
+     `parkhit.booking`) ; un vol donné sans compagnie (« 7841 », que `formatFlight` lirait « 78 41 ») n'est jamais pris pour
+     un numéro de vol : `ParsedBooking.notes` (« Vol aller indiqué sur la fiche : 7841 (sans compagnie) », « Commentaire du
+     client : … ») passe dans les notes de la réservation ; fixture `parkhit-notification.txt`, tests
+     `import-comparators.test.ts`, `inbound-rules.test.ts`, en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
      `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
      une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est

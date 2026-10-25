@@ -23,17 +23,17 @@
  */
 import { alloparkConfirmationPage, isAlloparkCancellation, isAlloparkChange } from './importers/allopark-page';
 import { cancellationIn, changeIn, flatten, isChange, SUBJECT_CANCELLATION_STRICT, SUBJECT_CHANGE } from './importers/common';
-import { EMAIL_IMPORTERS, OWN_SITE_PROVIDER } from './importers';
+import { EMAIL_IMPORTERS } from './importers';
+import { PARKHIT_PROVIDER } from './importers/parkhit';
 import { isOneparkSummary } from './importers/onepark';
 import type { ReadingMeta } from './email-reading';
 import { FORWARD_MARKER, HEADER_FROM } from './inbound-email';
 
 export type MailKind = 'booking' | 'change' | 'cancellation' | 'other' | 'unknown';
-/** The comparators the rules know, and (25/10/2026) the booking sheet of the parking's own site, read by its layout. */
-export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia' | typeof OWN_SITE_PROVIDER;
+export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia' | typeof PARKHIT_PROVIDER;
 
-/** The provider's word in a rule's name (« parkvia.booking », « site.booking »). */
-const ruleName = (provider: Comparator) => (provider === OWN_SITE_PROVIDER ? 'site' : provider.toLowerCase());
+/** The provider's word in a rule's name (« parkvia.booking », « parkhit.booking »). */
+const ruleName = (provider: Comparator) => provider.toLowerCase().replace(/\s+/g, '');
 
 export interface MailType {
   /** The comparator the email is about; null for an unknown sender. */
@@ -214,6 +214,7 @@ const BRANDS: { provider: Comparator; brand: RegExp }[] = [
   { provider: 'Parclick', brand: /parclick/i },
   { provider: 'ParkMundo', brand: /parkmundo/i },
   { provider: 'ParkVia', brand: /parkvia/i },
+  { provider: PARKHIT_PROVIDER, brand: /park\s*hit/i },
 ];
 
 /** The comparator a message names (subject, sender or text), or whose importer recognises its layout (ParkMundo's logo-only brand). */
@@ -253,8 +254,11 @@ function referenceOf(provider: Comparator, subject: string, text: string): strin
         return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
       case 'ParkVia':
         return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z]{1,4}\d{5,12})\b/i.exec(flat)?.[1];
-      case OWN_SITE_PROVIDER:
-        return /(?<![\p{L}\p{N}])R[ée]servation\s*:\s*([A-Z0-9][A-Z0-9-]{4,19})(?![A-Z0-9-])/iu.exec(flat)?.[1];
+      case PARKHIT_PROVIDER:
+        return (
+          /(?<![\p{L}\p{N}])R[ée]servation\s*:\s*([A-Z0-9][A-Z0-9-]{4,19})(?![A-Z0-9-])/iu.exec(flat)?.[1] ??
+          /nouvelle r[ée]servation\s+([A-Z0-9]{8,20})\b/i.exec(subject)?.[1]
+        );
     }
   })();
   return found ? found.toUpperCase() : null;
@@ -400,7 +404,7 @@ const KIND_OF: Record<Exclude<MailKind, 'unknown'>, ReadingMeta['kind']> = {
 
 /** The one-line summary of a rule's reading, in French, without personal data (« Modification Allopark de la réservation AL-… »). */
 export function ruleSummary(mail: MailType): string {
-  const p = mail.provider === OWN_SITE_PROVIDER ? 'du site du parking' : (mail.provider ?? '');
+  const p = mail.provider ?? '';
   const ref = mail.reference;
   switch (mail.kind) {
     case 'booking':
