@@ -464,6 +464,8 @@ export class InboundEmailService {
     if (type.rule === 'onepark.summary') return this.oneparkSummary(input, rules);
     // 21/10/2026 (« apprends à traiter les annulations ParkVia »): ParkVia's own cancellation notice cancels its booking.
     if (type.rule === 'parkvia.cancellation' && type.reference) return this.comparatorCancellation(input, 'ParkVia', type.reference, rules);
+    // 25/10/2026 (« mail pas compris »): Onepark's notice to the parking (« Une réservation Onepark a été annulée ») too.
+    if (type.rule === 'onepark.cancellation' && type.reference) return this.comparatorCancellation(input, 'Onepark', type.reference, rules);
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {

@@ -268,8 +268,29 @@ describe('Onepark, Parclick et ParkMundo (16/10/2026)', () => {
       ...onepark(),
       text: onepark().text.replace('Une nouvelle réservation Onepark a été enregistrée', 'Une réservation Onepark a été annulée'),
     };
-    expect(kindOf(cancelled)).toMatchObject({ kind: 'cancellation', provider: 'Onepark', rule: 'onepark.cancellation' });
+    // 25/10/2026: the words alone (a booking template reworded) are read, not applied; Onepark's own notice is applied.
+    expect(kindOf(cancelled)).toMatchObject({ kind: 'cancellation', provider: 'Onepark', rule: 'onepark.cancellation-wording', sure: false });
     expect(kindOf({ ...onepark(), subject: 'Annulation de réservation 5900001' })).toMatchObject({ kind: 'cancellation' });
+    const notice = readFileSync(join(__dirname, 'fixtures', 'onepark-cancellation.txt'), 'utf8');
+    expect(kindOf({ subject: 'Annulation de la réservation #5900003', from: 'Onepark <noreply@onepark.co>', text: notice })).toMatchObject({
+      provider: 'Onepark',
+      kind: 'cancellation',
+      reference: '5900003',
+      rule: 'onepark.cancellation',
+      sure: true,
+    });
+    // Forwarded by hand (Gmail keeps the heading in the body, the subject becomes « Fwd: … »): still applied.
+    expect(
+      kindOf({
+        subject: 'Fwd: Annulation de la réservation #5900003',
+        from: 'Jo <jo@example.com>',
+        text: `---------- Forwarded message ---------\nDe : Onepark <noreply@onepark.co>\nObjet : Annulation de la réservation #5900003\n\n${notice}`,
+      }),
+    ).toMatchObject({
+      rule: 'onepark.cancellation',
+      reference: '5900003',
+      sure: true,
+    });
     const changed = {
       ...onepark(),
       text: onepark().text.replace('Une nouvelle réservation Onepark a été enregistrée', 'La réservation Onepark 5900001 a été modifiée'),

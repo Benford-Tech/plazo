@@ -323,6 +323,17 @@ export function isParkViaCancellation(subject: string, text: string): boolean {
   return (title.test(subject) || title.test(text)) && /cette r[ée]servation a [ée]t[ée] annul[ée]e/i.test(flatten(text));
 }
 
+/**
+ * Onepark's cancellation notice to the parking (25/10/2026, « mail pas compris »): « Annulation de la réservation #5900003 »
+ * as subject or heading, and « Une réservation Onepark a été annulée sur votre parking » in its own text (a text/plain copy
+ * puts *emphasis* around « annulée »: the marks are ignored).
+ */
+export function isOneparkCancellation(subject: string, text: string): boolean {
+  const title = /annulation de la r[ée]servation\s*(?:n\s*[°ºo]|#)?\s*\d{4,}/i;
+  const plain = flatten(text).replace(/[*_]/g, '');
+  return (title.test(subject) || title.test(plain)) && /r[ée]servation onepark a [ée]t[ée] annul[ée]e/i.test(plain);
+}
+
 /** What a message of Onepark, Parclick or ParkMundo is: their cancellations and changes by their wording, their bookings by their importer. */
 function otherType(provider: Exclude<Comparator, 'Allopark'>, message: ComparatorMessage): MailType {
   const { subject, text, notes } = message;
@@ -336,6 +347,11 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
     if (provider === 'ParkVia') {
       const sure = !!reference && isParkViaCancellation(subject, text);
       return type(provider, 'cancellation', reference, sure ? 'parkvia.cancellation' : 'parkvia.cancellation-wording', sure);
+    }
+    // 25/10/2026 (« mail pas compris »): Onepark's own notice to the parking is applied the same way.
+    if (provider === 'Onepark') {
+      const sure = !!reference && isOneparkCancellation(subject, text);
+      return type(provider, 'cancellation', reference, sure ? 'onepark.cancellation' : 'onepark.cancellation-wording', sure);
     }
     return type(provider, 'cancellation', reference, `${name}.cancellation`, true);
   }

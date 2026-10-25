@@ -202,6 +202,31 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
   });
 
+  it('une annulation Onepark (25/10/2026) annule la réservation attendue ; une réservation inconnue reste à l’équipe', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const from = { From: { Name: 'Onepark', Address: 'noreply@onepark.co' } };
+    const notice = item(op.address, '', { RawHtmlBody: fixture('onepark-notification.html'), ...from, Subject: 'Nouvelle réservation' });
+    expect((await post([notice])).body).toMatchObject({ imported: 1 });
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, externalReference: '5900001' } });
+    expect(booking).toMatchObject({ status: 'upcoming', channelDetail: 'Onepark' });
+
+    const cancellation = (text = fixture('onepark-cancellation.txt').replace(/5900003/g, '5900001')) =>
+      item(op.address, text, { ...from, Subject: 'Annulation de la réservation #5900001' });
+    await post([cancellation()]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('cancelled');
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', reservationId: booking.id });
+    expect(row.reading).toMatchObject({ kind: 'cancellation', provider: 'Onepark', rule: 'onepark.cancellation' });
+    expect(row.change).toMatchObject({ kind: 'cancellation', applied: true, changes: [{ field: 'status', from: 'upcoming', to: 'cancelled' }] });
+    const history = await prisma.auditLog.findFirstOrThrow({ where: { entityId: booking.id, action: 'reservation.status_changed' } });
+    expect(history.details).toMatchObject({ from: 'upcoming', to: 'cancelled', source: 'onepark_cancellation', provider: 'Onepark' });
+
+    // A booking Plazo does not have: left to the staff, with the reason.
+    await post([cancellation(fixture('onepark-cancellation.txt'))]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
+  });
+
   it('le récapitulatif Onepark (20/10/2026) complète la plaque et le numéro, garde la plaque de l’équipe et laisse à l’équipe ce qui diffère', async () => {
     const op = await connected();
     claudeIs('absent');
