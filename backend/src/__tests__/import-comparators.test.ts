@@ -112,6 +112,55 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     expect(importedNames(read('onepark-notification-short.html')!)).toMatchObject({ customerFirstName: 'camille', customerLastName: 'exemple' });
   });
 
+  it('Park Hit (25/10/2026) : la fiche « Clé : valeur » de son avis au parking, vols sans compagnie dans les notes', () => {
+    const text = readFileSync(join(__dirname, 'fixtures', 'parkhit-notification.txt'), 'utf8');
+    expect(parseConfirmationEmail(text)).toEqual({
+      provider: 'Park Hit',
+      externalReference: 'F2000000ABCD',
+      customerName: 'Camille Exemple',
+      customerFirstName: 'Camille',
+      customerLastName: 'Exemple',
+      arrivalAt: '2026-10-31T13:45',
+      returnAt: '2026-11-04T11:45',
+      passengers: 1,
+      customerEmail: 'camille@example.com',
+      customerPhone: '+33612345678',
+      plate: 'AB-123-CD',
+      priceCents: 3200,
+      vehicleModel: 'Peugeot 208 Verte-Jaune',
+      notes: 'Vol aller indiqué sur la fiche : 7841 (sans compagnie)\nVol retour indiqué sur la fiche : 7842 (sans compagnie)',
+    });
+    // One field per line, a real flight number and a comment: read alike.
+    const lines = text
+      .replace(/;\s*/g, '\n')
+      .replace('Numéro de vol aller : 7841', 'Numéro de vol aller : EZY4411')
+      .replace('Commentaires : ', 'Commentaires : Arrivée en avance');
+    expect(parseConfirmationEmail(lines)).toMatchObject({
+      departureFlight: 'EZY4411',
+      notes: 'Vol retour indiqué sur la fiche : 7842 (sans compagnie)\nCommentaire du client : Arrivée en avance',
+    });
+    // Its classification: a sure Park Hit booking, by its sender and subject, or by its layout alone when forwarded by hand.
+    expect(classifyMail({ subject: 'Park Hit: Nouvelle réservation F2000000ABCD', from: 'noreply@parkhit.com', text })).toMatchObject({
+      provider: 'Park Hit',
+      kind: 'booking',
+      reference: 'F2000000ABCD',
+      rule: 'parkhit.booking',
+      sure: true,
+    });
+    const forwarded = `\n\n---------- Forwarded message ---------\nDe : resa@exemple.fr\nObjet : Nouvelle réservation\n\n${text}`;
+    expect(classifyMail({ subject: 'Fwd: Nouvelle réservation', from: 'Gérant <gerant@gmail.com>', text: forwarded })).toMatchObject({
+      provider: 'Park Hit',
+      kind: 'booking',
+      rule: 'parkhit.booking',
+      sure: true,
+    });
+    expect(isComparatorAddress('noreply@parkhit.com')).toBe(true);
+    expect(classifyMail({ subject: 'Réservation', from: 'x@y.fr', text: 'Réservation : ABC; Nom : Dupont' })).toMatchObject({
+      provider: null,
+      kind: 'unknown',
+    });
+  });
+
   it('ParkVia (20/10/2026) : la notification au parking, son numéro, ses dates à la seconde et le téléphone suivi de son indicatif', () => {
     const text = readFileSync(join(__dirname, 'fixtures', 'parkvia-notification.txt'), 'utf8');
     expect(parseConfirmationEmail(text)).toEqual({

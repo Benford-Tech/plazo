@@ -19,6 +19,8 @@ export interface ParsedBooking {
   priceCents?: number;
   vehicleModel?: string;
   vehicleColour?: string;
+  /** 25/10/2026: lines for the booking's notes (a flight typed without its airline, the customer's comment). */
+  notes?: string;
 }
 
 export interface EmailImporter {

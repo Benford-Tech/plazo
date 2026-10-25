@@ -192,6 +192,7 @@ describe('réception : comment le mail est arrivé, et les mails écartés (14/1
       { provider: 'Parclick', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
       { provider: 'ParkMundo', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
       { provider: 'ParkVia', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
+      { provider: 'Park Hit', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
     ]);
     expect(settings.progress).toEqual({
       confirmationAt: null,

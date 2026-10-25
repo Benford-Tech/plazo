@@ -257,7 +257,8 @@ export class ReservationService {
     const flights = importedFlights(parsed);
     logUnreadableFlights(flights, parsed.provider);
     const { returnFlight, departureFlight } = flights;
-    const notes = notesWithLines(null, unreadableFlightLines(flights, parsed.provider));
+    // 25/10/2026: the importer's own lines (Park Hit's flight typed without its airline, the customer's comment) go first.
+    const notes = notesWithLines(parsed.notes?.trim() || null, unreadableFlightLines(flights, parsed.provider));
     const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
     const plate = importedPlate(parsed.plate) ?? '';
     const key = plateKey(plate);

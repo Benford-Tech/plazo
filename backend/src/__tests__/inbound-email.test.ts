@@ -294,6 +294,7 @@ describe('POST /public/inbound/email', () => {
       { provider: 'Parclick', address: 'parclick' },
       { provider: 'ParkMundo', address: 'parkmundo' },
       { provider: 'ParkVia', address: 'parkvia' },
+      { provider: 'Park Hit', address: 'parkhit' },
     ]);
 
     const confirmation = item(address, 'Confirmation code: 482913507\nhttps://mail-settings.google.com/mail/vf-xyz', {

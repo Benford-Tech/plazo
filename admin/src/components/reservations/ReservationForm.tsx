@@ -74,7 +74,8 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       passengers: String(prefill.passengers ?? 1),
       channel: "aggregator",
       channelDetail: prefill.provider,
-      notes: "",
+      // 25/10/2026: Park Hit's flights typed without their airline, the customer's comment.
+      notes: prefill.notes ?? "",
       customerNote: "",
       // 10/10/2026: the car the comparator gives (the form's limits: 40 and 30 characters).
       vehicleModel: prefill.vehicleModel?.trim().slice(0, 40) ?? "",

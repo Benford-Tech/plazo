@@ -24,12 +24,16 @@
 import { alloparkConfirmationPage, isAlloparkCancellation, isAlloparkChange } from './importers/allopark-page';
 import { cancellationIn, changeIn, flatten, isChange, SUBJECT_CANCELLATION_STRICT, SUBJECT_CHANGE } from './importers/common';
 import { EMAIL_IMPORTERS } from './importers';
+import { PARKHIT_PROVIDER } from './importers/parkhit';
 import { isOneparkSummary } from './importers/onepark';
 import type { ReadingMeta } from './email-reading';
 import { FORWARD_MARKER, HEADER_FROM } from './inbound-email';
 
 export type MailKind = 'booking' | 'change' | 'cancellation' | 'other' | 'unknown';
-export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia';
+export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia' | typeof PARKHIT_PROVIDER;
+
+/** The provider's word in a rule's name (« parkvia.booking », « parkhit.booking »). */
+const ruleName = (provider: Comparator) => provider.toLowerCase().replace(/\s+/g, '');
 
 export interface MailType {
   /** The comparator the email is about; null for an unknown sender. */
@@ -210,6 +214,7 @@ const BRANDS: { provider: Comparator; brand: RegExp }[] = [
   { provider: 'Parclick', brand: /parclick/i },
   { provider: 'ParkMundo', brand: /parkmundo/i },
   { provider: 'ParkVia', brand: /parkvia/i },
+  { provider: PARKHIT_PROVIDER, brand: /park\s*hit/i },
 ];
 
 /** The comparator a message names (subject, sender or text), or whose importer recognises its layout (ParkMundo's logo-only brand). */
@@ -249,6 +254,11 @@ function referenceOf(provider: Comparator, subject: string, text: string): strin
         return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
       case 'ParkVia':
         return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z]{1,4}\d{5,12})\b/i.exec(flat)?.[1];
+      case PARKHIT_PROVIDER:
+        return (
+          /(?<![\p{L}\p{N}])R[ée]servation\s*:\s*([A-Z0-9][A-Z0-9-]{4,19})(?![A-Z0-9-])/iu.exec(flat)?.[1] ??
+          /nouvelle r[ée]servation\s+([A-Z0-9]{8,20})\b/i.exec(subject)?.[1]
+        );
     }
   })();
   return found ? found.toUpperCase() : null;
@@ -323,11 +333,22 @@ export function isParkViaCancellation(subject: string, text: string): boolean {
   return (title.test(subject) || title.test(text)) && /cette r[ée]servation a [ée]t[ée] annul[ée]e/i.test(flatten(text));
 }
 
+/**
+ * Onepark's cancellation notice to the parking (25/10/2026, « mail pas compris »): « Annulation de la réservation #5900003 »
+ * as subject or heading, and « Une réservation Onepark a été annulée sur votre parking » in its own text (a text/plain copy
+ * puts *emphasis* around « annulée »: the marks are ignored).
+ */
+export function isOneparkCancellation(subject: string, text: string): boolean {
+  const title = /annulation de la r[ée]servation\s*(?:n\s*[°ºo]|#)?\s*\d{4,}/i;
+  const plain = flatten(text).replace(/[*_]/g, '');
+  return (title.test(subject) || title.test(plain)) && /r[ée]servation onepark a [ée]t[ée] annul[ée]e/i.test(plain);
+}
+
 /** What a message of Onepark, Parclick or ParkMundo is: their cancellations and changes by their wording, their bookings by their importer. */
 function otherType(provider: Exclude<Comparator, 'Allopark'>, message: ComparatorMessage): MailType {
   const { subject, text, notes } = message;
   const reference = referenceOf(provider, subject, text);
-  const name = provider.toLowerCase();
+  const name = ruleName(provider);
   const both = `${subject}\n${text}`;
   if (SUBJECT_CANCELLATION_STRICT.test(subject) || cancellationIn(both) || cancellationIn(notes)) {
     // 21/10/2026 (« apprends à traiter les annulations ParkVia »): ParkVia's own cancellation notice (its title and « Cette
@@ -336,6 +357,11 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
     if (provider === 'ParkVia') {
       const sure = !!reference && isParkViaCancellation(subject, text);
       return type(provider, 'cancellation', reference, sure ? 'parkvia.cancellation' : 'parkvia.cancellation-wording', sure);
+    }
+    // 25/10/2026 (« mail pas compris »): Onepark's own notice to the parking is applied the same way.
+    if (provider === 'Onepark') {
+      const sure = !!reference && isOneparkCancellation(subject, text);
+      return type(provider, 'cancellation', reference, sure ? 'onepark.cancellation' : 'onepark.cancellation-wording', sure);
     }
     return type(provider, 'cancellation', reference, `${name}.cancellation`, true);
   }
@@ -362,7 +388,7 @@ export function classifyMail(mail: MailToClassify): MailType {
     const provider = providerOf(message.subject, message.from, message.text) ?? providerOf(mail.subject ?? '', mail.from ?? '', mail.text);
     if (!provider) return type(null, 'unknown', null, 'unknown', false);
     const reference = referenceOf(provider, message.subject, message.text) ?? referenceOf(provider, mail.subject ?? '', mail.text);
-    return type(provider, 'other', reference, `${provider.toLowerCase()}.reply`, true);
+    return type(provider, 'other', reference, `${ruleName(provider)}.reply`, true);
   }
   const provider = providerOf(message.subject, message.from, message.text);
   if (!provider) return type(null, 'unknown', null, 'unknown', false);
