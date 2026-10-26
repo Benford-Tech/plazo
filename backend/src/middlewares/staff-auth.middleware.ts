@@ -63,6 +63,12 @@ export const StaffAuthMiddleware = (permission?: Permission) => (request: Reques
  */
 const DEMO_REFUSED = () => new HttpException(httpStatus.FORBIDDEN, 'Not available in the demo', 'demo_read_only');
 
+/** A write allowed in consultation (traced view_as.write) but not in the prospects' demo (26/10/2026: resending an invitation). */
+export const RefuseInDemo = () => (request: Request, res: Response, next: NextFunction) => {
+  if ((request as RequestWithStaffSession).staff?.demo) return next(DEMO_REFUSED());
+  next();
+};
+
 export const RefuseInViewAsOutsidePlatformAccount = () => (request: Request, res: Response, next: NextFunction) => {
   if ((request as RequestWithStaffSession).staff?.demo) return next(DEMO_REFUSED());
   const actingAs = (request as RequestWithStaffSession).staff?.actingAs;

@@ -3,7 +3,7 @@ import { StaffController } from '@/controllers/staff.controller';
 import { AcceptJoinRequestDto, DeleteAccountDto, GoogleSignInDto, LinkAppleDto } from '@/dtos/identity.dto';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, RefuseInViewAsOutsidePlatformAccount, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, RefuseInViewAs, RefuseInViewAsOutsidePlatformAccount, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -255,6 +255,10 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(ResetPasswordDto),
       this.staff.resetPassword,
     );
+    // 26/10/2026: « Renvoyer l'invitation » is allowed to a platform admin viewing the operator's space (« en super admin
+    // je veux pouvoir renvoyer les mails d'invitation »): the member and the link are the operator's, the write is traced
+    // view_as.write; the prospects' demo stays refused.
+    this.router.post('/internal/staff/:id/invite', StaffAuthMiddleware('team:manage'), RefuseInDemo(), this.staff.invite);
 
     // « Rejoindre un parking » (13/10/2026). The code and the requests are read in consultation too; accepting and
     // refusing are team writes (read-only in consultation, except in the platform's own account).

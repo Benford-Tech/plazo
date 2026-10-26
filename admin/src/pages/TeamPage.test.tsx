@@ -6,20 +6,31 @@ import type { Staff } from "@/lib/types";
 import TeamPage from "./TeamPage";
 
 const auth = vi.hoisted(() => ({ user: null as Staff | null }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ user: auth.user }),
+}));
 const api = vi.hoisted(() => ({
   getTeam: vi.fn(),
   updateStaff: vi.fn(),
   createStaff: vi.fn(),
   resetStaffPassword: vi.fn(),
+  inviteStaff: vi.fn(),
   getJoinCode: vi.fn(),
   getJoinRequests: vi.fn(),
   acceptJoinRequest: vi.fn(),
   refuseJoinRequest: vi.fn(),
 }));
-vi.mock("@/lib/api", async importOriginal => {
+vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
-  return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
+  return {
+    ...actual,
+    adminApi: {
+      ...actual.adminApi,
+      ...Object.fromEntries(
+        Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)]),
+      ),
+    },
+  };
 });
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
@@ -38,13 +49,34 @@ const member = (patch: Partial<Staff>): Staff => ({
   createdAt: "2026-10-01T00:00:00Z",
   ...patch,
 });
-const joinCode = { code: "K7QM2-XP9TD", day: "2026-10-13", validUntil: "2026-10-13T22:00:00Z", operatorName: "Parkair Lyon" };
+const joinCode = {
+  code: "K7QM2-XP9TD",
+  day: "2026-10-13",
+  validUntil: "2026-10-13T22:00:00Z",
+  operatorName: "Parkair Lyon",
+};
 const manager = member({});
-const driver = member({ id: "s2", email: "paul@example.com", firstName: "Paul", lastName: "Durand", name: "Paul Durand", role: "driver" });
-const legacy = member({ id: "s3", email: "demo@example.com", firstName: "", lastName: "", name: "Gérant démo", role: "agent" });
+const driver = member({
+  id: "s2",
+  email: "paul@example.com",
+  firstName: "Paul",
+  lastName: "Durand",
+  name: "Paul Durand",
+  role: "driver",
+});
+const legacy = member({
+  id: "s3",
+  email: "demo@example.com",
+  firstName: "",
+  lastName: "",
+  name: "Gérant démo",
+  role: "agent",
+});
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
     <QueryClientProvider client={client}>
       <TeamPage />
@@ -52,13 +84,15 @@ function renderPage() {
   );
 }
 
-const rowOf = async (name: string) => (await screen.findByText(name)).closest("li")!;
-const renameForm = (row: HTMLElement, name: string) => within(within(row).getByText(`Nom de ${name}`).closest("form")!);
+const rowOf = async (name: string) =>
+  (await screen.findByText(name)).closest("li")!;
+const renameForm = (row: HTMLElement, name: string) =>
+  within(within(row).getByText(`Nom de ${name}`).closest("form")!);
 
 describe("Équipe : modifier le nom", () => {
   beforeEach(() => {
-    Object.values(api).forEach(f => f.mockReset());
-    Object.values(toast).forEach(f => f.mockReset());
+    Object.values(api).forEach((f) => f.mockReset());
+    Object.values(toast).forEach((f) => f.mockReset());
     auth.user = manager;
     api.getTeam.mockResolvedValue([manager, driver, legacy]);
     api.getJoinCode.mockResolvedValue(joinCode);
@@ -66,28 +100,47 @@ describe("Équipe : modifier le nom", () => {
   });
 
   it("corrige le prénom et le nom d'un membre", async () => {
-    api.updateStaff.mockResolvedValue({ data: { ...driver, firstName: "Paul-Henri", name: "Paul-Henri Durand" } });
+    api.updateStaff.mockResolvedValue({
+      data: { ...driver, firstName: "Paul-Henri", name: "Paul-Henri Durand" },
+    });
     renderPage();
     const row = await rowOf("Paul Durand");
 
-    await userEvent.click(within(row).getByRole("button", { name: "Modifier le nom" }));
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Modifier le nom" }),
+    );
     expect(within(row).getByText("Nom de Paul Durand")).toBeInTheDocument();
     expect(within(row).getByLabelText("Prénom")).toHaveValue("Paul");
     expect(within(row).getByLabelText("Nom")).toHaveValue("Durand");
     await userEvent.clear(within(row).getByLabelText("Prénom"));
     await userEvent.type(within(row).getByLabelText("Prénom"), " Paul-Henri ");
-    await userEvent.click(renameForm(row, "Paul Durand").getByRole("button", { name: "Enregistrer" }));
+    await userEvent.click(
+      renameForm(row, "Paul Durand").getByRole("button", {
+        name: "Enregistrer",
+      }),
+    );
 
-    await waitFor(() => expect(api.updateStaff).toHaveBeenCalledWith("s2", { firstName: "Paul-Henri", lastName: "Durand" }));
+    await waitFor(() =>
+      expect(api.updateStaff).toHaveBeenCalledWith("s2", {
+        firstName: "Paul-Henri",
+        lastName: "Durand",
+      }),
+    );
     expect(toast.success).toHaveBeenCalledWith("Membre mis à jour");
-    await waitFor(() => expect(within(row).queryByLabelText("Prénom")).not.toBeInTheDocument());
-    expect(within(row).getByRole("button", { name: "Modifier le nom" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(row).queryByLabelText("Prénom")).not.toBeInTheDocument(),
+    );
+    expect(
+      within(row).getByRole("button", { name: "Modifier le nom" }),
+    ).toBeInTheDocument();
   });
 
   it("coupe le nom affiché d'un membre sans prénom ni nom, et Annuler referme le formulaire", async () => {
     renderPage();
     const row = await rowOf("Gérant démo");
-    await userEvent.click(within(row).getByRole("button", { name: "Modifier le nom" }));
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Modifier le nom" }),
+    );
     expect(within(row).getByLabelText("Prénom")).toHaveValue("Gérant");
     expect(within(row).getByLabelText("Nom")).toHaveValue("démo");
     await userEvent.click(within(row).getByRole("button", { name: "Annuler" }));
@@ -96,40 +149,123 @@ describe("Équipe : modifier le nom", () => {
   });
 
   it("affiche sous le champ le refus du serveur", async () => {
-    api.updateStaff.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { lastName: "too_long" }));
+    api.updateStaff.mockRejectedValue(
+      new ApiError(400, "Validation failed", "validation_failed", {
+        lastName: "too_long",
+      }),
+    );
     renderPage();
     const row = await rowOf("Paul Durand");
-    await userEvent.click(within(row).getByRole("button", { name: "Modifier le nom" }));
-    await userEvent.click(renameForm(row, "Paul Durand").getByRole("button", { name: "Enregistrer" }));
-    expect(await within(row).findByText("Texte trop long.")).toBeInTheDocument();
-    expect(within(row).getByLabelText("Nom")).toHaveAttribute("aria-invalid", "true");
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Modifier le nom" }),
+    );
+    await userEvent.click(
+      renameForm(row, "Paul Durand").getByRole("button", {
+        name: "Enregistrer",
+      }),
+    );
+    expect(
+      await within(row).findByText("Texte trop long."),
+    ).toBeInTheDocument();
+    expect(within(row).getByLabelText("Nom")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
     expect(within(row).getByLabelText("Prénom")).toBeInTheDocument();
   });
 
   it("ne propose pas de renommer son propre compte depuis l'équipe (il passe par Mon compte)", async () => {
     renderPage();
     const own = await rowOf("Lucie Martin");
-    expect(within(own).queryByRole("button", { name: "Modifier le nom" })).not.toBeInTheDocument();
-    expect(within(await rowOf("Paul Durand")).getByRole("button", { name: "Modifier le nom" })).toBeInTheDocument();
+    expect(
+      within(own).queryByRole("button", { name: "Modifier le nom" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(await rowOf("Paul Durand")).getByRole("button", {
+        name: "Modifier le nom",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("cache le bouton pendant la consultation de l'espace d'un loueur", async () => {
-    auth.user = { ...manager, viewAs: { operatorId: "o1", operatorName: "Allo Park" } };
+    auth.user = {
+      ...manager,
+      viewAs: { operatorId: "o1", operatorName: "Allo Park" },
+    };
     renderPage();
     await rowOf("Paul Durand");
-    expect(screen.queryByRole("button", { name: "Modifier le nom" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Modifier le nom" }),
+    ).not.toBeInTheDocument();
+    // 26/10/2026: the platform admin can still resend a member's invitation.
+    api.inviteStaff.mockResolvedValueOnce({ invitation: { emailSent: true } });
+    await userEvent.click(
+      within(await rowOf("Paul Durand")).getByRole("button", {
+        name: "Renvoyer l'invitation",
+      }),
+    );
+    await waitFor(() => expect(api.inviteStaff).toHaveBeenCalledWith("s2"));
+  });
+
+  it("renvoie l'invitation d'un membre et dit si l'e-mail est parti (26/10/2026)", async () => {
+    api.inviteStaff
+      .mockResolvedValueOnce({ invitation: { emailSent: true } })
+      .mockResolvedValueOnce({ invitation: { emailSent: false } });
+    renderPage();
+    const row = await rowOf("Paul Durand");
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Renvoyer l'invitation" }),
+    );
+    await waitFor(() => expect(api.inviteStaff).toHaveBeenCalledWith("s2"));
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringContaining("Invitation envoyée"),
+    );
+    await userEvent.click(
+      within(row).getByRole("button", { name: "Renvoyer l'invitation" }),
+    );
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining("n'a pas pu partir"),
+      ),
+    );
   });
 
   it("envoie le prénom et le nom d'un nouveau membre sans espaces autour", async () => {
-    api.createStaff.mockResolvedValue({ data: member({ id: "s4" }) });
+    api.createStaff.mockResolvedValue({
+      data: member({ id: "s4" }),
+      invitation: { emailSent: true },
+    });
     renderPage();
     await rowOf("Paul Durand");
-    const form = screen.getByRole("button", { name: "Créer le compte" }).closest("form")!;
+    const form = screen
+      .getByRole("button", { name: "Créer le compte" })
+      .closest("form")!;
     await userEvent.type(within(form).getByLabelText("Prénom"), " Inès ");
     await userEvent.type(within(form).getByLabelText("Nom"), "Benali ");
-    await userEvent.type(within(form).getByLabelText("Email"), "ines@example.com");
-    await userEvent.type(within(form).getByLabelText("Mot de passe provisoire"), "provisoire-123");
-    await userEvent.click(within(form).getByRole("button", { name: "Créer le compte" }));
-    await waitFor(() => expect(api.createStaff).toHaveBeenCalledWith(expect.objectContaining({ firstName: "Inès", lastName: "Benali", email: "ines@example.com" })));
+    await userEvent.type(
+      within(form).getByLabelText("Email"),
+      "ines@example.com",
+    );
+    await userEvent.type(
+      within(form).getByLabelText("Mot de passe provisoire"),
+      "provisoire-123",
+    );
+    await userEvent.click(
+      within(form).getByRole("button", { name: "Créer le compte" }),
+    );
+    await waitFor(() =>
+      expect(api.createStaff).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: "Inès",
+          lastName: "Benali",
+          email: "ines@example.com",
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining("invite à choisir son mot de passe"),
+      ),
+    );
   });
 });

@@ -117,6 +117,59 @@ describe('équipe', () => {
   });
 });
 
+describe('invitation d’un membre (26/10/2026)', () => {
+  it('crée un lien « Choisir mon mot de passe » à la création et sur « Renvoyer l’invitation », jamais pour un membre désactivé', async () => {
+    const { token } = await setupOperator();
+    const res = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Nawfel', lastName: 'Exemple', email: 'nawfel@example.com', role: 'driver', password: PASSWORD });
+    expect(res.status).toBe(201);
+    // No Brevo in tests: the link exists, the email did not go out, the creation succeeded all the same.
+    expect(res.body.invitation).toEqual({ emailSent: false });
+    const id = res.body.data.id as string;
+    expect(await prisma.accountToken.count({ where: { staffId: id, type: 'invitation' } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { entityId: id, action: 'staff.invited' } })).toBe(1);
+
+    // A new link cancels the previous one.
+    const again = await api().post(`/api/internal/staff/${id}/invite`).set(auth(token));
+    expect(again.status).toBe(200);
+    expect(again.body.invitation).toEqual({ emailSent: false });
+    expect(await prisma.accountToken.count({ where: { staffId: id, type: 'invitation' } })).toBe(1);
+
+    // The typed password works meanwhile.
+    expect((await login('nawfel@example.com', PASSWORD)).user.email).toBe('nawfel@example.com');
+
+    await api().patch(`/api/internal/staff/${id}`).set(auth(token)).send({ isActive: false });
+    const inactive = await api().post(`/api/internal/staff/${id}/invite`).set(auth(token));
+    expect(inactive.status).toBe(400);
+    expect(inactive.body.code).toBe('staff_inactive');
+  });
+
+  it("est permise au super admin en consultation, tracée à son nom (« en super admin je veux pouvoir renvoyer les mails d'invitation »)", async () => {
+    const admin = await setupOperator('Plazo (plateforme)');
+    const op = await setupOperator();
+    const member = await addStaff(op.token, 'driver');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    try {
+      const view = await api().post(`/api/internal/platform/operators/${op.operator.id}/view-as`).set(auth(admin.token));
+      expect(view.status).toBe(201);
+      const viewing = view.body.access.token as string;
+      // The rest of the team stays read-only in consultation.
+      expect((await api().patch(`/api/internal/staff/${member.id}`).set(auth(viewing)).send({ role: 'agent' })).status).toBe(403);
+      const res = await api().post(`/api/internal/staff/${member.id}/invite`).set(auth(viewing));
+      expect(res.status).toBe(200);
+      expect(res.body.invitation).toEqual({ emailSent: false });
+      expect(await prisma.accountToken.count({ where: { staffId: member.id, type: 'invitation' } })).toBe(1);
+      expect(await prisma.auditLog.count({ where: { entityId: member.id, action: 'staff.invited' } })).toBe(2);
+      const traced = await prisma.auditLog.findMany({ where: { action: 'view_as.write' }, select: { details: true } });
+      expect(traced.map(t => (t.details as { path: string }).path)).toContain(`/api/internal/staff/${member.id}/invite`);
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
+  });
+});
+
 describe('prénom et nom du personnel (09/10/2026)', () => {
   it('« Votre nom » : chacun change son prénom et son nom ; réponse comme GET /me, nom affiché recalculé, tracé', async () => {
     const { token, manager } = await setupOperator();

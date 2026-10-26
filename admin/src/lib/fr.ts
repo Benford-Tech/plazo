@@ -179,7 +179,8 @@ export const fr = {
     stay_over: "Séjour déjà terminé, Plazo ne la crée pas de lui-même.",
     passengers_range: "Entre 1 et 9 passagers.",
     // « Sièges auto » (24/10/2026): fewer seats than passengers (one adult at least), 0 to 4 of each kind.
-    child_seats_exceed_passengers: "Les enfants comptent dans les passagers : il faut moins de sièges que de passagers.",
+    child_seats_exceed_passengers:
+      "Les enfants comptent dans les passagers : il faut moins de sièges que de passagers.",
     child_seats_range: "Entre 0 et 4 sièges de chaque sorte.",
     invalid_phone: "Numéro de téléphone invalide.",
     invalid_plate: "Plaque invalide.",
@@ -1006,6 +1007,18 @@ export const fr = {
     reactivate: "Réactiver",
     resetPassword: "Nouveau mot de passe",
     passwordReset: "Mot de passe réinitialisé. Ses sessions ont été fermées.",
+    // 26/10/2026: the member chooses their own password from an invitation email.
+    invite: "Renvoyer l'invitation",
+    readOnlyInvite:
+      "Vous pouvez seulement renvoyer l'invitation d'un membre qui n'a pas reçu son e-mail.",
+    invited:
+      "Invitation envoyée : un lien « Choisir mon mot de passe » lui est parti par e-mail (valable 7 jours).",
+    inviteNotSent:
+      "L'e-mail n'a pas pu partir : donnez-lui le mot de passe provisoire, ou réessayez plus tard.",
+    createdInvited:
+      "Compte créé. Un e-mail l'invite à choisir son mot de passe ; le mot de passe provisoire marche en attendant.",
+    createdNotInvited:
+      "Compte créé, mais l'e-mail d'invitation n'a pas pu partir : donnez-lui le mot de passe provisoire.",
     you: "vous",
     // 09/10/2026: a manager corrects a member's first and last name.
     rename: "Modifier le nom",

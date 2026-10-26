@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -19,14 +25,22 @@ import { nameParts } from "@/lib/names";
 import { STAFF_ROLES } from "@/lib/roles";
 import type { Staff, StaffRole } from "@/lib/types";
 
-function RoleSelect({ id, value, onChange }: { id: string; value: StaffRole; onChange: (role: StaffRole) => void }) {
+function RoleSelect({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: StaffRole;
+  onChange: (role: StaffRole) => void;
+}) {
   return (
-    <Select value={value} onValueChange={v => onChange(v as StaffRole)}>
+    <Select value={value} onValueChange={(v) => onChange(v as StaffRole)}>
       <SelectTrigger id={id} className="h-11 text-base">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {STAFF_ROLES.map(r => (
+        {STAFF_ROLES.map((r) => (
           <SelectItem key={r} value={r}>
             {fr.roles[r]}
           </SelectItem>
@@ -39,12 +53,18 @@ function RoleSelect({ id, value, onChange }: { id: string; value: StaffRole; onC
 /** 09/10/2026: a manager corrects a member's first and last name, inline. */
 function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
   const queryClient = useQueryClient();
-  const [names, setNames] = useState(() => nameParts(member.firstName, member.lastName, member.name));
+  const [names, setNames] = useState(() =>
+    nameParts(member.firstName, member.lastName, member.name),
+  );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const t = fr.team;
 
   const rename = useMutation({
-    mutationFn: () => adminApi.updateStaff(member.id, { firstName: names.firstName.trim(), lastName: names.lastName.trim() }),
+    mutationFn: () =>
+      adminApi.updateStaff(member.id, {
+        firstName: names.firstName.trim(),
+        lastName: names.lastName.trim(),
+      }),
     onSuccess: () => {
       toast.success(t.updated);
       queryClient.invalidateQueries({ queryKey: ["team"] });
@@ -59,7 +79,7 @@ function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
   return (
     <form
       className="space-y-2 border border-border p-3"
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault();
         rename.mutate();
       }}
@@ -72,7 +92,7 @@ function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
         required
         maxLength={60}
         value={names.firstName}
-        onChange={e => setNames({ ...names, firstName: e.target.value })}
+        onChange={(e) => setNames({ ...names, firstName: e.target.value })}
         error={fieldErrors.firstName}
       />
       <FormField
@@ -82,18 +102,50 @@ function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
         required
         maxLength={60}
         value={names.lastName}
-        onChange={e => setNames({ ...names, lastName: e.target.value })}
+        onChange={(e) => setNames({ ...names, lastName: e.target.value })}
         error={fieldErrors.lastName}
       />
       <div className="flex gap-2">
-        <Button type="submit" className="h-11 flex-1" disabled={rename.isPending}>
+        <Button
+          type="submit"
+          className="h-11 flex-1"
+          disabled={rename.isPending}
+        >
           {t.save}
         </Button>
-        <Button type="button" variant="outline" className="h-11 flex-1" onClick={onDone}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 flex-1"
+          onClick={onDone}
+        >
           {t.cancel}
         </Button>
       </div>
     </form>
+  );
+}
+
+/** « Renvoyer l'invitation » (26/10/2026): also the one team action a platform admin keeps in consultation. */
+function InviteButton({ member }: { member: Staff }) {
+  const t = fr.team;
+  const invite = useMutation({
+    mutationFn: () => adminApi.inviteStaff(member.id),
+    onSuccess: (res) =>
+      res.invitation.emailSent
+        ? toast.success(t.invited)
+        : toast.error(t.inviteNotSent),
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  return (
+    <Button
+      variant="outline"
+      className="h-11 w-full"
+      disabled={invite.isPending}
+      onClick={() => invite.mutate()}
+    >
+      {t.invite}
+    </Button>
   );
 }
 
@@ -105,7 +157,8 @@ function MemberActions({ member }: { member: Staff }) {
   const t = fr.team;
 
   const update = useMutation({
-    mutationFn: (patch: { role?: StaffRole; isActive?: boolean }) => adminApi.updateStaff(member.id, patch),
+    mutationFn: (patch: { role?: StaffRole; isActive?: boolean }) =>
+      adminApi.updateStaff(member.id, patch),
     onSuccess: () => {
       toast.success(t.updated);
       queryClient.invalidateQueries({ queryKey: ["team"] });
@@ -119,14 +172,24 @@ function MemberActions({ member }: { member: Staff }) {
       setPassword("");
       toast.success(t.passwordReset);
     },
-    onError: (err: Error) => toast.error(err instanceof ApiError && err.fields?.password ? errorMessage(err.fields.password) : describeError(err)),
+    onError: (err: Error) =>
+      toast.error(
+        err instanceof ApiError && err.fields?.password
+          ? errorMessage(err.fields.password)
+          : describeError(err),
+      ),
   });
 
   return (
     <div className="w-full space-y-2 sm:w-72">
       <div className="flex gap-2">
         <RoleSelect id={`role-${member.id}`} value={role} onChange={setRole} />
-        <Button variant="outline" className="h-11" disabled={update.isPending || role === member.role} onClick={() => update.mutate({ role })}>
+        <Button
+          variant="outline"
+          className="h-11"
+          disabled={update.isPending || role === member.role}
+          onClick={() => update.mutate({ role })}
+        >
           {fr.common.save}
         </Button>
       </div>
@@ -141,13 +204,18 @@ function MemberActions({ member }: { member: Staff }) {
       {renaming ? (
         <RenameForm member={member} onDone={() => setRenaming(false)} />
       ) : (
-        <Button variant="outline" className="h-11 w-full" onClick={() => setRenaming(true)}>
+        <Button
+          variant="outline"
+          className="h-11 w-full"
+          onClick={() => setRenaming(true)}
+        >
           {t.rename}
         </Button>
       )}
+      {member.isActive && <InviteButton member={member} />}
       <form
         className="flex gap-2"
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
           reset.mutate();
         }}
@@ -155,8 +223,20 @@ function MemberActions({ member }: { member: Staff }) {
         <Label htmlFor={`pwd-${member.id}`} className="sr-only">
           {t.resetPassword}
         </Label>
-        <Input id={`pwd-${member.id}`} className="h-11 text-base" placeholder={t.resetPassword} autoComplete="off" value={password} onChange={e => setPassword(e.target.value)} />
-        <Button type="submit" variant="outline" className="h-11" disabled={reset.isPending || !password}>
+        <Input
+          id={`pwd-${member.id}`}
+          className="h-11 text-base"
+          placeholder={t.resetPassword}
+          autoComplete="off"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <Button
+          type="submit"
+          variant="outline"
+          className="h-11"
+          disabled={reset.isPending || !password}
+        >
           OK
         </Button>
       </form>
@@ -164,7 +244,14 @@ function MemberActions({ member }: { member: Staff }) {
   );
 }
 
-const emptyMember = { firstName: "", lastName: "", email: "", phone: "", role: "agent" as StaffRole, password: "" };
+const emptyMember = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  role: "agent" as StaffRole,
+  password: "",
+};
 
 function CreateStaffForm() {
   const queryClient = useQueryClient();
@@ -174,37 +261,86 @@ function CreateStaffForm() {
 
   const create = useMutation({
     mutationFn: () =>
-      adminApi.createStaff({ ...form, firstName: form.firstName.trim(), lastName: form.lastName.trim(), phone: form.phone.trim() || undefined }),
-    onSuccess: () => {
+      adminApi.createStaff({
+        ...form,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        phone: form.phone.trim() || undefined,
+      }),
+    onSuccess: (res) => {
       setForm(emptyMember);
       setFieldErrors({});
-      toast.success(t.created);
+      if (res.invitation?.emailSent) toast.success(t.createdInvited);
+      else if (res.invitation) toast.error(t.createdNotInvited);
+      else toast.success(t.created);
       queryClient.invalidateQueries({ queryKey: ["team"] });
     },
     onError: (err: Error) => {
-      setFieldErrors(err instanceof ApiError ? (err.fields ?? (err.code === "email_taken" ? { email: "email_taken" } : {})) : {});
+      setFieldErrors(
+        err instanceof ApiError
+          ? (err.fields ??
+              (err.code === "email_taken" ? { email: "email_taken" } : {}))
+          : {},
+      );
       toast.error(describeError(err));
     },
   });
 
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value });
+  const set =
+    (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm({ ...form, [key]: e.target.value });
 
   return (
     <form
       className="space-y-4"
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault();
         create.mutate();
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="new-first-name" label={t.firstName} required maxLength={60} value={form.firstName} onChange={set("firstName")} error={fieldErrors.firstName} />
-        <FormField id="new-last-name" label={t.lastName} required maxLength={60} value={form.lastName} onChange={set("lastName")} error={fieldErrors.lastName} />
-        <FormField id="new-email" label={t.email} type="email" required value={form.email} onChange={set("email")} error={fieldErrors.email} />
-        <FormField id="new-phone" label={t.phone} type="tel" value={form.phone} onChange={set("phone")} error={fieldErrors.phone} />
+        <FormField
+          id="new-first-name"
+          label={t.firstName}
+          required
+          maxLength={60}
+          value={form.firstName}
+          onChange={set("firstName")}
+          error={fieldErrors.firstName}
+        />
+        <FormField
+          id="new-last-name"
+          label={t.lastName}
+          required
+          maxLength={60}
+          value={form.lastName}
+          onChange={set("lastName")}
+          error={fieldErrors.lastName}
+        />
+        <FormField
+          id="new-email"
+          label={t.email}
+          type="email"
+          required
+          value={form.email}
+          onChange={set("email")}
+          error={fieldErrors.email}
+        />
+        <FormField
+          id="new-phone"
+          label={t.phone}
+          type="tel"
+          value={form.phone}
+          onChange={set("phone")}
+          error={fieldErrors.phone}
+        />
         <div className="space-y-1.5">
           <Label htmlFor="new-role">{t.role}</Label>
-          <RoleSelect id="new-role" value={form.role} onChange={role => setForm({ ...form, role })} />
+          <RoleSelect
+            id="new-role"
+            value={form.role}
+            onChange={(role) => setForm({ ...form, role })}
+          />
         </div>
         <FormField
           id="new-password"
@@ -217,7 +353,11 @@ function CreateStaffForm() {
           error={fieldErrors.password}
         />
       </div>
-      <Button type="submit" className="h-11 text-base" disabled={create.isPending}>
+      <Button
+        type="submit"
+        className="h-11 text-base"
+        disabled={create.isPending}
+      >
         {t.create}
       </Button>
     </form>
@@ -228,13 +368,20 @@ export default function TeamPage() {
   const { user } = useAuth();
   // A platform admin viewing the operator's space: the team stays the operator's (read-only).
   const readOnly = !!user?.viewAs && !user.viewAs.platformAccount;
-  const { data: team, isLoading } = useQuery({ queryKey: ["team"], queryFn: adminApi.getTeam });
+  const { data: team, isLoading } = useQuery({
+    queryKey: ["team"],
+    queryFn: adminApi.getTeam,
+  });
   const t = fr.team;
 
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
-      {readOnly && <p className="border border-lime-deep p-3 text-base">{fr.viewAs.readOnly}</p>}
+      {readOnly && (
+        <p className="border border-lime-deep p-3 text-base">
+          {fr.viewAs.readOnly} {t.readOnlyInvite}
+        </p>
+      )}
       {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen (the code alone
           takes the row when nobody waits). */}
       <div className="grid gap-4 lg:items-start lg:has-[[data-testid=join-requests]]:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
@@ -245,12 +392,19 @@ export default function TeamPage() {
         <CardContent className="pt-2">
           {isLoading && <Skeleton className="my-4 h-24 w-full" />}
           <ul className="divide-y">
-            {team?.map(m => (
-              <li key={m.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+            {team?.map((m) => (
+              <li
+                key={m.id}
+                className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between"
+              >
                 <div className="space-y-0.5">
                   <p className="font-medium">
                     {m.name}
-                    {m.id === user?.id && <span className="ml-1 text-sm text-muted-foreground">({t.you})</span>}
+                    {m.id === user?.id && (
+                      <span className="ml-1 text-sm text-muted-foreground">
+                        ({t.you})
+                      </span>
+                    )}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {m.email}
@@ -258,32 +412,54 @@ export default function TeamPage() {
                   </p>
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
                     <Badge variant="secondary">{fr.roles[m.role]}</Badge>
-                    <Badge variant={m.isActive ? "outline" : "destructive"}>{m.isActive ? t.active : t.inactive}</Badge>
+                    <Badge variant={m.isActive ? "outline" : "destructive"}>
+                      {m.isActive ? t.active : t.inactive}
+                    </Badge>
                     {!!m.signIn?.length && (
                       <span className="inline-flex flex-wrap items-center gap-1">
                         <span className="sr-only">{t.signInPrefix}</span>
-                        {m.signIn.map(method => (
+                        {m.signIn.map((method) => (
                           <SignInBadge key={method} method={method} />
                         ))}
                       </span>
                     )}
                     {m.post && m.post !== m.role && m.postSetAt && (
-                      <Badge variant="default" title={t.postSince(dateTime.format(new Date(m.postSetAt)))}>
+                      <Badge
+                        variant="default"
+                        title={t.postSince(
+                          dateTime.format(new Date(m.postSetAt)),
+                        )}
+                      >
                         {t.postToday} : {fr.roles[m.post]}
                       </Badge>
                     )}
                     {m.vehicle && (
                       <Badge variant="outline">
-                        {t.vehicleToday} : {[m.vehicle.model, m.vehicle.colour].filter(Boolean).join(" ")}
+                        {t.vehicleToday} :{" "}
+                        {[m.vehicle.model, m.vehicle.colour]
+                          .filter(Boolean)
+                          .join(" ")}
                         {m.vehicle.plate ? ` · ${m.vehicle.plate}` : ""}
                       </Badge>
                     )}
                     <span>
-                      {t.lastLogin} : {m.lastLoginAt ? dateTime.format(new Date(m.lastLoginAt)) : fr.common.never}
+                      {t.lastLogin} :{" "}
+                      {m.lastLoginAt
+                        ? dateTime.format(new Date(m.lastLoginAt))
+                        : fr.common.never}
                     </span>
                   </div>
                 </div>
-                {m.id !== user?.id && !readOnly && <MemberActions key={`${m.id}-${m.role}`} member={m} />}
+                {m.id !== user?.id &&
+                  (readOnly ? (
+                    m.isActive && (
+                      <div className="w-full sm:w-72">
+                        <InviteButton member={m} />
+                      </div>
+                    )
+                  ) : (
+                    <MemberActions key={`${m.id}-${m.role}`} member={m} />
+                  ))}
               </li>
             ))}
           </ul>
