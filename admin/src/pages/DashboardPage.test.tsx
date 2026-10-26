@@ -473,6 +473,20 @@ describe("DashboardPage", () => {
         name: "Marquer : le client a laissé ses clés",
       }),
     ).not.toBeInTheDocument();
+    // One more click undoes it.
+    api.setKeys.mockResolvedValue({ keysLeftAt: null, keyHook: null });
+    api.getDashboard.mockResolvedValue(dashboard);
+    fireEvent.click(
+      within(vehicles).getByRole("button", {
+        name: "Clés laissées à 09:47 · cliquer pour annuler",
+      }),
+    );
+    await waitFor(() => expect(api.setKeys).toHaveBeenCalledWith("r3", false));
+    expect(
+      await within(vehicles).findByRole("button", {
+        name: "Marquer : le client a laissé ses clés",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("21/10/2026 (choix C) : les réservations sans prix, dans « À traiter » et à compléter sur place", async () => {

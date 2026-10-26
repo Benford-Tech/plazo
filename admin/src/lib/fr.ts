@@ -826,6 +826,9 @@ export const fr = {
       markKeysLeft: "Clés laissées",
       markKeysLeftAria: "Marquer : le client a laissé ses clés",
       keysLeftDone: "Clés laissées notées.",
+      keysLeftUndone: "Clés laissées : annulé.",
+      undoKeysLeftAria: (time: string) =>
+        `Clés laissées à ${time} · cliquer pour annuler`,
       flight: (code: string, time: string) => `Vol ${code} · ${time}`,
       badge: {
         returnToday: "Retour du jour",
