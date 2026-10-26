@@ -756,6 +756,8 @@ export const fr = {
       title: "À traiter maintenant",
       urgentCount: (n: number) => `${n} urgent${n > 1 ? "s" : ""}`,
       empty: "Rien à traiter : tout est en ordre.",
+      showMore: (n: number) => `Voir ${n} de plus`,
+      showLess: "Réduire",
       since: (minutes: number) => `depuis ${minutes} min`,
       severity: { urgent: "Urgent", watch: "À surveiller", todo: "À faire" },
       kind: {
