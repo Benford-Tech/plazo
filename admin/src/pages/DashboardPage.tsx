@@ -44,6 +44,7 @@ import {
 } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import type {
+  AlertKind,
   AlertSeverity,
   Dashboard,
   DashboardAlert,
@@ -343,30 +344,64 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
   );
 }
 
-/** The first rows only; the rest unfolds on demand (26/10/2026). */
-const ALERTS_SHOWN = 6;
+/**
+ * 26/10/2026 (« mets plutôt un nombre à traiter catégorisé par type ») : one counting pill per kind of alert, in the
+ * order of the server (urgent first); a pill unfolds its rows, and only its rows.
+ */
+const SEVERITY_PILL: Record<AlertSeverity, string> = {
+  urgent: "border-bad text-bad-text",
+  watch: "border-warn text-warn-text",
+  todo: "border-panel-line text-foreground",
+};
 
 function AlertList({ alerts }: { alerts: DashboardAlert[] }) {
-  const [open, setOpen] = useState(false);
-  const shown = open ? alerts : alerts.slice(0, ALERTS_SHOWN);
-  const hidden = alerts.length - shown.length;
+  const [openKind, setOpenKind] = useState<AlertKind | null>(null);
+  const groups: {
+    kind: AlertKind;
+    severity: AlertSeverity;
+    items: DashboardAlert[];
+  }[] = [];
+  for (const alert of alerts) {
+    const group = groups.find((g) => g.kind === alert.kind);
+    if (group) group.items.push(alert);
+    else
+      groups.push({
+        kind: alert.kind,
+        severity: alert.severity,
+        items: [alert],
+      });
+  }
+  const open = groups.find((g) => g.kind === openKind);
   return (
     <>
-      <ul>
-        {shown.map((alert, i) => (
-          <li key={`${alert.kind}-${alert.reservationId ?? i}`}>
-            <AlertRow alert={alert} />
-          </li>
+      <div className="flex flex-wrap gap-1.5" data-testid="alert-kinds">
+        {groups.map((g) => (
+          <button
+            key={g.kind}
+            type="button"
+            aria-pressed={openKind === g.kind}
+            onClick={() => setOpenKind((k) => (k === g.kind ? null : g.kind))}
+            className={cn(
+              "inline-flex min-h-8 items-center gap-1.5 rounded-full border bg-white px-2.5 text-[13px] font-medium hover:bg-panel-2",
+              SEVERITY_PILL[g.severity],
+              openKind === g.kind && "bg-panel-2 ring-1 ring-lime-deep",
+            )}
+          >
+            <span className="font-mono text-[14px] font-bold">
+              {g.items.length}
+            </span>
+            {t.alerts.kind[g.kind]}
+          </button>
         ))}
-      </ul>
-      {(hidden > 0 || open) && (
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="mt-1 text-[13px] font-semibold text-lime-deep hover:underline"
-        >
-          {open ? t.alerts.showLess : t.alerts.showMore(hidden)}
-        </button>
+      </div>
+      {open && (
+        <ul className="mt-2 border-t border-panel-line">
+          {open.items.map((alert, i) => (
+            <li key={`${alert.kind}-${alert.reservationId ?? i}`}>
+              <AlertRow alert={alert} />
+            </li>
+          ))}
+        </ul>
       )}
     </>
   );

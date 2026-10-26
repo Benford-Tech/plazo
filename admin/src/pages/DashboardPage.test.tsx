@@ -309,14 +309,27 @@ describe("DashboardPage", () => {
       .getByRole("heading", { name: "À traiter maintenant" })
       .closest("section")!;
     expect(alerts).toHaveTextContent("1 urgent");
+    // 26/10/2026: one counting pill per kind; a pill unfolds its rows.
+    const kinds = within(alerts).getByTestId("alert-kinds");
+    const pills = within(kinds).getAllByRole("button");
+    expect(pills.map((p) => p.textContent)).toEqual([
+      "1Sur place sans place",
+      "1Vol retardé",
+    ]);
+    expect(within(alerts).queryByRole("listitem")).not.toBeInTheDocument();
+    fireEvent.click(pills[0]);
     // C-A (06/10/2026): a row opens the operational card (a button), no longer a page link.
-    const rows = within(alerts).getAllByRole("button");
-    expect(rows[0]).toHaveTextContent("Sur place sans place");
-    expect(rows[0]).toHaveTextContent("Urgent");
-    expect(rows[0]).toHaveTextContent("depuis 10 min");
-    expect(rows[1]).toHaveTextContent("Vol retardé");
-    expect(rows[1]).toHaveTextContent("Camille Martin · TO 3627");
-    expect(rows[1]).toHaveTextContent("À surveiller");
+    let row = within(within(alerts).getByRole("listitem")).getByRole("button");
+    expect(row).toHaveTextContent("Sur place sans place");
+    expect(row).toHaveTextContent("Urgent");
+    expect(row).toHaveTextContent("depuis 10 min");
+    fireEvent.click(pills[1]);
+    row = within(within(alerts).getByRole("listitem")).getByRole("button");
+    expect(row).toHaveTextContent("Vol retardé");
+    expect(row).toHaveTextContent("Camille Martin · TO 3627");
+    expect(row).toHaveTextContent("À surveiller");
+    fireEvent.click(pills[1]);
+    expect(within(alerts).queryByRole("listitem")).not.toBeInTheDocument();
 
     const vehicles = screen
       .getByRole("heading", { name: "Véhicules sur le parking" })
@@ -363,6 +376,11 @@ describe("DashboardPage", () => {
     };
     api.getDashboard.mockResolvedValue({ ...dashboard, alerts: [join] });
     renderPage();
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Demande pour rejoindre l'équipe/,
+      }),
+    );
     const row = await screen.findByRole("link", {
       name: /Demande pour rejoindre l'équipe/,
     });
@@ -391,7 +409,12 @@ describe("DashboardPage", () => {
       ],
     });
     renderPage();
-    const title = await screen.findByText("Services à faire avant le retour");
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: /Services à faire avant le retour/,
+      }),
+    );
+    const title = screen.getAllByText("Services à faire avant le retour")[1];
     const row = title.closest("button, a") as HTMLElement;
     expect(row).toHaveTextContent(
       "Camille Martin · Lavage intérieur et shampouineuse, Recharge électrique · retour 18:40",
@@ -399,7 +422,7 @@ describe("DashboardPage", () => {
     expect(row).toHaveTextContent("À surveiller");
   });
 
-  it("26/10/2026 : la liste « À traiter » est compacte et se replie au-delà de six lignes", async () => {
+  it("26/10/2026 : les alertes d'un même type se comptent sur une seule pastille", async () => {
     const many = Array.from({ length: 9 }, (_, i) => ({
       ...dashboard.alerts[0],
       reservationId: `r${i + 10}`,
@@ -410,13 +433,12 @@ describe("DashboardPage", () => {
     const alerts = (
       await screen.findByRole("heading", { name: "À traiter maintenant" })
     ).closest("section")!;
-    expect(within(alerts).getAllByRole("listitem")).toHaveLength(6);
-    fireEvent.click(
-      within(alerts).getByRole("button", { name: "Voir 3 de plus" }),
+    const pill = within(within(alerts).getByTestId("alert-kinds")).getByRole(
+      "button",
     );
+    expect(pill).toHaveTextContent("9Sur place sans place");
+    fireEvent.click(pill);
     expect(within(alerts).getAllByRole("listitem")).toHaveLength(9);
-    fireEvent.click(within(alerts).getByRole("button", { name: "Réduire" }));
-    expect(within(alerts).getAllByRole("listitem")).toHaveLength(6);
   });
 
   it("26/10/2026 : « Clés laissées » en un clic depuis la liste des véhicules", async () => {
@@ -485,6 +507,9 @@ describe("DashboardPage", () => {
       },
     });
     renderPage();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Réservations sans prix/ }),
+    );
     const row = await screen.findByRole("link", {
       name: /Réservations sans prix/,
     });
