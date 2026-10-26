@@ -182,11 +182,22 @@ export class AccountService {
   }
 
   /** What the invitation page shows before the password is chosen. */
-  public async invitation(token: string): Promise<{ email: string; operatorName: string }> {
+  public async invitation(token: string): Promise<{
+    email: string;
+    operatorName: string;
+    role: string;
+    stores: { playStoreUrl: string; appStoreUrl: string | null };
+  }> {
     const row = await this.accountTokens.find(token, 'invitation');
     if (!row) throw invalidLink();
     const staff = await prisma.staff.findUniqueOrThrow({ where: { id: row.staffId }, include: { operator: true } });
-    return { email: staff.email, operatorName: staff.operator.name };
+    // 26/10/2026: a team member (not a manager) is sent to Plazo Pro once the password is chosen.
+    return {
+      email: staff.email,
+      operatorName: staff.operator.name,
+      role: staff.role,
+      stores: { playStoreUrl: PLAZO_PRO_PLAY_STORE_URL, appStoreUrl: PLAZO_PRO_APP_STORE_URL },
+    };
   }
 
   /** Sets the invited manager's password (which also proves the email) and opens a session. */

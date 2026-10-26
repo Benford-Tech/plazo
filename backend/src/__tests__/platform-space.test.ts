@@ -889,6 +889,8 @@ describe('invitations', () => {
     expect((await api().post('/api/internal/auth/invitation').send({ token })).body).toEqual({
       email: 'm.martin@example.com',
       operatorName: 'Parking Invité',
+      role: 'manager',
+      stores: { playStoreUrl: 'https://play.google.com/store/apps/details?id=com.benfordtech.plazopro', appStoreUrl: null },
     });
     const accepted = await api().post('/api/internal/auth/invitation/accept').send({ token, password: 'mon-nouveau-mot-de-passe' });
     expect(accepted.status).toBe(200);

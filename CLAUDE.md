@@ -1383,8 +1383,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   admin je veux pouvoir renvoyer les mails d'invitation »)** : la seule écriture d'équipe qui passe en consultation (`RefuseInDemo`
   à la place de `RefuseInViewAsOutsidePlatformAccount` : la démo reste refusée), tracée `view_as.write` ; le mail dit alors
   « Plazo vous a ajouté… » au lieu du nom de l'administrateur ; page Équipe en lecture seule : le bouton reste sur chaque membre
-  actif, avec la phrase « Vous pouvez seulement renvoyer l'invitation… ». Tests `staff.test.ts`, `TeamPage.test.tsx`. Plazo Pro
-  n'a pas encore le bouton « Renvoyer ».
+  actif, avec la phrase « Vous pouvez seulement renvoyer l'invitation… ». **Deux étapes (26/10/2026, « le mail doit permettre
+  d'installer plazo pro, définir son mot de passe » ; Brevo avait livré les cinq mails du matin, mais la page envoyait un chauffeur
+  vers « Ma fiche », page de gérant)** : le mail numérote « 1. Choisissez votre mot de passe » (bouton) puis « 2. Installez
+  l'application Plazo Pro … et connectez-vous avec cette adresse » (badges des stores) ; `POST /internal/auth/invitation` rend aussi
+  `role` et `stores { playStoreUrl, appStoreUrl }` ; `AcceptInvitationPage` : un membre qui n'est pas gérant lit « Ensuite, vous
+  installerez l'application… » sous l'intro, puis, le mot de passe enregistré, « Votre mot de passe est enregistré » avec les badges
+  (Google Play relié, App Store grisé avec la note d'Apple tant que `PLAZO_PRO_APP_STORE_URL` manque ; images `/badges/*` servies par
+  le site) et « Continuer sur le web » ; un gérant va toujours sur « Ma fiche ». Tests `staff.test.ts`, `TeamPage.test.tsx`,
+  `AcceptInvitationPage.test.tsx`. Plazo Pro n'a pas encore le bouton « Renvoyer ».
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
   https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et
