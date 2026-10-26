@@ -147,6 +147,7 @@ describe('ce qu’un changement d’état fait au reste de la réservation', () 
       returnedAt: now,
       cancelledAt: undefined,
       keyHook: null,
+      keysLeftAt: null,
       fileId: null,
       fileRank: null,
     });
@@ -166,6 +167,7 @@ describe('ce qu’un changement d’état fait au reste de la réservation', () 
       returnedAt: undefined,
       cancelledAt: undefined,
       keyHook: undefined,
+      keysLeftAt: undefined,
       fileId: undefined,
       fileRank: undefined,
     });
