@@ -542,18 +542,13 @@ function VehicleRow({ v }: { v: DashboardVehicle }) {
   const client = useQueryClient();
   // « Clés laissées » in one click (26/10/2026): the pill is a real button beside the card, never nested in it.
   const keysLeft = useMutation({
-    mutationFn: () => adminApi.setKeys(v.id, true),
-    onSuccess: () => {
-      toast.success(s.keysLeftDone);
+    mutationFn: (left: boolean) => adminApi.setKeys(v.id, left),
+    onSuccess: (_data, left) => {
+      toast.success(left ? s.keysLeftDone : s.keysLeftUndone);
       void client.invalidateQueries({ queryKey: ["dashboard"] });
     },
     onError: (err) => toast.error(describeError(err)),
   });
-  const keys = v.keyHook
-    ? s.keysHook(v.keyHook)
-    : v.keysLeftAt
-      ? s.keysLeft(timeOf(v.keysLeftAt))
-      : null;
   const meta = [
     v.returnFlight
       ? s.flight(v.returnFlight, timeOf(v.flightEstimatedAt ?? v.returnAt))
@@ -601,22 +596,31 @@ function VehicleRow({ v }: { v: DashboardVehicle }) {
         </span>
       </CardButton>
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        {keys ? (
-          <span
+        {v.keyHook ? (
+          <span className={pill}>{s.keysHook(v.keyHook)}</span>
+        ) : v.keysLeftAt ? (
+          // 26/10/2026 (« il doit être possible de changer l'état des clés laissées »): one more click undoes it.
+          <button
+            type="button"
+            aria-label={s.undoKeysLeftAria(timeOf(v.keysLeftAt))}
+            title={s.undoKeysLeftAria(timeOf(v.keysLeftAt))}
+            disabled={keysLeft.isPending}
+            onClick={() => keysLeft.mutate(false)}
             className={cn(
               pill,
-              v.keysLeftAt && !v.keyHook && "border-ok text-ok-text",
+              "inline-flex min-h-7 items-center gap-1 border-ok text-ok-text hover:bg-ok/10 disabled:opacity-60",
             )}
           >
-            {keys}
-          </span>
+            <KeyRound className="h-3 w-3" aria-hidden="true" />
+            {s.keysLeft(timeOf(v.keysLeftAt))}
+          </button>
         ) : (
           <button
             type="button"
             aria-label={s.markKeysLeftAria}
             title={s.markKeysLeftAria}
             disabled={keysLeft.isPending}
-            onClick={() => keysLeft.mutate()}
+            onClick={() => keysLeft.mutate(true)}
             className={cn(
               pill,
               "inline-flex min-h-7 items-center gap-1 border-warn text-warn-text hover:bg-warn/10 disabled:opacity-60",

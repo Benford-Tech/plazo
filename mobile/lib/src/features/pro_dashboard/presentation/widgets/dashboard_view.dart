@@ -33,6 +33,8 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   bool _allVehicles = false;
+  /// 26/10/2026 (« pareil dans Plazo Pro »): the kind of alert whose rows are unfolded, none by default.
+  String? _openKind;
 
   @override
   Widget build(BuildContext context) {
@@ -83,8 +85,10 @@ class _DashboardViewState extends State<DashboardView> {
                           Expanded(child: Text('dashboard.alerts_empty'.tr(), style: AppText.muted())),
                         ],
                       )
-                    : Column(
-                        children: [for (final (i, a) in d.alerts.indexed) _AlertRow(alert: a, first: i == 0)],
+                    : _AlertKinds(
+                        alerts: d.alerts,
+                        openKind: _openKind,
+                        onToggle: (kind) => setState(() => _openKind = _openKind == kind ? null : kind),
                       ),
               ),
               const SizedBox(height: 10),
@@ -430,6 +434,97 @@ class _Panel extends StatelessWidget {
           ],
           child,
         ],
+      ),
+    );
+  }
+}
+
+/// 26/10/2026: one counting pill per kind of alert (urgent first, the server's order); a pill unfolds its rows only.
+class _AlertKinds extends StatelessWidget {
+  const _AlertKinds({required this.alerts, required this.openKind, required this.onToggle});
+  final List<DashboardAlertModel> alerts;
+  final String? openKind;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final kinds = <String>[];
+    final counts = <String, int>{};
+    final severities = <String, String>{};
+    for (final a in alerts) {
+      if (!counts.containsKey(a.kind)) {
+        kinds.add(a.kind);
+        severities[a.kind] = a.severity;
+      }
+      counts[a.kind] = (counts[a.kind] ?? 0) + 1;
+    }
+    final open = openKind == null ? const <DashboardAlertModel>[] : alerts.where((a) => a.kind == openKind).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final kind in kinds)
+              _AlertKindPill(
+                kind: kind,
+                count: counts[kind]!,
+                severity: severities[kind]!,
+                selected: kind == openKind,
+                onTap: () => onToggle(kind),
+              ),
+          ],
+        ),
+        if (open.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: AppColors.panelLine),
+          for (final (i, a) in open.indexed) _AlertRow(alert: a, first: i == 0),
+        ],
+      ],
+    );
+  }
+}
+
+class _AlertKindPill extends StatelessWidget {
+  const _AlertKindPill({required this.kind, required this.count, required this.severity, required this.selected, required this.onTap});
+  final String kind;
+  final int count;
+  final String severity;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final (border, fg) = switch (severity) {
+      'urgent' => (AppStatus.bad, AppStatus.badText),
+      'watch' => (AppStatus.warn, AppStatus.warnText),
+      _ => (AppColors.panelLine, AppColors.ink),
+    };
+    return Material(
+      color: selected ? AppColors.tint : Colors.white,
+      borderRadius: _pill,
+      child: InkWell(
+        key: Key('alert-kind-$kind'),
+        borderRadius: _pill,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            borderRadius: _pill,
+            border: Border.all(color: selected ? AppColors.accent : border, width: selected ? 1.5 : 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('$count', style: AppText.tabular(size: 14, weight: 700, color: fg)),
+              const SizedBox(width: 6),
+              // A long kind (« Demande pour rejoindre l'équipe ») shortens on a narrow phone instead of overflowing.
+              Flexible(child: Text('dashboard.kind.$kind'.tr(), style: AppText.strong(size: 13, color: fg), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+        ),
       ),
     );
   }

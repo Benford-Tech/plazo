@@ -718,12 +718,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `OccupationService.setKeys`, tracé `reservation.keys`), la pilule devient « Clés laissées · 09:47 » (verte), l'alerte
      `keys_missing` s'éteint, fiche, fiche opérationnelle et « Rendre » disent « Clés laissées » tant qu'aucun crochet n'est noté
      (le crochet, posé depuis l'Occupation, l'emporte) ; « Rendu » l'efface avec le crochet (`statusSideEffects`) ; `left: false`
-     annule. `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. Plazo Pro ne l'a pas encore.
+     annule (web : un clic sur la pilule verte « Clés laissées · 09:47 » l'annule, 26/10/2026, « il doit être possible de changer
+     l'état des clés laissées »). `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. Plazo Pro ne l'a pas encore.
    - **« À traiter maintenant » par type (26/10/2026, « compacte… ça prend trop de place », puis « mets plutôt un nombre à
      traiter catégorisé par type de demandes »)** : une pastille par type d'alerte avec son nombre (« 2 Sur place sans place »,
      bordure de la gravité, dans l'ordre du serveur : urgent d'abord ; `AlertList`, `data-testid="alert-kinds"`), rien de déplié
      par défaut ; cliquer une pastille montre ses lignes seules (une ligne dense par alerte : point de gravité, titre · détail,
-     « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. Web seulement.
+     « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. **Plazo Pro aussi (26/10/2026, « pareil dans Plazo Pro »)** : `_AlertKinds` / `_AlertKindPill`
+     (`Key('alert-kind-<kind>')`) sur l'onglet Aujourd'hui, mêmes règles ; test `pro_dashboard_test.dart`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
