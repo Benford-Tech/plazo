@@ -20,10 +20,12 @@ type Op = Awaited<ReturnType<typeof setupOperator>>;
 let op: Op;
 let fetchMock: jest.SpyInstance;
 
+// 26/10/2026: a member added by addStaff receives a team invitation; only the morning mails count here.
 const emails = () =>
   fetchMock.mock.calls
     .filter(([u]) => String(u) === BREVO_EMAIL)
-    .map(([, init]) => JSON.parse((init as RequestInit).body as string) as Record<string, any>);
+    .map(([, init]) => JSON.parse((init as RequestInit).body as string) as Record<string, any>)
+    .filter(mail => !(mail.tags ?? []).includes('team_invitation'));
 
 beforeEach(async () => {
   await resetDatabase();
