@@ -1475,7 +1475,13 @@
       "agent": "Agent",
       "driver": "Chauffeur",
       "valet": "Voiturier"
-    }
+    },
+    "post_day": "Mon poste du jour",
+    "manager": "Gérant",
+    "driver": "Chauffeur",
+    "agent": "Accueil",
+    "valet": "Voiturier",
+    "start": "Bien démarrer"
   },
   "planning": {
     "title": "Planning des places",
@@ -1922,6 +1928,7 @@
     "signed_pdf": "PDF signé",
     "proof_pdf": "Preuve de signature",
     "file_error": "Le fichier n'a pas pu être ouvert.",
+    "pdf_share": "Partager ou enregistrer",
     "signature_label": "Signature du client, au doigt",
     "signature_clear": "Effacer",
     "report_title": {
@@ -2220,7 +2227,8 @@
       "pro_today": "Le tableau de bord",
       "pro_reservations": "Les réservations",
       "pro_shuttle": "Ma tournée : aller et retour",
-      "pro_occupation": "Le parking et les voitures à placer"
+      "pro_occupation": "Le parking et les voitures à placer",
+      "pro_start": "Bien démarrer avec Plazo Pro"
     },
     "where": {
       "search": "Rechercher",
@@ -2341,6 +2349,91 @@
       "s3_body": "L'application propose où ranger chaque voiture pour qu'elle ne bloque aucun retour.",
       "s4_title": "Le planning des places",
       "s4_body": "Les séjours place par place, ou file par file, sur les jours qui viennent."
+    },
+    "pro_start": {
+      "s1_title": "Votre parking",
+      "s1_body": "Adresse et nombre de places dans Plus › Réglages ; le plan et les files de voiturier se tracent sur l'espace pro web, l'app les retrouve.",
+      "s2_title": "Vos réservations arrivent seules",
+      "s2_body": "Donnez votre adresse Plazo (…@plazo.fr) à chaque comparateur : chaque mail crée la réservation. Au téléphone, saisissez-la dans Réservations.",
+      "s3_title": "Votre équipe et le code du jour",
+      "s3_body": "Ajoutez vos chauffeurs, voituriers et l'accueil dans Plus › Équipe, ou donnez-leur le code du jour : ils rejoignent le parking avec Apple ou Google.",
+      "s4_title": "Les navettes",
+      "s4_body": "Vos véhicules en service dans Plus › Véhicules de navette. Chaque chauffeur prend son véhicule du jour ; l'onglet Navette lui dit qui emmener et qui aller chercher.",
+      "s5_title": "Tarifs, fiche Plazo et contrat",
+      "s5_body": "La grille tarifaire et la fiche visible des voyageurs sur plazo.fr, et votre propre contrat PDF signé au comptoir : à régler sur l'espace pro web.",
+      "s6_title": "SMS et notifications",
+      "s6_body": "Le SMS de la veille part à l'heure que vous choisissez. Chaque membre règle ses notifications dans Plus › Notifications."
+    }
+  },
+  "getting_started": {
+    "title": "Bien démarrer",
+    "progress": "{} / {} étapes",
+    "all_done": "Tout est en place",
+    "intro": "Les étapes pour mettre votre parking en route avec Plazo Pro, cochées au fur et à mesure.",
+    "tour": "Voir la visite guidée",
+    "on_web": "À régler sur l'espace pro web",
+    "error": "Impossible de lire les étapes pour l'instant.",
+    "steps": {
+      "parking": {
+        "title": "Votre parking",
+        "body": "Adresse, nombre de places, plan ou files de voiturier."
+      },
+      "bookings": {
+        "title": "Vos réservations",
+        "body": "Donnez votre adresse Plazo aux comparateurs : chaque mail crée la réservation."
+      },
+      "team": {
+        "title": "Votre équipe",
+        "body": "Ajoutez vos chauffeurs, voituriers et l'accueil, ou partagez le code du jour."
+      },
+      "shuttles": {
+        "title": "Vos navettes",
+        "body": "Les véhicules en service et le point de rendez-vous au retour."
+      },
+      "listing": {
+        "title": "Vos tarifs et votre fiche Plazo",
+        "body": "La grille tarifaire et la fiche que voient les voyageurs."
+      },
+      "contract": {
+        "title": "Votre contrat de stationnement",
+        "body": "Votre propre PDF, ou le modèle Plazo."
+      },
+      "sms": {
+        "title": "Le SMS de la veille",
+        "body": "L'heure et le texte envoyés à vos clients avant leur dépôt."
+      },
+      "post": {
+        "title": "Votre poste du jour",
+        "body": "Choisi dans Plus › Mon poste."
+      },
+      "vehicle": {
+        "title": "Votre véhicule du jour",
+        "body": "Pris avant le premier trajet."
+      },
+      "notifications": {
+        "title": "Les notifications",
+        "body": "Autorisées sur ce téléphone."
+      },
+      "tracking": {
+        "title": "Le suivi des navettes",
+        "body": "Votre position partagée pendant un trajet."
+      },
+      "plan": {
+        "title": "Le plan du parking",
+        "body": "Les files ou les places où ranger les voitures."
+      },
+      "keys": {
+        "title": "Les clés",
+        "body": "Clés laissées ou crochet noté à chaque voiture."
+      },
+      "reservations": {
+        "title": "Une réservation saisie",
+        "body": "Reçue par téléphone ou au comptoir."
+      },
+      "inbox": {
+        "title": "La boîte de réception",
+        "body": "Les mails des comparateurs, à vérifier sur l'espace pro web."
+      }
     }
   }
 }

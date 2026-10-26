@@ -545,6 +545,12 @@ export const fr = {
     contracts: "Contrats",
     logout: "Se déconnecter",
     platform: "Plateforme",
+    // W-A (26/10/2026): the rail in three sections.
+    sections: {
+      operations: "Exploitation",
+      manager: "Gérant",
+      account: "Compte",
+    },
   },
   // CA-B + CA-A (09/10/2026): the revenue of the bookings, managers only.
   revenue: {
@@ -671,6 +677,79 @@ export const fr = {
     keeps: (net: string) => `garde ${net}`,
   },
   // 21/10/2026 (« Mets en évidence les réservations sans prix », choice A + C).
+  // T-A (26/10/2026): « Bien démarrer avec Plazo Pro », the dashboard card with the setup steps of the post.
+  gettingStarted: {
+    title: "Bien démarrer",
+    progress: (done: number, total: number) => `${done} / ${total} étapes`,
+    allDone: "Tout est en place.",
+    hide: "Masquer",
+    show: "Afficher",
+    done: "Fait",
+    todo: "À faire",
+    open: "Ouvrir",
+    steps: {
+      parking: {
+        title: "Votre parking",
+        body: "Adresse, nombre de places, plan ou files de voiturier.",
+      },
+      bookings: {
+        title: "Vos réservations",
+        body: "Donnez votre adresse Plazo aux comparateurs : chaque mail crée la réservation.",
+      },
+      team: {
+        title: "Votre équipe",
+        body: "Ajoutez vos chauffeurs, voituriers et l'accueil, ou partagez le code du jour.",
+      },
+      shuttles: {
+        title: "Vos navettes",
+        body: "Les véhicules en service et le point de rendez-vous au retour.",
+      },
+      listing: {
+        title: "Vos tarifs et votre fiche Plazo",
+        body: "La grille tarifaire et la fiche que voient les voyageurs.",
+      },
+      contract: {
+        title: "Votre contrat de stationnement",
+        body: "Votre propre PDF, ou le modèle Plazo.",
+      },
+      sms: {
+        title: "Le SMS de la veille",
+        body: "L'heure et le texte envoyés à vos clients avant leur dépôt.",
+      },
+      post: {
+        title: "Votre poste du jour",
+        body: "Choisi dans Plazo Pro, sous « Plus ».",
+      },
+      vehicle: {
+        title: "Votre véhicule du jour",
+        body: "Pris dans Plazo Pro avant le premier trajet.",
+      },
+      notifications: {
+        title: "Les notifications",
+        body: "Autorisées sur votre téléphone, dans Plazo Pro.",
+      },
+      tracking: {
+        title: "Le suivi des navettes",
+        body: "Votre position partagée pendant un trajet.",
+      },
+      plan: {
+        title: "Le plan du parking",
+        body: "Les files ou les places où ranger les voitures.",
+      },
+      keys: {
+        title: "Les clés",
+        body: "Clés laissées ou crochet noté à chaque voiture.",
+      },
+      reservations: {
+        title: "Une réservation saisie",
+        body: "Reçue par téléphone ou au comptoir.",
+      },
+      inbox: {
+        title: "La boîte de réception",
+        body: "Les mails des comparateurs à vérifier.",
+      },
+    },
+  },
   noPrice: {
     filter: (n: number) => `Sans prix · ${n}`,
     filterOff: "Toutes",

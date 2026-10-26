@@ -97,6 +97,7 @@ import type {
   RevenueBasis,
   RevenueReport,
   RevenueSummary,
+  GettingStarted,
   BookingContract,
   ContractTemplates,
   SignedContractFileKind,
@@ -722,6 +723,9 @@ export const adminApi = {
     ),
   getRevenueSummary: () =>
     apiRequest<RevenueSummary>("/internal/revenue/summary"),
+  // T-A (26/10/2026): « Bien démarrer » on the dashboard.
+  getGettingStarted: () =>
+    apiRequest<GettingStarted>("/internal/getting-started"),
   exportRevenue: (from: string, to: string, basis: RevenueBasis) =>
     apiFile(
       `/internal/revenue/export?${new URLSearchParams({ from, to, basis })}`,

@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../di/locator.dart';
-import '../../../../services/share_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
@@ -16,6 +15,7 @@ import '../../data/datasources/paperwork_data_source.dart';
 import '../../data/models/paperwork_models.dart';
 import '../bloc/paperwork_bloc.dart';
 import '../widgets/paperwork_widgets.dart';
+import 'contract_pdf_page.dart';
 
 /// Plazo Pro: the traveller signs the parking contract at the counter, with the code sent to their phone or by hand.
 @RoutePage()
@@ -236,16 +236,10 @@ class _ContractBodyState extends State<_ContractBody> {
   }
 }
 
-/// Opens a contract PDF through the phone's share sheet (the apps have no PDF viewer of their own).
-Future<void> _openContractFile(BuildContext context, PaperworkOwner? owner, String kind, String name) async {
-  if (owner == null) return;
-  final messenger = ScaffoldMessenger.of(context);
-  try {
-    final bytes = await locator<PaperworkDataSource>().contractFile(owner, kind);
-    await locator<ShareService>().shareBytes(bytes, name: name, mimeType: 'application/pdf');
-  } catch (_) {
-    messenger.showSnackBar(SnackBar(content: Text('paperwork.file_error'.tr())));
-  }
+/// Opens a contract PDF in the app (« le pdf doit s'afficher dans plazo », 26/10/2026), with « Partager » in its bar.
+Future<void> _openContractFile(BuildContext context, PaperworkOwner? owner, String kind, String name, {required String title}) {
+  if (owner == null) return Future<void>.value();
+  return ContractPdfPage.open(context, owner: owner, kind: kind, title: title, fileName: name);
 }
 
 /// « Contrat du parking » (26/10/2026): the PDF the parking hosts, its version and its pages, to open before signing.
@@ -271,7 +265,7 @@ class _TemplateCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
               key: const Key('contract-template-open'),
-              onPressed: () => _openContractFile(context, owner, 'template', template.fileName),
+              onPressed: () => _openContractFile(context, owner, 'template', template.fileName, title: template.title),
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
               label: Text('paperwork.template_open'.tr()),
             ),
@@ -321,14 +315,14 @@ class _Signed extends StatelessWidget {
                 if (files.signed)
                   OutlinedButton.icon(
                     key: const Key('contract-signed-open'),
-                    onPressed: () => _openContractFile(context, owner, 'signed', 'contrat-signe.pdf'),
+                    onPressed: () => _openContractFile(context, owner, 'signed', 'contrat-signe.pdf', title: 'paperwork.signed_pdf'.tr()),
                     icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
                     label: Text('paperwork.signed_pdf'.tr()),
                   ),
                 if (files.proof)
                   OutlinedButton.icon(
                     key: const Key('contract-proof-open'),
-                    onPressed: () => _openContractFile(context, owner, 'proof', 'preuve-signature.pdf'),
+                    onPressed: () => _openContractFile(context, owner, 'proof', 'preuve-signature.pdf', title: 'paperwork.proof_pdf'.tr()),
                     icon: const Icon(Icons.verified_outlined, size: 18),
                     label: Text('paperwork.proof_pdf'.tr()),
                   ),

@@ -13,6 +13,7 @@ import { ParkingRoute } from './parking.route';
 import { PaperworkRoute } from './paperwork.route';
 import { ExtraRoute } from './extra.route';
 import { ContractTemplateRoute } from './contract-template.route';
+import { GettingStartedRoute } from './getting-started.route';
 import { PartnerContractRoute } from './partner-contract.route';
 import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
@@ -38,6 +39,7 @@ const AppRoutes = [
   new ExtraRoute(),
   new PartnerContractRoute(),
   new ContractTemplateRoute(),
+  new GettingStartedRoute(),
   new DashboardRoute(),
   new RevenueRoute(),
   new ListingRoute(),

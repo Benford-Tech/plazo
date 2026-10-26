@@ -1397,6 +1397,34 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   des pages ; `WelcomeCarousel`, `CoachMarks`), textes `tutorials.*` de `fr-FR.json` ; `--dart-define=TUTORIALS=false` pour les
   captures des stores et les essais sur émulateur, coupés aussi dans les tests (`setUpLocalizedTests`) sauf
   `test/shared/tutorials/tutorials_test.dart`.
+  **Menu par rôle et « Bien démarrer » (26/10/2026, « réorganise le menu par rôle, gérant, chauffeur, accueil, ajoute un tutoriel
+  pour bien démarrer avec Plazo Pro », choix « M-A + W-A + T-A + T-B » des maquettes https://claude.ai/artifact/6rWrzpDZ712eQCaRRCRwbs)** :
+  **M-A** Plus de Plazo Pro en blocs : « Mon poste du jour » (poste, véhicule du jour pour un chauffeur, « Bien démarrer »),
+  « Gérant » (chiffre d'affaires, équipe, plan, véhicules de navette, réglages ; selon les droits du rôle), puis un bloc par
+  poste que le membre peut tenir (« Chauffeur » : Navette ; « Accueil » : Réservations ; « Voiturier » : Planning des places ;
+  `staff.allowedPosts`, sinon `coveredPosts(role)` de `core/helpers/roles.dart`, le miroir de `allowedPosts` du serveur) et
+  « Compte » (notifications, tutoriels, mon compte, déconnexion) ; mêmes clés `pmore-*`, plus `pmore-start` et
+  `pmore-reservations` ; test `pro_more_menu_test.dart`. **W-A** rail de l'espace pro web en trois sections « Exploitation »
+  (Tableau de bord, Planning, Navettes, Réservations, Parking), « Gérant » (Chiffre d'affaires, Sur Plazo, Équipe, Mon contrat,
+  Contrats) et « Compte » (Mon compte, Plateforme) : `NavItem.section` dans `AdminLayout.tsx`, en-tête visible dès `lg`, une
+  section sans lien pour le rôle n'apparaît pas ; test `AdminLayout.test.tsx`. **T-A** `GET /internal/getting-started`
+  (`GettingStartedService`, `reservations:view` ; rien d'enregistré) rend `{ post, steps[{ key, done, detail }], done, total }`
+  pour le poste du jour (`effectivePost`) : gérant `parking` (adresse et places : files, plan ou capacité déclarée), `bookings`
+  (un mail de comparateur reçu ou une réservation importée), `team` (2 membres actifs, demandes en attente dans le détail),
+  `shuttles` (un véhicule en service, rendez-vous du retour), `listing` (grille et fiche, statut), `contract` (PDF en vigueur,
+  sinon « Le modèle Plazo pour l'instant »), `sms` (ligne `reminder_settings`) ; chauffeur `post`, `vehicle`, `notifications`
+  (un appareil), `tracking` (suivi non coupé) ; voiturier `post`, `plan`, `keys` (clés laissées ou crochet notés une fois),
+  `notifications` ; accueil `post`, `reservations` (une saisie par l'équipe), `inbox`, `notifications` ; test
+  `getting-started.test.ts`. Web : carte « Bien démarrer » du tableau de bord (`GettingStartedCard`, bordure citron, « N / 7
+  étapes », barre, une ligne par étape avec son détail et « Ouvrir › » vers la page de réglage, « Masquer » gardé dans le
+  navigateur `plazo:getting-started-hidden`, disparue quand tout est fait). Plazo Pro : carte `GettingStartedCard` sous le chiffre
+  d'affaires du tableau de bord (avancement et les deux prochaines étapes, `features/pro_start/`, `GettingStartedDataSource` par
+  Dio sans freezed) et page `/pro/bien-demarrer` (`ProGettingStartedPage`, aussi Plus › « Bien démarrer ») : chaque étape cochée
+  mène à l'écran de l'app qui la règle, ou dit « À régler sur l'espace pro web » (mails, fiche, contrat, SMS). **T-B** visite guidée
+  `pro.start` (`Tutorials.proStart`, carrousel de six écrans : parking · réservations et comparateurs · équipe et code du jour ·
+  navettes · tarifs, fiche et contrat · SMS et notifications ; textes `tutorials.pro_start.*`), ouverte par « Voir la visite
+  guidée » de la page et listée dans Plus › Tutoriels pour chaque poste, après le carrousel du poste ; test
+  `getting_started_test.dart`.
   Voir `mobile/README.md`.
 
 - **Contrat Plazo ↔ loueur (20/10/2026, « Pouvoir stocker le contrat à faire signer », « Signé dans Plazo » puis choix 2a « bandeau

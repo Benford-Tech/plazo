@@ -10,12 +10,13 @@ import '../../../../core/router/app_router.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../pro_auth/data/models/staff_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../../core/helpers/posts.dart';
 import '../../../../shared/tutorials/tutorials_page.dart';
 
-/// "Plus" of Plazo Pro: who is signed in, the shuttle, the notifications, the parking plan
-/// (managers), sign out, version. Team, account and settings arrive at step 4.
+/// "Plus" of Plazo Pro: who is signed in, then the menu by role (M-A, 26/10/2026): the post of the day, the manager's
+/// tools, one block per post the member can hold, the account; version at the bottom.
 @RoutePage()
 class ProMoreTabPage extends StatelessWidget {
   const ProMoreTabPage({super.key});
@@ -56,43 +57,9 @@ class ProMoreTabPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          _title('pro_more.work'.tr()),
-          _Tile(
-            key: const Key('pmore-shuttle'),
-            icon: Icons.directions_bus_rounded,
-            label: 'shuttle.title'.tr(),
-            onTap: () => context.router.push(ProShuttleRoute()),
-          ),
-          _Tile(
-            key: const Key('pmore-planning'),
-            icon: Icons.view_timeline_outlined,
-            label: 'planning.title'.tr(),
-            onTap: () => context.router.push(const ProSpotPlanningRoute()),
-          ),
-          if (can(role, 'revenue:view'))
-            _Tile(
-              key: const Key('pmore-revenue'),
-              icon: Icons.euro_rounded,
-              label: 'revenue.title'.tr(),
-              onTap: () => context.router.push(const ProRevenueRoute()),
-            ),
-          _Tile(
-            key: const Key('pmore-notifications'),
-            icon: Icons.notifications_none_rounded,
-            label: 'pro.notifications'.tr(),
-            onTap: () => context.router.push(const ProNotificationsRoute()),
-          ),
-          if (can(role, 'parking:manage'))
-            _Tile(key: const Key('pmore-plan'), icon: Icons.map_rounded, label: 'plan.menu'.tr(), onTap: () => context.router.push(const ProPlanRoute())),
-          if (can(role, 'parking:manage'))
-            _Tile(
-              key: const Key('pmore-vehicles'),
-              icon: Icons.airport_shuttle_rounded,
-              label: 'vehicles.title'.tr(),
-              onTap: () => context.router.push(const ProVehiclesRoute()),
-            ),
-          const SizedBox(height: 14),
-          _title('pro_more.account'.tr()),
+          // M-A (26/10/2026, « réorganise le menu par rôle »): the post of the day first, then one block per post the
+          // member can hold (the manager's block for the managers' tools), then the account.
+          _title('pro_more.post_day'.tr()),
           _Tile(
             key: const Key('pmore-post'),
             icon: Icons.badge_outlined,
@@ -106,6 +73,79 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'vehicle_day.mine'.tr(args: [staff?.vehicle?.title ?? 'vehicle_day.none_short'.tr()]),
               onTap: () => context.router.push(const ProVehicleRoute()),
             ),
+          _Tile(
+            key: const Key('pmore-start'),
+            icon: Icons.rocket_launch_outlined,
+            label: 'pro_more.start'.tr(),
+            onTap: () => context.router.push(const ProGettingStartedRoute()),
+          ),
+          if (can(role, 'parking:manage') || can(role, 'revenue:view') || can(role, 'team:manage')) ...[
+            const SizedBox(height: 14),
+            _title('pro_more.manager'.tr()),
+            if (can(role, 'revenue:view'))
+              _Tile(
+                key: const Key('pmore-revenue'),
+                icon: Icons.euro_rounded,
+                label: 'revenue.title'.tr(),
+                onTap: () => context.router.push(const ProRevenueRoute()),
+              ),
+            if (can(role, 'team:manage'))
+              _Tile(key: const Key('pmore-team'), icon: Icons.group_outlined, label: 'team.title'.tr(), onTap: () => context.router.push(const ProTeamRoute())),
+            if (can(role, 'parking:manage'))
+              _Tile(key: const Key('pmore-plan'), icon: Icons.map_rounded, label: 'plan.menu'.tr(), onTap: () => context.router.push(const ProPlanRoute())),
+            if (can(role, 'parking:manage'))
+              _Tile(
+                key: const Key('pmore-vehicles'),
+                icon: Icons.airport_shuttle_rounded,
+                label: 'vehicles.title'.tr(),
+                onTap: () => context.router.push(const ProVehiclesRoute()),
+              ),
+            if (can(role, 'parking:manage'))
+              _Tile(
+                key: const Key('pmore-settings'),
+                icon: Icons.tune_rounded,
+                label: 'settings.title'.tr(),
+                onTap: () => context.router.push(const ProParkingSettingsRoute()),
+              ),
+          ],
+          if (_holds(staff, 'driver')) ...[
+            const SizedBox(height: 14),
+            _title('pro_more.driver'.tr()),
+            _Tile(
+              key: const Key('pmore-shuttle'),
+              icon: Icons.directions_bus_rounded,
+              label: 'shuttle.title'.tr(),
+              onTap: () => context.router.push(ProShuttleRoute()),
+            ),
+          ],
+          if (_holds(staff, 'agent')) ...[
+            const SizedBox(height: 14),
+            _title('pro_more.agent'.tr()),
+            _Tile(
+              key: const Key('pmore-reservations'),
+              icon: Icons.list_alt_rounded,
+              label: 'pro_tabs.reservations'.tr(),
+              onTap: () => context.router.push(const ProReservationsRoute()),
+            ),
+          ],
+          if (_holds(staff, 'valet')) ...[
+            const SizedBox(height: 14),
+            _title('pro_more.valet'.tr()),
+            _Tile(
+              key: const Key('pmore-planning'),
+              icon: Icons.view_timeline_outlined,
+              label: 'planning.title'.tr(),
+              onTap: () => context.router.push(const ProSpotPlanningRoute()),
+            ),
+          ],
+          const SizedBox(height: 14),
+          _title('pro_more.account'.tr()),
+          _Tile(
+            key: const Key('pmore-notifications'),
+            icon: Icons.notifications_none_rounded,
+            label: 'pro.notifications'.tr(),
+            onTap: () => context.router.push(const ProNotificationsRoute()),
+          ),
           _Tile(
             key: const Key('pmore-tutorials'),
             icon: Icons.school_outlined,
@@ -122,15 +162,6 @@ class ProMoreTabPage extends StatelessWidget {
             label: 'account.title'.tr(),
             onTap: () => context.router.push(const ProAccountRoute()),
           ),
-          if (can(role, 'team:manage'))
-            _Tile(key: const Key('pmore-team'), icon: Icons.group_outlined, label: 'team.title'.tr(), onTap: () => context.router.push(const ProTeamRoute())),
-          if (can(role, 'parking:manage'))
-            _Tile(
-              key: const Key('pmore-settings'),
-              icon: Icons.tune_rounded,
-              label: 'settings.title'.tr(),
-              onTap: () => context.router.push(const ProParkingSettingsRoute()),
-            ),
           _Tile(
             key: const Key('pmore-logout'),
             icon: Icons.logout_rounded,
@@ -157,6 +188,10 @@ class ProMoreTabPage extends StatelessWidget {
       ),
     );
   }
+
+  /// A block shows for a member whose role covers the post (the manager covers them all), whatever the post of the day.
+  static bool _holds(StaffModel? staff, String post) =>
+      staff != null && (staff.allowedPosts.isEmpty ? coveredPosts(staff.role) : staff.allowedPosts).contains(post);
 
   Widget _title(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 4, left: 4),

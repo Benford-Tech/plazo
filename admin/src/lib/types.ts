@@ -2020,3 +2020,16 @@ export interface ReservationExtra {
   doneBy: string | null;
   refusedBy: string | null;
 }
+
+/** 26/10/2026 (T-A, « Bien démarrer avec Plazo Pro »): the setup steps of the member's post, ticked from what Plazo sees. */
+export interface GettingStartedStep {
+  key: string;
+  done: boolean;
+  detail: string | null;
+}
+export interface GettingStarted {
+  post: StaffRole;
+  steps: GettingStartedStep[];
+  done: number;
+  total: number;
+}

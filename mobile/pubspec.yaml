@@ -61,6 +61,8 @@ dependencies:
   google_sign_in: ^7.2.0
   crypto: ^3.0.6
   share_plus: ^13.2.1
+  # The parking's contract read in the app (26/10/2026): PDFium viewer, pinch to zoom.
+  pdfrx: ^2.10.1
   image_picker: ^1.2.4
   # Tutorials (21/10/2026): which ones were seen, on this phone only.
   shared_preferences: ^2.5.5

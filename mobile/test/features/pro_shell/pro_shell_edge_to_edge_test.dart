@@ -84,6 +84,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expectClearOfSystemBars(tester, find.byKey(const Key('pmore-name')));
-    expectClearOfSystemBars(tester, find.byKey(const Key('pmore-shuttle')));
+    // M-A (26/10/2026): the shuttle row sits in the « Chauffeur » block, below the fold of a landscape phone.
+    final shuttle = find.byKey(const Key('pmore-shuttle'));
+    await tester.scrollUntilVisible(
+      shuttle,
+      80,
+      scrollable: find.descendant(of: find.byType(ProMoreTabPage), matching: find.byType(Scrollable)),
+    );
+    await tester.ensureVisible(shuttle);
+    await tester.pumpAndSettle();
+    expectClearOfSystemBars(tester, shuttle);
   });
 }

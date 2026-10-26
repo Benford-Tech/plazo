@@ -66,7 +66,7 @@ void main() {
   });
 
   test('chaque poste a son carrousel, puis les bulles de ses onglets', () {
-    expect(Tutorials.listFor(pro: true, post: 'driver').map((t) => t.id), ['pro.welcome.driver', 'pro.shuttle']);
+    expect(Tutorials.listFor(pro: true, post: 'driver').map((t) => t.id), ['pro.welcome.driver', 'pro.start', 'pro.shuttle']);
     expect(Tutorials.listFor(pro: true, post: 'manager').first.id, 'pro.welcome.manager');
     expect(Tutorials.welcomeFor('inconnu').id, 'pro.welcome.agent');
   });
