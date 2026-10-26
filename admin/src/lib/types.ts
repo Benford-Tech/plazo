@@ -268,6 +268,8 @@ export interface Reservation {
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
+  /** « Clés laissées » (26/10/2026): keys handed over, hook noted or not. */
+  keysLeftAt?: string | null;
   /** Where the car is parked (06/10/2026): GPS fix by the traveller or the valet. */
   carLat?: number | null;
   carLng?: number | null;
@@ -1380,6 +1382,7 @@ export interface DashboardVehicle {
   spotCode: string | null;
   stayClass: string | null;
   keyHook: string | null;
+  keysLeftAt: string | null;
   returnFlight: string | null;
   flightStatus: string | null;
   flightScheduledAt: string | null;

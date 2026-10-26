@@ -46,6 +46,7 @@ export interface StatusSideEffects {
   returnedAt: Date | null | undefined;
   cancelledAt: Date | null | undefined;
   keyHook: null | undefined;
+  keysLeftAt: null | undefined;
   fileId: null | undefined;
   fileRank: null | undefined;
 }
@@ -68,6 +69,7 @@ export function statusSideEffects(
     returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
     cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
     keyHook: status === 'returned' ? null : undefined,
+    keysLeftAt: status === 'returned' ? null : undefined,
     fileId: closes ? null : undefined,
     fileRank: closes ? null : undefined,
   };

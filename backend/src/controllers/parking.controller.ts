@@ -3,7 +3,7 @@ import { Container } from 'typedi';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AddSpotsDto, SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
-import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AssignFileDto, KeepFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { FileService } from '@/services/file.service';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
@@ -122,6 +122,12 @@ export class ParkingController {
   public locateCar = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: CarLocationDto = req.body;
     res.json({ message: 'Car located', data: await this.occupation.locateCar(req.staff, req.params.id as string, data) });
+  });
+
+  /** PUT /internal/reservations/:id/keys */
+  public setKeys = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: KeysDto = req.body;
+    res.json({ message: 'Keys updated', data: await this.occupation.setKeys(req.staff, req.params.id as string, data) });
   });
 
   /** DELETE /internal/reservations/:id/car-location */

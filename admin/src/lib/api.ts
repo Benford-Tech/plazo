@@ -611,6 +611,12 @@ export const adminApi = {
       method: "POST",
       body: json(patch),
     }),
+  /** « Clés laissées » in one click (26/10/2026). */
+  setKeys: (reservationId: string, left: boolean) =>
+    apiRequest<{ data: { keysLeftAt: string | null; keyHook: string | null } }>(
+      `/internal/reservations/${reservationId}/keys`,
+      { method: "PUT", body: json({ left }) },
+    ),
   getOccupation: (parkingId: string) =>
     apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),
   searchVehicles: (parkingId: string, q: string) =>

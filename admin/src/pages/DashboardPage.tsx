@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -6,6 +6,7 @@ import {
   BusFront,
   CreditCard,
   FileInput,
+  KeyRound,
   MessageSquare,
   Plane,
   SquareParking,
@@ -21,6 +22,7 @@ import {
   type SVGProps,
 } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Badge,
   StatusPill,
@@ -239,10 +241,14 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
               : alert.kind === "price_missing"
                 ? fr.noPrice.alertDetail(Number(alert.detail) || 0)
                 : alert.kind === "extras_due"
-                  ? a.extrasDetail(alert.customerName, alert.detail, alert.since ? timeOf(alert.since) : null)
+                  ? a.extrasDetail(
+                      alert.customerName,
+                      alert.detail,
+                      alert.since ? timeOf(alert.since) : null,
+                    )
                   : [alert.customerName, alert.detail]
-                    .filter(Boolean)
-                    .join(" · ")}
+                      .filter(Boolean)
+                      .join(" · ")}
         </span>
       </span>
       {alert.minutes !== null &&
@@ -325,12 +331,18 @@ function DemoTryCard({ role }: { role: string }) {
   const body = fr.demo.tryBody[role] ?? fr.demo.tryBody.manager;
   const link = fr.demo.tryLink[role] ?? fr.demo.tryLink.manager;
   return (
-    <div data-testid="demo-try" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-lime-ink px-4 py-3 text-white">
+    <div
+      data-testid="demo-try"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-lime-ink px-4 py-3 text-white"
+    >
       <div className="min-w-0 flex-1">
         <strong className="block text-sm">{fr.demo.tryTitle}</strong>
         <span className="block text-[13px] text-[#D6E9D9]">{body}</span>
       </div>
-      <Link to={link.to} className="flex min-h-11 items-center rounded-lg bg-lime px-3 text-sm font-semibold text-lime-ink">
+      <Link
+        to={link.to}
+        className="flex min-h-11 items-center rounded-lg bg-lime px-3 text-sm font-semibold text-lime-ink"
+      >
         {link.label}
       </Link>
     </div>
@@ -446,8 +458,22 @@ function vehicleBadges(
 
 function VehicleRow({ v }: { v: DashboardVehicle }) {
   const s = t.vehicles;
+  const client = useQueryClient();
+  // « Clés laissées » in one click (26/10/2026): the pill is a real button beside the card, never nested in it.
+  const keysLeft = useMutation({
+    mutationFn: () => adminApi.setKeys(v.id, true),
+    onSuccess: () => {
+      toast.success(s.keysLeftDone);
+      void client.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+    onError: (err) => toast.error(describeError(err)),
+  });
+  const keys = v.keyHook
+    ? s.keysHook(v.keyHook)
+    : v.keysLeftAt
+      ? s.keysLeft(timeOf(v.keysLeftAt))
+      : null;
   const meta = [
-    v.keyHook ? s.keysHook(v.keyHook) : s.badge.noKeys,
     v.returnFlight
       ? s.flight(v.returnFlight, timeOf(v.flightEstimatedAt ?? v.returnAt))
       : null,
@@ -460,46 +486,72 @@ function VehicleRow({ v }: { v: DashboardVehicle }) {
         .filter(Boolean)
         .join(" · ")
     : s.noSpot;
+  const pill =
+    "rounded-full border border-panel-line px-2 py-0.5 font-mono text-[11px] text-muted-foreground";
   return (
-    <CardButton
-      id={v.id}
-      className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-panel-line bg-panel-2 p-3 text-left hover:border-muted-foreground/40"
+    <div
+      data-testid="vehicle-row"
+      className="rounded-xl border border-panel-line bg-panel-2 p-3 hover:border-muted-foreground/40"
     >
-      <Plate value={v.plate} size="sm" />
-      <span className="min-w-0">
-        <span
-          className={cn(
-            "block font-mono text-xs font-medium",
-            v.spotCode ? "text-muted-foreground" : "text-bad-text",
-          )}
-        >
-          {place}
+      <CardButton
+        id={v.id}
+        className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left"
+      >
+        <Plate value={v.plate} size="sm" />
+        <span className="min-w-0">
+          <span
+            className={cn(
+              "block font-mono text-xs font-medium",
+              v.spotCode ? "text-muted-foreground" : "text-bad-text",
+            )}
+          >
+            {place}
+          </span>
+          <span className="block truncate font-mono text-[15px] font-medium">
+            {v.customerName} · {s.pax(v.passengers)}
+          </span>
         </span>
-        <span className="block truncate font-mono text-[15px] font-medium">
-          {v.customerName} · {s.pax(v.passengers)}
-        </span>
-        <span className="mt-1.5 flex flex-wrap gap-1.5">
-          {meta.map((m) => (
-            <span
-              key={m}
-              className={cn(
-                "rounded-full border border-panel-line px-2 py-0.5 font-mono text-[11px] text-muted-foreground",
-                m === s.badge.noKeys && "border-warn text-warn-text",
-              )}
-            >
-              {m}
-            </span>
+        <span className="flex flex-col items-end gap-1.5">
+          {vehicleBadges(v).map((b) => (
+            <Badge key={b.text} tone={b.tone}>
+              {b.text}
+            </Badge>
           ))}
         </span>
-      </span>
-      <span className="flex flex-col items-end gap-1.5">
-        {vehicleBadges(v).map((b) => (
-          <Badge key={b.text} tone={b.tone}>
-            {b.text}
-          </Badge>
+      </CardButton>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        {keys ? (
+          <span
+            className={cn(
+              pill,
+              v.keysLeftAt && !v.keyHook && "border-ok text-ok-text",
+            )}
+          >
+            {keys}
+          </span>
+        ) : (
+          <button
+            type="button"
+            aria-label={s.markKeysLeftAria}
+            title={s.markKeysLeftAria}
+            disabled={keysLeft.isPending}
+            onClick={() => keysLeft.mutate()}
+            className={cn(
+              pill,
+              "inline-flex min-h-7 items-center gap-1 border-warn text-warn-text hover:bg-warn/10 disabled:opacity-60",
+            )}
+          >
+            <KeyRound className="h-3 w-3" aria-hidden="true" />
+            {s.badge.noKeys} · {s.markKeysLeft}
+          </button>
+        )}
+        {meta.map((m) => (
+          <span key={m} className={pill}>
+            {m}
+          </span>
         ))}
-      </span>
-    </CardButton>
+      </div>
+    </div>
   );
 }
 

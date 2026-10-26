@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { Dashboard, LiveShuttles } from "@/lib/types";
 import DashboardPage from "./DashboardPage";
@@ -9,6 +15,7 @@ const api = vi.hoisted(() => ({
   getLiveShuttles: vi.fn(),
   getRevenueSummary: vi.fn(),
   setReservationPrice: vi.fn(),
+  setKeys: vi.fn(),
 }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { name: "Joanny Simpore", role: "manager" } }),
@@ -22,7 +29,9 @@ vi.mock("@/lib/api", async (importOriginal) => {
       getDashboard: () => api.getDashboard(),
       getLiveShuttles: () => api.getLiveShuttles(),
       getRevenueSummary: () => api.getRevenueSummary(),
-      setReservationPrice: (id: string, cents: number | null) => api.setReservationPrice(id, cents),
+      setReservationPrice: (id: string, cents: number | null) =>
+        api.setReservationPrice(id, cents),
+      setKeys: (id: string, left: boolean) => api.setKeys(id, left),
     },
   };
 });
@@ -110,6 +119,7 @@ const dashboard: Dashboard = {
       spotCode: "A-01-01",
       stayClass: "short",
       keyHook: "12",
+      keysLeftAt: null,
       returnFlight: "TO 3627",
       flightStatus: "delayed",
       flightScheduledAt: "2026-10-05T19:00:00Z",
@@ -131,6 +141,7 @@ const dashboard: Dashboard = {
       spotCode: null,
       stayClass: null,
       keyHook: null,
+      keysLeftAt: null,
       returnFlight: null,
       flightStatus: null,
       flightScheduledAt: null,
@@ -192,7 +203,13 @@ describe("DashboardPage", () => {
     api.getLiveShuttles.mockResolvedValue(live);
     api.getRevenueSummary.mockResolvedValue({
       today: "2026-10-05",
-      month: { from: "2026-10-01", to: "2026-10-31", totalCents: 481250, count: 109, withoutAmount: 3 },
+      month: {
+        from: "2026-10-01",
+        to: "2026-10-31",
+        totalCents: 481250,
+        count: 109,
+        withoutAmount: 3,
+      },
       todayCents: 34500,
       weekCents: 198000,
     });
@@ -204,26 +221,59 @@ describe("DashboardPage", () => {
     expect(tile).toHaveAttribute("href", "/chiffre-affaires");
     expect(tile).toHaveTextContent("Chiffre d'affaires · octobre");
     expect(tile).toHaveTextContent(/4\s812,50\s€/);
-    expect(tile).toHaveTextContent(/Aujourd'hui 345,00\s€ · 7 jours 1\s980,00\s€ · 109 réservations/);
+    expect(tile).toHaveTextContent(
+      /Aujourd'hui 345,00\s€ · 7 jours 1\s980,00\s€ · 109 réservations/,
+    );
     expect(tile).toHaveTextContent("3 sans montant");
   });
 
   it("choix A (20/10/2026) : brut − commissions = ce que le parking garde, une pastille par canal, un comparateur sans taux", async () => {
     api.getRevenueSummary.mockResolvedValue({
       today: "2026-10-20",
-      month: { from: "2026-10-01", to: "2026-10-31", totalCents: 841250, commissionCents: 123640, netCents: 717610, count: 187, withoutAmount: 0 },
+      month: {
+        from: "2026-10-01",
+        to: "2026-10-31",
+        totalCents: 841250,
+        commissionCents: 123640,
+        netCents: 717610,
+        count: 187,
+        withoutAmount: 0,
+      },
       todayCents: 41200,
       weekCents: 210480,
       commissions: [
-        { label: "Allopark", comparatorKey: "allopark", rateBp: 1800, amountCents: 61200, count: 41, missingRate: false },
-        { label: "Plazo", comparatorKey: null, rateBp: null, amountCents: 24000, count: 9, missingRate: false },
-        { label: "Parclick", comparatorKey: "parclick", rateBp: null, amountCents: 0, count: 14, missingRate: true },
+        {
+          label: "Allopark",
+          comparatorKey: "allopark",
+          rateBp: 1800,
+          amountCents: 61200,
+          count: 41,
+          missingRate: false,
+        },
+        {
+          label: "Plazo",
+          comparatorKey: null,
+          rateBp: null,
+          amountCents: 24000,
+          count: 9,
+          missingRate: false,
+        },
+        {
+          label: "Parclick",
+          comparatorKey: "parclick",
+          rateBp: null,
+          amountCents: 0,
+          count: 14,
+          missingRate: true,
+        },
       ],
     });
     renderPage();
     const tile = await screen.findByTestId("kpi-revenue");
     expect(tile).toHaveTextContent(/Encaissé par les clients8\s412,50\s€/);
-    expect(tile).toHaveTextContent(/Commissions1\s236,40\s€14,7\s%\sdu chiffre/);
+    expect(tile).toHaveTextContent(
+      /Commissions1\s236,40\s€14,7\s%\sdu chiffre/,
+    );
     expect(tile).toHaveTextContent(/Vous gardez7\s176,10\s€/);
     expect(tile).toHaveTextContent(/Allopark 18\s% · −612,00\s€/);
     expect(tile).toHaveTextContent(/Plazo · −240,00\s€/);
@@ -272,18 +322,20 @@ describe("DashboardPage", () => {
       .getByRole("heading", { name: "Véhicules sur le parking" })
       .closest("section")!;
     expect(vehicles).toHaveTextContent("2 véhicules");
-    const camille = within(vehicles).getByRole("button", {
-      name: /Camille Martin/,
-    });
+    const camille = within(vehicles)
+      .getByRole("button", { name: /Camille Martin/ })
+      .closest("[data-testid=vehicle-row]")!;
     expect(camille).toHaveTextContent("A-01-01 · zone court");
     expect(camille).toHaveTextContent("Clés : crochet 12");
     expect(camille).toHaveTextContent("Vol TO 3627 · 21:40");
     expect(camille).toHaveTextContent("Retour 23:00");
     expect(camille).toHaveTextContent("Retour du jour");
     expect(camille).toHaveTextContent("Retardé +40 min");
-    const louis = within(vehicles).getByRole("button", { name: /Louis Leroy/ });
+    const louis = within(vehicles)
+      .getByRole("button", { name: /Louis Leroy/ })
+      .closest("[data-testid=vehicle-row]")!;
     expect(louis).toHaveTextContent("Sans place");
-    expect(louis).toHaveTextContent("Clés ?");
+    expect(louis).toHaveTextContent("Clés ? · Clés laissées");
     expect(louis).toHaveTextContent("Retour ven. 9");
 
     expect(await screen.findByTestId("live-shuttles-map")).toHaveTextContent(
@@ -341,8 +393,44 @@ describe("DashboardPage", () => {
     renderPage();
     const title = await screen.findByText("Services à faire avant le retour");
     const row = title.closest("button, a") as HTMLElement;
-    expect(row).toHaveTextContent("Camille Martin · Lavage intérieur et shampouineuse, Recharge électrique · retour 18:40");
+    expect(row).toHaveTextContent(
+      "Camille Martin · Lavage intérieur et shampouineuse, Recharge électrique · retour 18:40",
+    );
     expect(row).toHaveTextContent("À surveiller");
+  });
+
+  it("26/10/2026 : « Clés laissées » en un clic depuis la liste des véhicules", async () => {
+    api.setKeys.mockResolvedValue({
+      keysLeftAt: "2026-10-05T07:47:00Z",
+      keyHook: null,
+    });
+    renderPage();
+    const vehicles = (
+      await screen.findByRole("heading", { name: "Véhicules sur le parking" })
+    ).closest("section")!;
+    const mark = within(vehicles).getByRole("button", {
+      name: "Marquer : le client a laissé ses clés",
+    });
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      vehicles: dashboard.vehicles.map((v) =>
+        v.id === "r3" ? { ...v, keysLeftAt: "2026-10-05T07:47:00Z" } : v,
+      ),
+    });
+    fireEvent.click(mark);
+    await waitFor(() => expect(api.setKeys).toHaveBeenCalledWith("r3", true));
+    await waitFor(() =>
+      expect(
+        within(vehicles)
+          .getByRole("button", { name: /Louis Leroy/ })
+          .closest("[data-testid=vehicle-row]")!,
+      ).toHaveTextContent("Clés laissées · 09:47"),
+    );
+    expect(
+      within(vehicles).queryByRole("button", {
+        name: "Marquer : le client a laissé ses clés",
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("21/10/2026 (choix C) : les réservations sans prix, dans « À traiter » et à compléter sur place", async () => {
@@ -364,22 +452,41 @@ describe("DashboardPage", () => {
       noPrice: {
         count: 7,
         next: [
-          { id: "r9", reference: "R9", customerName: "Julien Petit", plate: "GH-456-JK", arrivalAt: "2026-10-05T07:15:00Z", channel: "aggregator", detail: "Onepark" },
+          {
+            id: "r9",
+            reference: "R9",
+            customerName: "Julien Petit",
+            plate: "GH-456-JK",
+            arrivalAt: "2026-10-05T07:15:00Z",
+            channel: "aggregator",
+            detail: "Onepark",
+          },
         ],
       },
     });
     renderPage();
-    const row = await screen.findByRole("link", { name: /Réservations sans prix/ });
+    const row = await screen.findByRole("link", {
+      name: /Réservations sans prix/,
+    });
     expect(row).toHaveAttribute("href", "/reservations?sansprix=1");
-    expect(row).toHaveTextContent("7 réservations · le chiffre d'affaires est incomplet");
+    expect(row).toHaveTextContent(
+      "7 réservations · le chiffre d'affaires est incomplet",
+    );
     expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent("7 sans prix");
     const card = screen.getByTestId("no-price-card");
     expect(card).toHaveTextContent("Julien Petit");
     expect(card).toHaveTextContent("Onepark");
-    expect(screen.getByRole("link", { name: "Voir les 7" })).toHaveAttribute("href", "/reservations?sansprix=1");
-    fireEvent.change(within(card).getByLabelText("Prix payé de R9 en euros"), { target: { value: "48,50" } });
+    expect(screen.getByRole("link", { name: "Voir les 7" })).toHaveAttribute(
+      "href",
+      "/reservations?sansprix=1",
+    );
+    fireEvent.change(within(card).getByLabelText("Prix payé de R9 en euros"), {
+      target: { value: "48,50" },
+    });
     fireEvent.click(within(card).getByRole("button", { name: "OK" }));
-    await waitFor(() => expect(api.setReservationPrice).toHaveBeenCalledWith("r9", 4850));
+    await waitFor(() =>
+      expect(api.setReservationPrice).toHaveBeenCalledWith("r9", 4850),
+    );
   });
 
   it("16/10/2026 : « Import » À voir quand Claude n'a pas pu lire un mail dans l'heure, avec la cause", async () => {
@@ -388,12 +495,17 @@ describe("DashboardPage", () => {
       services: {
         ...dashboard.services,
         lastImportAt: new Date().toISOString(),
-        reading: { configured: true, outage: { cause: "credit", at: new Date().toISOString() } },
+        reading: {
+          configured: true,
+          outage: { cause: "credit", at: new Date().toISOString() },
+        },
       },
     });
     renderPage();
     const services = await screen.findByLabelText("Services");
-    expect(services).toHaveTextContent("ImportÀ voirLecture par Claude en panne : crédit Anthropic épuisé");
+    expect(services).toHaveTextContent(
+      "ImportÀ voirLecture par Claude en panne : crédit Anthropic épuisé",
+    );
   });
 
   it("dit quand il n'y a rien à traiter ni aucun véhicule", async () => {

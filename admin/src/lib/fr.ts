@@ -822,6 +822,10 @@ export const fr = {
       all: "Tous les véhicules",
       pax: (n: number) => `${n} pass.`,
       keysHook: (hook: string) => `Clés : crochet ${hook}`,
+      keysLeft: (time: string) => `Clés laissées · ${time}`,
+      markKeysLeft: "Clés laissées",
+      markKeysLeftAria: "Marquer : le client a laissé ses clés",
+      keysLeftDone: "Clés laissées notées.",
       flight: (code: string, time: string) => `Vol ${code} · ${time}`,
       badge: {
         returnToday: "Retour du jour",
@@ -3245,6 +3249,7 @@ export const quickCardFr = {
       : `${code} · ${position === 1 ? "1re" : `${position}e`} depuis l'allée`,
   keys: "Clés",
   noKeys: "crochet non noté",
+  keysLeft: "laissées",
   car: "Voiture",
   carDirections: "itinéraire",
   stop: "Desserte",
