@@ -1922,6 +1922,7 @@
     "signed_pdf": "PDF signé",
     "proof_pdf": "Preuve de signature",
     "file_error": "Le fichier n'a pas pu être ouvert.",
+    "pdf_share": "Partager ou enregistrer",
     "signature_label": "Signature du client, au doigt",
     "signature_clear": "Effacer",
     "report_title": {
