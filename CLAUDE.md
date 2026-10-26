@@ -719,9 +719,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `keys_missing` s'éteint, fiche, fiche opérationnelle et « Rendre » disent « Clés laissées » tant qu'aucun crochet n'est noté
      (le crochet, posé depuis l'Occupation, l'emporte) ; « Rendu » l'efface avec le crochet (`statusSideEffects`) ; `left: false`
      annule. `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. Plazo Pro ne l'a pas encore.
-   - **« À traiter maintenant » compacte (26/10/2026, « compacte les À traiter maintenant, ça prend trop de place »)** : une ligne
-     par alerte (point de couleur de la gravité, titre · détail, « depuis N min », plaque, gravité en petit texte ; `AlertRow`,
-     `alertDetail`), six lignes puis « Voir N de plus » / « Réduire » (`AlertList`, `ALERTS_SHOWN`). Web seulement.
+   - **« À traiter maintenant » par type (26/10/2026, « compacte… ça prend trop de place », puis « mets plutôt un nombre à
+     traiter catégorisé par type de demandes »)** : une pastille par type d'alerte avec son nombre (« 2 Sur place sans place »,
+     bordure de la gravité, dans l'ordre du serveur : urgent d'abord ; `AlertList`, `data-testid="alert-kinds"`), rien de déplié
+     par défaut ; cliquer une pastille montre ses lignes seules (une ligne dense par alerte : point de gravité, titre · détail,
+     « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. Web seulement.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
