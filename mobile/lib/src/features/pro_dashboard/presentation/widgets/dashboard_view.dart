@@ -11,6 +11,7 @@ import '../../../../shared/widgets/french_plate.dart';
 import '../../../pro_revenue/presentation/bloc/revenue_summary_bloc.dart';
 import '../../../pro_revenue/presentation/widgets/revenue_tile.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
+import '../../../pro_start/presentation/widgets/getting_started_card.dart';
 import '../../data/models/dashboard_model.dart';
 import '../bloc/pro_dashboard_bloc.dart';
 
@@ -64,6 +65,8 @@ class _DashboardViewState extends State<DashboardView> {
             children: [
               _Kpis(d: d),
               if (widget.revenue) const RevenueTile(),
+              // T-A (26/10/2026): the setup steps of the post, until everything is in place.
+              const GettingStartedCard(),
               const SizedBox(height: 10),
               _Services(s: d.services),
               const SizedBox(height: 10),

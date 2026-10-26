@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({
   getDashboard: vi.fn(),
   getLiveShuttles: vi.fn(),
   getRevenueSummary: vi.fn(),
+  getGettingStarted: vi.fn(),
   setReservationPrice: vi.fn(),
   setKeys: vi.fn(),
 }));
@@ -29,6 +30,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
       getDashboard: () => api.getDashboard(),
       getLiveShuttles: () => api.getLiveShuttles(),
       getRevenueSummary: () => api.getRevenueSummary(),
+      getGettingStarted: () => api.getGettingStarted(),
       setReservationPrice: (id: string, cents: number | null) =>
         api.setReservationPrice(id, cents),
       setKeys: (id: string, patch: unknown) => api.setKeys(id, patch),
@@ -201,6 +203,32 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     api.getDashboard.mockResolvedValue(dashboard);
     api.getLiveShuttles.mockResolvedValue(live);
+    api.getGettingStarted.mockResolvedValue({
+      post: "manager",
+      done: 2,
+      total: 7,
+      steps: [
+        { key: "parking", done: true, detail: "200 places déclarées" },
+        {
+          key: "bookings",
+          done: false,
+          detail: "Aucun mail de comparateur reçu pour l’instant",
+        },
+        { key: "team", done: true, detail: "3 membres" },
+        { key: "shuttles", done: false, detail: "Aucun véhicule de navette" },
+        { key: "listing", done: false, detail: "Grille tarifaire vide" },
+        {
+          key: "contract",
+          done: false,
+          detail: "Le modèle Plazo pour l’instant",
+        },
+        {
+          key: "sms",
+          done: false,
+          detail: "Heure et texte par défaut (18:00, texte Plazo)",
+        },
+      ],
+    });
     api.getRevenueSummary.mockResolvedValue({
       today: "2026-10-05",
       month: {
@@ -648,5 +676,44 @@ describe("DashboardPage", () => {
     expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent(
       "rien d'urgent",
     );
+  });
+});
+
+// T-A (26/10/2026): « Bien démarrer » on the dashboard.
+describe("getting started card", () => {
+  it("lists the steps with their links and folds on a click", async () => {
+    renderPage();
+    const card = await screen.findByTestId("getting-started");
+    expect(within(card).getByText("2 / 7 étapes")).toBeInTheDocument();
+    expect(within(card).getByText("Votre équipe")).toBeInTheDocument();
+    expect(within(card).getByText("3 membres")).toBeInTheDocument();
+    const shuttles = within(card).getByTestId("getting-started-shuttles");
+    expect(within(shuttles).getByRole("link")).toHaveAttribute(
+      "href",
+      "/parking/reglages",
+    );
+    expect(
+      within(within(card).getByTestId("getting-started-parking")).queryByRole(
+        "link",
+      ),
+    ).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: /Masquer/ }));
+    expect(within(card).queryByText("Votre équipe")).toBeNull();
+    expect(localStorage.getItem("plazo:getting-started-hidden")).toBe("1");
+    fireEvent.click(within(card).getByRole("button", { name: /Afficher/ }));
+    expect(within(card).getByText("Votre équipe")).toBeInTheDocument();
+    localStorage.removeItem("plazo:getting-started-hidden");
+  });
+
+  it("disappears once every step is done", async () => {
+    api.getGettingStarted.mockResolvedValue({
+      post: "manager",
+      done: 1,
+      total: 1,
+      steps: [{ key: "sms", done: true, detail: null }],
+    });
+    renderPage();
+    await screen.findByTestId("kpi-to-treat");
+    expect(screen.queryByTestId("getting-started")).toBeNull();
   });
 });

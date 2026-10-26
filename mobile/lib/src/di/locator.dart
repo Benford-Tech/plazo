@@ -72,6 +72,7 @@ import '../features/extras/presentation/bloc/staff_extras_bloc.dart';
 import '../features/extras/presentation/bloc/traveller_extras_bloc.dart';
 import '../features/pro_plan/data/client/plan_client.dart';
 import '../features/pro_reservations/data/client/reservations_client.dart';
+import '../features/pro_start/data/getting_started_data_source.dart';
 import '../features/pro_revenue/data/client/revenue_client.dart';
 import '../features/pro_revenue/data/datasources/revenue_data_source.dart';
 import '../features/pro_revenue/domain/repositories/revenue_repository.dart';

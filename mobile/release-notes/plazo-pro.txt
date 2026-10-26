@@ -1,7 +1,7 @@
 Première version de Plazo Pro, pour les équipes des parkings d'aéroport.
 • Tableau de bord du jour : arrivées, retours, navettes, à traiter par type.
 • Réservations de tous vos canaux, comparateurs compris.
-• Plan du parking et rangement des voitures en files, clés comprises.
-• Navette : Aller et Retour dans l'ordre du planning.
-• Sièges auto des enfants à charger avant de partir.
-• Votre propre contrat en PDF, signé au comptoir, gardé avec sa preuve ; état des lieux avec photos.
+• Plan du parking, voitures rangées en files, clés.
+• Navette : Aller et Retour dans l'ordre du planning, sièges auto à charger.
+• Contrat PDF signé au comptoir, gardé avec sa preuve ; état des lieux avec photos.
+• Menu « Plus » par rôle et guide « Bien démarrer » avec visite guidée.

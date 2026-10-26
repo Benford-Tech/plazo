@@ -115,6 +115,21 @@ abstract final class Tutorials {
     ],
   );
 
+  /// T-B (26/10/2026, « un tutoriel pour bien démarrer avec Plazo Pro »): the guided tour of a parking's setup, six
+  /// screens for every post, replayed from « Bien démarrer » and Plus › Tutoriels.
+  static const proStart = Tutorial(
+    id: 'pro.start',
+    kind: TutorialKind.carousel,
+    steps: [
+      TutorialStep(icon: Icons.local_parking_rounded),
+      TutorialStep(icon: Icons.mark_email_read_rounded),
+      TutorialStep(icon: Icons.group_rounded),
+      TutorialStep(icon: Icons.directions_bus_rounded),
+      TutorialStep(icon: Icons.sell_rounded),
+      TutorialStep(icon: Icons.sms_rounded),
+    ],
+  );
+
   // … and the bubbles of the main screens.
   static const proToday = Tutorial(
     id: 'pro.today',
@@ -171,6 +186,7 @@ abstract final class Tutorials {
     if (!pro) return const [welcome, search, booking];
     return [
       welcomeFor(post),
+      proStart,
       ...switch (post) {
         'driver' => const [proShuttle],
         'valet' => const [proOccupation, proToday],

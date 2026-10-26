@@ -953,6 +953,22 @@ class ProReturnsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProGettingStartedPage]
+class ProGettingStartedRoute extends PageRouteInfo<void> {
+  const ProGettingStartedRoute({List<PageRouteInfo>? children})
+    : super(ProGettingStartedRoute.name, initialChildren: children);
+
+  static const String name = 'ProGettingStartedRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProGettingStartedPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProRevenueMissingPage]
 class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
   ProRevenueMissingRoute({

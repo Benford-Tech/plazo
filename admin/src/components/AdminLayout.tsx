@@ -27,35 +27,44 @@ import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
-const NAV: {
+/** W-A (26/10/2026, « réorganise le menu par rôle »): the rail in three sections, a header over each. */
+type NavSection = "operations" | "manager" | "account";
+const SECTIONS: NavSection[] = ["operations", "manager", "account"];
+type NavItem = {
   label: string;
   to: string;
   icon: Icon;
   permission?: Permission;
-}[] = [
+  section: NavSection;
+};
+const NAV: NavItem[] = [
   {
     label: fr.nav.dashboard,
     to: "/",
     icon: LayoutDashboard,
     permission: "reservations:view",
+    section: "operations",
   },
   {
     label: fr.nav.planning,
     to: "/planning",
     icon: CalendarDays,
     permission: "reservations:view",
+    section: "operations",
   },
   {
     label: fr.nav.shuttles,
     to: "/navettes",
     icon: BusFront,
     permission: "reservations:view",
+    section: "operations",
   },
   {
     label: fr.nav.reservations,
     to: "/reservations",
     icon: ClipboardList,
     permission: "reservations:view",
+    section: "operations",
   },
   // CA-B (09/10/2026): managers only.
   {
@@ -63,25 +72,35 @@ const NAV: {
     to: "/chiffre-affaires",
     icon: Euro,
     permission: "revenue:view",
+    section: "manager",
   },
   {
     label: fr.nav.parking,
     to: "/parking",
     icon: SquareParking,
     permission: "reservations:view",
+    section: "operations",
   },
   {
     label: fr.nav.plazo,
     to: "/plazo",
     icon: Globe,
     permission: "parking:manage",
+    section: "manager",
   },
-  { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage" },
+  {
+    label: fr.nav.team,
+    to: "/equipe",
+    icon: Users,
+    permission: "team:manage",
+    section: "manager",
+  },
   {
     label: fr.nav.contract,
     to: "/mon-contrat",
     icon: FileSignature,
     permission: "parking:manage",
+    section: "manager",
   },
   // 26/10/2026 (R-A): the register of the travellers' signed contracts, managers only.
   {
@@ -89,8 +108,14 @@ const NAV: {
     to: "/contrats",
     icon: FileCheck,
     permission: "parking:manage",
+    section: "manager",
   },
-  { label: fr.nav.account, to: "/mon-compte", icon: UserRound },
+  {
+    label: fr.nav.account,
+    to: "/mon-compte",
+    icon: UserRound,
+    section: "account",
+  },
 ];
 
 /**
@@ -112,6 +137,7 @@ export function AdminLayout() {
       label: fr.nav.platform,
       to: "/plateforme",
       icon: ShieldCheck,
+      section: "account",
     });
 
   const handleLogout = async () => {
@@ -139,41 +165,56 @@ export function AdminLayout() {
             aria-label="Navigation principale"
             className="flex gap-1 overflow-x-auto px-3 pb-2 pt-1 lg:flex-col lg:gap-0.5 lg:px-2 lg:pb-0"
           >
-            {items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-1.5 text-[14px] font-semibold uppercase tracking-wide",
-                    isActive
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {/* The "Flotte" rail: a rounded tile per section, the current one yellow. */}
-                    <span
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border",
-                        isActive
-                          ? "border-transparent bg-primary text-primary-foreground"
-                          : "border-panel-line bg-panel text-muted-foreground group-hover:bg-panel-2",
-                      )}
+            {SECTIONS.map((section) => {
+              const inSection = items.filter((i) => i.section === section);
+              if (inSection.length === 0) return null;
+              return (
+                <div
+                  key={section}
+                  data-testid={`nav-section-${section}`}
+                  className="contents lg:block"
+                >
+                  <p className="hidden px-2 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground first:pt-1 lg:block">
+                    {fr.nav.sections[section]}
+                  </p>
+                  {inSection.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === "/"}
+                      className={({ isActive }) =>
+                        cn(
+                          "group flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-1.5 text-[14px] font-semibold uppercase tracking-wide",
+                          isActive
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )
+                      }
                     >
-                      <item.icon
-                        className="h-[18px] w-[18px]"
-                        aria-hidden="true"
-                      />
-                    </span>
-                    <span>{item.label}</span>
-                  </>
-                )}
-              </NavLink>
-            ))}
+                      {({ isActive }) => (
+                        <>
+                          {/* The "Flotte" rail: a rounded tile per section, the current one yellow. */}
+                          <span
+                            className={cn(
+                              "flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border",
+                              isActive
+                                ? "border-transparent bg-primary text-primary-foreground"
+                                : "border-panel-line bg-panel text-muted-foreground group-hover:bg-panel-2",
+                            )}
+                          >
+                            <item.icon
+                              className="h-[18px] w-[18px]"
+                              aria-hidden="true"
+                            />
+                          </span>
+                          <span>{item.label}</span>
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              );
+            })}
           </nav>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">

@@ -29,6 +29,7 @@ import {
   type BadgeTone,
 } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
+import { GettingStartedCard } from "@/components/dashboard/GettingStartedCard";
 import { RevenueTile } from "@/components/dashboard/RevenueTile";
 import { VehiclesTable } from "@/components/dashboard/VehiclesTable";
 import { QuickPrice } from "@/components/reservations/QuickPrice";
@@ -730,6 +731,8 @@ export default function DashboardPage() {
       </div>
 
       <ServicesStrip services={d.services} />
+
+      <GettingStartedCard />
 
       <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr]">
         <div className="space-y-3">
