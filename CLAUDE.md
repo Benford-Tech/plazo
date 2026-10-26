@@ -724,7 +724,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      doit être possible de changer l'état des clés laissées », choix « A » des maquettes
      https://claude.ai/artifact/4p2CFzeMX6c1HxgRpXq9pP, section 5)** : `components/dashboard/VehiclesTable.tsx` remplace les cartes
      du tableau de bord web : une ligne alignée par voiture (plaque et client cliquables vers la fiche opérationnelle, place ou
-     file avec sa zone, clés, retour « Vol TO 3627 · 21:40 » / heure / jour, badges d'état), triée par retour, 8 lignes puis
+     file avec sa zone, clés, retour « Vol TO 3627 · 21:40 » / heure / jour, badges d'état ; **la plaque est posée au-dessus du nom** en gras sur sa propre ligne, colonne « Plaque · client » qui prend la place laissée par les colonnes fixes, le badge « Sans place » n'est plus doublé dans « État » (26/10/2026, « les noms ne sont pas assez visibles » : le nom était tronqué à une lettre à côté de la carte)), triée par retour, 8 lignes puis
      « Voir les N autres › » ; filtres avec comptage « Tous · Retours du jour · Sans place · Clés ? · Vol en retard »
      (`data-testid="vehicle-filters"`, un filtre vide est caché) et recherche plaque ou nom (accents et tirets ignorés) ;
      **clés en trois positions** (`KeysControl`, groupe « Clés ») : « Clés ? » (ambre : rien) · « Laissées » (vert, titre
