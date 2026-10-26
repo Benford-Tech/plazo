@@ -720,6 +720,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (le crochet, posé depuis l'Occupation, l'emporte) ; « Rendu » l'efface avec le crochet (`statusSideEffects`) ; `left: false`
      annule (web : un clic sur la pilule verte « Clés laissées · 09:47 » l'annule, 26/10/2026, « il doit être possible de changer
      l'état des clés laissées »). `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. Plazo Pro ne l'a pas encore.
+   - **Véhicules sur le parking, direction A (26/10/2026, « améliore l'ergonomie d'affichage des véhicules sur le parking, il
+     doit être possible de changer l'état des clés laissées », choix « A » des maquettes
+     https://claude.ai/artifact/4p2CFzeMX6c1HxgRpXq9pP, section 5)** : `components/dashboard/VehiclesTable.tsx` remplace les cartes
+     du tableau de bord web : une ligne alignée par voiture (plaque et client cliquables vers la fiche opérationnelle, place ou
+     file avec sa zone, clés, retour « Vol TO 3627 · 21:40 » / heure / jour, badges d'état), triée par retour, 8 lignes puis
+     « Voir les N autres › » ; filtres avec comptage « Tous · Retours du jour · Sans place · Clés ? · Vol en retard »
+     (`data-testid="vehicle-filters"`, un filtre vide est caché) et recherche plaque ou nom (accents et tirets ignorés) ;
+     **clés en trois positions** (`KeysControl`, groupe « Clés ») : « Clés ? » (ambre : rien) · « Laissées » (vert, titre
+     « Clés laissées · 09:47 ») · « Crochet n° » qui ouvre un champ sur place (Entrée ou perte du focus enregistre, Échap
+     annule, « Crochet 12 » une fois posé) ; chaque position est un clic : `PUT /internal/reservations/:id/keys` accepte aussi
+     `keyHook` (`KeysDto`, absent = inchangé, nul ou blanc = sans crochet ; un crochet vaut clés laissées :
+     `OccupationService.setKeys` pose `keysLeftAt`, détails `{ left, keyHook, from }`) ; `adminApi.setKeys(id, { left, keyHook? })`.
+     Plazo Pro garde ses tuiles.
    - **« À traiter maintenant » par type (26/10/2026, « compacte… ça prend trop de place », puis « mets plutôt un nombre à
      traiter catégorisé par type de demandes »)** : une pastille par type d'alerte avec son nombre (« 2 Sur place sans place »,
      bordure de la gravité, dans l'ordre du serveur : urgent d'abord ; `AlertList`, `data-testid="alert-kinds"`), rien de déplié

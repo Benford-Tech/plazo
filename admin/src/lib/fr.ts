@@ -820,6 +820,40 @@ export const fr = {
         long: "zone long",
       } as Record<string, string>,
       all: "Tous les véhicules",
+      // Direction A (26/10/2026): one aligned row per car, filters, keys in three positions.
+      filters: {
+        all: "Tous",
+        returnsToday: "Retours du jour",
+        noSpot: "Sans place",
+        noKeys: "Clés ?",
+        flightLate: "Vol en retard",
+      },
+      searchAria: "Trouver un véhicule",
+      searchPlaceholder: "Plaque, nom…",
+      noMatch: "Aucun véhicule ne correspond.",
+      columns: {
+        plate: "Plaque",
+        client: "Client",
+        place: "Place · file",
+        keys: "Clés",
+        return: "Retour",
+        state: "État",
+      },
+      keysSeg: {
+        none: "Clés ?",
+        left: "Laissées",
+        hook: "Crochet n°",
+        hookN: (n: string) => `Crochet ${n}`,
+        hookAria: "Numéro du crochet",
+        hookPlaceholder: "n°",
+        hookDone: (n: string) => `Clés au crochet ${n}.`,
+      },
+      shown: (n: number, total: number) =>
+        n === total
+          ? `${total} véhicule${total > 1 ? "s" : ""} · triés par retour`
+          : `${n} sur ${total} · triés par retour`,
+      more: (n: number) => `Voir les ${n} autres ›`,
+      less: "Réduire",
       pax: (n: number) => `${n} pass.`,
       keysHook: (hook: string) => `Clés : crochet ${hook}`,
       keysLeft: (time: string) => `Clés laissées · ${time}`,

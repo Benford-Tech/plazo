@@ -31,7 +31,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
       getRevenueSummary: () => api.getRevenueSummary(),
       setReservationPrice: (id: string, cents: number | null) =>
         api.setReservationPrice(id, cents),
-      setKeys: (id: string, left: boolean) => api.setKeys(id, left),
+      setKeys: (id: string, patch: unknown) => api.setKeys(id, patch),
     },
   };
 });
@@ -337,19 +337,40 @@ describe("DashboardPage", () => {
     expect(vehicles).toHaveTextContent("2 véhicules");
     const camille = within(vehicles)
       .getByRole("button", { name: /Camille Martin/ })
-      .closest("[data-testid=vehicle-row]")!;
+      .closest<HTMLElement>("[data-testid=vehicle-row]")!;
+    // Direction A (26/10/2026): one aligned row per car, the keys in three positions.
     expect(camille).toHaveTextContent("A-01-01 · zone court");
-    expect(camille).toHaveTextContent("Clés : crochet 12");
+    expect(
+      within(camille).getByRole("button", { name: "Crochet 12" }),
+    ).toHaveAttribute("aria-pressed", "true");
     expect(camille).toHaveTextContent("Vol TO 3627 · 21:40");
-    expect(camille).toHaveTextContent("Retour 23:00");
     expect(camille).toHaveTextContent("Retour du jour");
     expect(camille).toHaveTextContent("Retardé +40 min");
     const louis = within(vehicles)
       .getByRole("button", { name: /Louis Leroy/ })
-      .closest("[data-testid=vehicle-row]")!;
+      .closest<HTMLElement>("[data-testid=vehicle-row]")!;
     expect(louis).toHaveTextContent("Sans place");
-    expect(louis).toHaveTextContent("Clés ? · Clés laissées");
-    expect(louis).toHaveTextContent("Retour ven. 9");
+    expect(
+      within(louis).getByRole("button", { name: "Clés ?" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(louis).toHaveTextContent("ven. 9");
+    // Filters with their counts; « Sans place » keeps Louis only.
+    const filters = within(vehicles).getByTestId("vehicle-filters");
+    expect(filters).toHaveTextContent("Tous2");
+    expect(filters).toHaveTextContent("Sans place1");
+    expect(filters).toHaveTextContent("Clés ?1");
+    fireEvent.click(
+      within(filters).getByRole("button", { name: /Sans place/ }),
+    );
+    expect(within(vehicles).getAllByTestId("vehicle-row")).toHaveLength(1);
+    fireEvent.click(within(filters).getByRole("button", { name: /^Tous/ }));
+    fireEvent.change(within(vehicles).getByRole("searchbox"), {
+      target: { value: "lm789" },
+    });
+    expect(within(vehicles).getAllByTestId("vehicle-row")).toHaveLength(1);
+    expect(within(vehicles).getByTestId("vehicle-row")).toHaveTextContent(
+      "Louis Leroy",
+    );
 
     expect(await screen.findByTestId("live-shuttles-map")).toHaveTextContent(
       "1 trajets",
@@ -441,7 +462,7 @@ describe("DashboardPage", () => {
     expect(within(alerts).getAllByRole("listitem")).toHaveLength(9);
   });
 
-  it("26/10/2026 : « Clés laissées » en un clic depuis la liste des véhicules", async () => {
+  it("26/10/2026 : les clés changent d'état d'un clic : laissées, crochet n°, puis « Clés ? »", async () => {
     api.setKeys.mockResolvedValue({
       keysLeftAt: "2026-10-05T07:47:00Z",
       keyHook: null,
@@ -450,43 +471,82 @@ describe("DashboardPage", () => {
     const vehicles = (
       await screen.findByRole("heading", { name: "Véhicules sur le parking" })
     ).closest("section")!;
-    const mark = within(vehicles).getByRole("button", {
-      name: "Marquer : le client a laissé ses clés",
-    });
+    const louisRow = () =>
+      within(vehicles)
+        .getByRole("button", { name: /Louis Leroy/ })
+        .closest<HTMLElement>("[data-testid=vehicle-row]")!;
     api.getDashboard.mockResolvedValue({
       ...dashboard,
       vehicles: dashboard.vehicles.map((v) =>
         v.id === "r3" ? { ...v, keysLeftAt: "2026-10-05T07:47:00Z" } : v,
       ),
     });
-    fireEvent.click(mark);
-    await waitFor(() => expect(api.setKeys).toHaveBeenCalledWith("r3", true));
+    fireEvent.click(
+      within(louisRow()).getByRole("button", { name: "Laissées" }),
+    );
+    await waitFor(() =>
+      expect(api.setKeys).toHaveBeenCalledWith("r3", {
+        left: true,
+        keyHook: null,
+      }),
+    );
     await waitFor(() =>
       expect(
-        within(vehicles)
-          .getByRole("button", { name: /Louis Leroy/ })
-          .closest("[data-testid=vehicle-row]")!,
-      ).toHaveTextContent("Clés laissées · 09:47"),
+        within(louisRow()).getByRole("button", { name: "Laissées" }),
+      ).toHaveAttribute("aria-pressed", "true"),
     );
     expect(
-      within(vehicles).queryByRole("button", {
-        name: "Marquer : le client a laissé ses clés",
+      within(louisRow()).getByRole("button", { name: "Laissées" }),
+    ).toHaveAttribute("title", "Clés laissées · 09:47");
+
+    // The hook number, typed on the spot.
+    api.setKeys.mockResolvedValue({
+      keysLeftAt: "2026-10-05T07:47:00Z",
+      keyHook: "7",
+    });
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      vehicles: dashboard.vehicles.map((v) =>
+        v.id === "r3"
+          ? { ...v, keysLeftAt: "2026-10-05T07:47:00Z", keyHook: "7" }
+          : v,
+      ),
+    });
+    fireEvent.click(
+      within(louisRow()).getByRole("button", { name: "Crochet n°" }),
+    );
+    const input = within(louisRow()).getByRole("textbox", {
+      name: "Numéro du crochet",
+    });
+    fireEvent.change(input, { target: { value: "7" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(api.setKeys).toHaveBeenCalledWith("r3", {
+        left: true,
+        keyHook: "7",
       }),
-    ).not.toBeInTheDocument();
-    // One more click undoes it.
+    );
+    await waitFor(() =>
+      expect(
+        within(louisRow()).getByRole("button", { name: "Crochet 7" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+
+    // Back to « Clés ? »: nothing left, no hook.
     api.setKeys.mockResolvedValue({ keysLeftAt: null, keyHook: null });
     api.getDashboard.mockResolvedValue(dashboard);
-    fireEvent.click(
-      within(vehicles).getByRole("button", {
-        name: "Clés laissées à 09:47 · cliquer pour annuler",
+    fireEvent.click(within(louisRow()).getByRole("button", { name: "Clés ?" }));
+    await waitFor(() =>
+      expect(api.setKeys).toHaveBeenCalledWith("r3", {
+        left: false,
+        keyHook: null,
       }),
     );
-    await waitFor(() => expect(api.setKeys).toHaveBeenCalledWith("r3", false));
-    expect(
-      await within(vehicles).findByRole("button", {
-        name: "Marquer : le client a laissé ses clés",
-      }),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(louisRow()).getByRole("button", { name: "Clés ?" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
   });
 
   it("21/10/2026 (choix C) : les réservations sans prix, dans « À traiter » et à compléter sur place", async () => {

@@ -134,6 +134,14 @@ describe('GET /internal/dashboard', () => {
     expect(audit).toHaveLength(1);
     expect(audit[0].details).toMatchObject({ left: true, keyHook: null });
 
+    // The hook number through the same route (web vehicles table): a hook implies the keys were left.
+    const hooked = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false, keyHook: ' 7 ' });
+    expect(hooked.status).toBe(200);
+    expect(hooked.body.data).toMatchObject({ keyHook: '7' });
+    expect(hooked.body.data.keysLeftAt).toBeTruthy();
+    const cleared = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true, keyHook: null });
+    expect(cleared.body.data).toMatchObject({ keyHook: null });
+    expect(cleared.body.data.keysLeftAt).toBeTruthy();
     // Undone: the alert comes back; another operator's token is refused.
     const undone = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false });
     expect(undone.body.data.keysLeftAt).toBeNull();
