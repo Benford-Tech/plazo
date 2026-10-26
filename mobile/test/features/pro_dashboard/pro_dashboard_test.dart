@@ -120,12 +120,23 @@ void main() {
     expect(find.descendant(of: services, matching: find.text('Off')), findsNWidgets(2));
     expect(find.descendant(of: services, matching: find.text('OK')), findsNWidgets(2));
     expect(find.descendant(of: services, matching: find.text('en ligne, encaissés par Plazo')), findsOneWidget);
+    // 26/10/2026: one counting pill per kind; nothing unfolded until a pill is tapped.
     expect(find.text('Sur place sans place'), findsOneWidget);
+    expect(find.text('Vol retardé'), findsOneWidget);
+    expect(find.text('Louis Leroy · depuis 10 min'), findsNothing);
+    await tester.tap(find.byKey(const Key('alert-kind-no_spot')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sur place sans place'), findsNWidgets(2));
     expect(find.text('Louis Leroy · depuis 10 min'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);
-    expect(find.text('Vol retardé'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('alert-kind-flight_delayed')));
+    await tester.pumpAndSettle();
+    expect(find.text('Louis Leroy · depuis 10 min'), findsNothing);
     expect(find.text('Camille Martin · TO 3627'), findsOneWidget);
     expect(find.text('À surveiller'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('alert-kind-flight_delayed')));
+    await tester.pumpAndSettle();
+    expect(find.text('Camille Martin · TO 3627'), findsNothing);
     expect(find.text('A-01-01 · zone court'), findsOneWidget);
     expect(find.text('Clés : crochet 12'), findsOneWidget);
     expect(find.text('Retour du jour'), findsOneWidget);
@@ -178,6 +189,8 @@ void main() {
       ),
     );
     expect(find.text("Demande pour rejoindre l'équipe"), findsOneWidget);
+    await tester.tap(find.byKey(const Key('alert-kind-join_request')));
+    await tester.pumpAndSettle();
     expect(find.text('Julie Martin et 1 autre(s) · depuis 2 h'), findsOneWidget);
     expect(find.text('À faire'), findsOneWidget);
   });

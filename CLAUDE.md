@@ -723,7 +723,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      traiter catégorisé par type de demandes »)** : une pastille par type d'alerte avec son nombre (« 2 Sur place sans place »,
      bordure de la gravité, dans l'ordre du serveur : urgent d'abord ; `AlertList`, `data-testid="alert-kinds"`), rien de déplié
      par défaut ; cliquer une pastille montre ses lignes seules (une ligne dense par alerte : point de gravité, titre · détail,
-     « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. Web seulement.
+     « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. **Plazo Pro aussi (26/10/2026, « pareil dans Plazo Pro »)** : `_AlertKinds` / `_AlertKindPill`
+     (`Key('alert-kind-<kind>')`) sur l'onglet Aujourd'hui, mêmes règles ; test `pro_dashboard_test.dart`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
