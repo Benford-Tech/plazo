@@ -328,13 +328,16 @@ export class OccupationService {
     if (!ON_SITE_STATUSES.includes(reservation.status)) {
       throw new HttpException(httpStatus.BAD_REQUEST, 'The vehicle is not on site', 'vehicle_not_on_site');
     }
-    const keysLeftAt = data.left ? (reservation.keysLeftAt ?? new Date()) : null;
-    const row = await prisma.reservation.update({ where: { id: reservation.id }, data: { keysLeftAt } });
+    const keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
+    // A hook number means the keys are in the team's hands.
+    const left = data.left || !!keyHook;
+    const keysLeftAt = left ? (reservation.keysLeftAt ?? new Date()) : null;
+    const row = await prisma.reservation.update({ where: { id: reservation.id }, data: { keysLeftAt, keyHook } });
     await this.audit.record(actor, {
       action: 'reservation.keys',
       entityType: 'reservation',
       entityId: reservation.id,
-      details: { left: data.left, keyHook: reservation.keyHook },
+      details: { left, keyHook, from: { keyHook: reservation.keyHook, left: !!reservation.keysLeftAt } },
     });
     return { keysLeftAt: row.keysLeftAt?.toISOString() ?? null, keyHook: row.keyHook };
   }

@@ -612,10 +612,13 @@ export const adminApi = {
       body: json(patch),
     }),
   /** « Clés laissées » in one click (26/10/2026). */
-  setKeys: (reservationId: string, left: boolean) =>
+  setKeys: (
+    reservationId: string,
+    patch: { left: boolean; keyHook?: string | null },
+  ) =>
     apiRequest<{ data: { keysLeftAt: string | null; keyHook: string | null } }>(
       `/internal/reservations/${reservationId}/keys`,
-      { method: "PUT", body: json({ left }) },
+      { method: "PUT", body: json(patch) },
     ),
   getOccupation: (parkingId: string) =>
     apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),

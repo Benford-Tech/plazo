@@ -30,6 +30,7 @@ import {
 } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
 import { RevenueTile } from "@/components/dashboard/RevenueTile";
+import { VehiclesTable } from "@/components/dashboard/VehiclesTable";
 import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -495,151 +496,6 @@ function CardButton({
   );
 }
 
-/** The badges of the "Flotte" list: the return of the day, the flight, the spot, the trip. */
-function vehicleBadges(
-  v: DashboardVehicle,
-): { tone: BadgeTone; text: string }[] {
-  const b = t.vehicles.badge;
-  const out: { tone: BadgeTone; text: string }[] = [];
-  if (v.returnsToday) out.push({ tone: "info", text: b.returnToday });
-  if (v.flightStatus === "landed") out.push({ tone: "ok", text: b.landed });
-  else if (v.flightStatus === "cancelled" || v.flightStatus === "diverted")
-    out.push({ tone: "bad", text: b.cancelled });
-  else if (
-    v.flightStatus === "delayed" ||
-    (v.flightScheduledAt &&
-      v.flightEstimatedAt &&
-      v.flightEstimatedAt > v.flightScheduledAt)
-  ) {
-    const late =
-      v.flightScheduledAt && v.flightEstimatedAt
-        ? Math.round(
-            (new Date(v.flightEstimatedAt).getTime() -
-              new Date(v.flightScheduledAt).getTime()) /
-              60000,
-          )
-        : 0;
-    out.push({
-      tone: "warn",
-      text:
-        late > 0 ? b.delayed(late) : fr.dashboard.alerts.kind.flight_delayed,
-    });
-  }
-  if (v.tripDirection) out.push({ tone: "accent", text: b.onTrip });
-  else if (v.status === "return_requested")
-    out.push({ tone: "warn", text: b.waiting });
-  else if (v.status === "back_at_parking")
-    out.push({ tone: "info", text: fr.status.back_at_parking });
-  else if (v.status === "shuttled_out")
-    out.push({ tone: "line", text: b.shuttled });
-  if (!v.spotCode) out.push({ tone: "bad", text: b.noSpot });
-  else if (out.length === 0) out.push({ tone: "ok", text: b.onSite });
-  return out;
-}
-
-function VehicleRow({ v }: { v: DashboardVehicle }) {
-  const s = t.vehicles;
-  const client = useQueryClient();
-  // « Clés laissées » in one click (26/10/2026): the pill is a real button beside the card, never nested in it.
-  const keysLeft = useMutation({
-    mutationFn: (left: boolean) => adminApi.setKeys(v.id, left),
-    onSuccess: (_data, left) => {
-      toast.success(left ? s.keysLeftDone : s.keysLeftUndone);
-      void client.invalidateQueries({ queryKey: ["dashboard"] });
-    },
-    onError: (err) => toast.error(describeError(err)),
-  });
-  const meta = [
-    v.returnFlight
-      ? s.flight(v.returnFlight, timeOf(v.flightEstimatedAt ?? v.returnAt))
-      : null,
-    v.returnsToday
-      ? s.returnToday(timeOf(v.returnAt))
-      : s.returnLater(shortDay(v.returnAt.slice(0, 10))),
-  ].filter(Boolean) as string[];
-  const place = v.spotCode
-    ? [v.spotCode, v.stayClass ? s.stay[v.stayClass] : null]
-        .filter(Boolean)
-        .join(" · ")
-    : s.noSpot;
-  const pill =
-    "rounded-full border border-panel-line px-2 py-0.5 font-mono text-[11px] text-muted-foreground";
-  return (
-    <div
-      data-testid="vehicle-row"
-      className="rounded-xl border border-panel-line bg-panel-2 p-3 hover:border-muted-foreground/40"
-    >
-      <CardButton
-        id={v.id}
-        className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left"
-      >
-        <Plate value={v.plate} size="sm" />
-        <span className="min-w-0">
-          <span
-            className={cn(
-              "block font-mono text-xs font-medium",
-              v.spotCode ? "text-muted-foreground" : "text-bad-text",
-            )}
-          >
-            {place}
-          </span>
-          <span className="block truncate font-mono text-[15px] font-medium">
-            {v.customerName} · {s.pax(v.passengers)}
-          </span>
-        </span>
-        <span className="flex flex-col items-end gap-1.5">
-          {vehicleBadges(v).map((b) => (
-            <Badge key={b.text} tone={b.tone}>
-              {b.text}
-            </Badge>
-          ))}
-        </span>
-      </CardButton>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-        {v.keyHook ? (
-          <span className={pill}>{s.keysHook(v.keyHook)}</span>
-        ) : v.keysLeftAt ? (
-          // 26/10/2026 (« il doit être possible de changer l'état des clés laissées »): one more click undoes it.
-          <button
-            type="button"
-            aria-label={s.undoKeysLeftAria(timeOf(v.keysLeftAt))}
-            title={s.undoKeysLeftAria(timeOf(v.keysLeftAt))}
-            disabled={keysLeft.isPending}
-            onClick={() => keysLeft.mutate(false)}
-            className={cn(
-              pill,
-              "inline-flex min-h-7 items-center gap-1 border-ok text-ok-text hover:bg-ok/10 disabled:opacity-60",
-            )}
-          >
-            <KeyRound className="h-3 w-3" aria-hidden="true" />
-            {s.keysLeft(timeOf(v.keysLeftAt))}
-          </button>
-        ) : (
-          <button
-            type="button"
-            aria-label={s.markKeysLeftAria}
-            title={s.markKeysLeftAria}
-            disabled={keysLeft.isPending}
-            onClick={() => keysLeft.mutate(true)}
-            className={cn(
-              pill,
-              "inline-flex min-h-7 items-center gap-1 border-warn text-warn-text hover:bg-warn/10 disabled:opacity-60",
-            )}
-          >
-            <KeyRound className="h-3 w-3" aria-hidden="true" />
-            {s.badge.noKeys} · {s.markKeysLeft}
-          </button>
-        )}
-        {meta.map((m) => (
-          <span key={m} className={pill}>
-            {m}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function Panel({
   title,
   sub,
@@ -766,7 +622,6 @@ export default function DashboardPage() {
     const id = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(id);
   }, []);
-  const [allVehicles, setAllVehicles] = useState(false);
 
   if (dashboard.isError) {
     return (
@@ -794,7 +649,6 @@ export default function DashboardPage() {
   }
   const k = t.kpi;
   const urgent = d.alerts.filter((a) => a.severity === "urgent").length;
-  const vehicles = allVehicles ? d.vehicles : d.vehicles.slice(0, 8);
 
   return (
     <div className="space-y-3">
@@ -913,21 +767,7 @@ export default function DashboardPage() {
                 {t.vehicles.empty}
               </p>
             ) : (
-              <ul className="grid gap-2">
-                {vehicles.map((v) => (
-                  <li key={v.id}>
-                    <VehicleRow v={v} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            {d.vehicles.length > vehicles.length && (
-              <button
-                onClick={() => setAllVehicles(true)}
-                className="mt-3 w-full rounded-full border border-panel-line py-2 text-sm font-semibold text-lime-deep hover:bg-panel-2"
-              >
-                {t.vehicles.all}
-              </button>
+              <VehiclesTable vehicles={d.vehicles} />
             )}
           </Panel>
         </div>

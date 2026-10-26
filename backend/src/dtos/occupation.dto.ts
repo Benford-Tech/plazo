@@ -26,4 +26,11 @@ export class AssignSpotDto {
 export class KeysDto {
   @IsBoolean()
   public left: boolean;
+
+  /** The hook number too (web vehicles table, 26/10/2026): absent = unchanged, null or blank = no hook. */
+  @IsOptional()
+  @ValidateIf(o => o.keyHook !== null)
+  @IsString()
+  @MaxLength(20)
+  public keyHook?: string | null;
 }
