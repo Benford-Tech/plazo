@@ -1009,6 +1009,8 @@ export const fr = {
     passwordReset: "Mot de passe réinitialisé. Ses sessions ont été fermées.",
     // 26/10/2026: the member chooses their own password from an invitation email.
     invite: "Renvoyer l'invitation",
+    readOnlyInvite:
+      "Vous pouvez seulement renvoyer l'invitation d'un membre qui n'a pas reçu son e-mail.",
     invited:
       "Invitation envoyée : un lien « Choisir mon mot de passe » lui est parti par e-mail (valable 7 jours).",
     inviteNotSent:

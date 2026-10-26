@@ -126,6 +126,29 @@ function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
   );
 }
 
+/** « Renvoyer l'invitation » (26/10/2026): also the one team action a platform admin keeps in consultation. */
+function InviteButton({ member }: { member: Staff }) {
+  const t = fr.team;
+  const invite = useMutation({
+    mutationFn: () => adminApi.inviteStaff(member.id),
+    onSuccess: (res) =>
+      res.invitation.emailSent
+        ? toast.success(t.invited)
+        : toast.error(t.inviteNotSent),
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  return (
+    <Button
+      variant="outline"
+      className="h-11 w-full"
+      disabled={invite.isPending}
+      onClick={() => invite.mutate()}
+    >
+      {t.invite}
+    </Button>
+  );
+}
+
 function MemberActions({ member }: { member: Staff }) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(member.role);
@@ -140,15 +163,6 @@ function MemberActions({ member }: { member: Staff }) {
       toast.success(t.updated);
       queryClient.invalidateQueries({ queryKey: ["team"] });
     },
-    onError: (err: Error) => toast.error(describeError(err)),
-  });
-
-  const invite = useMutation({
-    mutationFn: () => adminApi.inviteStaff(member.id),
-    onSuccess: (res) =>
-      res.invitation.emailSent
-        ? toast.success(t.invited)
-        : toast.error(t.inviteNotSent),
     onError: (err: Error) => toast.error(describeError(err)),
   });
 
@@ -198,16 +212,7 @@ function MemberActions({ member }: { member: Staff }) {
           {t.rename}
         </Button>
       )}
-      {member.isActive && (
-        <Button
-          variant="outline"
-          className="h-11 w-full"
-          disabled={invite.isPending}
-          onClick={() => invite.mutate()}
-        >
-          {t.invite}
-        </Button>
-      )}
+      {member.isActive && <InviteButton member={member} />}
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -374,7 +379,7 @@ export default function TeamPage() {
       <h1 className="text-2xl font-semibold">{t.title}</h1>
       {readOnly && (
         <p className="border border-lime-deep p-3 text-base">
-          {fr.viewAs.readOnly}
+          {fr.viewAs.readOnly} {t.readOnlyInvite}
         </p>
       )}
       {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen (the code alone
@@ -445,9 +450,16 @@ export default function TeamPage() {
                     </span>
                   </div>
                 </div>
-                {m.id !== user?.id && !readOnly && (
-                  <MemberActions key={`${m.id}-${m.role}`} member={m} />
-                )}
+                {m.id !== user?.id &&
+                  (readOnly ? (
+                    m.isActive && (
+                      <div className="w-full sm:w-72">
+                        <InviteButton member={m} />
+                      </div>
+                    )
+                  ) : (
+                    <MemberActions key={`${m.id}-${m.role}`} member={m} />
+                  ))}
               </li>
             ))}
           </ul>

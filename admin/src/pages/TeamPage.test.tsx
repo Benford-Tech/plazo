@@ -197,6 +197,14 @@ describe("Équipe : modifier le nom", () => {
     expect(
       screen.queryByRole("button", { name: "Modifier le nom" }),
     ).not.toBeInTheDocument();
+    // 26/10/2026: the platform admin can still resend a member's invitation.
+    api.inviteStaff.mockResolvedValueOnce({ invitation: { emailSent: true } });
+    await userEvent.click(
+      within(await rowOf("Paul Durand")).getByRole("button", {
+        name: "Renvoyer l'invitation",
+      }),
+    );
+    await waitFor(() => expect(api.inviteStaff).toHaveBeenCalledWith("s2"));
   });
 
   it("renvoie l'invitation d'un membre et dit si l'e-mail est parti (26/10/2026)", async () => {

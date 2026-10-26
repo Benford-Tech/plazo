@@ -259,7 +259,8 @@ export class StaffService {
       `staff ${staff.id}`,
       teamInvitationEmail(PRODUCT_NAME, {
         operatorName: operator.name,
-        inviterName: fullName(actor.firstName, actor.lastName),
+        // In consultation the platform resends the operator's invitation: the email names Plazo, not the admin.
+        inviterName: actor.actingAs ? PRODUCT_NAME : fullName(actor.firstName, actor.lastName),
         role: staff.role,
         url: notifications.proUrl(`/invitation#${token}`),
         days: INVITATION_TTL_DAYS,

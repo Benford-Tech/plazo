@@ -1379,8 +1379,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   le gérant marche en attendant ; un mail qui ne part pas ne fait pas échouer la création (`invitation { emailSent }` dans la
   réponse de `POST /internal/staff`, toast « Compte créé. Un e-mail l'invite… » ou « … l'e-mail d'invitation n'a pas pu partir »),
   tracé `staff.invited` ; `POST /internal/staff/:id/invite` et bouton « Renvoyer l'invitation » dans Équipe (membre actif seulement,
-  400 `staff_inactive` ; un nouveau lien annule le précédent ; même règle de consultation que les autres écritures d'équipe).
-  Tests `staff.test.ts`, `TeamPage.test.tsx`. Plazo Pro n'a pas encore le bouton « Renvoyer ».
+  400 `staff_inactive` ; un nouveau lien annule le précédent). **Permis au super admin en consultation (26/10/2026, « en super
+  admin je veux pouvoir renvoyer les mails d'invitation »)** : la seule écriture d'équipe qui passe en consultation (`RefuseInDemo`
+  à la place de `RefuseInViewAsOutsidePlatformAccount` : la démo reste refusée), tracée `view_as.write` ; le mail dit alors
+  « Plazo vous a ajouté… » au lieu du nom de l'administrateur ; page Équipe en lecture seule : le bouton reste sur chaque membre
+  actif, avec la phrase « Vous pouvez seulement renvoyer l'invitation… ». Tests `staff.test.ts`, `TeamPage.test.tsx`. Plazo Pro
+  n'a pas encore le bouton « Renvoyer ».
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
   https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et
