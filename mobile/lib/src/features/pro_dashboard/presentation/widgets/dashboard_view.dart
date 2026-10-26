@@ -520,7 +520,8 @@ class _AlertKindPill extends StatelessWidget {
             children: [
               Text('$count', style: AppText.tabular(size: 14, weight: 700, color: fg)),
               const SizedBox(width: 6),
-              Text('dashboard.kind.$kind'.tr(), style: AppText.strong(size: 13, color: fg)),
+              // A long kind (« Demande pour rejoindre l'équipe ») shortens on a narrow phone instead of overflowing.
+              Flexible(child: Text('dashboard.kind.$kind'.tr(), style: AppText.strong(size: 13, color: fg), maxLines: 1, overflow: TextOverflow.ellipsis)),
             ],
           ),
         ),
