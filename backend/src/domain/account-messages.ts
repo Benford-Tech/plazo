@@ -206,11 +206,13 @@ export function teamInvitationEmail(
     `Bienvenue dans l'équipe de ${data.operatorName}`,
     [
       `${data.inviterName} vous a ajouté à l'équipe de ${data.operatorName} sur ${productName}, en tant que ${role}.`,
-      `Choisissez votre mot de passe pour vous connecter. Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
+      `1. Choisissez votre mot de passe avec le bouton ci-dessous. Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
     ],
     { label: 'Choisir mon mot de passe', url: data.url },
     {
-      lines: [`Au quotidien, l'équipe utilise l'application ${productName} Pro sur son téléphone : planning, navette, parking et réservations.`],
+      lines: [
+        `2. Installez l'application ${productName} Pro sur votre téléphone et connectez-vous avec cette adresse e-mail et votre mot de passe. C'est elle que l'équipe utilise au quotidien : planning, navette, parking et réservations.`,
+      ],
       links: badgeRow ? [] : stores,
       badges: badgeRow,
     },

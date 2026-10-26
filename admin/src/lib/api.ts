@@ -404,10 +404,12 @@ export const adminApi = {
       { method: "POST" },
     ),
   getInvitation: (token: string) =>
-    apiRequest<{ email: string; operatorName: string }>(
-      "/internal/auth/invitation",
-      { method: "POST", body: json({ token }) },
-    ),
+    apiRequest<{
+      email: string;
+      operatorName: string;
+      role: string;
+      stores: { playStoreUrl: string; appStoreUrl: string | null };
+    }>("/internal/auth/invitation", { method: "POST", body: json({ token }) }),
   acceptInvitation: (token: string, password: string) =>
     apiRequest<{ tokenData: TokenData; user: Staff }>(
       "/internal/auth/invitation/accept",

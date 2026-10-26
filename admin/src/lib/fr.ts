@@ -513,6 +513,16 @@ export const fr = {
     passwordConfirmation: "Confirmer le mot de passe",
     submit: "Accéder à mon espace",
     invalid: `Cette invitation n'est plus valable : elle a expiré ou a déjà servi. Demandez à l'équipe ${PRODUCT.name} de vous la renvoyer.`,
+    // 26/10/2026: a team member installs Plazo Pro once the password is chosen (the web space is the managers').
+    nextApp: `Ensuite, vous installerez l'application ${PRODUCT.name} Pro sur votre téléphone.`,
+    doneTitle: "Votre mot de passe est enregistré",
+    doneIntro: (email: string) =>
+      `Installez l'application ${PRODUCT.name} Pro sur votre téléphone et connectez-vous avec ${email} et le mot de passe que vous venez de choisir.`,
+    googlePlay: "Disponible sur Google Play",
+    appStore: "Télécharger dans l'App Store",
+    appStoreSoon:
+      "Validation par Apple en cours : le lien vous sera envoyé dès que l'app est publiée.",
+    continueWeb: "Continuer sur le web",
   },
   viewAs: {
     banner: (name: string) => `Vous consultez l'espace de ${name}`,
