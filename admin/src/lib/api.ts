@@ -249,7 +249,10 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 /** A call with the session's token (refreshed once on a 401); errors become ApiError. */
-async function authorizedFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+async function authorizedFetch(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<Response> {
   const send = (token?: string) =>
     fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -300,9 +303,14 @@ export async function apiRequest<T = unknown>(
 }
 
 /** A file the API sends (a CSV export), with the name it gives it. */
-export async function apiFile(endpoint: string): Promise<{ blob: Blob; filename: string | null }> {
+export async function apiFile(
+  endpoint: string,
+): Promise<{ blob: Blob; filename: string | null }> {
   const res = await authorizedFetch(endpoint);
-  const filename = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? null;
+  const filename =
+    /filename="([^"]+)"/.exec(
+      res.headers.get("Content-Disposition") ?? "",
+    )?.[1] ?? null;
   return { blob: await res.blob(), filename };
 }
 
@@ -323,7 +331,10 @@ export const adminApi = {
   authProviders: () => apiRequest<AuthProviders>("/internal/auth/providers"),
   /** « Continuer avec Google »: a member's session, or an onboarding one (a Google account in no team yet). */
   googleSignIn: (idToken: string) =>
-    apiRequest<IdentitySignIn>("/internal/auth/google", { method: "POST", body: json({ idToken }) }),
+    apiRequest<IdentitySignIn>("/internal/auth/google", {
+      method: "POST",
+      body: json({ idToken }),
+    }),
   /** Ends the onboarding session the web cannot use (joining a team is done in Plazo Pro). */
   onboardingLogout: (onboardingToken: string) =>
     apiRequest<void>("/internal/auth/onboarding/logout", {
@@ -332,9 +343,14 @@ export const adminApi = {
     }),
   /** Mon compte › Connexion: link one's Google account, or unlink Apple / Google. */
   linkGoogle: (idToken: string) =>
-    apiRequest<{ user: Staff }>("/internal/staff/me/identities/google", { method: "POST", body: json({ idToken }) }),
+    apiRequest<{ user: Staff }>("/internal/staff/me/identities/google", {
+      method: "POST",
+      body: json({ idToken }),
+    }),
   unlinkIdentity: (provider: IdentityProvider) =>
-    apiRequest<{ user: Staff }>(`/internal/staff/me/identities/${provider}`, { method: "DELETE" }),
+    apiRequest<{ user: Staff }>(`/internal/staff/me/identities/${provider}`, {
+      method: "DELETE",
+    }),
   /** 21/10/2026: the prospects' demo in a role, with the prospect's own link when there is one. */
   enterDemo: (role: DemoRole, token?: string) =>
     apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/demo", {
@@ -342,17 +358,29 @@ export const adminApi = {
       body: json({ role, ...(token ? { token } : {}) }),
     }),
   demoLink: (token: string) =>
-    apiRequest<{ status: "valid" | "expired" | "unknown"; companyName: string | null }>(`/public/demo/links/${encodeURIComponent(token)}`),
+    apiRequest<{
+      status: "valid" | "expired" | "unknown";
+      companyName: string | null;
+    }>(`/public/demo/links/${encodeURIComponent(token)}`),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
   /** 21/10/2026: « Mail du matin », read with the other notification settings. */
   getMorningEmail: () =>
-    apiRequest<{ morningEmail: MorningEmailPreference }>("/internal/notifications/preferences").then(r => r.morningEmail),
+    apiRequest<{ morningEmail: MorningEmailPreference }>(
+      "/internal/notifications/preferences",
+    ).then((r) => r.morningEmail),
   updateMorningEmail: (patch: { enabled?: boolean; hour?: number }) =>
-    apiRequest<{ morningEmail: MorningEmailPreference }>("/internal/notifications/preferences", {
-      method: "PATCH",
-      body: json({ morningEmail: patch }),
-    }).then(r => r.morningEmail),
-  sendMorningEmail: () => apiRequest<{ sent: boolean }>("/internal/notifications/morning-email/send", { method: "POST" }),
+    apiRequest<{ morningEmail: MorningEmailPreference }>(
+      "/internal/notifications/preferences",
+      {
+        method: "PATCH",
+        body: json({ morningEmail: patch }),
+      },
+    ).then((r) => r.morningEmail),
+  sendMorningEmail: () =>
+    apiRequest<{ sent: boolean }>(
+      "/internal/notifications/morning-email/send",
+      { method: "POST" },
+    ),
   /** 09/10/2026: one's own first and last name; answers like getMe. */
   updateMe: (names: { firstName: string; lastName: string }) =>
     apiRequest<Staff>("/internal/staff/me", {
@@ -434,19 +462,36 @@ export const adminApi = {
   removeStop: (id: string) =>
     apiRequest<void>(`/internal/shuttle/stops/${id}`, { method: "DELETE" }),
   // Services for the car (21/10/2026).
-  getExtraSettings: (parkingId: string) => apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`),
+  getExtraSettings: (parkingId: string) =>
+    apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`),
   updateExtraSettings: (
     parkingId: string,
-    body: { leadHours?: number; offers?: { kind: ExtraKind; enabled: boolean; priceCents: number }[] },
-  ) => apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`, { method: "PUT", body: json(body) }),
-  getReservationExtras: (id: string) => apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras`),
-  markExtraDone: (id: string, extraId: string) =>
-    apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras/${extraId}/done`, { method: "POST" }),
-  refuseExtra: (id: string, extraId: string, reason: string) =>
-    apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras/${extraId}/refuse`, {
-      method: "POST",
-      body: json({ reason }),
+    body: {
+      leadHours?: number;
+      offers?: { kind: ExtraKind; enabled: boolean; priceCents: number }[];
+    },
+  ) =>
+    apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`, {
+      method: "PUT",
+      body: json(body),
     }),
+  getReservationExtras: (id: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(
+      `/internal/reservations/${id}/extras`,
+    ),
+  markExtraDone: (id: string, extraId: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(
+      `/internal/reservations/${id}/extras/${extraId}/done`,
+      { method: "POST" },
+    ),
+  refuseExtra: (id: string, extraId: string, reason: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(
+      `/internal/reservations/${id}/extras/${extraId}/refuse`,
+      {
+        method: "POST",
+        body: json({ reason }),
+      },
+    ),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
       method: "PUT",
@@ -594,18 +639,32 @@ export const adminApi = {
 
   getTeam: () => apiRequest<Staff[]>("/internal/staff"),
   createStaff: (staff: NewStaff) =>
-    apiRequest<{ data: Staff }>("/internal/staff", {
-      method: "POST",
-      body: json(staff),
-    }),
+    apiRequest<{ data: Staff; invitation?: { emailSent: boolean } }>(
+      "/internal/staff",
+      {
+        method: "POST",
+        body: json(staff),
+      },
+    ),
   updateStaff: (
     id: string,
-    patch: { role?: StaffRole; isActive?: boolean; firstName?: string; lastName?: string },
+    patch: {
+      role?: StaffRole;
+      isActive?: boolean;
+      firstName?: string;
+      lastName?: string;
+    },
   ) =>
     apiRequest<{ data: Staff }>(`/internal/staff/${id}`, {
       method: "PATCH",
       body: json(patch),
     }),
+  // 26/10/2026: « Renvoyer l'invitation » (a new « Choisir mon mot de passe » link by email).
+  inviteStaff: (id: string) =>
+    apiRequest<{ invitation: { emailSent: boolean } }>(
+      `/internal/staff/${id}/invite`,
+      { method: "POST" },
+    ),
   resetStaffPassword: (id: string, password: string) =>
     apiRequest<{ message: string }>(`/internal/staff/${id}/reset-password`, {
       method: "POST",
@@ -632,22 +691,51 @@ export const adminApi = {
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
   // CA-B + CA-A (09/10/2026): the revenue, managers only.
   getRevenue: (from: string, to: string, basis: RevenueBasis) =>
-    apiRequest<RevenueReport>(`/internal/revenue?${new URLSearchParams({ from, to, basis })}`),
-  getRevenueSummary: () => apiRequest<RevenueSummary>("/internal/revenue/summary"),
-  exportRevenue: (from: string, to: string, basis: RevenueBasis) => apiFile(`/internal/revenue/export?${new URLSearchParams({ from, to, basis })}`),
+    apiRequest<RevenueReport>(
+      `/internal/revenue?${new URLSearchParams({ from, to, basis })}`,
+    ),
+  getRevenueSummary: () =>
+    apiRequest<RevenueSummary>("/internal/revenue/summary"),
+  exportRevenue: (from: string, to: string, basis: RevenueBasis) =>
+    apiFile(
+      `/internal/revenue/export?${new URLSearchParams({ from, to, basis })}`,
+    ),
   // 19/10/2026: what each comparator takes, from a day on, and a booking's own exception.
-  getComparatorCommissions: () => apiRequest<{ today: string; comparators: ComparatorCommission[] }>("/internal/comparators/commissions"),
-  setComparatorCommission: (body: { label: string; rateBp: number; fixedCents: number; effectiveFrom: string }) =>
-    apiRequest<CommissionRate>("/internal/comparators/commissions", { method: "PUT", body: JSON.stringify(body) }),
-  removeComparatorCommission: (key: string, effectiveFrom: string) =>
-    apiRequest<void>(`/internal/comparators/commissions/${encodeURIComponent(key)}/${effectiveFrom}`, { method: "DELETE" }),
-  setReservationCommission: (id: string, body: { rateBp: number | null; amountCents: number | null }) =>
-    apiRequest<{ id: string; commission: ReservationCommission | null }>(`/internal/reservations/${id}/commission`, {
+  getComparatorCommissions: () =>
+    apiRequest<{ today: string; comparators: ComparatorCommission[] }>(
+      "/internal/comparators/commissions",
+    ),
+  setComparatorCommission: (body: {
+    label: string;
+    rateBp: number;
+    fixedCents: number;
+    effectiveFrom: string;
+  }) =>
+    apiRequest<CommissionRate>("/internal/comparators/commissions", {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  removeComparatorCommission: (key: string, effectiveFrom: string) =>
+    apiRequest<void>(
+      `/internal/comparators/commissions/${encodeURIComponent(key)}/${effectiveFrom}`,
+      { method: "DELETE" },
+    ),
+  setReservationCommission: (
+    id: string,
+    body: { rateBp: number | null; amountCents: number | null },
+  ) =>
+    apiRequest<{ id: string; commission: ReservationCommission | null }>(
+      `/internal/reservations/${id}/commission`,
+      {
+        method: "PUT",
+        body: JSON.stringify(body),
+      },
+    ),
   setReservationPrice: (id: string, priceCents: number | null) =>
-    apiRequest<{ id: string; priceCents: number | null }>(`/internal/reservations/${id}/price`, { method: "PUT", body: json({ priceCents }) }),
+    apiRequest<{ id: string; priceCents: number | null }>(
+      `/internal/reservations/${id}/price`,
+      { method: "PUT", body: json({ priceCents }) },
+    ),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
   // « SMS de la veille » (S-A + S-B, 06/10/2026): the usual rule, the evenings and each booking's SMS.
   getReminders: (parkingId: string, evening?: string) =>
@@ -766,7 +854,11 @@ export const adminApi = {
     apiRequest<CapacityPreview>(
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,
     ),
-  searchReservations: (params: { q?: string; page?: number; noPrice?: boolean }) =>
+  searchReservations: (params: {
+    q?: string;
+    page?: number;
+    noPrice?: boolean;
+  }) =>
     apiRequest<ReservationPage>(
       `/internal/reservations?${new URLSearchParams({
         ...(params.q ? { q: params.q } : {}),
@@ -783,7 +875,9 @@ export const adminApi = {
     }),
   updateReservation: (
     id: string,
-    input: Partial<Omit<ReservationInput, "externalReference" | "importedPriceCents">>,
+    input: Partial<
+      Omit<ReservationInput, "externalReference" | "importedPriceCents">
+    >,
   ) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
       method: "PATCH",
@@ -811,10 +905,18 @@ export const adminApi = {
     }),
   getPricing: () => apiRequest<Pricing>("/internal/pricing"),
   /** `night` absent: the night fees stay as they are (12/10/2026). */
-  updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null, night?: NightSettings) =>
+  updatePricing: (
+    tiers: PricingTier[],
+    extraDayPriceCents: number | null,
+    night?: NightSettings,
+  ) =>
     apiRequest<{ data: Pricing }>("/internal/pricing", {
       method: "PUT",
-      body: json(night ? { tiers, extraDayPriceCents, night } : { tiers, extraDayPriceCents }),
+      body: json(
+        night
+          ? { tiers, extraDayPriceCents, night }
+          : { tiers, extraDayPriceCents },
+      ),
     }),
 
   // The platform owner's space (super admin).
@@ -880,18 +982,36 @@ export const adminApi = {
     }),
   // The Plazo ↔ operator contract (20/10/2026).
   getOperatorContracts: (operatorId: string) =>
-    apiRequest<{ contracts: PartnerContract[] }>(`/internal/platform/operators/${operatorId}/contracts`),
+    apiRequest<{ contracts: PartnerContract[] }>(
+      `/internal/platform/operators/${operatorId}/contracts`,
+    ),
   uploadOperatorContract: (operatorId: string, file: File, title?: string) =>
     apiRequest<PartnerContract>(
       `/internal/platform/operators/${operatorId}/contracts?${new URLSearchParams({ fileName: file.name, ...(title ? { title } : {}) })}`,
-      { method: "POST", body: file, headers: { "Content-Type": "application/pdf" } },
+      {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": "application/pdf" },
+      },
     ),
   remindOperatorContract: (operatorId: string, contractId: string) =>
-    apiRequest<PartnerContract>(`/internal/platform/operators/${operatorId}/contracts/${contractId}/remind`, { method: "POST" }),
+    apiRequest<PartnerContract>(
+      `/internal/platform/operators/${operatorId}/contracts/${contractId}/remind`,
+      { method: "POST" },
+    ),
   removeOperatorContract: (operatorId: string, contractId: string) =>
-    apiRequest<void>(`/internal/platform/operators/${operatorId}/contracts/${contractId}`, { method: "DELETE" }),
-  operatorContractFile: (operatorId: string, contractId: string, kind: ContractFileKind) =>
-    apiFile(`/internal/platform/operators/${operatorId}/contracts/${contractId}/file?kind=${kind}`),
+    apiRequest<void>(
+      `/internal/platform/operators/${operatorId}/contracts/${contractId}`,
+      { method: "DELETE" },
+    ),
+  operatorContractFile: (
+    operatorId: string,
+    contractId: string,
+    kind: ContractFileKind,
+  ) =>
+    apiFile(
+      `/internal/platform/operators/${operatorId}/contracts/${contractId}/file?kind=${kind}`,
+    ),
   getMyContract: () => apiRequest<MyContract>("/internal/contract"),
   signMyContract: (contractId: string, signerName: string) =>
     apiRequest<MyContract>(`/internal/contract/${contractId}/sign`, {
@@ -931,7 +1051,8 @@ export const adminApi = {
   }) => {
     const query = new URLSearchParams();
     // Page 0 and below are the pages before today (10/10/2026): sent too.
-    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") query.set(k, String(v));
+    for (const [k, v] of Object.entries(params))
+      if (v !== undefined && v !== "") query.set(k, String(v));
     return apiRequest<PlatformReservations>(
       `/internal/platform/reservations?${query.toString()}`,
     );
@@ -989,7 +1110,13 @@ export const adminApi = {
       `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
     ),
   // Prospection (18/10/2026).
-  getProspects: (filters: { status?: ProspectStatus | null; airport?: string | null; region?: string | null } = {}) =>
+  getProspects: (
+    filters: {
+      status?: ProspectStatus | null;
+      airport?: string | null;
+      region?: string | null;
+    } = {},
+  ) =>
     apiRequest<ProspectList>(
       `/internal/platform/prospects?${new URLSearchParams({
         ...(filters.status ? { status: filters.status } : {}),
@@ -998,26 +1125,70 @@ export const adminApi = {
       })}`,
     ),
   createProspect: (input: ProspectInput) =>
-    apiRequest<{ data: Prospect }>("/internal/platform/prospects", { method: "POST", body: json(input) }),
+    apiRequest<{ data: Prospect }>("/internal/platform/prospects", {
+      method: "POST",
+      body: json(input),
+    }),
   updateProspect: (id: string, input: Partial<ProspectInput>) =>
-    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "PATCH", body: json(input) }),
+    apiRequest<{ data: Prospect }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: json(input) },
+    ),
   createProspectDemoLink: (id: string, renew = false) =>
-    apiRequest<{ data: DemoLink }>(`/internal/platform/prospects/${encodeURIComponent(id)}/demo-link`, { method: "POST", body: json({ renew }) }),
+    apiRequest<{ data: DemoLink }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}/demo-link`,
+      { method: "POST", body: json({ renew }) },
+    ),
   deleteProspect: (id: string) =>
-    apiRequest<{ data: { id: string } }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    apiRequest<{ data: { id: string } }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
   importProspects: (rows: Partial<ProspectInput>[], dryRun: boolean) =>
-    apiRequest<ProspectImportReport>("/internal/platform/prospects/import", { method: "POST", body: json({ rows, dryRun }) }),
-  setProspectStatus: (id: string, status: "replied" | "interested" | "not_interested" | "unsubscribed") =>
-    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}/status`, { method: "POST", body: json({ status }) }),
+    apiRequest<ProspectImportReport>("/internal/platform/prospects/import", {
+      method: "POST",
+      body: json({ rows, dryRun }),
+    }),
+  setProspectStatus: (
+    id: string,
+    status: "replied" | "interested" | "not_interested" | "unsubscribed",
+  ) =>
+    apiRequest<{ data: Prospect }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}/status`,
+      { method: "POST", body: json({ status }) },
+    ),
   stopProspect: (id: string) =>
-    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}/stop`, { method: "POST" }),
+    apiRequest<{ data: Prospect }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}/stop`,
+      { method: "POST" },
+    ),
   sendProspects: (ids: string[]) =>
-    apiRequest<ProspectSendResult>("/internal/platform/prospects/send", { method: "POST", body: json({ ids }) }),
-  sendProspectTest: (input: { step: number; prospectId?: string | null; subject?: string; body?: string }) =>
-    apiRequest<{ sentTo: string }>("/internal/platform/prospects/test", { method: "POST", body: json(input) }),
-  getProspectingSettings: () => apiRequest<{ data: ProspectingSettings }>("/internal/platform/prospects/settings"),
-  updateProspectingSettings: (input: { steps: ProspectingStep[]; dailyCap: number }) =>
-    apiRequest<{ data: ProspectingSettings }>("/internal/platform/prospects/settings", { method: "PUT", body: json(input) }),
+    apiRequest<ProspectSendResult>("/internal/platform/prospects/send", {
+      method: "POST",
+      body: json({ ids }),
+    }),
+  sendProspectTest: (input: {
+    step: number;
+    prospectId?: string | null;
+    subject?: string;
+    body?: string;
+  }) =>
+    apiRequest<{ sentTo: string }>("/internal/platform/prospects/test", {
+      method: "POST",
+      body: json(input),
+    }),
+  getProspectingSettings: () =>
+    apiRequest<{ data: ProspectingSettings }>(
+      "/internal/platform/prospects/settings",
+    ),
+  updateProspectingSettings: (input: {
+    steps: ProspectingStep[];
+    dailyCap: number;
+  }) =>
+    apiRequest<{ data: ProspectingSettings }>(
+      "/internal/platform/prospects/settings",
+      { method: "PUT", body: json(input) },
+    ),
   sendPlatformNotification: (input: PlatformNotificationInput) =>
     apiRequest<{ data: PlatformNotification }>(
       "/internal/platform/notifications",

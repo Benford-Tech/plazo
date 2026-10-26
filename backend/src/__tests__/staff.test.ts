@@ -117,6 +117,36 @@ describe('équipe', () => {
   });
 });
 
+describe('invitation d’un membre (26/10/2026)', () => {
+  it('crée un lien « Choisir mon mot de passe » à la création et sur « Renvoyer l’invitation », jamais pour un membre désactivé', async () => {
+    const { token } = await setupOperator();
+    const res = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Nawfel', lastName: 'Exemple', email: 'nawfel@example.com', role: 'driver', password: PASSWORD });
+    expect(res.status).toBe(201);
+    // No Brevo in tests: the link exists, the email did not go out, the creation succeeded all the same.
+    expect(res.body.invitation).toEqual({ emailSent: false });
+    const id = res.body.data.id as string;
+    expect(await prisma.accountToken.count({ where: { staffId: id, type: 'invitation' } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { entityId: id, action: 'staff.invited' } })).toBe(1);
+
+    // A new link cancels the previous one.
+    const again = await api().post(`/api/internal/staff/${id}/invite`).set(auth(token));
+    expect(again.status).toBe(200);
+    expect(again.body.invitation).toEqual({ emailSent: false });
+    expect(await prisma.accountToken.count({ where: { staffId: id, type: 'invitation' } })).toBe(1);
+
+    // The typed password works meanwhile.
+    expect((await login('nawfel@example.com', PASSWORD)).user.email).toBe('nawfel@example.com');
+
+    await api().patch(`/api/internal/staff/${id}`).set(auth(token)).send({ isActive: false });
+    const inactive = await api().post(`/api/internal/staff/${id}/invite`).set(auth(token));
+    expect(inactive.status).toBe(400);
+    expect(inactive.body.code).toBe('staff_inactive');
+  });
+});
+
 describe('prénom et nom du personnel (09/10/2026)', () => {
   it('« Votre nom » : chacun change son prénom et son nom ; réponse comme GET /me, nom affiché recalculé, tracé', async () => {
     const { token, manager } = await setupOperator();

@@ -2,16 +2,20 @@ import { nextDemoReset } from '@/domain/prospect-demo';
 import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
+import { BCRYPT_ROUNDS, INVITATION_TTL_DAYS, isPlatformAdmin, PLAZO_PRO_APP_STORE_URL, PLAZO_PRO_PLAY_STORE_URL, PRODUCT_NAME } from '@/config';
 import prisma, { IdentityProvider, Staff, StaffRole } from '@/database';
 import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
+import { logger } from '@/utils/logger';
 import { ChangePasswordDto, CreateStaffDto, UpdateMeDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { fullName, namesOf } from '@/domain/staff-name';
+import { teamInvitationEmail } from '@/domain/account-messages';
+import { AccountTokenService } from './account-token.service';
 import { AuditService } from './audit.service';
+import { NotificationService } from './notification.service';
 import { operatorTimezone } from './operator-timezone';
 import { checkPasswordAttempt } from './password-attempts';
 import { TokenService } from './token.service';
@@ -227,7 +231,45 @@ export class StaffService {
       },
     });
     await this.audit.record(actor, { action: 'staff.created', entityType: 'staff', entityId: staff.id, details: { role: staff.role } });
-    return toPublicStaff(staff);
+    // 26/10/2026: the member chooses their own password from an invitation email (the typed one works meanwhile); a mail
+    // that cannot go out never fails the creation.
+    const invitation = await this.sendInvitation(actor, staff).catch(error => {
+      logger.warn(`[Staff] invitation of ${staff.id} not sent: ${error instanceof Error ? error.message : String(error)}`);
+      return { emailSent: false };
+    });
+    return { staff: toPublicStaff(staff), invitation };
+  }
+
+  /** « Renvoyer l'invitation » (26/10/2026): a new link for a member who did not get, or lost, the email. */
+  public async invite(actor: AuthenticatedStaff, staffId: string): Promise<{ emailSent: boolean }> {
+    this.requireTeamManager(actor);
+    const target = await this.findInOperator(actor, staffId);
+    if (!target.isActive) throw new HttpException(httpStatus.BAD_REQUEST, 'This member is deactivated', 'staff_inactive');
+    return this.sendInvitation(actor, target);
+  }
+
+  /** Issues the invitation link (7 days, single use, a new one cancels the previous) and emails it. */
+  private async sendInvitation(actor: AuthenticatedStaff, staff: Staff): Promise<{ emailSent: boolean }> {
+    const operator = await prisma.operator.findUniqueOrThrow({ where: { id: staff.operatorId }, select: { name: true } });
+    const { token } = await Container.get(AccountTokenService).issue(staff.id, 'invitation', INVITATION_TTL_DAYS * 24 * 3600 * 1000);
+    const notifications = Container.get(NotificationService);
+    const emailSent = await notifications.emailStaff(
+      { email: staff.email, name: fullName(staff.firstName, staff.lastName) },
+      'team_invitation',
+      `staff ${staff.id}`,
+      teamInvitationEmail(PRODUCT_NAME, {
+        operatorName: operator.name,
+        inviterName: fullName(actor.firstName, actor.lastName),
+        role: staff.role,
+        url: notifications.proUrl(`/invitation#${token}`),
+        days: INVITATION_TTL_DAYS,
+        playStoreUrl: PLAZO_PRO_PLAY_STORE_URL,
+        appStoreUrl: PLAZO_PRO_APP_STORE_URL,
+        badgesBase: notifications.siteUrl(''),
+      }),
+    );
+    await this.audit.record(actor, { action: 'staff.invited', entityType: 'staff', entityId: staff.id, details: { emailSent } });
+    return { emailSent };
   }
 
   public async update(actor: AuthenticatedStaff, staffId: string, data: UpdateStaffDto) {

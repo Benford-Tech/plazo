@@ -255,6 +255,8 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(ResetPasswordDto),
       this.staff.resetPassword,
     );
+    // 26/10/2026: « Renvoyer l'invitation » (a team write, like the others).
+    this.router.post('/internal/staff/:id/invite', StaffAuthMiddleware('team:manage'), RefuseInViewAsOutsidePlatformAccount(), this.staff.invite);
 
     // « Rejoindre un parking » (13/10/2026). The code and the requests are read in consultation too; accepting and
     // refusing are team writes (read-only in consultation, except in the platform's own account).

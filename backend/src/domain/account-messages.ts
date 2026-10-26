@@ -171,6 +171,52 @@ export function invitationEmail(
   );
 }
 
+/** The French name of each role, as the Équipe page shows it. */
+const ROLE_LABELS: Record<string, string> = { manager: 'gérant', agent: "agent d'accueil", driver: 'chauffeur de navette', valet: 'voiturier' };
+
+/**
+ * 26/10/2026 (« Nawfel et Pascal n'ont pas reçu le mail afin de créer leur compte »): a member added to the team by a
+ * manager chooses their own password from this email (the same invitation link as a manager's, 7 days, single use); the
+ * password the manager typed keeps working meanwhile.
+ */
+export function teamInvitationEmail(
+  productName: string,
+  data: {
+    operatorName: string;
+    inviterName: string;
+    role: string;
+    url: string;
+    days: number;
+    playStoreUrl: string;
+    appStoreUrl: string | null;
+    badgesBase: string | null;
+  },
+): EmailMessage {
+  const role = ROLE_LABELS[data.role] ?? data.role;
+  const stores: Link[] = [
+    { label: `${productName} Pro sur Google Play (Android)`, url: data.playStoreUrl },
+    { label: `${productName} Pro sur l'App Store (iPhone)`, url: data.appStoreUrl, note: APPLE_REVIEW_NOTE },
+  ];
+  const badgeRow: StoreBadge[] | undefined = data.badgesBase
+    ? proStoreBadges(productName, { badgesBase: data.badgesBase, playStoreUrl: data.playStoreUrl, appStoreUrl: data.appStoreUrl })
+    : undefined;
+  return message(
+    productName,
+    `Rejoignez l'équipe de ${data.operatorName} sur ${productName}`,
+    `Bienvenue dans l'équipe de ${data.operatorName}`,
+    [
+      `${data.inviterName} vous a ajouté à l'équipe de ${data.operatorName} sur ${productName}, en tant que ${role}.`,
+      `Choisissez votre mot de passe pour vous connecter. Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
+    ],
+    { label: 'Choisir mon mot de passe', url: data.url },
+    {
+      lines: [`Au quotidien, l'équipe utilise l'application ${productName} Pro sur son téléphone : planning, navette, parking et réservations.`],
+      links: badgeRow ? [] : stores,
+      badges: badgeRow,
+    },
+  );
+}
+
 export function verificationEmail(productName: string, data: { url: string; hours: number }): EmailMessage {
   return message(
     productName,

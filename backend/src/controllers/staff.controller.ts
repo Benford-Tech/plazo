@@ -52,8 +52,14 @@ export class StaffController {
   /** POST /internal/staff */
   public create = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: CreateStaffDto = req.body;
-    const staff = await this.staffService.create(req.staff, data);
-    res.status(httpStatus.CREATED).json({ message: 'Staff member created', data: staff });
+    const { staff, invitation } = await this.staffService.create(req.staff, data);
+    res.status(httpStatus.CREATED).json({ message: 'Staff member created', data: staff, invitation });
+  });
+
+  /** POST /internal/staff/:id/invite (26/10/2026): emails the member a new « Choisir mon mot de passe » link. */
+  public invite = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const invitation = await this.staffService.invite(req.staff, req.params.id as string);
+    res.json({ message: 'Invitation sent', invitation });
   });
 
   /** PATCH /internal/staff/:id */
