@@ -101,7 +101,7 @@ class _ProGettingStartedPageState extends State<ProGettingStartedPage> {
               ),
             ),
             const SizedBox(height: 16),
-            if (_error != null) Text(_error!, style: AppText.body(color: AppColors.bad)),
+            if (_error != null) Text(_error!, style: AppText.body(color: AppStatus.bad)),
             if (d != null) ...[
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 6),
@@ -155,7 +155,7 @@ class _StepTile extends StatelessWidget {
                   margin: const EdgeInsets.only(top: 1),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: step.done ? AppColors.ok : AppColors.panel,
+                    color: step.done ? AppStatus.ok : AppColors.panel,
                     border: step.done ? null : Border.all(color: AppColors.panelLine),
                   ),
                   child: step.done ? const Icon(Icons.check_rounded, size: 16, color: Colors.white) : null,
