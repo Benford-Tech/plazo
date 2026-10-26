@@ -25,6 +25,8 @@ export const INSPECTION_PHOTO_PATH = new RegExp(
 
 // The Plazo ↔ operator contract (20/10/2026): the PDF's bytes, 4 MB at most.
 export const PARTNER_CONTRACT_PATH = new RegExp(`^${API_PREFIX}/internal/platform/operators/[^/]+/contracts$`);
+// The parking's own contract (26/10/2026): the same, uploaded by its managers.
+export const CONTRACT_TEMPLATE_PATH = `${API_PREFIX}/internal/contract-template`;
 
 export class App {
   public app: express.Application;
@@ -73,6 +75,7 @@ export class App {
     // Condition report photos (19/10/2026): the image's bytes, shrunk by the app (3 MB at most).
     this.app.post(INSPECTION_PHOTO_PATH, RawBodyMiddleware(MAX_PHOTO_BYTES + 64 * 1024));
     this.app.post(PARTNER_CONTRACT_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
+    this.app.post(CONTRACT_TEMPLATE_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     this.app.use(express.json({ limit: '1mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());

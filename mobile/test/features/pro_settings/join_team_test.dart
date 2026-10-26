@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +64,9 @@ class FakeShare implements ShareService {
   final shared = <String>[];
   @override
   Future<void> shareText(String text, {String? subject}) async => shared.add(text);
+
+  @override
+  Future<void> shareBytes(Uint8List bytes, {required String name, required String mimeType}) async => shared.add(name);
 }
 
 const claire = StaffModel(id: 'm1', name: 'Claire Dubois', email: 'claire@parkair.fr', role: 'manager', operatorName: 'Parkair Lyon');

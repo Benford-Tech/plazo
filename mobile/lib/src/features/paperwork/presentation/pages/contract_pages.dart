@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../di/locator.dart';
+import '../../../../services/share_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
@@ -102,6 +103,8 @@ class _ContractBodyState extends State<_ContractBody> {
           children: [
             Semantics(header: true, child: Text(doc.title, style: AppText.title(size: 24))),
             const SizedBox(height: 12),
+            // The parking's own PDF (26/10/2026, choice A): read it before signing.
+            if (contract.template != null) ...[_TemplateCard(template: contract.template!, owner: state.owner), const SizedBox(height: 10)],
             AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -131,7 +134,7 @@ class _ContractBodyState extends State<_ContractBody> {
             ),
             const SizedBox(height: 14),
             if (contract.isSigned)
-              _Signed(signed: contract.signed!)
+              _Signed(signed: contract.signed!, files: contract.files, owner: state.owner)
             else if (!widget.staff && contract.atCounter)
               AppCard(
                 key: const Key('contract-at-counter'),
@@ -233,9 +236,57 @@ class _ContractBodyState extends State<_ContractBody> {
   }
 }
 
+/// Opens a contract PDF through the phone's share sheet (the apps have no PDF viewer of their own).
+Future<void> _openContractFile(BuildContext context, PaperworkOwner? owner, String kind, String name) async {
+  if (owner == null) return;
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    final bytes = await locator<PaperworkDataSource>().contractFile(owner, kind);
+    await locator<ShareService>().shareBytes(bytes, name: name, mimeType: 'application/pdf');
+  } catch (_) {
+    messenger.showSnackBar(SnackBar(content: Text('paperwork.file_error'.tr())));
+  }
+}
+
+/// « Contrat du parking » (26/10/2026): the PDF the parking hosts, its version and its pages, to open before signing.
+class _TemplateCard extends StatelessWidget {
+  const _TemplateCard({required this.template, required this.owner});
+  final ContractTemplateInfo template;
+  final PaperworkOwner? owner;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      key: const Key('contract-template'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('paperwork.template_title'.tr().toUpperCase(), style: AppText.label(size: 11)),
+          const SizedBox(height: 6),
+          Text(template.title, style: AppText.strong(size: 15)),
+          const SizedBox(height: 2),
+          Text('paperwork.template_line'.tr(args: [template.version.toString(), template.pageCount.toString()]), style: AppText.muted(size: 13)),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('contract-template-open'),
+              onPressed: () => _openContractFile(context, owner, 'template', template.fileName),
+              icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+              label: Text('paperwork.template_open'.tr()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Signed extends StatelessWidget {
-  const _Signed({required this.signed});
+  const _Signed({required this.signed, required this.files, required this.owner});
   final SignedContractModel signed;
+  final ContractFiles files;
+  final PaperworkOwner? owner;
 
   @override
   Widget build(BuildContext context) {
@@ -260,6 +311,30 @@ class _Signed extends StatelessWidget {
           Text(how, style: AppText.body(size: 13)),
           const SizedBox(height: 4),
           Text('paperwork.proof'.tr(args: [signed.version, signed.proofSha256.substring(0, 16)]), style: AppText.muted(size: 11.5)),
+          // The PDF signed and its proof (26/10/2026), kept by Plazo and opened through the share sheet.
+          if (files.signed || files.proof) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (files.signed)
+                  OutlinedButton.icon(
+                    key: const Key('contract-signed-open'),
+                    onPressed: () => _openContractFile(context, owner, 'signed', 'contrat-signe.pdf'),
+                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                    label: Text('paperwork.signed_pdf'.tr()),
+                  ),
+                if (files.proof)
+                  OutlinedButton.icon(
+                    key: const Key('contract-proof-open'),
+                    onPressed: () => _openContractFile(context, owner, 'proof', 'preuve-signature.pdf'),
+                    icon: const Icon(Icons.verified_outlined, size: 18),
+                    label: Text('paperwork.proof_pdf'.tr()),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

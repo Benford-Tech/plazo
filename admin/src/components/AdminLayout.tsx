@@ -1,4 +1,18 @@
-import { BusFront, CalendarDays, ClipboardList, Euro, FileSignature, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
+import {
+  BusFront,
+  CalendarDays,
+  ClipboardList,
+  Euro,
+  FileCheck,
+  FileSignature,
+  Globe,
+  LayoutDashboard,
+  LogOut,
+  ShieldCheck,
+  SquareParking,
+  UserRound,
+  Users,
+} from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,17 +27,69 @@ import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
-const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] = [
-  { label: fr.nav.dashboard, to: "/", icon: LayoutDashboard, permission: "reservations:view" },
-  { label: fr.nav.planning, to: "/planning", icon: CalendarDays, permission: "reservations:view" },
-  { label: fr.nav.shuttles, to: "/navettes", icon: BusFront, permission: "reservations:view" },
-  { label: fr.nav.reservations, to: "/reservations", icon: ClipboardList, permission: "reservations:view" },
+const NAV: {
+  label: string;
+  to: string;
+  icon: Icon;
+  permission?: Permission;
+}[] = [
+  {
+    label: fr.nav.dashboard,
+    to: "/",
+    icon: LayoutDashboard,
+    permission: "reservations:view",
+  },
+  {
+    label: fr.nav.planning,
+    to: "/planning",
+    icon: CalendarDays,
+    permission: "reservations:view",
+  },
+  {
+    label: fr.nav.shuttles,
+    to: "/navettes",
+    icon: BusFront,
+    permission: "reservations:view",
+  },
+  {
+    label: fr.nav.reservations,
+    to: "/reservations",
+    icon: ClipboardList,
+    permission: "reservations:view",
+  },
   // CA-B (09/10/2026): managers only.
-  { label: fr.nav.revenue, to: "/chiffre-affaires", icon: Euro, permission: "revenue:view" },
-  { label: fr.nav.parking, to: "/parking", icon: SquareParking, permission: "reservations:view" },
-  { label: fr.nav.plazo, to: "/plazo", icon: Globe, permission: "parking:manage" },
+  {
+    label: fr.nav.revenue,
+    to: "/chiffre-affaires",
+    icon: Euro,
+    permission: "revenue:view",
+  },
+  {
+    label: fr.nav.parking,
+    to: "/parking",
+    icon: SquareParking,
+    permission: "reservations:view",
+  },
+  {
+    label: fr.nav.plazo,
+    to: "/plazo",
+    icon: Globe,
+    permission: "parking:manage",
+  },
   { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage" },
-  { label: fr.nav.contract, to: "/mon-contrat", icon: FileSignature, permission: "parking:manage" },
+  {
+    label: fr.nav.contract,
+    to: "/mon-contrat",
+    icon: FileSignature,
+    permission: "parking:manage",
+  },
+  // 26/10/2026 (R-A): the register of the travellers' signed contracts, managers only.
+  {
+    label: fr.nav.contracts,
+    to: "/contrats",
+    icon: FileCheck,
+    permission: "parking:manage",
+  },
   { label: fr.nav.account, to: "/mon-compte", icon: UserRound },
 ];
 
@@ -35,11 +101,18 @@ const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] 
 export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const items = NAV.filter(i => !i.permission || can(user?.role, i.permission));
+  const items = NAV.filter(
+    (i) => !i.permission || can(user?.role, i.permission),
+  );
   // The super admin's own operator space links to the "Plateforme" space (hidden from operators,
   // and while viewing another operator's space: the banner leads back).
   const platformAdmin = !!user?.isPlatformAdmin && !user.viewAs;
-  if (platformAdmin) items.push({ label: fr.nav.platform, to: "/plateforme", icon: ShieldCheck });
+  if (platformAdmin)
+    items.push({
+      label: fr.nav.platform,
+      to: "/plateforme",
+      icon: ShieldCheck,
+    });
 
   const handleLogout = async () => {
     await logout();
@@ -62,8 +135,11 @@ export function AdminLayout() {
               <LogOut className="h-5 w-5" />
             </button>
           </div>
-          <nav aria-label="Navigation principale" className="flex gap-1 overflow-x-auto px-3 pb-2 pt-1 lg:flex-col lg:gap-0.5 lg:px-2 lg:pb-0">
-            {items.map(item => (
+          <nav
+            aria-label="Navigation principale"
+            className="flex gap-1 overflow-x-auto px-3 pb-2 pt-1 lg:flex-col lg:gap-0.5 lg:px-2 lg:pb-0"
+          >
+            {items.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
@@ -71,7 +147,9 @@ export function AdminLayout() {
                 className={({ isActive }) =>
                   cn(
                     "group flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-1.5 text-[14px] font-semibold uppercase tracking-wide",
-                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+                    isActive
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )
                 }
               >
@@ -81,10 +159,15 @@ export function AdminLayout() {
                     <span
                       className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border",
-                        isActive ? "border-transparent bg-primary text-primary-foreground" : "border-panel-line bg-panel text-muted-foreground group-hover:bg-panel-2",
+                        isActive
+                          ? "border-transparent bg-primary text-primary-foreground"
+                          : "border-panel-line bg-panel text-muted-foreground group-hover:bg-panel-2",
                       )}
                     >
-                      <item.icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                      <item.icon
+                        className="h-[18px] w-[18px]"
+                        aria-hidden="true"
+                      />
                     </span>
                     <span>{item.label}</span>
                   </>
@@ -95,7 +178,9 @@ export function AdminLayout() {
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="hidden h-12 items-center gap-4 border-b border-panel-line bg-panel-shell px-6 lg:flex">
-            <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">{user?.operatorName}</span>
+            <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">
+              {user?.operatorName}
+            </span>
             {platformAdmin ? (
               <ViewSwitch current="own" className="ml-auto" />
             ) : (

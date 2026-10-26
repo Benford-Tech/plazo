@@ -155,6 +155,12 @@ class FakePaperworkSource implements PaperworkDataSource {
   Future<Uint8List> photo(PaperworkOwner owner, String kind, String photoId) async => _png;
 
   @override
+  Future<Uint8List> contractFile(PaperworkOwner owner, String kind) async {
+    calls.add('contractFile:$kind');
+    return Uint8List.fromList('%PDF-1.7'.codeUnits);
+  }
+
+  @override
   Future<PaperworkModel> start(PaperworkOwner owner, String kind) async {
     calls.add('start:$kind');
     return data;

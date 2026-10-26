@@ -31,6 +31,9 @@ abstract class PaperworkDataSource {
   Future<PaperworkModel> answer(PaperworkOwner owner, String kind, {required String decision, String? reserveText, List<List<List<double>>>? strokes});
   Future<Uint8List> photo(PaperworkOwner owner, String kind, String photoId);
 
+  /// A contract PDF (26/10/2026): the parking's own contract (`template`), the PDF signed or the proof.
+  Future<Uint8List> contractFile(PaperworkOwner owner, String kind);
+
   /// A report being taken: the staff's (Plazo Pro), or the traveller's own photos (Plazo, `…/mine`).
   Future<PaperworkModel> start(PaperworkOwner owner, String kind);
   Future<PaperworkModel> update(PaperworkOwner owner, String kind, Map<String, dynamic> body);
@@ -90,6 +93,20 @@ class PaperworkDataSourceImpl implements PaperworkDataSource {
     };
     final res = await dio.get<List<int>>(
       path,
+      options: Options(responseType: ResponseType.bytes, headers: headers),
+    );
+    return Uint8List.fromList(res.data ?? const []);
+  }
+
+  @override
+  Future<Uint8List> contractFile(PaperworkOwner owner, String kind) async {
+    final (path, headers) = switch (owner) {
+      StaffOwner(:final reservationId) => ('internal/reservations/$reservationId/contract/file', <String, dynamic>{}),
+      TravellerOwner(:final reference) => ('public/bookings/$reference/contract/file', <String, dynamic>{'x-booking-token': await _token(reference)}),
+    };
+    final res = await dio.get<List<int>>(
+      path,
+      queryParameters: {'kind': kind},
       options: Options(responseType: ResponseType.bytes, headers: headers),
     );
     return Uint8List.fromList(res.data ?? const []);

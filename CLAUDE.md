@@ -916,6 +916,39 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    lieux » de Ma réservation, `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/mes-photos/:kind`,
    `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et politique de confidentialité mises à jour
    (19/10/2026, puis 20/10/2026 : signature au comptoir, photos du voyageur). Le web n'a pas ces écrans.
+   **Le contrat du parking et le registre des contrats signés (26/10/2026, « chaque parking peut héberger le contrat de
+   stationnement à ses clients. chaque contrat est stocké ainsi que la preuve de signature », choix « A » (Mon PDF) des maquettes
+   https://claude.ai/artifact/WFFKgJUsqFDWQvebjayV6J, registre R-A pris par défaut)** : table `operator_contract_templates`
+   (migration `operator_contract_template` : PDF par loueur, `version` 1, 2, 3…, `title`, `fileName`, `pageCount`, `sha256`,
+   `blobKey` dans le magasin Blob privé, `retiredAt` ; index unique partiel = une seule version en vigueur), `ReservationContract.templateId`
+   (version signée, `version` « pdf-3 »), `signedBlobKey` / `signedSha256` / `proofBlobKey`. `domain/contract-template.ts` :
+   `templateDocument` (le texte signé lie la signature au PDF : ligne « Contrat : « titre », version N (P pages), empreinte SHA-256 … »
+   et trois clauses Contrat · État des lieux · Signature ; les clauses du parking sont dans son PDF), `buildSignedContractPdf`
+   (`pdf-lib` : le PDF du parking intact, ou le modèle Plazo mis en page, plus une page « Réservation et signature » : lignes de la
+   réservation, référence, signataire, moyen et appareil, témoin, heure du parking, empreintes du texte, du contrat du parking et
+   de la signature, les clauses signées, le tracé manuscrit ; la preuve = cette page seule avec l'empreinte du PDF signé),
+   `signedFileNames`. `ContractTemplateService` : `GET/POST /internal/contract-template` (PDF brut, `?fileName=&title=`,
+   `RawBodyMiddleware`, `checkPdf` de `partner-contract.ts`, 4 Mo ; gérants `parking:manage`, `RefuseInDemo` ; versions et nombre de
+   signés par version, `plazoSignedCount`), `POST …/revert` (retour au modèle Plazo, 409 `no_template`), `GET …/:id/file`
+   (relu contre son empreinte), registre `GET /internal/contracts?from=&to=&q=&reserved=1&page=` (50 par page, `plateKey`,
+   nom, référence ; `reservedCount`) et `GET /internal/contracts/export` (CSV « ; » avec BOM, 5 000 lignes), fichiers
+   `GET /internal/reservations/:id/contract/file?kind=template|signed|proof` (`reservations:view`) et
+   `GET /public/bookings/:ref/contract/file?kind=` (jeton). `PaperworkService.sign` : le PDF en vigueur est relu (empreinte) avant
+   la signature, le texte signé est celui de `templateDocument`, puis le PDF signé et la preuve sont construits et stockés (jamais
+   une signature échouée pour ça : sans magasin, texte et preuve seuls, `files` à faux) ; la copie par e-mail joint le PDF signé
+   (`NotificationService.emailTraveller` accepte des pièces jointes) ; vue `contract.template { id, title, version, pageCount,
+   fileName }` et `contract.files { template, signed, proof }`, `signed.signedSha256`. Les PDF signés sont effacés à
+   l'anonymisation (`RetentionService`) et avec le loueur (`ContractTemplateService.blobKeysOf`). Web : carte « Contrat de
+   stationnement » de Parking › Réglages (`ContractTemplateCard` : modèle Plazo ou version en vigueur, « Voir le PDF »,
+   « Remplacer », « Revenir au modèle Plazo », versions précédentes avec leur nombre de signés), page « Contrats » `/pro/contrats`
+   (menu, gérants ; `ContractsPage` : pilules Signés · Avec réserve, dates, recherche, tableau avec moyen et témoin, version
+   « PDF v3 » / « Plazo 2026-10-19 », empreinte, boutons « PDF signé » · « Preuve » · « Contrat du parking », export CSV), bloc
+   « Contrat de stationnement » de la fiche réservation (`BookingContractCard` : signé ou non, ce que le client signera, PDF signé
+   et preuve). Apps (freezed édité à la main, sans SDK) : `ContractModel.template` / `files`, carte « Contrat du parking » avec
+   « Ouvrir le PDF » avant la signature, « PDF signé » et « Preuve de signature » après (fichiers lus par
+   `PaperworkDataSource.contractFile` et ouverts par la feuille de partage, `ShareService.shareBytes`). Conditions générales
+   (article 9) et politique de confidentialité (données gardées, durées) mises à jour. Tests `contract-template.test.ts`,
+   `ContractTemplateCard.test.tsx`, `ContractsPage.test.tsx`.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

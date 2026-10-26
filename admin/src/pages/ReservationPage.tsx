@@ -8,6 +8,7 @@ import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
+import { BookingContractCard } from "@/components/reservations/BookingContractCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -415,6 +416,7 @@ export default function ReservationPage() {
             reservationId={r.id}
             mayAct={can(user?.role, "reservations:status")}
           />
+          <BookingContractCard reservationId={r.id} status={r.status} />
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>

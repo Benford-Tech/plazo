@@ -3,8 +3,9 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isProspectDemoOperator } from './demo-guard';
 import { PRODUCT_NAME, signatureCodeSecret } from '@/config';
-import prisma, { Prisma, Reservation } from '@/database';
+import prisma, { OperatorContractTemplate, Prisma, Reservation } from '@/database';
 import { EmailMessage } from '@/domain/booking-messages';
+import { buildSignedContractPdf, signedFileNames, templateDocument, templateVersion } from '@/domain/contract-template';
 import {
   CODE_MAX_ATTEMPTS,
   CODE_RESEND_AFTER_MS,
@@ -49,6 +50,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { ContractTemplateService, toBuffer } from './contract-template.service';
 import { NotificationService } from './notification.service';
 import { PhotoStorageService, StoredPhoto } from './photo-storage.service';
 import { PublicBookingService } from './public-booking.service';
@@ -72,7 +74,7 @@ const PURGE_BATCH = 200;
 const WITH_PAPERWORK = {
   parking: { include: { listing: { select: { title: true, services: true } } } },
   operator: { select: { name: true } },
-  contract: true,
+  contract: { include: { template: true } },
   inspections: { include: { photos: { orderBy: { takenAt: 'asc' as const } } } },
 } satisfies Prisma.ReservationInclude;
 
@@ -107,6 +109,8 @@ function documentFromText(text: string): ContractDocument {
   };
 }
 
+const templateFacts = (t: OperatorContractTemplate) => ({ id: t.id, title: t.title, version: t.version, pageCount: t.pageCount, sha256: t.sha256 });
+
 const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /**
@@ -122,6 +126,7 @@ export class PaperworkService {
   public notifications = Container.get(NotificationService);
   public audit = Container.get(AuditService);
   public bookings = Container.get(PublicBookingService);
+  public templates = Container.get(ContractTemplateService);
 
   // ---- Loading ----------------------------------------------------------------------------------------------------
 
@@ -187,17 +192,29 @@ export class PaperworkService {
     return this.notifications.settings.apiKey !== '' && !!smsRecipient(r.customerPhone);
   }
 
+  /** The document to sign: the parking's own PDF (26/10/2026, choice A) when it hosts one, else Plazo's template. */
+  private documentToSign(r: PaperworkRecord, template: OperatorContractTemplate | null): ContractDocument {
+    const facts = this.contractFacts(r);
+    return template ? templateDocument(facts, templateFacts(template)) : contractDocument(facts);
+  }
+
   /** The contract is signed at the counter, on the parking's phone (20/10/2026): the traveller app only shows it. */
-  private contractView(r: PaperworkRecord, viewer: Viewer) {
+  private contractView(r: PaperworkRecord, viewer: Viewer, current: OperatorContractTemplate | null) {
     const c = r.contract;
     const signable = !c && CONTRACT_SIGNABLE.includes(r.status);
+    // The PDF the traveller reads: the one signed, or the one in force until the signature.
+    const template = c ? c.template : current;
     return {
       status: c ? ('signed' as const) : ('unsigned' as const),
       canSign: signable && viewer === 'staff',
       atCounter: signable,
       codeAvailable: this.codeAvailable(r),
       phoneMasked: maskPhone(r.customerPhone),
-      document: c ? documentFromText(c.text) : contractDocument(this.contractFacts(r)),
+      document: c ? documentFromText(c.text) : this.documentToSign(r, current),
+      template: template
+        ? { id: template.id, title: template.title, version: template.version, pageCount: template.pageCount, fileName: template.fileName }
+        : null,
+      files: { template: !!template, signed: !!c?.signedBlobKey, proof: !!c?.proofBlobKey },
       signed: c
         ? {
             version: c.version,
@@ -207,6 +224,7 @@ export class PaperworkService {
             device: c.device,
             phoneMasked: c.phoneMasked,
             proofSha256: c.proofSha256,
+            signedSha256: c.signedSha256,
           }
         : null,
     };
@@ -274,11 +292,12 @@ export class PaperworkService {
           )
         : null;
     const traveller = viewer === 'traveller';
+    const current = r.contract ? null : await this.templates.current(r.operatorId);
     return {
       reservationId: traveller ? undefined : r.id,
       status: r.status,
       photosAvailable: this.storage.available(),
-      contract: this.contractView(r, viewer),
+      contract: this.contractView(r, viewer, current),
       dropoff: this.inspectionView(r, traveller && !dropoff?.completedAt ? undefined : dropoff, performers),
       return: this.inspectionView(r, traveller && !ret?.completedAt ? undefined : ret, performers),
       comparison,
@@ -361,17 +380,26 @@ export class PaperworkService {
     actor: AuthenticatedStaff | null,
     proof: { method: 'sms_code' | 'handwritten'; phoneMasked: string | null; strokes: number[][][] | null },
   ) {
-    const text = contractText(contractDocument(this.contractFacts(r)));
+    // The parking's own PDF (26/10/2026, choice A): what the traveller read is what is signed, bit for bit.
+    const template = await this.templates.current(r.operatorId);
+    const original = template ? await this.templates.bytesOf(template) : null;
+    const doc = this.documentToSign(r, template);
+    const text = contractText(doc);
+    const version = template ? templateVersion(template.version) : CONTRACT_VERSION;
     const signedAt = new Date();
     const device = actor ? 'staff_device' : 'traveller_app';
     const strokesHash = proof.strokes ? sha256(JSON.stringify(proof.strokes)) : '';
+    const textSha256 = sha256(text);
+    const proofSha256 = proofOf(text, r.customerName, proof.method, signedAt, strokesHash);
+    let contractId: string;
     try {
-      await prisma.reservationContract.create({
+      ({ id: contractId } = await prisma.reservationContract.create({
         data: {
           reservationId: r.id,
-          version: CONTRACT_VERSION,
+          version,
+          templateId: template?.id ?? null,
           text,
-          textSha256: sha256(text),
+          textSha256,
           signerName: r.customerName,
           method: proof.method,
           device,
@@ -379,17 +407,58 @@ export class PaperworkService {
           strokes: proof.strokes ?? undefined,
           witnessedById: actor?.id ?? null,
           signedAt,
-          proofSha256: proofOf(text, r.customerName, proof.method, signedAt, strokesHash),
+          proofSha256,
         },
-      });
+        select: { id: true },
+      }));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
         throw conflict('already_signed', 'The contract is already signed');
       throw error;
     }
+    // The PDF signed and the proof, kept in the private store (never fails the signature: the text and its proof are kept).
+    let signedSha256: string | null = null;
+    if (this.storage.available()) {
+      try {
+        const built = await buildSignedContractPdf(original, doc, {
+          productName: PRODUCT_NAME,
+          bookingReference: r.reference,
+          parkingTimeZone: r.parking.timezone,
+          signedAtLocal: localDateTime(signedAt, r.parking.timezone),
+          signedAt,
+          signerName: r.customerName,
+          method: proof.method,
+          device,
+          phoneMasked: proof.phoneMasked,
+          witnessName: actor?.firstName ?? null,
+          strokes: proof.strokes,
+          textSha256,
+          proofSha256,
+          template: template ? templateFacts(template) : null,
+        });
+        const names = signedFileNames(r.reference);
+        const folder = `contracts/${r.operatorId}/${r.id}`;
+        const signedBlobKey = `${folder}/${names.signed}`;
+        const proofBlobKey = `${folder}/${names.proof}`;
+        await this.storage.put(signedBlobKey, built.signed, 'application/pdf');
+        await this.storage.put(proofBlobKey, built.proof, 'application/pdf');
+        await prisma.reservationContract.update({
+          where: { id: contractId },
+          data: { signedBlobKey, signedSha256: built.signedSha256, proofBlobKey },
+        });
+        signedSha256 = built.signedSha256;
+      } catch (error) {
+        logger.error(`[Contracts] Signed PDF not stored for reservation ${r.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     await this.audit.record(
       { id: actor?.id ?? null, operatorId: r.operatorId, actingAs: actor?.actingAs },
-      { action: 'contract.signed', entityType: 'reservation', entityId: r.id, details: { method: proof.method, device, version: CONTRACT_VERSION } },
+      {
+        action: 'contract.signed',
+        entityType: 'reservation',
+        entityId: r.id,
+        details: { method: proof.method, device, version, templateId: template?.id ?? null, signedSha256 },
+      },
     );
     const signed = (await prisma.reservation.findUnique({ where: { id: r.id }, include: WITH_PAPERWORK }))!;
     await this.emailCopy(signed);
@@ -406,6 +475,17 @@ export class PaperworkService {
     const when = `${localDateTime(c.signedAt, r.parking.timezone).replace('T', ' à ')}`;
     const how = c.method === 'sms_code' ? `par code reçu par SMS au ${c.phoneMasked}` : 'par signature manuscrite sur l’appareil du parking';
     const proofLines = [`Signé par ${c.signerName} le ${when}, ${how}.`, `Version ${c.version} · empreinte ${c.proofSha256}`];
+    const attachments: { name: string; content: Buffer }[] = [];
+    if (c.signedBlobKey) {
+      // The signed PDF (the parking's contract, or Plazo's text) with the signature page (26/10/2026).
+      try {
+        const stored = await this.storage.get(c.signedBlobKey);
+        if (stored) attachments.push({ name: signedFileNames(r.reference).signed, content: await toBuffer(stored.stream) });
+      } catch (error) {
+        logger.warn(`[Contracts] Signed PDF not attached for reservation ${r.id}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    if (attachments.length) proofLines.push('Le contrat signé est joint à ce message (PDF).');
     const message: EmailMessage = {
       subject: `Votre contrat signé · ${doc.title.replace(/^Contrat de stationnement · /, '')}`,
       text: [c.text, '', ...proofLines].join('\n'),
@@ -421,6 +501,7 @@ export class PaperworkService {
       'contract_signed',
       `reservation ${r.id}`,
       message,
+      attachments,
     );
     if (ok) await prisma.reservationContract.update({ where: { id: c.id }, data: { emailedAt: new Date() } });
   }

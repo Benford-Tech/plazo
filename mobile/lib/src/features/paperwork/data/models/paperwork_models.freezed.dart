@@ -1046,7 +1046,9 @@ mixin _$ContractModel {
  String get status;/// The staff may have it signed now (the contract is signed at the counter, on the parking's phone).
  bool get canSign;/// Not signed yet and still signable: at the counter, the day of the drop-off.
  bool get atCounter;/// A code can be sent by SMS (a mobile number, SMS configured on the server).
- bool get codeAvailable; String get phoneMasked; ContractDocumentModel get document; SignedContractModel? get signed;
+ bool get codeAvailable; String get phoneMasked; ContractDocumentModel get document; SignedContractModel? get signed;/// The parking's own PDF (26/10/2026): the one signed, or the one in force until the signature.
+ ContractTemplateInfo? get template;/// Which PDFs the API serves: the parking's contract, the signed PDF, the proof.
+ ContractFiles get files;
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1060,20 +1062,20 @@ $ContractModelCopyWith<ContractModel> get copyWith => _$ContractModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as ContractModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContractModel&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.canSign, _this.canSign) || other.canSign == _this.canSign)&&(identical(other.atCounter, _this.atCounter) || other.atCounter == _this.atCounter)&&(identical(other.codeAvailable, _this.codeAvailable) || other.codeAvailable == _this.codeAvailable)&&(identical(other.phoneMasked, _this.phoneMasked) || other.phoneMasked == _this.phoneMasked)&&(identical(other.document, _this.document) || other.document == _this.document)&&(identical(other.signed, _this.signed) || other.signed == _this.signed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContractModel&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.canSign, _this.canSign) || other.canSign == _this.canSign)&&(identical(other.atCounter, _this.atCounter) || other.atCounter == _this.atCounter)&&(identical(other.codeAvailable, _this.codeAvailable) || other.codeAvailable == _this.codeAvailable)&&(identical(other.phoneMasked, _this.phoneMasked) || other.phoneMasked == _this.phoneMasked)&&(identical(other.document, _this.document) || other.document == _this.document)&&(identical(other.signed, _this.signed) || other.signed == _this.signed)&&(identical(other.template, _this.template) || other.template == _this.template)&&(identical(other.files, _this.files) || other.files == _this.files));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ContractModel;
-  return Object.hash(runtimeType,_this.status,_this.canSign,_this.atCounter,_this.codeAvailable,_this.phoneMasked,_this.document,_this.signed);
+  return Object.hash(runtimeType,_this.status,_this.canSign,_this.atCounter,_this.codeAvailable,_this.phoneMasked,_this.document,_this.signed,_this.template,_this.files);
 }
 
 @override
 String toString() {
   final _this = this as ContractModel;
-  return 'ContractModel(status: ${_this.status}, canSign: ${_this.canSign}, atCounter: ${_this.atCounter}, codeAvailable: ${_this.codeAvailable}, phoneMasked: ${_this.phoneMasked}, document: ${_this.document}, signed: ${_this.signed})';
+  return 'ContractModel(status: ${_this.status}, canSign: ${_this.canSign}, atCounter: ${_this.atCounter}, codeAvailable: ${_this.codeAvailable}, phoneMasked: ${_this.phoneMasked}, document: ${_this.document}, signed: ${_this.signed}, template: ${_this.template}, files: ${_this.files})';
 }
 
 
@@ -1084,7 +1086,7 @@ abstract mixin class $ContractModelCopyWith<$Res>  {
   factory $ContractModelCopyWith(ContractModel value, $Res Function(ContractModel) _then) = _$ContractModelCopyWithImpl;
 @useResult
 $Res call({
- String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
+ String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed, ContractTemplateInfo? template, ContractFiles files
 });
 
 
@@ -1101,7 +1103,7 @@ class _$ContractModelCopyWithImpl<$Res>
 
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,Object? template = freezed,Object? files = null,}) {
   return _then(ContractModel(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,canSign: null == canSign ? _self.canSign : canSign // ignore: cast_nullable_to_non_nullable
@@ -1110,7 +1112,9 @@ as bool,codeAvailable: null == codeAvailable ? _self.codeAvailable : codeAvailab
 as bool,phoneMasked: null == phoneMasked ? _self.phoneMasked : phoneMasked // ignore: cast_nullable_to_non_nullable
 as String,document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
 as ContractDocumentModel,signed: freezed == signed ? _self.signed : signed // ignore: cast_nullable_to_non_nullable
-as SignedContractModel?,
+as SignedContractModel?,template: freezed == template ? _self.template : template // ignore: cast_nullable_to_non_nullable
+as ContractTemplateInfo?,files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
+as ContractFiles,
   ));
 }
 /// Create a copy of ContractModel
@@ -1272,7 +1276,7 @@ return $default(_that.status,_that.canSign,_that.atCounter,_that.codeAvailable,_
 @JsonSerializable()
 
 class _ContractModel extends ContractModel {
-  const _ContractModel({required this.status, this.canSign = false, this.atCounter = false, this.codeAvailable = false, required this.phoneMasked, required this.document, this.signed}): super._();
+  const _ContractModel({required this.status, this.canSign = false, this.atCounter = false, this.codeAvailable = false, required this.phoneMasked, required this.document, this.signed, this.template, this.files = const ContractFiles()}): super._();
   factory _ContractModel.fromJson(Map<String, dynamic> json) => _$ContractModelFromJson(json);
 
 /// unsigned | signed
@@ -1286,6 +1290,10 @@ class _ContractModel extends ContractModel {
 @override final  String phoneMasked;
 @override final  ContractDocumentModel document;
 @override final  SignedContractModel? signed;
+/// The parking's own PDF (26/10/2026): the one signed, or the one in force until the signature.
+@override final  ContractTemplateInfo? template;
+/// Which PDFs the API serves: the parking's contract, the signed PDF, the proof.
+@override@JsonKey() final  ContractFiles files;
 
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
@@ -1300,18 +1308,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContractModel&&(identical(other.status, status) || other.status == status)&&(identical(other.canSign, canSign) || other.canSign == canSign)&&(identical(other.atCounter, atCounter) || other.atCounter == atCounter)&&(identical(other.codeAvailable, codeAvailable) || other.codeAvailable == codeAvailable)&&(identical(other.phoneMasked, phoneMasked) || other.phoneMasked == phoneMasked)&&(identical(other.document, document) || other.document == document)&&(identical(other.signed, signed) || other.signed == signed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContractModel&&(identical(other.status, status) || other.status == status)&&(identical(other.canSign, canSign) || other.canSign == canSign)&&(identical(other.atCounter, atCounter) || other.atCounter == atCounter)&&(identical(other.codeAvailable, codeAvailable) || other.codeAvailable == codeAvailable)&&(identical(other.phoneMasked, phoneMasked) || other.phoneMasked == phoneMasked)&&(identical(other.document, document) || other.document == document)&&(identical(other.signed, signed) || other.signed == signed)&&(identical(other.template, template) || other.template == template)&&(identical(other.files, files) || other.files == files));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,status,canSign,atCounter,codeAvailable,phoneMasked,document,signed);
+    return Object.hash(runtimeType,status,canSign,atCounter,codeAvailable,phoneMasked,document,signed,template,files);
 }
 
 @override
 String toString() {
-    return 'ContractModel(status: $status, canSign: $canSign, atCounter: $atCounter, codeAvailable: $codeAvailable, phoneMasked: $phoneMasked, document: $document, signed: $signed)';
+    return 'ContractModel(status: $status, canSign: $canSign, atCounter: $atCounter, codeAvailable: $codeAvailable, phoneMasked: $phoneMasked, document: $document, signed: $signed, template: $template, files: $files)';
 }
 
 
@@ -1322,7 +1330,7 @@ abstract mixin class _$ContractModelCopyWith<$Res> implements $ContractModelCopy
   factory _$ContractModelCopyWith(_ContractModel value, $Res Function(_ContractModel) _then) = __$ContractModelCopyWithImpl;
 @override @useResult
 $Res call({
- String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
+ String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed, ContractTemplateInfo? template, ContractFiles files
 });
 
 
@@ -1339,7 +1347,7 @@ class __$ContractModelCopyWithImpl<$Res>
 
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,Object? template = freezed,Object? files = null,}) {
   return _then(_ContractModel(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,canSign: null == canSign ? _self.canSign : canSign // ignore: cast_nullable_to_non_nullable
@@ -1348,7 +1356,9 @@ as bool,codeAvailable: null == codeAvailable ? _self.codeAvailable : codeAvailab
 as bool,phoneMasked: null == phoneMasked ? _self.phoneMasked : phoneMasked // ignore: cast_nullable_to_non_nullable
 as String,document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
 as ContractDocumentModel,signed: freezed == signed ? _self.signed : signed // ignore: cast_nullable_to_non_nullable
-as SignedContractModel?,
+as SignedContractModel?,template: freezed == template ? _self.template : template // ignore: cast_nullable_to_non_nullable
+as ContractTemplateInfo?,files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
+as ContractFiles,
   ));
 }
 

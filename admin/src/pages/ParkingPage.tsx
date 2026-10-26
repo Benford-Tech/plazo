@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { ComparatorCommissionCard } from "@/components/parking/ComparatorCommissionCard";
+import { ContractTemplateCard } from "@/components/parking/ContractTemplateCard";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
@@ -21,7 +22,15 @@ import { describeError, fr } from "@/lib/fr";
 import { bookableCapacity } from "@/lib/roles";
 import type { Parking } from "@/lib/types";
 
-type Form = { name: string; address: string; totalCapacity: string; safetyMarginPct: string; shuttleTravelMinutes: string; terminalLeadMinutes: string; landingDelayMinutes: string };
+type Form = {
+  name: string;
+  address: string;
+  totalCapacity: string;
+  safetyMarginPct: string;
+  shuttleTravelMinutes: string;
+  terminalLeadMinutes: string;
+  landingDelayMinutes: string;
+};
 
 const toForm = (p: Parking): Form => ({
   name: p.name,
@@ -35,7 +44,10 @@ const toForm = (p: Parking): Form => ({
 
 export default function ParkingPage() {
   const queryClient = useQueryClient();
-  const { data: parking, isLoading } = useQuery({ queryKey: ["parking"], queryFn: adminApi.getParking });
+  const { data: parking, isLoading } = useQuery({
+    queryKey: ["parking"],
+    queryFn: adminApi.getParking,
+  });
   const [form, setForm] = useState<Form | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const t = fr.parking;
@@ -76,11 +88,17 @@ export default function ParkingPage() {
     );
   }
 
-  const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value });
+  const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [key]: e.target.value });
   // 09/10/2026: once the plan has room (files or active spots), its figure is the capacity used
   // everywhere; the declared one stays stored and is sent back unchanged.
-  const planSource = parking?.capacitySource === "files" || parking?.capacitySource === "spots" ? parking.capacitySource : null;
-  const capacity = planSource ? parking!.effectiveCapacity : Number(form.totalCapacity);
+  const planSource =
+    parking?.capacitySource === "files" || parking?.capacitySource === "spots"
+      ? parking.capacitySource
+      : null;
+  const capacity = planSource
+    ? parking!.effectiveCapacity
+    : Number(form.totalCapacity);
   const preview = bookableCapacity(capacity, Number(form.safetyMarginPct));
 
   return (
@@ -91,21 +109,44 @@ export default function ParkingPage() {
         <CardContent className="pt-6">
           <form
             className="space-y-4"
-            onSubmit={e => {
+            onSubmit={(e) => {
               e.preventDefault();
               save.mutate(form);
             }}
           >
-            <FormField id="name" label={t.name} required value={form.name} onChange={set("name")} error={fieldErrors.name} />
-            <FormField id="address" label={t.address} value={form.address} onChange={set("address")} error={fieldErrors.address} />
+            <FormField
+              id="name"
+              label={t.name}
+              required
+              value={form.name}
+              onChange={set("name")}
+              error={fieldErrors.name}
+            />
+            <FormField
+              id="address"
+              label={t.address}
+              value={form.address}
+              onChange={set("address")}
+              error={fieldErrors.address}
+            />
             <div className="grid gap-4 sm:grid-cols-3">
               {planSource ? (
-                <div className="space-y-1.5 sm:col-span-3" data-testid="capacity-from-plan">
-                  <p className="text-sm font-medium leading-none">{t.totalCapacity}</p>
-                  <p className="font-mono text-2xl font-bold text-lime-deep">{t.capacityValue(capacity)}</p>
+                <div
+                  className="space-y-1.5 sm:col-span-3"
+                  data-testid="capacity-from-plan"
+                >
+                  <p className="text-sm font-medium leading-none">
+                    {t.totalCapacity}
+                  </p>
+                  <p className="font-mono text-2xl font-bold text-lime-deep">
+                    {t.capacityValue(capacity)}
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     {t.capacityFromPlan(planSource)}{" "}
-                    <Link to="/parking/plan" className="font-medium text-lime-deep underline">
+                    <Link
+                      to="/parking/plan"
+                      className="font-medium text-lime-deep underline"
+                    >
                       {t.openPlan}
                     </Link>
                   </p>
@@ -178,10 +219,16 @@ export default function ParkingPage() {
             </div>
             {preview !== null && (
               <Alert className="border-lime-deep/30 bg-accent">
-                <AlertDescription>{t.bookablePreview(preview)}</AlertDescription>
+                <AlertDescription>
+                  {t.bookablePreview(preview)}
+                </AlertDescription>
               </Alert>
             )}
-            <Button type="submit" className="h-11 text-base" disabled={save.isPending}>
+            <Button
+              type="submit"
+              className="h-11 text-base"
+              disabled={save.isPending}
+            >
               {fr.common.save}
             </Button>
           </form>
@@ -192,6 +239,7 @@ export default function ParkingPage() {
       <ReturnMeetingPointForm />
       {parking && <ShuttleTrackingCard parking={parking} />}
       {parking && <ExtrasSettingsCard parking={parking} />}
+      <ContractTemplateCard />
       <ShuttleStops />
       <ShuttleVehicles />
       <FlightCheckCard />

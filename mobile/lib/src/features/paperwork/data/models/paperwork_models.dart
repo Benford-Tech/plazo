@@ -67,11 +67,72 @@ abstract class ContractModel with _$ContractModel {
     required String phoneMasked,
     required ContractDocumentModel document,
     SignedContractModel? signed,
+
+    /// The parking's own PDF (26/10/2026): the one signed, or the one in force until the signature.
+    ContractTemplateInfo? template,
+
+    /// Which PDFs the API serves: the parking's contract, the signed PDF, the proof.
+    @Default(ContractFiles()) ContractFiles files,
   }) = _ContractModel;
 
   factory ContractModel.fromJson(Map<String, dynamic> json) => _$ContractModelFromJson(json);
 
   bool get isSigned => status == 'signed';
+}
+
+/// The parking's own contract (26/10/2026, « chaque parking peut héberger le contrat de stationnement à ses clients »,
+/// choice A « Mon PDF »): read before signing, served by `…/contract/file?kind=template`.
+class ContractTemplateInfo {
+  const ContractTemplateInfo({required this.id, required this.title, required this.version, required this.pageCount, required this.fileName});
+
+  factory ContractTemplateInfo.fromJson(Map<String, dynamic> json) => ContractTemplateInfo(
+    id: json['id'] as String,
+    title: json['title'] as String,
+    version: (json['version'] as num).toInt(),
+    pageCount: (json['pageCount'] as num).toInt(),
+    fileName: json['fileName'] as String,
+  );
+
+  final String id;
+  final String title;
+  final int version;
+  final int pageCount;
+  final String fileName;
+
+  Map<String, dynamic> toJson() => {'id': id, 'title': title, 'version': version, 'pageCount': pageCount, 'fileName': fileName};
+
+  @override
+  bool operator ==(Object other) =>
+      other is ContractTemplateInfo && other.id == id && other.title == title && other.version == version && other.pageCount == pageCount && other.fileName == fileName;
+
+  @override
+  int get hashCode => Object.hash(id, title, version, pageCount, fileName);
+
+  @override
+  String toString() => 'ContractTemplateInfo(id: $id, title: $title, version: $version, pageCount: $pageCount, fileName: $fileName)';
+}
+
+/// Which contract PDFs the API serves for a booking (`…/contract/file?kind=`).
+class ContractFiles {
+  const ContractFiles({this.template = false, this.signed = false, this.proof = false});
+
+  factory ContractFiles.fromJson(Map<String, dynamic> json) =>
+      ContractFiles(template: json['template'] as bool? ?? false, signed: json['signed'] as bool? ?? false, proof: json['proof'] as bool? ?? false);
+
+  final bool template;
+  final bool signed;
+  final bool proof;
+
+  Map<String, dynamic> toJson() => {'template': template, 'signed': signed, 'proof': proof};
+
+  @override
+  bool operator ==(Object other) => other is ContractFiles && other.template == template && other.signed == signed && other.proof == proof;
+
+  @override
+  int get hashCode => Object.hash(template, signed, proof);
+
+  @override
+  String toString() => 'ContractFiles(template: $template, signed: $signed, proof: $proof)';
 }
 
 @freezed

@@ -55,6 +55,8 @@ _ContractModel _$ContractModelFromJson(Map<String, dynamic> json) => _ContractMo
   phoneMasked: json['phoneMasked'] as String,
   document: ContractDocumentModel.fromJson(json['document'] as Map<String, dynamic>),
   signed: json['signed'] == null ? null : SignedContractModel.fromJson(json['signed'] as Map<String, dynamic>),
+  template: json['template'] == null ? null : ContractTemplateInfo.fromJson(json['template'] as Map<String, dynamic>),
+  files: json['files'] == null ? const ContractFiles() : ContractFiles.fromJson(json['files'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ContractModelToJson(_ContractModel instance) => <String, dynamic>{
@@ -65,6 +67,8 @@ Map<String, dynamic> _$ContractModelToJson(_ContractModel instance) => <String, 
   'phoneMasked': instance.phoneMasked,
   'document': instance.document,
   'signed': instance.signed,
+  'template': instance.template,
+  'files': instance.files,
 };
 
 _ContractDocumentModel _$ContractDocumentModelFromJson(Map<String, dynamic> json) => _ContractDocumentModel(

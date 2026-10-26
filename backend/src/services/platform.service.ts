@@ -19,6 +19,7 @@ import { loadPlanCapacity } from './capacity.service';
 import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
+import { ContractTemplateService } from './contract-template.service';
 import { PartnerContractService } from './partner-contract.service';
 import { PaymentService } from './payment.service';
 import { PushService } from './push.service';
@@ -386,7 +387,10 @@ export class PlatformService {
     if (reason) throw deletionRefused(reason);
 
     // The contract PDFs live outside the database (20/10/2026): erased once the operator is gone.
-    const contractFiles = await Container.get(PartnerContractService).blobKeysOf(operatorId);
+    const contractFiles = [
+      ...(await Container.get(PartnerContractService).blobKeysOf(operatorId)),
+      ...(await Container.get(ContractTemplateService).blobKeysOf(operatorId)),
+    ];
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.
       for (const parking of operator.parkings) await this.paymentService.capacity.lock(tx, parking.id);

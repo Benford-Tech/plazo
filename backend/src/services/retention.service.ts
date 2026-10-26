@@ -1,6 +1,7 @@
 import { Container, Service } from 'typedi';
 import prisma from '@/database';
 import { ANONYMIZED_TRAVELLER, anonymizeReturnedBefore, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
+import { ContractTemplateService } from './contract-template.service';
 import { PaperworkService } from './paperwork.service';
 
 /** Bookings anonymised per transaction, and per night at most (the rest waits for the next night). */
@@ -10,6 +11,7 @@ const MAX_BATCHES = 20;
 @Service()
 export class RetentionService {
   public paperwork = Container.get(PaperworkService);
+  public templates = Container.get(ContractTemplateService);
 
   /**
    * Anonymises the bookings returned more than 12 months ago (see src/domain/retention.ts): the
@@ -34,6 +36,9 @@ export class RetentionService {
       // The condition reports' photos go first (their storage is outside the database); the contract and the reports,
       // which name the traveller, go with the rest.
       await this.paperwork.erasePhotosOf(ids);
+      // The signed contracts' PDFs too (26/10/2026): outside the database, erased before the rows.
+      const contractFiles = await this.templates.signedBlobKeysOf(ids);
+      if (contractFiles.length) await this.templates.storage.remove(contractFiles);
       const [{ count }] = await prisma.$transaction([
         prisma.reservation.updateMany({ where: { id: { in: ids }, anonymizedAt: null }, data: { ...ANONYMIZED_TRAVELLER, anonymizedAt: now } }),
         prisma.$executeRaw`

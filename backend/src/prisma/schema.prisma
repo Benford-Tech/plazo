@@ -77,6 +77,7 @@ model Operator {
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
+  contractTemplates OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
 
   @@map("operators")
@@ -1504,8 +1505,10 @@ enum SignatureDevice {
 model ReservationContract {
   id            String          @id @default(cuid())
   reservationId String          @unique
-  // Version of Plazo's contract template, e.g. "2026-10-19".
+  // Version of Plazo's contract template, e.g. "2026-10-19", or "pdf-3" when the parking's own PDF (v3) was signed.
   version       String
+  // The parking's own contract (26/10/2026, choice A): the PDF the traveller signed, when the parking hosts one.
+  templateId    String?
   // The whole text signed (title and clauses, one per line) and its SHA-256 (hex).
   text          String
   textSha256    String
@@ -1522,10 +1525,45 @@ model ReservationContract {
   // Proof: SHA-256 of "text + signer + method + signedAt", shown in the emailed copy.
   proofSha256   String
   emailedAt     DateTime?
+  // The PDF signed (the parking's contract, or Plazo's text laid out, plus the « Réservation et signature » page) and
+  // the proof (that page alone), in the private store; null when the store was unavailable at the signature.
+  signedBlobKey String?
+  signedSha256  String?
+  proofBlobKey  String?
 
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  reservation Reservation               @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  template    OperatorContractTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
+  @@index([templateId])
   @@map("reservation_contracts")
+}
+
+/// The parking's own contract (26/10/2026, « chaque parking peut héberger le contrat de stationnement à ses clients »,
+/// choice A « Mon PDF »): a PDF per operator, versioned; the one without retiredAt is in force (partial unique index).
+/// Without one, the travellers sign Plazo's template (domain/contract.ts).
+model OperatorContractTemplate {
+  id           String    @id @default(cuid())
+  operatorId   String
+  operator     Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  /// 1, 2, 3… per operator.
+  version      Int
+  title        String
+  fileName     String
+  sizeBytes    Int
+  pageCount    Int
+  /// SHA-256 (hex) of the PDF uploaded.
+  sha256       String
+  blobKey      String
+  uploadedById String?
+  uploadedAt   DateTime  @default(now())
+  retiredAt    DateTime?
+  retiredById  String?
+
+  contracts ReservationContract[]
+
+  @@unique([operatorId, version])
+  @@index([operatorId, retiredAt])
+  @@map("operator_contract_templates")
 }
 
 /// A one-time code sent by SMS to sign (purpose "contract"). Only its HMAC is kept.

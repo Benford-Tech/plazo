@@ -34,9 +34,9 @@ export interface LegalDoc {
  * - Privacy: 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
-export const TERMS_VERSION = "22 octobre 2026";
+export const TERMS_VERSION = "26 octobre 2026";
 export const NOTICE_VERSION = "22 octobre 2026";
-export const PRIVACY_VERSION = "22 octobre 2026";
+export const PRIVACY_VERSION = "26 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -156,7 +156,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
           `Ni ${p} ni le parking ne sont responsables d’un vol manqué en raison d’une arrivée tardive du voyageur au parking ou d’informations inexactes qu’il a fournies.`,
           "Sauf mention contraire sur la fiche du parking, la réservation vaut pour une voiture particulière de dimensions courantes. Pour un utilitaire, un camping-car, un véhicule surélevé ou attelé, le voyageur vérifie auprès du parking avant de réserver : le parking peut le refuser ou appliquer le supplément prévu par ses conditions.",
           "Le véhicule doit être assuré, en état de circuler et conforme à la réglementation. Il est conseillé de n’y laisser aucun objet de valeur.",
-          `Le parking peut faire signer au voyageur un contrat de stationnement au comptoir, le jour du dépôt, sur le téléphone du parking (avec un code reçu par SMS ou par signature manuscrite) ; le voyageur peut le lire à l’avance dans l’application ${p}, et une copie signée lui est envoyée par e-mail. Au dépôt, le parking fait un état des lieux du véhicule avec photos (extérieur, compteur, intérieur, dégâts déjà présents, kilométrage, carburant). Le voyageur le valide ou signale un oubli, sur place ou depuis l’application ; sans réponse de sa part avant son départ en navette, l’état des lieux du dépôt vaut accord. Le voyageur peut aussi, s’il le souhaite, photographier lui-même son véhicule dans l’application avant de remettre ses clés et au retour : ses photos sont envoyées au parking et s’ajoutent à l’état des lieux.`,
+          `Le parking peut faire signer au voyageur un contrat de stationnement au comptoir, le jour du dépôt, sur le téléphone du parking (avec un code reçu par SMS ou par signature manuscrite) : son propre contrat, déposé en PDF dans son espace pro, ou à défaut le modèle proposé par ${p}. Le voyageur peut le lire à l’avance dans l’application ${p} ; une copie signée (le contrat tel que signé, plus une page « Réservation et signature » avec l’empreinte du document et de la signature) lui est envoyée par e-mail et reste consultable dans l’application. Au dépôt, le parking fait un état des lieux du véhicule avec photos (extérieur, compteur, intérieur, dégâts déjà présents, kilométrage, carburant). Le voyageur le valide ou signale un oubli, sur place ou depuis l’application ; sans réponse de sa part avant son départ en navette, l’état des lieux du dépôt vaut accord. Le voyageur peut aussi, s’il le souhaite, photographier lui-même son véhicule dans l’application avant de remettre ses clés et au retour : ses photos sont envoyées au parking et s’ajoutent à l’état des lieux.`,
         ],
       },
       {
@@ -334,7 +334,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "votre position, seulement si vous choisissez de la partager pour prévenir le parking de votre arrivée (dernière position uniquement), ou le délai que vous annoncez à la place ;",
             "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…) ;",
             "le statut de la réservation et l’historique de ses modifications par l’équipe du parking ;",
-            "le contrat de stationnement que vous signez (son texte, la date, le moyen de signature : code reçu par SMS, dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés, ou signature manuscrite sur le téléphone du parking) ;",
+            "le contrat de stationnement que vous signez (son texte ou le PDF du parking, le PDF signé et sa page de preuve, la date, le moyen de signature : code reçu par SMS, dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés, ou signature manuscrite sur le téléphone du parking, dont le tracé est gardé) ;",
             "l’état des lieux de votre véhicule au dépôt et au retour : les photos prises par le parking (extérieur, compteur, intérieur, gros plans des dégâts), les dégâts notés, le kilométrage, le carburant, et votre réponse (accord ou réserve, avec vos mots) ; et, si vous en prenez, vos propres photos du véhicule et le mot qui les accompagne, envoyés au parking depuis l’application.",
           ],
           "Dans l’application : l’identifiant d’abonnement aux notifications de votre téléphone, si vous les autorisez, et, sur le téléphone lui-même, les références et clés d’accès de vos réservations.",
@@ -400,7 +400,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Accès à Ma réservation par le lien reçu par e-mail ou SMS : jusqu’à 30 jours après le retour.",
             "Position partagée à l’arrivée : seule la dernière est gardée ; elle est effacée à l’arrivée, à l’arrêt du partage et au plus tard 2 heures après le début.",
             "Position GPS de la voiture : effacée 2 jours après le retour.",
-            "Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve (le temps de traiter le litige). Le contrat signé et l’état des lieux (sans les photos) suivent la réservation et sont supprimés avec son anonymisation.",
+            "Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve (le temps de traiter le litige). Le contrat signé (texte, PDF signé et preuve) et l’état des lieux (sans les photos) suivent la réservation et sont supprimés avec son anonymisation ; le parking peut en garder une copie, dans son propre registre.",
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
