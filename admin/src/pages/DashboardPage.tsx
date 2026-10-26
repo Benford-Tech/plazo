@@ -212,59 +212,67 @@ function ServicesStrip({ services }: { services: Dashboard["services"] }) {
   );
 }
 
-const SEVERITY_TONE: Record<AlertSeverity, BadgeTone> = {
-  urgent: "bad",
-  watch: "warn",
-  todo: "line",
+/** An "Opérations" row: what, who, since when, the severity as a badge; opens the booking. */
+/** 26/10/2026 (« ça prend trop de place »): one dense line per alert, severity as a coloured dot. */
+const SEVERITY_DOT: Record<AlertSeverity, string> = {
+  urgent: "bg-bad",
+  watch: "bg-warn",
+  todo: "bg-info",
 };
 
-/** An "Opérations" row: what, who, since when, the severity as a badge; opens the booking. */
+function alertDetail(alert: DashboardAlert): string {
+  const a = t.alerts;
+  if (alert.kind === "wave_overflow" && alert.since && alert.minutes !== null)
+    return a.waveDetail(
+      alert.detail as ShuttleDirection,
+      timeOf(alert.since),
+      alert.minutes,
+    );
+  if (alert.kind === "join_request" && /^\d+$/.test(alert.detail ?? ""))
+    return a.joinDetail(Number(alert.detail), alert.customerName);
+  if (alert.kind === "price_missing")
+    return fr.noPrice.alertDetail(Number(alert.detail) || 0);
+  if (alert.kind === "extras_due")
+    return a.extrasDetail(
+      alert.customerName,
+      alert.detail,
+      alert.since ? timeOf(alert.since) : null,
+    );
+  return [alert.customerName, alert.detail].filter(Boolean).join(" · ");
+}
+
 function AlertRow({ alert }: { alert: DashboardAlert }) {
   const a = t.alerts;
+  const detail = alertDetail(alert);
+  const showMinutes =
+    alert.minutes !== null &&
+    ![
+      "flight_delayed",
+      "departure_delayed",
+      "wave_overflow",
+      "join_request",
+    ].includes(alert.kind);
   const body = (
     <>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[15px] font-semibold">
-          {a.kind[alert.kind]}
-        </span>
-        <span className="truncate text-[13px] text-muted-foreground">
-          {alert.kind === "wave_overflow" &&
-          alert.since &&
-          alert.minutes !== null
-            ? a.waveDetail(
-                alert.detail as ShuttleDirection,
-                timeOf(alert.since),
-                alert.minutes,
-              )
-            : alert.kind === "join_request" && /^\d+$/.test(alert.detail ?? "")
-              ? a.joinDetail(Number(alert.detail), alert.customerName)
-              : alert.kind === "price_missing"
-                ? fr.noPrice.alertDetail(Number(alert.detail) || 0)
-                : alert.kind === "extras_due"
-                  ? a.extrasDetail(
-                      alert.customerName,
-                      alert.detail,
-                      alert.since ? timeOf(alert.since) : null,
-                    )
-                  : [alert.customerName, alert.detail]
-                      .filter(Boolean)
-                      .join(" · ")}
-        </span>
-      </span>
-      {alert.minutes !== null &&
-        ![
-          "flight_delayed",
-          "departure_delayed",
-          "wave_overflow",
-          "join_request",
-        ].includes(alert.kind) && (
-          <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
-            {a.since(alert.minutes)}
-          </span>
+      <span
+        className={cn(
+          "h-2 w-2 shrink-0 rounded-full",
+          SEVERITY_DOT[alert.severity],
         )}
+        aria-hidden="true"
+      />
+      <span className="min-w-0 flex-1 truncate text-[13px]">
+        <span className="font-semibold">{a.kind[alert.kind]}</span>
+        {detail && <span className="text-muted-foreground"> · {detail}</span>}
+      </span>
+      {showMinutes && (
+        <span className="hidden shrink-0 font-mono text-[11px] text-muted-foreground sm:inline">
+          {a.since(alert.minutes!)}
+        </span>
+      )}
       {/* A request may wait up to 7 days: « il y a 2 j », not « depuis 2880 min ». */}
       {alert.kind === "join_request" && alert.since && (
-        <span className="hidden text-xs text-muted-foreground sm:inline">
+        <span className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline">
           {timeAgo(alert.since)}
         </span>
       )}
@@ -272,16 +280,25 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
         <Plate
           value={alert.plate}
           size="sm"
-          className="hidden sm:inline-flex"
+          className="hidden shrink-0 sm:inline-flex"
         />
       )}
-      <Badge tone={SEVERITY_TONE[alert.severity]}>
+      <span
+        className={cn(
+          "shrink-0 text-[11px] font-semibold",
+          alert.severity === "urgent"
+            ? "text-bad-text"
+            : alert.severity === "watch"
+              ? "text-warn-text"
+              : "text-muted-foreground",
+        )}
+      >
         {a.severity[alert.severity]}
-      </Badge>
+      </span>
     </>
   );
   const className =
-    "flex items-center gap-3 border-t border-panel-line px-1 py-2.5 first:border-t-0";
+    "flex items-center gap-2 border-t border-panel-line px-1 py-1.5 first:border-t-0";
   if (alert.kind === "wave_overflow")
     return (
       <Link to="/navettes" className={cn(className, "hover:bg-panel-2")}>
@@ -323,6 +340,35 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
     </CardButton>
   ) : (
     <div className={className}>{body}</div>
+  );
+}
+
+/** The first rows only; the rest unfolds on demand (26/10/2026). */
+const ALERTS_SHOWN = 6;
+
+function AlertList({ alerts }: { alerts: DashboardAlert[] }) {
+  const [open, setOpen] = useState(false);
+  const shown = open ? alerts : alerts.slice(0, ALERTS_SHOWN);
+  const hidden = alerts.length - shown.length;
+  return (
+    <>
+      <ul>
+        {shown.map((alert, i) => (
+          <li key={`${alert.kind}-${alert.reservationId ?? i}`}>
+            <AlertRow alert={alert} />
+          </li>
+        ))}
+      </ul>
+      {(hidden > 0 || open) && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-1 text-[13px] font-semibold text-lime-deep hover:underline"
+        >
+          {open ? t.alerts.showLess : t.alerts.showMore(hidden)}
+        </button>
+      )}
+    </>
   );
 }
 
@@ -810,13 +856,7 @@ export default function DashboardPage() {
                 {t.alerts.empty}
               </p>
             ) : (
-              <ul>
-                {d.alerts.map((alert, i) => (
-                  <li key={`${alert.kind}-${alert.reservationId ?? i}`}>
-                    <AlertRow alert={alert} />
-                  </li>
-                ))}
-              </ul>
+              <AlertList alerts={d.alerts} />
             )}
           </Panel>
           {d.noPrice && d.noPrice.count > 0 && (

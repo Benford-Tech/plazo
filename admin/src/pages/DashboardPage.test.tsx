@@ -399,6 +399,26 @@ describe("DashboardPage", () => {
     expect(row).toHaveTextContent("À surveiller");
   });
 
+  it("26/10/2026 : la liste « À traiter » est compacte et se replie au-delà de six lignes", async () => {
+    const many = Array.from({ length: 9 }, (_, i) => ({
+      ...dashboard.alerts[0],
+      reservationId: `r${i + 10}`,
+      customerName: `Client ${i + 1}`,
+    }));
+    api.getDashboard.mockResolvedValue({ ...dashboard, alerts: many });
+    renderPage();
+    const alerts = (
+      await screen.findByRole("heading", { name: "À traiter maintenant" })
+    ).closest("section")!;
+    expect(within(alerts).getAllByRole("listitem")).toHaveLength(6);
+    fireEvent.click(
+      within(alerts).getByRole("button", { name: "Voir 3 de plus" }),
+    );
+    expect(within(alerts).getAllByRole("listitem")).toHaveLength(9);
+    fireEvent.click(within(alerts).getByRole("button", { name: "Réduire" }));
+    expect(within(alerts).getAllByRole("listitem")).toHaveLength(6);
+  });
+
   it("26/10/2026 : « Clés laissées » en un clic depuis la liste des véhicules", async () => {
     api.setKeys.mockResolvedValue({
       keysLeftAt: "2026-10-05T07:47:00Z",
