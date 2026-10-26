@@ -105,6 +105,20 @@ export const STORE_BADGE_PATHS = {
 
 export const APPLE_REVIEW_NOTE = "Validation par Apple en cours : le lien vous sera envoyé dès que l'app est publiée.";
 
+/**
+ * A numbered step of the team invitation (26/10/2026, « mets en forme le mail plazo »): a lime disc with the number, a
+ * bold title, one line of guidance, then the action (the button, or the store badges) inside a tinted card.
+ */
+function stepCard(n: number, title: string, text: string, actionHtml: string): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;background:${COLORS.tint};border-radius:12px"><tr>
+<td valign="top" width="44" style="padding:16px 0 16px 16px"><span style="display:inline-block;width:32px;height:32px;line-height:32px;border-radius:999px;background:${COLORS.lime};color:${COLORS.limeInk};font-weight:800;font-size:16px;text-align:center">${n}</span></td>
+<td valign="top" style="padding:16px 16px 16px 12px">
+<p style="margin:4px 0 0;font-size:17px;font-weight:700;color:${COLORS.deep}">${escapeHtml(title)}</p>
+<p style="margin:6px 0 0;font-size:14px;line-height:1.5;color:${COLORS.ink}">${escapeHtml(text)}</p>
+${actionHtml}
+</td></tr></table>`;
+}
+
 /** The two store badges of Plazo Pro (23/10/2026): Google Play linked, the App Store greyed and noted until Apple publishes. */
 export function proStoreBadges(productName: string, stores: { badgesBase: string; playStoreUrl: string; appStoreUrl: string | null }): StoreBadge[] {
   return [
@@ -200,23 +214,43 @@ export function teamInvitationEmail(
   const badgeRow: StoreBadge[] | undefined = data.badgesBase
     ? proStoreBadges(productName, { badgesBase: data.badgesBase, playStoreUrl: data.playStoreUrl, appStoreUrl: data.appStoreUrl })
     : undefined;
-  return message(
+  const subject = `Rejoignez l'équipe de ${data.operatorName} sur ${productName}`;
+  const heading = `Bienvenue dans l'équipe de ${data.operatorName}`;
+  const intro = `${data.inviterName} vous a ajouté à l'équipe de ${data.operatorName} sur ${productName}, en tant que ${role}. Deux étapes et c'est prêt :`;
+  const step1 = {
+    title: 'Choisissez votre mot de passe',
+    text: `Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
+    action: 'Choisir mon mot de passe',
+  };
+  const step2 = {
+    title: `Installez ${productName} Pro sur votre téléphone`,
+    text: `Connectez-vous avec cette adresse e-mail et votre mot de passe. C'est l'application que l'équipe utilise au quotidien : planning, navette, parking et réservations.`,
+  };
+  // 26/10/2026 (« mets en forme le mail plazo »): the two steps are numbered cards, the button in the first, the badges in the second.
+  const html = layout(
     productName,
-    `Rejoignez l'équipe de ${data.operatorName} sur ${productName}`,
-    `Bienvenue dans l'équipe de ${data.operatorName}`,
-    [
-      `${data.inviterName} vous a ajouté à l'équipe de ${data.operatorName} sur ${productName}, en tant que ${role}.`,
-      `1. Choisissez votre mot de passe avec le bouton ci-dessous. Ce lien est valable ${data.days} jours et ne sert qu'une fois ; personne d'autre ne connaît votre mot de passe.`,
-    ],
-    { label: 'Choisir mon mot de passe', url: data.url },
-    {
-      lines: [
-        `2. Installez l'application ${productName} Pro sur votre téléphone et connectez-vous avec cette adresse e-mail et votre mot de passe. C'est elle que l'équipe utilise au quotidien : planning, navette, parking et réservations.`,
-      ],
-      links: badgeRow ? [] : stores,
-      badges: badgeRow,
-    },
+    subject,
+    `<h1 style="margin:0 0 4px;font-size:22px;color:${COLORS.deep}">${escapeHtml(heading)}</h1>
+${paragraph(intro)}
+${stepCard(1, step1.title, step1.text, button(step1.action, data.url))}
+${stepCard(2, step2.title, step2.text, badgeRow ? storeBadgesHtml(badgeRow) : links(stores))}`,
   );
+  const text = [
+    heading,
+    '',
+    intro,
+    '',
+    `1. ${step1.title}`,
+    step1.text,
+    `${step1.action} : ${data.url}`,
+    '',
+    `2. ${step2.title}`,
+    step2.text,
+    ...stores.map(l => `- ${l.label} : ${l.url ?? l.note ?? ''}`),
+    '',
+    `— ${productName}`,
+  ].join('\n');
+  return { subject, html, text };
 }
 
 export function verificationEmail(productName: string, data: { url: string; hours: number }): EmailMessage {
