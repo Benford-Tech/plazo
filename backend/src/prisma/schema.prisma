@@ -740,6 +740,8 @@ model Reservation {
   fileId                  String?
   fileRank                Int?
   keyHook                 String?
+  /// 26/10/2026: keys handed over without a hook noted yet (« Clés laissées » in one click).
+  keysLeftAt              DateTime?
   // Where the shuttle serves this traveller (D-A, 05/10/2026): a stop of the parking (train station…);
   // null: the airport (the return meeting point).
   stopId                  String?

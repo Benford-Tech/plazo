@@ -7,7 +7,7 @@ import prisma, { ParkingPlan, ParkingSpot, Prisma, Reservation, ReservationStatu
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
 import { type Blocker, blockersOf, buildFiles, type FileSpot, type FileStay, scoreSpot } from '@/domain/files';
 import { dayBounds, localDate, nightsBetween } from '@/domain/time';
-import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { BOARDING_CHECK_IN_SELECT, withBoardingCheckIn } from '@/domain/shuttle';
@@ -316,6 +316,27 @@ export class OccupationService {
       details: { by: 'staff', accuracyM: data.accuracyM ?? null },
     });
     return { car: carView(row) };
+  }
+
+  /**
+   * « Clés laissées » in one click (26/10/2026, « pouvoir marquer en un clic qu'une personne a laissé ses clés »): the
+   * keys are in the team's hands even before a hook is noted; undone with `left: false`. Only while the car is on site.
+   */
+  public async setKeys(actor: AuthenticatedStaff, reservationId: string, data: KeysDto) {
+    const reservation = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId: actor.operatorId } });
+    if (!reservation) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    if (!ON_SITE_STATUSES.includes(reservation.status)) {
+      throw new HttpException(httpStatus.BAD_REQUEST, 'The vehicle is not on site', 'vehicle_not_on_site');
+    }
+    const keysLeftAt = data.left ? (reservation.keysLeftAt ?? new Date()) : null;
+    const row = await prisma.reservation.update({ where: { id: reservation.id }, data: { keysLeftAt } });
+    await this.audit.record(actor, {
+      action: 'reservation.keys',
+      entityType: 'reservation',
+      entityId: reservation.id,
+      details: { left: data.left, keyHook: reservation.keyHook },
+    });
+    return { keysLeftAt: row.keysLeftAt?.toISOString() ?? null, keyHook: row.keyHook };
   }
 
   public async clearCar(actor: AuthenticatedStaff, reservationId: string) {

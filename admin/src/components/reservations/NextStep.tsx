@@ -224,9 +224,15 @@ function HandoverForm({
     >
       <p className="font-mono text-[17px] font-medium">{h.title}</p>
       <p className="text-[13px] text-muted-foreground">
-        {[reservation.customerName, reservation.plate].filter((s) => s?.trim()).join(" · ")}
+        {[reservation.customerName, reservation.plate]
+          .filter((s) => s?.trim())
+          .join(" · ")}
         {reservation.spot?.code ? ` · ${t.spot} ${reservation.spot.code}` : ""}
-        {reservation.keyHook ? ` · ${t.keys} ${reservation.keyHook}` : ""}
+        {reservation.keyHook
+          ? ` · ${t.keys} ${reservation.keyHook}`
+          : reservation.keysLeftAt
+            ? ` · ${t.keys} ${t.keysLeft}`
+            : ""}
       </p>
       <label className="flex items-start gap-3">
         <input

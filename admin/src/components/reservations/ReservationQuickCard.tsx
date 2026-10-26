@@ -189,7 +189,10 @@ export function ReservationQuickCard({
               {hasChildSeats(r.childSeats) && (
                 <>
                   <dt className="text-muted-foreground">{t.childSeats}</dt>
-                  <dd className="flex items-center gap-1.5" data-testid="card-child-seats">
+                  <dd
+                    className="flex items-center gap-1.5"
+                    data-testid="card-child-seats"
+                  >
                     <ChildSeatIcon className="text-lime-deep" />
                     {childSeatsSummary(r.childSeats)}
                   </dd>
@@ -244,7 +247,7 @@ export function ReservationQuickCard({
                   data-testid="card-keys"
                   className={r.keyHook ? "" : "text-muted-foreground"}
                 >
-                  {r.keyHook ?? t.noKeys}
+                  {r.keyHook ?? (r.keysLeftAt ? t.keysLeft : t.noKeys)}
                 </span>
               </dd>
               {r.carLat != null && r.carLng != null && (

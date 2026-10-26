@@ -19,7 +19,13 @@ import {
 } from "@/lib/datetime";
 import { describeError, errorMessage, fr, quickCardFr } from "@/lib/fr";
 import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
-import { centsToInput, euros, isPriceLocked, nightFeeOf, parseEuros } from "@/lib/pricing";
+import {
+  centsToInput,
+  euros,
+  isPriceLocked,
+  nightFeeOf,
+  parseEuros,
+} from "@/lib/pricing";
 import { dayLabel, formatRate, parsePercent } from "@/lib/commission";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
@@ -63,8 +69,7 @@ function PriceLine({
   const queryClient = useQueryClient();
   const [value, setValue] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const editable =
-    canManage && !isPriceLocked(r) && r.status !== "cancelled";
+  const editable = canManage && !isPriceLocked(r) && r.status !== "cancelled";
   const save = useMutation({
     mutationFn: (cents: number | null) =>
       adminApi.setReservationPrice(r.id, cents),
@@ -74,7 +79,8 @@ function PriceLine({
       );
       void queryClient.invalidateQueries({ queryKey: ["revenue"] });
       // The comparator's commission follows the price (managers only see it).
-      if (r.commission) void queryClient.invalidateQueries({ queryKey: ["reservation", r.id] });
+      if (r.commission)
+        void queryClient.invalidateQueries({ queryKey: ["reservation", r.id] });
       setValue(null);
       setError(null);
       toast.success(t.priceSaved);
@@ -185,34 +191,56 @@ function CommissionLine({ reservation: r }: { reservation: Reservation }) {
   const [error, setError] = useState<string | null>(null);
   const c = r.commission;
   const save = useMutation({
-    mutationFn: (body: { rateBp: number | null; amountCents: number | null }) => adminApi.setReservationCommission(r.id, body),
+    mutationFn: (body: { rateBp: number | null; amountCents: number | null }) =>
+      adminApi.setReservationCommission(r.id, body),
     onSuccess: ({ commission }) => {
-      queryClient.setQueryData<Reservation>(["reservation", r.id], old => (old ? { ...old, commission } : old));
+      queryClient.setQueryData<Reservation>(["reservation", r.id], (old) =>
+        old ? { ...old, commission } : old,
+      );
       void queryClient.invalidateQueries({ queryKey: ["revenue"] });
       setEditing(false);
       setError(null);
       toast.success(t.overrideSaved);
     },
-    onError: err => setError(describeError(err)),
+    onError: (err) => setError(describeError(err)),
   });
   if (!c || r.priceCents === null) return null;
   const how =
-    c.source === "override" ? t.override : c.source === "rate" && c.effectiveFrom ? t.fromRate(c.comparator, dayLabel(c.effectiveFrom)) : t.noneSet(c.comparator);
-  const rateText = c.rateBp !== null ? `${formatRate(c.rateBp)}${c.fixedCents ? ` + ${euros(c.fixedCents)}` : ""}` : null;
+    c.source === "override"
+      ? t.override
+      : c.source === "rate" && c.effectiveFrom
+        ? t.fromRate(c.comparator, dayLabel(c.effectiveFrom))
+        : t.noneSet(c.comparator);
+  const rateText =
+    c.rateBp !== null
+      ? `${formatRate(c.rateBp)}${c.fixedCents ? ` + ${euros(c.fixedCents)}` : ""}`
+      : null;
 
   return (
     <Info label={t.line(c.comparator)}>
-      <span className="flex flex-wrap items-baseline gap-x-3" data-testid="commission-line">
-        <span className="tabular font-mono text-[#B45309]">− {euros(c.amountCents ?? 0)}</span>
-        {rateText && <span className="text-base text-muted-foreground">{rateText}</span>}
+      <span
+        className="flex flex-wrap items-baseline gap-x-3"
+        data-testid="commission-line"
+      >
+        <span className="tabular font-mono text-[#B45309]">
+          − {euros(c.amountCents ?? 0)}
+        </span>
+        {rateText && (
+          <span className="text-base text-muted-foreground">{rateText}</span>
+        )}
         <span className="text-base font-semibold text-lime-deep">
-          {t.keep} <span className="tabular font-mono">{euros(c.netCents ?? 0)}</span>
+          {t.keep}{" "}
+          <span className="tabular font-mono">{euros(c.netCents ?? 0)}</span>
         </span>
       </span>
       <span className="mt-1 flex flex-wrap items-baseline gap-x-3 text-sm text-muted-foreground">
         {how}
         {!editing && (
-          <button type="button" onClick={() => setEditing(true)} className="text-lime-deep underline-offset-4 hover:underline">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-lime-deep underline-offset-4 hover:underline"
+          >
             {t.change}
           </button>
         )}
@@ -231,29 +259,52 @@ function CommissionLine({ reservation: r }: { reservation: Reservation }) {
         <form
           className="mt-2 flex flex-wrap items-center gap-2 text-base"
           aria-label={t.overrideTitle}
-          onSubmit={e => {
+          onSubmit={(e) => {
             e.preventDefault();
             if (rate.trim() && amount.trim()) return setError(t.overrideBoth);
             if (rate.trim()) {
               const bp = parsePercent(rate);
-              return bp === null ? setError(t.invalidRate) : save.mutate({ rateBp: bp, amountCents: null });
+              return bp === null
+                ? setError(t.invalidRate)
+                : save.mutate({ rateBp: bp, amountCents: null });
             }
             if (amount.trim()) {
               const cents = parseEuros(amount);
-              return cents === null ? setError(t.invalidFixed) : save.mutate({ rateBp: null, amountCents: cents });
+              return cents === null
+                ? setError(t.invalidFixed)
+                : save.mutate({ rateBp: null, amountCents: cents });
             }
             save.mutate({ rateBp: null, amountCents: null });
           }}
         >
           <label className="flex items-center gap-1.5">
-            <span className="text-sm text-muted-foreground">{t.overrideRate}</span>
-            <input inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="tabular h-10 w-20 border border-border bg-card px-2.5 text-right font-mono" />
+            <span className="text-sm text-muted-foreground">
+              {t.overrideRate}
+            </span>
+            <input
+              inputMode="decimal"
+              value={rate}
+              onChange={(e) => setRate(e.target.value)}
+              className="tabular h-10 w-20 border border-border bg-card px-2.5 text-right font-mono"
+            />
           </label>
           <label className="flex items-center gap-1.5">
-            <span className="text-sm text-muted-foreground">{t.overrideAmount}</span>
-            <input inputMode="decimal" placeholder="0,00" value={amount} onChange={e => setAmount(e.target.value)} className="tabular h-10 w-24 border border-border bg-card px-2.5 text-right font-mono" />
+            <span className="text-sm text-muted-foreground">
+              {t.overrideAmount}
+            </span>
+            <input
+              inputMode="decimal"
+              placeholder="0,00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="tabular h-10 w-24 border border-border bg-card px-2.5 text-right font-mono"
+            />
           </label>
-          <button type="submit" disabled={save.isPending} className="h-10 bg-primary px-4 text-base font-bold uppercase text-primary-foreground hover:brightness-110 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={save.isPending}
+            className="h-10 bg-primary px-4 text-base font-bold uppercase text-primary-foreground hover:brightness-110 disabled:opacity-50"
+          >
             {t.save}
           </button>
           <button
@@ -360,7 +411,10 @@ export default function ReservationPage() {
       ) : (
         <>
           <NextStep reservation={r} />
-          <ReservationExtras reservationId={r.id} mayAct={can(user?.role, "reservations:status")} />
+          <ReservationExtras
+            reservationId={r.id}
+            mayAct={can(user?.role, "reservations:status")}
+          />
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>
@@ -402,7 +456,9 @@ export default function ReservationPage() {
                     : (r.spot?.code ?? quickCardFr.noSpot)}
                 </span>
                 <span className="ml-2 text-muted-foreground">
-                  · {quickCardFr.keys} {r.keyHook ?? quickCardFr.noKeys}
+                  · {quickCardFr.keys}{" "}
+                  {r.keyHook ??
+                    (r.keysLeftAt ? quickCardFr.keysLeft : quickCardFr.noKeys)}
                 </span>
               </Info>
               {r.boardingCheckIn && (

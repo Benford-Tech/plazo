@@ -711,6 +711,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      voiturier : N places · utilisées partout » quand les files comptent ; `apply-capacity` reste pour les anciennes
      versions de l'app.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
+   - **« Clés laissées » en un clic (26/10/2026, « pouvoir marquer en un clic qu'une personne a laissé ses clés »)** : sur le
+     tableau de bord web, la pilule ambre « Clés ? · Clés laissées » de chaque véhicule sans crochet noté est un bouton (hors de la
+     carte cliquable, jamais imbriqué) : un clic enregistre `Reservation.keysLeftAt` (migration `reservation_keys_left`,
+     `PUT /internal/reservations/:id/keys` `{ left }`, `reservations:status`, 400 `vehicle_not_on_site` hors statuts sur place,
+     `OccupationService.setKeys`, tracé `reservation.keys`), la pilule devient « Clés laissées · 09:47 » (verte), l'alerte
+     `keys_missing` s'éteint, fiche, fiche opérationnelle et « Rendre » disent « Clés laissées » tant qu'aucun crochet n'est noté
+     (le crochet, posé depuis l'Occupation, l'emporte) ; « Rendu » l'efface avec le crochet (`statusSideEffects`) ; `left: false`
+     annule. `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. Plazo Pro ne l'a pas encore.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
@@ -1391,7 +1399,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   installerez l'application… » sous l'intro, puis, le mot de passe enregistré, « Votre mot de passe est enregistré » avec les badges
   (Google Play relié, App Store grisé avec la note d'Apple tant que `PLAZO_PRO_APP_STORE_URL` manque ; images `/badges/*` servies par
   le site) et « Continuer sur le web » ; un gérant va toujours sur « Ma fiche ». Tests `staff.test.ts`, `TeamPage.test.tsx`,
-  `AcceptInvitationPage.test.tsx`. Plazo Pro n'a pas encore le bouton « Renvoyer ».
+  `AcceptInvitationPage.test.tsx`. Plazo Pro n'a pas encore le bouton « Renvoyer ». **Mise en forme (26/10/2026, « mets en forme le
+  mail plazo »)** : les deux étapes sont deux cartes teintées numérotées (`stepCard` de `account-messages.ts` : disque citron avec le
+  numéro, titre vert foncé, texte, puis le bouton ou les badges).
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
   https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et

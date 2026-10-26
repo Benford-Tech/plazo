@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { CarLocationDto } from './public-booking.dto';
-import { IsOptional, IsString, Matches, MaxLength, ValidateIf, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, Matches, MaxLength, ValidateIf, ValidateNested, IsBoolean } from 'class-validator';
 
 /** Puts a vehicle on a spot (or takes it off with `spotId: null`), with where its keys hang. */
 export class AssignSpotDto {
@@ -20,4 +20,10 @@ export class AssignSpotDto {
   @ValidateNested()
   @Type(() => CarLocationDto)
   public car?: CarLocationDto | null;
+}
+
+/** « Clés laissées » (26/10/2026): the keys were handed over (true) or not after all (false). */
+export class KeysDto {
+  @IsBoolean()
+  public left: boolean;
 }

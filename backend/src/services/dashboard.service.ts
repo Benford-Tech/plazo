@@ -90,6 +90,8 @@ export interface DashboardVehicle {
   spotCode: string | null;
   stayClass: string | null;
   keyHook: string | null;
+  /** « Clés laissées » (26/10/2026): the keys are in the team's hands, hook noted or not. */
+  keysLeftAt: string | null;
   returnFlight: string | null;
   flightStatus: string | null;
   flightScheduledAt: string | null;
@@ -253,7 +255,7 @@ export class DashboardService {
         });
       }
       // Placed, keys not hung.
-      for (const r of onSite.filter(r => placed(r) && !r.keyHook && r.arrivedAt && minutesSince(r.arrivedAt) >= KEYS_MINUTES)) {
+      for (const r of onSite.filter(r => placed(r) && !r.keyHook && !r.keysLeftAt && r.arrivedAt && minutesSince(r.arrivedAt) >= KEYS_MINUTES)) {
         alerts.push({
           kind: 'keys_missing',
           severity: 'todo',
@@ -575,6 +577,7 @@ export class DashboardService {
         spotCode: r.spot?.code ?? r.file?.code ?? null,
         stayClass: r.spot?.stayClass ?? null,
         keyHook: r.keyHook,
+        keysLeftAt: r.keysLeftAt?.toISOString() ?? null,
         returnFlight: r.returnFlight,
         flightStatus: r.flightStatus,
         flightScheduledAt: r.flightScheduledAt?.toISOString() ?? null,

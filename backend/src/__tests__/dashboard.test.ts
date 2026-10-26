@@ -106,6 +106,47 @@ describe('GET /internal/dashboard', () => {
     expect(res.body.breakdown).toMatchObject({ toTreat: 2, freeSpots: 1, returnsThisWeek: 3 });
   });
 
+  it("26/10/2026 : « Clés laissées » en un clic éteint l'alerte des clés et se voit sur le véhicule", async () => {
+    const op = await setupOperator();
+    const b = (await api().post('/api/internal/reservations').set(auth(op.token)).send(booking('GH-456-JK', 'Léa Durand'))).body.data;
+    // Not on site yet: refused.
+    const early = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true });
+    expect(early.status).toBe(400);
+    expect(early.body.code).toBe('vehicle_not_on_site');
+    await api().post(`/api/internal/reservations/${b.id}/status`).set(auth(op.token)).send({ status: 'arrived' });
+    await api().put(`/api/internal/parkings/${op.parking.id}/plan/spots`).set(auth(op.token)).send({ layout: 'valet24', spots });
+    const plan = await api().get(`/api/internal/parkings/${op.parking.id}/plan`).set(auth(op.token));
+    await api().post(`/api/internal/reservations/${b.id}/spot`).set(auth(op.token)).send({ spotId: plan.body.spots[0].id });
+    await prisma.reservation.update({ where: { id: b.id }, data: { arrivedAt: new Date(Date.now() - 45 * 60000) } });
+    let dash = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).toContain('keys_missing');
+
+    const left = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true });
+    expect(left.status).toBe(200);
+    expect(left.body.data.keysLeftAt).toBeTruthy();
+    expect(left.body.data.keyHook).toBeNull();
+    dash = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).not.toContain('keys_missing');
+    expect(dash.body.vehicles.find((v: { id: string }) => v.id === b.id)).toMatchObject({ keyHook: null, keysLeftAt: left.body.data.keysLeftAt });
+    const detail = await api().get(`/api/internal/reservations/${b.id}`).set(auth(op.token));
+    expect(detail.body.keysLeftAt).toBe(left.body.data.keysLeftAt);
+    const audit = await prisma.auditLog.findMany({ where: { action: 'reservation.keys', entityId: b.id } });
+    expect(audit).toHaveLength(1);
+    expect(audit[0].details).toMatchObject({ left: true, keyHook: null });
+
+    // Undone: the alert comes back; another operator's token is refused.
+    const undone = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false });
+    expect(undone.body.data.keysLeftAt).toBeNull();
+    dash = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).toContain('keys_missing');
+    // « Rendu » forgets it.
+    await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true });
+    for (const status of ['shuttled_out', 'return_requested', 'back_at_parking', 'returned']) {
+      await api().post(`/api/internal/reservations/${b.id}/status`).set(auth(op.token)).send({ status });
+    }
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } })).keysLeftAt).toBeNull();
+  });
+
   it('15/10/2026 : un retour bloqué derrière une voiture sans plaque nomme son client', async () => {
     const op = await setupOperator();
     const files = await api()

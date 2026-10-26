@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
-import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AssignFileDto, KeepFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
@@ -211,6 +211,13 @@ export class ParkingRoute implements Routes {
       this.parking.locateCar,
     );
     this.router.delete('/internal/reservations/:id/car-location', StaffAuthMiddleware('reservations:status'), this.parking.clearCar);
+    // « Clés laissées » in one click (26/10/2026), before or without a hook number.
+    this.router.put(
+      '/internal/reservations/:id/keys',
+      StaffAuthMiddleware('reservations:status'),
+      ValidationMiddleware(KeysDto),
+      this.parking.setKeys,
+    );
     // Bloc 2, step "Planning des places": one line per spot over the coming days.
     // S-C (07/10/2026): files as the unit of storage.
     this.router.get('/internal/parkings/:id/files', StaffAuthMiddleware('reservations:view'), this.parking.filesBoard);
