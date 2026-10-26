@@ -832,8 +832,7 @@ export const fr = {
       searchPlaceholder: "Plaque, nom…",
       noMatch: "Aucun véhicule ne correspond.",
       columns: {
-        plate: "Plaque",
-        client: "Client",
+        plate: "Plaque · client",
         place: "Place · file",
         keys: "Clés",
         return: "Retour",

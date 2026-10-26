@@ -16,6 +16,10 @@ const t = fr.dashboard.vehicles;
 /** Direction A (26/10/2026, « améliore l'ergonomie d'affichage des véhicules sur le parking »): one aligned row per car. */
 const SHOWN = 8;
 
+/** Plate + name, place, keys, return, state: the name column takes what the fixed ones leave. */
+const COLS =
+  "grid items-center gap-x-3 gap-y-1.5 md:grid-cols-[minmax(150px,1fr)_auto_auto_auto_auto]";
+
 type Filter = "all" | "returnsToday" | "noSpot" | "noKeys" | "flightLate";
 
 function isFlightLate(v: DashboardVehicle): boolean {
@@ -84,8 +88,7 @@ function vehicleBadges(
     out.push({ tone: "info", text: fr.status.back_at_parking });
   else if (v.status === "shuttled_out")
     out.push({ tone: "line", text: b.shuttled });
-  if (!v.spotCode) out.push({ tone: "bad", text: b.noSpot });
-  else if (out.length === 0) out.push({ tone: "ok", text: b.onSite });
+  if (v.spotCode && out.length === 0) out.push({ tone: "ok", text: b.onSite });
   return out;
 }
 
@@ -164,22 +167,22 @@ export function VehiclesTable({ vehicles }: { vehicles: DashboardVehicle[] }) {
       ) : (
         <div className="overflow-hidden rounded-xl border border-panel-line">
           <div
-            className="hidden grid-cols-[118px_minmax(0,1fr)_130px_250px_140px_auto] items-center gap-3 bg-panel-2 px-3 py-2 md:grid"
+            className={cn(COLS, "hidden bg-panel-2 px-3 py-2 md:grid")}
             aria-hidden="true"
           >
-            {(
-              ["plate", "client", "place", "keys", "return", "state"] as const
-            ).map((c) => (
-              <span
-                key={c}
-                className={cn(
-                  "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
-                  c === "state" && "text-right",
-                )}
-              >
-                {t.columns[c]}
-              </span>
-            ))}
+            {(["plate", "place", "keys", "return", "state"] as const).map(
+              (c) => (
+                <span
+                  key={c}
+                  className={cn(
+                    "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+                    c === "state" && "text-right",
+                  )}
+                >
+                  {t.columns[c]}
+                </span>
+              ),
+            )}
           </div>
           <ul>
             {shown.map((v) => (
@@ -222,19 +225,27 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
   return (
     <div
       data-testid="vehicle-row"
-      className="grid grid-cols-[118px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 border-t border-panel-line px-3 py-2 first:border-t-0 hover:bg-panel-2/60 md:grid-cols-[118px_minmax(0,1fr)_130px_250px_140px_auto]"
+      className={cn(
+        COLS,
+        "grid-cols-[minmax(0,1fr)_auto] border-t border-panel-line px-3 py-2 first:border-t-0 hover:bg-panel-2/60",
+      )}
     >
-      <button type="button" onClick={open} className="text-left">
-        <Plate value={v.plate} size="sm" />
-      </button>
-      <button
-        type="button"
-        onClick={open}
-        className="min-w-0 truncate text-left text-[14px] hover:underline"
-      >
-        <span className="font-semibold">{v.customerName}</span>
-        <span className="text-muted-foreground"> · {t.pax(v.passengers)}</span>
-      </button>
+      {/* Plate above the name (26/10/2026, « les noms ne sont pas assez visibles »): the name gets a full line. */}
+      <span className="flex min-w-0 flex-col items-start gap-1 max-md:col-span-2">
+        <button type="button" onClick={open} className="text-left">
+          <Plate value={v.plate} size="sm" />
+        </button>
+        <button
+          type="button"
+          onClick={open}
+          className="min-w-0 break-words text-left text-[15px] font-bold leading-tight hover:underline"
+        >
+          {v.customerName}
+          <span className="ml-1.5 text-[12px] font-medium text-muted-foreground">
+            {t.pax(v.passengers)}
+          </span>
+        </button>
+      </span>
       <span
         className={cn(
           "font-mono text-[13px] font-bold",
