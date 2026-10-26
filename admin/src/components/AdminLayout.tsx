@@ -20,6 +20,7 @@ import { fr } from "@/lib/fr";
 import { can, type Permission } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { ContractBanner } from "./ContractBanner";
+import { GettingStartedNav } from "./GettingStartedNav";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Logo } from "./Logo";
 import { DemoBanner } from "./DemoBanner";
@@ -216,6 +217,7 @@ export function AdminLayout() {
               );
             })}
           </nav>
+          <GettingStartedNav />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="hidden h-12 items-center gap-4 border-b border-panel-line bg-panel-shell px-6 lg:flex">

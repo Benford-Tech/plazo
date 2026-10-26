@@ -1415,9 +1415,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   sinon « Le modèle Plazo pour l'instant »), `sms` (ligne `reminder_settings`) ; chauffeur `post`, `vehicle`, `notifications`
   (un appareil), `tracking` (suivi non coupé) ; voiturier `post`, `plan`, `keys` (clés laissées ou crochet notés une fois),
   `notifications` ; accueil `post`, `reservations` (une saisie par l'équipe), `inbox`, `notifications` ; test
-  `getting-started.test.ts`. Web : carte « Bien démarrer » du tableau de bord (`GettingStartedCard`, bordure citron, « N / 7
-  étapes », barre, une ligne par étape avec son détail et « Ouvrir › » vers la page de réglage, « Masquer » gardé dans le
-  navigateur `plazo:getting-started-hidden`, disparue quand tout est fait). Plazo Pro : carte `GettingStartedCard` sous le chiffre
+  `getting-started.test.ts`. Web : **dans le rail de gauche** (même jour, « les étapes bien démarrer doivent être sur la nav
+  bar de gauche » : la carte du tableau de bord est retirée) : sous les sections, bloc `GettingStartedNav` « BIEN DÉMARRER ·
+  N / 7 étapes » avec sa barre, une ligne par étape (coche verte ou cercle, titre, détail en info-bulle) qui mène à la page de
+  réglage, repliable d'un clic (gardé dans le navigateur `plazo:getting-started-hidden`), absent quand tout est fait ; écran
+  large seulement (`lg`). Plazo Pro : carte `GettingStartedCard` sous le chiffre
   d'affaires du tableau de bord (avancement et les deux prochaines étapes, `features/pro_start/`, `GettingStartedDataSource` par
   Dio sans freezed) et page `/pro/bien-demarrer` (`ProGettingStartedPage`, aussi Plus › « Bien démarrer ») : chaque étape cochée
   mène à l'écran de l'app qui la règle, ou dit « À régler sur l'espace pro web » (mails, fiche, contrat, SMS). **T-B** visite guidée
