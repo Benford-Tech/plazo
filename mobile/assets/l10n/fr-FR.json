@@ -1916,6 +1916,12 @@
     "signed_by_code": "Avec le code reçu par SMS au {}",
     "signed_by_hand": "Signature à la main sur le téléphone du parking",
     "proof": "Version {} · empreinte {}…",
+    "template_title": "Contrat du parking",
+    "template_line": "Version {} · {} pages · à lire avant de signer",
+    "template_open": "Ouvrir le PDF",
+    "signed_pdf": "PDF signé",
+    "proof_pdf": "Preuve de signature",
+    "file_error": "Le fichier n'a pas pu être ouvert.",
     "signature_label": "Signature du client, au doigt",
     "signature_clear": "Effacer",
     "report_title": {

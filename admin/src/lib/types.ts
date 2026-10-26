@@ -1900,6 +1900,89 @@ export interface MyContract {
   canSign: boolean;
 }
 
+// ---- The parking's own contract (26/10/2026, choice A « Mon PDF », register R-A) ---------------------------------------
+
+export interface ContractTemplate {
+  id: string;
+  version: number;
+  title: string;
+  fileName: string;
+  sizeBytes: number;
+  pageCount: number;
+  sha256: string;
+  uploadedAt: string;
+  uploadedBy: string | null;
+  retiredAt: string | null;
+  signedCount: number;
+}
+
+export interface ContractTemplates {
+  current: ContractTemplate | null;
+  history: ContractTemplate[];
+  plazoSignedCount: number;
+}
+
+export type SignedContractFileKind = "template" | "signed" | "proof";
+
+export interface SignedContractRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  plate: string;
+  arrivalAt: string;
+  returnAt: string;
+  signedAt: string;
+  signerName: string;
+  method: "sms_code" | "handwritten" | "booking_link";
+  witnessName: string | null;
+  version: string;
+  templateVersion: number | null;
+  proofSha256: string;
+  signedSha256: string | null;
+  files: { template: boolean; signed: boolean; proof: boolean };
+  reserved: boolean;
+}
+
+export interface SignedContractsPage {
+  data: SignedContractRow[];
+  total: number;
+  reservedCount: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface SignedContractsQuery {
+  from?: string;
+  to?: string;
+  q?: string;
+  reserved?: boolean;
+  page?: number;
+}
+
+/** The contract block of a booking's paperwork (what the web reads of GET …/paperwork). */
+export interface BookingContract {
+  status: "unsigned" | "signed";
+  atCounter: boolean;
+  template: {
+    id: string;
+    title: string;
+    version: number;
+    pageCount: number;
+    fileName: string;
+  } | null;
+  files: { template: boolean; signed: boolean; proof: boolean };
+  signed: {
+    version: string;
+    signedAt: string;
+    signerName: string;
+    method: "sms_code" | "handwritten" | "booking_link";
+    device: string;
+    phoneMasked: string | null;
+    proofSha256: string;
+    signedSha256: string | null;
+  } | null;
+}
+
 // ---- Services for the car (21/10/2026) -----------------------------------------------------------------------------
 
 export type ExtraKind = "interior_wash" | "hybrid_charge" | "ev_charge";

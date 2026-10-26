@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
 import ContractPage from "@/pages/ContractPage";
+import ContractsPage from "@/pages/ContractsPage";
 import DemoEntryPage from "@/pages/DemoEntryPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
@@ -237,6 +238,14 @@ const App = () => (
                 }
               />
               <Route path="/mon-compte" element={<AccountPage />} />
+              <Route
+                path="/contrats"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <ContractsPage />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="/mon-contrat"
                 element={

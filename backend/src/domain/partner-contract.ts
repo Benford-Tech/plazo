@@ -88,7 +88,7 @@ const WIN_ANSI_EXTRA = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”�
 export const pdfSafe = (text: string) =>
   [...text.normalize('NFC')].map(c => ((c.charCodeAt(0) <= 0xff && c.charCodeAt(0) >= 0x20) || WIN_ANSI_EXTRA.has(c) ? c : '?')).join('');
 
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
   const lines: string[] = [];
   let line = '';
   for (const word of pdfSafe(text).split(' ')) {

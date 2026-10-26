@@ -97,6 +97,11 @@ import type {
   RevenueBasis,
   RevenueReport,
   RevenueSummary,
+  BookingContract,
+  ContractTemplates,
+  SignedContractFileKind,
+  SignedContractsPage,
+  SignedContractsQuery,
 } from "./types";
 
 import type {
@@ -315,6 +320,16 @@ export async function apiFile(
 }
 
 const json = (body: unknown) => JSON.stringify(body);
+
+function signedContractsParams(q: SignedContractsQuery): string {
+  const params = new URLSearchParams();
+  if (q.from) params.set("from", q.from);
+  if (q.to) params.set("to", q.to);
+  if (q.q?.trim()) params.set("q", q.q.trim());
+  if (q.reserved) params.set("reserved", "1");
+  if (q.page && q.page > 1) params.set("page", String(q.page));
+  return params.toString();
+}
 
 export type GeoScope = "operator" | "platform";
 const geoBase = (scope: GeoScope) =>
@@ -1022,6 +1037,41 @@ export const adminApi = {
   ) =>
     apiFile(
       `/internal/platform/operators/${operatorId}/contracts/${contractId}/file?kind=${kind}`,
+    ),
+  // The parking's own contract and the signed contracts (26/10/2026, choice A + R-A).
+  getContractTemplate: () =>
+    apiRequest<ContractTemplates>("/internal/contract-template"),
+  uploadContractTemplate: (file: File, title?: string) =>
+    apiRequest<ContractTemplates>(
+      `/internal/contract-template?${new URLSearchParams({ fileName: file.name, ...(title ? { title } : {}) })}`,
+      {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": "application/pdf" },
+      },
+    ),
+  revertContractTemplate: () =>
+    apiRequest<ContractTemplates>("/internal/contract-template/revert", {
+      method: "POST",
+    }),
+  contractTemplateFile: (templateId: string) =>
+    apiFile(`/internal/contract-template/${templateId}/file`),
+  getSignedContracts: (query: SignedContractsQuery) =>
+    apiRequest<SignedContractsPage>(
+      `/internal/contracts?${signedContractsParams(query)}`,
+    ),
+  exportSignedContracts: (query: SignedContractsQuery) =>
+    apiFile(`/internal/contracts/export?${signedContractsParams(query)}`),
+  reservationContractFile: (
+    reservationId: string,
+    kind: SignedContractFileKind,
+  ) =>
+    apiFile(
+      `/internal/reservations/${reservationId}/contract/file?kind=${kind}`,
+    ),
+  getBookingContract: (reservationId: string) =>
+    apiRequest<{ contract: BookingContract }>(
+      `/internal/reservations/${reservationId}/paperwork`,
     ),
   getMyContract: () => apiRequest<MyContract>("/internal/contract"),
   signMyContract: (contractId: string, signerName: string) =>

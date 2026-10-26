@@ -162,7 +162,13 @@ export class NotificationService {
    * Email to a traveller that is not about a site booking's thread (the signed contract, 19/10/2026). Returns whether Brevo
    * accepted it. Logs only the tag and `about` (an id), never the address.
    */
-  public async emailTraveller(to: { email: string; name: string }, tag: string, about: string, message: EmailMessage): Promise<boolean> {
+  public async emailTraveller(
+    to: { email: string; name: string },
+    tag: string,
+    about: string,
+    message: EmailMessage,
+    attachments: { name: string; content: Buffer }[] = [],
+  ): Promise<boolean> {
     if (!this.canSendEmail()) {
       logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
       return false;
@@ -174,6 +180,8 @@ export class NotificationService {
       htmlContent: message.html,
       textContent: message.text,
       tags: [tag],
+      // The signed contract as a PDF (26/10/2026); Brevo takes base64.
+      ...(attachments.length ? { attachment: attachments.map(a => ({ name: a.name, content: a.content.toString('base64') })) } : {}),
     });
   }
 

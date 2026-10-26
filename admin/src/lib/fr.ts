@@ -542,6 +542,7 @@ export const fr = {
     team: "Équipe",
     account: "Mon compte",
     contract: "Mon contrat",
+    contracts: "Contrats",
     logout: "Se déconnecter",
     platform: "Plateforme",
   },
@@ -4122,6 +4123,145 @@ export const contractFr = {
   downloadProof: "Télécharger la preuve de signature",
   signedNote: `Le PDF signé est le contrat d'origine, plus une dernière page « Signature » avec ces informations. ${PRODUCT.name} garde les deux ; personne ne peut les modifier.`,
   previous: "Versions précédentes",
+};
+
+// The parking's own contract (26/10/2026, choice A « Mon PDF ») and the register of the signed contracts (R-A).
+export const contractTemplateFr = {
+  title: "Contrat de stationnement",
+  intro:
+    "Le contrat que vos clients signent au comptoir, le jour du dépôt (code SMS ou signature à la main). Déposez le vôtre en PDF : chaque signature garde ce PDF tel quel, plus une page « Réservation et signature » avec les données du client et la preuve.",
+  plazoTemplate: `Modèle ${PRODUCT.name}`,
+  plazoTemplateHint: `Sans PDF, vos clients signent le modèle ${PRODUCT.name} (objet, clés, état des lieux, dommages, objets personnels, annulation, données, signature).`,
+  inForce: "En vigueur",
+  current: (title: string, v: number) => `${title} · version ${v}`,
+  fileLine: (
+    name: string,
+    pages: number,
+    size: string,
+    date: string,
+    by: string | null,
+  ) =>
+    `${name} · ${pages} page${pages > 1 ? "s" : ""} · ${size} · déposé le ${date}${by ? ` par ${by}` : ""}`,
+  signedCount: (n: number) =>
+    n === 0
+      ? "aucun contrat signé sur cette version"
+      : n === 1
+        ? "1 contrat signé"
+        : `${n} contrats signés`,
+  plazoSignedCount: (n: number) =>
+    n === 0
+      ? ""
+      : n === 1
+        ? `1 contrat signé sur le modèle ${PRODUCT.name}`
+        : `${n} contrats signés sur le modèle ${PRODUCT.name}`,
+  view: "Voir le PDF",
+  replace: "Remplacer",
+  upload: "Déposer mon PDF",
+  choose: "Choisir un PDF",
+  uploading: "Envoi…",
+  titleLabel: "Titre du contrat (facultatif)",
+  titlePlaceholder: "Contrat de stationnement",
+  hint: "PDF de 4 Mo au plus, sans mot de passe. Il s'applique aux signatures à venir ; les contrats déjà signés gardent leur version.",
+  uploaded: (v: number) =>
+    `Version ${v} en vigueur : vos clients la signent dès maintenant.`,
+  revert: `Revenir au modèle ${PRODUCT.name}`,
+  revertConfirm: (v: number) =>
+    `Retirer la version ${v} ? Vos clients signeront le modèle ${PRODUCT.name} ; les contrats déjà signés sur cette version sont gardés.`,
+  revertTitle: `Revenir au modèle ${PRODUCT.name}`,
+  reverted: `Vos clients signent de nouveau le modèle ${PRODUCT.name}.`,
+  history: "Versions précédentes",
+  historyLine: (v: number, title: string, from: string, to: string) =>
+    `v${v} · ${title} · du ${from} au ${to}`,
+  loadError: "Impossible de lire le contrat.",
+  storageUnavailable:
+    "Le stockage des fichiers n'est pas configuré : le dépôt d'un PDF est indisponible.",
+  fileErrors: {
+    empty: "Le fichier est vide.",
+    too_large: "Le PDF dépasse 4 Mo.",
+    not_a_pdf: "Ce fichier n'est pas un PDF.",
+    pdf_encrypted:
+      "Ce PDF est protégé par un mot de passe : déposez une version sans protection.",
+    pdf_unreadable: "Ce PDF est illisible.",
+    payload_too_large: "Le PDF dépasse 4 Mo.",
+    photos_unavailable: "Le stockage des fichiers n'est pas configuré.",
+    demo_read_only: "Indisponible dans la démo.",
+  } as Record<string, string>,
+  register: "Tous les contrats signés",
+  // Page « Contrats »
+  page: {
+    title: "Contrats signés",
+    intro:
+      "Chaque contrat tel que signé, avec sa preuve. Les contrats sont gardés avec la réservation, puis effacés à son anonymisation.",
+    signed: (n: number) => `Signés · ${n}`,
+    reserved: (n: number) => `Avec réserve · ${n}`,
+    searchAria: "Trouver un contrat",
+    searchPlaceholder: "Plaque, nom, référence…",
+    from: "Du",
+    to: "au",
+    apply: "Afficher",
+    export: "Exporter en CSV",
+    exported: "Export téléchargé.",
+    empty: "Aucun contrat signé sur cette période.",
+    columns: {
+      signedAt: "Signé le",
+      customer: "Client",
+      plate: "Plaque",
+      stay: "Séjour",
+      method: "Moyen",
+      version: "Version",
+      proof: "Preuve",
+      files: "Fichiers",
+    },
+    method: {
+      sms_code: "Code SMS",
+      handwritten: "À la main",
+      booking_link: "Lien",
+    } as Record<string, string>,
+    methodWith: (how: string, witness: string | null) =>
+      witness ? `${how} · ${witness}` : how,
+    version: (v: string, template: number | null) =>
+      template ? `PDF v${template}` : `${PRODUCT.name} ${v}`,
+    reservedPill: "réserve au retour",
+    signedPdf: "PDF signé",
+    proof: "Preuve",
+    templatePdf: "Contrat du parking",
+    noFiles: "texte signé seulement",
+    pageOf: (page: number, total: number) => `Page ${page} / ${total}`,
+    previous: "Précédent",
+    next: "Suivant",
+    shown: (n: number, total: number) =>
+      n === total
+        ? `${total} contrat${total > 1 ? "s" : ""}`
+        : `${n} sur ${total}`,
+  },
+  // Bloc « Contrat de stationnement » de la fiche réservation
+  booking: {
+    title: "Contrat de stationnement",
+    signed: "Signé",
+    unsigned: "Pas encore signé",
+    atCounter:
+      "Se signe au comptoir le jour du dépôt, dans l'application Plazo Pro.",
+    closed: "Non signé (la réservation est passée).",
+    signedLine: (date: string, how: string) => `Signé le ${date} · ${how}`,
+    how: {
+      sms_code: (phone: string | null) =>
+        `code SMS${phone ? ` (${phone})` : ""}`,
+      handwritten: () => "signature à la main",
+      booking_link: () => "lien de réservation",
+    } as Record<string, (phone: string | null) => string>,
+    version: (
+      v: string,
+      template: { title: string; version: number } | null,
+    ) =>
+      template
+        ? `${template.title} · PDF v${template.version}`
+        : `Modèle ${PRODUCT.name} ${v}`,
+    willSign: (template: { title: string; version: number } | null) =>
+      template
+        ? `Le client signera « ${template.title} » (version ${template.version}).`
+        : `Le client signera le modèle ${PRODUCT.name}.`,
+    proof: (sha: string) => `Empreinte ${sha.slice(0, 16)}…`,
+  },
 };
 
 // Services for the car (21/10/2026): the parking's offer (Parking › Réglages) and the orders on a booking.

@@ -76,7 +76,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("22 octobre 2026"); // night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026), services for the car (21/10/2026), contact@plazo.fr (22/10/2026)
+    expect(termsDoc().version).toBe("26 octobre 2026"); // the parking's own contract (26/10/2026), night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026), services for the car (21/10/2026), contact@plazo.fr (22/10/2026)
   });
 
   it("points to the contact form only once the service client has a real address (footer A, 15/10/2026)", () => {
@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("22 octobre 2026"); // contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("26 octobre 2026"); // the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -136,9 +136,9 @@ describe("privacy policy", () => {
     expect(all).toContain("les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour)");
   });
 
-  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, then on 22/10/2026 with the support address contact@plazo.fr", () => {
-    expect(privacyDoc().version).toBe("22 octobre 2026");
-    expect(termsDoc().version).toBe("22 octobre 2026");
+  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, then on 22/10/2026 with the support address contact@plazo.fr, the terms and the privacy policy again on 26/10/2026 with the parking's own contract", () => {
+    expect(privacyDoc().version).toBe("26 octobre 2026");
+    expect(termsDoc().version).toBe("26 octobre 2026");
     expect(legalNoticeDoc().version).toBe("22 octobre 2026");
   });
 
