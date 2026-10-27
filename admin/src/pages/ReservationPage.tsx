@@ -9,6 +9,7 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
+import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -417,6 +418,10 @@ export default function ReservationPage() {
             mayAct={can(user?.role, "reservations:status")}
           />
           <BookingContractCard reservationId={r.id} status={r.status} />
+          {/* « Mails liés » (27/10/2026): the mails this booking came from, for those who reach the inbox. */}
+          {can(user?.role, "reservations:manage") && (
+            <LinkedEmails reservationId={r.id} />
+          )}
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>

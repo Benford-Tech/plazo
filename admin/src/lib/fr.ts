@@ -4236,6 +4236,24 @@ export const contractFr = {
 };
 
 // The parking's own contract (26/10/2026, choice A « Mon PDF ») and the register of the signed contracts (R-A).
+/** « Mails liés » of a booking (27/10/2026, direction C). */
+export const linkedEmailsFr = {
+  title: (n: number) => `Mails liés · ${n}`,
+  role: {
+    created: "À l'origine",
+    change: "Modification",
+    cancellation: "Annulation",
+    duplicate: "Doublon",
+    linked: "Rattaché",
+  },
+  view: "Voir",
+  close: "Fermer",
+  openInbox: "Ouvrir dans la Boîte de réception",
+  leftInbox: "Ce mail n'est plus listé dans la Boîte de réception.",
+  textGone: "Texte effacé 30 jours après la réception.",
+  dialog: "Mail lié à la réservation",
+};
+
 export const contractTemplateFr = {
   title: "Contrat de stationnement",
   intro:

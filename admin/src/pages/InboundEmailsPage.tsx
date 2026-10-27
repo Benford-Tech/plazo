@@ -146,7 +146,7 @@ function linkify(line: string): ReactNode[] {
 }
 
 /** The mail as it reads: a paragraph per blank line, a line per line, quoted lines muted. */
-function MailBody({ text }: { text: string }) {
+export function MailBody({ text }: { text: string }) {
   const paragraphs = text.replace(/\r\n?/g, "\n").trim().split(/\n[ \t]*\n/);
   return (
     <div data-testid="inbound-body" className="space-y-3 text-[15px] leading-relaxed">
@@ -175,7 +175,7 @@ function leftToStaff(change: InboundChange | null | undefined): boolean {
  * The state of a mail; 10/10/2026 (relecture): an Allopark change Plazo recognised but left to the staff reads
  * « À faire à la main » (to do), never « Non reconnu ».
  */
-function StatusBadge({ email }: { email: InboundEmail }) {
+export function StatusBadge({ email }: { email: InboundEmail }) {
   const l = t.list;
   const changeLeft = email.status === "unrecognised" && leftToStaff(email.change);
   return (
@@ -229,7 +229,7 @@ function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boo
  * L-A (08/10/2026): what Claude made of the mail: kind, source, confidence, one-sentence summary. 16/10/2026 (« analyser
  * sans passer par Claude »): « Reconnu par Plazo » for what Plazo's rules per mail type made of it (no confidence).
  */
-function ReadingLine({ reading, missing, changed }: { reading: NonNullable<InboundEmail["reading"]>; missing: string[]; changed: boolean }) {
+export function ReadingLine({ reading, missing, changed }: { reading: NonNullable<InboundEmail["reading"]>; missing: string[]; changed: boolean }) {
   const l = t.list.reading;
   const rules = reading.source === "rules";
   const percent = Math.round(reading.confidence * 100);
@@ -300,7 +300,7 @@ function PageLookupLine({ lookup, email }: { lookup: InboundPageLookup; email: I
 }
 
 /** « Ce que Plazo a compris »: the parsed fields, each missing one flagged. */
-function Understood({ email }: { email: InboundEmail }) {
+export function Understood({ email }: { email: InboundEmail }) {
   const l = t.list;
   const known = FIELDS.flatMap(key => {
     const value = email.parsed ? fieldValue(key, email.parsed) : null;
@@ -348,7 +348,7 @@ function changeValue(field: InboundChangeField, value: string | number | null): 
  * applied to the booking (its link in the title), already there, or to make by hand with the reason; one line per
  * change, « Date de retour : 13 déc. 20:30 → 15 déc. 18:00 ».
  */
-function ChangeBlock({ change }: { change: InboundChange }) {
+export function ChangeBlock({ change }: { change: InboundChange }) {
   const l = t.list.change;
   const booking =
     change.reservationId && change.reference ? (
@@ -550,7 +550,11 @@ export default function InboundEmailsPage() {
   const l = t.list;
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
-  const [view, setView] = useState<InboundEmailView>("todo");
+  // « Mails liés » (27/10/2026): a booking's page opens a mail in its own tab (?vue=done&mail=…).
+  const [view, setView] = useState<InboundEmailView>(() => {
+    const wanted = params.get("vue");
+    return VIEWS.includes(wanted as InboundEmailView) ? (wanted as InboundEmailView) : "todo";
+  });
   const emails = useQuery({ queryKey: ["inbound-emails", view], queryFn: () => adminApi.getInboundEmails(view), refetchInterval: 60_000 });
   // While a tab loads, its neighbours' answer keeps the counts on screen.
   const counts =

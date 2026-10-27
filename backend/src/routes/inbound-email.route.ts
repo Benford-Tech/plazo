@@ -104,6 +104,15 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *   post:
  *     tags: [Inbound email]
  *     summary: "Link an email to the booking typed from it ({ reservationId })"
+ * /internal/reservations/{id}/emails:
+ *   get:
+ *     tags: [Inbound email]
+ *     summary: "« Mails liés »: the emails of a booking, oldest first (attached, or a change / cancellation read against it)"
+ *     responses:
+ *       200:
+ *         description: "{ data: (InboundEmailView & { role: created | change | cancellation | duplicate | linked, inboxView: todo | done | archived | null })[] }"
+ *       404:
+ *         description: "not_found: a booking of another operator"
  */
 export class InboundEmailRoute implements Routes {
   public router = Router();
@@ -126,6 +135,7 @@ export class InboundEmailRoute implements Routes {
     this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);
     this.router.post('/internal/inbound/emails/:id/reanalyse', StaffAuthMiddleware('reservations:manage'), this.inbound.reanalyse);
+    this.router.get('/internal/reservations/:id/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.forReservation);
     this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), this.inbound.attach);
   }
 }

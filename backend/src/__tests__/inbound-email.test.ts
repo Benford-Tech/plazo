@@ -276,8 +276,8 @@ describe('POST /public/inbound/email', () => {
     // The nightly purge clears old texts, then old rows.
     await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
     const purge = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
-    // The handled email kept its text (T-A), the attached one lost it at once.
-    expect(purge.body.inboundEmails).toEqual({ textsCleared: 1, rowsDeleted: 0 });
+    // The handled email kept its text (T-A), and so did the attached one (27/10/2026, « Mails liés »).
+    expect(purge.body.inboundEmails).toEqual({ textsCleared: 2, rowsDeleted: 0 });
     expect((await prisma.inboundEmail.findMany()).every(e => e.textBody === null)).toBe(true);
   });
 
@@ -617,10 +617,11 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
       expect([dismissed.status, dismissed.body.data.status]).toEqual([200, 'handled']);
       // « Compléter »: the email is linked to the booking typed from it.
       expect((await post(incomplete.id, 'attach', { reservationId: imported.reservationId })).status).toBe(200);
+      // 27/10/2026 (« Mails liés »): the text stays until the 30-day purge, so the booking's page can show the email.
       expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: incomplete.id } })).toMatchObject({
         status: 'imported',
         reservationId: imported.reservationId,
-        textBody: null,
+        textBody: expect.any(String),
       });
       // A new address too (the old one stops working).
       const slugOf = async () => (await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).inboundSlug;
