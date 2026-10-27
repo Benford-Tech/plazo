@@ -321,7 +321,21 @@ export function ProPricing({ action, demoHref, signupHref, supportEmail }: { act
   }
 }
 
-function QuoteForm({ action, selection }: { action: Action; selection: ProSelection }) {
+/**
+ * The operator's details, sent to the support address: « Demander un devis » with the page's selection (Tarifs), or
+ * « Demander une démo » without one (the home page of Plazo Pro, 27/10/2026).
+ */
+export function QuoteForm({
+  action,
+  selection,
+  submitLabel = t.askQuote,
+  sentText = t.form.sentText,
+}: {
+  action: Action;
+  selection: ProSelection | null;
+  submitLabel?: string;
+  sentText?: string;
+}) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM);
   const form = useRef<HTMLFormElement>(null);
   const done = useRef<HTMLDivElement>(null);
@@ -336,7 +350,7 @@ function QuoteForm({ action, selection }: { action: Action; selection: ProSelect
       <div ref={done} tabIndex={-1} className="flex flex-col items-start gap-2 self-center outline-none">
         <span className="rounded-full bg-lime-soft px-3 py-1 text-[13px] font-semibold text-lime-deep">{t.form.sent}</span>
         <p role="status" className="text-[15px] font-medium">
-          {t.form.sentText}
+          {sentText}
         </p>
       </div>
     );
@@ -377,19 +391,25 @@ function QuoteForm({ action, selection }: { action: Action; selection: ProSelect
       {input("email", t.form.email, { type: "email", autoComplete: "email", inputMode: "email", maxLength: 254, spellCheck: false, required: true })}
       {input("phone", t.form.phone, { type: "tel", autoComplete: "tel" }, false, true)}
       {input("airport", t.form.airport, { type: "text" }, true, true)}
-      <input type="hidden" name="plan" value={selection.plan} />
-      <input type="hidden" name="yearly" value={selection.yearly ? "1" : "0"} />
-      <input type="hidden" name="marketplace" value={selection.marketplace ? "1" : "0"} />
-      {selection.options.map(option => (
-        <input key={option} type="hidden" name="options" value={option} />
-      ))}
+      {selection ? (
+        <>
+          <input type="hidden" name="plan" value={selection.plan} />
+          <input type="hidden" name="yearly" value={selection.yearly ? "1" : "0"} />
+          <input type="hidden" name="marketplace" value={selection.marketplace ? "1" : "0"} />
+          {selection.options.map(option => (
+            <input key={option} type="hidden" name="options" value={option} />
+          ))}
+        </>
+      ) : (
+        <input type="hidden" name="request" value="demo" />
+      )}
       {/* Honeypot: invisible to people (and to screen readers), filled by bots. */}
       <div aria-hidden="true" className="absolute top-auto left-[-10000px] h-px w-px overflow-hidden">
         <label htmlFor="pp-website">{t.form.honeypot}</label>
         <input id="pp-website" name="website" type="text" tabIndex={-1} autoComplete="off" />
       </div>
       <button type="submit" disabled={pending} className={`${btnLime} sm:col-span-2`}>
-        {pending ? t.form.sending : t.askQuote}
+        {pending ? t.form.sending : submitLabel}
       </button>
     </form>
   );

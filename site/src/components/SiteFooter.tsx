@@ -9,7 +9,7 @@ import { newsletterAction } from "@/lib/contact-actions";
 import { currentYear, type FooterConfig, footerConfig, legalLine, type SocialNetwork } from "@/lib/footer";
 import { fr } from "@/lib/fr";
 import { topicLinks } from "@/lib/guides";
-import { AIRPORTS, airportPath, CONTACT_PATH, PRO_LOGIN_PATH, PRO_PRICING_PATH } from "@/lib/site";
+import { AIRPORTS, airportPath, CONTACT_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH } from "@/lib/site";
 
 // 44 px targets on phones (20 px line + 2 x 12 px), with the same spacing whether a label takes one line or two; from md
 // up the mockup's 14 px / 1.6 lines, 6 px apart, with a mouse only (a tablet's finger keeps the 44 px).
@@ -124,7 +124,7 @@ export function SiteFooter({ config = footerConfig(), year = currentYear() }: { 
             <Column title={fr.footer.product} className="col-span-2 md:col-span-1" listClassName="grid grid-cols-2 gap-x-5 md:flex md:flex-col">
               <li>
                 {/* The pro space is another service on the same domain: full page loads, not client-side navigations. */}
-                <a href={PRO_PRICING_PATH} className={linkClass}>
+                <a href={PRO_HOME_PATH} className={linkClass}>
                   {fr.nav.forOperators}
                 </a>
               </li>

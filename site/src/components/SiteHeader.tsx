@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { Logo } from "@/components/Logo";
-import { PRO_PRICING_PATH } from "@/lib/site";
+import { PRO_HOME_PATH } from "@/lib/site";
 
 const navLink =
   "flex min-h-11 items-center px-2 text-[14px] font-bold text-ink no-underline transition-colors hover:text-accent-dark md:text-[15px]";
@@ -27,9 +27,9 @@ export function SiteHeader() {
               </Link>
             </li>
             <li className="hidden md:block">
-              {/* Plazo Pro's pricing page (27/10/2026): its own layout, a full page load. */}
+              {/* Plazo Pro's home page (27/10/2026): its own layout, a full page load. */}
               <a
-                href={PRO_PRICING_PATH}
+                href={PRO_HOME_PATH}
                 className="flex min-h-11 items-center rounded-full border border-line bg-paper px-4 text-[14px] font-bold text-ink no-underline transition-colors hover:border-soft hover:text-ink"
               >
                 {fr.nav.forOperators}

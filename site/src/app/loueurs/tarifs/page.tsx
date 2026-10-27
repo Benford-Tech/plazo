@@ -16,5 +16,9 @@ export const metadata: Metadata = {
 };
 
 export default function ProPricingPage() {
-  return <ProPricing action={quoteAction} demoHref={PRO_DEMO_PATH} signupHref={PRO_SIGNUP_PATH} supportEmail={hasSupportEmail() ? SUPPORT_EMAIL : null} />;
+  return (
+    <div className="mx-auto w-full max-w-[1180px] px-4 md:px-6">
+      <ProPricing action={quoteAction} demoHref={PRO_DEMO_PATH} signupHref={PRO_SIGNUP_PATH} supportEmail={hasSupportEmail() ? SUPPORT_EMAIL : null} />
+    </div>
+  );
 }
