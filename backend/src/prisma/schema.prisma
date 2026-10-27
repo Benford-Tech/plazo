@@ -1734,12 +1734,6 @@ model PartnerContract {
 
 // ---- Services for the car (21/10/2026) ------------------------------------------------------------------------------
 
-enum ExtraKind {
-  interior_wash // lavage intérieur et shampouineuse
-  hybrid_charge // recharge d'une hybride rechargeable
-  ev_charge // recharge d'une voiture électrique
-}
-
 enum ExtraStatus {
   pending_payment // ordered, not paid yet (the app's payment sheet, or the booking's own payment)
   ordered // paid, to do before the return
@@ -1749,14 +1743,25 @@ enum ExtraStatus {
   expired // never paid
 }
 
-// A service a parking offers on Plazo, and its price. No row: not offered (the defaults are shown to the manager).
+// A service a parking offers on Plazo (27/10/2026, B + C: from the catalogue or written by the manager). `kind` is its key:
+// the catalogue's (interior_wash, ev_charge…) or `custom_…`; the orders keep it. A removed service is archived, never
+// deleted (its orders keep their label and price), and comes back with its key when re-added from the catalogue.
 model ParkingExtra {
-  id         String    @id @default(cuid())
-  parkingId  String
-  kind       ExtraKind
-  enabled    Boolean   @default(false)
-  priceCents Int // CHECK 100 to 100 000
-  updatedAt  DateTime  @default(now()) @updatedAt
+  id          String    @id @default(cuid())
+  parkingId   String
+  kind        String // CHECK ^[a-z][a-z0-9_]{1,39}$
+  label       String // CHECK 1 to 60 characters
+  description String    @default("") // CHECK 140 characters at most
+  icon        String    @default("star") // interior · exterior · fuel · ev · hybrid · tyre · luggage · star
+  groupKey    String? // « one per booking »: charge · wash
+  leadHours   Int       @default(24) // orderable until this many hours before the return, CHECK 0 to 168
+  position    Int       @default(0)
+  custom      Boolean   @default(false)
+  enabled     Boolean   @default(false)
+  priceCents  Int // CHECK 100 to 100 000
+  archivedAt  DateTime? // CHECK archived ⇒ not enabled
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
 
@@ -1771,7 +1776,7 @@ model ReservationExtra {
   id                    String        @id @default(cuid())
   reservationId         String
   operatorId            String
-  kind                  ExtraKind
+  kind                  String // the parking service's key
   // Name and amounts frozen at the order (the parking may change its prices afterwards).
   label                 String
   priceCents            Int

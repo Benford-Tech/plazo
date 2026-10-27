@@ -293,12 +293,13 @@ export class PublicService {
           extraDayPriceCents: listing.parking.extraDayPriceCents,
           night: nightRule(nightSettingsOf(listing.parking)),
         },
-        // Services for the car (21/10/2026), ordered in the Plazo app with the booking or later, until `leadHours`
-        // before the return.
-        extras: {
-          offers: enabledOffersFrom(await prisma.parkingExtra.findMany({ where: { parkingId: listing.parkingId } })),
-          leadHours: listing.parking.extrasLeadHours,
-        },
+        // Additional services (21/10/2026; each parking's own list since 27/10/2026), ordered in the Plazo app with the
+        // booking or later, until each service's `leadHours` before the return (`leadHours` here: the apps before
+        // 27/10/2026, the shortest one).
+        extras: await (async () => {
+          const offers = enabledOffersFrom(await prisma.parkingExtra.findMany({ where: { parkingId: listing.parkingId } }));
+          return { offers, leadHours: offers.length ? Math.min(...offers.map(o => o.leadHours)) : listing.parking.extrasLeadHours };
+        })(),
       },
       offer: stay ? await this.offer(listing, stay) : null,
     };
