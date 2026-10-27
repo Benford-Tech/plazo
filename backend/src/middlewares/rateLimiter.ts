@@ -102,7 +102,7 @@ export const bookingLimiter = rateLimit({
 
 /** The reference a lookup is about, so that guesses on one booking are limited whatever the IP. */
 export function lookupReferenceKey(req: Request): string {
-  const reference = typeof req.body?.reference === 'string' ? req.body.reference.trim().toUpperCase().slice(0, 20) : '';
+  const reference = typeof req.body?.reference === 'string' ? req.body.reference.replace(/[\s#]/g, '').toUpperCase().slice(0, 40) : '';
   return `reference:${reference}`;
 }
 

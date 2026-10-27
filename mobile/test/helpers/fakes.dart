@@ -111,9 +111,9 @@ class FakeBookingDataSource implements BookingDataSource {
   }
 
   @override
-  Future<BookingAccessModel> lookup({required String reference, required String email}) async {
+  Future<BookingAccessModel> lookup({required String reference, required String contact}) async {
     final access = await _next<BookingAccessModel>('lookup', () {
-      if (email != 'camille@exemple.fr') throw const ServerException(code: 'not_found');
+      if (contact != 'camille@exemple.fr') throw const ServerException(code: 'not_found');
       return BookingAccessModel(reference: reference.toUpperCase(), manageToken: 'token-lookup');
     });
     await storage.saveBookingToken(access.reference, access.manageToken);

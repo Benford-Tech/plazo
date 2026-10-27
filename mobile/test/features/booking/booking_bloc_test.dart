@@ -35,8 +35,8 @@ class FakeBookingDataSource implements BookingDataSource {
   );
 
   @override
-  Future<BookingAccessModel> lookup({required String reference, required String email}) async {
-    if (email != 'camille@example.com') throw const ServerException(code: 'not_found');
+  Future<BookingAccessModel> lookup({required String reference, required String contact}) async {
+    if (contact != 'camille@example.com') throw const ServerException(code: 'not_found');
     await storage.saveBookingToken('R7KQ2M', 'token-from-lookup');
     return const BookingAccessModel(reference: 'R7KQ2M', manageToken: 'token-from-lookup');
   }
@@ -98,7 +98,7 @@ void main() {
   });
 
   test('saisie manuelle : référence + email', () async {
-    bloc.add(const BookingLookupSubmitted(reference: 'R7KQ2M', email: 'camille@example.com'));
+    bloc.add(const BookingLookupSubmitted(reference: 'R7KQ2M', contact: 'camille@example.com'));
     final state = await bloc.stream.firstWhere((s) => s.viewState.isSuccess);
     expect(state.reference, 'R7KQ2M');
     expect(await storage.bookingToken('R7KQ2M'), 'token-from-lookup');

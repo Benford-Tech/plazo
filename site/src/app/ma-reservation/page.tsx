@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LookupPage({ searchParams }: PageProps<"/ma-reservation">) {
-  const reference = (param(await searchParams, "reference") ?? "").slice(0, 12);
+  const reference = (param(await searchParams, "reference") ?? "").slice(0, 40);
   return (
     <main className="mx-auto flex w-full max-w-[560px] flex-col gap-5 px-4 pt-7 pb-12 md:pt-14 md:pb-20">
       {/* Boutique: the title on the ivory ground, the form in a white card with a hairline. */}

@@ -240,10 +240,11 @@ export const api = {
       timeoutMs: BOOKING_TIMEOUT_MS,
     }),
 
-  lookupBooking: (reference: string, email: string) =>
+  // 27/10/2026: the Plazo reference or the comparator's number, and the email or the phone of the booking.
+  lookupBooking: (reference: string, contact: string) =>
     apiRequest<BookingAccess>("/api/public/bookings/lookup", {
       method: "POST",
-      body: { reference, email },
+      body: { reference, contact },
     }),
 
   /** « Lien court Plazo » (27/10/2026): the booking a short code names, and the phone remembered before the store. */
