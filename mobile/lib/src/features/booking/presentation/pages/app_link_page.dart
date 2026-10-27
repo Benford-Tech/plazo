@@ -9,7 +9,7 @@ import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../data/datasources/app_link_data_source.dart';
 
-/// « Lien court Plazo » (direction B, 27/10/2026): https://www.plazo.fr/a/<REF>-<code> (or plazo://a/<code>) opened in
+/// « Lien court Plazo » (direction B, 27/10/2026): `https://www.plazo.fr/a/REF-code` (or `plazo://a/code`) opened in
 /// the app. The code is resolved by the API, then the booking opens with its manage token saved on this phone.
 @RoutePage()
 class AppLinkPage extends StatefulWidget {

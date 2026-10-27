@@ -2,7 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 
-/// « Lien court Plazo » (direction B, 27/10/2026): the booking behind https://www.plazo.fr/a/<REF>-<code>.
+/// « Lien court Plazo » (direction B, 27/10/2026): the booking behind `https://www.plazo.fr/a/REF-code`.
 class AppLinkTarget {
   const AppLinkTarget({
     required this.reference,
