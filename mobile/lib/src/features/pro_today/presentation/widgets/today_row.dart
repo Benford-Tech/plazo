@@ -7,18 +7,36 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/ign_map.dart';
 import '../../../arrival/data/models/arrival_model.dart';
+import '../../data/models/planning_model.dart';
 import '../../data/models/staff_signal_model.dart';
 import '../bloc/pro_today_bloc.dart';
 
 /// A row of the staff's day. A traveller sharing their position gets the highlighted card (peach
 /// border, ETA, mini map, age of the position) — the app's version of the approved frame 3.
 class TodayRowTile extends StatelessWidget {
-  const TodayRowTile({super.key, required this.row, required this.isReturn, required this.positionAge, this.onTap, this.actionLabel, this.onAction});
+  const TodayRowTile({
+    super.key,
+    required this.row,
+    required this.isReturn,
+    required this.positionAge,
+    this.onTap,
+    this.actionLabel,
+    this.onAction,
+    this.tagged = false,
+    this.dimmed = false,
+  });
 
   final TodayRow row;
   final bool isReturn;
   final int? positionAge;
   final VoidCallback? onTap;
+
+  /// Direction A (27/10/2026): in the merged list of the day, the card says its kind, « DÉPÔT » on a pale green
+  /// ground or « RETOUR » on a pale indigo one, with a matching edge on the left.
+  final bool tagged;
+
+  /// Already done (under « Déjà passés »): faded.
+  final bool dimmed;
 
   /// The driver's « Embarquer » / « Récupérer » (14/10/2026): the traveller goes to the Navette tab's list.
   final String? actionLabel;
@@ -30,24 +48,60 @@ class TodayRowTile extends StatelessWidget {
     final s = row.signal;
     final approaching = row.approaching;
     final time = hhmm(isReturn ? b.returnAt : b.arrivalAt);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: AppRadius.card,
-      child: Container(
-        key: Key('row-${b.id}'),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: AppRadius.card,
-          border: Border.all(color: approaching ? AppColors.peach : AppColors.line, width: approaching ? 2.2 : 1),
+    final kind = isReturn ? AppStatus.info : AppStatus.ok;
+    final edge = approaching ? AppColors.peach : AppColors.line;
+    return Opacity(
+      opacity: dimmed ? 0.55 : 1,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.card,
+        child: Container(
+          key: Key('row-${b.id}'),
+          margin: const EdgeInsets.only(bottom: 10),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: tagged ? (isReturn ? AppStatus.infoSoft : AppStatus.okSoft) : AppColors.surface,
+            borderRadius: AppRadius.card,
+            border: Border.all(color: edge, width: approaching ? 2.2 : 1),
+          ),
+          // IntrinsicHeight: the list gives no height, so the edge strip stretches to the card's own.
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The kind's edge on the left (green drop-off, indigo return).
+                if (tagged) Container(width: 4, color: kind),
+                Expanded(
+                  child: Padding(padding: const EdgeInsets.all(12), child: _body(context, b, s, time, kind)),
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Column(
+      ),
+    );
+  }
+
+  Widget _body(BuildContext context, PlanningRowModel b, StaffSignalModel? s, String time, Color kind) {
+    final approaching = row.approaching;
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
                 Text(time, style: AppText.tabular(size: 17, color: AppColors.accent)),
+                if (tagged) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    key: Key('kind-${b.id}'),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(color: kind, borderRadius: AppRadius.small),
+                    child: Text(
+                      (isReturn ? 'pro.kind_return' : 'pro.kind_dropoff').tr().toUpperCase(),
+                      style: AppText.label(size: 10.5, color: AppStatus.okInk).copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 12),
                 // One line, as on the planning of the pro space: scaled down rather than wrapped.
                 Expanded(
@@ -116,9 +170,7 @@ class TodayRowTile extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
+        );
   }
 }
 

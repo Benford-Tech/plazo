@@ -24,13 +24,14 @@ import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../../../return_day/data/models/return_model.dart';
 import '../../data/models/planning_model.dart';
 import '../bloc/pro_today_bloc.dart';
-import '../widgets/date_strip.dart';
+import '../widgets/date_bar.dart';
 import '../widgets/today_row.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
-/// The staff's day: Arrivées / Retours (tabs on a phone, two columns on a wide screen), live
-/// statuses polled every 12 s, the approaching traveller first with a mini map.
+/// The staff's day: one chronological list of the drop-offs and returns on a phone (direction A of
+/// 27/10/2026, pills to keep one kind), two columns on a wide screen; live statuses polled every
+/// 12 s, the approaching traveller first with a mini map.
 @RoutePage()
 class ProTodayPage extends StatelessWidget implements AutoRouteWrapper {
   const ProTodayPage({super.key});
@@ -85,11 +86,45 @@ enum TodaySide { arrivals, returns }
 
 enum TodayMode { dashboard, planning }
 
+/// The pills over the merged list of the day: everything, the drop-offs or the returns.
+enum TodayFilter { all, arrivals, returns }
+
+/// A line of the merged list: the booking and its side.
+class DayEntry {
+  const DayEntry(this.row, this.isReturn);
+  final TodayRow row;
+  final bool isReturn;
+
+  DateTime get at => isReturn ? row.booking.returnAt : row.booking.arrivalAt;
+
+  /// Already done: a drop-off once the traveller came, a return once the car is back or the stay closed.
+  bool get done => isReturn ? _closedReturns.contains(row.booking.status) : row.booking.status != 'upcoming';
+
+  static const _closedReturns = {'back_at_parking', 'returned', 'cancelled', 'no_show'};
+}
+
+/// Both sides in one list: the travellers at the meeting point, then those sharing their position (by
+/// ETA), then everyone in time order.
+List<DayEntry> mergeDay(List<TodayRow> arrivals, List<TodayRow> returns) {
+  final all = [for (final r in arrivals) DayEntry(r, false), for (final r in returns) DayEntry(r, true)];
+  int rank(TodayRow r) => r.atMeetingPoint ? 0 : (r.approaching ? 1 : 2);
+  all.sort((a, b) {
+    final byRank = rank(a.row).compareTo(rank(b.row));
+    if (byRank != 0) return byRank;
+    if (rank(a.row) == 1) return (a.row.signal!.etaMinutes ?? 999).compareTo(b.row.signal!.etaMinutes ?? 999);
+    return a.at.compareTo(b.at);
+  });
+  return all;
+}
+
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
-  const ProTodayView({super.key, this.only, this.boarding, this.onBoard});
+  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard});
 
   final TodaySide? only;
+
+  /// Where the view opens when both sides are shown: the dashboard, or straight on the planning.
+  final TodayMode initialMode;
 
   /// The driver's tabs (14/10/2026): « Embarquer » / « Récupérer » on today's rows, for the Navette tab.
   final ShuttleBoardingRequests? boarding;
@@ -101,13 +136,18 @@ class ProTodayView extends StatefulWidget {
   State<ProTodayView> createState() => _ProTodayViewState();
 }
 
-class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 2, vsync: this);
+class _ProTodayViewState extends State<ProTodayView> {
   Timer? _clock;
+
+  /// Direction A: the merged list shows everything until a pill keeps one kind.
+  TodayFilter _filter = TodayFilter.all;
+
+  /// « Déjà passés · N » unfolded.
+  bool _showPast = false;
   DateTime _now = DateTime.now();
 
   /// The web's home is the dashboard; the planning is one tap away. Only when both sides are shown.
-  TodayMode _mode = TodayMode.dashboard;
+  late TodayMode _mode = widget.initialMode;
 
   @override
   void initState() {
@@ -119,7 +159,6 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
   @override
   void dispose() {
     _clock?.cancel();
-    _tabs.dispose();
     super.dispose();
   }
 
@@ -130,12 +169,10 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
     return DateTime.tryParse(d) ?? _now;
   }
 
-  static bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
-
   void _see(ProTodayState state) {
     final banner = state.banner;
     if (banner == null) return;
-    _tabs.animateTo(banner.kind.name == 'outbound' ? 0 : 1);
+    setState(() => _filter = banner.kind.name == 'outbound' ? TodayFilter.arrivals : TodayFilter.returns);
     context.read<ProTodayBloc>().add(const ProTodayBannerDismissed());
   }
 
@@ -223,37 +260,10 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
               if (dashboard)
                 Expanded(child: DashboardView(revenue: can(context.watch<ProAuthBloc>().state.staff?.role, 'revenue:view')))
               else ...[
-                Container(
-                  color: AppColors.canvas,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'pro.today_title'.tr(args: [planningDay(_shownDay(state))]),
-                              style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
-                            ),
-                          ),
-                          if (state.date != null)
-                            TextButton(
-                              key: const Key('today-back'),
-                              onPressed: () => context.read<ProTodayBloc>().add(const ProTodayDateChanged(null)),
-                              child: Text('pro.back_to_today'.tr(), style: AppText.strong(size: 13, color: AppColors.accent)),
-                            )
-                          else
-                            Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      DateStrip(
-                        selected: _shownDay(state),
-                        today: _now,
-                        onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(_isSameDay(day, _now) ? null : isoDay(day))),
-                      ),
-                    ],
-                  ),
+                PlanningDateBar(
+                  selected: _shownDay(state),
+                  today: _now,
+                  onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(day == null ? null : isoDay(day))),
                 ),
                 // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
                 if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(ProShuttleRoute())),
@@ -312,20 +322,25 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                     ),
                   )
                 else ...[
-                  TabBar(
-                    controller: _tabs,
-                    tabs: [
-                      Tab(text: '${'pro.arrivals'.tr().toUpperCase()} · ${state.arrivals.length}'),
-                      Tab(text: '${'pro.returns'.tr().toUpperCase()} · ${state.returns.length}'),
-                    ],
+                  _FilterPills(
+                    filter: _filter,
+                    arrivals: state.arrivals.length,
+                    returns: state.returns.length,
+                    onChanged: (f) => setState(() => _filter = f),
                   ),
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabs,
-                      children: [
-                        _Column(rows: state.arrivals, isReturn: false, state: state, now: _now),
-                        _Column(rows: state.returns, isReturn: true, state: state, now: _now),
-                      ],
+                    child: _DayList(
+                      entries: mergeDay(state.arrivals, state.returns).where((e) {
+                        return switch (_filter) {
+                          TodayFilter.all => true,
+                          TodayFilter.arrivals => !e.isReturn,
+                          TodayFilter.returns => e.isReturn,
+                        };
+                      }).toList(),
+                      state: state,
+                      now: _now,
+                      showPast: _showPast,
+                      onTogglePast: () => setState(() => _showPast = !_showPast),
                     ),
                   ),
                 ],
@@ -428,6 +443,131 @@ class _Column extends StatelessWidget {
       onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
       actionLabel: boarding == null ? null : (isReturn ? 'pro.fetch' : 'pro.board').tr(),
       onAction: boarding == null || hand == null ? null : () => hand(boarding),
+    );
+  }
+}
+
+
+/// « Tout · 22 · ● Dépôts · 9 · ● Retours · 13 »: the chosen pill on the action colour, the other two with
+/// the dot of their kind (green drop-offs, indigo returns).
+class _FilterPills extends StatelessWidget {
+  const _FilterPills({required this.filter, required this.arrivals, required this.returns, required this.onChanged});
+  final TodayFilter filter;
+  final int arrivals;
+  final int returns;
+  final ValueChanged<TodayFilter> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    // Scrolls sideways on a narrow phone or with large text rather than overflowing.
+    return Container(
+      color: AppColors.canvas,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+        child: Row(
+          children: [
+            _pill(TodayFilter.all, 'pro.filter_all'.tr(), arrivals + returns, null),
+            const SizedBox(width: 6),
+            _pill(TodayFilter.arrivals, 'pro.dropoffs'.tr(), arrivals, AppStatus.ok),
+            const SizedBox(width: 6),
+            _pill(TodayFilter.returns, 'pro.returns'.tr(), returns, AppStatus.info),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(TodayFilter f, String label, int count, Color? dot) {
+    final on = f == filter;
+    return Semantics(
+      selected: on,
+      button: true,
+      inMutuallyExclusiveGroup: true,
+      child: InkWell(
+        key: Key('planning-filter-${f.name}'),
+        borderRadius: AppRadius.pill,
+        onTap: () => onChanged(f),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(
+            color: on ? AppColors.action : AppColors.surface,
+            borderRadius: AppRadius.pill,
+            border: Border.all(color: on ? AppColors.action : AppColors.line),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (dot != null) ...[
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+              ],
+              Text('$label · $count', style: AppText.strong(size: 12.5, color: on ? AppColors.onAccent : AppColors.muted)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The merged list of the day: what is already done folded under « Déjà passés · N » at the top, then
+/// what comes, each card tagged with its kind.
+class _DayList extends StatelessWidget {
+  const _DayList({required this.entries, required this.state, required this.now, required this.showPast, required this.onTogglePast});
+  final List<DayEntry> entries;
+  final ProTodayState state;
+  final DateTime now;
+  final bool showPast;
+  final VoidCallback onTogglePast;
+
+  @override
+  Widget build(BuildContext context) {
+    final past = entries.where((e) => e.done).toList();
+    final coming = entries.where((e) => !e.done).toList();
+    return RefreshIndicator(
+      color: AppColors.accent,
+      onRefresh: () async => context.read<ProTodayBloc>().add(const ProTodayPolled(full: true)),
+      child: ListView(
+        padding: const EdgeInsets.all(14),
+        children: [
+          if (past.isNotEmpty) ...[
+            InkWell(
+              key: const Key('planning-past'),
+              borderRadius: AppRadius.chip,
+              onTap: onTogglePast,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(2, 4, 2, 10),
+                child: Row(
+                  children: [
+                    Expanded(child: Text('pro.past_rows'.tr(args: ['${past.length}']).toUpperCase(), style: AppText.label(size: 12))),
+                    Icon(showPast ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.muted, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            if (showPast) for (final e in past) _tile(context, e, dimmed: true),
+          ],
+          if (entries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(state.date == null ? 'pro.no_row'.tr() : 'pro.no_row_day'.tr(), style: AppText.muted()),
+            ),
+          for (final e in coming) _tile(context, e),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(BuildContext context, DayEntry e, {bool dimmed = false}) {
+    final row = e.row;
+    return TodayRowTile(
+      row: row,
+      isReturn: e.isReturn,
+      tagged: true,
+      dimmed: dimmed,
+      positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
+      onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
     );
   }
 }

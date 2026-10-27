@@ -749,6 +749,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      par défaut ; cliquer une pastille montre ses lignes seules (une ligne dense par alerte : point de gravité, titre · détail,
      « depuis N min », plaque ; `AlertRow`, `alertDetail`), cliquer de nouveau la replie. **Plazo Pro aussi (26/10/2026, « pareil dans Plazo Pro »)** : `_AlertKinds` / `_AlertKindPill`
      (`Key('alert-kind-<kind>')`) sur l'onglet Aujourd'hui, mêmes règles ; test `pro_dashboard_test.dart`.
+   - **Planning de Plazo Pro en une liste, direction A (27/10/2026, « le header prend trop de place, pour différencier les
+     aller et retour », maquettes https://claude.ai/artifact/G9oXqHvSaNGdARTWAc3t56, « Ajoute une couleur de fond »)** : sur
+     téléphone, l'onglet Aujourd'hui › Planning perd le titre, l'horloge et la bande de la semaine : une ligne de date
+     `PlanningDateBar` (« ‹ MAR. 27 OCT. › », jour par jour, pilule « Aujourd'hui » citron ou bouton de retour, calendrier),
+     puis les pilules « Tout · 22 · ● Dépôts · 9 · ● Retours · 13 » (`TodayFilter`, `planning-filter-*`) et une seule liste
+     chronologique (`mergeDay` : rendez-vous, en approche, puis par heure, les deux sens mêlés ; `DayEntry`) ; chaque carte
+     porte un fond vert pâle « DÉPÔT » ou indigo pâle « RETOUR » avec un liseré de 4 px et la pastille pleine
+     (`TodayRowTile.tagged`) ; ce qui est fait (dépôt dont le client est venu, retour rendu au parking ou clos) est replié
+     sous « Déjà passés · N » (`planning-past`, cartes estompées) ; le bandeau d'arrivée « Voir » choisit la pilule du sens.
+     Tablette (≥ 760 px) : deux colonnes inchangées ; onglets Arrivées / Retours du chauffeur (`only`) : la même ligne de
+     date, listes inchangées. `ProTodayView.initialMode` ; test `planning_list_test.dart`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
