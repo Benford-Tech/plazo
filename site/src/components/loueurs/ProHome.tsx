@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Plate } from "@/components/Plate";
+import { LiveShuttleMap, MessageCard } from "@/components/loueurs/LiveShuttleMap";
 import { QuoteForm } from "@/components/loueurs/ProPricing";
 import type { FormState } from "@/lib/forms";
 import { fr } from "@/lib/fr";
@@ -11,7 +12,7 @@ type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 const t = fr.proHome;
 
 /** The sections the header's menu points to. */
-export const PRO_HOME_SECTIONS = { software: "logiciel", app: "application", marketplace: "vendre-sur-plazo", paperwork: "contrat" } as const;
+export const PRO_HOME_SECTIONS = { software: "logiciel", live: "navette-et-clients", app: "application", marketplace: "vendre-sur-plazo", paperwork: "contrat" } as const;
 
 const btnLime = "inline-flex min-h-11 items-center justify-center rounded-[10px] bg-lime px-4 text-[14px] font-semibold text-lime-ink no-underline hover:brightness-95";
 const btnOutline =
@@ -77,7 +78,7 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
     <div className="flex flex-col">
       {/* Hero, on the dark band, edge to edge. */}
       <section aria-labelledby="pro-home-title" className="bg-lime-ink text-lime-band">
-        <div className="mx-auto grid max-w-[1180px] items-center gap-10 px-4 py-12 md:grid-cols-[1.2fr_.8fr] md:px-6 md:py-16">
+        <div className="mx-auto grid max-w-[1180px] items-center gap-10 px-4 py-12 md:grid-cols-[1fr_1fr] md:px-6 md:py-16">
           <div className="min-w-0">
             <h1 id="pro-home-title" className="mb-4 font-pro-display text-[38px] leading-none font-bold tracking-[.01em] text-balance text-white uppercase md:text-[54px]">
               {t.heroTitle} <span className="text-lime">{t.heroAccent}</span>
@@ -100,16 +101,36 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
               ))}
             </dl>
           </div>
-          <div aria-hidden="true" className="mx-auto flex w-[250px] max-w-full flex-col gap-2 rounded-[32px] border-[7px] border-black bg-white p-3.5 text-pro-ink">
-            <b className="text-[14px]">{t.phone.title}</b>
-            {t.phone.items.map(item => (
-              <div key={item.title} className="rounded-[12px] bg-pro-ground px-3 py-2">
-                <b className="block text-[13px]">{item.title}</b>
-                <span className="text-[12px] text-pro-soft">{item.text}</span>
-              </div>
-            ))}
-            <span className="rounded-[12px] bg-lime px-3 py-2 text-center text-[13px] font-bold text-lime-ink">{t.phone.go}</span>
+          <LiveShuttleMap variant="hero" />
+        </div>
+      </section>
+
+      {/* B: the customers don't call any more (the live shuttle and their messages). */}
+      <section id={PRO_HOME_SECTIONS.live} aria-labelledby="pro-home-live" className="scroll-mt-24 border-t border-lime-band/15 bg-lime-ink text-lime-band">
+        <div className="mx-auto grid max-w-[1180px] gap-8 px-4 py-12 md:grid-cols-2 md:px-6">
+          <div className="flex min-w-0 flex-col gap-4">
+            <h2 id="pro-home-live" className={`${sectionTitle} text-white`}>
+              {t.liveTitle} <span className="text-lime">{t.liveAccent}</span>
+            </h2>
+            <p className="max-w-[52ch] leading-relaxed">{t.liveLead}</p>
+            <LiveShuttleMap variant="section" />
           </div>
+          <div className="flex min-w-0 flex-col gap-2.5 md:pt-2">
+            <p className="text-[12.5px] font-bold tracking-[.08em] uppercase opacity-80">{t.feedTitle}</p>
+            {t.messages.map(message => (
+              <MessageCard key={message.title} message={message} />
+            ))}
+          </div>
+        </div>
+        <div className="bg-white text-pro-ink">
+          <ul className="mx-auto grid max-w-[1180px] gap-3 px-4 py-6 text-[15px] md:grid-cols-2 md:px-6">
+            {t.liveGains.map(gain => (
+              <li key={gain} className="flex items-start gap-2.5">
+                <span aria-hidden="true" className="mt-[7px] size-2 flex-none rounded-full bg-lime" />
+                {gain}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 

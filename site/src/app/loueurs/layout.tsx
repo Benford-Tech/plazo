@@ -16,7 +16,7 @@ const h = fr.proHome;
 /** The home page's sections, then the pricing page (the header's menu and the footer's « Solutions »). */
 const SOLUTIONS = [
   { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.software}`, label: h.nav.software },
-  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.app}`, label: h.nav.app },
+  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.live}`, label: h.nav.live },
   { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.marketplace}`, label: h.nav.marketplace },
   { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.paperwork}`, label: h.nav.paperwork },
 ];
