@@ -124,15 +124,23 @@ describe("bookAction", () => {
 describe("lookupAction", () => {
   it("answers the same way for a wrong reference or a wrong email", async () => {
     lookupBooking.mockRejectedValue(new ApiError(404, "Booking not found", "not_found"));
-    const state = await lookupAction(EMPTY_FORM, form({ reference: "rab234", email: "x@example.com" }));
+    const state = await lookupAction(EMPTY_FORM, form({ reference: "rab234", contact: "x@example.com" }));
     expect(lookupBooking).toHaveBeenCalledWith("RAB234", "x@example.com");
     expect(state.error).toBe("lookup_not_found");
+  });
+
+  it("A (27/10/2026): the comparator's number and a phone, both required", async () => {
+    lookupBooking.mockRejectedValue(new ApiError(404, "Booking not found", "not_found"));
+    await lookupAction(EMPTY_FORM, form({ reference: "al-884880719", contact: "06 11 22 33 44" }));
+    expect(lookupBooking).toHaveBeenLastCalledWith("AL-884880719", "06 11 22 33 44");
+    const empty = await lookupAction(EMPTY_FORM, form({ reference: "", contact: "" }));
+    expect(empty.fields).toEqual({ reference: "required", contact: "required" });
   });
 
   it("keeps the key in a cookie and opens the booking without it in the address", async () => {
     cookieJar.clear();
     lookupBooking.mockResolvedValue({ reference: "RAB234", manageToken: "tok_0123456789abcdefghij" });
-    await expect(lookupAction(EMPTY_FORM, form({ reference: "rab234", email: "x@example.com" }))).rejects.toThrow("REDIRECT /ma-reservation/RAB234");
+    await expect(lookupAction(EMPTY_FORM, form({ reference: "rab234", contact: "x@example.com" }))).rejects.toThrow("REDIRECT /ma-reservation/RAB234");
     expect(redirect).toHaveBeenLastCalledWith("/ma-reservation/RAB234");
     expect(cookieJar.get("cle-RAB234")?.value).toBe("tok_0123456789abcdefghij");
   });

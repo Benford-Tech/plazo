@@ -701,8 +701,10 @@ const frBase = {
   manage: {
     title: "Ma réservation",
     lookupLead:
-      "Pas de compte : le lien de votre email suffit. Sinon, entrez votre référence et votre email.",
-    reference: "Référence",
+      "Pas de compte : le lien de votre SMS ou de votre email suffit. Sinon, entrez le numéro reçu de Plazo ou du site où vous avez réservé.",
+    reference: "Numéro de réservation",
+    referenceHint: "Plazo, Allopark, Onepark, ParkVia…",
+    contact: "E-mail ou téléphone",
     email: "Email",
     find: "Retrouver ma réservation",
     finding: "Recherche…",
@@ -1091,7 +1093,7 @@ const frBase = {
     no_price: "Ce parking n’a pas de tarif pour la durée de votre séjour.",
     not_found: "Introuvable.",
     lookup_not_found:
-      "Aucune réservation ne correspond à cette référence et cet email.",
+      "Aucune réservation ne correspond à ce numéro avec cet e-mail ou ce téléphone.",
     flight_locked: "Le vol retour ne peut plus être modifié en ligne.",
     child_seats_exceed_passengers:
       "Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.",

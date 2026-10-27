@@ -938,7 +938,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `SmsService.bookingLink`). Désormais toute réservation d'un parking qui a une fiche est retrouvée et consultée par son voyageur
      (même e-mail, 30 jours après le retour au plus) ; **l'annulation en ligne reste réservée aux réservations faites sur Plazo**
      (409 `cancellation_closed` pour les autres : c'est l'affaire du parking ou du comparateur) ; paiement et services additionnels
-     inchangés (déjà réservés aux réservations Plazo payées). Test `public-booking.test.ts` « retrouver sa réservation ».
+     inchangés (déjà réservés aux réservations Plazo payées). Test `public-booking.test.ts` « retrouver sa réservation » **Numéro du comparateur et
+     téléphone (27/10/2026, « pouvoir récupérer n'importe quelle réservation dans Plazo », direction A des maquettes
+     https://claude.ai/artifact/WcdeKCQT1Tg8Sx93Vevj76)** : `POST /public/bookings/lookup` `{ reference, contact }` (`email` encore
+     accepté des anciennes apps) : le numéro est la référence Plazo ou `externalReference` (« AL-884880719 », « #5908369 » : casse,
+     espaces et « # » ignorés, `lookupNumber`), le contact l'e-mail de la réservation ou son téléphone (9 derniers chiffres,
+     `phoneKey`) ; même 404 pour tout refus, réservations anonymisées exclues, limite par numéro (`lookupReferenceKey`). Site
+     (`LookupForm` : « Numéro de réservation » avec « Plazo, Allopark, Onepark, ParkVia… », « E-mail ou téléphone ») et app Plazo
+     (« Ajouter une réservation », `open.contact`) ; tests `public-booking.test.ts`, `actions.test.ts`, `booking_bloc_test.dart`.
    - **« Lien court Plazo » (27/10/2026, « Lien profond pour télécharger et utiliser Plazo directement sur sa réservation »,
      direction B des maquettes https://claude.ai/artifact/RengaLdiu3ex2eB9yhot7d)** : les SMS (confirmation, veille, atterrissage)
      et les mails (confirmation, rappel) portent `https://www.plazo.fr/a/<REF>-<code>` à la place du lien long (`domain/app-link.ts` :

@@ -106,12 +106,12 @@ void main() {
       expect(find.text('Champ obligatoire'), findsNWidgets(2));
 
       await tester.enterText(find.byKey(const Key('add-reference')), 'r7kq2m');
-      await tester.enterText(find.byKey(const Key('add-email')), 'autre@exemple.fr');
+      await tester.enterText(find.byKey(const Key('add-contact')), 'autre@exemple.fr');
       await tester.tap(find.byKey(const Key('add-submit')));
       await tester.pumpAndSettle();
       expect(find.textContaining('Réservation introuvable'), findsOneWidget);
 
-      await tester.enterText(find.byKey(const Key('add-email')), 'camille@exemple.fr');
+      await tester.enterText(find.byKey(const Key('add-contact')), 'camille@exemple.fr');
       await tester.tap(find.byKey(const Key('add-submit')));
       await tester.pumpAndSettle();
       expect(added, 'R7KQ2M');

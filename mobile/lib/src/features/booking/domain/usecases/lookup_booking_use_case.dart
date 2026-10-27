@@ -7,11 +7,11 @@ import '../../data/models/public_booking_model.dart';
 import '../repositories/booking_repository.dart';
 
 class LookupBookingParams extends Equatable {
-  const LookupBookingParams({required this.reference, required this.email});
+  const LookupBookingParams({required this.reference, required this.contact});
   final String reference;
-  final String email;
+  final String contact;
   @override
-  List<Object?> get props => [reference, email];
+  List<Object?> get props => [reference, contact];
 }
 
 /// Manual entry: reference + email (the site's "Ma réservation" form). Saves the manage token.
@@ -22,5 +22,5 @@ class LookupBookingUseCase with UseCase<BookingAccessModel, LookupBookingParams>
 
   @override
   Future<Either<Failure, BookingAccessModel>> call(LookupBookingParams params) =>
-      _repository.lookup(reference: params.reference, email: params.email);
+      _repository.lookup(reference: params.reference, contact: params.contact);
 }

@@ -8,7 +8,7 @@ import '../../data/models/public_booking_model.dart';
 
 abstract class BookingRepository {
   Future<Either<Failure, CreatedBookingModel>> create(BookingInput input);
-  Future<Either<Failure, BookingAccessModel>> lookup({required String reference, required String email});
+  Future<Either<Failure, BookingAccessModel>> lookup({required String reference, required String contact});
   Future<Either<Failure, PublicBookingModel>> getBooking({required String reference});
   Future<Either<Failure, PublicBookingModel>> updateFlight({required String reference, required String? flight});
   Future<Either<Failure, PublicBookingModel>> locateCar({required String reference, required GeoPosition position, String? note});
@@ -32,8 +32,8 @@ class BookingRepositoryImpl implements BookingRepository {
   Future<Either<Failure, CreatedBookingModel>> create(BookingInput input) => _dataSource.create(input).makeRequest();
 
   @override
-  Future<Either<Failure, BookingAccessModel>> lookup({required String reference, required String email}) =>
-      _dataSource.lookup(reference: reference, email: email).makeRequest();
+  Future<Either<Failure, BookingAccessModel>> lookup({required String reference, required String contact}) =>
+      _dataSource.lookup(reference: reference, contact: contact).makeRequest();
 
   @override
   Future<Either<Failure, PublicBookingModel>> getBooking({required String reference}) => _dataSource.getBooking(reference: reference).makeRequest();

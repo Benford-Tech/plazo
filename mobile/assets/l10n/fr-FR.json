@@ -1,8 +1,10 @@
 {
   "open": {
     "title": "Ajouter une réservation",
-    "intro": "Une réservation faite sur le site ? Entrez sa référence et l'email utilisé : elle sera gardée sur ce téléphone.",
-    "reference": "Référence",
+    "intro": "Entrez le numéro reçu de Plazo ou du site où vous avez réservé : la réservation sera gardée sur ce téléphone.",
+    "reference": "Numéro de réservation",
+    "reference_help": "Plazo, Allopark, Onepark, ParkVia…",
+    "contact": "E-mail ou téléphone",
     "email": "Email de la réservation",
     "submit": "Ajouter la réservation",
     "saved": "Sur ce téléphone",
@@ -514,7 +516,7 @@
     "invalid_idempotency_key": "Le formulaire a expiré. Revenez en arrière et réessayez.",
     "overbooked": "Ce parking est complet pour au moins une nuit de votre séjour.",
     "no_price": "Ce parking n'a pas de tarif pour la durée de votre séjour.",
-    "lookup_not_found": "Aucune réservation ne correspond à cette référence et cet email.",
+    "lookup_not_found": "Aucune réservation ne correspond à ce numéro avec cet e-mail ou ce téléphone.",
     "flight_locked": "Le vol retour ne peut plus être modifié en ligne.",
     "cancellation_closed": "Cette réservation ne peut plus être annulée en ligne.",
     "online_booking_unavailable": "Ce parking n'accepte pas encore les réservations en ligne.",

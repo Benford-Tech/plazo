@@ -8,7 +8,8 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../booking/presentation/bloc/booking_bloc.dart';
 
-/// "Ajouter une réservation": reference + email (the site's "Ma réservation" form). The manage
+/// "Ajouter une réservation": the Plazo reference or the comparator's number, and the email or the phone of the booking
+/// (the site's "Ma réservation" form; 27/10/2026, direction A). The manage
 /// token goes to the secure storage; returns the reference added.
 Future<String?> showAddBookingSheet(BuildContext context) => showModalBottomSheet<String>(
   context: context,
@@ -30,18 +31,18 @@ class AddBookingForm extends StatefulWidget {
 class _AddBookingFormState extends State<AddBookingForm> {
   final _form = GlobalKey<FormState>();
   final _reference = TextEditingController();
-  final _email = TextEditingController();
+  final _contact = TextEditingController();
 
   @override
   void dispose() {
     _reference.dispose();
-    _email.dispose();
+    _contact.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (!_form.currentState!.validate()) return;
-    context.read<BookingBloc>().add(BookingLookupSubmitted(reference: _reference.text.trim(), email: _email.text.trim()));
+    context.read<BookingBloc>().add(BookingLookupSubmitted(reference: _reference.text.trim(), contact: _contact.text.trim()));
   }
 
   @override
@@ -68,16 +69,17 @@ class _AddBookingFormState extends State<AddBookingForm> {
                 key: const Key('add-reference'),
                 controller: _reference,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(labelText: 'open.reference'.tr(), hintText: 'R7KQ2M'),
+                decoration: InputDecoration(labelText: 'open.reference'.tr(), hintText: 'R7KQ2M', helperText: 'open.reference_help'.tr()),
                 validator: required,
               ),
               const SizedBox(height: 12),
               TextFormField(
-                key: const Key('add-email'),
-                controller: _email,
+                key: const Key('add-contact'),
+                controller: _contact,
                 keyboardType: TextInputType.emailAddress,
-                autofillHints: const [AutofillHints.email],
-                decoration: InputDecoration(labelText: 'open.email'.tr()),
+                autocorrect: false,
+                autofillHints: const [AutofillHints.email, AutofillHints.telephoneNumber],
+                decoration: InputDecoration(labelText: 'open.contact'.tr()),
                 validator: required,
                 onFieldSubmitted: (_) => _submit(),
               ),

@@ -4,4 +4,4 @@ Première version de Plazo.
 • Le jour du départ, prévenez le parking de votre arrivée et suivez la navette en direct.
 • Au retour, suivez votre vol et la navette, et retrouvez votre voiture.
 • Sièges auto gratuits pour les enfants dans la navette.
-• Le lien de votre SMS ouvre directement votre réservation dans l'app.
+• Le lien de votre SMS ouvre votre réservation ; ou son numéro et votre téléphone.

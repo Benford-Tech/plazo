@@ -7,7 +7,7 @@ import '../models/public_booking_model.dart';
 
 abstract class BookingDataSource {
   Future<CreatedBookingModel> create(BookingInput input);
-  Future<BookingAccessModel> lookup({required String reference, required String email});
+  Future<BookingAccessModel> lookup({required String reference, required String contact});
   Future<PublicBookingModel> getBooking({required String reference});
   Future<PublicBookingModel> updateFlight({required String reference, required String? flight});
   Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note});
@@ -44,8 +44,8 @@ class BookingDataSourceImpl implements BookingDataSource {
   }
 
   @override
-  Future<BookingAccessModel> lookup({required String reference, required String email}) async {
-    final access = await client.lookup(body: {'reference': reference.trim().toUpperCase(), 'email': email.trim()});
+  Future<BookingAccessModel> lookup({required String reference, required String contact}) async {
+    final access = await client.lookup(body: {'reference': reference.trim().toUpperCase(), 'contact': contact.trim()});
     await storage.saveBookingToken(access.reference, access.manageToken);
     return access;
   }

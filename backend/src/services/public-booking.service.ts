@@ -40,6 +40,11 @@ export function phoneKey(phone: string): string {
   return phone.replace(/\D/g, '').slice(-9);
 }
 
+/** A booking number as typed, for the lookup: upper case, without spaces nor « # ». */
+export function lookupNumber(reference: string): string {
+  return reference.replace(/[\s#]/g, '').toUpperCase();
+}
+
 const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 
 /**
@@ -236,15 +241,33 @@ export class PublicBookingService {
     }
   }
 
-  /** The manage token of a booking, for its reference and the email given when booking. */
+  /**
+   * The manage token of a booking, for its reference and its traveller's contact (27/10/2026, direction A): the Plazo
+   * reference or the comparator's number (« AL-884880719 », « #5908369 »: case, spaces and « # » ignored), and the email
+   * or the phone of the booking (last 9 digits). Same answer for a wrong reference and a wrong contact.
+   */
   public async lookup(data: LookupBookingDto) {
-    const reservation = await prisma.reservation.findFirst({
-      // Any channel (27/10/2026): the parking's own bookings and imports get the same SMS links as Plazo's.
-      where: { reference: data.reference.trim().toUpperCase(), parking: { listing: { isNot: null } } },
-      select: { id: true, reference: true, customerEmail: true, returnAt: true, manageTokenVersion: true },
+    const number = lookupNumber(data.reference);
+    const contact = (data.contact ?? data.email ?? '').trim();
+    const isEmail = contact.includes('@');
+    const phone = isEmail ? '' : phoneKey(contact);
+    if (!number || (!isEmail && phone.length < 9)) throw notFound();
+    // Any channel (27/10/2026): the parking's own bookings and imports get the same SMS links as Plazo's.
+    const byNumber = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM reservations
+      WHERE "externalReference" IS NOT NULL AND upper(regexp_replace("externalReference", '[[:space:]#]', '', 'g')) = ${number}
+      LIMIT 20`;
+    const candidates = await prisma.reservation.findMany({
+      where: { OR: [{ reference: number }, { id: { in: byNumber.map(r => r.id) } }], parking: { listing: { isNot: null } }, anonymizedAt: null },
+      select: { id: true, reference: true, customerEmail: true, customerPhone: true, returnAt: true, arrivalAt: true, manageTokenVersion: true },
+      orderBy: { arrivalAt: 'desc' },
     });
-    if (!reservation?.customerEmail || reservation.customerEmail !== data.email.trim().toLowerCase()) throw notFound();
-    if (manageLinkExpired(reservation.returnAt)) throw notFound();
+    const reservation = candidates.find(
+      r =>
+        !manageLinkExpired(r.returnAt) &&
+        (isEmail ? !!r.customerEmail && r.customerEmail === contact.toLowerCase() : !!r.customerPhone && phoneKey(r.customerPhone) === phone),
+    );
+    if (!reservation) throw notFound();
     return { reference: reservation.reference, manageToken: manageToken(reservation.id, this.secret, reservation.manageTokenVersion) };
   }
 
