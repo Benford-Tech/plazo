@@ -64,15 +64,18 @@ class TodayRowTile extends StatelessWidget {
             borderRadius: AppRadius.card,
             border: Border.all(color: edge, width: approaching ? 2.2 : 1),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // The kind's edge on the left (green drop-off, indigo return).
-              if (tagged) Container(width: 4, color: kind),
-              Expanded(
-                child: Padding(padding: const EdgeInsets.all(12), child: _body(context, b, s, time, kind)),
-              ),
-            ],
+          // IntrinsicHeight: the list gives no height, so the edge strip stretches to the card's own.
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // The kind's edge on the left (green drop-off, indigo return).
+                if (tagged) Container(width: 4, color: kind),
+                Expanded(
+                  child: Padding(padding: const EdgeInsets.all(12), child: _body(context, b, s, time, kind)),
+                ),
+              ],
+            ),
           ),
         ),
       ),
