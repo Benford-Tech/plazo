@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
-import { DEFAULT_AIRPORT } from "./src/lib/site";
+import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL } from "./src/lib/site";
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -32,11 +32,23 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: `/${DEFAULT_AIRPORT}`, destination: "/", permanent: true },
+      // Plazo Pro on its own address (27/10/2026), once NEXT_PUBLIC_PRO_SITE_URL is set: /loueurs leads there.
+      ...(PRO_SITE_URL
+        ? [
+            { source: OPERATORS_PREFIX, destination: `${PRO_SITE_URL}/`, permanent: true },
+            { source: `${OPERATORS_PREFIX}/tarifs`, destination: `${PRO_SITE_URL}/tarifs`, permanent: true },
+          ]
+        : []),
     ];
   },
   async rewrites() {
     return {
-      beforeFiles: [{ source: "/", destination: `/${DEFAULT_AIRPORT}` }],
+      beforeFiles: [
+        // pro.plazo.fr (27/10/2026): Plazo Pro's pages at the root of its host; /pro and /api stay the other services.
+        { source: "/", has: [{ type: "host", value: PRO_HOST }], destination: OPERATORS_PREFIX },
+        { source: "/tarifs", has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/tarifs` },
+        { source: "/", destination: `/${DEFAULT_AIRPORT}` },
+      ],
       afterFiles: [],
       fallback: [],
     };
