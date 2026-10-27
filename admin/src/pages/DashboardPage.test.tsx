@@ -649,4 +649,23 @@ describe("DashboardPage", () => {
       "rien d'urgent",
     );
   });
+
+  // « la carte doit être repliable pour que l'on puisse filtrer les voitures et les parcourir » (27/10/2026).
+  it("folds the live map into one line, kept in the browser, and unfolds it", async () => {
+    localStorage.removeItem("plazo:dashboard-map-collapsed");
+    renderPage();
+    await screen.findByTestId("live-shuttles-map");
+    fireEvent.click(screen.getByRole("button", { name: "Replier la carte" }));
+    expect(screen.queryByTestId("live-shuttles-map")).toBeNull();
+    const bar = screen.getByTestId("live-panel-collapsed");
+    expect(
+      within(bar).getByText(/navette.* en route|Aucune navette en route/),
+    ).toBeInTheDocument();
+    expect(localStorage.getItem("plazo:dashboard-map-collapsed")).toBe("1");
+    fireEvent.click(
+      within(bar).getByRole("button", { name: "Afficher la carte" }),
+    );
+    expect(await screen.findByTestId("live-shuttles-map")).toBeInTheDocument();
+    expect(localStorage.getItem("plazo:dashboard-map-collapsed")).toBeNull();
+  });
 });
