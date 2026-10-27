@@ -155,6 +155,15 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(reading().getByText("Archiver")).toBeInTheDocument();
   });
 
+  it("« Mails liés » (27/10/2026) : ?vue=done&mail= ouvre l'onglet du mail, déjà sélectionné", async () => {
+    renderPage("/reservations/a-verifier?vue=done&mail=e4");
+    await waitFor(() => expect(api.getInboundEmails).toHaveBeenCalledWith("done"));
+    expect(api.getInboundEmails).not.toHaveBeenCalledWith("todo");
+    expect(tab(/Traités/)).toHaveAttribute("aria-selected", "true");
+    const rows = await screen.findAllByTestId("inbound-row");
+    expect(within(rows[1]).getByRole("button")).toHaveAttribute("aria-current", "true");
+  });
+
   it("la sélection vit dans ?mail= ; « Retour » la retire ; un mail sans texte dit qu'il est effacé", async () => {
     renderPage();
     const rows = await screen.findAllByTestId("inbound-row");

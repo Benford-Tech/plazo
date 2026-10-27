@@ -17,6 +17,7 @@ import type {
   LiveShuttles,
   InboundSettings,
   InboundEmail,
+  LinkedEmail,
   InboundEmailList,
   InboundReanalysis,
   InboundEmailView,
@@ -831,6 +832,11 @@ export const adminApi = {
     apiRequest<InboundReanalysis>(`/internal/inbound/emails/${id}/reanalyse`, {
       method: "POST",
     }),
+  // « Mails liés » (27/10/2026): the mails of a booking, oldest first.
+  getReservationEmails: (reservationId: string) =>
+    apiRequest<{ data: LinkedEmail[] }>(
+      `/internal/reservations/${reservationId}/emails`,
+    ),
   attachInboundEmail: (id: string, reservationId: string) =>
     apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, {
       method: "POST",

@@ -109,6 +109,11 @@ export class InboundEmailController {
     res.status(httpStatus.OK).json(await this.inbound.reanalyse(req.staff, req.params.id as string));
   });
 
+  /** GET /internal/reservations/:id/emails (« Mails liés », 27/10/2026) */
+  public forReservation = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.inbound.forReservation(req.staff, req.params.id as string) });
+  });
+
   /** POST /internal/inbound/emails/:id/attach  { reservationId } */
   public attach = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const reservationId = typeof req.body?.reservationId === 'string' ? req.body.reservationId : '';

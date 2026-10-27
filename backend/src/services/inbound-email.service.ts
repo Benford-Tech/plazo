@@ -129,6 +129,20 @@ export interface InboundEmailView {
   receivedAt: string;
 }
 
+/**
+ * « Mails liés » of a booking (27/10/2026, « pouvoir retrouver le mail qui a permis de créer la réservation », direction C):
+ * what the email was to the booking. `created`: the booking was made from it (the first one received before the booking,
+ * not a change); `change` / `cancellation`: a comparator's change or cancellation read against it (applied or left to the
+ * staff); `duplicate`: the same booking sent again; `linked`: attached otherwise (« Compléter », a summary).
+ */
+export type LinkedEmailRole = 'created' | 'change' | 'cancellation' | 'duplicate' | 'linked';
+
+export interface LinkedEmailView extends InboundEmailView {
+  role: LinkedEmailRole;
+  /** The inbox tab that still lists it (« Ouvrir dans la Boîte de réception »), null once it left every tab. */
+  inboxView: InboundView | null;
+}
+
 /** 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): what one automatic pass did, without personal data. */
 export interface AutoRetryReport {
   /** Emails due for another try. */
@@ -193,6 +207,16 @@ const DONE_STATUSES: InboundEmailStatus[] = ['imported', 'duplicate', 'handled',
 /** T-A: « Marquer comme traité » applies to these; `imported` stays imported, `archived` refuses, `forwarding` is unknown. */
 const HANDLEABLE: InboundEmailStatus[] = ['incomplete', 'unrecognised', 'duplicate', 'dismissed'];
 const DONE_WINDOW_DAYS = COUNT_WINDOW_DAYS;
+
+/** The tab that still lists an email (its status and the tab's window), null once it left every tab. */
+function inboxViewOf(status: InboundEmailStatus, receivedAt: Date, now: number): InboundView | null {
+  if (status === 'forwarding' || status === 'ignored') return null;
+  const view = viewOfStatus(status);
+  const age = now - receivedAt.getTime();
+  if (view === 'done' && age > DONE_WINDOW_DAYS * 86400000) return null;
+  if (view === 'archived' && age > ARCHIVED_WINDOW_DAYS * 86400000) return null;
+  return view;
+}
 
 /** The tab a status lives in (forwarding confirmations are in none: the caller gets an empty list). */
 function viewOfStatus(status: InboundEmailStatus): InboundView {
@@ -1141,6 +1165,44 @@ export class InboundEmailService {
   }
 
   /**
+   * « Mails liés » (27/10/2026): the emails of one of the operator's bookings, oldest first: the ones attached to it and
+   * the changes or cancellations read against it (also those left to the staff, which are not attached). 404 for a
+   * booking of another operator. The text reads as the inbox shows it (cleared 30 days after reception).
+   */
+  public async forReservation(actor: AuthenticatedStaff, reservationId: string): Promise<LinkedEmailView[]> {
+    this.require(actor, 'reservations:manage');
+    const booking = await prisma.reservation.findFirst({
+      where: { id: reservationId, operatorId: actor.operatorId },
+      select: { id: true, createdAt: true },
+    });
+    if (!booking) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        operatorId: actor.operatorId,
+        status: { notIn: ['forwarding', 'ignored'] },
+        OR: [{ reservationId: booking.id }, { change: { path: ['reservationId'], equals: booking.id } }],
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: LIST_MAX,
+    });
+    const now = Date.now();
+    let creatorFound = false;
+    return rows.map(r => {
+      const view = this.view(r);
+      const change = view.change;
+      let role: LinkedEmailRole;
+      if (change?.kind === 'cancellation') role = 'cancellation';
+      else if (change) role = 'change';
+      else if (r.status === 'duplicate') role = 'duplicate';
+      else if (!creatorFound && r.receivedAt.getTime() <= booking.createdAt.getTime()) role = 'created';
+      else role = 'linked';
+      if (role === 'created') creatorFound = true;
+      return { ...view, role, inboxView: inboxViewOf(r.status, r.receivedAt, now) };
+    });
+  }
+
+  /**
    * T-A « Marquer comme traité »: the email was dealt with, with or without a booking. `imported` stays as it is
    * (a booking is its proof); an archived email refuses (409 `archived`); the text stays until the purge.
    */
@@ -1737,7 +1799,9 @@ export class InboundEmailService {
     if (!row || !booking) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
     await prisma.inboundEmail.update({
       where: { id },
-      data: { status: 'imported', reservationId, textBody: null, recipients: [], links: [], pageLookup: Prisma.DbNull, change: Prisma.DbNull },
+      // 27/10/2026 (« Mails liés »): the text stays, like an automatic import's, until the nightly purge at 30 days, so the
+      // booking's email can be read from its page; what only served a re-analysis goes.
+      data: { status: 'imported', reservationId, recipients: [], links: [], pageLookup: Prisma.DbNull, change: Prisma.DbNull },
     });
   }
 

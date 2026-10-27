@@ -410,6 +410,23 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `reservation_imported_price`, reprise du prix des réservations importées) garde le dernier montant du comparateur
      (`createFromImport`, `applyImportChange`, et `importedPriceCents` envoyé par « Compléter ») : une modification Allopark ne
      touche le prix que si le montant d'Allopark a changé (`importChanges`), un prix corrigé par l'équipe reste le sien.
+   - **« Mails liés » d'une réservation (27/10/2026, « pouvoir retrouver le mail qui a permis de créer la réservation », direction C
+     des maquettes https://claude.ai/artifact/DKEMgx5YaEnganwdmnqfnx)** : `GET /internal/reservations/:id/emails`
+     (`InboundEmailService.forReservation`, `reservations:manage`, 404 pour la réservation d'un autre loueur) rend, du plus ancien au
+     plus récent, les mails rattachés à la réservation et ceux d'une modification ou d'une annulation lue contre elle, même laissée à
+     l'équipe (`change.reservationId`), jamais une confirmation de transfert ni un mail écarté ; chacun avec la vue de la boîte de
+     réception, `role` (`created` : le premier reçu avant la création de la réservation, hors modification ; `change`, `cancellation`,
+     `duplicate`, `linked`) et `inboxView` (l'onglet qui le liste encore, nul après les 30 jours des Traités ou les 90 des Archivés).
+     « Compléter » (`attach`) garde désormais le texte du mail jusqu'à la purge des 30 jours, comme un import automatique (il
+     l'effaçait au rattachement). Web : bloc « Mails liés · N » de la fiche réservation (`LinkedEmails`, après le contrat, caché sans
+     mail et pour les rôles sans boîte de réception), pastilles « À l'origine · Modification · Annulation · Doublon · Rattaché »,
+     « Voir › » ouvre un tiroir (`role="dialog"`, Échap ou clic hors du tiroir) : rôle et état, objet, expéditeur, date, « Reconnu »,
+     lecture, texte (`MailBody`) ou « Texte effacé 30 jours après la réception. », bloc de la modification (`ChangeBlock`) ou « Ce que
+     Plazo a compris » (`Understood`), puis « Ouvrir dans la Boîte de réception » vers `/reservations/a-verifier?vue=<onglet>&mail=<id>`
+     (la boîte s'ouvre désormais sur l'onglet `?vue=`) ou « Ce mail n'est plus listé dans la Boîte de réception. ». Plazo Pro : même
+     bloc sur la fiche réservation (`LinkedEmailsCard`, `LinkedEmailsDataSource` par Dio sans freezed), feuille du mail (texte
+     sélectionnable, résumé, une ligne par changement « Date de retour : … → … »). Tests `reservation-emails.test.ts`,
+     `LinkedEmails.test.tsx`, `InboundEmailsPage.test.tsx`, `linked_emails_card_test.dart`.
    - **Listes chronologiques (10/10/2026, « Les réservations doivent être affichées de manière chronologique »)** : la liste
      Réservations (web `/pro/reservations`, app Plazo Pro) et Plateforme › Réservations vont par date d'arrivée, la plus
      ancienne d'abord (puis `id`) ; sans recherche (ni filtre de dates pour la plateforme), la page 1 commence à la première

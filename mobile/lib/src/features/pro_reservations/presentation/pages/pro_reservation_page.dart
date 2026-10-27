@@ -26,6 +26,7 @@ import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
 import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
+import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
 
 /// One booking: the sheet, the contact, the stay, the vehicle's spot, and the status buttons.
@@ -240,6 +241,8 @@ class _Sheet extends StatelessWidget {
           PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
         // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
         StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
+        // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
+        if (can(role, 'reservations:manage')) LinkedEmailsCard(key: ValueKey('mails-${r.id}-${r.status}'), reservationId: r.id),
         if (r.returnNoticeKind != null && r.returnNoticeAt != null)
           _Section(
             title: 'res.return_notice'.tr(),

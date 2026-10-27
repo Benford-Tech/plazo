@@ -218,6 +218,37 @@
     "vehicle_model": "Modèle du véhicule",
     "vehicle_colour": "Couleur",
     "customer_note": "Message du client",
+    "mails": {
+      "title": "Mails liés · {}",
+      "role": {
+        "created": "À l'origine",
+        "change": "Modification",
+        "cancellation": "Annulation",
+        "duplicate": "Doublon",
+        "linked": "Rattaché"
+      },
+      "no_subject": "(sans objet)",
+      "unknown_sender": "expéditeur inconnu",
+      "from": "De : {}",
+      "received": "Reçu le {}",
+      "recognised": "Reconnu : {}",
+      "close": "Fermer",
+      "text_gone": "Texte effacé 30 jours après la réception.",
+      "field": {
+        "arrivalAt": "Date d'arrivée",
+        "returnAt": "Date de retour",
+        "passengers": "Passagers",
+        "plate": "Plaque",
+        "departureFlight": "Vol aller",
+        "returnFlight": "Vol retour",
+        "customerPhone": "Téléphone",
+        "customerName": "Nom",
+        "customerEmail": "E-mail",
+        "vehicleModel": "Véhicule",
+        "priceCents": "Prix",
+        "status": "Statut"
+      }
+    },
     "return_notice": "Signalé au retour",
     "return_notice_kind": {
       "flight_delayed": "Mon vol a du retard",

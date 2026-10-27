@@ -613,6 +613,20 @@ export interface InboundRecent {
   receivedAt: string;
 }
 
+/** « Mails liés » (27/10/2026): what a mail was to its booking. */
+export type LinkedEmailRole =
+  | "created"
+  | "change"
+  | "cancellation"
+  | "duplicate"
+  | "linked";
+
+/** A mail of a booking (GET /internal/reservations/:id/emails): the inbox's view, its role, the tab still listing it. */
+export interface LinkedEmail extends InboundEmail {
+  role: LinkedEmailRole;
+  inboxView: InboundEmailView | null;
+}
+
 export interface InboundEmail {
   id: string;
   status: InboundEmailStatus;
