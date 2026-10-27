@@ -13,6 +13,7 @@ import { describeError, fr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ValetPill } from "@/lib/valet-icon";
 
 function NightCell({ night }: { night: NightLoad }) {
   const t = fr.planning;
@@ -104,6 +105,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
             <span className="block truncate text-sm text-muted-foreground">
               {t.pax(r.passengers)} · {isArrival ? (r.channelDetail ?? fr.channels[r.channel]) : fr.status[r.status]}
             </span>
+            {r.handover === "valet" && <ValetPill label={fr.reservation.handovers.valet} className="mt-0.5" />}
           </span>
         </span>
         {!isArrival && r.shuttleTrip ? (

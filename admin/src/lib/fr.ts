@@ -89,6 +89,17 @@ export const readingOutageCause: Record<InboundReadingOutageCause, string> = {
 };
 
 export const fr = {
+  // « Voiturier au terminal » (27/10/2026, direction B): the dashboard's runs.
+  valetRuns: {
+    title: "Courses au terminal",
+    meetingPoint: (point: string) => `Rendez-vous : ${point}`,
+    kinds: { arrival: "Arrivée", departure: "Départ" } as Record<"arrival" | "departure", string>,
+    todo: "À prendre",
+    taken: "Prise",
+    done: "Faite",
+    todoCount: (n: number) => `${n} à prendre`,
+    takenCount: (n: number) => `${n} en cours`,
+  },
   common: {
     close: "Fermer",
     confirm: { title: "Confirmer", yes: "Confirmer", no: "Annuler" },
@@ -182,6 +193,11 @@ export const fr = {
     child_seats_exceed_passengers:
       "Les enfants comptent dans les passagers : il faut moins de sièges que de passagers.",
     child_seats_range: "Entre 0 et 4 sièges de chaque sorte.",
+    // « Voiturier au terminal » (27/10/2026).
+    invalid_handover: "Choisissez navette ou voiturier au terminal.",
+    not_valet: "Cette réservation prend la navette, pas le voiturier.",
+    run_taken: "Un autre voiturier a déjà pris cette course.",
+    run_closed: "Cette course est déjà faite.",
     invalid_phone: "Numéro de téléphone invalide.",
     invalid_plate: "Plaque invalide.",
     invalid_flight: "Numéro de vol invalide (ex. TO 3627).",
@@ -1046,6 +1062,10 @@ export const fr = {
       "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
     bookablePreview: (n: number) =>
       `Places réservables avec ces réglages : ${n}`,
+    valetMeetingPoint: "Rendez-vous du voiturier à l'aéroport",
+    valetMeetingPointPlaceholder: "Terminal 1 · dépose-minute",
+    valetMeetingPointHelp:
+      "Pour les réservations « Voiturier au terminal » : là où le voiturier prend et rend la voiture. Vide : Terminal 1 · dépose-minute.",
   },
   meetingPoint: {
     title: "Point de rendez-vous au retour",
@@ -1445,6 +1465,11 @@ export const fr = {
     carDirections: "Itinéraire à pied",
     stop: "Desserte",
     stopAirport: "Aéroport",
+    // « Voiturier au terminal » (27/10/2026, direction B).
+    handover: "Prise en charge",
+    handovers: { shuttle: "Navette", valet: "Voiturier au terminal" } as Record<"shuttle" | "valet", string>,
+    handoverValetHelp:
+      "Un voiturier prend la voiture au terminal à l'arrivée et la ramène au retour : le client ne prend pas la navette.",
     passengers: "Passagers",
     /** « Sièges auto » (24/10/2026, direction B « par âge »): the child seats to install in the shuttle. */
     childSeats: {

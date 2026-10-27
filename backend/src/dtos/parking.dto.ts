@@ -41,6 +41,12 @@ export class UpdateParkingDto {
   @Min(0, { message: 'delay_range' })
   @Max(180, { message: 'delay_range' })
   public landingDelayMinutes?: number;
+
+  /** 27/10/2026: where the valet meets the traveller at the airport; absent: unchanged, blank: the default. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80, { message: 'too_long' })
+  public valetMeetingPoint?: string | null;
 }
 
 /** PUT /internal/parkings/:id/shuttle-tracking (R-B, 07/10/2026). */

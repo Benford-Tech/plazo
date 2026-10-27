@@ -55,7 +55,8 @@ export class ShuttleForecastService {
       landingDelayMinutes: parking.landingDelayMinutes,
     };
     const include = { stop: { select: { id: true, name: true } } } as const;
-    const pick = (where: Prisma.ReservationWhereInput) => prisma.reservation.findMany({ where: { parkingId: parking.id, ...where }, include });
+    const pick = (where: Prisma.ReservationWhereInput) =>
+      prisma.reservation.findMany({ where: { parkingId: parking.id, handover: 'shuttle', ...where }, include });
     const [dropoffs, pickups] = await Promise.all([
       pick({
         status: { in: DROPOFF_DAY_STATUSES },

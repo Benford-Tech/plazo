@@ -25,6 +25,9 @@ abstract class PlanningRowModel with _$PlanningRowModel {
     /// The stop serving the traveller (D-A); null: the airport.
     String? stopId,
     StaffSignalModel? arrivalSignal,
+
+    /// « Voiturier au terminal » (27/10/2026): `valet` when a valet takes the car at the terminal (no shuttle).
+    @Default('shuttle') String handover,
   }) = _PlanningRowModel;
 
   factory PlanningRowModel.fromJson(Map<String, dynamic> json) => _$PlanningRowModelFromJson(json);

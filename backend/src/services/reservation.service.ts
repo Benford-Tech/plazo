@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/database';
+import prisma, { Handover, Parking, Prisma, Reservation, ReservationStatus } from '@/database';
+import { valetStatuses } from '@/domain/valet';
 import { can } from '@/domain/roles';
 import {
   canTransition,
@@ -209,6 +210,7 @@ export class ReservationService {
             returnFlight,
             departureFlight,
             stopId,
+            handover: data.handover ?? 'shuttle',
             notes: data.notes?.trim() || null,
             customerNote: data.customerNote?.trim() || null,
             vehicleModel: data.vehicleModel?.trim() || null,
@@ -841,6 +843,11 @@ export class ReservationService {
             ? {}
             : { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }),
           stopId,
+          handover: data.handover,
+          // Back to the shuttle: the valet runs taken are given up.
+          ...(data.handover === 'shuttle'
+            ? { valetArrivalById: null, valetArrivalTakenAt: null, valetDepartureById: null, valetDepartureTakenAt: null }
+            : {}),
           notes: data.notes === undefined ? undefined : data.notes?.trim() || null,
           customerNote: data.customerNote === undefined ? undefined : data.customerNote?.trim() || null,
           vehicleModel: data.vehicleModel === undefined ? undefined : data.vehicleModel?.trim() || null,
@@ -1149,12 +1156,17 @@ export class ReservationService {
    * The statuses this staff member may set next, in the journey's order (06/10/2026: served by the API
    * so the web and the app no longer copy the table). A refunded booking is closed for good.
    */
-  public nextStatuses(actor: AuthenticatedStaff, booking: { status: ReservationStatus; paymentStatus: string | null }): ReservationStatus[] {
+  public nextStatuses(
+    actor: AuthenticatedStaff,
+    booking: { status: ReservationStatus; paymentStatus: string | null; handover?: Handover },
+  ): ReservationStatus[] {
     if (booking.paymentStatus === 'refunded' || !can(actor.role, 'reservations:status')) return [];
     const decisions = can(actor.role, 'reservations:manage');
-    return STATUS_TRANSITIONS[booking.status].filter(
+    const next = STATUS_TRANSITIONS[booking.status].filter(
       s => decisions || (!RELEASED_STATUSES.includes(s) && !RELEASED_STATUSES.includes(booking.status)),
     );
+    // 27/10/2026: a valet booking never goes out by shuttle.
+    return valetStatuses(next, booking.handover ?? 'shuttle');
   }
 
   /**

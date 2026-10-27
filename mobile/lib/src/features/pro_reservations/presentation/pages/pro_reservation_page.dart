@@ -134,6 +134,7 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
       vehicleColour: r.vehicleColour,
       priceCents: r.priceCents,
       childSeats: r.childSeats,
+      handover: r.handover,
     );
   }
 }
@@ -186,6 +187,8 @@ class _Sheet extends StatelessWidget {
               ),
             if (r.returnFlight != null) ('res.return_flight'.tr(), r.returnFlight!),
             ('res.passengers'.tr(), '${r.passengers}'),
+            // 27/10/2026: « Prise en charge · Voiturier au terminal ».
+            if (r.valet) ('res.care'.tr(), 'res.care_valet'.tr()),
             // 24/10/2026: « Sièges auto · 1 siège bébé · 1 réhausseur », once asked.
             if (r.childSeats.any) ('child_seats.title'.tr(), childSeatsSummary(r.childSeats)),
             ('res.channel_label'.tr(), r.channelDetail != null ? '$channel · ${r.channelDetail}' : channel),

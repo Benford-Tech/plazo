@@ -32,6 +32,7 @@ import {
 } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
 import { RevenueTile } from "@/components/dashboard/RevenueTile";
+import { ValetRunsCard } from "@/components/dashboard/ValetRunsCard";
 import { VehiclesTable } from "@/components/dashboard/VehiclesTable";
 import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
@@ -826,6 +827,7 @@ export default function DashboardPage() {
               <AlertList alerts={d.alerts} />
             )}
           </Panel>
+          <ValetRunsCard />
           {d.noPrice && d.noPrice.count > 0 && (
             <NoPricePanel noPrice={d.noPrice} />
           )}

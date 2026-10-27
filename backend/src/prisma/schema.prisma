@@ -77,7 +77,7 @@ model Operator {
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
-  contractTemplates OperatorContractTemplate[]
+  contractTemplates     OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
 
   @@map("operators")
@@ -125,56 +125,56 @@ enum BookingNotify {
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
 model Staff {
-  id              String        @id @default(cuid())
-  operatorId      String
-  email           String        @unique // always lower-cased
+  id                 String        @id @default(cuid())
+  operatorId         String
+  email              String        @unique // always lower-cased
   // First and last name (06/10/2026); `name` stays the display form "Prénom Nom", kept in sync by the server.
-  firstName       String        @default("")
-  lastName        String        @default("")
-  name            String
-  phone           String?
-  role            StaffRole
-  password        String
-  isActive        Boolean       @default(true)
-  lastLoginAt     DateTime?
+  firstName          String        @default("")
+  lastName           String        @default("")
+  name               String
+  phone              String?
+  role               StaffRole
+  password           String
+  isActive           Boolean       @default(true)
+  lastLoginAt        DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
-  emailVerifiedAt DateTime?
+  emailVerifiedAt    DateTime?
   // Push notifications of travellers' arrivals (see ArrivalSignal): drop-offs, returns, or both.
-  notifyArrivals  Boolean       @default(true)
-  notifyReturns   Boolean       @default(true)
+  notifyArrivals     Boolean       @default(true)
+  notifyReturns      Boolean       @default(true)
   // The post held today (R-C, 04/10/2026): the app puts that post's pages first. Only a post the role
   // covers (see domain/roles.ts allowedPosts); the role, not the post, decides the permissions.
-  post            StaffRole?
-  postSetAt       DateTime?
+  post               StaffRole?
+  postSetAt          DateTime?
   // The shuttle vehicle taken for the day (V-A, 05/10/2026), chosen with the "Chauffeur" post and
   // preselected at the start of each trip. Counts for the local day of vehicleSetAt only.
-  vehicleId       String?
-  vehicleSetAt    DateTime?
+  vehicleId          String?
+  vehicleSetAt       DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
-  notifyShuttles  Boolean       @default(true)
+  notifyShuttles     Boolean       @default(true)
   /**
    * New bookings (N-A, 08/10/2026): a push per booking made on the site or imported (`immediate`, 06/10/2026), the
    * hourly digest of every channel (`hourly`, managers by default), or nothing (`never`).
    */
-  bookingNotify   BookingNotify @default(immediate)
+  bookingNotify      BookingNotify @default(immediate)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
-  notifyPlatform  Boolean       @default(true)
+  notifyPlatform     Boolean       @default(true)
   // « Mail du matin » (21/10/2026, choice A): the day's planning, revenue and integrations by email. Null: the role's
   // default (on for managers, off for the others); the local hour of the parking it leaves at (5 to 10); the local
   // date it was last sent (once a day).
   morningEmail       Boolean?
-  morningEmailHour   Int       @default(7)
+  morningEmailHour   Int           @default(7)
   morningEmailSentOn String?
   // 13/10/2026 (sign in with Apple / Google): when the person last chose their password. Null: the stored hash is a
   // random one nobody knows (an invited manager before the invitation, a member who joined with the daily code).
-  passwordSetAt   DateTime?
+  passwordSetAt      DateTime?
   // « Quitter ce parking » (the email is replaced, the names kept: business records) and « Supprimer mon compte »
   // (anonymised: names, email, phone). CHECKs: neither while active.
-  leftAt          DateTime?
-  deletedAt       DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @default(now()) @updatedAt
+  leftAt             DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now()) @updatedAt
 
   operator            Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
@@ -191,6 +191,8 @@ model Staff {
   decidedJoinRequests StaffJoinRequest[] @relation("JoinRequestDecider")
   extrasDone          ReservationExtra[] @relation("ExtraDoneBy")
   extrasRefused       ReservationExtra[] @relation("ExtraRefusedBy")
+  valetArrivalRuns    Reservation[]      @relation("ValetArrivalRuns")
+  valetDepartureRuns  Reservation[]      @relation("ValetDepartureRuns")
 
   @@index([operatorId])
   @@map("staff")
@@ -413,6 +415,10 @@ model Parking {
   // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
   shuttleTracking ShuttleTracking @default(team)
 
+  /// 27/10/2026: where the valet meets the traveller at the airport (« Terminal 1 · dépose-minute »); null: the default
+  /// of `valetMeetingPointOf`.
+  valetMeetingPoint String?
+
   // Services for the car (21/10/2026, « lavage intérieur, recharge hybride, recharge électrique via Plazo, même après le
   // dépôt »): a traveller orders them until this many hours before the booked return (CHECK 0 to 168).
   extrasLeadHours Int @default(24)
@@ -436,6 +442,14 @@ model Parking {
 }
 
 // R-B (07/10/2026): who sees the position of a parking's shuttles.
+/// 27/10/2026 (« certaines réservations sont service voiturier : récupération du véhicule au terminal à l'arrivée et au
+/// retour », direction B): how the car and the traveller meet. `shuttle`: the traveller drives to the parking and takes
+/// the shuttle; `valet`: a valet takes the car at the terminal on arrival and brings it back there on departure.
+enum Handover {
+  shuttle
+  valet
+}
+
 enum ShuttleTracking {
   off // the drivers do not share it
   team // the staff's live map only
@@ -685,174 +699,186 @@ enum PayoutStatus {
 
 // A booking. Times are stored in UTC; "nights" are counted in the parking's timezone.
 model Reservation {
-  id                      String              @id @default(cuid())
-  reference               String              @unique // short code given to the customer
-  operatorId              String
-  parkingId               String
-  channel                 ReservationChannel
-  channelDetail           String?
-  status                  ReservationStatus   @default(upcoming)
-  arrivalAt               DateTime
-  returnAt                DateTime
-  passengers              Int
+  id                       String              @id @default(cuid())
+  reference                String              @unique // short code given to the customer
+  operatorId               String
+  parkingId                String
+  channel                  ReservationChannel
+  channelDetail            String?
+  status                   ReservationStatus   @default(upcoming)
+  arrivalAt                DateTime
+  returnAt                 DateTime
+  passengers               Int
   // The traveller's first and last name (09/10/2026); `customerName` stays the display form "Prénom Nom", recomputed
   // by the server on every write (search, lists and exports keep using it).
-  customerFirstName       String              @default("")
-  customerLastName        String              @default("")
-  customerName            String
-  customerPhone           String
-  customerEmail           String?
-  plate                   String // display form, e.g. AB-123-CD
-  plateKey                String // letters and digits only, for search
-  returnFlight            String? // e.g. TO 3627
+  customerFirstName        String              @default("")
+  customerLastName         String              @default("")
+  customerName             String
+  customerPhone            String
+  customerEmail            String?
+  plate                    String // display form, e.g. AB-123-CD
+  plateKey                 String // letters and digits only, for search
+  returnFlight             String? // e.g. TO 3627
   // Outbound flight (V-A "Vagues de navettes", 05/10/2026): sets when the drop-off shuttle must leave.
-  departureFlight         String? // e.g. AF 7641
-  notes                   String?
+  departureFlight          String? // e.g. AF 7641
+  notes                    String?
   // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
-  externalReference       String?
+  externalReference        String?
   // Price paid, in euro cents, when known: the comparator's amount (imports), the staff's, or on Plazo the grid price plus
   // the night fees (the total « tout compris » the traveller paid).
-  priceCents              Int?
+  priceCents               Int?
   // 10/10/2026: the amount the comparator last gave (import, applied change). A comparator's change touches the price
   // only when its amount differs from this one, so a price the staff corrected stays theirs.
-  importedPriceCents      Int?
+  importedPriceCents       Int?
   // What the comparator takes on this one booking when it differs from its usual rate (19/10/2026, « paramétrer le
   // taux de commission de chaque comparateur »): a rate in basis points, or an amount in cents; never both, and only
   // for a comparator's booking (CHECKs). Null: the comparator's rate of the day the booking was made.
-  commissionOverrideBp    Int?
-  commissionOverrideCents Int?
+  commissionOverrideBp     Int?
+  commissionOverrideCents  Int?
   // 12/10/2026: night fees charged at booking on Plazo (drop-off, return), frozen when the place is held and included in
   // priceCents; null when none (and always for the other channels). A late flight or a staff edit never recomputes them.
-  nightArrivalFeeCents    Int?
-  nightReturnFeeCents     Int?
+  nightArrivalFeeCents     Int?
+  nightReturnFeeCents      Int?
   // Saved although at least one night was already full (forced by staff, audited).
-  overbooked              Boolean             @default(false)
+  overbooked               Boolean             @default(false)
   // Cancellation terms accepted by the traveller when booking on the site (channel plazo): later
   // changes to the listing's policy do not apply to it. Null for the other channels.
-  cancellationPolicy      CancellationPolicy?
+  cancellationPolicy       CancellationPolicy?
   // Key sent by the site with a booking form: a retried submission returns the booking already
   // made instead of holding a second place (channel plazo only).
-  idempotencyKey          String?             @unique
+  idempotencyKey           String?             @unique
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
-  manageTokenVersion      Int                 @default(0)
+  manageTokenVersion       Int                 @default(0)
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
-  spotId                  String?
+  spotId                   String?
   // S-C (07/10/2026): the file the car stands in and its entry rank (1 = deepest, at the back).
-  fileId                  String?
-  fileRank                Int?
-  keyHook                 String?
+  fileId                   String?
+  fileRank                 Int?
+  keyHook                  String?
   /// 26/10/2026: keys handed over without a hook noted yet (« Clés laissées » in one click).
-  keysLeftAt              DateTime?
+  keysLeftAt               DateTime?
   // Where the shuttle serves this traveller (D-A, 05/10/2026): a stop of the parking (train station…);
   // null: the airport (the return meeting point).
-  stopId                  String?
+  stopId                   String?
+  /// 27/10/2026: shuttle (default) or valet at the terminal; a valet booking gives two runs, its arrival (the car taken
+  /// at the terminal) and its departure (the car brought back), each taken by one valet.
+  handover                 Handover            @default(shuttle)
+  valetArrivalById         String?
+  valetArrivalTakenAt      DateTime?
+  valetDepartureById       String?
+  valetDepartureTakenAt    DateTime?
+  /// When the « Course à prendre » push went out for each run (once).
+  valetArrivalNotifiedAt   DateTime?
+  valetDepartureNotifiedAt DateTime?
   // Online payment (Stripe Checkout on Plazo's account; "separate charges and transfers").
-  paymentStatus           PaymentStatus?
+  paymentStatus            PaymentStatus?
   // End of the place's hold while the payment is pending (lazy expiry: past it, the place is free).
-  holdExpiresAt           DateTime?
-  stripeCheckoutSessionId String?             @unique
-  stripePaymentIntentId   String?
-  stripeChargeId          String?
-  stripeRefundId          String?
+  holdExpiresAt            DateTime?
+  stripeCheckoutSessionId  String?             @unique
+  stripePaymentIntentId    String?
+  stripeChargeId           String?
+  stripeRefundId           String?
   // 14/10/2026: the payment page or sheet was created with live keys (true) or test keys (false or null: every payment
   // before this date, live keys being refused in production). A test payment moves no money once the keys are live:
   // nothing to refund at Stripe, no payout.
-  stripeLive              Boolean?
+  stripeLive               Boolean?
   // Amounts in cents, computed by the backend when the place is held: what the traveller pays,
   // Plazo's commission, and the operator's share (charged = commission + share).
-  chargedCents            Int?
-  commissionCents         Int?
-  operatorShareCents      Int?
+  chargedCents             Int?
+  commissionCents          Int?
+  operatorShareCents       Int?
   // 21/10/2026: the services for the car asked with the booking, paid in the same payment on top of chargedCents (their
   // commission and share are on reservation_extras). Null: none.
-  extrasChargedCents      Int?
+  extrasChargedCents       Int?
   // Transfer of the operator's share (null until the booking is paid).
-  payoutStatus            PayoutStatus?
-  stripeTransferId        String?
-  transferredAt           DateTime?
-  paidAt                  DateTime?
-  refundedAt              DateTime?
+  payoutStatus             PayoutStatus?
+  stripeTransferId         String?
+  transferredAt            DateTime?
+  paidAt                   DateTime?
+  refundedAt               DateTime?
   // E (06/10/2026): what the traveller tells the parking — a message at booking, the vehicle
   // (so the valet spots it), and a notice on the return day ("mon vol a du retard", "bagage perdu").
-  customerNote            String?
-  vehicleModel            String?
-  vehicleColour           String?
+  customerNote             String?
+  vehicleModel             String?
+  vehicleColour            String?
   // Child car seats for the shuttle (24/10/2026, direction B « par âge »): how many of each kind the
   // parking installs, both ways. Children count in `passengers`. CHECK 0..4 each in the migration.
-  childSeatInfant         Int               @default(0)
-  childSeatToddler        Int               @default(0)
-  childSeatBooster        Int               @default(0)
-  returnNoticeKind        ReturnNoticeKind?
-  returnNoticeText        String?
-  returnNoticeAt          DateTime?
+  childSeatInfant          Int                 @default(0)
+  childSeatToddler         Int                 @default(0)
+  childSeatBooster         Int                 @default(0)
+  returnNoticeKind         ReturnNoticeKind?
+  returnNoticeText         String?
+  returnNoticeAt           DateTime?
   // Set when the confirmation email/SMS went out: they are sent exactly once.
-  confirmationSentAt      DateTime?
-  createdById             String?
-  arrivedAt               DateTime?
+  confirmationSentAt       DateTime?
+  createdById              String?
+  arrivedAt                DateTime?
   // « Embarquer en un geste » (14/10/2026): the drop-off trip at whose boarding the traveller, not checked in yet, was
   // checked in (« Pointé à l'embarquement »); null otherwise, and again when the booking goes back to "upcoming".
-  boardingTripId          String?
-  returnedAt              DateTime?
-  cancelledAt             DateTime?
+  boardingTripId           String?
+  returnedAt               DateTime?
+  cancelledAt              DateTime?
   // Return flight tracking (see src/domain/flight.ts): refreshed by the cron and lazily when read
   // (5-minute cache on flightCheckedAt), or set by the traveller ("J'ai atterri").
-  flightStatus            FlightStatus?
-  flightScheduledAt       DateTime? // scheduled landing
-  flightEstimatedAt       DateTime? // revised / predicted landing
-  flightLandedAt          DateTime? // actual landing (tracking) or when the traveller said so
-  flightLandedSource      FlightLandedSource?
-  flightTerminal          String?
-  flightGate              String?
-  flightCheckedAt         DateTime? // last lookup at the provider (cache)
+  flightStatus             FlightStatus?
+  flightScheduledAt        DateTime? // scheduled landing
+  flightEstimatedAt        DateTime? // revised / predicted landing
+  flightLandedAt           DateTime? // actual landing (tracking) or when the traveller said so
+  flightLandedSource       FlightLandedSource?
+  flightTerminal           String?
+  flightGate               String?
+  flightCheckedAt          DateTime? // last lookup at the provider (cache)
   // Outbound flight tracking (take-off), same provider and cache rules; nothing is sent on it.
-  departureStatus         FlightStatus?
-  departureScheduledAt    DateTime? // scheduled take-off
-  departureEstimatedAt    DateTime? // revised take-off
-  departureTerminal       String?
-  departureCheckedAt      DateTime?
+  departureStatus          FlightStatus?
+  departureScheduledAt     DateTime? // scheduled take-off
+  departureEstimatedAt     DateTime? // revised take-off
+  departureTerminal        String?
+  departureCheckedAt       DateTime?
   // Where the car is parked (06/10/2026): recorded by whoever parks it, the traveller from the app
   // or a staff member (valet) from Plazo Pro, whose position prevails. Erased with the traveller
   // devices two days after the return.
-  carLat                  Float?
-  carLng                  Float?
-  carAccuracyM            Int?
-  carLocatedAt            DateTime?
-  carLocatedBy            CarLocatedBy?
-  carNote                 String?
+  carLat                   Float?
+  carLng                   Float?
+  carAccuracyM             Int?
+  carLocatedAt             DateTime?
+  carLocatedBy             CarLocatedBy?
+  carNote                  String?
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
-  landingNotifiedAt       DateTime?
-  landingSmsAt            DateTime?
+  landingNotifiedAt        DateTime?
+  landingSmsAt             DateTime?
   // The traveller's message thread (B, 06/10/2026), each sent once: the day-before reminder, "votre
   // voiture est garée", the closing message after the handover.
-  reminderSentAt          DateTime?
+  reminderSentAt           DateTime?
   // The day-before SMS (S-A + S-B, 06/10/2026): left out by a staff member ("Ne pas envoyer").
-  reminderExcludedAt      DateTime?
-  reminderExcludedById    String?
-  parkedNotifiedAt        DateTime?
-  closingSentAt           DateTime?
+  reminderExcludedAt       DateTime?
+  reminderExcludedById     String?
+  parkedNotifiedAt         DateTime?
+  closingSentAt            DateTime?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
-  anonymizedAt            DateTime?
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @default(now()) @updatedAt
+  anonymizedAt             DateTime?
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @default(now()) @updatedAt
 
-  operator       Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  parking        Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
-  createdBy      Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  spot           ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
-  file           ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
-  boardingTrip   ShuttleTrip?           @relation("BoardingCheckIn", fields: [boardingTripId], references: [id], onDelete: SetNull)
-  devices        TravellerDevice[]
-  arrivalSignals ArrivalSignal[]
-  inboundEmails  InboundEmail[]
-  shuttleTrips   ShuttleTripPassenger[]
-  smsOutbox      SmsOutbox[]
-  contract       ReservationContract?
-  inspections    VehicleInspection[]
-  signatureCodes SignatureCode[]
-  extras         ReservationExtra[]
-  appLinkClaims  AppLinkClaim[]
+  operator         Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  parking          Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  createdBy        Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  spot             ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
+  file             ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  stop             ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  valetArrivalBy   Staff?                 @relation("ValetArrivalRuns", fields: [valetArrivalById], references: [id], onDelete: SetNull)
+  valetDepartureBy Staff?                 @relation("ValetDepartureRuns", fields: [valetDepartureById], references: [id], onDelete: SetNull)
+  boardingTrip     ShuttleTrip?           @relation("BoardingCheckIn", fields: [boardingTripId], references: [id], onDelete: SetNull)
+  devices          TravellerDevice[]
+  arrivalSignals   ArrivalSignal[]
+  inboundEmails    InboundEmail[]
+  shuttleTrips     ShuttleTripPassenger[]
+  smsOutbox        SmsOutbox[]
+  contract         ReservationContract?
+  inspections      VehicleInspection[]
+  signatureCodes   SignatureCode[]
+  extras           ReservationExtra[]
+  appLinkClaims    AppLinkClaim[]
 
   @@unique([operatorId, externalReference])
   @@index([spotId])

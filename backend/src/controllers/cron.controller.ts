@@ -16,6 +16,7 @@ import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
 import { MorningEmailService } from '@/services/morning-email.service';
 import { ProspectingService } from '@/services/prospecting.service';
+import { ValetService } from '@/services/valet.service';
 import { ExtraService } from '@/services/extra.service';
 import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
@@ -46,6 +47,7 @@ export class CronController {
   public identityVerification = Container.get(IdentityVerificationService);
   public prospecting = Container.get(ProspectingService);
   public morning = Container.get(MorningEmailService);
+  public valet = Container.get(ValetService);
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
 
@@ -73,6 +75,16 @@ export class CronController {
   }
 
   /** « Mail du matin » (21/10/2026) due now. Never throws: it must not change the answer of remind-tomorrow. */
+  /** « Course à prendre » (27/10/2026): the valets hear of the runs nobody took. Never throws. */
+  private async valetPass(): Promise<{ announced: number } | { error: true }> {
+    try {
+      return { announced: await this.valet.announceDue() };
+    } catch (error) {
+      logger.error(`[Cron] valet runs pass failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { error: true };
+    }
+  }
+
   private async morningPass(): Promise<Awaited<ReturnType<MorningEmailService['run']>> | { error: true }> {
     try {
       return await this.morning.run();
@@ -138,10 +150,11 @@ export class CronController {
     // « Mail du matin » (21/10/2026) rides on it too, with the same rule.
     const morning = await this.morningPass();
     const extras = await this.extrasPass();
+    const valet = await this.valetPass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}`,
     );
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras });
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras, valet });
   });
 
   /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */
