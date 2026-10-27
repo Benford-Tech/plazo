@@ -19,6 +19,7 @@ import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
 import { ProspectingRoute } from './prospecting.route';
 import { PublicBookingRoute } from './public-booking.route';
+import { AppLinkRoute } from './app-link.route';
 import { PublicRoute } from './public.route';
 import { ReminderRoute } from './reminder.route';
 import { ReservationRoute } from './reservation.route';
@@ -49,6 +50,7 @@ const AppRoutes = [
   new MorningEmailRoute(),
   new PublicRoute(),
   new PublicBookingRoute(),
+  new AppLinkRoute(),
   new ContactRoute(),
   new ArrivalRoute(),
   new ReturnRoute(),

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../booking/presentation/widgets/app_link_resume.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_service.dart';
@@ -36,7 +37,8 @@ class AppShellPage extends StatelessWidget {
           };
           return TutorialSpot(
             tutorial: Tutorials.welcome,
-            child: Scaffold(
+            child: AppLinkResumeGate(
+              child: Scaffold(
               // Edge-to-edge: in landscape the tabs keep clear of a side navigation bar or a cutout (their bars and the
               // tab bar handle the top and the bottom).
               body: SafeArea(top: false, bottom: false, child: child),
@@ -75,6 +77,7 @@ class AppShellPage extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           );
         },

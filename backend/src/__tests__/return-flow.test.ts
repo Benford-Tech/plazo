@@ -353,7 +353,7 @@ describe('GET /public/bookings/:reference/return', () => {
     expect(sms.length).toBe(1);
     expect(sms[0].recipient).toBe('33612345678');
     expect(sms[0].content).toContain('Terminal 1 · Porte 12');
-    expect(sms[0].content).toContain('https://plazo.test/ma-reservation/');
+    expect(sms[0].content).toMatch(/https:\/\/plazo\.test\/a\/[A-Z0-9]+-[A-Za-z0-9_-]{8}/);
 
     // Second read within 5 minutes, and the flight is final anyway: no lookup, no second push or SMS.
     await getReturn(b);

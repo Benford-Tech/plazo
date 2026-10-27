@@ -1,8 +1,28 @@
 // Shapes of the backend's public API (/api/public/...). Datetimes are local parking times "YYYY-MM-DDTHH:mm".
 
-export type Service = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
-export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
-export type BookingStatus = "pending_payment" | "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "back_at_parking" | "returned" | "cancelled" | "no_show";
+export type Service =
+  | "shuttle"
+  | "valet"
+  | "covered"
+  | "ev_charging"
+  | "open_24h"
+  | "fenced"
+  | "cctv";
+export type CancellationPolicy =
+  | "free_until_arrival"
+  | "free_24h"
+  | "free_48h"
+  | "non_refundable";
+export type BookingStatus =
+  | "pending_payment"
+  | "upcoming"
+  | "arrived"
+  | "shuttled_out"
+  | "return_requested"
+  | "back_at_parking"
+  | "returned"
+  | "cancelled"
+  | "no_show";
 
 /** How travellers pay on the site: by card online (Stripe), or at the parking. */
 export type PaymentsMode = "online" | "on_site";
@@ -41,7 +61,14 @@ export interface LatLng {
 export interface AirportLive {
   serverTime: string;
   airport: { code: string; name: string; slug: string; location: LatLng };
-  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null; liveShuttle?: boolean }[];
+  parkings: {
+    slug: string;
+    title: string;
+    services: string[];
+    shuttleMinutes: number | null;
+    location: LatLng | null;
+    liveShuttle?: boolean;
+  }[];
   shuttles: LiveShuttle[];
 }
 
@@ -61,9 +88,19 @@ export interface LiveShuttle {
 export interface AirportResponse {
   /** Missing from an older API: paid at the parking. */
   payments?: PaymentsMode;
-  airport: { code: string; name: string; city: string; slug: string; timezone: string; location?: LatLng | null };
+  airport: {
+    code: string;
+    name: string;
+    city: string;
+    slug: string;
+    timezone: string;
+    location?: LatLng | null;
+  };
   /** Lowest package price and the number of days it covers ("dès 15,00 € la journée"). */
-  listings: (ListingSummary & { fromPriceCents: number | null; fromDays?: number | null })[];
+  listings: (ListingSummary & {
+    fromPriceCents: number | null;
+    fromDays?: number | null;
+  })[];
 }
 
 /**
@@ -103,7 +140,12 @@ export type SearchResult = ListingSummary & Offer;
 export interface SearchResponse {
   /** Missing from an older API: paid at the parking. */
   payments?: PaymentsMode;
-  airport: { code: string; name: string; slug: string; location?: LatLng | null };
+  airport: {
+    code: string;
+    name: string;
+    slug: string;
+    location?: LatLng | null;
+  };
   results: SearchResult[];
 }
 
@@ -115,7 +157,12 @@ export interface PricingTier {
 export interface ParkingResponse {
   /** Missing from an older API: paid at the parking. */
   payments?: PaymentsMode;
-  airport: { code: string; name: string; slug: string; location?: LatLng | null };
+  airport: {
+    code: string;
+    name: string;
+    slug: string;
+    location?: LatLng | null;
+  };
   parking: ListingSummary & {
     description: string | null;
     photos: string[];
@@ -219,7 +266,13 @@ export interface PublicBooking {
   /** Outbound flight (V-A, 05/10/2026) and, when tracked, when the shuttle to the terminal leaves (local). */
   departureFlight: string | null;
   car: CarLocation | null;
-  outbound: { status: string | null; scheduledAt: string | null; estimatedAt: string | null; terminal: string | null; shuttleAt: string | null } | null;
+  outbound: {
+    status: string | null;
+    scheduledAt: string | null;
+    estimatedAt: string | null;
+    terminal: string | null;
+    shuttleAt: string | null;
+  } | null;
   passengers: number;
   /** Child seats for the shuttle (zeros when none); missing from an older API. */
   childSeats?: ChildSeats;
@@ -241,6 +294,15 @@ export interface BookingAccess {
   manageToken: string;
 }
 
+/** GET /api/public/app-link/:code (27/10/2026): what the rebound page needs to open or name a booking. */
+export interface AppLinkTarget extends BookingAccess {
+  firstName: string;
+  parking: { title: string };
+  /** Local time of the parking, "YYYY-MM-DDTHH:mm". */
+  arrivalAt: string;
+  returnAt: string;
+}
+
 /** The payment page to go to, or the news that the booking is already paid. */
 export type CheckoutResult = { url: string } | { paid: true };
 
@@ -251,12 +313,28 @@ export interface SiteConfig {
 /** GET /api/public/bookings/:ref/return (the app's return day), read live by the booking page. */
 /** GET /public/bookings/:ref/arrival (D, 06/10/2026): the "Prévenir de mon arrivée" block, as in the app. */
 export type ArrivalKind = "outbound" | "return";
-export type ArrivalSignalState = "sharing" | "announced" | "at_meeting_point" | "ended";
+export type ArrivalSignalState =
+  | "sharing"
+  | "announced"
+  | "at_meeting_point"
+  | "ended";
 export interface TravellerArrival {
   reference: string;
   /** The moment offered now (open) or the next one (opensAt); null when nothing is left. */
-  moment: { kind: ArrivalKind; open: boolean; opensAt: string; closesAt: string } | null;
-  meetingPoint: { lat: number; lng: number; source: "parking" | "return_point" | "airport"; label: string | null; instructions?: string | null; photoUrl?: string | null } | null;
+  moment: {
+    kind: ArrivalKind;
+    open: boolean;
+    opensAt: string;
+    closesAt: string;
+  } | null;
+  meetingPoint: {
+    lat: number;
+    lng: number;
+    source: "parking" | "return_point" | "airport";
+    label: string | null;
+    instructions?: string | null;
+    photoUrl?: string | null;
+  } | null;
   signal: {
     kind: ArrivalKind;
     state: ArrivalSignalState;
@@ -273,7 +351,12 @@ export interface TravellerArrival {
     /** E: the traveller's word for the parking. */
     note?: string | null;
   } | null;
-  rules: { maxMinutes: number; arrivedWithinMeters: number; positionIntervalSeconds: number; announceMinutes: number[] };
+  rules: {
+    maxMinutes: number;
+    arrivedWithinMeters: number;
+    positionIntervalSeconds: number;
+    announceMinutes: number[];
+  };
 }
 
 /** GET /public/bookings/:ref/shuttles (S-A): the parking's shuttles on the road during the stay. */
@@ -289,14 +372,23 @@ export interface TravellerShuttle {
   direction: "pickup" | "dropoff";
   mine: boolean;
   startedAt: string;
-  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  vehicle: {
+    model: string | null;
+    colour: string | null;
+    plate: string | null;
+  };
   driverFirstName: string;
   position: LatLng | null;
   positionAgeSeconds: number | null;
   distanceM: number | null;
   etaMinutes: number | null;
   etaAt: string | null;
-  destination: { kind: "parking" | "meeting_point"; lat: number; lng: number; label: string | null } | null;
+  destination: {
+    kind: "parking" | "meeting_point";
+    lat: number;
+    lng: number;
+    label: string | null;
+  } | null;
 }
 
 export interface TravellerReturn {
@@ -315,14 +407,24 @@ export interface TravellerReturn {
     gate: string | null;
   };
   flightTracked: boolean;
-  meetingPoint: { lat: number; lng: number; label: string | null; instructions: string | null; photoUrl?: string | null } | null;
+  meetingPoint: {
+    lat: number;
+    lng: number;
+    label: string | null;
+    instructions: string | null;
+    photoUrl?: string | null;
+  } | null;
   atMeetingPointAt: string | null;
   shuttle: {
     tripId: string;
     direction: "pickup" | "dropoff";
     mine: boolean;
     startedAt: string;
-    vehicle: { model: string | null; colour: string | null; plate: string | null };
+    vehicle: {
+      model: string | null;
+      colour: string | null;
+      plate: string | null;
+    };
     driverFirstName: string;
     position: LatLng | null;
     positionAgeSeconds: number | null;
@@ -330,7 +432,13 @@ export interface TravellerReturn {
     etaMinutes: number | null;
     etaAt: string | null;
   } | null;
-  parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
+  parking: {
+    name: string;
+    phone: string | null;
+    shuttleMinutes: number | null;
+    address: string | null;
+    location: LatLng | null;
+  };
   plate: string;
   spot: { code: string; stayClass: string | null } | null;
   /** S-C (07/10/2026): the file the valet put the car in and its position from the aisle (1 = first out). */

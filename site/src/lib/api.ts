@@ -3,13 +3,16 @@ import { headers } from "next/headers";
 import { cache } from "react";
 import type {
   AirportResponse,
+  AppLinkTarget,
   BookingAccess,
   BookingInput,
   CheckoutResult,
   CreatedBooking,
   ParkingResponse,
   PublicBooking,
-  SearchResponse, TravellerReturn } from "./types";
+  SearchResponse,
+  TravellerReturn,
+} from "./types";
 import { visitorIp } from "./client-ip";
 
 /**
@@ -39,12 +42,17 @@ export class ApiError extends Error {
 }
 
 /** Backend base URL without trailing slash. Read at call time: bindings exist at runtime only. */
-export function backendBase(env: Record<string, string | undefined> = process.env): string {
+export function backendBase(
+  env: Record<string, string | undefined> = process.env,
+): string {
   return (env.BACKEND_URL || DEFAULT_BACKEND_URL).replace(/\/+$/, "");
 }
 
 /** Joins the base and an absolute API path by string ("/api/public/..."). */
-export function backendUrl(path: string, env?: Record<string, string | undefined>): string {
+export function backendUrl(
+  path: string,
+  env?: Record<string, string | undefined>,
+): string {
   return `${backendBase(env)}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
@@ -53,9 +61,14 @@ export function backendUrl(path: string, env?: Record<string, string | undefined
  * the site as a whole. Required once deployed: without it, a few lookups would lock the form for
  * every traveller.
  */
-export function siteApiKey(env: Record<string, string | undefined> = process.env): string {
+export function siteApiKey(
+  env: Record<string, string | undefined> = process.env,
+): string {
   const key = env.SITE_API_KEY?.trim() ?? "";
-  if (!key && env.VERCEL) throw new Error("SITE_API_KEY is not set (it must match the API's SITE_API_KEY)");
+  if (!key && env.VERCEL)
+    throw new Error(
+      "SITE_API_KEY is not set (it must match the API's SITE_API_KEY)",
+    );
   return key;
 }
 
@@ -84,7 +97,10 @@ interface RequestOptions {
   timeoutMs?: number;
 }
 
-export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
   const incoming = await headers();
   const outgoing: Record<string, string> = {
     accept: "application/json",
@@ -100,7 +116,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(backendUrl(path), {
       method: options.method ?? "GET",
       headers: outgoing,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body:
+        options.body === undefined ? undefined : JSON.stringify(options.body),
       cache: "no-store",
       signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
     });
@@ -142,8 +159,19 @@ async function readResponse<T>(response: Response): Promise<T> {
     data = null;
   }
   if (!response.ok) {
-    const body = (data ?? {}) as { message?: string; code?: string; fields?: Record<string, string>; details?: unknown };
-    throw new ApiError(response.status, body.message ?? response.statusText, body.code ?? fallbackCode(response.status), body.fields, body.details);
+    const body = (data ?? {}) as {
+      message?: string;
+      code?: string;
+      fields?: Record<string, string>;
+      details?: unknown;
+    };
+    throw new ApiError(
+      response.status,
+      body.message ?? response.statusText,
+      body.code ?? fallbackCode(response.status),
+      body.fields,
+      body.details,
+    );
   }
   return data as T;
 }
@@ -168,61 +196,125 @@ export interface NewsletterInput {
 }
 
 function query(params: Record<string, string | null | undefined>): string {
-  const entries = Object.entries(params).filter((e): e is [string, string] => !!e[1]);
+  const entries = Object.entries(params).filter(
+    (e): e is [string, string] => !!e[1],
+  );
   return entries.length ? `?${new URLSearchParams(entries)}` : "";
 }
 
 export const api = {
-
   /** Airport page: published parkings with their lowest package price. Shared by every visitor, deduplicated per request. */
-  airport: cache((slug: string) => sharedRead<AirportResponse>(`/api/public/airports/${seg(slug)}`)),
+  airport: cache((slug: string) =>
+    sharedRead<AirportResponse>(`/api/public/airports/${seg(slug)}`),
+  ),
 
   /** Parkings for a traveller's stay, with availability and total price. */
   search: (airport: string, arrivalAt: string, returnAt: string) =>
-    apiRequest<SearchResponse>(`/api/public/search${query({ airport, arrivalAt, returnAt })}`),
+    apiRequest<SearchResponse>(
+      `/api/public/search${query({ airport, arrivalAt, returnAt })}`,
+    ),
 
   /** The same for a stay every visitor sees (the default week of the airport page and the guides): a shared read. */
   sharedSearch: (airport: string, arrivalAt: string, returnAt: string) =>
-    sharedRead<SearchResponse>(`/api/public/search${query({ airport, arrivalAt, returnAt })}`),
+    sharedRead<SearchResponse>(
+      `/api/public/search${query({ airport, arrivalAt, returnAt })}`,
+    ),
 
   /** A parking's page, with the offer for a stay when dates are given. Deduplicated per request. */
-  parking: cache((airport: string, slug: string, arrivalAt?: string | null, returnAt?: string | null) =>
-    apiRequest<ParkingResponse>(`/api/public/airports/${seg(airport)}/parkings/${seg(slug)}${query({ arrivalAt, returnAt })}`),
+  parking: cache(
+    (
+      airport: string,
+      slug: string,
+      arrivalAt?: string | null,
+      returnAt?: string | null,
+    ) =>
+      apiRequest<ParkingResponse>(
+        `/api/public/airports/${seg(airport)}/parkings/${seg(slug)}${query({ arrivalAt, returnAt })}`,
+      ),
   ),
 
   createBooking: (input: BookingInput) =>
-    apiRequest<CreatedBooking>("/api/public/bookings", { method: "POST", body: input, timeoutMs: BOOKING_TIMEOUT_MS }),
+    apiRequest<CreatedBooking>("/api/public/bookings", {
+      method: "POST",
+      body: input,
+      timeoutMs: BOOKING_TIMEOUT_MS,
+    }),
 
   lookupBooking: (reference: string, email: string) =>
-    apiRequest<BookingAccess>("/api/public/bookings/lookup", { method: "POST", body: { reference, email } }),
+    apiRequest<BookingAccess>("/api/public/bookings/lookup", {
+      method: "POST",
+      body: { reference, email },
+    }),
+
+  /** « Lien court Plazo » (27/10/2026): the booking a short code names, and the phone remembered before the store. */
+  appLink: (code: string) =>
+    apiRequest<AppLinkTarget>(`/api/public/app-link/${seg(code)}`),
+  claimAppLink: (code: string, platform: "ios" | "android") =>
+    apiRequest<{ ok: true }>(`/api/public/app-link/${seg(code)}/claim`, {
+      method: "POST",
+      body: { platform },
+    }),
 
   booking: cache((reference: string, token: string) =>
-    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}`, { bookingToken: token }),
+    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}`, {
+      bookingToken: token,
+    }),
   ),
 
   /** The return day of a booking (the app's live block), for the booking page's first paint. */
-  returnState: (reference: string, token: string) => apiRequest<TravellerReturn>(`/api/public/bookings/${seg(reference)}/return`, { bookingToken: token }),
+  returnState: (reference: string, token: string) =>
+    apiRequest<TravellerReturn>(
+      `/api/public/bookings/${seg(reference)}/return`,
+      { bookingToken: token },
+    ),
 
-  changeFlight: (reference: string, token: string, returnFlight: string | null, departureFlight?: string | null) =>
+  changeFlight: (
+    reference: string,
+    token: string,
+    returnFlight: string | null,
+    departureFlight?: string | null,
+  ) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/flight`, {
       method: "PATCH",
-      body: departureFlight === undefined ? { returnFlight } : { returnFlight, departureFlight },
+      body:
+        departureFlight === undefined
+          ? { returnFlight }
+          : { returnFlight, departureFlight },
       bookingToken: token,
     }),
 
   /** Stripe Checkout page of a booking holding its place (or { paid: true }). */
   checkout: (reference: string, token: string) =>
-    apiRequest<CheckoutResult>(`/api/public/bookings/${seg(reference)}/checkout`, { method: "POST", body: {}, bookingToken: token, timeoutMs: BOOKING_TIMEOUT_MS }),
+    apiRequest<CheckoutResult>(
+      `/api/public/bookings/${seg(reference)}/checkout`,
+      {
+        method: "POST",
+        body: {},
+        bookingToken: token,
+        timeoutMs: BOOKING_TIMEOUT_MS,
+      },
+    ),
 
   /** Ends the hold of a booking not paid yet (the traveller goes back to edit the form). */
   releaseBooking: (reference: string, token: string) =>
-    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/release`, { method: "POST", body: {}, bookingToken: token }),
+    apiRequest<PublicBooking>(
+      `/api/public/bookings/${seg(reference)}/release`,
+      { method: "POST", body: {}, bookingToken: token },
+    ),
 
   /** The contact form (footer A, 15/10/2026): 202 once handed to the mail sender. */
-  contact: (input: ContactInput) => apiRequest<{ ok: true }>("/api/public/contact", { method: "POST", body: input }),
+  contact: (input: ContactInput) =>
+    apiRequest<{ ok: true }>("/api/public/contact", {
+      method: "POST",
+      body: input,
+    }),
 
   /** « La lettre Plazo »: 202 once Brevo has the double opt-in request. */
-  newsletter: (input: NewsletterInput) => apiRequest<{ ok: true }>("/api/public/newsletter", { method: "POST", body: input }),
+  newsletter: (input: NewsletterInput) =>
+    apiRequest<{ ok: true }>("/api/public/newsletter", {
+      method: "POST",
+      body: input,
+    }),
 
   cancelBooking: (reference: string, token: string) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/cancel`, {

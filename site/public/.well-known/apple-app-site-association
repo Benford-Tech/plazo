@@ -3,7 +3,10 @@
     "details": [
       {
         "appIDs": ["3BX4795V2Y.com.benfordtech.plazo"],
-        "components": [{ "/": "/ma-reservation/*", "comment": "A booking's manage link opens the Plazo app" }]
+        "components": [
+          { "/": "/ma-reservation/*", "comment": "A booking's manage link opens the Plazo app" },
+          { "/": "/a/*", "comment": "The short link of the SMS and emails (27/10/2026) opens the booking in the app" }
+        ]
       }
     ]
   }

@@ -726,7 +726,9 @@ describe('notifications', () => {
     const calls = fetchMock.mock.calls.map(([url, init]) => ({ url, init, body: JSON.parse(init.body) }));
     const email = calls.find(c => c.url === 'https://api.brevo.com/v3/smtp/email')!;
     const sms = calls.find(c => c.url === 'https://api.brevo.com/v3/transactionalSMS/send')!;
-    const manageUrl = `https://site.example/ma-reservation/${res.body.reference}?cle=${res.body.manageToken}`;
+    // 27/10/2026 (direction B): the short link https://…/a/<REF>-<code>, which the site resolves to the manage page.
+    const manageUrl = `https://site.example/a/${res.body.reference}-`;
+    const code = new RegExp(`https://site\\.example/a/${res.body.reference}-[A-Za-z0-9_-]{8}\\b`);
 
     expect(email.init).toMatchObject({ method: 'POST', headers: { 'api-key': 'test-brevo-key', 'content-type': 'application/json' } });
     expect(email.init.signal).toBeInstanceOf(AbortSignal);
@@ -737,6 +739,8 @@ describe('notifications', () => {
       tags: ['booking_confirmed'],
     });
     expect(email.body.htmlContent).toContain(manageUrl);
+    expect(email.body.htmlContent).toMatch(code);
+    expect(email.body.htmlContent).not.toContain(res.body.manageToken);
     expect(email.body.htmlContent).toContain('34,99 €');
     expect(email.body.textContent).toContain('payé en ligne par carte');
     // 09/10/2026: greeted by the first name.

@@ -62,9 +62,23 @@
 		<string>location</string>
 		<string>remote-notification</string>
 	</array>
-	<!-- The booking links (https://<domain>/ma-reservation/...) open the app: see Runner.entitlements. -->
+	<!-- The booking links (https://<domain>/ma-reservation/..., /a/<code>) open the app: see Runner.entitlements. -->
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
+	<!-- « Lien court Plazo » (27/10/2026): plazo://a/<code>, « J'ai déjà l'app » on the site's rebound page. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.benfordtech.plazo.app-link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>plazo</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

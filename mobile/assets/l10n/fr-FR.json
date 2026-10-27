@@ -958,6 +958,16 @@
     "offline": "Impossible de charger vos réservations. Vérifiez votre connexion.",
     "your_return": "Votre retour aujourd'hui"
   },
+  "app_link": {
+    "found_title": "Retrouvée pour vous",
+    "found_text": "Vous avez ouvert le lien de votre réservation avant d'installer l'app : la voici.",
+    "found_text_named": "Bonjour {}, vous avez ouvert le lien de votre réservation avant d'installer l'app : la voici.",
+    "open": "Ouvrir ma réservation",
+    "not_me": "Ce n'est pas moi",
+    "invalid_title": "Lien inconnu ou expiré",
+    "invalid_text": "Ce lien ne mène plus à une réservation. Retrouvez la vôtre avec sa référence et votre email.",
+    "find": "Retrouver ma réservation"
+  },
   "status": {
     "pending_payment": "En attente de paiement",
     "upcoming": "Confirmée",

@@ -880,6 +880,29 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (409 `car_location_locked` pour le voyageur). Champs `Reservation.car*`, `domain/car-location.ts`, vue
      `PublicBooking.car` / `TravellerReturn.car` ; « Retrouver ma voiture » (app) et le bloc du site mènent à l'épingle ;
      épingle sur l'Occupation web et ligne sur les fiches ; effacée deux jours après le retour par le cron de nuit.
+   - **« Lien court Plazo » (27/10/2026, « Lien profond pour télécharger et utiliser Plazo directement sur sa réservation »,
+     direction B des maquettes https://claude.ai/artifact/RengaLdiu3ex2eB9yhot7d)** : les SMS (confirmation, veille, atterrissage)
+     et les mails (confirmation, rappel) portent `https://www.plazo.fr/a/<REF>-<code>` à la place du lien long (`domain/app-link.ts` :
+     `appLinkCode` = référence + 8 caractères d'un HMAC de `SECRET_KEY` sur l'id et `manageTokenVersion`, révoqué avec le lien
+     de gestion ; `NotificationService.appLinkUrl(booking)`, `bookingConfirmed` / `bookingReminder` reçoivent le lien). Sur un
+     téléphone avec l'app, l'OS ouvre l'app lui-même (`/a/*` dans `apple-app-site-association` et le manifeste Android du flavor
+     voyageur ; route `/a/:code`, `AppLinkPage` → `GET /public/app-link/:code` → `MyBookingRoute` avec la clé ; schéma `plazo://a/<code>`
+     pour « J'ai déjà l'app », `CFBundleURLTypes` du plist, que les pipelines remplacent pour Plazo Pro). Sans l'app, la page de
+     rebond du site `app/a/[code]` (`force-dynamic`, `noindex`, `Referrer-Policy: same-origin`, `Cache-Control: no-store`) :
+     ordinateur → redirection vers `/ma-reservation/REF?cle=…` ; iPhone ou Android → `POST /public/app-link/:code/claim`
+     (`{ platform }` : le téléphone est retenu 24 h par `sha256(adresse|plateforme)`, table `app_link_claims`, migration
+     `app_link_claims`, purgée par le cron de nuit, `appLinkClaimsDeleted`), puis « Installer l'app » (Google Play avec
+     `referrer=plazo_code=<code>` ; App Store `PLAZO_APP_STORE_URL`, variable Vercel du site à poser quand Apple publie Plazo,
+     sinon « Bientôt sur l'App Store »), « J'ai déjà l'app », « Continuer sur le site ». Premier lancement de l'app
+     (`AppLinkResumeGate` autour de la coquille voyageur, une fois par téléphone, `shared_preferences` `app_link.resume_checked`,
+     jamais dans Plazo Pro ni dans les tests, `AppLinkResumeGate.enabled`) : `POST /public/app-link/resume` `{ platform, code? }`
+     → `{ found: false }` ou `{ found: true, match: 'code' | 'device', reference, manageToken, firstName, parking, arrivalAt,
+     returnAt }` (l'attente est consommée) → feuille « Retrouvée pour vous · R7KQ2M · parking · date », « Ouvrir ma réservation »
+     (clé enregistrée) ou « Ce n'est pas moi ». `AppLinkService`, `appLinkLimiter` (40 par 15 min), `visitorAddress(req)` dans
+     `rateLimiter.ts`, `SITE_API_KEY=test-site-key` dans le setup des tests. Reste à faire : l'empreinte de signature Play dans
+     `assetlinks.json` (sans elle Android ouvre le navigateur même avec l'app) et le lecteur de l'Install Referrer dans l'app (le
+     code est déjà passé au store ; d'ici là Android est retrouvé comme iPhone, par l'adresse). Politique de confidentialité à
+     compléter (hachage 24 h). Tests `app-link.test.ts`, `app-link.test.ts` (site), `app_link_test.dart`.
 
 4. **Contrat signé et état des lieux (19/10/2026, « Intègre un outil de signature numérique des contrats et un état des lieux
    utilisateur et loueur avant et après réservation », « comme Yousign » ; maquettes https://claude.ai/artifact/USWr2tiiqbgJ2eZsTum5w9,

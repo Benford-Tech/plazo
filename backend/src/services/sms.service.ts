@@ -2,9 +2,8 @@ import { createHash } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isProspectDemoOperator } from './demo-guard';
-import { PRODUCT_NAME, SECRET_KEY, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
+import { PRODUCT_NAME, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
-import { manageToken } from '@/domain/booking';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
@@ -346,8 +345,8 @@ export class SmsService {
 
   /** The traveller's manage link, when the site can show the booking (its parking is listed). */
   public bookingLink(booking: BookingRecord): string | null {
-    if (!SECRET_KEY || !booking.parking.listing) return null;
-    return this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion));
+    if (!booking.parking.listing) return null;
+    return this.notifications.appLinkUrl(booking);
   }
 
   /** The day-before SMS of a booking (S-A + S-B, 06/10/2026): the parking's own text, else Plazo's. */

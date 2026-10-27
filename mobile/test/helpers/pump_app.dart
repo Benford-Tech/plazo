@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:parking_app/src/features/booking/presentation/widgets/app_link_resume.dart';
 import 'package:parking_app/src/shared/theme/theme.dart';
 import 'package:parking_app/src/shared/tutorials/tutorial_service.dart';
 import 'package:parking_app/src/shared/widgets/ign_map.dart';
@@ -20,6 +21,8 @@ Future<void> setUpLocalizedTests() async {
   LiveDot.animationsEnabled = false;
   // The tutorials have their own tests: elsewhere, the screens open without them.
   TutorialService.enabled = false;
+  // The short link's first-launch check talks to the API: never in the widget tests.
+  AppLinkResumeGate.enabled = false;
 }
 
 /// The app's own fonts instead of the test font (whose glyphs are all one em wide), for the tests that check whether

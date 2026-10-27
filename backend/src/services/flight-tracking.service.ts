@@ -2,7 +2,6 @@ import { Container, Service } from 'typedi';
 import { AWAY_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
-import { manageToken } from '@/domain/booking';
 import { WITH_LISTING, BookingRecord } from '@/domain/booking-view';
 import {
   departureUpdate,
@@ -20,7 +19,6 @@ import {
 } from '@/domain/flight';
 import { landedPush, landedSms } from '@/domain/return-messages';
 import { localDate, localDateTime } from '@/domain/time';
-import { SECRET_KEY } from '@/config';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
@@ -402,7 +400,7 @@ export class FlightTrackingService {
     if (!smsClaim.count) return;
     const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
       SELECT "returnMeetingLabel" AS label, "returnMeetingInstructions" AS instructions FROM parkings WHERE id = ${booking.parkingId}`;
-    const url = SECRET_KEY ? this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion)) : null;
+    const url = this.notifications.appLinkUrl(booking);
     // Through the operator's own SMS channel (their phone, Brevo, or none).
     await this.sms.sendTravellerSms(booking.operatorId, {
       reservationId: booking.id,

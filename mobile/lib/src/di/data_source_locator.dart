@@ -3,6 +3,7 @@ part of 'locator.dart';
 void _initDataSource() {
   locator
     ..registerLazySingleton<BookingDataSource>(() => BookingDataSourceImpl(locator(), locator()))
+    ..registerLazySingleton<AppLinkDataSource>(() => AppLinkDataSourceImpl(locator()))
     ..registerLazySingleton<PublicDataSource>(() => PublicDataSourceImpl(locator()))
     ..registerLazySingleton<ArrivalDataSource>(() => ArrivalDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<AuthDataSource>(() => AuthDataSourceImpl(locator(), locator()))

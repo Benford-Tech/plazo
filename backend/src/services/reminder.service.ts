@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY } from '@/config';
 import prisma, { ReminderSettings, ReservationChannel, SmsMode, SmsOutbox } from '@/database';
-import { MANAGE_TOKEN_LENGTH, manageToken } from '@/domain/booking';
+import { APP_LINK_CHECK_LENGTH } from '@/domain/app-link';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import {
   BOARD_EVENINGS_AFTER,
@@ -177,11 +177,10 @@ export class ReminderService {
     });
     if (!count) return 'taken';
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id }, include: WITH_LISTING });
-    const token = SECRET_KEY ? manageToken(record.id, SECRET_KEY, record.manageTokenVersion) : null;
     const firstName = greetingName(record);
     const parkingName = record.parking.listing?.title ?? record.parking.name;
     try {
-      if (record.parking.listing) await this.notifications.bookingReminder(toPublicBooking(record, now), token);
+      if (record.parking.listing) await this.notifications.bookingReminder(toPublicBooking(record, now), this.sms.bookingLink(record));
       await this.sms.sendTravellerSms(record.operatorId, {
         reservationId: record.id,
         kind: 'booking_reminder',
@@ -300,7 +299,7 @@ export class ReminderService {
 
     const context = templateContextOf(PRODUCT_NAME, { ...parking, listing: parking.listing }, mode === 'gateway');
     const defaults = { template: defaultTemplate(context), short: shortTemplate(context) };
-    const linkAvailable = !!SECRET_KEY && !!parking.listing && !!this.notifications.manageUrl('R', 'x');
+    const linkAvailable = !!SECRET_KEY && !!parking.listing && !!this.notifications.appLinkUrl({ id: 'x', reference: 'R', manageTokenVersion: 0 });
     const selectedRows = rowsByEvening.get(selected) ?? [];
     const example = selectedRows.find(row => row.status === 'planned') ?? null;
     const exampleRecord = example ? reservations.find(r => r.id === example.reservationId)! : null;
@@ -312,7 +311,9 @@ export class ReminderService {
       plate: 'AB-123-CD',
       reference: 'R7KQ2M',
     };
-    const sampleLink = linkAvailable ? this.notifications.manageUrl(sampleSource.reference, 'X'.repeat(MANAGE_TOKEN_LENGTH)) : null;
+    const sampleLink = linkAvailable
+      ? `${this.notifications.settings.publicSiteUrl.replace(/\/+$/, '')}/a/${sampleSource.reference}-${'X'.repeat(APP_LINK_CHECK_LENGTH)}`
+      : null;
     // The example's 08:30 is written in UTC so that it reads 08:30 whatever the parking's zone.
     const sampleValues = exampleRecord ? valuesOf(exampleRecord, tz, sampleLink) : valuesOf(sampleSource, 'UTC', sampleLink);
     const updatedBy = usualRow?.updatedById ? ((await this.firstNames([usualRow.updatedById])).get(usualRow.updatedById) ?? null) : null;
