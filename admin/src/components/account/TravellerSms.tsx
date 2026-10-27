@@ -24,13 +24,15 @@ const STATUS_POLL_MS = 60_000;
 /**
  * « SMS aux voyageurs » (Mon compte): the operator chooses how its SMS go out — its own Android
  * phone through the free "SMS Gateway for Android" app, Plazo (Brevo, charged), or none — links the
- * phone and watches it. Managers only; read-only in a platform admin's view-as session (the API
+ * phone and watches it. Managers only; read-only in the prospects' demo (the API
  * refuses those writes too).
  */
 export function TravellerSms() {
   const { user } = useAuth();
   const manager = can(user?.role, "parking:manage");
-  const readOnly = !!user?.viewAs;
+  // 27/10/2026 (« le super admin peut configurer les paramètres des SMS »): editable in consultation too
+  // (the API traces those writes view_as.write); only the prospects' demo stays read-only.
+  const readOnly = !!user?.demo;
   const [editing, setEditing] = useState(false);
   const t = fr.sms;
 

@@ -1639,7 +1639,7 @@ export const fr = {
     changeChannel: "Changer",
     footnote: `Tant que rien n'est configuré, ${PRODUCT.name} n'envoie pas de SMS pour votre parking (les emails partent quand même). Le mot de passe est chiffré côté serveur et jamais réaffiché.`,
     readOnly:
-      "Consultation : seul le loueur peut relier son téléphone ou changer l'envoi des SMS.",
+      "Démo : relier un téléphone ou changer l'envoi des SMS n'est pas possible ici.",
   },
   listingStatus: {
     draft: "Brouillon",
