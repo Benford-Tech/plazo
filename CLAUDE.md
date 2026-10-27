@@ -226,7 +226,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      les mots de passe et identifiants (canal SMS), les paiements et les réglages personnels (appareils et préférences de
      notification) ; les mails entrants (traité, rattaché, nouvelle adresse), le « SMS de la veille », le suivi des navettes,
      les dessertes et la fin d'un trajet sont permis et tracés `view_as.write` ; démarrer un trajet ou partager sa position
-     reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur).
+     reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur). **Canal SMS réglable par le super
+     admin (27/10/2026, « le super admin peut configurer les paramètres des SMS »)** : `PUT /internal/sms/settings`, `POST /internal/sms/test`
+     et `POST /internal/sms/disable` passent de `RefuseInViewAs` à `RefuseInDemo` (permis en consultation, tracés `view_as.write` ; la
+     démo reste refusée) ; la carte « SMS aux voyageurs » de Mon compte est modifiable en consultation, en lecture seule dans la démo
+     seulement (`user.demo`, texte « Démo : … »).
      **Son propre loueur n'est pas une consultation (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »)** :
      « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
      pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,

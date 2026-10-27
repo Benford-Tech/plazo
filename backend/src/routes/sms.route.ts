@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { SmsController } from '@/controllers/sms.controller';
 import { TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -80,12 +80,12 @@ export class SmsRoute implements Routes {
     this.router.put(
       '/internal/sms/settings',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
+      RefuseInDemo(),
       ValidationMiddleware(UpdateSmsSettingsDto),
       this.sms.updateSettings,
     );
-    this.router.post('/internal/sms/test', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), ValidationMiddleware(TestSmsDto), this.sms.test);
-    this.router.post('/internal/sms/disable', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.sms.disable);
+    this.router.post('/internal/sms/test', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), ValidationMiddleware(TestSmsDto), this.sms.test);
+    this.router.post('/internal/sms/disable', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.sms.disable);
     this.router.get('/internal/sms/status', StaffAuthMiddleware('parking:manage'), this.sms.status);
   }
 }

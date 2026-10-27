@@ -218,7 +218,7 @@ describe('réglages du canal SMS', () => {
     expect(row).toMatchObject({ mode: 'none', gatewayLogin: null, gatewayPasswordEncrypted: null, senderPhone: null, linkedAt: null });
   });
 
-  it('en consultation (view-as), un super admin lit mais ne modifie pas', async () => {
+  it('en consultation (view-as), un super admin règle le canal SMS, tracé view_as.write (27/10/2026)', async () => {
     const admin = await setupOperator('Plazo (tests)');
     const op = await linkedOperator();
     process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
@@ -227,16 +227,15 @@ describe('réglages du canal SMS', () => {
     const token = session.body.access.token as string;
     expect((await api().get('/api/internal/sms/settings').set(auth(token))).body.gateway.login).toBe('AB12CD');
     expect((await api().get('/api/internal/sms/status').set(auth(token))).status).toBe(200);
-    for (const [method, path, body] of [
-      ['put', '/api/internal/sms/settings', GATEWAY_FORM],
-      ['post', '/api/internal/sms/test', { to: '+33612345678' }],
-      ['post', '/api/internal/sms/disable', {}],
-    ] as const) {
-      const res = await api()[method](path).set(auth(token)).send(body);
-      expect(res.status).toBe(403);
-      expect(res.body.code).toBe('view_as_read_only');
-    }
-    expect(calls(/sms-gate/).length).toBe(0);
+    const disabled = await api().post('/api/internal/sms/disable').set(auth(token));
+    expect(disabled.status).toBe(200);
+    expect(disabled.body.mode).toBe('none');
+    const relinked = await api().put('/api/internal/sms/settings').set(auth(token)).send(GATEWAY_FORM);
+    expect(relinked.status).toBe(200);
+    expect(relinked.body.gateway.login).toBe('AB12CD');
+    const traced = await prisma.auditLog.findMany({ where: { operatorId: op.operator.id, action: 'view_as.write' } });
+    expect(traced.map(t => (t.details as { path: string }).path).sort()).toEqual(['/api/internal/sms/disable', '/api/internal/sms/settings']);
+    expect(traced.every(t => t.staffId === admin.manager.id)).toBe(true);
   });
 });
 
