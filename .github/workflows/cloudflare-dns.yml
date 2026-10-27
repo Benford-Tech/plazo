@@ -1,0 +1,40 @@
+name: Cloudflare DNS record
+
+# 27/10/2026 (« Le site pro est sur pro.plazo.fr », « Fais le »): creates or updates one DNS record of plazo.fr at
+# Cloudflare, by hand only. Uses CLOUDFLARE_DNS_TOKEN of the Production environment when it exists (a token with
+# « Zone · DNS · Edit » on plazo.fr), else CLOUDFLARE_API_TOKEN (the relay's Workers token, which may lack DNS rights:
+# the run then says so). Defaults: pro → cname.vercel-dns.com, DNS only (Vercel issues the certificate).
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Sous-domaine (ex. pro)
+        default: pro
+        required: true
+      content:
+        description: Cible du CNAME
+        default: cname.vercel-dns.com
+        required: true
+      proxied:
+        description: Proxy Cloudflare (nuage orange)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    environment: Production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create or update the record
+        env:
+          DNS_TOKEN: ${{ secrets.CLOUDFLARE_DNS_TOKEN }}
+          WORKERS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ZONE_NAME: plazo.fr
+          RECORD_NAME: ${{ inputs.name }}
+          RECORD_CONTENT: ${{ inputs.content }}
+          RECORD_PROXIED: ${{ inputs.proxied }}
+        run: python3 .github/scripts/cloudflare_dns.py
