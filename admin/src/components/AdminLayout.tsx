@@ -25,6 +25,7 @@ import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Logo } from "./Logo";
 import { DemoBanner } from "./DemoBanner";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
+import { RevenueMaskToggle } from "./platform/RevenueMaskToggle";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -231,6 +232,7 @@ export function AdminLayout() {
                 {user?.name} · {user ? fr.roles[user.role] : ""}
               </span>
             )}
+            <RevenueMaskToggle />
             <button
               onClick={handleLogout}
               aria-label={fr.nav.logout}

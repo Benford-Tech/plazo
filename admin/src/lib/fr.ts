@@ -609,6 +609,17 @@ export const fr = {
     tileShare: (pct: string) => `${pct} du chiffre`,
     tileKept: "Vous gardez",
     tileMissingRate: (name: string) => `${name} : taux à régler`,
+    // 27/10/2026: the platform admin can hide the revenue on this browser.
+    mask: {
+      hide: "Masquer le CA",
+      show: "Afficher le CA",
+      hideTitle: "Masquer le chiffre d'affaires sur ce navigateur",
+      showTitle: "Afficher de nouveau le chiffre d'affaires",
+      hidden: "Chiffre d'affaires masqué",
+      hiddenNote:
+        "Les montants ne sont pas affichés sur ce navigateur. Les autres membres de l'équipe les voient toujours.",
+      reveal: "Afficher le chiffre d'affaires",
+    },
     // 19/10/2026: what the comparators take (choice « les 3 », A).
     view: "Afficher",
     views: { gross: "Brut", net: "Net de commissions" },

@@ -480,7 +480,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Commission Allopark − 9,72 € · 18 % · Vous gardez 44,28 € », « Changer pour cette réservation » (taux ou montant), « Revenir au
      taux du comparateur » ; liste des réservations : prix et « garde … » sous chaque réservation de comparateur. `commission` est
      servi aux gérants seulement (null pour les autres rôles) sur `GET /internal/reservations/:id` et la liste. Plazo Pro ne montre
-     pas encore le net. **Tableau de bord (20/10/2026, « mets en avant les commissions », choix A des maquettes
+     pas encore le net. **Masquer le CA (27/10/2026, « pouvoir masquer le
+     chiffre d'affaires pour le super admin de la plateforme »)** : bouton « Masquer le CA » / « Afficher le CA » (œil, `RevenueMaskToggle`)
+     dans la barre haute de l'espace pro pour le super admin seulement (`isPlatformAdmin`, dans son espace comme en consultation) ; choix
+     gardé dans le navigateur (`plazo:revenue-hidden`, `lib/revenue-mask.ts`, `useRevenueHidden`) : la tuile du tableau de bord devient
+     « Chiffre d'affaires masqué · Afficher le CA » (`kpi-revenue-hidden`) et la page Chiffre d'affaires une carte « Chiffre d'affaires
+     masqué » avec « Afficher le chiffre d'affaires », sans rien demander à l'API ; les autres membres ne voient pas le bouton et gardent
+     leurs chiffres. **Tableau de bord (20/10/2026, « mets en avant les commissions », choix A des maquettes
      https://claude.ai/artifact/MsqXE6C4ZsDwZppBbPCMkD)** : la tuile `RevenueTile` dit « Encaissé par les clients − Commissions (N % du
      chiffre) = Vous gardez », puis une pastille par canal qui a retenu (« Allopark 18 % · −612,00 € », « Plazo · −240,00 € ») et
      « Parclick : taux à régler » en ambre pour un comparateur sans taux ; `GET /internal/revenue/summary` rend `month.commissionCents`

@@ -15,7 +15,10 @@ vi.mock("@/lib/api", async (importOriginal) => {
   };
 });
 
-const auth = vi.hoisted(() => ({ role: "manager" as string }));
+const auth = vi.hoisted(() => ({
+  role: "manager" as string,
+  platformAdmin: false,
+}));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
     user: {
@@ -24,6 +27,7 @@ vi.mock("@/contexts/AuthContext", () => ({
       name: "Joanny Simpore",
       role: auth.role,
       operatorName: "Parking Test",
+      isPlatformAdmin: auth.platformAdmin,
     },
     logout: vi.fn(),
   }),
@@ -175,5 +179,38 @@ describe("AdminLayout rail sections", () => {
     renderLayout();
     await screen.findByTestId("getting-started");
     expect(screen.queryByTestId("getting-started-welcome")).toBeNull();
+  });
+});
+
+// 27/10/2026 (« pouvoir masquer le chiffre d'affaires pour le super admin de la plateforme »).
+describe("AdminLayout · Masquer le CA", () => {
+  beforeEach(() => {
+    api.getGettingStarted.mockResolvedValue({ ...STEPS, done: 7 });
+    localStorage.setItem("plazo:getting-started-welcome", "s1");
+    localStorage.removeItem("plazo:revenue-hidden");
+  });
+  afterEach(() => {
+    auth.platformAdmin = false;
+    localStorage.removeItem("plazo:revenue-hidden");
+  });
+
+  it("offers the toggle to the platform admin only, and keeps the choice in the browser", () => {
+    auth.role = "manager";
+    renderLayout();
+    expect(screen.queryByTestId("revenue-mask")).toBeNull();
+  });
+
+  it("hides and shows the revenue on a click", () => {
+    auth.platformAdmin = true;
+    renderLayout();
+    const toggle = screen.getByTestId("revenue-mask");
+    expect(toggle).toHaveTextContent("Masquer le CA");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveTextContent("Afficher le CA");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(localStorage.getItem("plazo:revenue-hidden")).toBe("1");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveTextContent("Masquer le CA");
+    expect(localStorage.getItem("plazo:revenue-hidden")).toBeNull();
   });
 });
