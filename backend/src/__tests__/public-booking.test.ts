@@ -506,7 +506,50 @@ describe('retrouver sa réservation', () => {
     const cancel = await api().post(`/api/public/bookings/${phone.body.data.reference}/cancel`).set(token(found.body.manageToken));
     expect(cancel.status).toBe(409);
     expect(cancel.body.code).toBe('cancellation_closed');
-    expect((await lookup('', '')).body.fields).toEqual({ reference: 'required', email: 'required' });
+    expect((await api().post('/api/public/bookings/lookup').send({ reference: '', contact: '' })).body.fields).toEqual({
+      reference: 'required',
+      contact: 'required',
+    });
+  });
+
+  it('A (27/10/2026) : le numéro du comparateur et le téléphone suffisent, sans e-mail', async () => {
+    const { token: staffToken } = await publishedParking();
+    const imported = await api()
+      .post('/api/internal/reservations')
+      .set(auth(staffToken))
+      .send({
+        channel: 'aggregator',
+        channelDetail: 'Onepark',
+        externalReference: '#5908369',
+        arrivalAt: inDays(6, '08:00'),
+        returnAt: inDays(8, '20:00'),
+        passengers: 1,
+        customerFirstName: 'Léa',
+        customerLastName: 'Bernard',
+        customerPhone: '06 11 22 33 44',
+        plate: 'EF456GH',
+      });
+    expect(imported.status).toBe(201);
+    const reference = imported.body.data.reference as string;
+    const find = (body: Record<string, string>) => api().post('/api/public/bookings/lookup').send(body);
+
+    for (const number of ['5908369', ' # 5908369 ', reference.toLowerCase()]) {
+      for (const contact of ['0611223344', '+33 6 11 22 33 44']) {
+        const res = await find({ reference: number, contact });
+        expect(res.status).toBe(200);
+        expect(res.body.reference).toBe(reference);
+      }
+    }
+    // The page opens with the key it gives.
+    const ok = await find({ reference: '5908369', contact: '06.11.22.33.44' });
+    expect((await api().get(`/api/public/bookings/${reference}`).set(token(ok.body.manageToken))).status).toBe(200);
+    // Wrong phone, too short a phone, an email the booking does not have: the same 404.
+    for (const contact of ['0699999999', '33 44', 'lea@example.com']) {
+      const res = await find({ reference: '5908369', contact });
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe('not_found');
+    }
+    expect((await find({ reference: '5908360', contact: '0611223344' })).status).toBe(404);
   });
 
   it('répond 404 sans la bonne clé', async () => {

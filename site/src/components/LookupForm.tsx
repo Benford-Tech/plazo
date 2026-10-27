@@ -7,7 +7,7 @@ import { errorMessage, fr } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-/** Find a booking with its reference and email (no account). */
+/** Find a booking with its number (Plazo's or the comparator's) and its email or phone (no account; 27/10/2026, direction A). */
 export function LookupForm({ action, reference = "" }: { action: Action; reference?: string }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM);
   const v = state.values;
@@ -28,33 +28,39 @@ export function LookupForm({ action, reference = "" }: { action: Action; referen
           name="reference"
           type="text"
           required
-          maxLength={12}
+          maxLength={40}
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
           defaultValue={v.reference ?? reference}
           aria-invalid={f.reference ? true : undefined}
-          aria-describedby={f.reference ? "m-reference-error" : undefined}
+          aria-describedby={f.reference ? "m-reference-error" : "m-reference-hint"}
           className="field font-semibold tracking-[.06em] uppercase"
         />
+        <p id="m-reference-hint" className="mt-1.5 text-[13px] font-medium text-soft">
+          {fr.manage.referenceHint}
+        </p>
         <FieldError id="m-reference-error" code={f.reference} />
       </div>
       <div>
-        <label htmlFor="m-email" className="label">
-          {fr.manage.email}
+        <label htmlFor="m-contact" className="label">
+          {fr.manage.contact}
         </label>
         <input
-          id="m-email"
-          name="email"
-          type="email"
+          id="m-contact"
+          name="contact"
+          type="text"
           required
+          maxLength={254}
           autoComplete="email"
-          defaultValue={v.email}
-          aria-invalid={f.email ? true : undefined}
-          aria-describedby={f.email ? "m-email-error" : undefined}
+          autoCapitalize="none"
+          spellCheck={false}
+          defaultValue={v.contact}
+          aria-invalid={f.contact ? true : undefined}
+          aria-describedby={f.contact ? "m-contact-error" : undefined}
           className="field"
         />
-        <FieldError id="m-email-error" code={f.email} />
+        <FieldError id="m-contact-error" code={f.contact} />
       </div>
       <button type="submit" disabled={pending} className="btn-primary mt-1 min-h-12 px-6 text-base">
         {pending ? fr.manage.finding : fr.manage.find}

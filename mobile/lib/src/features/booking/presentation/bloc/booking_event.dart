@@ -16,9 +16,9 @@ class BookingLinkOpened extends BookingEvent {
 }
 
 class BookingLookupSubmitted extends BookingEvent {
-  const BookingLookupSubmitted({required this.reference, required this.email});
+  const BookingLookupSubmitted({required this.reference, required this.contact});
   final String reference;
-  final String email;
+  final String contact;
 }
 
 class BookingRefreshed extends BookingEvent {

@@ -169,17 +169,26 @@ export class CreatePublicBookingDto {
   public idempotencyKey?: string;
 }
 
-/** Finding a booking again: its reference and the email given when booking. */
+/**
+ * Finding a booking again (27/10/2026, direction A of https://claude.ai/artifact/WcdeKCQT1Tg8Sx93Vevj76): the Plazo
+ * reference or the comparator's number, and the email or the phone of the booking (`contact`). Older apps send `email`.
+ */
 export class LookupBookingDto {
-  @MaxLength(20, { message: 'too_long' })
+  @MaxLength(40, { message: 'too_long' })
   @IsNotEmpty({ message: 'required' })
   @IsString({ message: 'required' })
   public reference: string;
 
-  @MaxLength(254, { message: 'invalid_email' })
+  @ValidateIf(body => body.email === undefined)
+  @MaxLength(254, { message: 'too_long' })
   @IsNotEmpty({ message: 'required' })
   @IsString({ message: 'required' })
-  public email: string;
+  public contact?: string;
+
+  @IsOptional()
+  @MaxLength(254, { message: 'invalid_email' })
+  @IsString({ message: 'required' })
+  public email?: string;
 }
 
 /** New return flight; empty or null clears it (the field itself is required). The outbound flight may come along. */

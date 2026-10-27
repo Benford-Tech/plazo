@@ -44,7 +44,7 @@ class BookingBloc extends Bloc<BookingEvent, BookingState> {
 
   Future<void> _onLookup(BookingLookupSubmitted event, Emitter<BookingState> emit) async {
     emit(state.copyWith(lookupState: ViewState.processing, errorMessage: null));
-    final result = await _lookup(LookupBookingParams(reference: event.reference, email: event.email));
+    final result = await _lookup(LookupBookingParams(reference: event.reference, contact: event.contact));
     await result.fold(
       (failure) async => emit(state.copyWith(lookupState: ViewState.error, errorMessage: failure.message)),
       (access) async {

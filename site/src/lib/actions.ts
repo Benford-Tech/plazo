@@ -140,15 +140,15 @@ export async function editBookingAction(reference: string, _previous: FormState)
 }
 
 export async function lookupAction(_previous: FormState, formData: FormData): Promise<FormState> {
-  const values = { reference: text(formData, "reference").toUpperCase(), email: text(formData, "email") };
+  const values = { reference: text(formData, "reference").toUpperCase(), contact: text(formData, "contact") };
   const fields: Record<string, string> = {};
   if (!values.reference) fields.reference = "required";
-  if (!values.email) fields.email = "required";
+  if (!values.contact) fields.contact = "required";
   if (Object.keys(fields).length) return { values, fields, error: "validation_failed" };
 
   let access: BookingAccess;
   try {
-    access = await api.lookupBooking(values.reference, values.email);
+    access = await api.lookupBooking(values.reference, values.contact);
   } catch (error) {
     const state = failure(values, error);
     return state.error === "not_found" ? { ...state, error: "lookup_not_found" } : state;
