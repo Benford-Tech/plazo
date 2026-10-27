@@ -18,9 +18,18 @@ export const PRO_LOGIN_PATH = "/pro/login";
 
 /** Plazo Pro's pages for the operators (27/10/2026), on the site: the home page and the pricing page. */
 export const OPERATORS_PREFIX = "/loueurs";
+/**
+ * Plazo Pro's own address (27/10/2026, « Le site pro est sur pro.plazo.fr »), e.g. https://pro.plazo.fr. Set once its DNS
+ * answers: the pages are then served at its root (rewrites of next.config.ts), /loueurs redirects there and every link
+ * points there. Unset: the pages stay under /loueurs on the travellers' site.
+ */
+export const PRO_SITE_URL = (process.env.NEXT_PUBLIC_PRO_SITE_URL ?? "").replace(/\/+$/, "") || null;
+/** The host that serves Plazo Pro's pages at its root, even before the links point there. */
+export const PRO_HOST = PRO_SITE_URL ? new URL(PRO_SITE_URL).host : "pro.plazo.fr";
+
 /** The home page of Plazo Pro (27/10/2026, on the model of Solution Park's): « Vous êtes un parking ? » leads to it. */
-export const PRO_HOME_PATH = OPERATORS_PREFIX;
-export const PRO_PRICING_PATH = `${OPERATORS_PREFIX}/tarifs`;
+export const PRO_HOME_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/` : OPERATORS_PREFIX;
+export const PRO_PRICING_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/tarifs` : `${OPERATORS_PREFIX}/tarifs`;
 
 /** « Essayer la démo »: the pro space's demo for prospects (21/10/2026), no account needed. */
 export const PRO_DEMO_PATH = "/pro/demo";
