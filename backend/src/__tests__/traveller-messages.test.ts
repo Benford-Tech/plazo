@@ -202,6 +202,7 @@ describe('le fil de messages du voyageur (B)', () => {
       prospecting: expect.any(Object),
       morning: expect.any(Object),
       extras: { refunded: 0, failed: 0, expired: 0 },
+      valet: { announced: 0 },
     });
   });
 
