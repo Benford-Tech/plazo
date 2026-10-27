@@ -459,17 +459,21 @@ class _FilterPills extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Scrolls sideways on a narrow phone or with large text rather than overflowing.
     return Container(
       color: AppColors.canvas,
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
-      child: Row(
-        children: [
-          _pill(TodayFilter.all, 'pro.filter_all'.tr(), arrivals + returns, null),
-          const SizedBox(width: 6),
-          _pill(TodayFilter.arrivals, 'pro.dropoffs'.tr(), arrivals, AppStatus.ok),
-          const SizedBox(width: 6),
-          _pill(TodayFilter.returns, 'pro.returns'.tr(), returns, AppStatus.info),
-        ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+        child: Row(
+          children: [
+            _pill(TodayFilter.all, 'pro.filter_all'.tr(), arrivals + returns, null),
+            const SizedBox(width: 6),
+            _pill(TodayFilter.arrivals, 'pro.dropoffs'.tr(), arrivals, AppStatus.ok),
+            const SizedBox(width: 6),
+            _pill(TodayFilter.returns, 'pro.returns'.tr(), returns, AppStatus.info),
+          ],
+        ),
       ),
     );
   }
