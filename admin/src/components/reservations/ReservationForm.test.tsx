@@ -168,6 +168,32 @@ describe("ReservationForm", () => {
     expect(updateReservation.mock.calls[0][1]).toMatchObject({ childSeats: null });
   });
 
+  it("« Voiturier au terminal » (27/10/2026) : envoyé à la création, puis seulement quand il change", async () => {
+    createReservation.mockResolvedValue({ data: { id: "r1" } });
+    const onSaved = renderForm();
+    await fillStay();
+    expect(screen.getByRole("button", { name: "Navette" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Voiturier au terminal" }));
+    expect(screen.getByText(/prend la voiture au terminal/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createReservation.mock.calls[0][0]).toMatchObject({ handover: "valet", stopId: null });
+  });
+
+  it("« Voiturier au terminal » à la modification : rien d'envoyé sans changement, puis le retour à la navette", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ handover: "valet" }) });
+    expect(screen.getByRole("button", { name: "Voiturier au terminal" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("handover");
+    updateReservation.mockClear();
+    await userEvent.click(screen.getByRole("button", { name: "Navette" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(updateReservation).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).toMatchObject({ handover: "shuttle" });
+  });
+
   it("traduit le refus du serveur sur les sièges auto", async () => {
     createReservation.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { childSeats: "child_seats_range" }));
     renderForm();

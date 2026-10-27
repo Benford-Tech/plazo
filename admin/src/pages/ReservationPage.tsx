@@ -32,6 +32,7 @@ import { dayLabel, formatRate, parsePercent } from "@/lib/commission";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ValetPill } from "@/lib/valet-icon";
 
 // The next statuses come from the API (GET /internal/reservations/:id, 06/10/2026): one table, on the server.
 const MANAGE_ONLY: ReservationStatus[] = ["cancelled", "no_show"];
@@ -455,7 +456,13 @@ export default function ReservationPage() {
                   {r.returnFlight ?? "—"}
                 </span>
               </Info>
-              {r.stop && <Info label={t.stop}>{r.stop.name}</Info>}
+              {r.handover === "valet" ? (
+                <Info label={fr.reservation.handover}>
+                  <ValetPill label={fr.reservation.handovers.valet} />
+                </Info>
+              ) : (
+                r.stop && <Info label={t.stop}>{r.stop.name}</Info>
+              )}
               <Info label={quickCardFr.spot}>
                 <span className="tabular font-mono">
                   {r.file

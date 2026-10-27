@@ -14,6 +14,7 @@ import type {
   MyContract,
   PartnerContract,
   Dashboard,
+  ValetRuns,
   LiveShuttles,
   InboundSettings,
   InboundEmail,
@@ -717,6 +718,8 @@ export const adminApi = {
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
+  // « Voiturier au terminal » (27/10/2026).
+  valetRuns: () => apiRequest<ValetRuns>("/internal/valet/runs"),
   // CA-B + CA-A (09/10/2026): the revenue, managers only.
   getRevenue: (from: string, to: string, basis: RevenueBasis) =>
     apiRequest<RevenueReport>(
