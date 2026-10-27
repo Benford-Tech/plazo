@@ -1607,7 +1607,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   trait plein, navette → desserte en pointillé, couches GeoJSON MapLibre) ; les dessertes sont des ronds blancs avec leur
   icône (avion, train, épingle) et leur nom, « Terminal 1 dans 7 min » en pilule colorée quand une navette y va
   (`stopEta`) ; **une navette sans position apparaît toujours** : fantôme gris en pointillé à côté du parking, « Nadia ·
-  partie à 14:02 · sans position » (`ghosts`). Plazo Pro garde l'ancienne carte pour l'instant. **Tuile Paiements (07/10/2026, « les paiements sont centralisés »)** : OK « en ligne, encaissés par Plazo » si
+  partie à 14:02 · sans position » (`ghosts`). Plazo Pro garde l'ancienne carte pour l'instant. **Carte repliable (27/10/2026,
+  « la carte doit être repliable pour que l'on puisse filtrer les voitures et les parcourir »)** : « Replier la carte » sur la carte
+  du tableau de bord la réduit à une ligne (titre, « N navettes en route », « Afficher la carte ») et le panneau des véhicules prend
+  toute la largeur (`lg:grid-cols-1`) ; choix gardé dans le navigateur `plazo:dashboard-map-collapsed`. **Tuile Paiements (07/10/2026, « les paiements sont centralisés »)** : OK « en ligne, encaissés par Plazo » si
   `services.stripe.online` (clés Stripe de la plateforme + commission, `PaymentService.modeFor`), sinon Off ; le compte Stripe
   du loueur n'y apparaît pas (il ne sert qu'aux reversements, page Reversements), web et app. Le planning passe à `/pro/planning`. **Fiche opérationnelle (C-A, 06/10/2026)** :
   `ReservationQuickCard` (tiroir, `QuickCardProvider` dans `App.tsx`, `useQuickCard().open(id)`) ouverte depuis les lignes du

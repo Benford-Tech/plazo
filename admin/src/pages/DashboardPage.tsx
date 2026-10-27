@@ -4,6 +4,8 @@ import {
   ArrowUpFromLine,
   Bell,
   BusFront,
+  ChevronDown,
+  ChevronUp,
   CreditCard,
   FileInput,
   KeyRound,
@@ -536,14 +538,65 @@ function Panel({
   );
 }
 
+const MAP_COLLAPSED_KEY = "plazo:dashboard-map-collapsed";
+const readMapCollapsed = () => {
+  try {
+    return localStorage.getItem(MAP_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const writeMapCollapsed = (collapsed: boolean) => {
+  try {
+    if (collapsed) localStorage.setItem(MAP_COLLAPSED_KEY, "1");
+    else localStorage.removeItem(MAP_COLLAPSED_KEY);
+  } catch {
+    /* private window: the choice lasts the page */
+  }
+};
+
+/**
+ * « La carte doit être repliable pour que l'on puisse filtrer les voitures et les parcourir » (27/10/2026): folded, the
+ * map becomes one line (title, running shuttles, « Afficher la carte ») and the vehicles panel takes the whole width; the
+ * choice is kept in the browser.
+ */
 function LivePanel({
   live,
   parkingName,
+  collapsed,
+  onToggle,
 }: {
   live: LiveShuttles | undefined;
   parkingName: string;
+  collapsed: boolean;
+  onToggle: () => void;
 }) {
   const m = t.map;
+  if (collapsed) {
+    return (
+      <section
+        aria-label={m.title}
+        data-testid="live-panel-collapsed"
+        className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-panel-line bg-panel px-3 py-2"
+      >
+        <span className="rounded-full bg-primary px-3 py-1 text-[13px] font-semibold text-primary-foreground">
+          {m.title} · {parkingName}
+        </span>
+        <span className="font-mono text-xs text-muted-foreground">
+          {live ? m.running(live.trips.length) : "…"}
+        </span>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={false}
+          className="ml-auto flex min-h-9 items-center gap-1 rounded-full border border-panel-line bg-panel px-3 text-xs font-semibold hover:bg-panel-2"
+        >
+          {m.expand}
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </section>
+    );
+  }
   return (
     <section
       aria-label={m.title}
@@ -563,12 +616,23 @@ function LivePanel({
       <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-primary px-3 py-1.5 text-[13px] font-semibold text-primary-foreground">
         {m.title} · {parkingName}
       </span>
-      <Link
-        to="/planning"
-        className="absolute right-3 top-3 rounded-full border border-panel-line bg-panel px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-panel-2"
-      >
-        {m.open}
-      </Link>
+      <span className="absolute right-3 top-3 flex items-center gap-1.5">
+        <Link
+          to="/planning"
+          className="rounded-full border border-panel-line bg-panel px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-panel-2"
+        >
+          {m.open}
+        </Link>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={true}
+          className="flex min-h-[30px] items-center gap-1 rounded-full border border-panel-line bg-panel px-3 text-xs font-semibold text-foreground hover:bg-panel-2"
+        >
+          {m.collapse}
+          <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
+      </span>
       <ul className="absolute bottom-3 left-3 right-3 flex flex-col gap-1.5">
         {live && live.trips.length === 0 && (
           <li className="w-fit rounded-full border border-panel-line bg-panel px-3 py-1.5 font-mono text-xs text-foreground">
@@ -606,6 +670,11 @@ function LivePanel({
 
 /** The home of the pro space (fusion "Flotte + Opérations", 05/10/2026). */
 export default function DashboardPage() {
+  const [mapCollapsed, setMapCollapsedState] = useState(readMapCollapsed);
+  const setMapCollapsed = (collapsed: boolean) => {
+    writeMapCollapsed(collapsed);
+    setMapCollapsedState(collapsed);
+  };
   const { user } = useAuth();
   const dashboard = useQuery({
     queryKey: ["dashboard"],
@@ -731,7 +800,12 @@ export default function DashboardPage() {
 
       <ServicesStrip services={d.services} />
 
-      <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr]">
+      <div
+        className={cn(
+          "grid gap-3",
+          mapCollapsed ? "lg:grid-cols-1" : "lg:grid-cols-[1.25fr_1fr]",
+        )}
+      >
         <div className="space-y-3">
           <Panel
             title={t.alerts.title}
@@ -771,7 +845,12 @@ export default function DashboardPage() {
             )}
           </Panel>
         </div>
-        <LivePanel live={live.data} parkingName={d.parking.name} />
+        <LivePanel
+          live={live.data}
+          parkingName={d.parking.name}
+          collapsed={mapCollapsed}
+          onToggle={() => setMapCollapsed(!mapCollapsed)}
+        />
       </div>
     </div>
   );

@@ -985,6 +985,13 @@ export const fr = {
       noPositionShort: "sans position",
       persons: (n: number) => `${n} pers.`,
       open: "Ouvrir les retours",
+      // 27/10/2026: the map folds so the vehicles panel takes the whole width.
+      collapse: "Replier la carte",
+      expand: "Afficher la carte",
+      running: (n: number) =>
+        n === 0
+          ? "Aucune navette en route"
+          : `${n} navette${n > 1 ? "s" : ""} en route`,
       shuttle: (n: number) => `Navette ${String(n).padStart(2, "0")}`,
       since: (at: Date) =>
         `partie à ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(at)}`,
