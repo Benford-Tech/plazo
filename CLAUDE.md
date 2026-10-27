@@ -1306,6 +1306,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   au-delà ; lettre chez Brevo, double confirmation, gardée jusqu'à la désinscription en un clic, puis marquée désinscrite chez
   Brevo) et conditions générales (le
   formulaire à côté de l'adresse du service client, dès qu'elle est réelle) mises à jour.
+- **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
+  https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
+  (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
+  Archivo Narrow posés par `loueurs/layout.tsx` ; l'en-tête et le pied de page des voyageurs sont cachés sous `/loueurs` par
+  `HiddenOn prefixes`) : formules Essentiel 79 €, Opérations 149 € (recommandée), Complet 229 € HT par mois, « Annuel −10 % »,
+  fiche sur Plazo à 15 % par réservation payée (exemple 60 € → 51 €), options (mise en route 290 € une fois, 1 000 SMS 49 € une fois,
+  page de réservation 29 €/mois, deuxième parking « Bientôt »), récapitulatif collant avec le total (barre en bas sur téléphone),
+  sélection gardée dans le navigateur (`plazo:pro-pricing`), « Essayer la démo » (`/pro/demo`), « Inscrire mon parking »,
+  « Demander un devis » (`quoteAction` : la sélection relue depuis ses identifiants, envoyée par `POST /public/contact` à
+  `supportEmail`). Prix et contenu dans `site/src/lib/pro-pricing.ts` (`quote`, `selectionSummary`) ; « Vous êtes un parking ? »
+  (en-tête et pied de page) mène à cette page ; dans le plan du site. Prix provisoires, à confirmer par Joanny.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
