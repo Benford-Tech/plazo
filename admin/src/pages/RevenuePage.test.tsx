@@ -11,7 +11,7 @@ const api = vi.hoisted(() => ({
   setReservationPrice: vi.fn(),
   setComparatorCommission: vi.fn(),
 }));
-vi.mock("@/lib/api", async importOriginal => {
+vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
 });
@@ -20,7 +20,12 @@ const days = (from: string, n: number) =>
   Array.from({ length: n }, (_, i) => {
     const d = new Date(`${from}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() + i);
-    return { date: d.toISOString().slice(0, 10), count: 0, totalCents: 0, netCents: 0 };
+    return {
+      date: d.toISOString().slice(0, 10),
+      count: 0,
+      totalCents: 0,
+      netCents: 0,
+    };
   });
 
 const report = (over: Partial<RevenueReport> = {}): RevenueReport => ({
@@ -44,20 +49,55 @@ const report = (over: Partial<RevenueReport> = {}): RevenueReport => ({
       commissionCents: 29520,
       netCents: 134480,
       comparatorKey: "allopark",
-      rate: { comparatorKey: "allopark", label: "Allopark", rateBp: 1800, fixedCents: 0, effectiveFrom: "2026-10-01" },
+      rate: {
+        comparatorKey: "allopark",
+        label: "Allopark",
+        rateBp: 1800,
+        fixedCents: 0,
+        effectiveFrom: "2026-10-01",
+      },
     },
-    { channel: "plazo", detail: null, count: 9, totalCents: 51350, commissionCents: 0, netCents: 51350, comparatorKey: null, rate: null },
+    {
+      channel: "plazo",
+      detail: null,
+      count: 9,
+      totalCents: 51350,
+      commissionCents: 0,
+      netCents: 51350,
+      comparatorKey: null,
+      rate: null,
+    },
   ],
-  byDay: days("2026-10-01", 31).map(d => (d.date === "2026-10-09" ? { ...d, count: 3, totalCents: 12300, netCents: 11000 } : d)),
+  byDay: days("2026-10-01", 31).map((d) =>
+    d.date === "2026-10-09"
+      ? { ...d, count: 3, totalCents: 12300, netCents: 11000 }
+      : d,
+  ),
   missing: [
-    { id: "r1", reference: "R7KQ2M", customerName: "Léa Petit", arrivalAt: "2026-10-09T17:45:00Z", channel: "phone", detail: null },
-    { id: "r2", reference: "R8ZZ9A", customerName: "Marc Leroy", arrivalAt: "2026-10-08T06:00:00Z", channel: "counter", detail: null },
+    {
+      id: "r1",
+      reference: "R7KQ2M",
+      customerName: "Léa Petit",
+      arrivalAt: "2026-10-09T17:45:00Z",
+      channel: "phone",
+      detail: null,
+    },
+    {
+      id: "r2",
+      reference: "R8ZZ9A",
+      customerName: "Marc Leroy",
+      arrivalAt: "2026-10-08T06:00:00Z",
+      channel: "counter",
+      detail: null,
+    },
   ],
   ...over,
 });
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -73,26 +113,47 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     vi.setSystemTime(new Date("2026-10-09T10:00:00Z"));
     api.getRevenue.mockReset().mockResolvedValue(report());
     api.exportRevenue.mockReset();
-    api.setReservationPrice.mockReset().mockResolvedValue({ id: "r1", priceCents: 4500 });
+    api.setReservationPrice
+      .mockReset()
+      .mockResolvedValue({ id: "r1", priceCents: 4500 });
   });
   afterEach(() => vi.useRealTimers());
 
   it("ouvre sur le mois en cours, par jour d’arrivée : total, réservations, panier moyen, canaux et jours", async () => {
     renderPage();
-    expect(await screen.findByTestId("revenue-total")).toHaveTextContent("Total octobre");
-    expect(api.getRevenue).toHaveBeenCalledWith("2026-10-01", "2026-10-31", "arrival");
-    expect(screen.getByTestId("revenue-total")).toHaveTextContent(/4\s812,50\s€/);
+    expect(await screen.findByTestId("revenue-total")).toHaveTextContent(
+      "Total octobre",
+    );
+    expect(api.getRevenue).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-10-31",
+      "arrival",
+    );
+    expect(screen.getByTestId("revenue-total")).toHaveTextContent(
+      /4\s812,50\s€/,
+    );
     expect(screen.getByTestId("revenue-count")).toHaveTextContent("109");
     expect(screen.getByText("dont 2 sans montant")).toBeInTheDocument();
     expect(screen.getByText("5,2 jours en moyenne")).toBeInTheDocument();
     const table = screen.getByRole("table");
-    expect(within(table).getByRole("rowheader", { name: "Allopark" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "Plazo" })).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "Allopark" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "Plazo" }),
+    ).toBeInTheDocument();
     // Once in the share column, once under the amount on phones.
     expect(within(table).getAllByText("34 %")).toHaveLength(2);
-    expect(within(screen.getByTestId("revenue-days")).getAllByRole("listitem")).toHaveLength(31);
-    expect(screen.getByText(/9 oct\. : 123,00\s€, 3 réservations/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Octobre" })).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(screen.getByTestId("revenue-days")).getAllByRole("listitem"),
+    ).toHaveLength(31);
+    expect(
+      screen.getByText(/9 oct\. : 123,00\s€, 3 réservations/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Octobre" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("change de période et de mode de comptage", async () => {
@@ -100,26 +161,59 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     renderPage();
     await screen.findByTestId("revenue-total");
     await user.click(screen.getByRole("button", { name: "7 jours" }));
-    await waitFor(() => expect(api.getRevenue).toHaveBeenLastCalledWith("2026-10-03", "2026-10-09", "arrival"));
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-10-03",
+        "2026-10-09",
+        "arrival",
+      ),
+    );
     await user.click(screen.getByRole("button", { name: "Septembre" }));
-    await waitFor(() => expect(api.getRevenue).toHaveBeenLastCalledWith("2026-09-01", "2026-09-30", "arrival"));
-    await user.click(screen.getByRole("button", { name: "jour de réservation" }));
-    await waitFor(() => expect(api.getRevenue).toHaveBeenLastCalledWith("2026-09-01", "2026-09-30", "booked"));
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-09-01",
+        "2026-09-30",
+        "arrival",
+      ),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "jour de réservation" }),
+    );
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-09-01",
+        "2026-09-30",
+        "booked",
+      ),
+    );
     await user.click(screen.getByRole("button", { name: "Dates…" }));
     await user.clear(screen.getByLabelText("Du"));
     await user.type(screen.getByLabelText("Du"), "2026-08-15");
     await user.click(screen.getByRole("button", { name: "Afficher" }));
-    await waitFor(() => expect(api.getRevenue).toHaveBeenLastCalledWith("2026-08-15", "2026-10-09", "booked"));
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-08-15",
+        "2026-10-09",
+        "booked",
+      ),
+    );
   });
 
   it("fait compléter les réservations sans montant, une par une", async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.click(await screen.findByRole("button", { name: "Les compléter" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Les compléter" }),
+    );
     const missing = screen.getByTestId("revenue-missing");
     expect(within(missing).getByText("Léa Petit")).toBeInTheDocument();
-    await user.type(within(missing).getByLabelText("Montant de R7KQ2M en euros"), "45");
-    await user.click(within(missing).getAllByRole("button", { name: "Enregistrer" })[0]);
+    await user.type(
+      within(missing).getByLabelText("Montant de R7KQ2M en euros"),
+      "45",
+    );
+    await user.click(
+      within(missing).getAllByRole("button", { name: "Enregistrer" })[0],
+    );
     expect(api.setReservationPrice).toHaveBeenCalledWith("r1", 4500);
     await waitFor(() => expect(api.getRevenue).toHaveBeenCalledTimes(2));
   });
@@ -128,36 +222,101 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     const user = userEvent.setup();
     const createObjectURL = vi.fn(() => "blob:csv");
     Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    api.exportRevenue.mockResolvedValue({ blob: new Blob(["x"]), filename: "chiffre-affaires_2026-10-01_2026-10-31.csv" });
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    api.exportRevenue.mockResolvedValue({
+      blob: new Blob(["x"]),
+      filename: "chiffre-affaires_2026-10-01_2026-10-31.csv",
+    });
     renderPage();
-    await user.click(await screen.findByRole("button", { name: "Exporter en CSV" }));
-    expect(api.exportRevenue).toHaveBeenCalledWith("2026-10-01", "2026-10-31", "arrival");
+    await user.click(
+      await screen.findByRole("button", { name: "Exporter en CSV" }),
+    );
+    expect(api.exportRevenue).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-10-31",
+      "arrival",
+    );
     await waitFor(() => expect(click).toHaveBeenCalled());
     expect(createObjectURL).toHaveBeenCalled();
     click.mockRestore();
   });
 
   it("le dit quand rien n’a de montant sur la période", async () => {
-    api.getRevenue.mockResolvedValue(report({ totalCents: 0, count: 0, averageCents: null, averageDays: null, withoutAmount: 0, byChannel: [], missing: [] }));
+    api.getRevenue.mockResolvedValue(
+      report({
+        totalCents: 0,
+        count: 0,
+        averageCents: null,
+        averageDays: null,
+        withoutAmount: 0,
+        byChannel: [],
+        missing: [],
+      }),
+    );
     renderPage();
-    expect(await screen.findByText("Aucune réservation avec un montant sur cette période.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Les compléter" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Aucune réservation avec un montant sur cette période.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Les compléter" }),
+    ).not.toBeInTheDocument();
   });
 
   it("montre ce que le parking garde et change le taux d'un comparateur dans « Par canal » (19/10/2026)", async () => {
     api.getRevenue.mockResolvedValue(report());
-    api.setComparatorCommission.mockResolvedValue({ comparatorKey: "allopark", label: "Allopark", rateBp: 2000, fixedCents: 0, effectiveFrom: "2026-10-01" });
+    api.setComparatorCommission.mockResolvedValue({
+      comparatorKey: "allopark",
+      label: "Allopark",
+      rateBp: 2000,
+      fixedCents: 0,
+      effectiveFrom: "2026-10-01",
+    });
     renderPage();
-    expect(await screen.findByText("dont 295,20 € de commissions des comparateurs")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Net de commissions" }));
+    expect(
+      await screen.findByText("dont 295,20 € de commissions des comparateurs"),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Net de commissions" }),
+    );
     expect(screen.getByTestId("revenue-total")).toHaveTextContent("4 517,30 €");
     const input = screen.getByLabelText("Taux de commission de Allopark en %");
     expect(input).toHaveValue("18");
     await userEvent.clear(input);
     await userEvent.type(input, "20{Enter}");
     await waitFor(() =>
-      expect(api.setComparatorCommission).toHaveBeenCalledWith({ label: "Allopark", rateBp: 2000, fixedCents: 0, effectiveFrom: "2026-10-01" }),
+      expect(api.setComparatorCommission).toHaveBeenCalledWith({
+        label: "Allopark",
+        rateBp: 2000,
+        fixedCents: 0,
+        effectiveFrom: "2026-10-01",
+      }),
     );
+  });
+});
+
+describe("RevenuePage · chiffre d'affaires masqué (27/10/2026)", () => {
+  beforeEach(() => {
+    api.getRevenue.mockReset().mockResolvedValue(report());
+    localStorage.setItem("plazo:revenue-hidden", "1");
+  });
+  afterEach(() => localStorage.removeItem("plazo:revenue-hidden"));
+
+  it("shows no figure and asks nothing to the API, until « Afficher »", async () => {
+    renderPage();
+    expect(screen.getByTestId("revenue-hidden")).toHaveTextContent(
+      "Chiffre d'affaires masqué",
+    );
+    expect(screen.queryByText(/4 812,50/)).toBeNull();
+    expect(api.getRevenue).not.toHaveBeenCalled();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Afficher le chiffre d'affaires" }),
+    );
+    await waitFor(() => expect(api.getRevenue).toHaveBeenCalled());
+    expect(screen.queryByTestId("revenue-hidden")).toBeNull();
+    expect(localStorage.getItem("plazo:revenue-hidden")).toBeNull();
   });
 });
