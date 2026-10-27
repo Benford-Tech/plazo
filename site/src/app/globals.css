@@ -413,6 +413,27 @@
     }
   }
 
+  /* Plazo Pro's home page (27/10/2026, choice « A et B »): the drawn shuttle drives back and forth on its road, and
+     the « En direct » dot breathes; both still when motion is reduced. */
+  .pro-bus {
+    animation: pro-bus-drive 9s ease-in-out infinite alternate;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+  .pro-live-dot {
+    display: inline-block;
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: #16a34a;
+    animation: pro-live-pulse 1.6s ease-in-out infinite;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
   /* Ground of a missing photo: plain cream with a small caption (« Photos à venir »). Looks intended, not broken. */
   .photo-none {
     display: flex;
@@ -674,5 +695,20 @@
 @media (width < 48rem) {
   html:has(.dock) {
     scroll-padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes pro-bus-drive {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(96px, -46px);
+  }
+}
+
+@keyframes pro-live-pulse {
+  50% {
+    opacity: 0.35;
   }
 }

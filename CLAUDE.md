@@ -1385,6 +1385,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Logiciel · Application · Vendre sur Plazo · Contrat et état des lieux · Tarifs ; pied de page Solutions · Commencer · Plazo ; chaque
   page pose sa largeur (`main` pleine largeur). « Vous êtes un parking ? » (en-tête et pied de page voyageurs) mène à `/loueurs`
   (`PRO_HOME_PATH`), au plan du site aussi.
+  **Navette en direct et messages des clients (27/10/2026, « mets en avant la carte avec le suivi navette, la communication avec le
+  parking », choix « A et B » des maquettes https://claude.ai/artifact/QgoMEx8FgeqMt4mv6LpLvC)** : **A** la carte dessinée
+  (`components/loueurs/LiveShuttleMap.tsx`, SVG et non des tuiles : parking « P » au halo citron, route vers le Terminal 1, navette
+  « Karim · 3 pers. » qui roule, `.pro-bus` immobile en `prefers-reduced-motion`, « Terminal 1 · 7 min », pilule « En direct ») remplace
+  le téléphone de la bande d'accueil, avec deux messages de clients par-dessus (dessous sur téléphone) ; **B** bande sombre « Vos
+  clients ne vous appellent plus » juste après (`#navette-et-clients` : la carte, « Ce que reçoit votre équipe » avec quatre messages
+  `MessageCard`, quatre bénéfices sur fond blanc) ; le menu « Application » devient « Navette et clients ». Aucun mot technique (ni GPS,
+  ni SMS, ni suivi de vol : test `ProHome.test.tsx`).
   **pro.plazo.fr (27/10/2026, « Le site pro est sur pro.plazo.fr »)** : domaine ajouté au projet Vercel `plazo` ; sur cet hôte,
   `/` sert `/loueurs` et `/tarifs` sert `/loueurs/tarifs` (réécritures `has: host` de `next.config.ts`, `PRO_HOST`), `/pro` et `/api`
   restent les autres services. Les liens, l'adresse canonique et la redirection 308 de `/loueurs` vers pro.plazo.fr ne basculent
