@@ -141,7 +141,7 @@ export interface Parking {
   /** R-B (07/10/2026): who sees the position of the shuttles. */
   shuttleTracking: ShuttleTracking;
   /** 27/10/2026: where the valet meets the travellers at the airport (null: Terminal 1 · dépose-minute). */
-  valetMeetingPoint: string | null;
+  valetMeetingPoint?: string | null;
   /**
    * 09/10/2026: `totalCapacity` and `declaredCapacity` are the figure typed by the operator;
    * `effectiveCapacity` is the one used everywhere (the plan's files, else its active spots, else
