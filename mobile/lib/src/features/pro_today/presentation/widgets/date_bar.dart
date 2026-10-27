@@ -35,16 +35,23 @@ class PlanningDateBar extends StatelessWidget {
             tooltip: 'pro.prev_day'.tr(),
             onTap: () => onSelected(sel.subtract(const Duration(days: 1))),
           ),
-          InkWell(
-            key: const Key('date-pick'),
-            borderRadius: AppRadius.chip,
-            onTap: () => _pick(context, sel),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-              child: Text(
-                planningDay(sel),
-                key: const Key('planning-date'),
-                style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
+          // Takes what the pill and the arrows leave, scaled down rather than overflowing on a narrow phone.
+          Expanded(
+            child: InkWell(
+              key: const Key('date-pick'),
+              borderRadius: AppRadius.chip,
+              onTap: () => _pick(context, sel),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    planningDay(sel),
+                    key: const Key('planning-date'),
+                    style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
+                  ),
+                ),
               ),
             ),
           ),
@@ -54,7 +61,6 @@ class PlanningDateBar extends StatelessWidget {
             tooltip: 'pro.next_day'.tr(),
             onTap: () => onSelected(sel.add(const Duration(days: 1))),
           ),
-          const Spacer(),
           if (isToday)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
