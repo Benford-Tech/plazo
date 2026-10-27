@@ -1419,7 +1419,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   bar de gauche » : la carte du tableau de bord est retirée) : sous les sections, bloc `GettingStartedNav` « BIEN DÉMARRER ·
   N / 7 étapes » avec sa barre, une ligne par étape (coche verte ou cercle, titre, détail en info-bulle) qui mène à la page de
   réglage, repliable d'un clic (gardé dans le navigateur `plazo:getting-started-hidden`), absent quand tout est fait ; écran
-  large seulement (`lg`). Plazo Pro : carte `GettingStartedCard` sous le chiffre
+  large seulement (`lg`). **Pop-up de bienvenue (27/10/2026, « mets en avant le Bien démarrer : une pop-up à la première
+  connexion »)** : `GettingStartedWelcome` (même fichier) s'ouvre la première fois qu'un membre ouvre l'espace pro sur ce navigateur
+  tant que des étapes restent (« Bienvenue, Joanny ! », avancement, les trois prochaines étapes, « Commencer : <étape> » vers sa page,
+  « Plus tard », Échap ou clic hors de la boîte) ; vu une fois par membre et par navigateur (`plazo:getting-started-welcome`, ids séparés
+  par des virgules), jamais en démo ni en consultation. Plazo Pro : carte `GettingStartedCard` sous le chiffre
   d'affaires du tableau de bord (avancement et les deux prochaines étapes, `features/pro_start/`, `GettingStartedDataSource` par
   Dio sans freezed) et page `/pro/bien-demarrer` (`ProGettingStartedPage`, aussi Plus › « Bien démarrer ») : chaque étape cochée
   mène à l'écran de l'app qui la règle, ou dit « À régler sur l'espace pro web » (mails, fiche, contrat, SMS). **T-B** visite guidée

@@ -19,6 +19,8 @@ const auth = vi.hoisted(() => ({ role: "manager" as string }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
     user: {
+      id: "s1",
+      firstName: "Joanny",
       name: "Joanny Simpore",
       role: auth.role,
       operatorName: "Parking Test",
@@ -53,6 +55,7 @@ const renderLayout = () =>
         <Routes>
           <Route element={<AdminLayout />}>
             <Route index element={<p>accueil</p>} />
+            <Route path="parking/reglages" element={<p>réglages</p>} />
           </Route>
         </Routes>
       </MemoryRouter>
@@ -64,6 +67,7 @@ describe("AdminLayout rail sections", () => {
   beforeEach(() => {
     api.getGettingStarted.mockResolvedValue(STEPS);
     localStorage.removeItem("plazo:getting-started-hidden");
+    localStorage.setItem("plazo:getting-started-welcome", "s1");
   });
 
   it("groups the manager’s links under Exploitation, Gérant and Compte", () => {
@@ -139,5 +143,37 @@ describe("AdminLayout rail sections", () => {
     await screen.findByText("accueil");
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByTestId("getting-started")).toBeNull();
+  });
+
+  // « une pop-up à la première connexion » (27/10/2026).
+  it("welcomes a member once per browser with the next steps, « Commencer » opens the first one", async () => {
+    auth.role = "manager";
+    localStorage.removeItem("plazo:getting-started-welcome");
+    renderLayout();
+    const dialog = await screen.findByTestId("getting-started-welcome");
+    expect(within(dialog).getByText("Bienvenue, Joanny !")).toBeInTheDocument();
+    expect(within(dialog).getByText("Vos réservations")).toBeInTheDocument();
+    expect(within(dialog).getByText("Vos navettes")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Vos tarifs et votre fiche Plazo"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText("Votre contrat de stationnement"),
+    ).toBeNull();
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Commencer : Vos réservations",
+      }),
+    );
+    expect(screen.queryByTestId("getting-started-welcome")).toBeNull();
+    expect(screen.getByText("réglages")).toBeInTheDocument();
+    expect(localStorage.getItem("plazo:getting-started-welcome")).toBe("s1");
+  });
+
+  it("does not welcome again once seen, nor in a demo", async () => {
+    auth.role = "manager";
+    renderLayout();
+    await screen.findByTestId("getting-started");
+    expect(screen.queryByTestId("getting-started-welcome")).toBeNull();
   });
 });
