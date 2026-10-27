@@ -318,8 +318,9 @@ describe('réglages des services', () => {
     expect(put.body.leadHours).toBe(12);
     page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
     expect(page.body.parking.extras.offers).toEqual([
-      { kind: 'ev_charge', label: 'Recharge électrique', description: expect.any(String), priceCents: 3500 },
+      expect.objectContaining({ kind: 'ev_charge', label: 'Recharge électrique', icon: 'ev', group: 'charge', leadHours: 12, priceCents: 3500 }),
     ]);
+    expect(page.body.parking.extras.leadHours).toBe(12);
 
     const bad = await api()
       .put(`/api/internal/parkings/${op.parking.id}/extras`)
@@ -333,6 +334,140 @@ describe('réglages des services', () => {
   });
 });
 
+describe('services du parking (B + C du 27/10/2026)', () => {
+  const service = (over: Record<string, unknown> = {}) => ({
+    label: 'Lavage intérieur et shampouineuse',
+    description: 'Aspiration, plastiques et shampouineuse des sièges',
+    icon: 'interior',
+    group: null,
+    leadHours: 24,
+    enabled: true,
+    priceCents: 5000,
+    ...over,
+  });
+  const put = (token: string, parkingId: string, services: unknown[]) =>
+    api().put(`/api/internal/parkings/${parkingId}/extras`).set(auth(token)).send({ services });
+
+  it('catalogue, service personnalisé, ordre, délai et groupe par service', async () => {
+    const op = await publishedParking();
+    currentParkingId = op.parking.id;
+    const empty = await api().get(`/api/internal/parkings/${op.parking.id}/extras`).set(auth(op.token));
+    expect(empty.body.services).toEqual([]);
+    expect(empty.body.maxServices).toBe(10);
+    expect(empty.body.catalogue.map((c: any) => c.kind)).toEqual([
+      'interior_wash',
+      'exterior_wash',
+      'hybrid_charge',
+      'ev_charge',
+      'fuel',
+      'tyres',
+      'luggage',
+    ]);
+
+    const saved = await put(op.token, op.parking.id, [
+      service({ kind: 'ev_charge', label: 'Recharge électrique', icon: 'ev', group: 'charge', leadHours: 12, priceCents: 3000 }),
+      service({
+        label: '  Lustrage   des jantes ',
+        description: 'Jantes nettoyées et lustrées',
+        icon: 'star',
+        group: 'wash',
+        leadHours: 36,
+        priceCents: 2500,
+      }),
+      service({ kind: 'exterior_wash', label: 'Lavage complet', icon: 'exterior', group: 'wash', leadHours: 36, priceCents: 7500 }),
+    ]);
+    expect(saved.status).toBe(200);
+    expect(saved.body.services.map((s: any) => [s.kind.startsWith('custom_') ? 'custom' : s.kind, s.label, s.group, s.leadHours, s.custom])).toEqual([
+      ['ev_charge', 'Recharge électrique', 'charge', 12, false],
+      ['custom', 'Lustrage des jantes', 'wash', 36, true],
+      ['exterior_wash', 'Lavage complet', 'wash', 36, false],
+    ]);
+    expect(saved.body.catalogue.find((c: any) => c.kind === 'exterior_wash').added).toBe(true);
+    // The old switches of Plazo Pro read the same rows.
+    expect(saved.body.offers.map((o: any) => [o.kind, o.enabled])).toEqual([
+      ['interior_wash', false],
+      ['hybrid_charge', false],
+      ['ev_charge', true],
+    ]);
+
+    // Drag: the order is the list's.
+    const custom = saved.body.services[1];
+    const reordered = await put(op.token, op.parking.id, [{ ...saved.body.services[2] }, { ...custom }, { ...saved.body.services[0] }]);
+    expect(reordered.body.services.map((s: any) => s.label)).toEqual(['Lavage complet', 'Lustrage des jantes', 'Recharge électrique']);
+    expect(reordered.body.services[1].kind).toBe(custom.kind);
+
+    // The traveller: one per group, each service its own deadline.
+    const held = await book({ extras: [custom.kind, 'exterior_wash'] });
+    expect(held.body.fields).toEqual({ extras: 'one_of_group' });
+    const ok = await book({ extras: [custom.kind, 'ev_charge'] });
+    expect(ok.status).toBe(201);
+    const view = await extrasOf(ok.body.reference, ok.body.manageToken);
+    expect(view.body.offers.map((o: any) => [o.label, o.icon, o.leadHours])).toEqual([
+      ['Lavage complet', 'exterior', 36],
+      ['Lustrage des jantes', 'star', 36],
+      ['Recharge électrique', 'ev', 12],
+    ]);
+    const returnAt = new Date(view.body.offers[0].orderUntil).getTime() + 36 * 3600000;
+    expect(new Date(view.body.offers[2].orderUntil).getTime()).toBe(returnAt - 12 * 3600000);
+    expect(new Date(view.body.orderUntil).getTime()).toBe(returnAt - 12 * 3600000);
+  });
+
+  it('retirer un service : ses commandes restent, il n’est plus proposé, et revient du catalogue', async () => {
+    const op = await parkingWithExtras();
+    const held = await book({ extras: ['interior_wash'] });
+    const sheet = await api().post(`/api/public/bookings/${held.body.reference}/payment-intent`).set(bookingToken(held.body.manageToken));
+    const event = signedEvent('payment_intent.succeeded', payIntent(sheet.body.paymentIntentId));
+    await sendWebhook(event.payload, event.signature);
+
+    const before = await api().get(`/api/internal/parkings/${currentParkingId}/extras`).set(auth(op.token));
+    expect(before.body.services.find((s: any) => s.kind === 'interior_wash').toDo).toBe(1);
+    const kept = before.body.services.filter((s: any) => s.kind !== 'interior_wash');
+    const after = await put(op.token, currentParkingId, kept);
+    expect(after.status).toBe(200);
+    expect(after.body.services.map((s: any) => s.kind)).toEqual(['hybrid_charge', 'ev_charge']);
+    const row = await prisma.parkingExtra.findFirstOrThrow({ where: { parkingId: currentParkingId, kind: 'interior_wash' } });
+    expect(row).toMatchObject({ enabled: false, archivedAt: expect.any(Date) });
+
+    // The order stays to do, under its frozen label, and the service is no longer offered.
+    const view = await extrasOf(held.body.reference, held.body.manageToken);
+    expect(view.body.orders).toEqual([
+      expect.objectContaining({ kind: 'interior_wash', status: 'ordered', label: 'Lavage intérieur et shampouineuse', icon: 'interior' }),
+    ]);
+    expect(view.body.offers.map((o: any) => o.kind)).toEqual(['hybrid_charge', 'ev_charge']);
+    const again = await book({ extras: ['interior_wash'], plate: 'HB-219-QR' });
+    expect([again.status, again.body]).toEqual([400, expect.objectContaining({ fields: { extras: 'not_offered' } })]);
+
+    // Back from the catalogue: the same row.
+    const back = await put(op.token, currentParkingId, [...kept, service({ kind: 'interior_wash', priceCents: 5500 })]);
+    expect(back.body.services.map((s: any) => [s.kind, s.priceCents])).toEqual([
+      ['hybrid_charge', 1500],
+      ['ev_charge', 3000],
+      ['interior_wash', 5500],
+    ]);
+    expect(back.body.services[2].id).toBe(row.id);
+  });
+
+  it('refuse plus de 10 services et les champs invalides', async () => {
+    const op = await publishedParking();
+    const eleven = Array.from({ length: 11 }, (_, i) => service({ label: `Service ${i + 1}`, icon: 'star' }));
+    expect((await put(op.token, op.parking.id, eleven)).body.fields).toEqual({ services: 'too_many' });
+    const bad = await put(op.token, op.parking.id, [
+      service({ label: ' ', icon: 'rocket', group: 'other', leadHours: 200, priceCents: 50 }),
+      service({ kind: 'unknown', description: 'x'.repeat(141) }),
+    ]);
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toEqual({
+      'services.0.label': 'required',
+      'services.0.icon': 'invalid',
+      'services.0.group': 'invalid',
+      'services.0.leadHours': 'invalid',
+      'services.0.priceCents': 'range',
+      'services.1.kind': 'invalid',
+      'services.1.description': 'too_long',
+    });
+  });
+});
+
 describe('services commandés avec la réservation', () => {
   it('un seul paiement : le séjour et les services, comptés à part', async () => {
     await parkingWithExtras();
@@ -341,7 +476,7 @@ describe('services commandés avec la réservation', () => {
     const saved = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.body.reference } });
     // The stay's commission and share stay those of the stay; the services carry theirs.
     expect(saved).toMatchObject({ priceCents: 3499, chargedCents: 3499, extrasChargedCents: 8000, commissionCents: 420, operatorShareCents: 3079 });
-    const extras = await prisma.reservationExtra.findMany({ where: { reservationId: saved.id }, orderBy: { kind: 'asc' } });
+    const extras = await prisma.reservationExtra.findMany({ where: { reservationId: saved.id }, orderBy: { priceCents: 'desc' } });
     expect(extras.map(e => [e.kind, e.status, e.withBooking, e.priceCents, e.commissionCents])).toEqual([
       ['interior_wash', 'pending_payment', true, 5000, 600],
       ['ev_charge', 'pending_payment', true, 3000, 360],
@@ -379,7 +514,8 @@ describe('services commandés avec la réservation', () => {
         ],
       });
     expect((await book({ extras: ['hybrid_charge', 'ev_charge'] })).body.fields).toEqual({ extras: 'one_charge' });
-    expect((await book({ extras: ['interior_wash'] })).body.fields).toEqual({ extras: 'not_offered' });
+    const again = await book({ extras: ['interior_wash'], plate: 'HB-219-QR' });
+    expect([again.status, again.body]).toEqual([400, expect.objectContaining({ fields: { extras: 'not_offered' } })]);
     expect((await book({ extras: ['polish'] })).status).toBe(400);
     expect(await prisma.reservation.count()).toBe(0);
   });

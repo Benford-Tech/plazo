@@ -16,8 +16,10 @@ export const PRO_SIGNUP_PATH = "/pro/inscription";
 /** « Se connecter à l'espace loueur » (footer A, 15/10/2026): the pro space's login page (admin route /login under /pro). */
 export const PRO_LOGIN_PATH = "/pro/login";
 
-/** Plazo Pro's pricing page for the operators (27/10/2026), on the site; « Vous êtes un parking ? » leads to it. */
+/** Plazo Pro's pages for the operators (27/10/2026), on the site: the home page and the pricing page. */
 export const OPERATORS_PREFIX = "/loueurs";
+/** The home page of Plazo Pro (27/10/2026, on the model of Solution Park's): « Vous êtes un parking ? » leads to it. */
+export const PRO_HOME_PATH = OPERATORS_PREFIX;
 export const PRO_PRICING_PATH = `${OPERATORS_PREFIX}/tarifs`;
 
 /** « Essayer la démo »: the pro space's demo for prospects (21/10/2026), no account needed. */

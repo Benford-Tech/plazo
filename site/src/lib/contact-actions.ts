@@ -103,6 +103,22 @@ export async function quoteAction(_previous: FormState, formData: FormData): Pro
   }
   if (Object.keys(fields).length) return { values, fields: fieldCodes(fields), error: "validation_failed" };
 
+  // The home page's « Demander une démo »: the details only, no selection.
+  if (text(formData, "request") === "demo") {
+    const message = ["Demande de démo Plazo Pro", `Parking : ${values.parking}`, `Aéroport : ${values.airport || "non précisé"}`, `Téléphone : ${values.phone || "non précisé"}`].join("\n");
+    try {
+      await api.contact({
+        name: `${values.firstName} ${values.lastName}`.slice(0, CONTACT_LIMITS.name),
+        email: values.email,
+        message: message.slice(0, CONTACT_LIMITS.message),
+        website: text(formData, "website"),
+      });
+    } catch (error) {
+      return failure(values, error);
+    }
+    return { values: {}, fields: {}, error: null, notice: "quote_sent" };
+  }
+
   const options = formData.getAll("options").filter((o): o is OptionId => typeof o === "string" && PRO_OPTIONS.some(p => p.id === o));
   const planValue = text(formData, "plan");
   const selection = {

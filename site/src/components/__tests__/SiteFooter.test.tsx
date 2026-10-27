@@ -62,7 +62,7 @@ describe("SiteFooter (A, 15/10/2026)", () => {
     expect(within(chips).getAllByRole("listitem").map(li => li.textContent)).toEqual(["CB", "Visa", "Mastercard", "Apple Pay", "Google Pay"]);
     expect(footer).toHaveTextContent("Payé en ligne à la réservation, par Stripe. Rien à régler au parking.");
     expect(within(footer).getByRole("link", { name: "Se connecter à l’espace loueur" })).toHaveAttribute("href", "/pro/login");
-    expect(within(footer).getByRole("link", { name: "Vous êtes un parking ?" })).toHaveAttribute("href", "/loueurs/tarifs");
+    expect(within(footer).getByRole("link", { name: "Vous êtes un parking ?" })).toHaveAttribute("href", "/loueurs");
     expect(footer).toHaveTextContent("© 2026 Benford Tech · Tous droits réservés");
     expect(footer).toHaveTextContent("Société par actions simplifiée · 910 729 102 RCS Vienne · TVA FR55910729102");
     expect(within(footer).queryByText("Suivez-nous")).not.toBeInTheDocument();

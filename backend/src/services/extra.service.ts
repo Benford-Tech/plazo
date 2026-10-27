@@ -1,18 +1,30 @@
+import { randomBytes } from 'crypto';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import { Container, Service } from 'typedi';
-import prisma, { ExtraKind, Operator, Prisma, Reservation, ReservationExtra } from '@/database';
+import prisma, { Operator, ParkingExtra, Prisma, Reservation, ReservationExtra } from '@/database';
 import {
   ACTIVE_EXTRA_STATUSES,
+  CATALOGUE_KEYS,
   CLOSED_BOOKING_STATUSES,
-  EXTRA_KINDS,
+  EXTRA_CATALOGUE,
+  EXTRA_GROUPS,
+  EXTRA_ICONS,
+  ExtraOffer,
+  LEGACY_KINDS,
+  MAX_DESCRIPTION_LENGTH,
   MAX_EXTRA_PRICE_CENTS,
+  MAX_LABEL_LENGTH,
   MAX_LEAD_HOURS,
+  MAX_SERVICES,
   MIN_EXTRA_PRICE_CENTS,
+  activeServices,
   checkBookingExtras,
+  customKey,
   enabledOffersFrom,
-  offerList,
   extraDonePush,
+  iconOf,
+  legacyOfferList,
   extraOrderedPush,
   extraRefundedPush,
   orderDeadline,
@@ -39,13 +51,11 @@ const STRIPE_TX = { timeout: 30000, maxWait: 10000 };
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Service not found', 'not_found');
 const unavailable = () => new HttpException(httpStatus.CONFLICT, 'Online payment is not available', 'online_booking_unavailable');
 
-/** A service as the parking offers it (settings) or as the traveller can order it. */
-export type ExtraOffer = { kind: ExtraKind; label: string; description: string; priceCents: number };
-
 export type ExtraOrderView = {
   id: string;
-  kind: ExtraKind;
+  kind: string;
   label: string;
+  icon: string;
   priceCents: number;
   status: ReservationExtra['status'];
   withBooking: boolean;
@@ -68,11 +78,12 @@ function stripeErrorName(error: unknown): string {
 const chargeOf = (intent: Stripe.PaymentIntent) =>
   typeof intent.latest_charge === 'string' ? intent.latest_charge : (intent.latest_charge?.id ?? null);
 
-function orderView(e: ReservationExtra): ExtraOrderView {
+function orderView(e: ReservationExtra, rows: readonly Pick<ParkingExtra, 'kind' | 'icon'>[]): ExtraOrderView {
   return {
     id: e.id,
     kind: e.kind,
     label: e.label,
+    icon: iconOf(e.kind, rows),
     priceCents: e.priceCents,
     status: e.status,
     withBooking: e.withBooking,
@@ -107,14 +118,14 @@ export class ExtraService {
 
   // ---- The parking's offer ----------------------------------------------------------------------------------------
 
-  /** Every service with the parking's price (the default when never set) and whether it is offered. */
-  public async offersOf(parkingId: string, client: Client = prisma) {
-    return offerList(await client.parkingExtra.findMany({ where: { parkingId } }));
+  /** Every service row of the parking, removed ones included (the orders read their icon and group). */
+  public async serviceRows(parkingId: string, client: Client = prisma) {
+    return client.parkingExtra.findMany({ where: { parkingId } });
   }
 
-  /** What a traveller can order on this parking (offered services only). */
+  /** What a traveller can order on this parking (offered services only, in the parking's order). */
   public async enabledOffers(parkingId: string, client: Client = prisma): Promise<ExtraOffer[]> {
-    return enabledOffersFrom(await client.parkingExtra.findMany({ where: { parkingId } }));
+    return enabledOffersFrom(await this.serviceRows(parkingId, client));
   }
 
   private async ownParking(actor: AuthenticatedStaff, parkingId: string) {
@@ -123,51 +134,136 @@ export class ExtraService {
     return parking;
   }
 
-  /** GET /internal/parkings/:id/extras */
+  /**
+   * GET /internal/parkings/:id/extras: the parking's services in its order (with the orders still to do of each, for
+   * « N commandes en cours » before removing one), the catalogue, and `leadHours` / `offers` for Plazo Pro before
+   * 27/10/2026.
+   */
   public async settings(actor: AuthenticatedStaff, parkingId: string) {
     const parking = await this.ownParking(actor, parkingId);
-    return { leadHours: parking.extrasLeadHours, offers: await this.offersOf(parking.id) };
+    const rows = await this.serviceRows(parking.id);
+    const active = activeServices(rows);
+    const toDo = await prisma.reservationExtra.groupBy({
+      by: ['kind'],
+      where: { status: 'ordered', reservation: { parkingId: parking.id } },
+      _count: { _all: true },
+    });
+    return {
+      leadHours: parking.extrasLeadHours,
+      maxServices: MAX_SERVICES,
+      services: active.map(r => ({
+        id: r.id,
+        kind: r.kind,
+        label: r.label,
+        description: r.description,
+        icon: r.icon,
+        group: r.groupKey,
+        leadHours: r.leadHours,
+        enabled: r.enabled,
+        priceCents: r.priceCents,
+        custom: r.custom,
+        defaultPriceCents: EXTRA_CATALOGUE[r.kind]?.priceCents ?? null,
+        toDo: toDo.find(t => t.kind === r.kind)?._count._all ?? 0,
+      })),
+      catalogue: CATALOGUE_KEYS.map(kind => ({ kind, ...EXTRA_CATALOGUE[kind], added: active.some(r => r.kind === kind) })),
+      offers: legacyOfferList(rows),
+    };
   }
 
-  /** PUT /internal/parkings/:id/extras { leadHours?, offers?: [{ kind, enabled, priceCents }] } */
-  public async updateSettings(actor: AuthenticatedStaff, parkingId: string, body: { leadHours?: unknown; offers?: unknown }) {
+  /**
+   * PUT /internal/parkings/:id/extras { services: [{ kind?, label, description, icon, group, leadHours, enabled,
+   * priceCents }] }: the parking's whole list, in its order. A catalogue key adds that service (or brings it back), no
+   * key adds a custom one, and a service left out is removed (archived: its orders keep their label and price, and stay
+   * to do). Plazo Pro before 27/10/2026 sends `{ leadHours?, offers?: [{ kind, enabled, priceCents }] }` instead.
+   */
+  public async updateSettings(actor: AuthenticatedStaff, parkingId: string, body: { services?: unknown; leadHours?: unknown; offers?: unknown }) {
     const parking = await this.ownParking(actor, parkingId);
+    if (body.services === undefined) return this.updateLegacySettings(actor, parking, body);
+    if (!Array.isArray(body.services)) throw new ValidationException({ services: 'invalid' });
+    const rows = await this.serviceRows(parking.id);
     const fields: Record<string, string> = {};
-    let leadHours: number | undefined;
-    if (body.leadHours !== undefined) {
-      if (typeof body.leadHours !== 'number' || !Number.isInteger(body.leadHours) || body.leadHours < 0 || body.leadHours > MAX_LEAD_HOURS) {
-        fields.leadHours = 'invalid';
-      } else leadHours = body.leadHours;
-    }
-    const offers: { kind: ExtraKind; enabled: boolean; priceCents: number }[] = [];
-    if (body.offers !== undefined) {
-      if (!Array.isArray(body.offers)) fields.offers = 'invalid';
-      else {
-        for (const raw of body.offers as unknown[]) {
-          const o = (raw ?? {}) as { kind?: unknown; enabled?: unknown; priceCents?: unknown };
-          if (typeof o.kind !== 'string' || !EXTRA_KINDS.includes(o.kind as ExtraKind) || offers.some(x => x.kind === o.kind)) {
-            fields.offers = 'invalid';
-            continue;
-          }
-          const kind = o.kind as ExtraKind;
-          if (typeof o.enabled !== 'boolean') fields[`offers.${kind}.enabled`] = 'invalid';
-          if (typeof o.priceCents !== 'number' || !Number.isInteger(o.priceCents)) fields[`offers.${kind}.priceCents`] = 'invalid';
-          else if (o.priceCents < MIN_EXTRA_PRICE_CENTS || o.priceCents > MAX_EXTRA_PRICE_CENTS) fields[`offers.${kind}.priceCents`] = 'range';
-          offers.push({ kind, enabled: o.enabled === true, priceCents: o.priceCents as number });
-        }
+    if (body.services.length > MAX_SERVICES) fields.services = 'too_many';
+    type Item = {
+      kind: string | null;
+      label: string;
+      description: string;
+      icon: string;
+      group: string | null;
+      leadHours: number;
+      enabled: boolean;
+      priceCents: number;
+    };
+    const items: Item[] = [];
+    (body.services as unknown[]).forEach((raw, i) => {
+      const o = (raw ?? {}) as Record<string, unknown>;
+      const at = (field: string) => `services.${i}.${field}`;
+      let kind: string | null = null;
+      if (o.kind !== undefined && o.kind !== null) {
+        if (
+          typeof o.kind !== 'string' ||
+          !(rows.some(r => r.kind === o.kind) || CATALOGUE_KEYS.includes(o.kind)) ||
+          items.some(x => x.kind === o.kind)
+        ) {
+          fields[at('kind')] = 'invalid';
+        } else kind = o.kind;
       }
-    }
+      const label = typeof o.label === 'string' ? o.label.trim().replace(/\s+/g, ' ') : '';
+      if (!label) fields[at('label')] = 'required';
+      else if (label.length > MAX_LABEL_LENGTH) fields[at('label')] = 'too_long';
+      const description = typeof o.description === 'string' ? o.description.trim().replace(/\s+/g, ' ') : '';
+      if (o.description !== undefined && o.description !== null && typeof o.description !== 'string') fields[at('description')] = 'invalid';
+      else if (description.length > MAX_DESCRIPTION_LENGTH) fields[at('description')] = 'too_long';
+      if (typeof o.icon !== 'string' || !(EXTRA_ICONS as readonly string[]).includes(o.icon)) fields[at('icon')] = 'invalid';
+      const group = o.group === undefined || o.group === null || o.group === '' ? null : o.group;
+      if (group !== null && (typeof group !== 'string' || !(EXTRA_GROUPS as readonly string[]).includes(group))) fields[at('group')] = 'invalid';
+      if (typeof o.leadHours !== 'number' || !Number.isInteger(o.leadHours) || o.leadHours < 0 || o.leadHours > MAX_LEAD_HOURS) {
+        fields[at('leadHours')] = 'invalid';
+      }
+      if (typeof o.enabled !== 'boolean') fields[at('enabled')] = 'invalid';
+      if (typeof o.priceCents !== 'number' || !Number.isInteger(o.priceCents)) fields[at('priceCents')] = 'invalid';
+      else if (o.priceCents < MIN_EXTRA_PRICE_CENTS || o.priceCents > MAX_EXTRA_PRICE_CENTS) fields[at('priceCents')] = 'range';
+      items.push({
+        kind,
+        label,
+        description,
+        icon: o.icon as string,
+        group: group as string | null,
+        leadHours: o.leadHours as number,
+        enabled: o.enabled === true,
+        priceCents: o.priceCents as number,
+      });
+    });
     if (Object.keys(fields).length) throw new ValidationException(fields);
 
-    const before = await this.settings(actor, parking.id);
+    const now = new Date();
+    const before = activeServices(rows);
     await prisma.$transaction(async tx => {
-      if (leadHours !== undefined) await tx.parking.update({ where: { id: parking.id }, data: { extrasLeadHours: leadHours } });
-      for (const o of offers) {
-        await tx.parkingExtra.upsert({
-          where: { parkingId_kind: { parkingId: parking.id, kind: o.kind } },
-          create: { parkingId: parking.id, kind: o.kind, enabled: o.enabled, priceCents: o.priceCents },
-          update: { enabled: o.enabled, priceCents: o.priceCents },
-        });
+      const kept: string[] = [];
+      for (const [position, item] of items.entries()) {
+        const data = {
+          label: item.label,
+          description: item.description,
+          icon: item.icon,
+          groupKey: item.group,
+          leadHours: item.leadHours,
+          enabled: item.enabled,
+          priceCents: item.priceCents,
+          position,
+          archivedAt: null,
+        };
+        const existing = item.kind ? rows.find(r => r.kind === item.kind) : undefined;
+        if (existing) {
+          await tx.parkingExtra.update({ where: { id: existing.id }, data });
+          kept.push(existing.kind);
+        } else {
+          const kind = item.kind ?? customKey(() => randomBytes(6).toString('hex'));
+          await tx.parkingExtra.create({ data: { ...data, parkingId: parking.id, kind, custom: !item.kind } });
+          kept.push(kind);
+        }
+      }
+      const removed = before.filter(r => !kept.includes(r.kind));
+      if (removed.length) {
+        await tx.parkingExtra.updateMany({ where: { id: { in: removed.map(r => r.id) } }, data: { archivedAt: now, enabled: false } });
       }
       await this.audit.record(
         actor,
@@ -176,7 +272,104 @@ export class ExtraService {
           entityType: 'parking',
           entityId: parking.id,
           details: {
-            ...(leadHours !== undefined && leadHours !== before.leadHours ? { leadHours: { from: before.leadHours, to: leadHours } } : {}),
+            services: items.map((item, i) => ({
+              kind: kept[i],
+              enabled: item.enabled,
+              priceCents: item.priceCents,
+              leadHours: item.leadHours,
+              group: item.group,
+            })),
+            added: kept.filter(k => !before.some(r => r.kind === k)),
+            removed: removed.map(r => r.kind),
+          },
+        },
+        tx,
+      );
+    });
+    return this.settings(actor, parking.id);
+  }
+
+  /** The settings of Plazo Pro before 27/10/2026: the three services of 21/10/2026 and one lead time for all. */
+  private async updateLegacySettings(
+    actor: AuthenticatedStaff,
+    parking: { id: string; extrasLeadHours: number },
+    body: { leadHours?: unknown; offers?: unknown },
+  ) {
+    const fields: Record<string, string> = {};
+    let leadHours: number | undefined;
+    if (body.leadHours !== undefined) {
+      if (typeof body.leadHours !== 'number' || !Number.isInteger(body.leadHours) || body.leadHours < 0 || body.leadHours > MAX_LEAD_HOURS) {
+        fields.leadHours = 'invalid';
+      } else leadHours = body.leadHours;
+    }
+    const offers: { kind: string; enabled: boolean; priceCents: number }[] = [];
+    if (body.offers !== undefined) {
+      if (!Array.isArray(body.offers)) fields.offers = 'invalid';
+      else {
+        for (const raw of body.offers as unknown[]) {
+          const o = (raw ?? {}) as { kind?: unknown; enabled?: unknown; priceCents?: unknown };
+          if (typeof o.kind !== 'string' || !(LEGACY_KINDS as readonly string[]).includes(o.kind) || offers.some(x => x.kind === o.kind)) {
+            fields.offers = 'invalid';
+            continue;
+          }
+          const kind = o.kind;
+          if (typeof o.enabled !== 'boolean') fields[`offers.${kind}.enabled`] = 'invalid';
+          if (typeof o.priceCents !== 'number' || !Number.isInteger(o.priceCents)) fields[`offers.${kind}.priceCents`] = 'invalid';
+          else if (o.priceCents < MIN_EXTRA_PRICE_CENTS || o.priceCents > MAX_EXTRA_PRICE_CENTS) fields[`offers.${kind}.priceCents`] = 'range';
+          offers.push({ kind, enabled: o.enabled === true, priceCents: o.priceCents as number });
+        }
+      }
+    }
+    const rows = await this.serviceRows(parking.id);
+    const active = activeServices(rows);
+    const added = offers.filter(o => o.enabled && !active.some(r => r.kind === o.kind)).length;
+    if (active.length + added > MAX_SERVICES) fields.offers = 'too_many';
+    if (Object.keys(fields).length) throw new ValidationException(fields);
+
+    await prisma.$transaction(async tx => {
+      if (leadHours !== undefined && leadHours !== parking.extrasLeadHours) {
+        await tx.parking.update({ where: { id: parking.id }, data: { extrasLeadHours: leadHours } });
+        await tx.parkingExtra.updateMany({ where: { parkingId: parking.id, archivedAt: null }, data: { leadHours } });
+      }
+      let next = active.reduce((max, r) => Math.max(max, r.position + 1), 0);
+      for (const o of offers) {
+        const row = rows.find(r => r.kind === o.kind);
+        const d = EXTRA_CATALOGUE[o.kind];
+        if (!row) {
+          if (!o.enabled) continue;
+          await tx.parkingExtra.create({
+            data: {
+              parkingId: parking.id,
+              kind: o.kind,
+              label: d.label,
+              description: d.description,
+              icon: d.icon,
+              groupKey: d.group,
+              leadHours: leadHours ?? parking.extrasLeadHours,
+              position: next++,
+              enabled: true,
+              priceCents: o.priceCents,
+            },
+          });
+        } else if (row.archivedAt && o.enabled) {
+          await tx.parkingExtra.update({
+            where: { id: row.id },
+            data: { enabled: true, priceCents: o.priceCents, archivedAt: null, position: next++ },
+          });
+        } else if (!row.archivedAt) {
+          await tx.parkingExtra.update({ where: { id: row.id }, data: { enabled: o.enabled, priceCents: o.priceCents } });
+        }
+      }
+      await this.audit.record(
+        actor,
+        {
+          action: 'extras.settings_updated',
+          entityType: 'parking',
+          entityId: parking.id,
+          details: {
+            ...(leadHours !== undefined && leadHours !== parking.extrasLeadHours
+              ? { leadHours: { from: parking.extrasLeadHours, to: leadHours } }
+              : {}),
             offers: offers.map(o => ({ kind: o.kind, enabled: o.enabled, priceCents: o.priceCents })),
           },
         },
@@ -199,12 +392,9 @@ export class ExtraService {
     operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'>,
   ) {
     const offers = await this.enabledOffers(parkingId, tx);
-    let kinds: ExtraKind[];
+    let kinds: string[];
     try {
-      kinds = checkBookingExtras(
-        raw,
-        offers.map(o => o.kind),
-      );
+      kinds = checkBookingExtras(raw, offers);
     } catch (error) {
       throw new ValidationException({ extras: error instanceof Error ? error.message : 'invalid' });
     }
@@ -263,33 +453,35 @@ export class ExtraService {
   }
 
   private refusalOf(
-    r: Reservation & { parking: { extrasLeadHours: number }; extras: ReservationExtra[] },
-    kind: ExtraKind,
-    offered: boolean,
+    r: Reservation & { extras: ReservationExtra[] },
+    offer: ExtraOffer | null,
+    rows: readonly ParkingExtra[],
     now: Date,
   ): OrderRefusal | null {
     // A payment sheet left half-way does not block (a new order closes it).
     const active = r.extras
       .filter(e => ACTIVE_EXTRA_STATUSES.includes(e.status) && !(e.status === 'pending_payment' && !e.withBooking))
-      .map(e => e.kind);
+      .map(e => ({ kind: e.kind, group: rows.find(row => row.kind === e.kind)?.groupKey ?? null }));
     if (r.paymentStatus !== 'paid') return 'not_online';
-    return orderRefusal(r, kind, { offered, leadHours: r.parking.extrasLeadHours, active, now });
+    return orderRefusal(r, offer, { active, now });
   }
 
   private async travellerViewOf(r: Reservation & { parking: { id: string; extrasLeadHours: number }; extras: ReservationExtra[] }, now = new Date()) {
-    const offers = await this.enabledOffers(r.parking.id);
-    const offerList = offers.map(o => {
-      const refusal = this.refusalOf(r, o.kind, true, now);
-      return { ...o, available: refusal === null, reason: refusal };
+    const rows = await this.serviceRows(r.parking.id);
+    const offerList = enabledOffersFrom(rows).map(o => {
+      const refusal = this.refusalOf(r, o, rows, now);
+      return { ...o, orderUntil: orderDeadline(r.returnAt, o.leadHours).toISOString(), available: refusal === null, reason: refusal };
     });
     const closed = r.paymentStatus !== 'paid' || offerList.every(o => o.reason === 'closed' || o.reason === 'too_late' || o.reason === 'not_online');
+    // One date for the apps before 27/10/2026: the latest service's (each service has its own since).
+    const latestLead = offerList.length ? Math.min(...offerList.map(o => o.leadHours)) : r.parking.extrasLeadHours;
     return {
       offers: offerList,
       orders: r.extras
         .filter(e => SHOWN.status.in.includes(e.status))
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        .map(orderView),
-      orderUntil: orderDeadline(r.returnAt, r.parking.extrasLeadHours).toISOString(),
+        .map(e => orderView(e, rows)),
+      orderUntil: orderDeadline(r.returnAt, latestLead).toISOString(),
       canOrder: !closed && offerList.some(o => o.available),
     };
   }
@@ -313,8 +505,8 @@ export class ExtraService {
     token: string | undefined,
     rawKind: unknown,
   ): Promise<{ extra: ExtraOrderView; payment: ExtraPayment | { paid: true } }> {
-    if (typeof rawKind !== 'string' || !EXTRA_KINDS.includes(rawKind as ExtraKind)) throw new ValidationException({ kind: 'invalid' });
-    const kind = rawKind as ExtraKind;
+    if (typeof rawKind !== 'string' || rawKind.length === 0 || rawKind.length > 40) throw new ValidationException({ kind: 'invalid' });
+    const kind = rawKind;
     if (!this.payments.enabled()) throw unavailable();
     const booking = await this.bookings.load(reference, token);
     const confirmLater: Stripe.PaymentIntent[] = [];
@@ -322,6 +514,7 @@ export class ExtraService {
       await this.lockReservation(tx, booking.id);
       const r = await tx.reservation.findUniqueOrThrow({ where: { id: booking.id }, include: { parking: true, operator: true, extras: true } });
       const api = this.stripe.api();
+      const rows = await this.serviceRows(r.parkingId, tx);
 
       for (const e of r.extras.filter(x => x.status === 'pending_payment' && !x.withBooking && x.stripePaymentIntentId)) {
         if (this.payments.testUnderLiveKeys(e)) {
@@ -333,11 +526,11 @@ export class ExtraService {
           const intent = await api.paymentIntents.retrieve(e.stripePaymentIntentId!);
           if (intent.status === 'succeeded') {
             confirmLater.push(intent);
-            return { extra: orderView(e), payment: { paid: true as const } };
+            return { extra: orderView(e, rows), payment: { paid: true as const } };
           }
           if (intent.status !== 'canceled' && intent.client_secret) {
             return {
-              extra: orderView(e),
+              extra: orderView(e, rows),
               payment: { clientSecret: intent.client_secret, paymentIntentId: intent.id, amountCents: intent.amount, currency: intent.currency },
             };
           }
@@ -354,9 +547,8 @@ export class ExtraService {
         e.status = 'expired';
       }
 
-      const offers = await this.enabledOffers(r.parkingId, tx);
-      const offer = offers.find(o => o.kind === kind);
-      const refusal = this.refusalOf(r, kind, !!offer, new Date());
+      const offer = enabledOffersFrom(rows).find(o => o.kind === kind) ?? null;
+      const refusal = this.refusalOf(r, offer, rows, new Date());
       if (refusal) throw new HttpException(httpStatus.CONFLICT, `This service cannot be ordered (${refusal})`, refusal);
       if (this.payments.modeFor(r.operator) !== 'online') throw unavailable();
       const amounts = this.payments.split(r.operator, offer!.priceCents);
@@ -388,14 +580,17 @@ export class ExtraService {
       const saved = await tx.reservationExtra.update({ where: { id: extra.id }, data: { stripePaymentIntentId: intent.id } });
       if (!intent.client_secret) throw new HttpException(httpStatus.BAD_GATEWAY, 'No payment intent', 'payment_failed');
       return {
-        extra: orderView(saved),
+        extra: orderView(saved, rows),
         payment: { clientSecret: intent.client_secret, paymentIntentId: intent.id, amountCents: intent.amount, currency: intent.currency },
       };
     }, STRIPE_TX);
     for (const intent of confirmLater) await this.confirmIntent(intent, 'return');
     if ('paid' in result.payment) {
-      const fresh = await prisma.reservationExtra.findUniqueOrThrow({ where: { id: result.extra.id } });
-      return { extra: orderView(fresh), payment: { paid: true } };
+      const fresh = await prisma.reservationExtra.findUniqueOrThrow({
+        where: { id: result.extra.id },
+        include: { reservation: { select: { parkingId: true } } },
+      });
+      return { extra: orderView(fresh, await this.serviceRows(fresh.reservation.parkingId)), payment: { paid: true } };
     }
     return result;
   }
@@ -565,13 +760,15 @@ export class ExtraService {
   }
 
   private async staffViewOf(reservationId: string) {
-    const rows = await prisma.reservationExtra.findMany({
+    const orders = await prisma.reservationExtra.findMany({
       where: { reservationId, ...SHOWN },
       include: { doneBy: { select: { firstName: true } }, refusedBy: { select: { firstName: true } } },
       orderBy: { createdAt: 'asc' },
     });
+    const { parkingId } = await prisma.reservation.findUniqueOrThrow({ where: { id: reservationId }, select: { parkingId: true } });
+    const rows = await this.serviceRows(parkingId);
     return {
-      extras: rows.map(e => ({ ...orderView(e), doneBy: e.doneBy?.firstName ?? null, refusedBy: e.refusedBy?.firstName ?? null })),
+      extras: orders.map(e => ({ ...orderView(e, rows), doneBy: e.doneBy?.firstName ?? null, refusedBy: e.refusedBy?.firstName ?? null })),
     };
   }
 
@@ -608,7 +805,7 @@ export class ExtraService {
     });
     if (!changed) throw new HttpException(httpStatus.CONFLICT, 'This service is not to do', 'not_to_do');
     await this.push
-      .notifyTravellers([id], extraDonePush(e.kind), {
+      .notifyTravellers([id], extraDonePush(e.kind, e.label), {
         data: { type: 'booking', event: 'extra_done', reservationId: id },
         collapseId: `extra-${e.id}`,
       })

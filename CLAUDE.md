@@ -1365,6 +1365,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   « Demander un devis » (`quoteAction` : la sélection relue depuis ses identifiants, envoyée par `POST /public/contact` à
   `supportEmail`). Prix et contenu dans `site/src/lib/pro-pricing.ts` (`quote`, `selectionSummary`) ; « Vous êtes un parking ? »
   (en-tête et pied de page) mène à cette page ; dans le plan du site. Prix provisoires, à confirmer par Joanny.
+- **Accueil de Plazo Pro (27/10/2026, « un vrai site Plazo Pro avec page d'accueil », « inspire-toi de Solution Park », « ne montre
+  pas les moyens techniques mis en place » ; maquette https://claude.ai/artifact/XBPQJUEg1qcto8MCwj7woY, « Go »)** : page `/loueurs`
+  (`site/src/app/loueurs/page.tsx`, `components/loueurs/ProHome.tsx`, textes `fr.proHome`) sur le déroulé de la page d'accueil de
+  Solution Park : bande vert foncé « Le logiciel des parkings d'aéroport » avec « Essayer la démo » et « Construire mon offre », trois
+  faits vrais (6 comparateurs reconnus, 4 postes, web · iPhone · Android) et un téléphone ; les quatre produits en alternance (Logiciel,
+  Application Plazo Pro, Vendre sur Plazo, Contrat et état des lieux ; ancres `#logiciel`, `#application`, `#vendre-sur-plazo`,
+  `#contrat`, « L'essayer dans la démo ») ; « Centralisez vos réservations » avec les canaux et trois gains ; « Fait sur le terrain »
+  (client n°1 jamais nommé) ; « Construisez votre offre » (`PRO_PLANS`) ; « Un renseignement ? » : `QuoteForm` sans sélection
+  (`request=demo`, « Demande de démo Plazo Pro » envoyée par `quoteAction` à `supportEmail`) ; barre « Essayer la démo » collée en bas
+  sur téléphone. Ce que le parking gagne, jamais comment Plazo le fait ; ni avis, ni nombre de clients. En-tête des pages `/loueurs` :
+  Logiciel · Application · Vendre sur Plazo · Contrat et état des lieux · Tarifs ; pied de page Solutions · Commencer · Plazo ; chaque
+  page pose sa largeur (`main` pleine largeur). « Vous êtes un parking ? » (en-tête et pied de page voyageurs) mène à `/loueurs`
+  (`PRO_HOME_PATH`), au plan du site aussi.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
