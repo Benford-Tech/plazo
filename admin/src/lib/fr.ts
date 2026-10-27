@@ -682,6 +682,19 @@ export const fr = {
     title: "Bien démarrer",
     progress: (done: number, total: number) => `${done} / ${total} étapes`,
     allDone: "Tout est en place.",
+    // 27/10/2026: the welcome dialog at the first sign-in on this browser.
+    welcome: {
+      title: (firstName: string) =>
+        firstName ? `Bienvenue, ${firstName} !` : "Bienvenue sur Plazo Pro !",
+      body: (done: number, total: number) =>
+        done > 0
+          ? `Votre parking est en route : ${done} étape${done > 1 ? "s" : ""} sur ${total} déjà en place. Voici les prochaines.`
+          : `Quelques étapes mettent votre parking en route sur Plazo. Voici les premières.`,
+      hint: "Vous retrouvez la liste complète à tout moment dans le menu de gauche, sous « Bien démarrer ».",
+      start: (step: string) => `Commencer : ${step}`,
+      ok: "C'est parti",
+      later: "Plus tard",
+    },
     hide: "Masquer",
     show: "Afficher",
     done: "Fait",
