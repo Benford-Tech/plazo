@@ -891,6 +891,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (409 `car_location_locked` pour le voyageur). Champs `Reservation.car*`, `domain/car-location.ts`, vue
      `PublicBooking.car` / `TravellerReturn.car` ; « Retrouver ma voiture » (app) et le bloc du site mènent à l'épingle ;
      épingle sur l'Occupation web et ligne sur les fiches ; effacée deux jours après le retour par le cron de nuit.
+   - **« Ma réservation » pour tous les canaux (27/10/2026, « impossible de retrouver la réservation avec le code et le mail » :
+     les tentatives de la soirée répondaient 404)** : `POST /public/bookings/lookup` (référence + e-mail), `PublicBookingService.load`
+     (lien de gestion) et `AppLinkService` (lien court) acceptaient seulement le canal `plazo` ; or les SMS de la veille et
+     d'atterrissage envoient ce lien à toutes les réservations d'un parking présent sur Plazo (téléphone, comptoir, comparateurs,
+     `SmsService.bookingLink`). Désormais toute réservation d'un parking qui a une fiche est retrouvée et consultée par son voyageur
+     (même e-mail, 30 jours après le retour au plus) ; **l'annulation en ligne reste réservée aux réservations faites sur Plazo**
+     (409 `cancellation_closed` pour les autres : c'est l'affaire du parking ou du comparateur) ; paiement et services additionnels
+     inchangés (déjà réservés aux réservations Plazo payées). Test `public-booking.test.ts` « retrouver sa réservation ».
    - **« Lien court Plazo » (27/10/2026, « Lien profond pour télécharger et utiliser Plazo directement sur sa réservation »,
      direction B des maquettes https://claude.ai/artifact/RengaLdiu3ex2eB9yhot7d)** : les SMS (confirmation, veille, atterrissage)
      et les mails (confirmation, rappel) portent `https://www.plazo.fr/a/<REF>-<code>` à la place du lien long (`domain/app-link.ts` :

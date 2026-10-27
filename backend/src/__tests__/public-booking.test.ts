@@ -483,7 +483,7 @@ describe('retrouver sa réservation', () => {
     expect(wrongEmail.body).toEqual(wrongReference.body);
     expect(wrongEmail.body.code).toBe('not_found');
 
-    // Bookings from the other channels are not managed on the site.
+    // Bookings from the other channels (27/10/2026): found as well, the SMS links point to the same area.
     const phone = await api()
       .post('/api/internal/reservations')
       .set(auth(staffToken))
@@ -497,7 +497,15 @@ describe('retrouver sa réservation', () => {
         customerEmail: 'x@example.com',
         plate: 'AB123CD',
       });
-    expect((await lookup(phone.body.data.reference, 'x@example.com')).status).toBe(404);
+    const found = await lookup(phone.body.data.reference, 'x@example.com');
+    expect(found.status).toBe(200);
+    const page = await api().get(`/api/public/bookings/${phone.body.data.reference}`).set(token(found.body.manageToken));
+    expect(page.status).toBe(200);
+    expect(page.body.reference).toBe(phone.body.data.reference);
+    // … but it is not cancelled online: that is the parking's or the comparator's business.
+    const cancel = await api().post(`/api/public/bookings/${phone.body.data.reference}/cancel`).set(token(found.body.manageToken));
+    expect(cancel.status).toBe(409);
+    expect(cancel.body.code).toBe('cancellation_closed');
     expect((await lookup('', '')).body.fields).toEqual({ reference: 'required', email: 'required' });
   });
 
