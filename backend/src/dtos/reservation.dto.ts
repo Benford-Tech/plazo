@@ -15,7 +15,9 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ChildSeatsDto } from './child-seats.dto';
-import { ReservationChannel, ReservationStatus } from '@/database';
+import { Handover, ReservationChannel, ReservationStatus } from '@/database';
+
+const HANDOVERS: Handover[] = ['shuttle', 'valet'];
 import { PLATE_OPTIONAL_CHANNELS, PLATE_RE } from '@/domain/reservation';
 
 export { PLATE_RE };
@@ -117,6 +119,11 @@ export class CreateReservationDto {
   @IsString({ message: 'invalid_stop' })
   @MaxLength(40, { message: 'invalid_stop' })
   public stopId?: string | null;
+
+  /** 27/10/2026: shuttle (default) or valet at the terminal. */
+  @IsOptional()
+  @IsIn(HANDOVERS, { message: 'invalid_handover' })
+  public handover?: Handover;
 
   @IsOptional()
   @IsString()
@@ -263,6 +270,11 @@ export class UpdateReservationDto {
   @IsString({ message: 'invalid_stop' })
   @MaxLength(40, { message: 'invalid_stop' })
   public stopId?: string | null;
+
+  /** 27/10/2026: shuttle or valet at the terminal; absent: unchanged. */
+  @IsOptional()
+  @IsIn(HANDOVERS, { message: 'invalid_handover' })
+  public handover?: Handover;
 
   @IsOptional()
   @IsString()

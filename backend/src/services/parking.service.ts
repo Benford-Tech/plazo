@@ -80,6 +80,7 @@ export class ParkingService {
           shuttleTravelMinutes: data.shuttleTravelMinutes,
           terminalLeadMinutes: data.terminalLeadMinutes,
           landingDelayMinutes: data.landingDelayMinutes,
+          valetMeetingPoint: data.valetMeetingPoint === undefined ? undefined : data.valetMeetingPoint?.trim() || null,
         },
       });
 
