@@ -1388,8 +1388,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **pro.plazo.fr (27/10/2026, « Le site pro est sur pro.plazo.fr »)** : domaine ajouté au projet Vercel `plazo` ; sur cet hôte,
   `/` sert `/loueurs` et `/tarifs` sert `/loueurs/tarifs` (réécritures `has: host` de `next.config.ts`, `PRO_HOST`), `/pro` et `/api`
   restent les autres services. Les liens, l'adresse canonique et la redirection 308 de `/loueurs` vers pro.plazo.fr ne basculent
-  qu'avec `NEXT_PUBLIC_PRO_SITE_URL=https://pro.plazo.fr` (variable Vercel du site, à poser quand le DNS répond : CNAME `pro` →
-  `cname.vercel-dns.com` chez Cloudflare) ; sans elle, tout reste sous `/loueurs`.
+  avec `NEXT_PUBLIC_PRO_SITE_URL=https://pro.plazo.fr` (variable Vercel de production, posée le 27/10/2026 ; sans elle, tout reste
+  sous `/loueurs`). DNS (« Fais le », 27/10/2026) : CNAME `pro` → `cname.vercel-dns.com`, sans proxy, posé par le workflow GitHub
+  « Cloudflare DNS record » (`cloudflare-dns.yml`, `.github/scripts/cloudflare_dns.py`, à la main : `CLOUDFLARE_DNS_TOKEN` de
+  l'environnement Production s'il existe, sinon le jeton Workers `CLOUDFLARE_API_TOKEN` ; jamais un enregistrement d'un autre type
+  remplacé).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
