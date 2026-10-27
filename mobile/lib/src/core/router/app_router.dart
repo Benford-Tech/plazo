@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../constants/app_constants.dart';
 
+import '../../features/booking/presentation/pages/app_link_page.dart';
 import '../../features/booking/presentation/pages/my_booking_page.dart';
 import '../../features/checkout/presentation/pages/booking_form_page.dart';
 import '../../features/checkout/presentation/pages/payment_page.dart';
@@ -119,6 +120,8 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),
     ],
     if (!AppConstants.isPro) ...[
+      // « Lien court Plazo » (27/10/2026): https://www.plazo.fr/a/<code> and plazo://a/<code> open the booking
+      AutoRoute(page: AppLinkRoute.page, path: '/a/:code'),
       // Traveller: a booking (A5 detail, confirmation) and its payment step (A4)
       AutoRoute(page: MyBookingRoute.page, path: '/ma-reservation/:reference'),
       AutoRoute(page: PaymentRoute.page, path: '/ma-reservation/:reference/paiement'),

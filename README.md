@@ -396,7 +396,7 @@ au même instant) ; nouvelles adresses de réception à 8 caractères aléatoire
 mails par Claude avec 4 000 jetons de réponse. **Reste côté code, sur
 décision** : reversement « payé à la main » (sinon double paiement si
 Joanny vire puis que le loueur relie Stripe),
-App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par
+App Links sur `www.plazo.fr` (empreinte Play à fournir dans `assetlinks.json` ; le lien court `/a/<code>` des SMS et mails, 27/10/2026, en dépend sur Android ; `PLAZO_APP_STORE_URL` à poser dès qu'Apple publie Plazo), plafond quotidien des lectures Claude par
 loueur et liste d'expéditeurs admis (les adresses créées avant le 08/10/2026 n'ont que 16 bits d'aléa : « Nouvelle adresse »
 en donne une à 32 bits), `maxDuration` à 300 s (Hobby avec Fluid compute) avec un budget de temps dans `runPayouts` et
 l'envoi des rappels, une CSP en « report-only » sur l'espace pro et le site, et un magasin partagé pour les limites de débit

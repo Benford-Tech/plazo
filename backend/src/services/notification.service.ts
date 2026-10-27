@@ -1,5 +1,6 @@
 import { Service } from 'typedi';
-import { BREVO_API_KEY, EMAIL_FROM, PRODUCT_NAME, PUBLIC_SITE_URL, SMS_SENDER } from '@/config';
+import { BREVO_API_KEY, EMAIL_FROM, PRODUCT_NAME, PUBLIC_SITE_URL, SECRET_KEY, SMS_SENDER } from '@/config';
+import { appLinkCode } from '@/domain/app-link';
 import { cancellationEmail, closingEmail, confirmationEmail, EmailMessage, isGsm7, reminderEmail } from '@/domain/booking-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { logger } from '@/utils/logger';
@@ -42,20 +43,27 @@ export class NotificationService {
     return `${base}/ma-reservation/${encodeURIComponent(reference)}?cle=${encodeURIComponent(manageToken)}`;
   }
 
-  /** Confirmation email after a booking on the site (the SMS goes through SmsService). */
-  public async bookingConfirmed(booking: PublicBooking, manageToken: string): Promise<void> {
-    if (!this.configured(booking.reference, 'booking_confirmed')) return;
-    await this.sendEmail(booking, 'booking_confirmed', confirmationEmail(PRODUCT_NAME, booking, this.manageUrl(booking.reference, manageToken)));
+  /**
+   * « Lien court Plazo » (direction B, 27/10/2026): the link of the SMS and emails, https://www.plazo.fr/a/<code>. On a
+   * phone with the app it opens the booking in the app; without it, the site's rebound page leads to the store and
+   * remembers the phone; on a computer it opens the booking's page. Null without the site's URL or the secret.
+   */
+  public appLinkUrl(booking: { id: string; reference: string; manageTokenVersion: number }): string | null {
+    const base = this.settings.publicSiteUrl.replace(/\/+$/, '');
+    if (!base || !SECRET_KEY) return null;
+    return `${base}/a/${appLinkCode(booking, SECRET_KEY)}`;
   }
 
-  /** The day before the drop-off (B, 06/10/2026). */
-  public async bookingReminder(booking: PublicBooking, manageToken: string | null): Promise<void> {
+  /** Confirmation email after a booking on the site (the SMS goes through SmsService); `link` = appLinkUrl(booking). */
+  public async bookingConfirmed(booking: PublicBooking, link: string | null): Promise<void> {
+    if (!this.configured(booking.reference, 'booking_confirmed')) return;
+    await this.sendEmail(booking, 'booking_confirmed', confirmationEmail(PRODUCT_NAME, booking, link));
+  }
+
+  /** The day before the drop-off (B, 06/10/2026); `link` = appLinkUrl(booking). */
+  public async bookingReminder(booking: PublicBooking, link: string | null): Promise<void> {
     if (!this.configured(booking.reference, 'booking_reminder')) return;
-    await this.sendEmail(
-      booking,
-      'booking_reminder',
-      reminderEmail(PRODUCT_NAME, booking, manageToken ? this.manageUrl(booking.reference, manageToken) : null),
-    );
+    await this.sendEmail(booking, 'booking_reminder', reminderEmail(PRODUCT_NAME, booking, link));
   }
 
   /** After the handover (B, 06/10/2026). */

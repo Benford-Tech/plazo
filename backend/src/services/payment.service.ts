@@ -8,13 +8,11 @@ import {
   paymentsEnabled,
   PRODUCT_NAME,
   PUBLIC_SITE_URL,
-  SECRET_KEY,
   stripePublishableKey,
   stripeSecretKey,
   stripeWebhookSecrets,
 } from '@/config';
 import prisma, { Operator, PayoutSchedule, Prisma, Reservation } from '@/database';
-import { manageToken } from '@/domain/booking';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { confirmationSms, formatEuros, formatLocalShort } from '@/domain/booking-messages';
 import { splitPayment } from '@/domain/pricing';
@@ -614,10 +612,9 @@ export class PaymentService {
     if (!count) return;
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id }, include: WITH_LISTING });
     if (!record.parking.listing) return;
-    if (!SECRET_KEY) throw new Error('SECRET_KEY is not set');
-    const token = manageToken(record.id, SECRET_KEY, record.manageTokenVersion);
     const booking = toPublicBooking(record);
-    await this.notifications.bookingConfirmed(booking, token);
+    const link = this.notifications.appLinkUrl(record);
+    await this.notifications.bookingConfirmed(booking, link);
     // The team hears of it (06/10/2026): nobody typed this booking.
     await this.push.notifyNewBooking(record, record.parking.timezone);
     // The SMS goes through the operator's own channel (their phone, Brevo, or none).
@@ -625,7 +622,7 @@ export class PaymentService {
       reservationId: record.id,
       kind: 'booking_confirmed',
       to: record.customerPhone,
-      text: confirmationSms(PRODUCT_NAME, booking, this.notifications.manageUrl(record.reference, token)),
+      text: confirmationSms(PRODUCT_NAME, booking, link),
     });
   }
 

@@ -185,7 +185,7 @@ describe('le fil de messages du voyageur (B)', () => {
     const sms = calls(BREVO_SMS).find(s => s.tag === 'booking_reminder');
     expect(sms.content).toMatch(/^Plazo : à demain ! Dépôt le 01\/03\/2027 à 06:30 à Parking LYS\./);
     expect(sms.content).toContain('Parking : 04 72 00 00 00.');
-    expect(sms.content).toContain(`https://site.example/ma-reservation/${reference}?cle=`);
+    expect(sms.content).toContain(`https://site.example/a/${reference}-`);
     expect(pushes().map(p => p.headings.fr)).toEqual(['À demain, Camille !']);
     // Already reminded: nothing more.
     expect(await reminders.dispatchDue(new Date('2027-02-28T17:20:00Z'))).toEqual({ checked: 0, sent: 0, failed: 0 });

@@ -46,6 +46,14 @@ export function rateLimitKey(req: Request, siteKey: string = SITE_API_KEY): stri
   return ip ? ipKey(ip) : 'unknown';
 }
 
+/** The visitor's own address (the one the site forwards, else the one seen behind Cloudflare), or undefined. */
+export function visitorAddress(req: Request, siteKey: string = SITE_API_KEY): string | undefined {
+  const sentKey = req.get('x-plazo-site-key');
+  const clientIp = req.get('x-plazo-client-ip')?.trim();
+  if (siteKey && sentKey && sameSecret(sentKey, siteKey) && clientIp && isIP(clientIp)) return clientIp;
+  return visitorIp(req.ip, req.get('cf-connecting-ip'));
+}
+
 const keyGenerator = (req: Request) => rateLimitKey(req);
 
 // 429 bodies follow the API's error shape: { message, code }.
@@ -97,6 +105,9 @@ export function lookupReferenceKey(req: Request): string {
   const reference = typeof req.body?.reference === 'string' ? req.body.reference.trim().toUpperCase().slice(0, 20) : '';
   return `reference:${reference}`;
 }
+
+// « Lien court Plazo » (27/10/2026): the rebound page, the store claim and the app's first launch, per visitor.
+export const appLinkLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, skip, keyGenerator, message: tooMany('too_many_requests') });
 
 // Failed lookups of one reference, from any number of addresses.
 export const lookupReferenceLimiter = rateLimit({

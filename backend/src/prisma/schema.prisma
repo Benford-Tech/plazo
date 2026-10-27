@@ -852,6 +852,7 @@ model Reservation {
   inspections    VehicleInspection[]
   signatureCodes SignatureCode[]
   extras         ReservationExtra[]
+  appLinkClaims  AppLinkClaim[]
 
   @@unique([operatorId, externalReference])
   @@index([spotId])
@@ -1820,4 +1821,20 @@ model DemoLink {
   prospect Prospect? @relation(fields: [prospectId], references: [id], onDelete: Cascade)
 
   @@map("demo_links")
+}
+
+// « Lien court Plazo » (direction B, 27/10/2026): a phone that left the rebound page for the store, remembered 24 h
+// by a hash of its address and platform so that the app opens its booking at the first launch. Deleted once used.
+model AppLinkClaim {
+  id            String      @id @default(cuid())
+  reservationId String
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  fingerprint   String
+  platform      String
+  createdAt     DateTime    @default(now())
+  expiresAt     DateTime
+
+  @@index([fingerprint, createdAt])
+  @@index([expiresAt])
+  @@map("app_link_claims")
 }

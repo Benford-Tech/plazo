@@ -9,6 +9,15 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="www.plazo.fr" android:pathPrefix="/ma-reservation"/>
+                <!-- « Lien court Plazo » (27/10/2026): https://www.plazo.fr/a/<code> in the SMS and emails. -->
+                <data android:scheme="https" android:host="www.plazo.fr" android:pathPrefix="/a/"/>
+            </intent-filter>
+            <!-- The app's own scheme, for « J'ai déjà l'app » on the site's rebound page: plazo://a/<code>. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="plazo" android:host="a"/>
             </intent-filter>
         </activity>
     </application>

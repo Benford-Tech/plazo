@@ -1,6 +1,7 @@
 import { ProspectDemoService } from '@/services/prospect-demo.service';
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
+import { AppLinkService } from '@/services/app-link.service';
 import { ArrivalService } from '@/services/arrival.service';
 import { BookingDigestService } from '@/services/booking-digest.service';
 import { FileService } from '@/services/file.service';
@@ -192,6 +193,8 @@ export class CronController {
     // Apple / Google tokens already used (single use) past their own expiry, and login attempts after 30 days.
     const usedIdentityTokensDeleted = await this.identityVerification.purgeUsedTokens();
     const loginAttemptsDeleted = await purgeLoginAttempts();
+    // « Lien court Plazo » (27/10/2026): phones remembered for the store past their 24 h.
+    const appLinkClaimsDeleted = await Container.get(AppLinkService).purge();
     // Prospects 3 years after the last contact (or their creation); the opt-out list stays.
     const prospectsDeleted = await this.prospecting.purge();
     // 21/10/2026: the prospects' demo starts every day afresh (never throws).
@@ -222,6 +225,7 @@ export class CronController {
       identitiesDeleted: joins.identitiesDeleted,
       usedIdentityTokensDeleted,
       loginAttemptsDeleted,
+      appLinkClaimsDeleted,
       prospectsDeleted,
     });
   });

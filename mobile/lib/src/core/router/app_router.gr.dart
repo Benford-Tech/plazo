@@ -11,6 +11,54 @@
 part of 'app_router.dart';
 
 /// generated route for
+/// [AppLinkPage]
+class AppLinkRoute extends PageRouteInfo<AppLinkRouteArgs> {
+  AppLinkRoute({Key? key, required String code, List<PageRouteInfo>? children})
+    : super(
+        AppLinkRoute.name,
+        args: AppLinkRouteArgs(key: key, code: code),
+        rawPathParams: {'code': code},
+        initialChildren: children,
+      );
+
+  static const String name = 'AppLinkRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<AppLinkRouteArgs>(
+        orElse: () => AppLinkRouteArgs(code: pathParams.getString('code')),
+      );
+      return AppLinkPage(key: args.key, code: args.code);
+    },
+  );
+}
+
+class AppLinkRouteArgs {
+  const AppLinkRouteArgs({this.key, required this.code});
+
+  final Key? key;
+
+  final String code;
+
+  @override
+  String toString() {
+    return 'AppLinkRouteArgs{key: $key, code: $code}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! AppLinkRouteArgs) return false;
+    return key == other.key && code == other.code;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ code.hashCode;
+}
+
+/// generated route for
 /// [AppShellPage]
 class AppShellRoute extends PageRouteInfo<void> {
   const AppShellRoute({List<PageRouteInfo>? children})

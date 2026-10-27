@@ -11,24 +11,35 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
 ];
 
 const nextConfig: NextConfig = {
   turbopack: { root: repositoryRoot },
   outputFileTracingRoot: repositoryRoot,
   // Vercel optimises images itself: sharp and its native libraries (about 45 MB) never run in our functions.
-  outputFileTracingExcludes: { "*": ["node_modules/sharp/**", "node_modules/@img/**"] },
+  outputFileTracingExcludes: {
+    "*": ["node_modules/sharp/**", "node_modules/@img/**"],
+  },
   poweredByHeader: false,
   // The repository keeps its own agent instructions (CLAUDE.md at the root): no generated copies here.
   agentRules: false,
   // C (09/10/2026): the home page is the default airport's page, cached like any airport page (ISR); that page
   // has one address, "/" (a permanent redirect from its own, which the internal rewrite does not go through).
   async redirects() {
-    return [{ source: `/${DEFAULT_AIRPORT}`, destination: "/", permanent: true }];
+    return [
+      { source: `/${DEFAULT_AIRPORT}`, destination: "/", permanent: true },
+    ];
   },
   async rewrites() {
-    return { beforeFiles: [{ source: "/", destination: `/${DEFAULT_AIRPORT}` }], afterFiles: [], fallback: [] };
+    return {
+      beforeFiles: [{ source: "/", destination: `/${DEFAULT_AIRPORT}` }],
+      afterFiles: [],
+      fallback: [],
+    };
   },
   async headers() {
     return [
@@ -42,6 +53,15 @@ const nextConfig: NextConfig = {
       // Booking pages carry the traveller's manage key in their URL: never send it to another site in
       // a Referer, never index them, never cache them. ("same-origin" rather than "no-referrer": with
       // no-referrer, browsers post forms with "Origin: null", which server actions reject without JavaScript.)
+      // The short link of the SMS and emails (27/10/2026): the code behind /a/ opens a booking, same care.
+      {
+        source: "/a/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "private, no-store" },
+        ],
+      },
       {
         source: "/ma-reservation/:path*",
         headers: [

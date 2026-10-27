@@ -17,6 +17,7 @@ import '../features/arrival/domain/usecases/start_sharing_use_case.dart';
 import '../features/arrival/domain/usecases/stop_sharing_use_case.dart';
 import '../features/arrival/presentation/bloc/arrival_bloc.dart';
 import '../features/booking/data/client/booking_client.dart';
+import '../features/booking/data/datasources/app_link_data_source.dart';
 import '../features/booking/data/datasources/booking_data_source.dart';
 import '../features/booking/domain/repositories/booking_repository.dart';
 import '../features/booking/domain/usecases/booking_actions_use_cases.dart';
