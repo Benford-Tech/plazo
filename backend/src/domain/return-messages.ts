@@ -33,13 +33,20 @@ export interface LandedSmsInput {
   instructions: string | null;
   phone: string | null;
   manageUrl: string | null;
+  /** 27/10/2026: a valet booking's meeting point at the airport (the car comes there). */
+  valetMeetingPoint?: string | null;
 }
 
 /** "Plazo : votre vol a atterri. Rendez-vous : Terminal 1 · Porte 12. …" (short: one or two segments). */
 export function landedSms(input: LandedSmsInput): string {
   const parts = [`${input.productName} : votre vol a atterri.`];
-  parts.push(input.meetingLabel ? `Rendez-vous navette : ${input.meetingLabel}.` : `Rendez-vous au point navette de ${input.parkingName}.`);
-  if (input.instructions) parts.push(input.instructions.trim().slice(0, 160));
+  if (input.valetMeetingPoint) {
+    // 27/10/2026: a valet booking: the car comes to the terminal, no shuttle.
+    parts.push(`Votre voiture vous attend : ${input.valetMeetingPoint}.`);
+  } else {
+    parts.push(input.meetingLabel ? `Rendez-vous navette : ${input.meetingLabel}.` : `Rendez-vous au point navette de ${input.parkingName}.`);
+    if (input.instructions) parts.push(input.instructions.trim().slice(0, 160));
+  }
   if (input.manageUrl) parts.push(`Votre reservation : ${input.manageUrl}`);
   if (input.phone) parts.push(`Parking : ${input.phone}`);
   return parts.join(' ');

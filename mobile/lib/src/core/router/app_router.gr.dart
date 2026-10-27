@@ -631,6 +631,22 @@ class ProContractRouteArgs {
 }
 
 /// generated route for
+/// [ProGettingStartedPage]
+class ProGettingStartedRoute extends PageRouteInfo<void> {
+  const ProGettingStartedRoute({List<PageRouteInfo>? children})
+    : super(ProGettingStartedRoute.name, initialChildren: children);
+
+  static const String name = 'ProGettingStartedRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProGettingStartedPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ProInspectionPage]
 class ProInspectionRoute extends PageRouteInfo<ProInspectionRouteArgs> {
   ProInspectionRoute({
@@ -1001,22 +1017,6 @@ class ProReturnsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [ProGettingStartedPage]
-class ProGettingStartedRoute extends PageRouteInfo<void> {
-  const ProGettingStartedRoute({List<PageRouteInfo>? children})
-    : super(ProGettingStartedRoute.name, initialChildren: children);
-
-  static const String name = 'ProGettingStartedRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return const ProGettingStartedPage();
-    },
-  );
-}
-
-/// generated route for
 /// [ProRevenueMissingPage]
 class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
   ProRevenueMissingRoute({
@@ -1227,6 +1227,22 @@ class ProTodayRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProTodayPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProValetPage]
+class ProValetRoute extends PageRouteInfo<void> {
+  const ProValetRoute({List<PageRouteInfo>? children})
+    : super(ProValetRoute.name, initialChildren: children);
+
+  static const String name = 'ProValetRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProValetPage();
     },
   );
 }

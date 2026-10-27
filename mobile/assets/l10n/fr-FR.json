@@ -128,6 +128,10 @@
     "return": "Retour",
     "return_flight": "Vol retour",
     "passengers": "Passagers",
+    "care": "Prise en charge",
+    "care_shuttle": "Navette",
+    "care_valet": "Voiturier au terminal",
+    "care_valet_help": "Un voiturier prend la voiture au terminal à l'arrivée et la ramène au retour : le client ne prend pas la navette.",
     "channel_label": "Canal",
     "channel_detail": "Nom du comparateur",
     "external_reference": "Réf. du canal",
@@ -378,9 +382,10 @@
     "prev_day": "Jour précédent",
     "next_day": "Jour suivant",
     "filter_all": "Tout",
-    "dropoffs": "Dépôts",
-    "kind_dropoff": "Dépôt",
-    "kind_return": "Retour",
+    "dropoffs": "Arrivées",
+    "departures": "Départs",
+    "kind_dropoff": "Arrivée",
+    "kind_return": "Départ",
     "past_rows": "Déjà passés · {}",
     "no_row": "Rien de prévu aujourd'hui.",
     "no_row_day": "Rien de prévu ce jour-là.",
@@ -1496,7 +1501,8 @@
     "shuttle": "Navette",
     "arrivals": "Arrivées",
     "returns": "Retours",
-    "places": "Places"
+    "places": "Places",
+    "terminal": "Terminal"
   },
   "post": {
     "title": "Aujourd'hui, je suis…",
@@ -2484,6 +2490,41 @@
         "title": "La boîte de réception",
         "body": "Les mails des comparateurs, à vérifier sur l'espace pro web."
       }
+    }
+  },
+  "valet": {
+    "title": "Courses au terminal",
+    "meeting_point": "Rendez-vous : {}",
+    "band_todo": "À faire · {}",
+    "band_taken": "En cours · {}",
+    "band_done": "Faites · {}",
+    "empty_todo": "Aucune course à prendre.",
+    "empty_taken": "Aucune course en cours.",
+    "empty_done": "Aucune course faite aujourd'hui.",
+    "error": "Les courses n'ont pas pu être lues. Tirez pour réessayer.",
+    "kind_arrival": "Arrivée",
+    "kind_departure": "Départ",
+    "take_at": "Récupérer au {}",
+    "bring_to": "Livrer au {}",
+    "flight_out": "vol aller {}",
+    "flight_back": "vol retour {}",
+    "landed": "Atterri {}",
+    "file": "File {}",
+    "spot": "Place {}",
+    "hook": "clés crochet {}",
+    "mine": "Pour vous",
+    "taken_by": "{} y va",
+    "done": "Faite",
+    "take": "Je prends",
+    "call": "Appeler",
+    "release": "Je ne peux plus",
+    "done_arrival": "Voiture récupérée au terminal",
+    "done_departure": "Voiture rendue au client",
+    "errors": {
+      "run_taken": "Un autre voiturier a déjà pris cette course.",
+      "run_closed": "Cette course est déjà faite.",
+      "not_valet": "Cette réservation prend la navette.",
+      "generic": "Une erreur est survenue. Réessayez."
     }
   }
 }

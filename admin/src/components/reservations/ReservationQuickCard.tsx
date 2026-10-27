@@ -29,6 +29,7 @@ import { childSeatsSummary, hasChildSeats } from "@/lib/child-seats";
 import { dateTimeShort, timeOf } from "@/lib/datetime";
 import { describeError, fr, quickCardFr as t } from "@/lib/fr";
 import type { Reservation } from "@/lib/types";
+import { ValetPill } from "@/lib/valet-icon";
 
 /** Opens the operational card of a booking from anywhere in the pro space (C-A, 06/10/2026). */
 const QuickCardContext = createContext<{
@@ -180,7 +181,9 @@ export function ReservationQuickCard({
               <dt className="text-muted-foreground">{t.return}</dt>
               <dd className="font-mono">
                 {dateTimeShort(r.returnAt)}
-                {r.stop && (
+                {r.handover === "valet" ? (
+                  <ValetPill label={fr.reservation.handovers.valet} className="ml-1.5 font-sans" />
+                ) : r.stop && (
                   <span className="ml-1 text-muted-foreground">
                     · {r.stop.name}
                   </span>

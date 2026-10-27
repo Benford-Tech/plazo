@@ -30,6 +30,7 @@ type Form = {
   shuttleTravelMinutes: string;
   terminalLeadMinutes: string;
   landingDelayMinutes: string;
+  valetMeetingPoint: string;
 };
 
 const toForm = (p: Parking): Form => ({
@@ -40,6 +41,7 @@ const toForm = (p: Parking): Form => ({
   shuttleTravelMinutes: String(p.shuttleTravelMinutes),
   terminalLeadMinutes: String(p.terminalLeadMinutes ?? 120),
   landingDelayMinutes: String(p.landingDelayMinutes ?? 30),
+  valetMeetingPoint: p.valetMeetingPoint ?? "",
 });
 
 export default function ParkingPage() {
@@ -66,6 +68,7 @@ export default function ParkingPage() {
         shuttleTravelMinutes: Number(f.shuttleTravelMinutes),
         terminalLeadMinutes: Number(f.terminalLeadMinutes),
         landingDelayMinutes: Number(f.landingDelayMinutes),
+        valetMeetingPoint: f.valetMeetingPoint.trim() || null,
       }),
     onSuccess: ({ data }) => {
       setFieldErrors({});
@@ -217,6 +220,16 @@ export default function ParkingPage() {
                 error={fieldErrors.landingDelayMinutes}
               />
             </div>
+            <FormField
+              id="valetMeetingPoint"
+              label={t.valetMeetingPoint}
+              value={form.valetMeetingPoint}
+              onChange={set("valetMeetingPoint")}
+              placeholder={t.valetMeetingPointPlaceholder}
+              maxLength={80}
+              help={t.valetMeetingPointHelp}
+              error={fieldErrors.valetMeetingPoint}
+            />
             {preview !== null && (
               <Alert className="border-lime-deep/30 bg-accent">
                 <AlertDescription>

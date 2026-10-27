@@ -140,6 +140,8 @@ export interface Parking {
   landingDelayMinutes: number;
   /** R-B (07/10/2026): who sees the position of the shuttles. */
   shuttleTracking: ShuttleTracking;
+  /** 27/10/2026: where the valet meets the travellers at the airport (null: Terminal 1 · dépose-minute). */
+  valetMeetingPoint?: string | null;
   /**
    * 09/10/2026: `totalCapacity` and `declaredCapacity` are the figure typed by the operator;
    * `effectiveCapacity` is the one used everywhere (the plan's files, else its active spots, else
@@ -168,6 +170,7 @@ export interface ParkingSettings {
   shuttleTravelMinutes: number;
   terminalLeadMinutes?: number;
   landingDelayMinutes?: number;
+  valetMeetingPoint?: string | null;
 }
 
 export interface NewStaff {
@@ -196,8 +199,12 @@ export type ReservationChannel =
   | "import"
   | "plazo";
 
+/** 27/10/2026: how the car changes hands: the shuttle, or a valet at the terminal (« Voiturier au terminal »). */
+export type Handover = "shuttle" | "valet";
+
 export interface Reservation {
   id: string;
+  handover?: Handover;
   /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */
   commission?: ReservationCommission | null;
   commissionOverrideBp?: number | null;
@@ -471,6 +478,7 @@ export interface ReservationInput {
   importedPriceCents?: number;
   /** « Sièges auto » (24/10/2026): each 0 to 4, fewer than the passengers; on an edit, absent = unchanged, null = none. */
   childSeats?: ChildSeats | null;
+  handover?: Handover;
   force?: boolean;
 }
 
@@ -2046,4 +2054,31 @@ export interface GettingStarted {
   steps: GettingStartedStep[];
   done: number;
   total: number;
+}
+
+/** « Voiturier au terminal » (27/10/2026): a run of the valets (arrival: take the car; departure: bring it back). */
+export interface ValetRun {
+  id: string;
+  reservationId: string;
+  kind: "arrival" | "departure";
+  state: "todo" | "taken" | "done";
+  meetAt: string;
+  leaveAt: string;
+  takenBy: { id: string; firstName: string } | null;
+  takenAt: string | null;
+  doneAt: string | null;
+  mine: boolean;
+  reference: string;
+  customerName: string;
+  customerPhone: string;
+  plate: string;
+  passengers: number;
+  status: ReservationStatus;
+}
+
+export interface ValetRuns {
+  serverTime: string;
+  meetingPoint: string;
+  runs: ValetRun[];
+  counts: Record<ValetRun["state"], number>;
 }

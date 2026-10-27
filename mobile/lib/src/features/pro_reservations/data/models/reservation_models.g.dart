@@ -81,6 +81,7 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       childSeats: json['childSeats'] == null
           ? ChildSeats.none
           : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
+      handover: json['handover'] as String? ?? 'shuttle',
     );
 
 Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
@@ -132,6 +133,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'filePosition': instance.filePosition,
       'boardingCheckIn': instance.boardingCheckIn,
       'childSeats': instance.childSeats,
+      'handover': instance.handover,
     };
 
 _BoardingCheckInModel _$BoardingCheckInModelFromJson(
@@ -226,6 +228,7 @@ _ReservationInput _$ReservationInputFromJson(Map<String, dynamic> json) =>
       childSeats: json['childSeats'] == null
           ? ChildSeats.none
           : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
+      handover: json['handover'] as String? ?? 'shuttle',
     );
 
 Map<String, dynamic> _$ReservationInputToJson(_ReservationInput instance) =>
@@ -250,6 +253,7 @@ Map<String, dynamic> _$ReservationInputToJson(_ReservationInput instance) =>
       'priceCents': instance.priceCents,
       'force': instance.force,
       'childSeats': instance.childSeats,
+      'handover': instance.handover,
     };
 
 _ReservationFileModel _$ReservationFileModelFromJson(

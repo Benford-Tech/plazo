@@ -78,11 +78,16 @@ abstract class ReservationModel with _$ReservationModel {
 
     /// 24/10/2026: the child car seats asked for the shuttle (none from an older API).
     @Default(ChildSeats.none) ChildSeats childSeats,
+
+    /// « Voiturier au terminal » (27/10/2026): `shuttle` or `valet` (the car taken and brought back at the terminal).
+    @Default('shuttle') String handover,
   }) = _ReservationModel;
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) => _$ReservationModelFromJson(json);
 
   bool get closed => status == 'returned' || status == 'cancelled' || status == 'no_show';
+
+  bool get valet => handover == 'valet';
 }
 
 /// « Embarquer en un geste » (14/10/2026): a traveller still expected when the shuttle left was checked in by its
@@ -155,6 +160,9 @@ abstract class ReservationInput with _$ReservationInput {
 
     /// 24/10/2026: the child car seats for the shuttle; an edit sends them only once changed (`seats` of [toBody]).
     @Default(ChildSeats.none) ChildSeats childSeats,
+
+    /// 27/10/2026: `shuttle` or `valet`, always sent (the same value again changes nothing on the server).
+    @Default('shuttle') String handover,
   }) = _ReservationInput;
 
   factory ReservationInput.fromJson(Map<String, dynamic> json) => _$ReservationInputFromJson(json);

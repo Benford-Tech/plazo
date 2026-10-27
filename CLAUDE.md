@@ -879,6 +879,29 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      avec « Modifier » ; espace pro web et Plazo Pro : bloc du formulaire, ligne de la fiche, pastilles « Siège bébé · Siège 1 à
      4 ans · Réhausseur » et « dont N enfants » sur les lignes Aller / Retour / En route du chauffeur, bandeau « À charger avant de
      partir » au-dessus de « Partir ». Tests `child-seats.test.ts`, `public-booking.test.ts`, `shuttle-day.test.ts`.
+   - **Voiturier au terminal, direction B (27/10/2026, « certaines réservations sont service Voiturier : récupération du véhicule
+     au terminal à l'arrivée et au retour », puis « B et change Dépôt et Retours en arrivée et départ », maquette
+     https://claude.ai/artifact/5Xu8o9kZgNxKTjfpG3HxqP avec le petit voiturier indigo)** : `Reservation.handover` `shuttle` | `valet`
+     (migration `valet_handover` ; `valetArrivalById/TakenAt`, `valetDepartureById/TakenAt`, `valetArrival/DepartureNotifiedAt`, CHECK :
+     courses seulement sur une réservation voiturier) ; `Parking.valetMeetingPoint` (≤ 80, vide = « Terminal 1 · dépose-minute » à LYS,
+     sinon « Aéroport · dépose-minute », `valetMeetingPointOf`). Une réservation voiturier n'est jamais dans Aller / Retour du chauffeur,
+     la prévision des navettes ni un trajet (422 `invalid_passengers`), jamais « Parti en navette » (`valetStatuses`) ; SMS
+     d'atterrissage « Votre voiture vous attend : <point>. ». Deux courses par réservation (`domain/valet.ts`, `ValetService`) :
+     arrivée (ouverte tant que « Attendu ») et départ (ouverte de « Sur place » à « De retour au parking ») ;
+     `GET /internal/valet/runs` (de 6 h avant à 18 h après, faites du jour ; « Prise » d'abord), `POST
+     /internal/valet/runs/:id/:kind/take` (409 `run_taken`), `…/release` (son voiturier ou un gérant), `…/done` (arrivée → « Sur
+     place », départ → « Rendu » par `changeStatus` ; une course non prise devient la sienne) ; 400 `not_valet`, 409 `run_closed` ;
+     push « Course à prendre · 08:15 · <point> » aux voituriers et gérants (audience `valets`) une fois, 30 min avant de partir,
+     par le passage de 15 minutes de `remind-tomorrow` (`valet` dans sa réponse) ; repasser en navette efface les courses.
+     Réservable par l'équipe et à la main seulement : ni plazo.fr ni import (exemples de mails voiturier des comparateurs attendus).
+     Web : « Prise en charge · Navette | Voiturier au terminal » du formulaire (desserte cachée en voiturier), pastille indigo
+     `ValetPill` (`lib/valet-icon.tsx`) sur la fiche, la fiche opérationnelle et le planning, carte « Courses au terminal » du tableau
+     de bord (`ValetRunsCard`, cachée sans course), « Rendez-vous du voiturier à l'aéroport » dans Parking › Réglages. Plazo Pro :
+     onglet **Terminal** du poste Voiturier (`features/pro_valet`, `ProValetPage`, `/pro/terminal` : À faire · En cours · Faites,
+     « Je prends », « Voiture récupérée au terminal » / « Voiture rendue au client », « Je ne peux plus », Appeler ; relu toutes
+     les 30 s), choix dans le formulaire, ligne de la fiche, pastille sur le planning, pas d'« Embarquer » pour un voiturier ;
+     **planning en une liste renommé** : pilules « Arrivées · Départs » et pastilles « ARRIVÉE » / « DÉPART ». Tests
+     `valet.test.ts`, `ValetRunsCard.test.tsx`, `ReservationForm.test.tsx`, `valet_runs_test.dart`.
    - Décisions **R-B + I-C du 07/10/2026 (« suivi des navettes réglable », règle 1)** : `Parking.shuttleTracking` `off` | `team` |
      `everyone` (`team` par défaut pour un nouveau parking ; les parkings existants et ceux de démonstration à `everyone`),
      `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`), `domain/shuttle-tracking.ts` ; bloc « Suivi des navettes »

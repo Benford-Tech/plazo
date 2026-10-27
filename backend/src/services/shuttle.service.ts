@@ -544,6 +544,8 @@ export class ShuttleService {
     const { start, end } = dayBounds(now, parking.timezone);
     const where: Prisma.ReservationWhereInput = {
       parkingId: parking.id,
+      // 27/10/2026: a valet booking has no shuttle (its car is brought to the terminal).
+      handover: 'shuttle',
       status: { in: PICKUP_STATUSES },
       OR: [{ returnAt: { gte: start, lte: end } }, { flightEstimatedAt: { gte: start, lte: end } }],
     };
@@ -608,6 +610,7 @@ export class ShuttleService {
     const rows = await prisma.reservation.findMany({
       where: {
         parkingId: parking.id,
+        handover: 'shuttle',
         status: { in: DROPOFF_STATUSES },
         // Checked in during the last hours, or (no check-in time recorded) planned around now.
         OR: [
@@ -629,6 +632,7 @@ export class ShuttleService {
     const expected = await prisma.reservation.findMany({
       where: {
         parkingId: parking.id,
+        handover: 'shuttle',
         status: 'upcoming',
         arrivalAt: {
           gte: new Date(now.getTime() - DROPOFF_LIST_HOURS_BEFORE * 3600000),
@@ -755,10 +759,11 @@ export class ShuttleService {
     const now = new Date();
     const bookings = await prisma.reservation.findMany({
       where: { id: { in: ids }, operatorId: actor.operatorId },
-      select: { id: true, status: true, passengers: true, arrivalAt: true },
+      select: { id: true, status: true, passengers: true, arrivalAt: true, handover: true },
     });
     const invalidPassengers = () => new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'A booking cannot board this trip', 'invalid_passengers');
-    if (bookings.length !== ids.length || bookings.some(b => !canBoard(direction, b, now))) throw invalidPassengers();
+    // 27/10/2026: a valet booking never boards the shuttle.
+    if (bookings.length !== ids.length || bookings.some(b => b.handover === 'valet' || !canBoard(direction, b, now))) throw invalidPassengers();
     const onAnotherTrip = await prisma.shuttleTripPassenger.findFirst({ where: { reservationId: { in: ids }, trip: { status: 'running' } } });
     if (onAnotherTrip) throw alreadyOnTrip();
 

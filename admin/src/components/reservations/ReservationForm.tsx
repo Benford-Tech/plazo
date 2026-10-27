@@ -17,8 +17,9 @@ import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { nameParts } from "@/lib/names";
 import { centsToInput, isPriceLocked, parseEuros } from "@/lib/pricing";
-import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
+import type { Handover, ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ValetIcon } from "@/lib/valet-icon";
 
 const STAFF_CHANNELS: ReservationChannel[] = ["phone", "counter", "aggregator"];
 
@@ -49,6 +50,8 @@ type Form = {
   price: string;
   /** « Sièges auto » (24/10/2026): the child seats to install in the shuttle. */
   childSeats: ChildSeats;
+  /** « Voiturier au terminal » (27/10/2026). */
+  handover: Handover;
 };
 
 const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
@@ -83,6 +86,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       // 10/10/2026: the amount read in the email, to check or correct before saving.
       price: prefill.priceCents != null ? centsToInput(prefill.priceCents) : "",
       childSeats: { ...NO_CHILD_SEATS },
+      handover: "shuttle",
     };
   }
   if (reservation) {
@@ -111,6 +115,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       vehicleColour: reservation.vehicleColour ?? "",
       price: reservation.priceCents != null ? centsToInput(reservation.priceCents) : "",
       childSeats: { ...NO_CHILD_SEATS, ...(reservation.childSeats ?? {}) },
+      handover: reservation.handover ?? "shuttle",
     };
   }
   return {
@@ -135,6 +140,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     vehicleColour: "",
     price: "",
     childSeats: { ...NO_CHILD_SEATS },
+    handover: "shuttle",
   };
 }
 
@@ -302,7 +308,8 @@ export function ReservationForm({
         plate: form.plate,
         returnFlight: form.returnFlight.trim() || null,
         departureFlight: form.departureFlight.trim() || null,
-        stopId: form.stopId || null,
+        stopId: form.handover === "valet" ? null : form.stopId || null,
+        ...(!reservation || form.handover !== (reservation.handover ?? "shuttle") ? { handover: form.handover } : {}),
         notes: form.notes.trim() || null,
         customerNote: form.customerNote.trim() || null,
         vehicleModel: form.vehicleModel.trim() || null,
@@ -499,7 +506,7 @@ export function ReservationForm({
             />
           </Field>
         </div>
-        {customStops.length > 0 && (
+        {customStops.length > 0 && form.handover === "shuttle" && (
           <Field id="stopId" label={t.stop} error={fieldErrors.stopId}>
             <select id="stopId" value={form.stopId} onChange={set("stopId")} aria-invalid={!!fieldErrors.stopId} className={inputClass}>
               <option value="">{t.stopAirport}</option>
@@ -526,6 +533,29 @@ export function ReservationForm({
           />
         </Field>
       </div>
+
+      <fieldset data-testid="handover">
+        <legend className={labelClass}>{t.handover}</legend>
+        <div className="flex gap-1.5">
+          {(["shuttle", "valet"] as const).map(h => (
+            <button
+              key={h}
+              type="button"
+              aria-pressed={form.handover === h}
+              onClick={() => setForm({ ...form, handover: h })}
+              className={cn(
+                "flex h-11 flex-1 items-center justify-center gap-1.5 font-semibold",
+                form.handover === h ? (h === "valet" ? "bg-info text-info-ink" : "bg-foreground text-background") : "border border-border hover:bg-accent",
+              )}
+            >
+              {h === "valet" && <ValetIcon className="h-4 w-4" />}
+              {t.handovers[h]}
+            </button>
+          ))}
+        </div>
+        {form.handover === "valet" && <p className="mt-1.5 text-sm text-muted-foreground">{t.handoverValetHelp}</p>}
+        {fieldErrors.handover && <p className="mt-1.5 text-sm text-destructive">{errorMessage(fieldErrors.handover)}</p>}
+      </fieldset>
 
       <ChildSeatsBlock
         seats={form.childSeats}

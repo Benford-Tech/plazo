@@ -1,3 +1,4 @@
+import { valetMeetingPointOf } from '@/domain/valet';
 import { Container, Service } from 'typedi';
 import { AWAY_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
@@ -413,6 +414,7 @@ export class FlightTrackingService {
         instructions: point?.instructions ?? null,
         phone: booking.parking.listing.contactPhone,
         manageUrl: url,
+        valetMeetingPoint: booking.handover === 'valet' ? valetMeetingPointOf(booking.parking, booking.parking.listing.airport.code) : null,
       }),
     });
   }

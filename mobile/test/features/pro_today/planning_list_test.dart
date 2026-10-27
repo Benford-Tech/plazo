@@ -74,19 +74,19 @@ void main() {
     expect(merged.map((e) => e.done).toList(), [false, true, true, false, false, false]);
   });
 
-  testWidgets('une seule liste : barre de date compacte, pilules avec comptages, passés repliés, pastilles DÉPÔT / RETOUR', (tester) async {
+  testWidgets('une seule liste : barre de date compacte, pilules avec comptages, passés repliés, pastilles ARRIVÉE / DÉPART', (tester) async {
     await show(tester);
     expect(find.byKey(const Key('date-bar')), findsOneWidget);
     expect(find.text('MAR. 27 OCT.'), findsOneWidget);
     expect(find.byKey(const Key('today-back')), findsNothing);
     expect(find.text('Tout · 6'), findsOneWidget);
-    expect(find.text('Dépôts · 3'), findsOneWidget);
-    expect(find.text('Retours · 3'), findsOneWidget);
+    expect(find.text('Arrivées · 3'), findsOneWidget);
+    expect(find.text('Départs · 3'), findsOneWidget);
     // Chloé (arrived) and Marc (back at the parking) are done: folded.
     expect(find.text('DÉJÀ PASSÉS · 2'), findsOneWidget);
     expect(visibleRows(tester), ['b1', 'a1', 'b2', 'a3']);
-    expect(find.text('DÉPÔT'), findsNWidgets(2));
-    expect(find.text('RETOUR'), findsNWidgets(2));
+    expect(find.text('ARRIVÉE'), findsNWidgets(2));
+    expect(find.text('DÉPART'), findsNWidgets(2));
 
     await tester.tap(find.byKey(const Key('planning-past')));
     await tester.pump();
@@ -99,7 +99,7 @@ void main() {
     await tester.tap(find.byKey(const Key('planning-filter-returns')));
     await tester.pump();
     expect(visibleRows(tester), ['b1', 'b2']);
-    expect(find.text('DÉPÔT'), findsNothing);
+    expect(find.text('ARRIVÉE'), findsNothing);
     await tester.ensureVisible(find.byKey(const Key('planning-filter-arrivals')));
     await tester.tap(find.byKey(const Key('planning-filter-arrivals')));
     await tester.pump();

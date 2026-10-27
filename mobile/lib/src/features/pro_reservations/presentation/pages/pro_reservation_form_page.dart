@@ -10,6 +10,7 @@ import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/child_seat_widgets.dart';
+import '../../../../shared/widgets/segmented.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/plate_field.dart';
 import '../../data/models/reservation_models.dart';
@@ -255,6 +256,22 @@ class _FormState extends State<_Form> {
                 ChildSeatsEditor(seats: i.childSeats, onChanged: (s) => _set((x) => x.copyWith(childSeats: s))),
                 if (seatsError != null)
                   Text(seatsError, key: const Key('f-child-seats-error'), style: AppText.body(size: 12.5, color: AppColors.danger)),
+                const SizedBox(height: 12),
+                // « Voiturier au terminal » (27/10/2026): the car taken and brought back at the terminal, no shuttle.
+                Text('res.care'.tr(), style: AppText.strong(size: 14)),
+                const SizedBox(height: 6),
+                Segmented<String>(
+                  key: const Key('f-handover'),
+                  values: const ['shuttle', 'valet'],
+                  labels: ['res.care_shuttle'.tr(), 'res.care_valet'.tr()],
+                  selected: i.handover,
+                  onChanged: (v) => _set((x) => x.copyWith(handover: v)),
+                ),
+                if (i.handover == 'valet')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text('res.care_valet_help'.tr(), style: AppText.body(size: 12.5, color: AppColors.muted)),
+                  ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   key: const Key('f-channel'),

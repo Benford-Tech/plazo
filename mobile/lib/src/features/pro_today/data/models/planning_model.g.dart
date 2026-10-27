@@ -26,6 +26,7 @@ _PlanningRowModel _$PlanningRowModelFromJson(Map<String, dynamic> json) =>
           : StaffSignalModel.fromJson(
               json['arrivalSignal'] as Map<String, dynamic>,
             ),
+      handover: json['handover'] as String? ?? 'shuttle',
     );
 
 Map<String, dynamic> _$PlanningRowModelToJson(_PlanningRowModel instance) =>
@@ -42,6 +43,7 @@ Map<String, dynamic> _$PlanningRowModelToJson(_PlanningRowModel instance) =>
       'returnFlight': instance.returnFlight,
       'stopId': instance.stopId,
       'arrivalSignal': instance.arrivalSignal,
+      'handover': instance.handover,
     };
 
 _PlanningParkingModel _$PlanningParkingModelFromJson(

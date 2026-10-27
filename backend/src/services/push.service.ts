@@ -17,7 +17,17 @@ const MAX_SUBSCRIPTIONS_PER_CALL = 2000;
  * 10/10/2026 (relecture): `bookingChanges` = whoever hears of bookings at all (immediate or hourly), for a booking Plazo
  * changed by itself. 13/10/2026: `team` = the managers, always (a request to join the team waits for one of them).
  */
-export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest' | 'bookingChanges' | 'team';
+export type PushAudience =
+  | 'arrivals'
+  | 'returns'
+  | 'shuttles'
+  | 'platform'
+  | 'bookings'
+  | 'bookingDigest'
+  | 'bookingChanges'
+  | 'team'
+  // 27/10/2026: the valets (role or today's post) and the managers, for « Course à prendre ».
+  | 'valets';
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -53,7 +63,9 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
               ? { bookingNotify: { in: ['immediate', 'hourly'] } }
               : audience === 'team'
                 ? { role: 'manager' }
-                : { notifyPlatform: true };
+                : audience === 'valets'
+                  ? { OR: [{ role: { in: ['valet', 'manager'] } }, { post: 'valet' }] }
+                  : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to

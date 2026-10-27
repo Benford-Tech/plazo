@@ -15,10 +15,10 @@ class ProTab {
 /// The four posts a staff member can hold for the day (R-C, 04/10/2026), in the order of the sheet.
 const posts = ['manager', 'agent', 'driver', 'valet'];
 
-/// The four tabs of each post: the pages of the day's work first, "Plus" keeps the rest.
+/// The tabs of each post: the pages of the day's work first, "Plus" keeps the rest.
 ///
 /// - driver: the shuttle, then the arrivals and returns of the day;
-/// - valet: the parking (arrivals to place, keys), the day, the spot planning;
+/// - valet: the parking (arrivals to place, keys), the terminal runs, the day, the spot planning (five tabs);
 /// - agent and manager: the day, the bookings, the parking.
 List<ProTab> tabsFor(String post) {
   const more = ProTab(route: ProMoreTabRoute(), icon: Icons.more_horiz_rounded, label: 'more', key: 'ptab-more');
@@ -35,6 +35,8 @@ List<ProTab> tabsFor(String post) {
     case 'valet':
       return [
         parking,
+        // « Voiturier au terminal » (27/10/2026, direction B): the runs to and from the terminal.
+        const ProTab(route: ProValetRoute(), icon: Icons.hail_rounded, label: 'terminal', key: 'ptab-terminal'),
         today,
         const ProTab(route: ProSpotPlanningRoute(), icon: Icons.view_timeline_outlined, label: 'places', key: 'ptab-places'),
         more,
