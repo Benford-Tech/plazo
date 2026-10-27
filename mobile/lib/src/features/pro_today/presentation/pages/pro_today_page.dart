@@ -434,7 +434,8 @@ class _Column extends StatelessWidget {
   }
 
   Widget _tile(BuildContext context, TodayRow row) {
-    final boarding = board?.call(row.booking);
+    // A valet booking never rides the shuttle: no « Embarquer » / « Récupérer » (27/10/2026).
+    final boarding = row.booking.handover == 'valet' ? null : board?.call(row.booking);
     final hand = onBoard;
     return TodayRowTile(
       row: row,
@@ -471,7 +472,7 @@ class _FilterPills extends StatelessWidget {
             const SizedBox(width: 6),
             _pill(TodayFilter.arrivals, 'pro.dropoffs'.tr(), arrivals, AppStatus.ok),
             const SizedBox(width: 6),
-            _pill(TodayFilter.returns, 'pro.returns'.tr(), returns, AppStatus.info),
+            _pill(TodayFilter.returns, 'pro.departures'.tr(), returns, AppStatus.info),
           ],
         ),
       ),

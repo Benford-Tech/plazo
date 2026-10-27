@@ -27,6 +27,7 @@ import '../../features/pro_revenue/presentation/bloc/pro_revenue_bloc.dart';
 import '../../features/pro_revenue/presentation/pages/pro_revenue_missing_page.dart';
 import '../../features/pro_revenue/presentation/pages/pro_revenue_page.dart';
 import '../../features/pro_start/presentation/pages/pro_getting_started_page.dart';
+import '../../features/pro_valet/presentation/pages/pro_valet_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_account_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_parking_settings_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_team_page.dart';
@@ -97,6 +98,8 @@ class AppRouter extends RootStackRouter {
           AutoRoute(page: ProArrivalsRoute.page, path: 'arrivees'),
           AutoRoute(page: ProReturnsRoute.page, path: 'retours'),
           AutoRoute(page: ProSpotPlanningRoute.page, path: 'places'),
+          // « Voiturier au terminal » (27/10/2026): the valet's runs.
+          AutoRoute(page: ProValetRoute.page, path: 'terminal'),
         ],
       ),
       AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),

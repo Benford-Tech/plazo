@@ -6,6 +6,7 @@ import '../../../../core/helpers/formatters.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/valet_icon.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../data/models/planning_model.dart';
 import '../../data/models/staff_signal_model.dart';
@@ -32,7 +33,7 @@ class TodayRowTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   /// Direction A (27/10/2026): in the merged list of the day, the card says its kind, « DÉPÔT » on a pale green
-  /// ground or « RETOUR » on a pale indigo one, with a matching edge on the left.
+  /// ground or « RETOUR » on a pale indigo one (« ARRIVÉE » / « DÉPART » since 27/10/2026), with a matching edge on the left.
   final bool tagged;
 
   /// Already done (under « Déjà passés »): faded.
@@ -114,6 +115,10 @@ class TodayRowTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
+            if (b.handover == 'valet') ...[
+              Align(alignment: Alignment.centerLeft, child: ValetPill(label: 'res.care_valet'.tr())),
+              const SizedBox(height: 6),
+            ],
             Row(
               children: [
                 FrenchPlate(b.plate),
