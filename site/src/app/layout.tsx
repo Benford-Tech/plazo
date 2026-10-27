@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Manrope, Playfair_Display } from "next/font/google";
+import { HiddenOn } from "@/components/HiddenOn";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { fr, texts } from "@/lib/fr";
 import { paymentsOnline } from "@/lib/payments";
 import { PRODUCT_NAME } from "@/lib/product";
 import { openGraph } from "@/lib/seo";
-import { siteUrl } from "@/lib/site";
+import { OPERATORS_PREFIX, siteUrl } from "@/lib/site";
 import "./globals.css";
 
 // Boutique (11/10/2026): Manrope for the text and the prices, Playfair Display regular (no more italic) for the
@@ -43,11 +44,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           {fr.a11y.skipToContent}
         </a>
-        <SiteHeader />
+        {/* Plazo Pro's pages (/loueurs) carry their own header and footer. */}
+        <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+          <SiteHeader />
+        </HiddenOn>
         <div id="contenu" className="flex flex-1 flex-col">
           {children}
         </div>
-        <SiteFooter />
+        <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+          <SiteFooter />
+        </HiddenOn>
       </body>
     </html>
   );

@@ -2,6 +2,8 @@
 
 import { api, ApiError } from "./api";
 import type { FormState } from "./forms";
+import { formatEuros } from "./money";
+import { DEFAULT_PLAN, PRO_OPTIONS, PRO_PLANS, selectionSummary, type OptionId, type PlanId } from "./pro-pricing";
 
 // Footer A (15/10/2026): the contact form and « La lettre Plazo ». Like the other forms of the site they go through the
 // site's server (server actions), which forwards the site key and the visitor's address to the API's per-visitor
@@ -78,4 +80,54 @@ export async function newsletterAction(_previous: FormState, formData: FormData)
     return failure(values, error);
   }
   return { values: {}, fields: {}, error: null, notice: "newsletter_sent" };
+}
+
+/**
+ * « Demander un devis » of the Plazo Pro pricing page (27/10/2026): the operator's details and the selection made on the
+ * page, sent like the contact form to the support address (the visitor in Reply-To). The selection is read again
+ * here from its ids, never taken as text from the browser.
+ */
+export async function quoteAction(_previous: FormState, formData: FormData): Promise<FormState> {
+  const values = {
+    firstName: text(formData, "firstName"),
+    lastName: text(formData, "lastName"),
+    parking: text(formData, "parking"),
+    email: text(formData, "email"),
+    phone: text(formData, "phone"),
+    airport: text(formData, "airport"),
+  };
+  const fields: Record<string, string> = {};
+  for (const name of ["firstName", "lastName", "parking", "email"] as const) if (!values[name]) fields[name] = "required";
+  for (const name of ["firstName", "lastName", "parking", "phone", "airport"] as const) {
+    if (!fields[name] && values[name].length > 80) fields[name] = "too_long";
+  }
+  if (Object.keys(fields).length) return { values, fields: fieldCodes(fields), error: "validation_failed" };
+
+  const options = formData.getAll("options").filter((o): o is OptionId => typeof o === "string" && PRO_OPTIONS.some(p => p.id === o));
+  const planValue = text(formData, "plan");
+  const selection = {
+    plan: (PRO_PLANS.some(p => p.id === planValue) ? planValue : DEFAULT_PLAN) as PlanId,
+    yearly: text(formData, "yearly") === "1",
+    marketplace: text(formData, "marketplace") === "1",
+    options,
+  };
+  const message = [
+    "Demande de devis Plazo Pro",
+    `Parking : ${values.parking}`,
+    `Aéroport : ${values.airport || "non précisé"}`,
+    `Téléphone : ${values.phone || "non précisé"}`,
+    "",
+    selectionSummary(selection, formatEuros),
+  ].join("\n");
+  try {
+    await api.contact({
+      name: `${values.firstName} ${values.lastName}`.slice(0, CONTACT_LIMITS.name),
+      email: values.email,
+      message: message.slice(0, CONTACT_LIMITS.message),
+      website: text(formData, "website"),
+    });
+  } catch (error) {
+    return failure(values, error);
+  }
+  return { values: {}, fields: {}, error: null, notice: "quote_sent" };
 }

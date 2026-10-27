@@ -63,8 +63,26 @@
   --color-plate-blue: #1f3fa6;
   --color-plate-ink: #0b0b0c;
 
+  /*
+   * Plazo Pro's own pages (/loueurs, 27/10/2026, « Tarifs » mockup validated by Joanny): the colours of the pro space
+   * (direction C-B « Opérations »): grey-green ground, lime in fills only (dark green text on it), dark green for
+   * accent text. Never used on the travellers' pages.
+   */
+  --color-pro-ground: #eef0ee;
+  --color-pro-line: #e4e6e2;
+  --color-pro-ink: #1a1d1a;
+  --color-pro-soft: #5f6672; /* #6B7280 of the pro space, a touch darker: 4.9:1 on the ground */
+  --color-lime: #a3e635;
+  --color-lime-ink: #0f2a14; /* text on lime, and the dark band */
+  --color-lime-deep: #1e5e2e; /* accent text and outlines */
+  --color-lime-soft: #e7f3df;
+  --color-lime-band: #eaf7d6; /* text on the dark band */
+
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  /* Plazo Pro's pages: set again by the /loueurs layout with the next/font faces. */
+  --font-pro: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-pro-display: "Arial Narrow", Arial, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
   --radius-card: 16px; /* cards, maps, sheets */

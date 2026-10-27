@@ -96,3 +96,33 @@ describe("newsletterAction", () => {
     expect(await newsletterAction(EMPTY_FORM, form({ email: "camille@" }))).toMatchObject({ fields: { email: "invalid_email" }, values: { email: "camille@" } });
   });
 });
+
+describe("quoteAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends the operator's details and the selection read again from its ids", async () => {
+    const { quoteAction } = await import("../contact-actions");
+    contact.mockResolvedValue({ ok: true });
+    const data = form({ firstName: " Claire ", lastName: "Martin", parking: "Parking des Cèdres", email: "claire@example.com", phone: "", airport: "", plan: "complet", yearly: "0", marketplace: "1", website: "" });
+    data.append("options", "setup");
+    data.append("options", "evil<script>");
+    const state = await quoteAction(EMPTY_FORM, data);
+    expect(state.notice).toBe("quote_sent");
+    const sent = contact.mock.calls[0][0];
+    expect(sent.name).toBe("Claire Martin");
+    expect(sent.message).toContain("Parking : Parking des Cèdres");
+    expect(sent.message).toContain("Logiciel Complet");
+    expect(sent.message).toContain("Mise en route sur place");
+    expect(sent.message).not.toContain("evil");
+  });
+
+  it("asks for the required fields before calling the API", async () => {
+    const { quoteAction } = await import("../contact-actions");
+    const state = await quoteAction(EMPTY_FORM, form({ firstName: "", lastName: "Martin", parking: "", email: "" }));
+    expect(state.error).toBe("validation_failed");
+    expect(state.fields).toEqual({ firstName: "required", parking: "required", email: "required" });
+    expect(contact).not.toHaveBeenCalled();
+  });
+});
