@@ -95,10 +95,12 @@ void main() {
 
   testWidgets('les pilules gardent un sens ; un autre jour montre « Aujourd\'hui » pour revenir', (tester) async {
     await show(tester);
+    await tester.ensureVisible(find.byKey(const Key('planning-filter-returns')));
     await tester.tap(find.byKey(const Key('planning-filter-returns')));
     await tester.pump();
     expect(visibleRows(tester), ['b1', 'b2']);
     expect(find.text('DÉPÔT'), findsNothing);
+    await tester.ensureVisible(find.byKey(const Key('planning-filter-arrivals')));
     await tester.tap(find.byKey(const Key('planning-filter-arrivals')));
     await tester.pump();
     expect(visibleRows(tester), ['a1', 'a3']);
