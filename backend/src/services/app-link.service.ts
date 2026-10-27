@@ -58,7 +58,7 @@ export class AppLinkService {
   public async resolve(code: string): Promise<AppLinkTarget> {
     const reference = appLinkReference(code);
     if (!reference) throw notFound();
-    const booking = await prisma.reservation.findFirst({ where: { reference, channel: 'plazo' }, select: SELECT });
+    const booking = await prisma.reservation.findFirst({ where: { reference }, select: SELECT });
     if (!booking?.parking.listing || !isValidAppLinkCode(booking, code, this.secret)) throw notFound();
     if (manageLinkExpired(booking.returnAt)) throw notFound();
     return this.target(booking);
@@ -71,7 +71,7 @@ export class AppLinkService {
   public async claim(code: string, ip: string, platform: AppPlatform): Promise<void> {
     const reference = appLinkReference(code);
     if (!reference) throw notFound();
-    const booking = await prisma.reservation.findFirst({ where: { reference, channel: 'plazo' }, select: SELECT });
+    const booking = await prisma.reservation.findFirst({ where: { reference }, select: SELECT });
     if (!booking?.parking.listing || !isValidAppLinkCode(booking, code, this.secret) || manageLinkExpired(booking.returnAt)) throw notFound();
     const fingerprint = deviceFingerprint(ip, platform);
     await prisma.$transaction([

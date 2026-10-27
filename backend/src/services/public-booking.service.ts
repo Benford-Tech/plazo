@@ -239,7 +239,8 @@ export class PublicBookingService {
   /** The manage token of a booking, for its reference and the email given when booking. */
   public async lookup(data: LookupBookingDto) {
     const reservation = await prisma.reservation.findFirst({
-      where: { reference: data.reference.trim().toUpperCase(), channel: 'plazo' },
+      // Any channel (27/10/2026): the parking's own bookings and imports get the same SMS links as Plazo's.
+      where: { reference: data.reference.trim().toUpperCase(), parking: { listing: { isNot: null } } },
       select: { id: true, reference: true, customerEmail: true, returnAt: true, manageTokenVersion: true },
     });
     if (!reservation?.customerEmail || reservation.customerEmail !== data.email.trim().toLowerCase()) throw notFound();
@@ -361,6 +362,8 @@ export class PublicBookingService {
   public async cancel(reference: string, token: string | undefined): Promise<PublicBooking> {
     const before = await this.load(reference, token);
     const closed = () => new HttpException(httpStatus.CONFLICT, 'This booking can no longer be cancelled online', 'cancellation_closed');
+    // Only a booking made on Plazo is cancelled online: the others belong to the parking or the comparator.
+    if (before.channel !== 'plazo') throw closed();
     if (!canCancel(before.status, cancellableUntil(before.arrivalAt, this.policy(before)))) throw closed();
 
     const after = await this.payments.cancelWithRefund(
@@ -438,7 +441,7 @@ export class PublicBookingService {
   public async load(reference: string, token: string | undefined): Promise<BookingRecord> {
     if (!reference || reference.length > 20 || !token) throw notFound();
     const reservation = await prisma.reservation.findFirst({
-      where: { reference: reference.toUpperCase(), channel: 'plazo' },
+      where: { reference: reference.toUpperCase() },
       include: WITH_LISTING,
     });
     if (!reservation?.parking.listing || !isValidManageToken(reservation.id, token, this.secret, reservation.manageTokenVersion)) throw notFound();
