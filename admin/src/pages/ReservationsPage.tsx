@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { MovementPill } from "@/components/MovementPill";
 import { Plate } from "@/components/Plate";
 import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +10,7 @@ import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr, inboundFr, remindersFr } from "@/lib/fr";
 import { euros, isPriceLocked } from "@/lib/pricing";
+import { MOVEMENT_CARD, nextMovementOf } from "@/lib/movement";
 import { can } from "@/lib/roles";
 import type { Reservation } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -105,9 +107,16 @@ export default function ReservationsPage() {
       )}
       {data && <p className="text-sm text-muted-foreground">{q ? t.orderSearch : data.page >= 1 ? t.orderFromToday : t.orderBeforeToday}</p>}
       {error && <p className="text-destructive">{describeError(error)}</p>}
-      <ul className={isFetching ? "opacity-70" : ""}>
-        {data?.docs.map(r => (
-          <li key={r.id} className={cn("flex flex-wrap items-center gap-x-3 border-b border-border", without(r) && "bg-warn-soft")} data-testid={without(r) ? "row-no-price" : undefined}>
+      <ul className={cn("flex flex-col gap-1.5", isFetching && "opacity-70")}>
+        {data?.docs.map(r => {
+          // 28/10/2026: the row of its next movement, a green arrival or an indigo departure (a missing price stays amber).
+          const move = nextMovementOf(r.status);
+          return (
+            <li
+              key={r.id}
+              className={cn("flex flex-wrap items-center gap-x-3 overflow-hidden rounded-lg border border-border bg-card", move && MOVEMENT_CARD[move], without(r) && "bg-warn-soft")}
+              data-testid={without(r) ? "row-no-price" : undefined}
+            >
             <Link to={`/reservations/${r.id}`} className="flex min-h-16 min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-1 py-2 hover:bg-accent">
               <Plate value={r.plate} />
               <span className="min-w-0 flex-1">
@@ -115,6 +124,7 @@ export default function ReservationsPage() {
                 <span className="tabular block text-sm text-muted-foreground">
                   <span className="font-mono">{r.reference}</span> · {dateTimeShort(r.arrivalAt)} → {dateTimeShort(r.returnAt)}
                 </span>
+                {move && <MovementPill kind={move} time={dateTimeShort(move === "arrival" ? r.arrivalAt : r.returnAt)} className="mt-1" />}
               </span>
               {/* 19/10/2026: for the managers, the price and, for a comparator's booking, what they keep. */}
               {r.commission && r.priceCents !== null && (
@@ -123,7 +133,7 @@ export default function ReservationsPage() {
                   <span className="block text-lime-deep">{fr.commission.keeps(euros(r.commission.netCents ?? r.priceCents))}</span>
                 </span>
               )}
-              <span className="border border-border px-2 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>
+              <span className="rounded-full border border-border bg-white px-2.5 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>
             </Link>
             {/* 21/10/2026 (choice A): no price yet, typed here without opening the booking. */}
             {without(r) &&
@@ -140,8 +150,9 @@ export default function ReservationsPage() {
                   + {n.toFill}
                 </button>
               ))}
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       {data && data.docs.length === 0 && (
         <p className="text-muted-foreground">{noPrice && !q && data.totalDocs === 0 ? n.none : !q && data.hasPrevPage ? t.noneFromToday : t.noResult}</p>

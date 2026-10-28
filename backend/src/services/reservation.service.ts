@@ -46,6 +46,8 @@ import { TestFeedService } from './test-feed.service';
 
 const MAX_STAY_DAYS = 90;
 const PLANNING_NIGHTS = 7;
+/** The forecast calendar reads at most three months (92 days). */
+const FORECAST_MAX_DAYS = 92;
 
 const forbidden = () => new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
@@ -1273,6 +1275,52 @@ export class ReservationService {
     const stay = this.parseStay(parking, arrival, ret);
     const { nights, full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { excludeReservationId });
     return { nights, fullNights: full.map(n => n.date), canForce: can(actor.role, 'reservations:force') };
+  }
+
+  /**
+   * 28/10/2026 (« planning prévisionnel », direction A « Calendrier par mois »): for each local day of a period of
+   * 1 to 92 days, its arrivals and returns (bookings as recorded, all channels, cancelled and no-shows excluded) and
+   * the load of its night against the real capacity (`CapacityService.nights`, margin included). No forecast is made up.
+   */
+  public async forecast(actor: AuthenticatedStaff, from?: string, days?: number) {
+    this.require(actor, 'reservations:view');
+    const parking = await this.parkings.getPrimary(actor);
+    const tz = parking.timezone;
+    const today = localDate(new Date(), tz);
+    const start = from && DATE_RE.test(from) ? from : today;
+    const count = Math.min(FORECAST_MAX_DAYS, Math.max(1, Number.isFinite(days) ? Math.floor(days as number) : 31));
+    const end = addDays(start, count - 1);
+    const startAt = dayBounds(start, tz).start;
+    const endAt = dayBounds(end, tz).end;
+
+    const movements = (column: 'arrivalAt' | 'returnAt') => prisma.$queryRaw<{ day: Date; n: number }[]>`
+      SELECT ((r.${Prisma.raw(`"${column}"`)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date AS day, COUNT(*)::int AS n
+      FROM reservations r
+      WHERE r."parkingId" = ${parking.id}
+        AND r.status::text NOT IN ('cancelled', 'no_show', 'pending_payment')
+        AND (r."paymentStatus" IS NULL OR r."paymentStatus"::text <> 'expired')
+        AND r.${Prisma.raw(`"${column}"`)} >= ${startAt} AND r.${Prisma.raw(`"${column}"`)} < ${endAt}
+      GROUP BY 1`;
+    const [arrivals, returns, nights] = await Promise.all([movements('arrivalAt'), movements('returnAt'), this.capacity.nights(parking, start, end)]);
+    const byDay = (rows: { day: Date; n: number }[]) => new Map(rows.map(r => [r.day.toISOString().slice(0, 10), r.n]));
+    const arrivalsOf = byDay(arrivals);
+    const returnsOf = byDay(returns);
+    return {
+      today,
+      timezone: tz,
+      from: start,
+      to: end,
+      bookableCapacity: nights[0]?.bookable ?? 0,
+      days: nights.map(night => ({
+        date: night.date,
+        arrivals: arrivalsOf.get(night.date) ?? 0,
+        returns: returnsOf.get(night.date) ?? 0,
+        parked: night.count,
+        bookable: night.bookable,
+        free: night.free,
+        overbooked: night.overbooked,
+      })),
+    };
   }
 
   /** The day sheet: arrivals and returns of a local date, plus the load of the next nights. */

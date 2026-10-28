@@ -631,6 +631,52 @@ class ProContractRouteArgs {
 }
 
 /// generated route for
+/// [ProForecastPage]
+class ProForecastRoute extends PageRouteInfo<ProForecastRouteArgs> {
+  ProForecastRoute({Key? key, String? anchor, List<PageRouteInfo>? children})
+    : super(
+        ProForecastRoute.name,
+        args: ProForecastRouteArgs(key: key, anchor: anchor),
+        initialChildren: children,
+      );
+
+  static const String name = 'ProForecastRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<ProForecastRouteArgs>(
+        orElse: () => const ProForecastRouteArgs(),
+      );
+      return ProForecastPage(key: args.key, anchor: args.anchor);
+    },
+  );
+}
+
+class ProForecastRouteArgs {
+  const ProForecastRouteArgs({this.key, this.anchor});
+
+  final Key? key;
+
+  final String? anchor;
+
+  @override
+  String toString() {
+    return 'ProForecastRouteArgs{key: $key, anchor: $anchor}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProForecastRouteArgs) return false;
+    return key == other.key && anchor == other.anchor;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ anchor.hashCode;
+}
+
+/// generated route for
 /// [ProGettingStartedPage]
 class ProGettingStartedRoute extends PageRouteInfo<void> {
   const ProGettingStartedRoute({List<PageRouteInfo>? children})

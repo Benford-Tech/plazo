@@ -955,7 +955,7 @@ export const fr = {
         plate: "Plaque · client",
         place: "Place · file",
         keys: "Clés",
-        return: "Retour",
+        return: "Départ",
         state: "État",
       },
       keysSeg: {
@@ -1359,6 +1359,31 @@ export const fr = {
     // Booked by a traveller on the public site.
     plazo: PRODUCT.name,
   } satisfies Record<ReservationChannel, string>,
+  // « Arrivées · Départs » (28/10/2026): the kind of a movement, on its green or indigo pill.
+  movement: { arrival: "Arrivée", departure: "Départ" },
+  // « Planning prévisionnel » (28/10/2026, direction A « Calendrier par mois »).
+  forecast: {
+    tabs: { day: "Jour", forecast: "Prévisionnel" },
+    tabsLabel: "Vue du planning",
+    title: "Planning prévisionnel",
+    views: { semaine: "Semaine", mois: "Mois", "3mois": "3 mois" } as Record<string, string>,
+    viewsLabel: "Période affichée",
+    previous: "Période précédente",
+    next: "Période suivante",
+    today: "Aujourd'hui",
+    legend: { arrivals: "Arrivées", departures: "Départs", high: "Plus de 85 %", full: "Complet" },
+    weekdays: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+    full: "Complet",
+    overbooked: (n: number) => `Complet +${n}`,
+    summary: (arrivals: number, departures: number) =>
+      `${arrivals} arrivée${arrivals > 1 ? "s" : ""} · ${departures} départ${departures > 1 ? "s" : ""}`,
+    busiest: (pct: number, day: string) => `Nuit la plus chargée : ${pct} % (${day})`,
+    fullNights: (n: number) => `${n} nuit${n > 1 ? "s" : ""} complète${n > 1 ? "s" : ""}`,
+    note: "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
+    dayLabel: (date: string, arrivals: number, departures: number, load: string) =>
+      `${date} : ${arrivals} arrivée${arrivals > 1 ? "s" : ""}, ${departures} départ${departures > 1 ? "s" : ""}, ${load}. Ouvrir le planning du jour.`,
+    loadPct: (pct: number) => `occupation ${pct} %`,
+  },
   planning: {
     today: "Aujourd'hui",
     previousDay: "Jour précédent",
@@ -1369,11 +1394,11 @@ export const fr = {
     almostFull: "Presque plein",
     free: (n: number) => `${n} libre${n > 1 ? "s" : ""}`,
     arrivals: "Arrivées",
-    returns: "Retours",
+    returns: "Départs",
     arrivalsCount: (total: number, here: number) =>
       `${total} · ${here} sur place`,
     noArrival: "Aucune arrivée ce jour.",
-    noReturn: "Aucun retour ce jour.",
+    noReturn: "Aucun départ ce jour.",
     pax: (n: number) => `${n} pers.`,
     from: (city: string) => `de ${city}`,
     // Travellers telling the parking they are coming (live position or announce).
@@ -3397,8 +3422,8 @@ export const quickCardFr = {
   call: "Appeler",
   sms: "SMS",
   loadError: "Impossible de charger la réservation.",
-  arrival: "Dépôt",
-  return: "Retour",
+  arrival: "Arrivée",
+  return: "Départ",
   flight: "Vol retour",
   departureFlight: "Vol aller",
   noFlight: "sans vol",

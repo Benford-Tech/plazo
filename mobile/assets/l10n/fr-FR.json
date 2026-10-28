@@ -2528,5 +2528,33 @@
       "not_valet": "Cette réservation prend la navette.",
       "generic": "Une erreur est survenue. Réessayez."
     }
+  },
+  "forecast": {
+    "title": "Planning prévisionnel",
+    "open": "Planning prévisionnel",
+    "views": {
+      "week": "Semaine",
+      "month": "Mois",
+      "quarter": "3 mois"
+    },
+    "previous": "Période précédente",
+    "next": "Période suivante",
+    "legend": {
+      "arrivals": "Arrivées",
+      "departures": "Départs",
+      "high": "Plus de 85 %",
+      "full": "Complet"
+    },
+    "weekdays": "L,M,M,J,V,S,D",
+    "full": "Complet",
+    "overbooked": "Complet +{n}",
+    "summary": "{arrivals} arrivées · {departures} départs",
+    "busiest": "Nuit la plus chargée : {pct} % ({day})",
+    "full_nights": {
+      "one": "{} nuit complète",
+      "other": "{} nuits complètes"
+    },
+    "note": "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
+    "error": "Le planning prévisionnel n'a pas pu être chargé. Tirez pour réessayer."
   }
 }

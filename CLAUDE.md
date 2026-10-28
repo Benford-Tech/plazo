@@ -398,6 +398,24 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
+   - **Planning prévisionnel, direction A « Calendrier par mois » (28/10/2026, « un calendrier/planning prévisionnel affichable
+     sur 1 semaine à 3 mois », maquettes https://claude.ai/artifact/VDdfnQyG8f56DMPVa4FPFF)** : pilules « Jour · Prévisionnel »
+     (`PlanningTabs`) en tête du menu Planning ; page `/pro/planning/previsionnel` (`ForecastPage`, `lib/forecast.ts`) : Semaine
+     (du lundi) · Mois (civil, par défaut) · 3 mois (`?vue=semaine|3mois`, `?date=`), ‹ période ›, grilles du lundi au dimanche ;
+     chaque jour : ↑ arrivées (vert), ↓ départs (indigo), jauge des voitures garées la nuit (pâle sous 70 %, citron, ambre au-dessus
+     de 85 %, rouge « Complet » ou « Complet +N » avec la case teintée), aujourd'hui cerclé de citron, jours passés estompés ; un clic
+     ouvre le planning du jour (`/planning?date=`) ; ligne « N arrivées · N départs », nuit la plus chargée, nuits complètes ; trois
+     mois côte à côte dès `xl`, l'un sous l'autre plus étroit. Serveur : `GET /internal/planning/forecast?from=&days=`
+     (`ReservationService.forecast`, `reservations:view`, 1 à 92 jours, 31 par défaut) → `{ today, timezone, from, to,
+     bookableCapacity, days: [{ date, arrivals, returns, parked, bookable, free, overbooked }] }` : réservations enregistrées, tous
+     canaux, sans annulées, non venues ni attentes de paiement, jour local du parking ; nuits par `CapacityService.nights` (capacité
+     réelle, marge comprise) ; aucune prévision inventée. Tests `planning-forecast.test.ts`,
+     `forecast.test.ts`, `ForecastPage.test.tsx`. **Dans Plazo Pro (28/10/2026, « Ajoute-le aussi dans Plazo Pro »)** : bouton
+     calendrier `date-forecast` au bout de la barre de date du planning (`PlanningDateBar.onForecast`) → page `/pro/previsionnel`
+     (`features/pro_forecast` : `ProForecastPage`, `ForecastDataSource` par Dio sans freezed, `domain/forecast_period.dart` = les
+     règles de `lib/forecast.ts`) : pilules Semaine · Mois · 3 mois, ‹ période ›, légende, résumé, grilles du lundi au dimanche (trois
+     mois l'un sous l'autre), la semaine en lignes ; toucher un jour revient au planning de ce jour. `ProTodayView.clock` (horloge
+     fixe des tests : `planning_list_test.dart` datait la barre au vrai jour). Test `forecast_test.dart`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
@@ -777,6 +795,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sous « Déjà passés · N » (`planning-past`, cartes estompées) ; le bandeau d'arrivée « Voir » choisit la pilule du sens.
      Tablette (≥ 760 px) : deux colonnes inchangées ; onglets Arrivées / Retours du chauffeur (`only`) : la même ligne de
      date, listes inchangées. `ProTodayView.initialMode` ; test `planning_list_test.dart`.
+     **Le même style partout (28/10/2026, « mets à niveau Plazo Pro avec le style des arrivées, départs »)** : une arrivée est
+     verte, un départ indigo, chaque carte a le fond pâle de sa couleur, un liseré de 4 px à gauche et la pastille pleine
+     « ARRIVÉE » / « DÉPART » ; le prochain mouvement d'une réservation = son arrivée tant qu'elle est « Attendu », son départ tant
+     que la voiture est au parking (`nextMovementOf`). Plazo Pro (`shared/widgets/movement_kind.dart` : `Movement`, `MovementPill`,
+     `MovementEdge`) : onglets Arrivées / Départs du chauffeur et deux colonnes de la tablette (cartes teintées, titre à point de
+     couleur « Départs », plus « Retours »), liste Réservations (`ReservationTile` : carte teintée, « ARRIVÉE · sam. 4 oct.
+     06:30 »), Navette (lignes Aller en vert, Retour en indigo). Espace pro web (`lib/movement.ts`, `components/MovementPill.tsx`) :
+     planning du jour (colonnes « Arrivées » / « Départs » à point de couleur, cartes teintées et arrondies, pastille sous l'heure,
+     état et vol en pilules), liste Réservations (ligne teintée et pastille datée ; une ligne sans prix reste ambre), fiche
+     opérationnelle (pastilles Arrivée / Départ devant les deux dates), véhicules du tableau de bord (colonne « Départ », pastille
+     indigo pour un départ du jour). Tests `movement_kind_test.dart`, `MovementPill.test.tsx`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
@@ -1402,7 +1431,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   l'environnement Production s'il existe, sinon le jeton Workers `CLOUDFLARE_API_TOKEN` ; jamais un enregistrement d'un autre type
   remplacé). **En-tête des voyageurs caché sur pro.plazo.fr (28/10/2026, « Enlève le bandeau plazo en haut »)** : là, le chemin est
   « / », que `HiddenOn` ne reconnaît pas ; la mise en page des loueurs porte `data-pro-site` et `globals.css` cache l'en-tête et le
-  pied de page des voyageurs (`data-traveller-chrome` du layout racine) par `body:has([data-pro-site])`, sans rendre les pages dynamiques. **Audit SEO (28/10/2026, « utilise le skill seo-audit »)** : pro.plazo.fr a son `robots.txt` et
+  pied de page des voyageurs (`data-traveller-chrome` du layout racine) par `body:has([data-pro-site])`, sans rendre les pages dynamiques.
+  **Favicon vert (28/10/2026, « le favicon doit être vert pour Plazo Pro »)** : les pages `/loueurs` déclarent le panneau citron de
+  l'espace pro (`metadata.icons` de `loueurs/layout.tsx` : `site/public/brand/favicon-pro.svg`, `favicon-pro.ico` 16/32/48,
+  `apple-touch-icon-pro.png`, copies de `brand/favicon-pro*`) et, sur pro.plazo.fr, `/favicon.ico` est réécrit vers
+  `/brand/favicon-pro.ico` (`next.config.ts`) : le lien du favicon racine et la demande propre des navigateurs y reçoivent le vert.
+  **Audit SEO (28/10/2026, « utilise le skill seo-audit »)** : pro.plazo.fr a son `robots.txt` et
   son `sitemap.xml` (la page d'accueil et `/tarifs`, `isProHost` de `lib/pro-host.ts` dans `robots.ts` et `sitemap.ts`) ; toute autre
   page demandée sur pro.plazo.fr (pages des voyageurs, `/a/…`) part en 308 vers son adresse sur www (`next.config.ts`, fichiers et
   `_next` exclus, jamais si www était pro.plazo.fr) ; titres « Logiciel de gestion de parking d'aéroport · Plazo Pro » et « Tarifs du

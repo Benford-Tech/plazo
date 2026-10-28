@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MovementPill } from "@/components/MovementPill";
 import { KeyRound } from "lucide-react";
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { toast } from "sonner";
@@ -255,7 +256,14 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
         {place}
       </span>
       <KeysControl v={v} />
-      <span className="font-mono text-[12px] text-muted-foreground">{ret}</span>
+      {/* 28/10/2026: every car here has its departure next; today's in the indigo pill of the planning. */}
+      <span>
+        {v.returnsToday ? (
+          <MovementPill kind="departure" time={ret} />
+        ) : (
+          <span className="font-mono text-[12px] text-info-text">{ret}</span>
+        )}
+      </span>
       <span className="flex flex-wrap items-center justify-end gap-1 md:justify-end">
         {vehicleBadges(v).map((b) => (
           <Badge key={b.text} tone={b.tone}>

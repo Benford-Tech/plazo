@@ -119,7 +119,7 @@ List<DayEntry> mergeDay(List<TodayRow> arrivals, List<TodayRow> returns) {
 
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
-  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard});
+  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard, this.clock = DateTime.now});
 
   final TodaySide? only;
 
@@ -131,6 +131,9 @@ class ProTodayView extends StatefulWidget {
 
   /// Hands a traveller over; by default to the shell's Navette tab ([openShuttleTab]).
   final ValueChanged<ShuttleBoarding>? onBoard;
+
+  /// The phone's clock; the tests pass a fixed one (the planning was dated by the real day).
+  final DateTime Function() clock;
 
   @override
   State<ProTodayView> createState() => _ProTodayViewState();
@@ -144,7 +147,7 @@ class _ProTodayViewState extends State<ProTodayView> {
 
   /// « Déjà passés · N » unfolded.
   bool _showPast = false;
-  DateTime _now = DateTime.now();
+  late DateTime _now = widget.clock();
 
   /// The web's home is the dashboard; the planning is one tap away. Only when both sides are shown.
   late TodayMode _mode = widget.initialMode;
@@ -153,7 +156,7 @@ class _ProTodayViewState extends State<ProTodayView> {
   void initState() {
     super.initState();
     // "Position mise à jour il y a 20 s" keeps counting between two polls.
-    _clock = Timer.periodic(const Duration(seconds: 5), (_) => setState(() => _now = DateTime.now()));
+    _clock = Timer.periodic(const Duration(seconds: 5), (_) => setState(() => _now = widget.clock()));
   }
 
   @override
@@ -167,6 +170,14 @@ class _ProTodayViewState extends State<ProTodayView> {
     final d = state.date;
     if (d == null) return _now;
     return DateTime.tryParse(d) ?? _now;
+  }
+
+  /// « Planning prévisionnel » (28/10/2026): a day tapped in the calendar comes back as the day shown.
+  Future<void> _openForecast(ProTodayState state) async {
+    final bloc = context.read<ProTodayBloc>();
+    final picked = await context.router.push<String>(ProForecastRoute(anchor: isoDay(_shownDay(state))));
+    if (picked == null || !mounted) return;
+    bloc.add(ProTodayDateChanged(picked == isoDay(widget.clock()) ? null : picked));
   }
 
   void _see(ProTodayState state) {
@@ -264,6 +275,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                   selected: _shownDay(state),
                   today: _now,
                   onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(day == null ? null : isoDay(day))),
+                  onForecast: () => _openForecast(state),
                 ),
                 // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
                 if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(ProShuttleRoute())),
@@ -294,7 +306,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                                   onBoard: _onBoard,
                                 )
                               : _Column(
-                                  title: 'pro.returns'.tr(),
+                                  title: 'pro.departures'.tr(),
                                   rows: state.returns,
                                   isReturn: true,
                                   state: state,
@@ -316,7 +328,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                         ),
                         const VerticalDivider(width: 1, color: AppColors.line),
                         Expanded(
-                          child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                          child: _Column(title: 'pro.departures'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
                         ),
                       ],
                     ),
@@ -416,7 +428,24 @@ class _Column extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
-          if (title != null) ...[Text(title!.toUpperCase(), style: AppText.label(size: 13)), const SizedBox(height: 10)],
+          // 28/10/2026: the column says its kind like the merged list, a green « Arrivées » or an indigo « Départs ».
+          if (title != null) ...[
+            Row(
+              key: Key(isReturn ? 'column-departures' : 'column-arrivals'),
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: isReturn ? AppStatus.info : AppStatus.ok, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(title!.toUpperCase(), style: AppText.label(size: 13, color: isReturn ? AppStatus.info : AppStatus.okText)),
+                const SizedBox(width: 6),
+                Text('· ${rows.length}', style: AppText.label(size: 13)),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           if (rows.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
@@ -442,6 +471,7 @@ class _Column extends StatelessWidget {
       isReturn: isReturn,
       positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
       onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
+      tagged: true,
       actionLabel: boarding == null ? null : (isReturn ? 'pro.fetch' : 'pro.board').tr(),
       onAction: boarding == null || hand == null ? null : () => hand(boarding),
     );

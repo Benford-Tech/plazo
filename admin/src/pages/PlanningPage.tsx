@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, BusFront, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { MovementPill } from "@/components/MovementPill";
 import { Plate } from "@/components/Plate";
+import { PlanningTabs } from "@/components/planning/PlanningTabs";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +15,7 @@ import { describeError, fr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
 
 function NightCell({ night }: { night: NightLoad }) {
@@ -76,7 +79,7 @@ function SignalLabel({ s }: { s: ArrivalSignal }) {
   return <span className="whitespace-nowrap text-xs font-bold uppercase text-lime-deep sm:text-sm">● {text}</span>;
 }
 
-function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "return"; index: number; clock: { fetchedAt: number; now: number } }) {
+function Row({ r, kind, clock }: { r: PlanningRow; kind: "arrival" | "return"; clock: { fetchedAt: number; now: number } }) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
   const onSite = r.status !== "upcoming";
@@ -85,18 +88,21 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
   const card = useQuickCard();
   return (
-    <li id={`row-${r.id}`} className={cn(live && "my-1 border-2 border-lime-deep")}>
+    <li id={`row-${r.id}`} className={cn("overflow-hidden rounded-lg", MOVEMENT_CARD[isArrival ? "arrival" : "departure"], live && "ring-2 ring-lime-deep")}>
       {/* C-A (06/10/2026): a row opens the operational card; the full page is one link further. */}
       <button
         type="button"
         data-testid={`planning-row-${r.id}`}
         onClick={() => card.open(r.id)}
         className={cn(
-          "grid min-h-16 w-full grid-cols-[56px_1fr_auto] items-center gap-3 border-b border-[#262625] px-1 py-2 text-left hover:bg-accent sm:grid-cols-[64px_1fr_auto] sm:gap-3.5",
-          live ? "border-b-0 bg-background px-2.5" : index % 2 ? "bg-muted/60" : "bg-card",
+          // 28/10/2026: the card of its kind (green arrival, indigo departure), as in Plazo Pro's list of the day.
+          "grid min-h-16 w-full grid-cols-[64px_1fr_auto] items-center gap-3 px-2.5 py-2 text-left hover:brightness-[.97] sm:grid-cols-[72px_1fr_auto] sm:gap-3.5",
         )}
       >
-        <span className="tabular font-mono text-xl font-bold text-lime-deep">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
+        <span className="flex flex-col items-start gap-1">
+          <span className="tabular font-mono text-xl font-bold text-lime-deep">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
+          <MovementPill kind={isArrival ? "arrival" : "departure"} />
+        </span>
         {/* On a phone the plate sits above the name; side by side from sm up. */}
         <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3.5">
           <Plate value={r.plate} />
@@ -118,14 +124,14 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
         ) : isArrival ? (
           <span
             className={cn(
-              "whitespace-nowrap px-2 py-1 text-xs font-bold uppercase sm:text-sm",
-              onSite ? "bg-foreground text-background" : "border border-border text-muted-foreground",
+              "whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-bold uppercase sm:text-sm",
+              onSite ? "border border-ok text-ok-text" : "border border-border text-muted-foreground",
             )}
           >
             {fr.status[r.status]}
           </span>
         ) : r.returnFlight ? (
-          <span className="tabular whitespace-nowrap border border-lime-deep px-2 py-1 font-mono text-sm font-bold text-lime-deep sm:text-[15px]">{r.returnFlight}</span>
+          <span className="tabular whitespace-nowrap rounded-full border border-info bg-white px-2.5 py-1 font-mono text-sm font-bold text-info-text sm:text-[15px]">{r.returnFlight}</span>
         ) : (
           <span />
         )}
@@ -159,15 +165,19 @@ function Column({
   empty: string;
   clock: { fetchedAt: number; now: number };
 }) {
+  const movement = kind === "arrival" ? "arrival" : "departure";
   return (
     <section className="flex min-w-0 flex-col">
-      <div className="flex items-baseline justify-between border-b-2 border-lime-deep px-1 pb-2">
-        <h2 className="text-2xl font-bold uppercase tracking-wider">{title}</h2>
+      <div className="flex items-baseline justify-between px-1 pb-2">
+        <h2 className={cn("flex items-center gap-2 text-2xl font-bold uppercase tracking-wider", MOVEMENT_TEXT[movement])}>
+          <span aria-hidden="true" className={cn("h-2.5 w-2.5 rounded-full", MOVEMENT_DOT[movement])} />
+          {title}
+        </h2>
         <span className="tabular font-mono text-muted-foreground">{count}</span>
       </div>
-      <ul>
-        {items.map((r, i) => (
-          <Row key={r.id} r={r} kind={kind} index={i} clock={clock} />
+      <ul className="flex flex-col gap-2">
+        {items.map(r => (
+          <Row key={r.id} r={r} kind={kind} clock={clock} />
         ))}
       </ul>
       {items.length === 0 && <p className="px-1 py-6 text-muted-foreground">{empty}</p>}
@@ -253,6 +263,7 @@ export default function PlanningPage() {
   return (
     <>
       {banner && <ArrivalBanner signal={banner} onClose={() => setBanner(null)} />}
+      <PlanningTabs />
       {data?.smsWarning && <SmsWarning pending={data.smsWarning.pending} manager={can(user?.role, "parking:manage")} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
