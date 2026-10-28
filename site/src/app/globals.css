@@ -712,3 +712,12 @@
     opacity: 0.35;
   }
 }
+
+/* Plazo Pro's pages (/loueurs, and « / » on pro.plazo.fr): the travellers' header and footer step aside, and the page
+   ground is the pro one under the sticky demo bar. */
+body:has([data-pro-site]) [data-traveller-chrome] {
+  display: none;
+}
+body:has([data-pro-site]) {
+  background: var(--color-pro-ground);
+}

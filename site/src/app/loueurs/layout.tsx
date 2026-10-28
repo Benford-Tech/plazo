@@ -31,6 +31,7 @@ export default function OperatorsLayout({ children }: { children: React.ReactNod
     <div
       // The faces are set here, where next/font defines them (a value read on :root would not see them).
       style={{ "--font-pro": `${inter.style.fontFamily}, system-ui, sans-serif`, "--font-pro-display": `${archivo.style.fontFamily}, "Arial Narrow", sans-serif` } as React.CSSProperties}
+      data-pro-site
       className="flex flex-1 flex-col bg-pro-ground font-pro text-pro-ink"
     >
       <header className="sticky top-0 z-30 border-b border-pro-line bg-white">
