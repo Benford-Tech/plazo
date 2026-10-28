@@ -131,3 +131,39 @@ export function parkingLd(base: string, { airport, parking }: Pick<ParkingRespon
 export function jsonLdScript(data: JsonLdObject | JsonLdObject[]): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
+
+/**
+ * Plazo Pro, the software sold to the parkings (pro.plazo.fr, 28/10/2026 SEO audit): web, iPhone and Android, with the
+ * monthly price range of its plans (excluding VAT, as the pricing page says).
+ */
+export function proSoftwareLd(home: string, plans: { name: string; monthlyCents: number }[], publisher: string): JsonLdObject {
+  const prices = plans.map(p => p.monthlyCents / 100);
+  return {
+    "@context": CONTEXT,
+    "@type": "SoftwareApplication",
+    "@id": `${home}#software`,
+    name: `${PRODUCT_NAME} Pro`,
+    url: home,
+    applicationCategory: "BusinessApplication",
+    applicationSubCategory: "Logiciel de gestion de parking d’aéroport",
+    operatingSystem: "Web, iOS, Android",
+    inLanguage: "fr-FR",
+    description:
+      "Logiciel pour les parkings d’aéroport avec navette et voiturier : réservations de tous les canaux, plan du parking, navette, contrat et état des lieux.",
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "EUR",
+      lowPrice: Math.min(...prices),
+      highPrice: Math.max(...prices),
+      offerCount: plans.length,
+      offers: plans.map(p => ({
+        "@type": "Offer",
+        name: p.name,
+        price: p.monthlyCents / 100,
+        priceCurrency: "EUR",
+        priceSpecification: { "@type": "UnitPriceSpecification", price: p.monthlyCents / 100, priceCurrency: "EUR", unitCode: "MON", valueAddedTaxIncluded: false },
+      })),
+    },
+    ...(publisher ? { publisher: { "@type": "Organization", name: publisher } } : {}),
+  };
+}
