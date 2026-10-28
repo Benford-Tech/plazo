@@ -312,6 +312,28 @@ export interface NightLoad {
   overbooked: boolean;
 }
 
+/** « Planning prévisionnel » (28/10/2026): one local day of GET /internal/planning/forecast. */
+export interface ForecastDay {
+  date: string;
+  arrivals: number;
+  /** Cars going home that day (« Départs » on screen). */
+  returns: number;
+  /** Cars parked the night of that day. */
+  parked: number;
+  bookable: number;
+  free: number;
+  overbooked: boolean;
+}
+
+export interface PlanningForecast {
+  today: string;
+  timezone: string;
+  from: string;
+  to: string;
+  bookableCapacity: number;
+  days: ForecastDay[];
+}
+
 /** A traveller telling the parking they are coming (live position, announce, or at the meeting point). */
 export type ArrivalKind = "outbound" | "return";
 export type ArrivalState = "sharing" | "announced" | "at_meeting_point";

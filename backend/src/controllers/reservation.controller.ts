@@ -32,6 +32,12 @@ export class ReservationController {
     });
   });
 
+  /** GET /internal/planning/forecast?from=YYYY-MM-DD&days=N */
+  public forecast = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const days = str(req.query.days);
+    res.json(await this.reservationService.forecast(req.staff, str(req.query.from), days ? Number(days) : undefined));
+  });
+
   /** GET /internal/capacity?arrivalAt=&returnAt=&excludeId= */
   public capacity = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const { arrivalAt, returnAt, excludeId } = req.query;

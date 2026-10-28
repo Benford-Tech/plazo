@@ -20,6 +20,7 @@ import RevenuePage from "@/pages/RevenuePage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
+import ForecastPage from "@/pages/ForecastPage";
 import ShuttleWavesPage from "@/pages/ShuttleWavesPage";
 import { QuickCardProvider } from "@/components/reservations/ReservationQuickCard";
 import PricingPage from "@/pages/PricingPage";
@@ -145,6 +146,7 @@ const App = () => (
             >
               <Route path="/" element={<DashboardPage />} />
               <Route path="/planning" element={<PlanningPage />} />
+              <Route path="/planning/previsionnel" element={<ForecastPage />} />
               <Route path="/navettes" element={<ShuttleWavesPage />} />
               <Route path="/reservations" element={<ReservationsPage />} />
               <Route

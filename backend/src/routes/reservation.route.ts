@@ -20,6 +20,14 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Reservations]
  *     parameters:
  *       - { in: query, name: date, schema: { type: string, example: "2026-10-04" }, description: "Local date (default: today)" }
+ * /internal/planning/forecast:
+ *   get:
+ *     summary: Forecast calendar — arrivals, returns and night load of each day of 1 to 92 days
+ *     description: Bookings as recorded (all channels, cancelled and no-shows excluded), nights against the real capacity.
+ *     tags: [Reservations]
+ *     parameters:
+ *       - { in: query, name: from, schema: { type: string, example: "2026-10-01" }, description: "First local date (default: today)" }
+ *       - { in: query, name: days, schema: { type: integer, example: 31 }, description: "1 to 92 (default 31)" }
  * /internal/capacity:
  *   get:
  *     summary: Load of each night of a stay, with the nights already full
@@ -143,6 +151,7 @@ export class ReservationRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get('/internal/planning', StaffAuthMiddleware('reservations:view'), this.reservations.planning);
+    this.router.get('/internal/planning/forecast', StaffAuthMiddleware('reservations:view'), this.reservations.forecast);
     this.router.get('/internal/capacity', StaffAuthMiddleware('reservations:view'), this.reservations.capacity);
     this.router.get('/internal/reservations', StaffAuthMiddleware('reservations:view'), this.reservations.list);
     this.router.post(
