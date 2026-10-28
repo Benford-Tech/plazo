@@ -319,7 +319,11 @@ export class NotificationService {
       const code = typeof data?.code === 'string' && /^[a-z_]{1,40}$/.test(data.code) ? data.code : '';
       const message = typeof data?.message === 'string' ? data.message.replace(/\S*@\S*/g, ' ') : '';
       const setup = res.status === 400 && /\b(template|redirection)/i.test(message);
-      logger.error(`[Notifications] ${tag} ${kind} failed for ${about}: HTTP ${res.status}${code ? ` ${code}` : ''}${setup ? ' (settings)' : ''}`);
+      // 28/10/2026: a 401 is either a wrong key or Brevo's « Authorised IPs » blocking Vercel's address: say which.
+      const refusal = res.status === 401 ? (/\bIP\b/i.test(message) ? ' (ip_not_authorised)' : ' (api_key_rejected)') : '';
+      logger.error(
+        `[Notifications] ${tag} ${kind} failed for ${about}: HTTP ${res.status}${code ? ` ${code}` : ''}${setup ? ' (settings)' : ''}${refusal}`,
+      );
       return { ok: false, status: res.status, setup };
     } catch (error) {
       const reason = error instanceof Error ? error.name : 'unknown error';
