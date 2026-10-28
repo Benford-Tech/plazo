@@ -1,3 +1,4 @@
+import type { ImportRow } from "./booking-import";
 import type {
   FileBoard,
   FileChoice,
@@ -80,6 +81,8 @@ import type {
   LiveArrivals,
   Planning,
   PlanningForecast,
+  ImportPreview,
+  ReservationImportSummary,
   Reservation,
   ReservationInput,
   ReservationStatus,
@@ -717,6 +720,12 @@ export const adminApi = {
 
   getPlanning: (date?: string) =>
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
+  // Import of old bookings from a file (28/10/2026): the preview (dryRun), then the import.
+  importReservations: (body: { rows: ImportRow[]; fileName?: string; dryRun: boolean }) =>
+    apiRequest<ImportPreview>("/internal/reservations/import", { method: "POST", body: JSON.stringify(body) }),
+  getReservationImports: () => apiRequest<{ data: ReservationImportSummary[] }>("/internal/reservations/imports"),
+  undoReservationImport: (id: string) =>
+    apiRequest<{ removed: number; kept: number }>(`/internal/reservations/imports/${id}/undo`, { method: "POST" }),
   getPlanningForecast: (from: string, days: number) =>
     apiRequest<PlanningForecast>(`/internal/planning/forecast?from=${from}&days=${days}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),

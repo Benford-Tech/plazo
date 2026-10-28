@@ -79,6 +79,7 @@ model Operator {
   comparatorCommissions ComparatorCommission[]
   contractTemplates     OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
+  reservationImports    ReservationImport[]
 
   @@map("operators")
 }
@@ -176,23 +177,24 @@ model Staff {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @default(now()) @updatedAt
 
-  operator            Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  operator            Operator            @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
   accountTokens       AccountToken[]
   auditLogs           AuditLog[]
   createdReservations Reservation[]
+  reservationImports  ReservationImport[]
   capacityStudies     CapacityStudy[]
   devices             StaffDevice[]
   shuttleTrips        ShuttleTrip[]
-  shuttleVehicles     ShuttleVehicle[]   @relation("UsualDriver")
-  vehicle             ShuttleVehicle?    @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
+  shuttleVehicles     ShuttleVehicle[]    @relation("UsualDriver")
+  vehicle             ShuttleVehicle?     @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
   identities          StaffIdentity[]
-  joinRequests        StaffJoinRequest[] @relation("JoinRequestMember")
-  decidedJoinRequests StaffJoinRequest[] @relation("JoinRequestDecider")
-  extrasDone          ReservationExtra[] @relation("ExtraDoneBy")
-  extrasRefused       ReservationExtra[] @relation("ExtraRefusedBy")
-  valetArrivalRuns    Reservation[]      @relation("ValetArrivalRuns")
-  valetDepartureRuns  Reservation[]      @relation("ValetDepartureRuns")
+  joinRequests        StaffJoinRequest[]  @relation("JoinRequestMember")
+  decidedJoinRequests StaffJoinRequest[]  @relation("JoinRequestDecider")
+  extrasDone          ReservationExtra[]  @relation("ExtraDoneBy")
+  extrasRefused       ReservationExtra[]  @relation("ExtraRefusedBy")
+  valetArrivalRuns    Reservation[]       @relation("ValetArrivalRuns")
+  valetDepartureRuns  Reservation[]       @relation("ValetDepartureRuns")
 
   @@index([operatorId])
   @@map("staff")
@@ -857,10 +859,13 @@ model Reservation {
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
   anonymizedAt             DateTime?
+  /// 28/10/2026: the file import that created the booking (« importer des anciennes réservations »); null otherwise.
+  importId                 String?
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @default(now()) @updatedAt
 
   operator         Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  import           ReservationImport?     @relation(fields: [importId], references: [id], onDelete: SetNull)
   parking          Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy        Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
   spot             ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
@@ -889,7 +894,29 @@ model Reservation {
   @@index([operatorId, plateKey])
   @@index([status, holdExpiresAt])
   @@index([payoutStatus, arrivalAt])
+  @@index([importId])
   @@map("reservations")
+}
+
+/// 28/10/2026 (« importer des anciennes réservations dans plazo et avoir un aperçu avant de valider », direction A): one
+/// file imported by a manager. Its bookings carry `importId`; « Retirer cet import » removes, within 24 hours, those
+/// nobody touched since (their updatedAt is still the import's createdAt).
+model ReservationImport {
+  id           String    @id @default(cuid())
+  operatorId   String
+  staffId      String?
+  fileName     String    @default("")
+  createdCount Int       @default(0)
+  removedCount Int       @default(0)
+  createdAt    DateTime  @default(now())
+  undoneAt     DateTime?
+
+  operator     Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  staff        Staff?        @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  reservations Reservation[]
+
+  @@index([operatorId, createdAt])
+  @@map("reservation_imports")
 }
 
 // Airports served by the platform (Lyon Saint-Exupéry first).

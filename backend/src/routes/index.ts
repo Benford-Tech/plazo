@@ -1,3 +1,4 @@
+import { BookingImportRoute } from './booking-import.route';
 import { DemoRoute } from './demo.route';
 import { MorningEmailRoute } from './morning-email.route';
 import { ArrivalRoute } from './arrival.route';
@@ -36,6 +37,7 @@ const AppRoutes = [
   new IdentityRoute(),
   new StaffRoute(),
   new ParkingRoute(),
+  new BookingImportRoute(),
   new ReservationRoute(),
   new PaperworkRoute(),
   new ExtraRoute(),

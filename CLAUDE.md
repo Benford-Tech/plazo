@@ -416,6 +416,27 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      règles de `lib/forecast.ts`) : pilules Semaine · Mois · 3 mois, ‹ période ›, légende, résumé, grilles du lundi au dimanche (trois
      mois l'un sous l'autre), la semaine en lignes ; toucher un jour revient au planning de ce jour. `ProTodayView.clock` (horloge
      fixe des tests : `planning_list_test.dart` datait la barre au vrai jour). Test `forecast_test.dart`.
+   - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
+     avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
+     les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`
+     (`ImportReservationsPage`) : un fichier Excel `.xlsx` (lu dans le navigateur sans bibliothèque, `lib/xlsx.ts` :
+     `DecompressionStream` + `DOMParser`, choix de la feuille) ou CSV (`parseCsvCells`), colonnes reconnues par leur titre
+     (`lib/booking-import.ts`, `guessMapping` : « Nom client », « Tél », « Immat », « Date dépôt », « Date retour », « Prix TTC »,
+     « Source », « N° résa »…) et corrigées sur place, puis l'aperçu de chaque ligne par le serveur (pilules À créer · À vérifier ·
+     Déjà dans Plazo · Erreur avec la raison) et « Importer N réservations » (confirmé). Serveur : `POST /internal/reservations/import`
+     `{ rows, fileName, dryRun }` (2 000 lignes au plus, JSON jusqu'à 4 Mo sur cette route), `domain/booking-import.ts` lit chaque
+     cellule (dates françaises, ISO, en lettres ou numéro de série Excel ; heure à part ou non, 08:00 et 18:00 par défaut ; prix
+     « 54,00 € » ; mobile sans son 0 ; canal : comparateur connu, téléphone, comptoir, site, autre nom = comparateur, vide = Import ;
+     statut « Annulée » / « Non venu » du fichier, sinon Rendu, Sur place ou Attendu d'après les dates) ; `BookingImportService` :
+     doublon = même référence, sinon même voyageur (`sameTraveller`) le même jour d'arrivée, dans Plazo ou plus haut dans le fichier ;
+     une nuit à venir déjà complète importe la ligne en « À vérifier » (`overbooked`) ; l'import refait tout sous le verrou des places
+     et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (SMS de la veille en « Ne pas envoyer », messages d'un séjour
+     commencé comptés envoyés, récapitulatif horaire sans les imports), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
+     d'un séjour commencé, sinon l'import. Table `reservation_imports` et `Reservation.importId` (migration `reservation_imports`) ;
+     `GET /internal/reservations/imports` (10 derniers) et « Retirer cet import » `POST …/imports/:id/undo` pendant 24 h : supprime
+     les réservations de l'import que personne n'a touchées (aucune trace après l'import, ni trajet, mail, contrat, état des lieux,
+     service ou SMS), garde les autres (`{ removed, kept }`, 409 `already_undone` / `undo_expired`). Tests `booking-import.test.ts`
+     (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
