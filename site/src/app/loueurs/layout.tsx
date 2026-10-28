@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Archivo_Narrow, Inter } from "next/font/google";
 import Link from "next/link";
 import { currentYear, legalLine } from "@/lib/footer";
@@ -9,6 +10,17 @@ import { PRO_DEMO_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH, PRO_PRICING_PATH, PRO_SIG
 // Plazo Pro's pages (27/10/2026): the pro space's faces, Inter for the text and Archivo Narrow for the titles.
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
 const archivo = Archivo_Narrow({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
+
+/** Plazo Pro's own favicon (28/10/2026): the lime sign of the pro space, not the travellers' orange one. */
+export const metadata: Metadata = {
+  icons: {
+    icon: [
+      { url: "/brand/favicon-pro.ico", sizes: "48x48" },
+      { url: "/brand/favicon-pro.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/brand/apple-touch-icon-pro.png", sizes: "180x180" }],
+  },
+};
 
 const t = fr.proPricing;
 const h = fr.proHome;

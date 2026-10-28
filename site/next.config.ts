@@ -47,6 +47,8 @@ const nextConfig: NextConfig = {
         // pro.plazo.fr (27/10/2026): Plazo Pro's pages at the root of its host; /pro and /api stay the other services.
         { source: "/", has: [{ type: "host", value: PRO_HOST }], destination: OPERATORS_PREFIX },
         { source: "/tarifs", has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/tarifs` },
+        // Plazo Pro's lime favicon (28/10/2026): the root favicon.ico link and the browsers' own request get it there.
+        { source: "/favicon.ico", has: [{ type: "host", value: PRO_HOST }], destination: "/brand/favicon-pro.ico" },
         { source: "/", destination: `/${DEFAULT_AIRPORT}` },
       ],
       afterFiles: [],
