@@ -44,16 +44,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           {fr.a11y.skipToContent}
         </a>
-        {/* Plazo Pro's pages (/loueurs) carry their own header and footer. */}
-        <HiddenOn prefixes={[OPERATORS_PREFIX]}>
-          <SiteHeader />
-        </HiddenOn>
+        {/* Plazo Pro's pages carry their own header and footer: hidden by path on /loueurs, and by CSS wherever the pro
+            layout is on the page (on pro.plazo.fr the path is « / », 28/10/2026). */}
+        <div data-traveller-chrome className="contents">
+          <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+            <SiteHeader />
+          </HiddenOn>
+        </div>
         <div id="contenu" className="flex flex-1 flex-col">
           {children}
         </div>
-        <HiddenOn prefixes={[OPERATORS_PREFIX]}>
-          <SiteFooter />
-        </HiddenOn>
+        <div data-traveller-chrome className="contents">
+          <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+            <SiteFooter />
+          </HiddenOn>
+        </div>
       </body>
     </html>
   );
