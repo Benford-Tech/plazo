@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
-import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL } from "./src/lib/site";
+import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL, siteUrl } from "./src/lib/site";
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -37,6 +37,15 @@ const nextConfig: NextConfig = {
         ? [
             { source: OPERATORS_PREFIX, destination: `${PRO_SITE_URL}/`, permanent: true },
             { source: `${OPERATORS_PREFIX}/tarifs`, destination: `${PRO_SITE_URL}/tarifs`, permanent: true },
+            // 28/10/2026 (SEO audit): pro.plazo.fr served the whole travellers' site too, a copy of www. Any page other than
+            // Plazo Pro's own (and the files: scripts, images, robots.txt, sitemap.xml) goes to its one address on www.
+            // Never when www itself would be pro.plazo.fr (a loop).
+            ...(new URL(siteUrl()).host === PRO_HOST ? [] : [{
+              source: "/:path((?!tarifs$|loueurs|_next|.*\\.).+)",
+              has: [{ type: "host" as const, value: PRO_HOST }],
+              destination: `${siteUrl()}/:path`,
+              permanent: true,
+            }]),
           ]
         : []),
     ];

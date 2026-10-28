@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
+import { headers } from "next/headers";
 import { api } from "@/lib/api";
 import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { topicFacts } from "@/lib/airport-guides";
 import { topicGuide, topicLinks } from "@/lib/guides";
+import { isProHost } from "@/lib/pro-host";
 import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, siteUrl } from "@/lib/site";
 
 // Lists the published parkings, read from the API at request time (never at build time). Demo parkings
@@ -10,6 +12,13 @@ import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, s
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // pro.plazo.fr (28/10/2026, SEO audit): its sitemap lists Plazo Pro's pages only, the travellers' stay on www.
+  if (PRO_SITE_URL && isProHost((await headers()).get("host"))) {
+    return [
+      { url: `${PRO_SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
+      { url: `${PRO_SITE_URL}/tarifs`, changeFrequency: "monthly", priority: 0.8 },
+    ];
+  }
   const base = siteUrl();
   const entries: MetadataRoute.Sitemap = [
     { url: `${base}/`, changeFrequency: "weekly", priority: 1 },

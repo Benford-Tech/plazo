@@ -102,8 +102,8 @@ const frBase = {
   // Plazo Pro's home page (27/10/2026, « un vrai site Plazo Pro avec page d'accueil », on the model of Solution Park's,
   // mockup https://claude.ai/artifact/XBPQJUEg1qcto8MCwj7woY validated by Joanny): what the parking gains, never how.
   proHome: {
-    metaTitle: `${P} Pro · Logiciel pour parking d’aéroport`,
-    metaDescription: `Le logiciel des parkings d’aéroport avec navette et voituriers : réservations de tous vos canaux, places, navettes, contrat et état des lieux. Essayez la démo de ${P} Pro.`,
+    metaTitle: `Logiciel de gestion de parking d’aéroport · ${P} Pro`,
+    metaDescription: `Logiciel pour parkings d’aéroport avec navette et voiturier : réservations des comparateurs, plan, navette, contrat et état des lieux. Démo gratuite.`,
     nav: { software: "Logiciel", live: "Navette et clients", marketplace: `Vendre sur ${P}`, paperwork: "Contrat et état des lieux", pricing: "Tarifs" },
     heroTitle: "Le logiciel des parkings",
     heroAccent: "d’aéroport",
@@ -221,7 +221,7 @@ const frBase = {
   },
   // Plazo Pro « Tarifs » (27/10/2026, mockup validated by Joanny): the operators' pricing page, /loueurs/tarifs.
   proPricing: {
-    metaTitle: `Tarifs ${P} Pro`,
+    metaTitle: `Tarifs du logiciel de parking d’aéroport · ${P} Pro`,
     metaDescription: `Logiciel pour parkings d’aéroport : réservations, comparateurs, plan, navette. Composez votre offre ${P} Pro et voyez le prix tout de suite.`,
     navPricing: "Tarifs",
     navTravellers: "Pour les voyageurs",
@@ -1272,7 +1272,7 @@ export const frOnline: DeepPartial<typeof frBase> = {
     defaultDescription:
       "Comparez les parkings privés avec navette autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne. Paiement sécurisé par carte.",
     airportDescription: (airport: string) =>
-      `Parkings privés à l’aéroport de ${airport} avec navette gratuite vers les terminaux : prix total pour vos dates, réservation et paiement sécurisé en ligne.`,
+      `Parkings privés à l’aéroport de ${airport} avec navette gratuite vers les terminaux : prix total pour vos dates, réservation et paiement en ligne.`,
   },
   home: {
     how: [

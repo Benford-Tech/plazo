@@ -1402,7 +1402,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   l'environnement Production s'il existe, sinon le jeton Workers `CLOUDFLARE_API_TOKEN` ; jamais un enregistrement d'un autre type
   remplacé). **En-tête des voyageurs caché sur pro.plazo.fr (28/10/2026, « Enlève le bandeau plazo en haut »)** : là, le chemin est
   « / », que `HiddenOn` ne reconnaît pas ; la mise en page des loueurs porte `data-pro-site` et `globals.css` cache l'en-tête et le
-  pied de page des voyageurs (`data-traveller-chrome` du layout racine) par `body:has([data-pro-site])`, sans rendre les pages dynamiques.
+  pied de page des voyageurs (`data-traveller-chrome` du layout racine) par `body:has([data-pro-site])`, sans rendre les pages dynamiques. **Audit SEO (28/10/2026, « utilise le skill seo-audit »)** : pro.plazo.fr a son `robots.txt` et
+  son `sitemap.xml` (la page d'accueil et `/tarifs`, `isProHost` de `lib/pro-host.ts` dans `robots.ts` et `sitemap.ts`) ; toute autre
+  page demandée sur pro.plazo.fr (pages des voyageurs, `/a/…`) part en 308 vers son adresse sur www (`next.config.ts`, fichiers et
+  `_next` exclus, jamais si www était pro.plazo.fr) ; titres « Logiciel de gestion de parking d'aéroport · Plazo Pro » et « Tarifs du
+  logiciel de parking d'aéroport · Plazo Pro », descriptions sous 160 caractères, `og:site_name` « Plazo Pro » (`proOpenGraph`) ;
+  JSON-LD `SoftwareApplication` avec les trois formules HT (`proSoftwareLd`) sur l'accueil et les tarifs, plus un `BreadcrumbList` sur
+  les tarifs ; test `pro-seo.test.ts`.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
