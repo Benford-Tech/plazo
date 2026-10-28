@@ -795,6 +795,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sous « Déjà passés · N » (`planning-past`, cartes estompées) ; le bandeau d'arrivée « Voir » choisit la pilule du sens.
      Tablette (≥ 760 px) : deux colonnes inchangées ; onglets Arrivées / Retours du chauffeur (`only`) : la même ligne de
      date, listes inchangées. `ProTodayView.initialMode` ; test `planning_list_test.dart`.
+     **Le même style partout (28/10/2026, « mets à niveau Plazo Pro avec le style des arrivées, départs »)** : une arrivée est
+     verte, un départ indigo, chaque carte a le fond pâle de sa couleur, un liseré de 4 px à gauche et la pastille pleine
+     « ARRIVÉE » / « DÉPART » ; le prochain mouvement d'une réservation = son arrivée tant qu'elle est « Attendu », son départ tant
+     que la voiture est au parking (`nextMovementOf`). Plazo Pro (`shared/widgets/movement_kind.dart` : `Movement`, `MovementPill`,
+     `MovementEdge`) : onglets Arrivées / Départs du chauffeur et deux colonnes de la tablette (cartes teintées, titre à point de
+     couleur « Départs », plus « Retours »), liste Réservations (`ReservationTile` : carte teintée, « ARRIVÉE · sam. 4 oct.
+     06:30 »), Navette (lignes Aller en vert, Retour en indigo). Espace pro web (`lib/movement.ts`, `components/MovementPill.tsx`) :
+     planning du jour (colonnes « Arrivées » / « Départs » à point de couleur, cartes teintées et arrondies, pastille sous l'heure,
+     état et vol en pilules), liste Réservations (ligne teintée et pastille datée ; une ligne sans prix reste ambre), fiche
+     opérationnelle (pastilles Arrivée / Départ devant les deux dates), véhicules du tableau de bord (colonne « Départ », pastille
+     indigo pour un départ du jour). Tests `movement_kind_test.dart`, `MovementPill.test.tsx`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
