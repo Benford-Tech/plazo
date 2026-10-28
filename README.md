@@ -321,9 +321,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   3 mois → indexé, 1er sur « plazo parking », page 1 sur « <client n°1> parking » ; 6 mois → page 1 sur deux ou trois requêtes
   de longue traîne (longue durée, voiturier, prix d'une semaine) ; 12 mois → page 1 sur la requête principale, avec des avis
   et des liens.
-- [ ] Search Console : l'enregistrement TXT `google-site-verification` est déjà dans le DNS Cloudflare ; ajouter la propriété
-  Domaine `plazo.fr`, soumettre `https://www.plazo.fr/sitemap.xml`, demander l'indexation de `/` ; Bing Webmaster Tools par
-  « Import from Google Search Console ».
+- [x] Search Console et Bing pour www.plazo.fr (28/10/2026) : propriété `plazo.fr` validée par l'enregistrement TXT
+  `google-site-verification` du DNS Cloudflare, `https://www.plazo.fr/sitemap.xml` envoyé ; Bing Webmaster Tools par
+  « Import from Google Search Console » (fait par Joanny).
 - [x] Search Console pour pro.plazo.fr (28/10/2026) : propriété ajoutée par Joanny (validée par le même TXT de `plazo.fr`),
   `https://pro.plazo.fr/sitemap.xml` envoyé (accueil, tarifs, navette, voiturier, comparateurs).
 - [x] Bing Webmaster Tools pour pro.plazo.fr (28/10/2026) : importé depuis la Search Console par Joanny (propriété et sitemap
