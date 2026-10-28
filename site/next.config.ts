@@ -1,6 +1,9 @@
 import path from "node:path";
 import type { NextConfig } from "next";
-import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL, siteUrl } from "./src/lib/site";
+import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL, PRO_TOPIC_SLUGS, siteUrl } from "./src/lib/site";
+
+/** The topic pages of Plazo Pro, as a path pattern (« navette|voiturier|comparateurs »). */
+const PRO_TOPICS = PRO_TOPIC_SLUGS.join("|");
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -37,11 +40,12 @@ const nextConfig: NextConfig = {
         ? [
             { source: OPERATORS_PREFIX, destination: `${PRO_SITE_URL}/`, permanent: true },
             { source: `${OPERATORS_PREFIX}/tarifs`, destination: `${PRO_SITE_URL}/tarifs`, permanent: true },
+            { source: `${OPERATORS_PREFIX}/:topic(${PRO_TOPICS})`, destination: `${PRO_SITE_URL}/:topic`, permanent: true },
             // 28/10/2026 (SEO audit): pro.plazo.fr served the whole travellers' site too, a copy of www. Any page other than
             // Plazo Pro's own (and the files: scripts, images, robots.txt, sitemap.xml) goes to its one address on www.
             // Never when www itself would be pro.plazo.fr (a loop).
             ...(new URL(siteUrl()).host === PRO_HOST ? [] : [{
-              source: "/:path((?!tarifs$|loueurs|_next|.*\\.).+)",
+              source: `/:path((?!(?:tarifs|${PRO_TOPICS})$|loueurs|_next|.*\\.).+)`,
               has: [{ type: "host" as const, value: PRO_HOST }],
               destination: `${siteUrl()}/:path`,
               permanent: true,
@@ -56,6 +60,7 @@ const nextConfig: NextConfig = {
         // pro.plazo.fr (27/10/2026): Plazo Pro's pages at the root of its host; /pro and /api stay the other services.
         { source: "/", has: [{ type: "host", value: PRO_HOST }], destination: OPERATORS_PREFIX },
         { source: "/tarifs", has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/tarifs` },
+        { source: `/:topic(${PRO_TOPICS})`, has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/:topic` },
         // Plazo Pro's lime favicon (28/10/2026): the root favicon.ico link and the browsers' own request get it there.
         { source: "/favicon.ico", has: [{ type: "host", value: PRO_HOST }], destination: "/brand/favicon-pro.ico" },
         { source: "/", destination: `/${DEFAULT_AIRPORT}` },

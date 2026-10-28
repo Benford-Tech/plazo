@@ -1447,7 +1447,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   mail) avec leur carte 1200 × 630 : bande vert foncé, plaque citron « Plazo PRO », « Le logiciel des parkings d'aéroport », la petite
   carte de la navette vers le Terminal 1 et « pro.plazo.fr » (`brand/social-card-pro.html`, rendue par `brand/tools/social-card-pro.mjs`
   en `brand/png/social-card-pro-1200x630.png` et `site/public/brand/social-card-pro.png` ; `PRO_SOCIAL_CARD` de `lib/seo.ts`, posée
-  par `proOpenGraph`) ; le site voyageurs garde sa carte orange. La FAQ et les pages par sujet des maquettes n'ont pas été retenues.
+  par `proOpenGraph`) ; le site voyageurs garde sa carte orange. **FAQ et pages par sujet (28/10/2026, « Fais la FAQ et les autres », choix 2A et 3A des mêmes maquettes)** : sur
+  l'accueil, « Questions fréquentes » avant « Un renseignement ? » (`ProFaq` : `<details>` natifs, la première ouverte, réponses
+  dans le HTML ; six questions `fr.proHome.faq` en `FAQPage`) ; trois pages `/navette`, `/voiturier`, `/comparateurs` sur
+  pro.plazo.fr (`app/loueurs/[topic]/page.tsx`, `dynamicParams` faux, `ProTopicView` : bande vert foncé avec fil d'Ariane, le
+  problème et ce qui change, trois écrans dessinés, quatre sections, FAQ, « À lire aussi », démo ; textes ~1 000 mots dans
+  `lib/pro-topics.ts`, vrais faits seulement, aucun mot technique ; JSON-LD `BreadcrumbList` + `FAQPage`) ; `PRO_TOPIC_SLUGS` /
+  `proTopicPath` de `lib/site.ts` ; `next.config.ts` : réécriture sur l'hôte pro, 308 de `/loueurs/<sujet>`, sujets exclus du
+  renvoi vers www ; sitemap de pro.plazo.fr ; menu « Logiciel · Navette · Voiturier · Comparateurs · Contrat et état des lieux ·
+  Tarifs » (le pied de page garde « Vendre sur Plazo ») et liens « En savoir plus › » depuis l'accueil. Tests `pro-topics.test.ts`,
+  `ProTopicView.test.tsx`, `ProHome.test.tsx`.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.

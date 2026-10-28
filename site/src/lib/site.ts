@@ -30,6 +30,10 @@ export const PRO_HOST = PRO_SITE_URL ? new URL(PRO_SITE_URL).host : "pro.plazo.f
 /** The home page of Plazo Pro (27/10/2026, on the model of Solution Park's): « Vous êtes un parking ? » leads to it. */
 export const PRO_HOME_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/` : OPERATORS_PREFIX;
 export const PRO_PRICING_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/tarifs` : `${OPERATORS_PREFIX}/tarifs`;
+/** Plazo Pro's pages by topic (28/10/2026, SEO mockups 3A): one search each, at the root of pro.plazo.fr. */
+export const PRO_TOPIC_SLUGS = ["navette", "voiturier", "comparateurs"] as const;
+export type ProTopicSlug = (typeof PRO_TOPIC_SLUGS)[number];
+export const proTopicPath = (slug: ProTopicSlug) => (PRO_SITE_URL ? `${PRO_SITE_URL}/${slug}` : `${OPERATORS_PREFIX}/${slug}`);
 
 /** « Essayer la démo »: the pro space's demo for prospects (21/10/2026), no account needed. */
 export const PRO_DEMO_PATH = "/pro/demo";

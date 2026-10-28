@@ -32,4 +32,13 @@ describe("ProHome", () => {
     expect(action).toHaveBeenCalled();
     expect(await screen.findByText(/nous vous écrivons très vite pour vous montrer Plazo/)).toBeInTheDocument();
   });
+
+  it("answers the operators' first questions, the first one open, and links to the pages by topic", () => {
+    const { container } = render(<ProHome action={vi.fn(async () => EMPTY_FORM)} demoHref="/pro/demo" pricingHref="/loueurs/tarifs" />);
+    const faq = screen.getByRole("region", { name: "Questions fréquentes" });
+    expect(within(faq).getByText("Quels comparateurs Plazo Pro lit-il ?")).toBeInTheDocument();
+    expect(container.querySelectorAll("details")[0]).toHaveAttribute("open");
+    expect(screen.getByRole("link", { name: "Comparateurs · En savoir plus ›" })).toHaveAttribute("href", "/loueurs/comparateurs");
+    expect(screen.getByRole("link", { name: "Voiturier · En savoir plus ›" })).toHaveAttribute("href", "/loueurs/voiturier");
+  });
 });

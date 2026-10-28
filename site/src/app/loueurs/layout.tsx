@@ -5,7 +5,8 @@ import { currentYear, legalLine } from "@/lib/footer";
 import { fr } from "@/lib/fr";
 import { COMPANY, PRODUCT_NAME } from "@/lib/product";
 import { PRO_HOME_SECTIONS } from "@/components/loueurs/ProHome";
-import { PRO_DEMO_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH, PRO_PRICING_PATH, PRO_SIGNUP_PATH } from "@/lib/site";
+import { PRO_TOPICS } from "@/lib/pro-topics";
+import { PRO_DEMO_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH, PRO_PRICING_PATH, PRO_SIGNUP_PATH, proTopicPath } from "@/lib/site";
 
 // Plazo Pro's pages (27/10/2026): the pro space's faces, Inter for the text and Archivo Narrow for the titles.
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
@@ -28,10 +29,14 @@ const h = fr.proHome;
 /** The home page's sections, then the pricing page (the header's menu and the footer's « Solutions »). */
 const SOLUTIONS = [
   { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.software}`, label: h.nav.software },
-  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.live}`, label: h.nav.live },
-  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.marketplace}`, label: h.nav.marketplace },
+  // The pages by topic (28/10/2026) in place of the home page's « Navette et clients ».
+  { href: proTopicPath("navette"), label: PRO_TOPICS.navette.label },
+  { href: proTopicPath("voiturier"), label: PRO_TOPICS.voiturier.label },
+  { href: proTopicPath("comparateurs"), label: PRO_TOPICS.comparateurs.label },
   { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.paperwork}`, label: h.nav.paperwork },
 ];
+/** The footer adds what the header leaves out. */
+const FOOTER_SOLUTIONS = [...SOLUTIONS, { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.marketplace}`, label: h.nav.marketplace }];
 
 /**
  * The operators' pages wear the pro space's colours (grey-green ground, lime, dark green) and their own header and
@@ -93,7 +98,7 @@ export default function OperatorsLayout({ children }: { children: React.ReactNod
           </div>
           <nav aria-label={h.footer.solutions} className="flex flex-col gap-1">
             <b className="text-[12px] tracking-[.08em] text-lime uppercase">{h.footer.solutions}</b>
-            {SOLUTIONS.map(link => (
+            {FOOTER_SOLUTIONS.map(link => (
               <Link key={link.href} href={link.href} className="text-lime-band">
                 {link.label}
               </Link>

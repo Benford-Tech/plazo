@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Plate } from "@/components/Plate";
 import { LiveShuttleMap, MessageCard } from "@/components/loueurs/LiveShuttleMap";
+import { ProFaq } from "@/components/loueurs/ProFaq";
 import { QuoteForm } from "@/components/loueurs/ProPricing";
 import type { FormState } from "@/lib/forms";
 import { fr } from "@/lib/fr";
 import { formatEuros } from "@/lib/money";
 import { PRO_PLANS } from "@/lib/pro-pricing";
+import { PRO_TOPICS } from "@/lib/pro-topics";
+import { proTopicPath, type ProTopicSlug } from "@/lib/site";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -14,23 +17,23 @@ const t = fr.proHome;
 /** The sections the header's menu points to. */
 export const PRO_HOME_SECTIONS = { software: "logiciel", live: "navette-et-clients", app: "application", marketplace: "vendre-sur-plazo", paperwork: "contrat" } as const;
 
-const btnLime = "inline-flex min-h-11 items-center justify-center rounded-[10px] bg-lime px-4 text-[14px] font-semibold text-lime-ink no-underline hover:brightness-95";
-const btnOutline =
+export const btnLime = "inline-flex min-h-11 items-center justify-center rounded-[10px] bg-lime px-4 text-[14px] font-semibold text-lime-ink no-underline hover:brightness-95";
+export const btnOutline =
   "inline-flex min-h-11 items-center justify-center rounded-[10px] border border-lime-band/40 px-4 text-[14px] font-semibold text-lime-band no-underline hover:border-lime-band";
-const btnLine = "inline-flex min-h-11 items-center justify-center rounded-[10px] border border-pro-line bg-white px-4 text-[14px] font-semibold text-lime-deep no-underline";
-const sectionTitle = "font-pro-display text-[28px] leading-tight font-bold tracking-[.02em] text-balance uppercase md:text-[34px]";
+export const btnLine = "inline-flex min-h-11 items-center justify-center rounded-[10px] border border-pro-line bg-white px-4 text-[14px] font-semibold text-lime-deep no-underline";
+export const sectionTitle = "font-pro-display text-[28px] leading-tight font-bold tracking-[.02em] text-balance uppercase md:text-[34px]";
 const pill = "rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap";
-const pillOk = `${pill} bg-[#e8f7ec] text-[#15803d]`;
-const pillWarn = `${pill} bg-[#fff4e0] text-[#b45309]`;
-const pillInfo = `${pill} bg-[#e8effd] text-[#4338ca]`;
-const screenLine = "flex flex-wrap items-center gap-2 rounded-[10px] bg-pro-ground px-3 py-2";
-const hour = "font-mono font-bold text-lime-deep";
+export const pillOk = `${pill} bg-[#e8f7ec] text-[#15803d]`;
+export const pillWarn = `${pill} bg-[#fff4e0] text-[#b45309]`;
+export const pillInfo = `${pill} bg-[#e8effd] text-[#4338ca]`;
+export const screenLine = "flex flex-wrap items-center gap-2 rounded-[10px] bg-pro-ground px-3 py-2";
+export const hour = "font-mono font-bold text-lime-deep";
 
 /** Whole euros (« 149 € »). */
 const eur = (cents: number) => formatEuros(cents).replace(",00", "");
 
 /** A screen of the product drawn with its own components (the demo's data: « Parking des Cèdres »). */
-function Screen({ children }: { children: React.ReactNode }) {
+export function Screen({ children }: { children: React.ReactNode }) {
   return <div className="flex min-w-0 flex-col gap-2 rounded-[14px] border border-pro-line bg-white p-4 text-[13px] shadow-[0_8px_24px_rgba(15,42,20,0.06)]">{children}</div>;
 }
 
@@ -39,8 +42,10 @@ function Product({
   copy,
   flip,
   demoHref,
+  more,
   children,
 }: {
+  more?: ProTopicSlug;
   id: string;
   copy: { tag: string; title: string; points: string[] };
   flip?: boolean;
@@ -59,11 +64,23 @@ function Product({
           ))}
         </ul>
         {/* The pro space is another service on the same domain: full page loads. */}
-        <a href={demoHref} className="text-[14px] font-bold text-lime-deep no-underline hover:underline">
-          {t.tryInDemo}
-        </a>
+        <p className="flex flex-wrap gap-x-5 gap-y-1">
+          <a href={demoHref} className="text-[14px] font-bold text-lime-deep no-underline hover:underline">
+            {t.tryInDemo}
+          </a>
+          {more && <TopicLink slug={more} />}
+        </p>
       </div>
     </div>
+  );
+}
+
+/** A link to a page by topic (28/10/2026): « Voiturier · En savoir plus › ». */
+function TopicLink({ slug }: { slug: ProTopicSlug }) {
+  return (
+    <Link href={proTopicPath(slug)} className="text-[14px] font-bold text-lime-deep no-underline hover:underline">
+      {PRO_TOPICS[slug].label} · {t.learnMore}
+    </Link>
   );
 }
 
@@ -112,7 +129,12 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
             <h2 id="pro-home-live" className={`${sectionTitle} text-white`}>
               {t.liveTitle} <span className="text-lime">{t.liveAccent}</span>
             </h2>
-            <p className="max-w-[52ch] leading-relaxed">{t.liveLead}</p>
+            <p className="max-w-[52ch] leading-relaxed">
+              {t.liveLead}{" "}
+              <Link href={proTopicPath("navette")} className="font-bold whitespace-nowrap text-lime">
+                {t.learnMore}
+              </Link>
+            </p>
             <LiveShuttleMap variant="section" />
           </div>
           <div className="flex min-w-0 flex-col gap-2.5 md:pt-2">
@@ -141,7 +163,7 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
         </h2>
         <p className="mt-2 max-w-[62ch] text-pro-soft">{t.productsLead}</p>
         <div className="mt-4">
-          <Product id={PRO_HOME_SECTIONS.software} copy={t.products.software} demoHref={demoHref}>
+          <Product id={PRO_HOME_SECTIONS.software} copy={t.products.software} demoHref={demoHref} more="voiturier">
             <Screen>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
@@ -164,7 +186,7 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
               </div>
             </Screen>
           </Product>
-          <Product id={PRO_HOME_SECTIONS.app} copy={t.products.app} flip demoHref={demoHref}>
+          <Product id={PRO_HOME_SECTIONS.app} copy={t.products.app} flip demoHref={demoHref} more="navette">
             <Screen>
               <div className={screenLine}>
                 <span className={pillOk}>{s.go}</span>
@@ -212,6 +234,9 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
                 {t.centralTitle}
               </h2>
               <p className="mt-2 text-pro-soft">{t.centralLead}</p>
+              <p className="mt-2">
+                <TopicLink slug="comparateurs" />
+              </p>
               <ul className="mt-4 flex flex-wrap gap-2" aria-label={t.centralTitle}>
                 {t.channels.map(channel => (
                   <li key={channel} className="rounded-full border border-pro-line bg-pro-ground px-3 py-1 text-[13px] font-semibold">
@@ -287,6 +312,11 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
             </Link>
           </p>
         </div>
+      </section>
+
+      {/* 2A (28/10/2026): the questions operators ask first. */}
+      <section aria-labelledby="pro-home-faq" className="mx-auto w-full max-w-[860px] px-4 py-12 md:px-6">
+        <ProFaq id="pro-home-faq" title={t.faqTitle} faq={t.faq} />
       </section>
 
       {/* Demo request. */}
