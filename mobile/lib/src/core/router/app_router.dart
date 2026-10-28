@@ -26,6 +26,7 @@ import '../../features/pro_reservations/presentation/pages/pro_reservations_page
 import '../../features/pro_revenue/presentation/bloc/pro_revenue_bloc.dart';
 import '../../features/pro_revenue/presentation/pages/pro_revenue_missing_page.dart';
 import '../../features/pro_revenue/presentation/pages/pro_revenue_page.dart';
+import '../../features/pro_forecast/presentation/pages/pro_forecast_page.dart';
 import '../../features/pro_start/presentation/pages/pro_getting_started_page.dart';
 import '../../features/pro_valet/presentation/pages/pro_valet_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_account_page.dart';
@@ -116,6 +117,7 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProRevenueRoute.page, path: '/pro/chiffre-affaires', guards: [proGuard]),
       AutoRoute(page: ProRevenueMissingRoute.page, path: '/pro/chiffre-affaires/a-completer', guards: [proGuard]),
       AutoRoute(page: ProGettingStartedRoute.page, path: '/pro/bien-demarrer', guards: [proGuard]),
+      AutoRoute(page: ProForecastRoute.page, path: '/pro/previsionnel', guards: [proGuard]),
       AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
       // « Contrat signé et état des lieux » (19/10/2026).
       AutoRoute(page: ProContractRoute.page, path: '/pro/reservations/:id/contrat', guards: [proGuard]),

@@ -119,7 +119,7 @@ List<DayEntry> mergeDay(List<TodayRow> arrivals, List<TodayRow> returns) {
 
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
-  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard});
+  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard, this.clock = DateTime.now});
 
   final TodaySide? only;
 
@@ -131,6 +131,9 @@ class ProTodayView extends StatefulWidget {
 
   /// Hands a traveller over; by default to the shell's Navette tab ([openShuttleTab]).
   final ValueChanged<ShuttleBoarding>? onBoard;
+
+  /// The phone's clock; the tests pass a fixed one (the planning was dated by the real day).
+  final DateTime Function() clock;
 
   @override
   State<ProTodayView> createState() => _ProTodayViewState();
@@ -144,7 +147,7 @@ class _ProTodayViewState extends State<ProTodayView> {
 
   /// « Déjà passés · N » unfolded.
   bool _showPast = false;
-  DateTime _now = DateTime.now();
+  late DateTime _now = widget.clock();
 
   /// The web's home is the dashboard; the planning is one tap away. Only when both sides are shown.
   late TodayMode _mode = widget.initialMode;
@@ -153,7 +156,7 @@ class _ProTodayViewState extends State<ProTodayView> {
   void initState() {
     super.initState();
     // "Position mise à jour il y a 20 s" keeps counting between two polls.
-    _clock = Timer.periodic(const Duration(seconds: 5), (_) => setState(() => _now = DateTime.now()));
+    _clock = Timer.periodic(const Duration(seconds: 5), (_) => setState(() => _now = widget.clock()));
   }
 
   @override
@@ -167,6 +170,14 @@ class _ProTodayViewState extends State<ProTodayView> {
     final d = state.date;
     if (d == null) return _now;
     return DateTime.tryParse(d) ?? _now;
+  }
+
+  /// « Planning prévisionnel » (28/10/2026): a day tapped in the calendar comes back as the day shown.
+  Future<void> _openForecast(ProTodayState state) async {
+    final bloc = context.read<ProTodayBloc>();
+    final picked = await context.router.push<String>(ProForecastRoute(anchor: isoDay(_shownDay(state))));
+    if (picked == null || !mounted) return;
+    bloc.add(ProTodayDateChanged(picked == isoDay(widget.clock()) ? null : picked));
   }
 
   void _see(ProTodayState state) {
@@ -264,6 +275,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                   selected: _shownDay(state),
                   today: _now,
                   onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(day == null ? null : isoDay(day))),
+                  onForecast: () => _openForecast(state),
                 ),
                 // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
                 if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(ProShuttleRoute())),

@@ -8,13 +8,16 @@ import '../../../../shared/theme/theme.dart';
 /// strip and the title: the header took 590 px before the first booking): « ‹ MAR. 27 OCT. › »,
 /// an « Aujourd'hui » pill (a button when another day is shown), a calendar icon for a date further away.
 class PlanningDateBar extends StatelessWidget {
-  const PlanningDateBar({super.key, required this.selected, required this.today, required this.onSelected});
+  const PlanningDateBar({super.key, required this.selected, required this.today, required this.onSelected, this.onForecast});
 
   final DateTime selected;
   final DateTime today;
 
   /// Called with the chosen day; null stands for today.
   final ValueChanged<DateTime?> onSelected;
+
+  /// « Planning prévisionnel » (28/10/2026): opens the calendar of the coming weeks; no button when null.
+  final VoidCallback? onForecast;
 
   static DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
   static bool _same(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
@@ -81,6 +84,14 @@ class PlanningDateBar extends StatelessWidget {
             color: AppColors.accent,
             onTap: () => _pick(context, sel),
           ),
+          if (onForecast != null)
+            _Arrow(
+              key: const Key('date-forecast'),
+              icon: Icons.calendar_view_month_rounded,
+              tooltip: 'forecast.open'.tr(),
+              color: AppColors.accent,
+              onTap: onForecast!,
+            ),
         ],
       ),
     );

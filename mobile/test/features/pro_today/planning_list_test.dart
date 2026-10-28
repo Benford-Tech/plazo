@@ -53,7 +53,7 @@ void main() {
           BlocProvider<ProTodayBloc>.value(value: today),
           BlocProvider<LiveShuttlesBloc>.value(value: live),
         ],
-        child: const ProTodayView(initialMode: TodayMode.planning),
+        child: ProTodayView(initialMode: TodayMode.planning, clock: () => now),
       ),
       size: const Size(400, 1200),
     );
