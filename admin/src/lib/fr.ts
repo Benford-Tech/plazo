@@ -955,7 +955,7 @@ export const fr = {
         plate: "Plaque · client",
         place: "Place · file",
         keys: "Clés",
-        return: "Retour",
+        return: "Départ",
         state: "État",
       },
       keysSeg: {
@@ -1359,6 +1359,8 @@ export const fr = {
     // Booked by a traveller on the public site.
     plazo: PRODUCT.name,
   } satisfies Record<ReservationChannel, string>,
+  // « Arrivées · Départs » (28/10/2026): the kind of a movement, on its green or indigo pill.
+  movement: { arrival: "Arrivée", departure: "Départ" },
   // « Planning prévisionnel » (28/10/2026, direction A « Calendrier par mois »).
   forecast: {
     tabs: { day: "Jour", forecast: "Prévisionnel" },
@@ -1392,11 +1394,11 @@ export const fr = {
     almostFull: "Presque plein",
     free: (n: number) => `${n} libre${n > 1 ? "s" : ""}`,
     arrivals: "Arrivées",
-    returns: "Retours",
+    returns: "Départs",
     arrivalsCount: (total: number, here: number) =>
       `${total} · ${here} sur place`,
     noArrival: "Aucune arrivée ce jour.",
-    noReturn: "Aucun retour ce jour.",
+    noReturn: "Aucun départ ce jour.",
     pax: (n: number) => `${n} pers.`,
     from: (city: string) => `de ${city}`,
     // Travellers telling the parking they are coming (live position or announce).
@@ -3420,8 +3422,8 @@ export const quickCardFr = {
   call: "Appeler",
   sms: "SMS",
   loadError: "Impossible de charger la réservation.",
-  arrival: "Dépôt",
-  return: "Retour",
+  arrival: "Arrivée",
+  return: "Départ",
   flight: "Vol retour",
   departureFlight: "Vol aller",
   noFlight: "sans vol",

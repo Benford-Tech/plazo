@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { MovementPill } from "@/components/MovementPill";
 import {
   KeyRound,
   MessageSquare,
@@ -168,7 +169,10 @@ export function ReservationQuickCard({
               </a>
             </div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-xl border border-panel-line bg-panel p-3 text-[14px]">
-              <dt className="text-muted-foreground">{t.arrival}</dt>
+              {/* 28/10/2026: the two movements in their colours, as on the planning (green arrival, indigo departure). */}
+              <dt className="self-center">
+                <MovementPill kind="arrival" />
+              </dt>
               <dd className="font-mono">
                 {dateTimeShort(r.arrivalAt)} · {t.passengers(r.passengers)}
                 {r.departureFlight && (
@@ -178,7 +182,9 @@ export function ReservationQuickCard({
                   </span>
                 )}
               </dd>
-              <dt className="text-muted-foreground">{t.return}</dt>
+              <dt className="self-center">
+                <MovementPill kind="departure" />
+              </dt>
               <dd className="font-mono">
                 {dateTimeShort(r.returnAt)}
                 {r.handover === "valet" ? (

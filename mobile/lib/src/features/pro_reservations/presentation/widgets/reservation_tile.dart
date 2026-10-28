@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
+import '../../../../shared/widgets/movement_kind.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../data/models/reservation_models.dart';
 
@@ -29,7 +30,8 @@ StatusBadge proStatusBadge(String status, {Key? key}) {
   return StatusBadge(key: key, text: 'pro.status.$status'.tr(), tone: tone);
 }
 
-/// A row of the bookings list: plate, name, stay, status.
+/// A row of the bookings list: plate, name, stay, status; since 28/10/2026 tinted with its next movement
+/// (« ARRIVÉE · sam. 4 oct. 06:30 » while expected, « DÉPART · … » while the car is at the parking).
 class ReservationTile extends StatelessWidget {
   const ReservationTile({super.key, required this.reservation, required this.onTap});
 
@@ -39,30 +41,43 @@ class ReservationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = reservation;
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.line)),
-        ),
-        child: Row(
-          children: [
-            FrenchPlate(r.plate, size: 12),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final kind = nextMovementOf(r.status);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: kind == null ? AppColors.surface : movementSoft(kind),
+        borderRadius: AppRadius.chip,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: MovementEdge(
+            kind: kind,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
                 children: [
-                  Text(r.customerName, style: AppText.strong(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text('${dayTime(r.arrivalAt)} → ${dayTime(r.returnAt)}', style: AppText.muted(size: 12.5)),
+                  FrenchPlate(r.plate, size: 12),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r.customerName, style: AppText.strong(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 2),
+                        Text('${dayTime(r.arrivalAt)} → ${dayTime(r.returnAt)}', style: AppText.muted(size: 12.5)),
+                        if (kind != null) ...[
+                          const SizedBox(height: 4),
+                          MovementPill(kind, key: Key('movement-${r.id}'), time: dayTime(kind == Movement.arrival ? r.arrivalAt : r.returnAt)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  proStatusBadge(r.status),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            proStatusBadge(r.status),
-          ],
+          ),
         ),
       ),
     );

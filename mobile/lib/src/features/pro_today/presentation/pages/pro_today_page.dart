@@ -306,7 +306,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                                   onBoard: _onBoard,
                                 )
                               : _Column(
-                                  title: 'pro.returns'.tr(),
+                                  title: 'pro.departures'.tr(),
                                   rows: state.returns,
                                   isReturn: true,
                                   state: state,
@@ -328,7 +328,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                         ),
                         const VerticalDivider(width: 1, color: AppColors.line),
                         Expanded(
-                          child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                          child: _Column(title: 'pro.departures'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
                         ),
                       ],
                     ),
@@ -428,7 +428,24 @@ class _Column extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(14),
         children: [
-          if (title != null) ...[Text(title!.toUpperCase(), style: AppText.label(size: 13)), const SizedBox(height: 10)],
+          // 28/10/2026: the column says its kind like the merged list, a green « Arrivées » or an indigo « Départs ».
+          if (title != null) ...[
+            Row(
+              key: Key(isReturn ? 'column-departures' : 'column-arrivals'),
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: isReturn ? AppStatus.info : AppStatus.ok, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 8),
+                Text(title!.toUpperCase(), style: AppText.label(size: 13, color: isReturn ? AppStatus.info : AppStatus.okText)),
+                const SizedBox(width: 6),
+                Text('· ${rows.length}', style: AppText.label(size: 13)),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
           if (rows.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
@@ -454,6 +471,7 @@ class _Column extends StatelessWidget {
       isReturn: isReturn,
       positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
       onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
+      tagged: true,
       actionLabel: boarding == null ? null : (isReturn ? 'pro.fetch' : 'pro.board').tr(),
       onAction: boarding == null || hand == null ? null : () => hand(boarding),
     );

@@ -28,6 +28,7 @@ import '../bloc/shuttle_bloc.dart';
 import '../bloc/shuttle_boarding.dart';
 import '../widgets/live_shuttles_card.dart';
 import '../widgets/vehicle_sheet.dart';
+import '../../../../shared/widgets/movement_kind.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
@@ -254,7 +255,9 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             borderColor: AppStatus.warnSoft,
             padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
             child: Text(
-              state.checkedInAtBoarding == 1 ? 'shuttle.checked_in_note_one'.tr() : 'shuttle.checked_in_note_many'.tr(args: ['${state.checkedInAtBoarding}']),
+              state.checkedInAtBoarding == 1
+                  ? 'shuttle.checked_in_note_one'.tr()
+                  : 'shuttle.checked_in_note_many'.tr(args: ['${state.checkedInAtBoarding}']),
               key: const Key('checked-in-note'),
               style: AppText.body(size: 12.5),
             ),
@@ -404,7 +407,11 @@ class _TabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String label(String key, int? count) => count == null ? key.tr() : '${key.tr()} · $count';
-    final labels = [label('shuttle.tab_go', state.goCount), label('shuttle.tab_back', state.backCount), label('shuttle.band_route', state.bandCount2)];
+    final labels = [
+      label('shuttle.tab_go', state.goCount),
+      label('shuttle.tab_back', state.backCount),
+      label('shuttle.band_route', state.bandCount2),
+    ];
     final current = state.tab;
     // A trip runs: its side and « En route » only.
     final runningSide = state.running ? (state.trip!.dropoff ? 0 : 1) : null;
@@ -673,7 +680,7 @@ class _PickupTile extends StatelessWidget {
     ].join(' · ');
     final highlighted = selected || onTrip;
     return Material(
-      color: AppColors.surface,
+      color: movementSoft(Movement.departure),
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.card,
         side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
@@ -682,60 +689,61 @@ class _PickupTile extends StatelessWidget {
       child: InkWell(
         key: Key('pickup-${row.reservationId}'),
         onTap: selectable ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (selectable) ...[
-                    Icon(
-                      selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                      size: 20,
-                      color: selected ? AppColors.accent : AppColors.line,
-                    ),
+        child: MovementEdge(
+          kind: Movement.departure,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (selectable) ...[
+                      Icon(
+                        selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        size: 20,
+                        color: selected ? AppColors.accent : AppColors.line,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5))),
                     const SizedBox(width: 8),
+                    // Never wider than half the card: a long badge scales down instead of overflowing.
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 180),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: _Badge(row: row, onTrip: onTrip),
+                      ),
+                    ),
                   ],
-                  Expanded(
-                    child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5)),
-                  ),
-                  const SizedBox(width: 8),
-                  // Never wider than half the card: a long badge scales down instead of overflowing.
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 180),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: _Badge(row: row, onTrip: onTrip),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (details.isNotEmpty) Expanded(child: Text(details, style: AppText.muted(size: 12.5))) else const Spacer(),
+                    const SizedBox(width: 8),
+                    FrenchPlate(row.plate, size: 11),
+                  ],
+                ),
+                // 24/10/2026: the child seats to load for this traveller.
+                if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
+                // E (06/10/2026): what the traveller signalled today.
+                if (row.notice != null) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: StatusBadge(
+                      key: Key('pickup-notice-${row.reservationId}'),
+                      text: row.notice!.kind == 'other' && row.notice!.text != null
+                          ? '« ${row.notice!.text} »'
+                          : 'shuttle.notice.${row.notice!.kind}'.tr() + (row.notice!.text != null ? ' · « ${row.notice!.text} »' : ''),
+                      tone: BadgeTone.peach,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  if (details.isNotEmpty) Expanded(child: Text(details, style: AppText.muted(size: 12.5))) else const Spacer(),
-                  const SizedBox(width: 8),
-                  FrenchPlate(row.plate, size: 11),
-                ],
-              ),
-              // 24/10/2026: the child seats to load for this traveller.
-              if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
-              // E (06/10/2026): what the traveller signalled today.
-              if (row.notice != null) ...[
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: StatusBadge(
-                    key: Key('pickup-notice-${row.reservationId}'),
-                    text: row.notice!.kind == 'other' && row.notice!.text != null
-                        ? '« ${row.notice!.text} »'
-                        : 'shuttle.notice.${row.notice!.kind}'.tr() + (row.notice!.text != null ? ' · « ${row.notice!.text} »' : ''),
-                    tone: BadgeTone.peach,
-                  ),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -763,7 +771,7 @@ class _DepartureTile extends StatelessWidget {
     ].join(' · ');
     final expected = row.expected || row.status == 'upcoming';
     return Material(
-      color: AppColors.surface,
+      color: movementSoft(Movement.arrival),
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.card,
         side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
@@ -772,49 +780,50 @@ class _DepartureTile extends StatelessWidget {
       child: InkWell(
         key: Key('departure-${row.reservationId}'),
         onTap: selectable ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (selectable) ...[
-                    Icon(
-                      selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                      size: 20,
-                      color: selected ? AppColors.accent : AppColors.line,
-                    ),
+        child: MovementEdge(
+          kind: Movement.arrival,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    if (selectable) ...[
+                      Icon(
+                        selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                        size: 20,
+                        color: selected ? AppColors.accent : AppColors.line,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5))),
                     const SizedBox(width: 8),
+                    if (onTrip || row.tripId != null)
+                      StatusBadge(text: 'shuttle.badge_on_trip'.tr(), tone: BadgeTone.tint)
+                    // 14/10/2026: an expected traveller boards like the others (checked in when the trip starts).
+                    else if (expected)
+                      StatusBadge(
+                        key: Key('expected-${row.reservationId}'),
+                        text: 'shuttle.expected_at'.tr(args: [hhmm(row.arrivalAt)]),
+                        tone: BadgeTone.warn,
+                      )
+                    else
+                      StatusBadge(key: Key('on-site-${row.reservationId}'), text: 'shuttle.badge_on_site'.tr()),
                   ],
-                  Expanded(
-                    child: Text(_peopleLine(row.customerName, row.passengers, row.childSeats), style: AppText.strong(size: 14.5)),
-                  ),
-                  const SizedBox(width: 8),
-                  if (onTrip || row.tripId != null)
-                    StatusBadge(text: 'shuttle.badge_on_trip'.tr(), tone: BadgeTone.tint)
-                  // 14/10/2026: an expected traveller boards like the others (checked in when the trip starts).
-                  else if (expected)
-                    StatusBadge(
-                      key: Key('expected-${row.reservationId}'),
-                      text: 'shuttle.expected_at'.tr(args: [hhmm(row.arrivalAt)]),
-                      tone: BadgeTone.warn,
-                    )
-                  else
-                    StatusBadge(key: Key('on-site-${row.reservationId}'), text: 'shuttle.badge_on_site'.tr()),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(child: Text(details, style: AppText.muted(size: 12.5))),
-                  const SizedBox(width: 8),
-                  FrenchPlate(row.plate, size: 11),
-                ],
-              ),
-              // 24/10/2026: the child seats to load for this traveller.
-              if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
-            ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(child: Text(details, style: AppText.muted(size: 12.5))),
+                    const SizedBox(width: 8),
+                    FrenchPlate(row.plate, size: 11),
+                  ],
+                ),
+                // 24/10/2026: the child seats to load for this traveller.
+                if (row.childSeats.any) ...[const SizedBox(height: 6), ChildSeatPills(seats: row.childSeats)],
+              ],
+            ),
           ),
         ),
       ),
