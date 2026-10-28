@@ -50,7 +50,13 @@ export class BookingDigestService {
       // cancelled within the hour, is not « reçue ». A row's createdAt is stamped at its INSERT and its transaction commits
       // within milliseconds, so the window's edge loses nothing in practice.
       const bookings = await prisma.reservation.findMany({
-        where: { operatorId: operator.id, createdAt: { gt: window.start, lte: window.end }, status: { notIn: ['pending_payment', 'cancelled'] } },
+        where: {
+          operatorId: operator.id,
+          createdAt: { gt: window.start, lte: window.end },
+          status: { notIn: ['pending_payment', 'cancelled'] },
+          // 28/10/2026: a file of old bookings imported by the manager is no « réservation reçue ».
+          importId: null,
+        },
         select: { channel: true, channelDetail: true },
       });
       if (bookings.length) {

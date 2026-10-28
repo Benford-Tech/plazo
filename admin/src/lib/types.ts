@@ -2104,3 +2104,48 @@ export interface ValetRuns {
   runs: ValetRun[];
   counts: Record<ValetRun["state"], number>;
 }
+
+// Import of old (and upcoming) bookings from a file (28/10/2026, direction A).
+export type ImportOutcome = "create" | "check" | "duplicate" | "error";
+
+export interface ImportPreviewRow {
+  line: number;
+  outcome: ImportOutcome;
+  errors: string[];
+  warnings: string[];
+  duplicateOf: { reference: string | null; line: number | null } | null;
+  booking: {
+    customerName: string;
+    customerPhone: string;
+    plate: string;
+    arrivalAt: string;
+    returnAt: string;
+    status: ReservationStatus;
+    channel: ReservationChannel;
+    channelDetail: string | null;
+    externalReference: string | null;
+    priceCents: number | null;
+    returnFlight: string | null;
+    passengers: number;
+    timing: "past" | "current" | "future";
+  } | null;
+}
+
+export interface ImportPreview {
+  dryRun: boolean;
+  timezone: string;
+  counts: Record<ImportOutcome, number>;
+  rows: ImportPreviewRow[];
+  import: { id: string; created: number } | null;
+}
+
+export interface ReservationImportSummary {
+  id: string;
+  fileName: string;
+  createdAt: string;
+  createdCount: number;
+  removedCount: number;
+  undoneAt: string | null;
+  undoableUntil: string | null;
+  by: string | null;
+}
