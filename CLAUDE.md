@@ -409,8 +409,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`ReservationService.forecast`, `reservations:view`, 1 à 92 jours, 31 par défaut) → `{ today, timezone, from, to,
      bookableCapacity, days: [{ date, arrivals, returns, parked, bookable, free, overbooked }] }` : réservations enregistrées, tous
      canaux, sans annulées, non venues ni attentes de paiement, jour local du parking ; nuits par `CapacityService.nights` (capacité
-     réelle, marge comprise) ; aucune prévision inventée. Plazo Pro ne l'a pas encore. Tests `planning-forecast.test.ts`,
-     `forecast.test.ts`, `ForecastPage.test.tsx`.
+     réelle, marge comprise) ; aucune prévision inventée. Tests `planning-forecast.test.ts`,
+     `forecast.test.ts`, `ForecastPage.test.tsx`. **Dans Plazo Pro (28/10/2026, « Ajoute-le aussi dans Plazo Pro »)** : bouton
+     calendrier `date-forecast` au bout de la barre de date du planning (`PlanningDateBar.onForecast`) → page `/pro/previsionnel`
+     (`features/pro_forecast` : `ProForecastPage`, `ForecastDataSource` par Dio sans freezed, `domain/forecast_period.dart` = les
+     règles de `lib/forecast.ts`) : pilules Semaine · Mois · 3 mois, ‹ période ›, légende, résumé, grilles du lundi au dimanche (trois
+     mois l'un sous l'autre), la semaine en lignes ; toucher un jour revient au planning de ce jour. `ProTodayView.clock` (horloge
+     fixe des tests : `planning_list_test.dart` datait la barre au vrai jour). Test `forecast_test.dart`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
