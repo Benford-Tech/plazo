@@ -25,6 +25,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond orange plein-pan, glyphes dans le cercle de sûreté (80 %). |
 | `android-foreground.svg` | Couche avant de l'icône adaptative Android (glyphes dans les 66 % centraux, fond transparent). |
 | `social-card.svg`, `png/social-card-1200x630.png` | Carte de partage (Open Graph / Twitter), le panneau sur brun foncé. |
+| `social-card-pro.html`, `png/social-card-pro-1200x630.png` | Carte de partage de Plazo Pro (pro.plazo.fr), bande vert foncé et carte de la navette ; rendue par `node brand/tools/social-card-pro.mjs`, qui la copie aussi dans `site/public/brand/`. |
 | `png/logo-horizontal-*@1x/2x/4x.png` | Exports du logo (232 × 100, 464 × 200, 928 × 400), fond transparent. |
 | `png/symbol-512.png`, `png/symbol-1024.png`, `png/symbol-dark-512.png` | Exports du symbole. |
 | `png/app-icon-1024.png`, `png/android-foreground-1024.png` | Sources de l'icône d'app (flutter_launcher_icons). |

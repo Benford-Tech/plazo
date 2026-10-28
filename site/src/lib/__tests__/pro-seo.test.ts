@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isProHost } from "../pro-host";
 import { PRO_PLANS } from "../pro-pricing";
+import { PRO_SOCIAL_CARD, proOpenGraph } from "../seo";
 import { proSoftwareLd } from "../structured-data";
 
 describe("Plazo Pro SEO (28/10/2026)", () => {
@@ -26,5 +27,12 @@ describe("Plazo Pro SEO (28/10/2026)", () => {
     expect(ld.offers.offers).toHaveLength(3);
     expect(ld.offers.offers[0].priceSpecification.valueAddedTaxIncluded).toBe(false);
     expect(ld.publisher.name).toBe("Benford Tech");
+  });
+
+  it("shares Plazo Pro's pages with their own green card", () => {
+    const og = proOpenGraph({ title: "Plazo Pro" });
+    expect(og.siteName).toBe("Plazo Pro");
+    expect(og.images).toEqual([PRO_SOCIAL_CARD]);
+    expect(PRO_SOCIAL_CARD.url).toBe("/brand/social-card-pro.png");
   });
 });

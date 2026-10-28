@@ -9,9 +9,12 @@ type OpenGraph = NonNullable<Metadata["openGraph"]>;
 export const SOCIAL_CARD = { url: "/brand/social-card.png", width: 1200, height: 630, alt: PRODUCT_NAME };
 
 /** Open Graph of a page. A page's openGraph replaces the layout's, so the shared fields are repeated here. */
-/** Open Graph of a Plazo Pro page: the same, signed « Plazo Pro ». */
+/** Plazo Pro's social card (choice 1A of 28/10/2026, brand/social-card-pro.html rendered by brand/tools/social-card-pro.mjs). */
+export const PRO_SOCIAL_CARD = { url: "/brand/social-card-pro.png", width: 1200, height: 630, alt: `${PRODUCT_NAME} Pro · le logiciel des parkings d’aéroport` };
+
+/** Open Graph of a Plazo Pro page: signed « Plazo Pro », with its own card. */
 export function proOpenGraph(fields: OpenGraph): OpenGraph {
-  return openGraph({ siteName: `${PRODUCT_NAME} Pro`, ...fields });
+  return openGraph({ siteName: `${PRODUCT_NAME} Pro`, images: [PRO_SOCIAL_CARD], ...fields });
 }
 
 export function openGraph(fields: OpenGraph): OpenGraph {
