@@ -79,6 +79,7 @@ import type {
   ShuttleVehicleInput,
   LiveArrivals,
   Planning,
+  PlanningForecast,
   Reservation,
   ReservationInput,
   ReservationStatus,
@@ -716,6 +717,8 @@ export const adminApi = {
 
   getPlanning: (date?: string) =>
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
+  getPlanningForecast: (from: string, days: number) =>
+    apiRequest<PlanningForecast>(`/internal/planning/forecast?from=${from}&days=${days}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
   // « Voiturier au terminal » (27/10/2026).

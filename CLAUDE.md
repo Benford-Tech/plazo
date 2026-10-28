@@ -398,6 +398,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
+   - **Planning prévisionnel, direction A « Calendrier par mois » (28/10/2026, « un calendrier/planning prévisionnel affichable
+     sur 1 semaine à 3 mois », maquettes https://claude.ai/artifact/VDdfnQyG8f56DMPVa4FPFF)** : pilules « Jour · Prévisionnel »
+     (`PlanningTabs`) en tête du menu Planning ; page `/pro/planning/previsionnel` (`ForecastPage`, `lib/forecast.ts`) : Semaine
+     (du lundi) · Mois (civil, par défaut) · 3 mois (`?vue=semaine|3mois`, `?date=`), ‹ période ›, grilles du lundi au dimanche ;
+     chaque jour : ↑ arrivées (vert), ↓ départs (indigo), jauge des voitures garées la nuit (pâle sous 70 %, citron, ambre au-dessus
+     de 85 %, rouge « Complet » ou « Complet +N » avec la case teintée), aujourd'hui cerclé de citron, jours passés estompés ; un clic
+     ouvre le planning du jour (`/planning?date=`) ; ligne « N arrivées · N départs », nuit la plus chargée, nuits complètes ; trois
+     mois côte à côte dès `xl`, l'un sous l'autre plus étroit. Serveur : `GET /internal/planning/forecast?from=&days=`
+     (`ReservationService.forecast`, `reservations:view`, 1 à 92 jours, 31 par défaut) → `{ today, timezone, from, to,
+     bookableCapacity, days: [{ date, arrivals, returns, parked, bookable, free, overbooked }] }` : réservations enregistrées, tous
+     canaux, sans annulées, non venues ni attentes de paiement, jour local du parking ; nuits par `CapacityService.nights` (capacité
+     réelle, marge comprise) ; aucune prévision inventée. Plazo Pro ne l'a pas encore. Tests `planning-forecast.test.ts`,
+     `forecast.test.ts`, `ForecastPage.test.tsx`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la

@@ -3,6 +3,7 @@ import { Bell, BusFront, ChevronLeft, ChevronRight, MessageSquareWarning, X } fr
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
+import { PlanningTabs } from "@/components/planning/PlanningTabs";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -253,6 +254,7 @@ export default function PlanningPage() {
   return (
     <>
       {banner && <ArrivalBanner signal={banner} onClose={() => setBanner(null)} />}
+      <PlanningTabs />
       {data?.smsWarning && <SmsWarning pending={data.smsWarning.pending} manager={can(user?.role, "parking:manage")} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">

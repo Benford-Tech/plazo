@@ -1359,6 +1359,29 @@ export const fr = {
     // Booked by a traveller on the public site.
     plazo: PRODUCT.name,
   } satisfies Record<ReservationChannel, string>,
+  // « Planning prévisionnel » (28/10/2026, direction A « Calendrier par mois »).
+  forecast: {
+    tabs: { day: "Jour", forecast: "Prévisionnel" },
+    tabsLabel: "Vue du planning",
+    title: "Planning prévisionnel",
+    views: { semaine: "Semaine", mois: "Mois", "3mois": "3 mois" } as Record<string, string>,
+    viewsLabel: "Période affichée",
+    previous: "Période précédente",
+    next: "Période suivante",
+    today: "Aujourd'hui",
+    legend: { arrivals: "Arrivées", departures: "Départs", high: "Plus de 85 %", full: "Complet" },
+    weekdays: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+    full: "Complet",
+    overbooked: (n: number) => `Complet +${n}`,
+    summary: (arrivals: number, departures: number) =>
+      `${arrivals} arrivée${arrivals > 1 ? "s" : ""} · ${departures} départ${departures > 1 ? "s" : ""}`,
+    busiest: (pct: number, day: string) => `Nuit la plus chargée : ${pct} % (${day})`,
+    fullNights: (n: number) => `${n} nuit${n > 1 ? "s" : ""} complète${n > 1 ? "s" : ""}`,
+    note: "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
+    dayLabel: (date: string, arrivals: number, departures: number, load: string) =>
+      `${date} : ${arrivals} arrivée${arrivals > 1 ? "s" : ""}, ${departures} départ${departures > 1 ? "s" : ""}, ${load}. Ouvrir le planning du jour.`,
+    loadPct: (pct: number) => `occupation ${pct} %`,
+  },
   planning: {
     today: "Aujourd'hui",
     previousDay: "Jour précédent",
