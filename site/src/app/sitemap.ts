@@ -5,7 +5,7 @@ import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { topicFacts } from "@/lib/airport-guides";
 import { topicGuide, topicLinks } from "@/lib/guides";
 import { isProHost } from "@/lib/pro-host";
-import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, siteUrl } from "@/lib/site";
+import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, PRO_TOPIC_SLUGS, siteUrl } from "@/lib/site";
 
 // Lists the published parkings, read from the API at request time (never at build time). Demo parkings
 // are fictional: they stay out of it (and their pages are not indexed).
@@ -17,6 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       { url: `${PRO_SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
       { url: `${PRO_SITE_URL}/tarifs`, changeFrequency: "monthly", priority: 0.8 },
+      ...PRO_TOPIC_SLUGS.map(slug => ({ url: `${PRO_SITE_URL}/${slug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
     ];
   }
   const base = siteUrl();
