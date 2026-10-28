@@ -326,6 +326,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   « Import from Google Search Console ».
 - [x] Search Console pour pro.plazo.fr (28/10/2026) : propriété ajoutée par Joanny (validée par le même TXT de `plazo.fr`),
   `https://pro.plazo.fr/sitemap.xml` envoyé (accueil, tarifs, navette, voiturier, comparateurs).
+- [x] Bing Webmaster Tools pour pro.plazo.fr (28/10/2026) : importé depuis la Search Console par Joanny (propriété et sitemap
+  repris, sans code de vérification à poser).
 - [x] Parkings de démonstration archivés le 09/10/2026 (« archive tous les parkings de démo ») : `DEMO_LISTINGS=archive` sur
   Vercel, les quatre loueurs fictifs sont suspendus au build suivant (plus sur le site, dans l'app ni dans `/api/public/search`,
   comptes de démo refusés) et restent en base ; `true` les rétablit, `remove` les supprime. Tant que la fiche du client n°1
