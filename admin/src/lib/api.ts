@@ -849,7 +849,7 @@ export const adminApi = {
       method: "POST",
     }),
   // « Coller un mail » (29/10/2026): read like a received mail, kept in the inbox.
-  pasteInboundEmail: (body: { text: string; subject?: string }) =>
+  pasteInboundEmail: (body: { text: string; subject?: string; html?: string }) =>
     apiRequest<InboundReanalysis>("/internal/inbound/emails/paste", {
       method: "POST",
       body: JSON.stringify(body),

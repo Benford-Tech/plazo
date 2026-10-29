@@ -18,6 +18,7 @@ import { MAX_CONTRACT_BYTES } from './domain/partner-contract';
 import { appLimiter, authLimiter, publicLimiter } from './middlewares/rateLimiter';
 import { logger, stream } from './utils/logger';
 import { BOOKING_IMPORT_PATH } from './routes/booking-import.route';
+import { INBOUND_PASTE_PATH } from './routes/inbound-email.route';
 
 export const STRIPE_WEBHOOK_PATH = `${API_PREFIX}/public/stripe/webhook`;
 export const INSPECTION_PHOTO_PATH = new RegExp(
@@ -79,6 +80,7 @@ export class App {
     this.app.post(CONTRACT_TEMPLATE_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     // A file of old bookings (28/10/2026): 2 000 rows at most, read under a larger limit than the other requests.
     this.app.post(`${API_PREFIX}${BOOKING_IMPORT_PATH}`, express.json({ limit: '4mb' }));
+    this.app.post(`${API_PREFIX}${INBOUND_PASTE_PATH}`, express.json({ limit: '4mb' }));
     this.app.use(express.json({ limit: '1mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());

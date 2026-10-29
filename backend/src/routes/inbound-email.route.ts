@@ -125,6 +125,9 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *       404:
  *         description: "not_found: a booking of another operator"
  */
+/** 29/10/2026: « Coller un mail » carries the clipboard's HTML (links), read under a larger body limit (app.ts). */
+export const INBOUND_PASTE_PATH = '/internal/inbound/emails/paste';
+
 export class InboundEmailRoute implements Routes {
   public router = Router();
   public inbound = new InboundEmailController();
@@ -143,7 +146,7 @@ export class InboundEmailRoute implements Routes {
     this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), this.inbound.enableAddress);
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);
     // 29/10/2026 (« Coller un mail »): read like a received email; not in the prospects' demo (Claude reads it).
-    this.router.post('/internal/inbound/emails/paste', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.inbound.paste);
+    this.router.post(INBOUND_PASTE_PATH, StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.inbound.paste);
     this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);

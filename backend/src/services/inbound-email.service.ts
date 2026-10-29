@@ -22,6 +22,7 @@ import {
   recipientsOf,
   REQUIRED_FOR_IMPORT,
   SOUGHT_FOR_IMPORT,
+  stripHtml,
   textOf,
 } from '@/domain/inbound-email';
 import { fullName } from '@/domain/staff-name';
@@ -48,6 +49,7 @@ const TEXT_MAX_CHARS = 20000;
 /** 29/10/2026 (« Coller un mail »): shorter than this is no email; more than this an hour per operator is refused (Claude reads them). */
 const PASTE_MIN_CHARS = 40;
 const PASTE_PER_HOUR = 60;
+const PASTE_HTML_MAX_CHARS = 3_000_000;
 
 /** The sender a pasted email names in its first lines (« De : Allopark <info@allopark.com> », « From: … »). */
 export function pastedSenderOf(text: string): { address: string; name: string | null } | null {
@@ -1317,9 +1319,12 @@ export class InboundEmailService {
    * comparator, Allopark's booking page, Claude, createFromImport) and kept in the inbox like one, `delivery: pasted`,
    * « Collé par <prénom> ». The sender comes from a « De : » line of the pasted text when it has one.
    */
-  public async paste(actor: AuthenticatedStaff, input: { text: string; subject?: string | null }): Promise<Reanalysis> {
+  public async paste(actor: AuthenticatedStaff, input: { text: string; subject?: string | null; html?: string | null }): Promise<Reanalysis> {
     this.require(actor, 'reservations:manage');
-    const text = input.text.replace(/\r\n?/g, '\n').trim().slice(0, TEXT_MAX_CHARS);
+    // 29/10/2026 (« récupérer les infos dans les liens aussi »): the HTML the clipboard gave with the text keeps the mail's links
+    // (« Consulter ma réservation »), lost in its plain text; read for them only, never kept. A paste of HTML alone is read too.
+    const html = input.html?.slice(0, PASTE_HTML_MAX_CHARS) || null;
+    const text = (input.text.trim() ? input.text : html ? stripHtml(html) : '').replace(/\r\n?/g, '\n').trim().slice(0, TEXT_MAX_CHARS);
     if (text.length < PASTE_MIN_CHARS) {
       throw new ValidationException({ text: 'too_short' });
     }
@@ -1338,7 +1343,7 @@ export class InboundEmailService {
       subject,
       textBody: text,
     };
-    const forReanalysis = { recipients: [] as string[], links: alloparkLinks(null, text) };
+    const forReanalysis = { recipients: [] as string[], links: alloparkLinks(html, text) };
     const id = newRowId();
     const analysis = await this.analyse({ ...base, ...forReanalysis, text, emailId: id });
     const status = storedStatus(analysis.status);

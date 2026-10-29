@@ -8,7 +8,8 @@ import { api, resetDatabase, setupOperator } from './utils/helpers';
 
 // 29/10/2026 (« pouvoir importer en collant le contenu du mail », direction A). Every traveller is fictional.
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-const notice = readFileSync(join(__dirname, 'fixtures', 'parkvia-notification.txt'), 'utf8');
+const fixture = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
+const notice = fixture('parkvia-notification.txt');
 
 describe('« Coller un mail » (domaine)', () => {
   it('lit l’expéditeur et l’objet d’un mail collé avec son en-tête', () => {
@@ -61,5 +62,26 @@ describe('POST /internal/inbound/emails/paste', () => {
   it('refuse un texte vide ou trop court', async () => {
     expect((await paste({ text: '' })).body.fields).toEqual({ text: 'required' });
     expect((await paste({ text: 'Bonjour' })).body.fields).toEqual({ text: 'too_short' });
+  });
+  it('suit les liens du mail collé (le HTML du presse-papiers) jusqu’à la page Allopark', async () => {
+    const page = fixture('allopark-page.html');
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async url =>
+        String(url).includes('reference=AL-884880719')
+          ? new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } })
+          : new Response('<html><body>Comparez et réservez votre parking</body></html>', { status: 200, headers: { 'Content-Type': 'text/html' } }),
+      );
+    try {
+      const text = fixture('allopark-confirmation.txt');
+      const html = `<p>Bonjour</p><a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>`;
+      const res = await paste({ subject: 'Confirmation de votre réservation AL-884880719 chez Aeroports Parking Lyon', text, html });
+      expect(res.status).toBe(201);
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('reference=AL-884880719'))).toBe(true);
+      expect(res.body.outcome).toBe('imported');
+      expect(await prisma.reservation.count({ where: { operatorId: op.operator.id, externalReference: 'AL-884880719' } })).toBe(1);
+    } finally {
+      fetchMock.mockRestore();
+    }
   });
 });

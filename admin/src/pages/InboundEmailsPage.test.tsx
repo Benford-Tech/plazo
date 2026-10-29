@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { ApiError } from "@/lib/api";
@@ -930,5 +930,23 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     await waitFor(() => expect(tab(/Traités/)).toHaveAttribute("aria-selected", "true"));
     expect(screen.getByTestId("search")).toHaveTextContent("mail=p1");
     expect(await reading().findByText("Collé par Joanny")).toBeInTheDocument();
+  });
+
+  it("« Coller un mail » envoie les liens du mail que le presse-papiers garde en HTML", async () => {
+    const pasted = email({ id: "p2", status: "imported", missing: [], delivery: "pasted", pastedBy: "Joanny", reservationReference: "RAB124" });
+    api.pasteInboundEmail.mockResolvedValue({ email: pasted, outcome: "imported" } satisfies InboundReanalysis);
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByTestId("inbound-row");
+    await user.click(screen.getByTestId("paste-mail"));
+    const dialog = within(screen.getByTestId("paste-mail-dialog"));
+    const area = dialog.getByTestId("paste-mail-text");
+    area.focus();
+    const html = '<p>Confirmation AL-884880719</p><a href="https://www.allopark.com/fr/confirmation?reference=AL-884880719">Consulter ma réservation</a>';
+    fireEvent.paste(area, { clipboardData: { getData: (type: string) => (type === "text/html" ? html : "") } });
+    await user.type(area, "Confirmation de votre réservation AL-884880719, consultez-la en ligne");
+    expect(dialog.getByTestId("paste-mail-count")).toHaveTextContent("1 lien du mail récupéré");
+    await user.click(dialog.getByRole("button", { name: "Analyser ce mail" }));
+    await waitFor(() => expect(api.pasteInboundEmail).toHaveBeenCalledWith({ text: "Confirmation de votre réservation AL-884880719, consultez-la en ligne", html }));
   });
 });

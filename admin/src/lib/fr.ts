@@ -3804,11 +3804,13 @@ export const inboundFr = {
       button: "Coller un mail",
       title: "Coller un mail",
       intro:
-        "Ouvrez le mail du comparateur, sélectionnez tout son texte (Ctrl+A, ou ⌘A sur Mac), copiez-le et collez-le ici. Plazo le lit comme s'il l'avait reçu.",
+        "Ouvrez le mail du comparateur, sélectionnez tout son texte (Ctrl+A, ou ⌘A sur Mac), copiez-le et collez-le ici. Plazo le lit comme s'il l'avait reçu et suit ses liens (la page de la réservation Allopark).",
       subject: "Objet du mail",
       subjectHint: "facultatif, aide à le reconnaître",
       text: "Texte du mail",
       chars: (n: number) => `${n.toLocaleString("fr-FR")} caractère${n > 1 ? "s" : ""}`,
+      /** 29/10/2026: the mail's links kept from the clipboard (Plazo follows them, the Allopark booking page first). */
+      links: (n: number) => `${n} lien${n > 1 ? "s" : ""} du mail récupéré${n > 1 ? "s" : ""}`,
       cancel: "Annuler",
       submit: "Analyser ce mail",
       submitting: "Analyse en cours…",
