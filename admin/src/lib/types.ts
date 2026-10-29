@@ -2072,12 +2072,44 @@ export interface ReservationExtra {
   status: ExtraStatus;
   withBooking: boolean;
   paidAt: string | null;
+  /** 29/10/2026: « Accepter » (the traveller is told); the status stays `ordered`. */
+  acceptedAt?: string | null;
+  acceptedBy?: string | null;
   doneAt: string | null;
   refusedAt: string | null;
   refusedReason: string | null;
   refundedAt: string | null;
   doneBy: string | null;
   refusedBy: string | null;
+}
+
+/** 29/10/2026 (A): « Services à faire », GET /internal/extras?view=. */
+export type ExtrasBoardView = "todo" | "done" | "refused";
+export interface ExtrasBoardRow extends ReservationExtra {
+  /** One hour before the expected return (the flight's landing when known). */
+  dueAt: string;
+  late: boolean;
+  reservation: {
+    id: string;
+    reference: string;
+    customerName: string;
+    plate: string;
+    vehicleModel: string | null;
+    vehicleColour: string | null;
+    status: ReservationStatus;
+    returnAt: string;
+    expectedReturnAt: string;
+    returnFlight: string | null;
+    spot: string | null;
+    file: { code: string; rank: number | null } | null;
+  };
+}
+export interface ExtrasBoard {
+  view: ExtrasBoardView;
+  timezone: string;
+  now: string;
+  counts: Record<ExtrasBoardView, number>;
+  data: ExtrasBoardRow[];
 }
 
 /** 26/10/2026 (T-A, « Bien démarrer avec Plazo Pro »): the setup steps of the member's post, ticked from what Plazo sees. */

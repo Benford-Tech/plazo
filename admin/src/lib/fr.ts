@@ -4525,6 +4525,10 @@ export const extrasFr = {
     refusedLine: (reason: string | null) =>
       reason ? `Motif : ${reason}` : "Remboursé au client",
     done: "Fait",
+    accept: "Accepter",
+    acceptedLine: (when: string, by: string | null) =>
+      `Accepté ${when}${by ? ` par ${by}` : ""} · le client est prévenu`,
+    acceptedToast: "Service accepté : le client est prévenu.",
     refuse: "Pas possible",
     reasonLabel: "Pourquoi ? (facultatif)",
     reasonPlaceholder: "Borne en panne, câble absent…",
@@ -4537,6 +4541,36 @@ export const extrasFr = {
       not_to_do: "Ce service n'est plus à faire.",
       refund_failed: "Le remboursement n'a pas abouti, réessayez.",
     } as Record<string, string>,
+  },
+  // 29/10/2026 (A): « Services à faire », sorted by « à faire avant » (one hour before the expected return).
+  board: {
+    link: "Services à faire",
+    title: "Services à faire",
+    crumb: "Réservations › Services à faire",
+    intro:
+      "Les services commandés par vos clients sur Plazo, à faire une heure avant leur retour (l'atterrissage quand le vol est suivi). Le client reçoit une notification quand vous acceptez, quand c'est fait ou si ce n'est pas possible.",
+    tabs: { todo: "À faire", done: "Faits aujourd'hui", refused: "Pas possibles" } as Record<string, string>,
+    columns: { due: "À faire avant", service: "Service", client: "Client · voiture", place: "Place", paid: "Payé" },
+    late: "En retard",
+    today: "Aujourd'hui",
+    tomorrow: "Demain",
+    later: "Plus tard",
+    returnLine: (time: string) => `retour ${time}`,
+    flightLine: (flight: string, time: string) => `vol ${flight} · atterrit ${time}`,
+    overdue: "dépassé",
+    inLine: (text: string) => `dans ${text}`,
+    file: (code: string, rank: number | null) => (rank ? `File ${code} · ${rank === 1 ? "1re" : `${rank}e`}` : `File ${code}`),
+    spot: (code: string) => `Place ${code}`,
+    noPlace: "Pas encore rangée",
+    accepted: (by: string | null) => (by ? `Accepté par ${by}` : "Accepté"),
+    doneAt: (time: string, by: string | null) => `Fait à ${time}${by ? ` par ${by}` : ""}`,
+    refusedAt: (when: string, reason: string | null) => `${when}${reason ? ` · ${reason}` : ""} · remboursé`,
+    empty: {
+      todo: "Aucun service à faire. Les commandes de vos clients arriveront ici.",
+      done: "Aucun service fait aujourd'hui.",
+      refused: "Aucun service refusé ces 7 derniers jours.",
+    } as Record<string, string>,
+    loadError: "Les services n'ont pas pu être chargés.",
   },
 };
 

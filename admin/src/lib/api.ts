@@ -12,6 +12,8 @@ import type {
   ExtraSettings,
   PaymentMethod,
   ReservationExtra,
+  ExtrasBoard,
+  ExtrasBoardView,
   ContractFileKind,
   MyContract,
   PartnerContract,
@@ -503,6 +505,13 @@ export const adminApi = {
   getReservationExtras: (id: string) =>
     apiRequest<{ extras: ReservationExtra[] }>(
       `/internal/reservations/${id}/extras`,
+    ),
+  getExtrasBoard: (view: ExtrasBoardView) =>
+    apiRequest<ExtrasBoard>(`/internal/extras?view=${view}`),
+  acceptExtra: (id: string, extraId: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(
+      `/internal/reservations/${id}/extras/${extraId}/accept`,
+      { method: "POST" },
     ),
   markExtraDone: (id: string, extraId: string) =>
     apiRequest<{ extras: ReservationExtra[] }>(

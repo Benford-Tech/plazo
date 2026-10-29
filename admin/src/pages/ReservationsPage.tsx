@@ -8,7 +8,7 @@ import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
-import { bookingImportFr, describeError, fr, inboundFr, remindersFr } from "@/lib/fr";
+import { bookingImportFr, describeError, extrasFr, fr, inboundFr, remindersFr } from "@/lib/fr";
 import { euros, isPriceLocked } from "@/lib/pricing";
 import { MOVEMENT_CARD, nextMovementOf } from "@/lib/movement";
 import { can } from "@/lib/roles";
@@ -50,6 +50,9 @@ export default function ReservationsPage() {
                 {bookingImportFr.link}
               </Link>
             )}
+            <Link to="/reservations/services" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
+              {extrasFr.board.link}
+            </Link>
             <Link to="/reservations/sms-veille" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
               {remindersFr.link}
             </Link>

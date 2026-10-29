@@ -17,6 +17,7 @@ import NewReservationPage from "@/pages/NewReservationPage";
 import ImportReservationsPage from "@/pages/ImportReservationsPage";
 import InboundEmailsPage from "@/pages/InboundEmailsPage";
 import RemindersPage from "@/pages/RemindersPage";
+import ExtrasTodoPage from "@/pages/ExtrasTodoPage";
 import RevenuePage from "@/pages/RevenuePage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -174,6 +175,7 @@ const App = () => (
                   </RequirePermission>
                 }
               />
+              <Route path="/reservations/services" element={<ExtrasTodoPage />} />
               <Route
                 path="/reservations/sms-veille"
                 element={<RemindersPage />}
