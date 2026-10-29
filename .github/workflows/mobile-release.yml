@@ -488,9 +488,14 @@ jobs:
               NAME=$(basename "$IPA" .ipa)
               SLUG="${NAME%-v$VERSION_NAME-$NEXT}"
               # Creates or updates the App Store version and submits it, replacing an older submission still waiting.
-              if app-store-connect publish --path "$IPA" --skip-package-upload --max-build-processing-wait 30 \
-                --app-store --platform IOS --version-string "$VERSION_NAME" --release-type "$APP_STORE_RELEASE_TYPE" \
-                --cancel-previous-submissions --locale fr-FR --whats-new "@file:$RUNNER_TEMP/notes/release-notes-$SLUG.txt"; then
+              # Tried twice (29/10/2026, Plazo Pro 1.0.123): Apple may take longer than 120 s to cancel the waiting
+              # submission, and the build can't be attached until it has (409 « pre-release build could not be added »).
+              submit() {
+                app-store-connect publish --path "$IPA" --skip-package-upload --max-build-processing-wait 30 \
+                  --app-store --platform IOS --version-string "$VERSION_NAME" --release-type "$APP_STORE_RELEASE_TYPE" \
+                  --cancel-previous-submissions --locale fr-FR --whats-new "@file:$RUNNER_TEMP/notes/release-notes-$SLUG.txt"
+              }
+              if submit || { echo "Nouvel essai de soumission dans 3 min"; sleep 180; submit; }; then
                 echo "OK  App Store  $NAME" >> "$STATUS"
               else
                 echo "KO  App Store  $NAME" >> "$STATUS"
