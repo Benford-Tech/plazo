@@ -17,7 +17,8 @@ import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { nameParts } from "@/lib/names";
 import { centsToInput, isPriceLocked, parseEuros } from "@/lib/pricing";
-import type { Handover, ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
+import { PAYMENT_METHODS } from "@/lib/payment-method";
+import type { Handover, ParsedBooking, PaymentMethod, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ValetIcon } from "@/lib/valet-icon";
 
@@ -52,6 +53,8 @@ type Form = {
   childSeats: ChildSeats;
   /** « Voiturier au terminal » (27/10/2026). */
   handover: Handover;
+  /** 29/10/2026 (« Payé par »): null when not said. */
+  paymentMethod: PaymentMethod | null;
 };
 
 const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
@@ -87,6 +90,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       price: prefill.priceCents != null ? centsToInput(prefill.priceCents) : "",
       childSeats: { ...NO_CHILD_SEATS },
       handover: "shuttle",
+      paymentMethod: null,
     };
   }
   if (reservation) {
@@ -116,6 +120,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       price: reservation.priceCents != null ? centsToInput(reservation.priceCents) : "",
       childSeats: { ...NO_CHILD_SEATS, ...(reservation.childSeats ?? {}) },
       handover: reservation.handover ?? "shuttle",
+      paymentMethod: reservation.paymentMethod ?? null,
     };
   }
   return {
@@ -141,6 +146,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     price: "",
     childSeats: { ...NO_CHILD_SEATS },
     handover: "shuttle",
+    paymentMethod: null,
   };
 }
 
@@ -319,6 +325,8 @@ export function ReservationForm({
         // The amount read in the email stays the comparator's, even if corrected here: its next change email keeps ours.
         ...(!reservation && prefill?.externalReference && prefill.priceCents != null ? { importedPriceCents: prefill.priceCents } : {}),
         ...(reservation && !priceLocked && priceCents !== reservation.priceCents ? { priceCents } : {}),
+        ...(!reservation && form.paymentMethod ? { paymentMethod: form.paymentMethod } : {}),
+        ...(reservation && !priceLocked && form.paymentMethod !== (reservation.paymentMethod ?? null) ? { paymentMethod: form.paymentMethod } : {}),
         // The seats go with a creation; an edit sends them only once changed (null when they are all gone).
         ...(!reservation ? { childSeats: form.childSeats } : {}),
         ...(reservation && !sameChildSeats(form.childSeats, reservation.childSeats)
@@ -607,6 +615,29 @@ export function ReservationForm({
           </span>
         </div>
       </Field>
+      {priceLocked ? null : (
+        <fieldset data-testid="payment-method">
+          <legend className={labelClass}>{t.paidBy}</legend>
+          <div className="flex flex-wrap gap-1.5">
+            {PAYMENT_METHODS.map(m => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={form.paymentMethod === m}
+                onClick={() => setForm({ ...form, paymentMethod: form.paymentMethod === m ? null : m })}
+                className={cn(
+                  "h-10 rounded-full px-3.5 text-sm font-semibold",
+                  form.paymentMethod === m ? "bg-foreground text-background" : "border border-border hover:bg-accent",
+                )}
+              >
+                {fr.paidBy[m]}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-sm text-muted-foreground">{t.paidByHelp}</p>
+          {fieldErrors.paymentMethod && <p className="mt-1.5 text-sm text-destructive">{errorMessage(fieldErrors.paymentMethod)}</p>}
+        </fieldset>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="vehicleModel" label={t.vehicleModel} error={fieldErrors.vehicleModel}>
           <input id="vehicleModel" value={form.vehicleModel} onChange={set("vehicleModel")} maxLength={40} placeholder="Peugeot 308" className={inputClass} />

@@ -156,6 +156,24 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     );
   });
 
+  it("donne le chiffre par moyen de paiement (29/10/2026), « Non précisé » en dernier", async () => {
+    api.getRevenue.mockResolvedValue(
+      report({
+        byPaymentMethod: [
+          { method: "comparator", count: 41, totalCents: 164000 },
+          { method: "online", count: 9, totalCents: 51350 },
+          { method: null, count: 3, totalCents: 12000 },
+        ],
+      }),
+    );
+    renderPage();
+    const card = await screen.findByTestId("revenue-methods");
+    expect(card).toHaveTextContent("Par moyen de paiement");
+    expect(card).toHaveTextContent("Au comparateur");
+    expect(card).toHaveTextContent("En ligne sur Plazo");
+    expect(card.textContent?.indexOf("Non précisé")).toBeGreaterThan(card.textContent!.indexOf("En ligne"));
+  });
+
   it("change de période et de mode de comptage", async () => {
     const user = userEvent.setup();
     renderPage();

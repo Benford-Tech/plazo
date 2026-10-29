@@ -79,8 +79,8 @@ describe('le chiffre d’affaires (domaine)', () => {
     );
     const lines = csv.split('\r\n');
     expect(csv.startsWith('﻿Référence;Réservée le;Arrivée;Retour;Canal;Client;Plaque;Montant (€)')).toBe(true);
-    expect(lines[1]).toBe('RZZ1;2026-09-20;2026-10-02;2026-10-05;Allopark;Camille Martin;AB-123-CD;;;');
-    expect(lines[2]).toBe('RZZ2;2026-09-20;2026-10-09;2026-10-12;Allopark;"Léa ""Lili"" Petit";AB-123-CD;1045,50;0,00;1045,50');
+    expect(lines[1]).toBe('RZZ1;2026-09-20;2026-10-02;2026-10-05;Allopark;Camille Martin;AB-123-CD;;;;');
+    expect(lines[2]).toBe('RZZ2;2026-09-20;2026-10-09;2026-10-12;Allopark;"Léa ""Lili"" Petit";AB-123-CD;1045,50;;0,00;1045,50');
   });
 });
 
@@ -182,7 +182,7 @@ describe('GET /internal/revenue', () => {
     const phone = await create(op, '2026-10-06T08:00', 'phone', null, null, 'returned');
     const plazo = await create(op, '2026-10-06T08:00', 'plazo', null, 5290);
     const put = (id: string, body: object, token = op.token) => api().put(`/api/internal/reservations/${id}/price`).set(auth(token)).send(body);
-    expect((await put(phone.id, { priceCents: 4200 })).body).toEqual({ id: phone.id, priceCents: 4200 });
+    expect((await put(phone.id, { priceCents: 4200 })).body).toEqual({ id: phone.id, priceCents: 4200, paymentMethod: null });
     expect((await prisma.auditLog.findFirstOrThrow({ where: { entityId: phone.id } })).details).toEqual({ priceCents: { from: null, to: 4200 } });
     expect((await put(phone.id, { priceCents: null })).body.priceCents).toBeNull();
     expect((await put(phone.id, {})).body.fields).toEqual({ priceCents: 'integer' });

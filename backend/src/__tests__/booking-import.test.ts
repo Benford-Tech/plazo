@@ -118,6 +118,7 @@ describe('POST /internal/reservations/import', () => {
       price: '54,00',
       commission: '9,72',
       handover: 'Voiturier',
+      payment: 'Prépayé',
       reference: 'al-884880719',
     },
     {
@@ -163,7 +164,7 @@ describe('POST /internal/reservations/import', () => {
       ['Claire Martin', 'returned', 'aggregator', 'AB-123-CD'],
       ['Karim Benali', 'upcoming', 'phone', 'FG-456-HJ'],
     ]);
-    expect(created[0]).toMatchObject({ commissionOverrideCents: 972, commissionOverrideBp: null, handover: 'valet' });
+    expect(created[0]).toMatchObject({ commissionOverrideCents: 972, commissionOverrideBp: null, handover: 'valet', paymentMethod: 'comparator' });
     expect(created[1]).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
     expect(created[0].createdAt.toISOString()).toBe(created[0].arrivalAt.toISOString());
     expect(created[0].closingSentAt).not.toBeNull();

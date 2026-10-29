@@ -194,6 +194,33 @@ describe("ReservationForm", () => {
     expect(updateReservation.mock.calls[0][1]).toMatchObject({ handover: "shuttle" });
   });
 
+  it("« Payé par » (29/10/2026) : envoyé à la création, retiré d'un second clic, changé à la modification", async () => {
+    createReservation.mockResolvedValue({ data: { id: "r1" } });
+    const onSaved = renderForm();
+    await fillStay();
+    await userEvent.click(screen.getByRole("button", { name: "Chèque" }));
+    await userEvent.click(screen.getByRole("button", { name: "Chèque" }));
+    expect(screen.getByRole("button", { name: "Chèque" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(screen.getByRole("button", { name: "Espèces" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createReservation.mock.calls[0][0]).toMatchObject({ paymentMethod: "cash" });
+  });
+
+  it("« Payé par » à la modification : rien sans changement, null quand on le retire", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ paymentMethod: "card" }) });
+    expect(screen.getByRole("button", { name: "Carte bancaire" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("paymentMethod");
+    updateReservation.mockClear();
+    await userEvent.click(screen.getByRole("button", { name: "Carte bancaire" }));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(updateReservation).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).toMatchObject({ paymentMethod: null });
+  });
+
   it("traduit le refus du serveur sur les sièges auto", async () => {
     createReservation.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { childSeats: "child_seats_range" }));
     renderForm();

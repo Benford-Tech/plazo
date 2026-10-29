@@ -1,4 +1,5 @@
-import { Handover, ReservationChannel, ReservationStatus } from '@/database';
+import { Handover, PaymentMethod, ReservationChannel, ReservationStatus } from '@/database';
+import { importedPaymentMethod } from './payment-method';
 import { KNOWN_COMPARATORS } from './comparator-commission';
 import { cleanNamePart, CustomerNames, customerNamesOf } from './customer-name';
 import { formatFlight, importedPlate, plateKey } from './reservation';
@@ -34,6 +35,7 @@ export const IMPORT_FIELDS = [
   'notes',
   'handover',
   'commission',
+  'payment',
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -64,7 +66,8 @@ export type ImportWarning =
   | 'booked_at_unreadable'
   | 'full_night'
   | 'handover_unreadable'
-  | 'commission_unreadable';
+  | 'commission_unreadable'
+  | 'payment_unreadable';
 
 export interface ImportedBooking extends CustomerNames {
   customerPhone: string;
@@ -87,6 +90,7 @@ export interface ImportedBooking extends CustomerNames {
   handover: Handover;
   /** The comparator's commission in cents as the file gives it (its exact amount), for a comparator's booking only. */
   commissionOverrideCents: number | null;
+  paymentMethod: PaymentMethod | null;
   /** When the booking was made (the file's « réservée le »), null when the file does not say. */
   bookedAt: Date | null;
   /** Whether the stay is over, under way or to come at the time of the import. */
@@ -364,6 +368,8 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
   // A comparator's commission only (the base refuses it on a phone or counter booking).
   const commission = parseImportPrice(row.commission);
   if (commission === 'invalid') warnings.push('commission_unreadable');
+  const payment = importedPaymentMethod(row.payment);
+  if (payment === 'invalid') warnings.push('payment_unreadable');
   const commissionOverrideCents =
     typeof commission === 'number' && (channel.channel === 'aggregator' || channel.channel === 'import') ? commission : null;
 
@@ -393,6 +399,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
       notes: notes || null,
       handover: handover ?? 'shuttle',
       commissionOverrideCents,
+      paymentMethod: payment === 'invalid' ? null : payment,
       bookedAt,
       timing,
     },

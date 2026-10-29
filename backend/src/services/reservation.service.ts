@@ -220,6 +220,8 @@ export class ReservationService {
             ...childSeatColumns(data.childSeats),
             externalReference,
             priceCents: data.priceCents ?? null,
+            // 29/10/2026 (« Payé par »): a Plazo booking is paid online (CHECK).
+            paymentMethod: data.channel === 'plazo' ? null : (data.paymentMethod ?? null),
             // 10/10/2026: the amount read in the email (« Compléter »), kept apart from a price the staff corrected.
             importedPriceCents: externalReference ? (data.importedPriceCents ?? data.priceCents ?? null) : null,
             overbooked: full.length > 0,
@@ -804,6 +806,9 @@ export class ReservationService {
       // 10/10/2026: what the traveller paid on Plazo is not the staff's to change (an unchanged value goes through).
       const priceChanged = data.priceCents !== undefined && data.priceCents !== before.priceCents;
       if (priceChanged && isPriceLocked(before)) throw fieldError('priceCents', 'price_locked');
+      // 29/10/2026 (« Payé par »): a Plazo booking is paid online, it has no method of its own.
+      const paymentChanged = data.paymentMethod !== undefined && data.paymentMethod !== before.paymentMethod;
+      if (paymentChanged && (data.channel ?? before.channel) === 'plazo') throw fieldError('paymentMethod', 'price_locked');
 
       const datesChanged = data.arrivalAt !== undefined || data.returnAt !== undefined;
       const stay = datesChanged
@@ -856,6 +861,7 @@ export class ReservationService {
           vehicleColour: data.vehicleColour === undefined ? undefined : data.vehicleColour?.trim() || null,
           ...(data.childSeats === undefined ? {} : childSeatColumns(data.childSeats)),
           priceCents: priceChanged ? data.priceCents : undefined,
+          paymentMethod: paymentChanged ? data.paymentMethod : undefined,
           overbooked: datesChanged ? full.length > 0 : undefined,
         },
       });

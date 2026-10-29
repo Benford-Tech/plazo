@@ -3,6 +3,7 @@ import type {
   ListingService,
   ListingStatus,
   PayoutSchedule,
+  PaidBy,
   ReservationChannel,
   PlatformAudience,
   ProspectStatus,
@@ -591,6 +592,10 @@ export const fr = {
     averageSub: (days: number | null) =>
       days === null ? "—" : `${days.toLocaleString("fr-FR")} jours en moyenne`,
     byChannel: "Par canal",
+    byPaymentMethod: "Par moyen de paiement",
+    paidByUnknown: "Non précisé",
+    bookingsShort: (n: number) => `${n} rés.`,
+    paidByHint: "Choisissez « Payé par » dans le formulaire de chaque réservation. Aussi dans l'export CSV.",
     channel: "Canal",
     count: "Réservations",
     amount: "Chiffre d'affaires",
@@ -1359,6 +1364,16 @@ export const fr = {
     // Booked by a traveller on the public site.
     plazo: PRODUCT.name,
   } satisfies Record<ReservationChannel, string>,
+  // 29/10/2026 (« le moyen de paiement », direction A « Payé par »).
+  paidBy: {
+    card: "Carte bancaire",
+    cash: "Espèces",
+    cheque: "Chèque",
+    transfer: "Virement",
+    holiday_vouchers: "Chèques-vacances",
+    comparator: "Au comparateur",
+    online: `En ligne sur ${PRODUCT.name}`,
+  } satisfies Record<PaidBy, string>,
   // « Arrivées · Départs » (28/10/2026): the kind of a movement, on its green or indigo pill.
   movement: { arrival: "Arrivée", departure: "Départ" },
   // « Planning prévisionnel » (28/10/2026, direction A « Calendrier par mois »).
@@ -1445,6 +1460,8 @@ export const fr = {
     // 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »).
     priceHelp: "Ce que paie le client, sans les frais du comparateur.",
     priceLocked: `Payé en ligne sur ${PRODUCT.name} : le prix ne se modifie pas.`,
+    paidBy: "Payé par",
+    paidByHelp: "Facultatif. Cliquez de nouveau pour retirer le choix.",
     priceInput: "Prix payé en euros",
     editPrice: "Modifier le prix",
     addPrice: "Ajouter le prix",
@@ -4537,6 +4554,7 @@ export const bookingImportFr = {
     notes: "Notes",
     handover: "Prise en charge",
     commission: "Commission",
+    payment: "Payé par",
   } as Record<string, string>,
   required: { name: "Nom", arrivalDate: "Arrivée", returnDate: "Départ" } as Record<string, string>,
   filters: {
@@ -4566,6 +4584,7 @@ export const bookingImportFr = {
     price_unreadable: "Prix illisible, laissé vide",
     commission_unreadable: "Commission illisible, taux du comparateur appliqué",
     handover_unreadable: "Service non reconnu, navette par défaut",
+    payment_unreadable: "Moyen de paiement non reconnu, laissé vide",
     passengers_unreadable: "Passagers illisibles, 1 par défaut",
     booked_at_unreadable: "Date de réservation illisible",
     full_night: "Nuit déjà complète",

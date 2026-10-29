@@ -452,6 +452,16 @@ enum Handover {
   valet
 }
 
+/// 29/10/2026 (« le moyen de paiement », direction A « Payé par »): how the traveller paid a booking not made on Plazo.
+enum PaymentMethod {
+  card
+  cash
+  cheque
+  transfer
+  holiday_vouchers
+  comparator
+}
+
 enum ShuttleTracking {
   off // the drivers do not share it
   team // the staff's live map only
@@ -732,6 +742,8 @@ model Reservation {
   // 10/10/2026: the amount the comparator last gave (import, applied change). A comparator's change touches the price
   // only when its amount differs from this one, so a price the staff corrected stays theirs.
   importedPriceCents       Int?
+  /// 29/10/2026: how it was paid (« Payé par »), null when not said; never set on a Plazo booking, paid online (CHECK).
+  paymentMethod            PaymentMethod?
   // What the comparator takes on this one booking when it differs from its usual rate (19/10/2026, « paramétrer le
   // taux de commission de chaque comparateur »): a rate in basis points, or an amount in cents; never both, and only
   // for a comparator's booking (CHECKs). Null: the comparator's rate of the day the booking was made.

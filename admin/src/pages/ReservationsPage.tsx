@@ -12,6 +12,7 @@ import { bookingImportFr, describeError, fr, inboundFr, remindersFr } from "@/li
 import { euros, isPriceLocked } from "@/lib/pricing";
 import { MOVEMENT_CARD, nextMovementOf } from "@/lib/movement";
 import { can } from "@/lib/roles";
+import { paidBy } from "@/lib/payment-method";
 import type { Reservation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -132,10 +133,16 @@ export default function ReservationsPage() {
                 {move && <MovementPill kind={move} time={dateTimeShort(move === "arrival" ? r.arrivalAt : r.returnAt)} className="mt-1" />}
               </span>
               {/* 19/10/2026: for the managers, the price and, for a comparator's booking, what they keep. */}
-              {r.commission && r.priceCents !== null && (
+              {/* 29/10/2026 (« Payé par »): and how it was paid. */}
+              {priced && r.priceCents !== null && (r.commission || paidBy(r)) && (
                 <span className="tabular text-right font-mono text-sm" data-testid="list-net">
                   <span className="block">{euros(r.priceCents)}</span>
-                  <span className="block text-lime-deep">{fr.commission.keeps(euros(r.commission.netCents ?? r.priceCents))}</span>
+                  {r.commission && <span className="block text-lime-deep">{fr.commission.keeps(euros(r.commission.netCents ?? r.priceCents))}</span>}
+                  {paidBy(r) && (
+                    <span className="block font-sans text-muted-foreground" data-testid="list-paid-by">
+                      {fr.paidBy[paidBy(r)!]}
+                    </span>
+                  )}
                 </span>
               )}
               <span className="rounded-full border border-border bg-white px-2.5 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>

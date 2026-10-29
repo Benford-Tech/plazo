@@ -10,6 +10,7 @@ import type {
   Airport,
   ExtraKind,
   ExtraSettings,
+  PaymentMethod,
   ReservationExtra,
   ContractFileKind,
   MyContract,
@@ -778,7 +779,7 @@ export const adminApi = {
       },
     ),
   setReservationPrice: (id: string, priceCents: number | null) =>
-    apiRequest<{ id: string; priceCents: number | null }>(
+    apiRequest<{ id: string; priceCents: number | null; paymentMethod?: PaymentMethod | null }>(
       `/internal/reservations/${id}/price`,
       { method: "PUT", body: json({ priceCents }) },
     ),
