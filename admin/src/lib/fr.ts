@@ -4535,6 +4535,8 @@ export const bookingImportFr = {
     bookedAt: "Réservée le",
     vehicle: "Véhicule",
     notes: "Notes",
+    handover: "Prise en charge",
+    commission: "Commission",
   } as Record<string, string>,
   required: { name: "Nom", arrivalDate: "Arrivée", returnDate: "Départ" } as Record<string, string>,
   filters: {
@@ -4562,6 +4564,8 @@ export const bookingImportFr = {
     plate_unreadable: "Plaque illisible, laissée vide",
     flight_unreadable: "Vol illisible, mis dans les notes",
     price_unreadable: "Prix illisible, laissé vide",
+    commission_unreadable: "Commission illisible, taux du comparateur appliqué",
+    handover_unreadable: "Service non reconnu, navette par défaut",
     passengers_unreadable: "Passagers illisibles, 1 par défaut",
     booked_at_unreadable: "Date de réservation illisible",
     full_night: "Nuit déjà complète",

@@ -1,4 +1,4 @@
-import { ReservationChannel, ReservationStatus } from '@/database';
+import { Handover, ReservationChannel, ReservationStatus } from '@/database';
 import { KNOWN_COMPARATORS } from './comparator-commission';
 import { cleanNamePart, CustomerNames, customerNamesOf } from './customer-name';
 import { formatFlight, importedPlate, plateKey } from './reservation';
@@ -32,6 +32,8 @@ export const IMPORT_FIELDS = [
   'bookedAt',
   'vehicle',
   'notes',
+  'handover',
+  'commission',
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -54,7 +56,15 @@ export type ImportError =
 
 /** What is imported anyway but worth a look (« À vérifier »). */
 export type ImportWarning =
-  'no_phone' | 'plate_unreadable' | 'flight_unreadable' | 'price_unreadable' | 'passengers_unreadable' | 'booked_at_unreadable' | 'full_night';
+  | 'no_phone'
+  | 'plate_unreadable'
+  | 'flight_unreadable'
+  | 'price_unreadable'
+  | 'passengers_unreadable'
+  | 'booked_at_unreadable'
+  | 'full_night'
+  | 'handover_unreadable'
+  | 'commission_unreadable';
 
 export interface ImportedBooking extends CustomerNames {
   customerPhone: string;
@@ -73,6 +83,10 @@ export interface ImportedBooking extends CustomerNames {
   departureFlight: string | null;
   vehicleModel: string | null;
   notes: string | null;
+  /** Shuttle, or valet at the terminal (the file's « Service » column, 29/10/2026). */
+  handover: Handover;
+  /** The comparator's commission in cents as the file gives it (its exact amount), for a comparator's booking only. */
+  commissionOverrideCents: number | null;
   /** When the booking was made (the file's « réservée le »), null when the file does not say. */
   bookedAt: Date | null;
   /** Whether the stay is over, under way or to come at the time of the import. */
@@ -261,6 +275,18 @@ function instantOf(date: DateParts, time: string, timeZone: string): Date | null
 }
 
 /** One row read: its booking, or why it cannot be imported; what is worth a look on the side. */
+/**
+ * The handover a row names (29/10/2026, « Service » : Voiturier / Parking) : valet at the terminal, else the shuttle. Null when
+ * the cell says something else (the shuttle is kept, with a warning).
+ */
+export function importedHandover(raw: string | undefined): Handover | null {
+  const value = text(raw);
+  if (!value) return 'shuttle';
+  if (/voiturier|valet|terminal|jockey/i.test(value)) return 'valet';
+  if (/^(parking|navette|shuttle|standard|classique|parking navette|navette gratuite)$/i.test(value)) return 'shuttle';
+  return null;
+}
+
 export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, order: DateOrder = 'dmy'): ReadRow {
   const errors: ImportError[] = [];
   const warnings: ImportWarning[] = [];
@@ -332,6 +358,15 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
     else if (bookedAt > now) bookedAt = now;
   }
 
+  const handover = importedHandover(row.handover);
+  if (!handover) warnings.push('handover_unreadable');
+  const channel = importedChannel(row.channel);
+  // A comparator's commission only (the base refuses it on a phone or counter booking).
+  const commission = parseImportPrice(row.commission);
+  if (commission === 'invalid') warnings.push('commission_unreadable');
+  const commissionOverrideCents =
+    typeof commission === 'number' && (channel.channel === 'aggregator' || channel.channel === 'import') ? commission : null;
+
   const email = text(row.email).toLowerCase();
   const notes = [text(row.notes).slice(0, 1000), ...unreadableFlights].filter(Boolean).join('\n');
 
@@ -348,7 +383,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
       arrivalAt,
       returnAt,
       status,
-      ...importedChannel(row.channel),
+      ...channel,
       externalReference: text(row.reference).toUpperCase().slice(0, 60) || null,
       priceCents: typeof price === 'number' ? price : null,
       passengers,
@@ -356,6 +391,8 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
       departureFlight,
       vehicleModel: text(row.vehicle).slice(0, 40) || null,
       notes: notes || null,
+      handover: handover ?? 'shuttle',
+      commissionOverrideCents,
       bookedAt,
       timing,
     },

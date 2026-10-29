@@ -27,6 +27,8 @@ export const IMPORT_FIELDS = [
   "bookedAt",
   "vehicle",
   "notes",
+  "handover",
+  "commission",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -66,6 +68,8 @@ const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "reference", test: /^(n |no |num |numero )?(de )?(resa|reservation|reference|ref|dossier|booking)( n)?$|^reference externe$/ },
   { field: "status", test: /^(statut|etat|status)$/ },
   { field: "vehicle", test: /^(vehicule|voiture|modele|marque|marque modele)$/ },
+  { field: "handover", test: /^(service|services|prise en charge|type( de)? service|formule|voiturier)$/ },
+  { field: "commission", test: /^(commission|com|frais( du)? comparateur)( eur| euros?| ttc)?$/ },
   { field: "notes", test: /^(notes?|remarques?|commentaires?|observations?|infos?)$/ },
 ];
 
