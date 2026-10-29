@@ -40,6 +40,10 @@ on:
         description: "mapping : noms masqués cités par Google Play (ex. « u41.Q go3.e »)"
         type: string
         default: ""
+      lines:
+        description: "logs : nombre de dernières lignes gardées par étape (60 par défaut, 2000 au plus)"
+        type: string
+        default: "60"
 
 permissions:
   contents: read
@@ -61,4 +65,5 @@ jobs:
           GROUP_NAME: ${{ inputs.group_name }}
           INSTANCE_TYPE: ${{ inputs.instance_type }}
           NAMES: ${{ inputs.names }}
+          LOG_LINES: ${{ inputs.lines }}
         run: python3 .github/scripts/codemagic_build.py

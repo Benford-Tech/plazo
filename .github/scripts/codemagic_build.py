@@ -94,7 +94,9 @@ def steps(app):
     summary(lines)
 
 
-LOG_LINES = 60
+# « lines » of the workflow (29/10/2026: the App Store refusal of one app was above the 60 kept lines).
+_lines = os.environ.get("LOG_LINES") or ""
+LOG_LINES = min(2000, int(_lines)) if _lines.isdigit() and int(_lines) > 0 else 60
 STORE_STEP = re.compile(r"Google Play|App Store|TestFlight|Bilan", re.IGNORECASE)
 
 
