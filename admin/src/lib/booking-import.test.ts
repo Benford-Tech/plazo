@@ -101,4 +101,9 @@ describe("import of old bookings: the file", () => {
     expect(csv.sheets[0].rows[1]).toEqual(["Claire Martin", "03/09/2025", "10/09/2025"]);
     await expect(readImportFile(new File(["ÐÏ"], "vieux.xls"))).rejects.toThrow("old_excel");
   });
+
+  it("takes « Canal » over « Source » for the channel, and « Source » when it is the only one", () => {
+    expect(guessMapping(["Référence", "Source", "Canal", "Prix (€)"])).toEqual(["reference", null, "channel", "price"]);
+    expect(guessMapping(["Source", "Client"])).toEqual(["channel", "name"]);
+  });
 });

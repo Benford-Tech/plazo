@@ -44,7 +44,7 @@ const fold = (text: string) =>
     .trim();
 
 /** Header words, folded, for each field; the first rule that matches wins (order matters: « date retour » before « date »). */
-const RULES: { field: ImportField; test: RegExp }[] = [
+const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "bookedAt", test: /^(date (de )?(reservation|resa|commande|creation)|reserve le|reservee le|cree le|booking date)$/ },
   { field: "returnTime", test: /^(heure|h) (de )?(retour|sortie|depart|recuperation|fin)$/ },
   { field: "arrivalTime", test: /^(heure|h) (d )?(de )?(arrivee|depot|entree|debut)$/ },
@@ -60,7 +60,9 @@ const RULES: { field: ImportField; test: RegExp }[] = [
   { field: "plate", test: /^(plaque|immat|immatriculation|plaque d immatriculation|vehicule immat|plate)$/ },
   { field: "passengers", test: /^(passagers?|nb (de )?(personnes|passagers|pers)|personnes|pax|nombre de personnes)$/ },
   { field: "price", test: /^(prix|montant|tarif|total|prix ttc|montant ttc|prix paye|ca|chiffre)( eur)?$/ },
-  { field: "channel", test: /^(source|canal|origine|provenance|comparateur|apporteur|via)$/ },
+  // « Canal » before « Source » (29/10/2026: a file with both gave « GOOGLE » / « PLATEFORME » instead of the comparator).
+  { field: "channel", test: /^(canal|comparateur|apporteur|via|plateforme)$/ },
+  { field: "channel", test: /^(source|origine|provenance)$/, weak: true },
   { field: "reference", test: /^(n |no |num |numero )?(de )?(resa|reservation|reference|ref|dossier|booking)( n)?$|^reference externe$/ },
   { field: "status", test: /^(statut|etat|status)$/ },
   { field: "vehicle", test: /^(vehicule|voiture|modele|marque|marque modele)$/ },
@@ -74,15 +76,21 @@ export function fieldOfHeader(header: string): ImportField | null {
   return RULES.find(r => r.test.test(key))?.field ?? null;
 }
 
-/** A field per column, each field used once (the first column that names it). */
+/** A field per column, each field used once: the first column that names it, a vaguer name (« Source ») only when no other does. */
 export function guessMapping(header: string[]): ImportMapping {
-  const used = new Set<ImportField>();
-  const mapping = header.map(h => {
-    const field = fieldOfHeader(h);
-    if (!field || used.has(field)) return null;
-    used.add(field);
-    return field;
+  const rules = header.map(h => {
+    const key = fold(h);
+    return key ? RULES.find(r => r.test.test(key)) : undefined;
   });
+  const used = new Set<ImportField>();
+  const mapping: ImportMapping = header.map(() => null);
+  for (const weak of [false, true]) {
+    rules.forEach((rule, column) => {
+      if (!rule || Boolean(rule.weak) !== weak || used.has(rule.field)) return;
+      used.add(rule.field);
+      mapping[column] = rule.field;
+    });
+  }
   // A lone « Nom » column holds the whole name.
   if (used.has("lastName") && !used.has("firstName") && !used.has("name")) return mapping.map(f => (f === "lastName" ? "name" : f));
   return mapping;

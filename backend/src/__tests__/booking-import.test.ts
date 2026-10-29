@@ -1,5 +1,13 @@
 import prisma from '@/database';
-import { importedChannel, importedPhone, parseImportDate, parseImportPrice, parseImportTime, readImportRow } from '@/domain/booking-import';
+import {
+  dateOrderOf,
+  importedChannel,
+  importedPhone,
+  parseImportDate,
+  parseImportPrice,
+  parseImportTime,
+  readImportRow,
+} from '@/domain/booking-import';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 // Import of old (and upcoming) bookings from a file, previewed before they are created (28/10/2026, direction A).
@@ -22,6 +30,17 @@ describe('reading a row', () => {
     expect(parseImportDate('demain')).toBeNull();
     expect(parseImportTime('0.875')).toBe('21:00');
     expect(parseImportTime('25:00')).toBeNull();
+  });
+
+  it('reads an American export month first, and only when its dates say so', () => {
+    // 29/10/2026: a file in month/day order (« 11/20/2026 ») read « 12/10/2026 » as 12 October.
+    expect(dateOrderOf(['12/10/2026', '11/20/2026', '4/10/2026'])).toBe('mdy');
+    expect(dateOrderOf(['12/10/2026', '20/11/2026'])).toBe('dmy');
+    expect(dateOrderOf(['03/09/2025', '04/09/2025'])).toBe('dmy');
+    expect(dateOrderOf(['2026-11-20', '22-Aug', undefined])).toBe('dmy');
+    expect(parseImportDate('12/10/2026', 'mdy')).toEqual({ y: 2026, m: 12, d: 10 });
+    expect(parseImportDate('11/20/2026 13h', 'mdy')).toEqual({ y: 2026, m: 11, d: 20, time: '13:00' });
+    expect(parseImportDate('2026-11-20', 'mdy')).toEqual({ y: 2026, m: 11, d: 20 });
   });
 
   it('reads prices, phones and channels', () => {

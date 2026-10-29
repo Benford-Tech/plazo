@@ -435,7 +435,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      d'un séjour commencé, sinon l'import. Table `reservation_imports` et `Reservation.importId` (migration `reservation_imports`) ;
      `GET /internal/reservations/imports` (10 derniers) et « Retirer cet import » `POST …/imports/:id/undo` pendant 24 h : supprime
      les réservations de l'import que personne n'a touchées (aucune trace après l'import, ni trajet, mail, contrat, état des lieux,
-     service ou SMS), garde les autres (`{ removed, kept }`, 409 `already_undone` / `undo_expired`). Tests `booking-import.test.ts`
+     service ou SMS), garde les autres (`{ removed, kept }`, 409 `already_undone` / `undo_expired`). **Fichier américain et « Canal » (29/10/2026, d'après le fichier de réservations de Joanny)** : l'ordre des dates numériques
+     est lu sur tout le fichier (`dateOrderOf` : mois d'abord seulement si une date ne peut être que « 11/20/2026 » et aucune
+     « 20/11/2026 », `parseImportDate(raw, order)`), rendu en `dateOrder` et dit dans l'aperçu (« Dates lues au format
+     mois/jour/année… ») ; « Canal », « Comparateur » ou « Plateforme » passent avant « Source », « Origine » ou « Provenance »
+     pour le canal (règles `weak` de `guessMapping`). Tests `booking-import.test.ts`
      (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation

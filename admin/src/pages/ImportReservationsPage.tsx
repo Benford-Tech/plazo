@@ -279,6 +279,11 @@ export default function ImportReservationsPage() {
 
         {preview && counts && (
           <>
+            {preview.dateOrder === "mdy" && (
+              <p className="rounded-lg bg-info-soft px-3 py-2 text-[13px] text-info-text" data-testid="import-month-first">
+                {t.monthFirst}
+              </p>
+            )}
             <div className="flex flex-wrap gap-2" role="group" aria-label={t.columnsTable.state}>
               {(["all", "create", "check", "duplicate", "error"] as const).map(key => {
                 const n = key === "all" ? preview.rows.length : counts[key];
