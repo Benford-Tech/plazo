@@ -288,17 +288,18 @@ class _ExtraCard extends StatelessWidget {
                 ],
                 if (canAct && todo) ...[
                   const SizedBox(height: 10),
+                  // « Accepter » on its own line first, then « Fait » and « Pas possible » side by side (a phone's width).
+                  if (!row.accepted) ...[
+                    OutlinedButton(
+                      key: Key('extras-accept-${row.id}'),
+                      onPressed: busy ? null : onAccept,
+                      style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                      child: Text('extras.accept'.tr()),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Row(
                     children: [
-                      if (!row.accepted) ...[
-                        OutlinedButton(
-                          key: Key('extras-accept-${row.id}'),
-                          onPressed: busy ? null : onAccept,
-                          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                          child: Text('extras.accept'.tr()),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
                       Expanded(
                         child: FilledButton(
                           key: Key('extras-done-${row.id}'),
@@ -312,11 +313,13 @@ class _ExtraCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      OutlinedButton(
-                        key: Key('extras-refuse-${row.id}'),
-                        onPressed: busy ? null : onRefuse,
-                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                        child: Text('extras.refuse'.tr()),
+                      Expanded(
+                        child: OutlinedButton(
+                          key: Key('extras-refuse-${row.id}'),
+                          onPressed: busy ? null : onRefuse,
+                          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                          child: Text('extras.refuse'.tr()),
+                        ),
                       ),
                     ],
                   ),
