@@ -7,6 +7,7 @@ import { InboundEmailStatus } from '@/database';
 import { InboundPayload } from '@/domain/inbound-email';
 import { Envelope, parseRawEmail } from '@/domain/inbound-mime';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { ValidationException } from '@/middlewares/validation.middleware';
 import { INBOUND_VIEWS, InboundEmailService, InboundView } from '@/services/inbound-email.service';
 import catchAsync from '@/utils/catchAsync';
 import { HttpException } from '@/utils/httpException';
@@ -107,6 +108,15 @@ export class InboundEmailController {
   /** POST /internal/inbound/emails/:id/reanalyse → { email, outcome } (10/10/2026, « Relancer l'analyse ») */
   public reanalyse = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.status(httpStatus.OK).json(await this.inbound.reanalyse(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/inbound/emails/paste  { text, subject? } → { email, outcome } (29/10/2026, « Coller un mail ») */
+  public paste = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const text = typeof req.body?.text === 'string' ? req.body.text : '';
+    const subject = typeof req.body?.subject === 'string' ? req.body.subject : null;
+    if (!text.trim()) throw new ValidationException({ text: 'required' });
+    if (text.length > 200000) throw new ValidationException({ text: 'too_long' });
+    res.status(httpStatus.CREATED).json(await this.inbound.paste(req.staff, { text, subject }));
   });
 
   /** GET /internal/reservations/:id/emails (« Mails liés », 27/10/2026) */

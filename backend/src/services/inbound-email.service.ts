@@ -27,6 +27,7 @@ import {
 import { fullName } from '@/domain/staff-name';
 import { AUTO_RETRY_MAX, AUTO_RETRY_OUTCOMES, AUTO_RETRY_WINDOW_HOURS, nextAutoRetry } from '@/domain/inbound-retry';
 import { can } from '@/domain/roles';
+import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { allocateInboundSlug } from './inbound-slug';
 import { AlloparkPageOutcome, AlloparkPageService } from './allopark-page.service';
@@ -44,6 +45,36 @@ const ROW_RETENTION_DAYS = 90;
 /** What the settings block counts: the last 30 days. */
 const COUNT_WINDOW_DAYS = 30;
 const TEXT_MAX_CHARS = 20000;
+/** 29/10/2026 (« Coller un mail »): shorter than this is no email; more than this an hour per operator is refused (Claude reads them). */
+const PASTE_MIN_CHARS = 40;
+const PASTE_PER_HOUR = 60;
+
+/** The sender a pasted email names in its first lines (« De : Allopark <info@allopark.com> », « From: … »). */
+export function pastedSenderOf(text: string): { address: string; name: string | null } | null {
+  const head = text.split('\n').slice(0, 30);
+  for (const line of head) {
+    const m = /^\s*(?:De|From|Expéditeur|Exp\.)\s*:\s*(.*)$/i.exec(line);
+    if (!m) continue;
+    const address = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/.exec(m[1])?.[0]?.toLowerCase();
+    if (!address) continue;
+    const name = m[1]
+      .replace(/<[^>]*>|[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, '')
+      .replace(/["']/g, '')
+      .trim();
+    return { address: address.slice(0, 200), name: name ? name.slice(0, 120) : null };
+  }
+  return null;
+}
+
+/** The subject a pasted email names in its first lines (« Objet : … », « Subject: … »), when the staff gave none. */
+export function pastedSubjectOf(text: string): string | null {
+  for (const line of text.split('\n').slice(0, 30)) {
+    const m = /^\s*(?:Objet|Subject|Sujet)\s*:\s*(.+)$/i.exec(line);
+    if (m) return m[1].trim().slice(0, 200) || null;
+  }
+  return null;
+}
+
 /** Gmail's confirmation code is shown in the setup wizard this long. */
 const FORWARDING_SHOWN_DAYS = 7;
 /** "Ce que Plazo a reçu" in the wizard's last step. */
@@ -127,6 +158,9 @@ export interface InboundEmailView {
   autoRetries: number;
   autoRetryAt: string | null;
   receivedAt: string;
+  /** 29/10/2026: how it arrived (`pasted`: « Coller un mail ») and who pasted it. */
+  delivery: 'direct' | 'forwarded' | 'manual' | 'pasted' | null;
+  pastedBy: string | null;
 }
 
 /**
@@ -1278,6 +1312,68 @@ export class InboundEmailService {
   }
 
   /**
+   * 29/10/2026 (« pouvoir importer en collant le contenu du mail », direction A): a staff member pastes the text of a
+   * comparator's email in the inbox. It is read exactly as an email received at the Plazo address (the rules per
+   * comparator, Allopark's booking page, Claude, createFromImport) and kept in the inbox like one, `delivery: pasted`,
+   * « Collé par <prénom> ». The sender comes from a « De : » line of the pasted text when it has one.
+   */
+  public async paste(actor: AuthenticatedStaff, input: { text: string; subject?: string | null }): Promise<Reanalysis> {
+    this.require(actor, 'reservations:manage');
+    const text = input.text.replace(/\r\n?/g, '\n').trim().slice(0, TEXT_MAX_CHARS);
+    if (text.length < PASTE_MIN_CHARS) {
+      throw new ValidationException({ text: 'too_short' });
+    }
+    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { status: true } });
+    if (!operator || operator.status !== 'active') throw new HttpException(httpStatus.CONFLICT, 'This operator is not active', 'operator_inactive');
+    const recent = await prisma.inboundEmail.count({
+      where: { operatorId: actor.operatorId, delivery: 'pasted', receivedAt: { gte: new Date(Date.now() - 3600000) } },
+    });
+    if (recent >= PASTE_PER_HOUR) throw new HttpException(httpStatus.TOO_MANY_REQUESTS, 'Too many pasted emails this hour', 'paste_limit');
+    const sender = pastedSenderOf(text);
+    const subject = input.subject?.replace(/\s+/g, ' ').trim().slice(0, 200) || pastedSubjectOf(text);
+    const base = {
+      operatorId: actor.operatorId,
+      fromAddress: sender?.address ?? null,
+      fromName: sender?.name ?? null,
+      subject,
+      textBody: text,
+    };
+    const forReanalysis = { recipients: [] as string[], links: alloparkLinks(null, text) };
+    const id = newRowId();
+    const analysis = await this.analyse({ ...base, ...forReanalysis, text, emailId: id });
+    const status = storedStatus(analysis.status);
+    const created = await prisma.inboundEmail.create({
+      data: {
+        id,
+        ...base,
+        ...(analysis.reservationId ? {} : forReanalysis),
+        status,
+        delivery: 'pasted',
+        pastedBy: (actor.firstName || actor.name.split(' ')[0] || '').slice(0, 60) || null,
+        ...(analysis.reading || analysis.outage ? { reading: storedReading(analysis.reading, analysis.outage) } : {}),
+        ...(analysis.provider ? { provider: analysis.provider } : {}),
+        ...(analysis.parsed ? { parsed: analysis.parsed as unknown as Prisma.InputJsonValue } : {}),
+        ...(analysis.missing.length ? { missing: analysis.missing } : {}),
+        ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
+        ...(analysis.pageLookup ? { pageLookup: storedPageLookup(analysis.pageLookup, !!analysis.reservationId) } : {}),
+        ...(analysis.change ? { change: storedChange(analysis.change) } : {}),
+      },
+      include: { reservation: { select: { reference: true } } },
+    });
+    await this.audit.record(actor, {
+      action: 'inbound.pasted',
+      entityType: 'inbound_email',
+      entityId: id,
+      details: {
+        outcome: analysis.status,
+        ...(analysis.provider ? { provider: analysis.provider } : {}),
+        ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
+      },
+    });
+    return { email: this.view(created), outcome: analysis.status };
+  }
+
+  /**
    * 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the Allopark emails whose booking page Plazo could not
    * read are analysed again by Plazo itself when due (domain/inbound-retry.ts: after 10 min, 30 min, 1 h, 3 h and 8 h, two
    * days at most; never a page protected by a captcha), oldest first, a few per pass. Each is one « Relancer l'analyse »:
@@ -1904,6 +2000,8 @@ export class InboundEmailService {
       autoRetries: r.autoRetries,
       autoRetryAt: nextAutoRetry(autoRetryCandidate(r))?.toISOString() ?? null,
       receivedAt: r.receivedAt.toISOString(),
+      delivery: r.delivery ?? null,
+      pastedBy: r.pastedBy ?? null,
     };
   }
 
@@ -1931,6 +2029,8 @@ type InboundRow = {
   autoRetries: number;
   reservationId: string | null;
   receivedAt: Date;
+  delivery?: 'direct' | 'forwarded' | 'manual' | 'pasted' | null;
+  pastedBy?: string | null;
   reservation: { reference: string } | null;
 };
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Mail, RefreshCw } from "lucide-react";
+import { ChevronLeft, ClipboardPaste, Mail, RefreshCw, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -199,6 +199,113 @@ function KindBadge({ email }: { email: InboundEmail }) {
   );
 }
 
+/** 29/10/2026 (« Coller un mail »): who a pasted mail is from, else who pasted it. */
+function senderLine(email: InboundEmail): string {
+  if (email.delivery === "pasted" && !email.fromName && !email.fromAddress) return t.list.paste.by(email.pastedBy ?? null);
+  return email.fromName ?? email.fromAddress ?? t.list.unknownSender;
+}
+
+/** The toast of a pasted mail: the booking made or found, else that it waits in « À traiter ». */
+function pastedMessage(result: InboundReanalysis): string {
+  if (["imported", "changed", "duplicate", "handled"].includes(result.outcome)) return reanalysedMessage(result);
+  if (result.email.readingOutage) return `${t.list.paste.waiting} ${t.list.reanalysed.outage(result.email.readingOutage.cause).replace(/^Analyse relancée, mais /, "")}`;
+  return t.list.paste.waiting;
+}
+
+/**
+ * 29/10/2026 (« pouvoir importer en collant le contenu du mail », direction A): the text of a comparator's mail pasted
+ * here is read like a mail received at the Plazo address, and kept in the inbox.
+ */
+function PasteMailDialog({ onClose, onPasted }: { onClose: () => void; onPasted: (result: InboundReanalysis) => void }) {
+  const p = t.list.paste;
+  const [subject, setSubject] = useState("");
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    area.current?.focus();
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const paste = useMutation({
+    mutationFn: () => adminApi.pasteInboundEmail({ text, ...(subject.trim() ? { subject: subject.trim() } : {}) }),
+    onSuccess: onPasted,
+    onError: (err: Error) => setError(describeError(err, p.errors)),
+  });
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (text.trim().length < 40) {
+      setError(p.tooShort);
+      return;
+    }
+    setError(null);
+    paste.mutate();
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-10" onMouseDown={e => e.target === e.currentTarget && !paste.isPending && onClose()}>
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="paste-title"
+        data-testid="paste-mail-dialog"
+        onSubmit={submit}
+        className="w-full max-w-2xl space-y-4 rounded-[16px] border border-panel-line bg-panel p-6 shadow-xl"
+      >
+        <div className="flex items-center gap-2">
+          <h2 id="paste-title" className="flex-1 text-xl font-bold">
+            {p.title}
+          </h2>
+          <button type="button" aria-label={p.cancel} onClick={onClose} disabled={paste.isPending} className="flex h-10 w-10 items-center justify-center rounded-full border border-panel-line hover:bg-panel-2">
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+        <p className="text-sm text-muted-foreground">{p.intro}</p>
+        <label className="block space-y-1 text-sm">
+          <span className="font-semibold">
+            {p.subject} <span className="font-normal text-muted-foreground">({p.subjectHint})</span>
+          </span>
+          <input
+            value={subject}
+            onChange={e => setSubject(e.target.value)}
+            maxLength={200}
+            className="h-10 w-full rounded-[10px] border border-panel-line bg-panel px-3"
+          />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="font-semibold">{p.text}</span>
+          <textarea
+            ref={area}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            maxLength={100000}
+            rows={12}
+            data-testid="paste-mail-text"
+            className="w-full rounded-[10px] border border-panel-line bg-panel p-3 font-mono text-xs leading-relaxed"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex-1 text-xs text-muted-foreground">{p.chars(text.length)}</span>
+          <button type="button" onClick={onClose} disabled={paste.isPending} className={OUTLINE}>
+            {p.cancel}
+          </button>
+          <button type="submit" disabled={paste.isPending || !text.trim()} aria-busy={paste.isPending} className={cn(PRIMARY, "gap-2")}>
+            {paste.isPending && <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {paste.isPending ? p.submitting : p.submit}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boolean; onSelect: () => void }) {
   const l = t.list;
   const summary = summaryOf(email.parsed) ?? email.reading?.summary ?? null;
@@ -211,7 +318,7 @@ function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boo
         className={cn("block w-full space-y-1 border-l-4 px-4 py-3 text-left hover:bg-panel-2", selected ? "border-l-primary bg-accent" : "border-l-transparent")}
       >
         <span className="flex items-center gap-2">
-          <span className="min-w-0 flex-1 truncate font-semibold">{email.fromName ?? email.fromAddress ?? l.unknownSender}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold">{senderLine(email)}</span>
           <span className="shrink-0 font-mono text-xs text-muted-foreground">{receivedShort(email.receivedAt)}</span>
         </span>
         <span className={cn("block truncate text-sm", !email.subject && "text-muted-foreground")}>{email.subject ?? l.noSubject}</span>
@@ -507,7 +614,8 @@ function Reading({
         </div>
         <p className="break-all text-sm">
           <span className="text-muted-foreground">{l.from} : </span>
-          {l.sender(email.fromName, email.fromAddress)}
+          {email.delivery === "pasted" && !email.fromName && !email.fromAddress ? l.paste.by(email.pastedBy ?? null) : l.sender(email.fromName, email.fromAddress)}
+          {email.delivery === "pasted" && (email.fromName || email.fromAddress) && <span className="text-muted-foreground"> · {l.paste.by(email.pastedBy ?? null)}</span>}
         </p>
         <p className="text-sm">
           <span className="text-muted-foreground">{l.received} : </span>
@@ -664,6 +772,30 @@ export default function InboundEmailsPage() {
     },
   });
   const busy = act.isPending || reanalyse.isPending;
+  const [pasting, setPasting] = useState(false);
+  const onPasted = (result: InboundReanalysis) => {
+    setPasting(false);
+    toast.success(pastedMessage(result));
+    const target = viewOf(result.email.status);
+    setView(target);
+    setParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.set("mail", result.email.id);
+        next.set("vue", target);
+        return next;
+      },
+      { replace: true },
+    );
+    void queryClient.invalidateQueries({ queryKey: ["inbound-emails"] });
+    void queryClient.invalidateQueries({ queryKey: ["inbound-settings"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    if (result.email.reservationId) {
+      void queryClient.invalidateQueries({ queryKey: ["reservations"] });
+      void queryClient.invalidateQueries({ queryKey: ["planning"] });
+      void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+    }
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
@@ -678,7 +810,13 @@ export default function InboundEmailsPage() {
           </h1>
           <p className="text-sm text-muted-foreground">{l.subtitle}</p>
         </div>
+        <span className="flex-1" />
+        <button type="button" data-testid="paste-mail" onClick={() => setPasting(true)} className={cn(PRIMARY, "gap-2")}>
+          <ClipboardPaste className="h-4 w-4" aria-hidden="true" />
+          {l.paste.button}
+        </button>
       </div>
+      {pasting && <PasteMailDialog onClose={() => setPasting(false)} onPasted={onPasted} />}
 
       <div role="tablist" aria-label={l.title} className="flex flex-wrap items-center gap-2">
         {VIEWS.map(v => (

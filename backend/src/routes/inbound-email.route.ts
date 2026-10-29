@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { RAW_EMAIL_MAX_BYTES, RAW_EMAIL_TYPE } from '@/domain/inbound-mime';
 import { InboundEmailController } from '@/controllers/inbound-email.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
  * @swagger
@@ -100,6 +100,17 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ email: InboundEmailView (with analysedAt), outcome }"
+ * /internal/inbound/emails/paste:
+ *   post:
+ *     tags: [Inbound email]
+ *     summary: "« Coller un mail »: read a pasted email like a received one ({ text, subject? })"
+ *     responses:
+ *       201:
+ *         description: "{ email: InboundEmailView (delivery pasted), outcome }"
+ *       400:
+ *         description: "validation_failed: text required, too_short or too_long"
+ *       429:
+ *         description: "paste_limit: 60 pasted emails an hour per operator"
  * /internal/inbound/emails/{id}/attach:
  *   post:
  *     tags: [Inbound email]
@@ -131,6 +142,8 @@ export class InboundEmailRoute implements Routes {
     // gesture of the inbox and the new address are open to « Ouvrir son espace » (traced as view_as.write under the admin's name).
     this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), this.inbound.enableAddress);
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);
+    // 29/10/2026 (« Coller un mail »): read like a received email; not in the prospects' demo (Claude reads it).
+    this.router.post('/internal/inbound/emails/paste', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.inbound.paste);
     this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);
