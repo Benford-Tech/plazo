@@ -510,6 +510,59 @@ workflows:
       - build/ios/ipa/*.ipa
       - build/ios/dsym/*/*.dSYM
 
+  mobile-submit-app-store:
+    name: App Store — soumettre à la revue un build déjà sur TestFlight (sans rebuild)
+    # 29/10/2026 (build 6ae23b88, Plazo Pro 1.0.123 « KO App Store »): the IPA reached TestFlight but Apple was still
+    # cancelling the older submission (409 « pre-release build could not be added »). This submits the last TestFlight
+    # build of each app of SUBMIT_APPS again, without building anything (a few minutes instead of 45). By hand only.
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    working_directory: mobile
+    integrations:
+      app_store_connect: lovenest-asc
+    environment:
+      <<: *env_versions
+      vars:
+        # Apps to submit, separated by spaces: plazo, plazo-pro.
+        SUBMIT_APPS: plazo-pro
+        APP_STORE_APP_ID_PLAZO: "6821635235"
+        APP_STORE_APP_ID_PLAZO_PRO: "6821635650"
+        APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
+    scripts:
+      - name: Soumettre le dernier build TestFlight à la revue App Store
+        script: |
+          set -e
+          BASE=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//' | cut -d. -f1,2)
+          FAILED=""
+          for SLUG in $SUBMIT_APPS; do
+            case "$SLUG" in
+              plazo) APP_ID="$APP_STORE_APP_ID_PLAZO" ;;
+              plazo-pro) APP_ID="$APP_STORE_APP_ID_PLAZO_PRO" ;;
+              *) echo "ERREUR: app inconnue $SLUG (plazo ou plazo-pro)"; exit 1 ;;
+            esac
+            NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_ID" | tail -1)
+            BUILD_ID=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$NUMBER" --json \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')
+            VERSION="$BASE.$NUMBER"
+            python3 - "release-notes/$SLUG.txt" "$CM_BUILD_DIR/notes-$SLUG.txt" <<'NOTES'
+          import sys
+          open(sys.argv[2], "w", encoding="utf-8").write(open(sys.argv[1], encoding="utf-8").read().strip())
+          NOTES
+            echo "$SLUG : build $NUMBER ($BUILD_ID), version $VERSION"
+            submit() {
+              app-store-connect builds submit-to-app-store "$BUILD_ID" --platform IOS --version-string "$VERSION" \
+                --release-type "$APP_STORE_RELEASE_TYPE" --cancel-previous-submissions --max-build-processing-wait 5 \
+                --locale fr-FR --whats-new "@file:$CM_BUILD_DIR/notes-$SLUG.txt"
+            }
+            # Apple may take minutes to cancel the waiting submission: up to three tries, 3 min apart.
+            if submit || { echo "Nouvel essai dans 3 min"; sleep 180; submit; } || { echo "Dernier essai dans 3 min"; sleep 180; submit; }; then
+              echo "OK  App Store   $SLUG $VERSION ($NUMBER)"
+            else
+              echo "KO  App Store   $SLUG $VERSION ($NUMBER)"; FAILED=yes
+            fi
+          done
+          [ -z "$FAILED" ]
+
   mobile-release-android:
     name: Plazo + Plazo Pro — Android seul (APK, AAB) → Google Play (production, notes de version)
     # Same machine as mobile-release: the only one the account's free minutes cover (Linux needs billing), and
