@@ -129,8 +129,10 @@ class _StaffOrderRow extends StatelessWidget {
           ),
           if (order.toDo && canAct) ...[
             const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 6,
               children: [
                 TextButton(
                   key: Key('extra-refuse-${order.kind}'),

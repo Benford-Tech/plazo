@@ -224,17 +224,15 @@ class _ExtraCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Container(
         key: Key('extras-row-${row.id}'),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: late ? AppStatus.badSoft : AppColors.panel,
           borderRadius: BorderRadius.circular(14),
-          border: Border(
-            left: BorderSide(color: edge, width: 4),
-            top: BorderSide(color: late ? AppStatus.badSoft : AppColors.line),
-            right: BorderSide(color: late ? AppStatus.badSoft : AppColors.line),
-            bottom: BorderSide(color: late ? AppStatus.badSoft : AppColors.line),
-          ),
+          border: Border.all(color: late ? AppStatus.badSoft : AppColors.line),
         ),
-        child: InkWell(
+        child: DecoratedBox(
+          decoration: BoxDecoration(border: Border(left: BorderSide(color: edge, width: 4))),
+          child: InkWell(
           borderRadius: BorderRadius.circular(14),
           onTap: () => context.router.push(ProReservationRoute(id: row.reservationId)),
           child: Padding(
@@ -310,6 +308,7 @@ class _ExtraCard extends StatelessWidget {
                 ],
               ],
             ),
+          ),
           ),
         ),
       ),
