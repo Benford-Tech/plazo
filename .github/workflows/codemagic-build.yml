@@ -16,7 +16,7 @@ on:
         options: [status, steps, logs, start, cancel, groups, ensure-group, team, mapping]
         default: status
       workflow_id:
-        description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-check)"
+        description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-submit-app-store, mobile-check)"
         type: string
         default: mobile-release-android
       branch:

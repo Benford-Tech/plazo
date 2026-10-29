@@ -1616,6 +1616,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   sont dans AndroidX, Flutter et Stripe, le décodage d'images dans OneSignal (images de notification, jamais envoyées), et
   le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
   détail dans `mobile/publier-sur-les-stores.md`.
+  **Soumettre sans reconstruire (29/10/2026, Plazo Pro 1.0.123 « KO App Store » : l'IPA était sur TestFlight, mais Apple annulait encore l'ancienne soumission, 409 « pre-release build could not be added »)** : workflow Codemagic `mobile-submit-app-store` (à la main, `SUBMIT_APPS` = `plazo-pro` par défaut, ou `plazo plazo-pro`) : dernier build TestFlight de chaque app soumis à la revue (`builds submit-to-app-store`, version `MAJEUR.MINEUR.<numéro>`, notes de version, trois essais à 3 min d'écart), sans rien construire ; lancé par `codemagic-build.yml` › `start`. Le numéro ne monte qu'à un nouveau build : relancer le bilan d'un build ne le change pas.
   **Pipeline des stores sur GitHub Actions (23/10/2026, « Refais le pipeline codemagic dans github avec la publication sur les
   deux stores » ; Codemagic répondait 402 « Billing error »)** : `.github/workflows/mobile-release.yml` « Mobile release (Google
   Play + App Store) », tag `mobile-v…` ou à la main (stores, piste Google Play, brouillon, revue Apple et sortie, APK,
