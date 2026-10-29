@@ -243,13 +243,28 @@ class _ExtraCard extends StatelessWidget {
                 Row(
                   children: [
                     if (pill != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                        decoration: BoxDecoration(color: pillBg, borderRadius: AppRadius.pill),
-                        child: Text(pill.toUpperCase(), style: AppText.body(size: 12, weight: 700, color: pillFg)),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(color: pillBg, borderRadius: AppRadius.pill),
+                          child: Text(
+                            pill.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.body(size: 12, weight: 700, color: pillFg),
+                          ),
+                        ),
                       ),
-                    const Spacer(),
-                    Text(returnLine, style: AppText.tabular(size: 12, color: AppColors.muted)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        returnLine,
+                        textAlign: TextAlign.end,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.tabular(size: 12, color: AppColors.muted),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
