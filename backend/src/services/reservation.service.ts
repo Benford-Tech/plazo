@@ -44,6 +44,16 @@ import { PaymentService } from './payment.service';
 import { SmsService } from './sms.service';
 import { TestFeedService } from './test-feed.service';
 
+/** Accented letters and what a search folds them to (29/10/2026). */
+const ACCENTED = 'àáâãäåæçèéêëìíîïñòóôõöœùúûüýÿ';
+const UNACCENTED = 'aaaaaaaceeeeiiiinoooooouuuuyy';
+const foldForSearch = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
 const MAX_STAY_DAYS = 90;
 const PLANNING_NIGHTS = 7;
 /** The forecast calendar reads at most three months (92 days). */
@@ -1136,6 +1146,8 @@ export class ReservationService {
         file: { select: { id: true, code: true, name: true } },
         stop: { select: { id: true, name: true, kind: true } },
         boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
+        // 29/10/2026: the file a booking was imported from, and whether the import was removed since.
+        import: { select: { id: true, fileName: true, createdAt: true, undoneAt: true } },
       },
     });
     if (!found) throw notFound();
@@ -1178,6 +1190,23 @@ export class ReservationService {
   }
 
   /**
+   * 29/10/2026 (« je ne retrouve pas la réservation en saisissant le nom »): the bookings whose name holds every word
+   * typed, accents and case aside (« gwenael » finds « Gwénaël », « dupont jean » finds « Jean Dupont »).
+   */
+  private async idsByName(operatorId: string, q: string): Promise<string[]> {
+    const words = foldForSearch(q)
+      .split(/\s+/)
+      .filter(w => w.length >= 2)
+      .slice(0, 5);
+    if (!words.length) return [];
+    const folded = Prisma.sql`translate(lower("customerName"), ${ACCENTED}, ${UNACCENTED})`;
+    const conditions = words.map(w => Prisma.sql`${folded} LIKE ${`%${w.replace(/[\\%_]/g, c => `\\${c}`)}%`}`);
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM reservations WHERE "operatorId" = ${operatorId} AND ${Prisma.join(conditions, ' AND ')} LIMIT 500`;
+    return rows.map(r => r.id);
+  }
+
+  /**
    * Search by plate, name, phone or reference, in chronological order (10/10/2026, « Les réservations doivent être
    * affichées de manière chronologique »): by arrival, the earliest first. Without a search, the pages count from today
    * (the parking's local day), so the list opens on what is coming without hiding the past (`chronologicalPage`). A
@@ -1195,8 +1224,12 @@ export class ReservationService {
       : { operatorId: actor.operatorId, AND: [STAFF_VISIBLE] };
     if (q) {
       const key = plateKey(q);
+      const byName = await this.idsByName(actor.operatorId, q);
       where.OR = [
         { customerName: { contains: q, mode: 'insensitive' } },
+        ...(byName.length ? [{ id: { in: byName } }] : []),
+        // 29/10/2026: the comparator's number too (« AL-884880719 »).
+        { externalReference: { contains: q, mode: 'insensitive' } },
         { reference: { equals: q.toUpperCase() } },
         { customerPhone: { contains: q } },
         ...(key.length >= 2 ? [{ plateKey: { contains: key } }] : []),

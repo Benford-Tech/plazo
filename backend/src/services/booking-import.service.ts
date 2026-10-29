@@ -10,7 +10,6 @@ import {
   ReadRow,
   readImportRow,
   dateOrderOf,
-  UNDO_HOURS,
 } from '@/domain/booking-import';
 import { sameTraveller } from '@/domain/import-change';
 import { newReference } from '@/domain/reservation';
@@ -355,35 +354,32 @@ export class BookingImportService {
     };
   }
 
-  /** GET /internal/reservations/imports: the last ten imports, with whether « Retirer cet import » is still open. */
+  /** GET /internal/reservations/imports: the last fifty imports, with whether « Retirer cet import » still applies. */
   public async list(actor: AuthenticatedStaff) {
     this.require(actor);
-    const now = Date.now();
     const rows = await prisma.reservationImport.findMany({
       where: { operatorId: actor.operatorId },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 50,
       include: { staff: { select: { firstName: true, lastName: true } } },
     });
     return {
-      data: rows.map(r => {
-        const until = new Date(r.createdAt.getTime() + UNDO_HOURS * 3600_000);
-        return {
-          id: r.id,
-          fileName: r.fileName,
-          createdAt: r.createdAt.toISOString(),
-          createdCount: r.createdCount,
-          removedCount: r.removedCount,
-          undoneAt: r.undoneAt?.toISOString() ?? null,
-          undoableUntil: !r.undoneAt && r.createdCount > 0 && until.getTime() > now ? until.toISOString() : null,
-          by: r.staff ? `${r.staff.firstName} ${r.staff.lastName}`.trim() : null,
-        };
-      }),
+      data: rows.map(r => ({
+        id: r.id,
+        fileName: r.fileName,
+        createdAt: r.createdAt.toISOString(),
+        createdCount: r.createdCount,
+        removedCount: r.removedCount,
+        undoneAt: r.undoneAt?.toISOString() ?? null,
+        undoable: !r.undoneAt && r.createdCount > 0,
+        by: r.staff ? `${r.staff.firstName} ${r.staff.lastName}`.trim() : null,
+      })),
     };
   }
 
   /**
-   * POST /internal/reservations/imports/:id/undo: within 24 hours, removes the import's bookings nobody touched since —
+   * POST /internal/reservations/imports/:id/undo: at any time (29/10/2026, « pour que l'on puisse revenir en arrière »;
+   * 24 hours before), removes the import's bookings nobody touched since —
    * no audit entry after the import (status, place, edit…), no shuttle trip, email, contract, condition report, service
    * or SMS on them. The others stay (`kept`).
    */
@@ -393,9 +389,6 @@ export class BookingImportService {
       const record = await tx.reservationImport.findFirst({ where: { id, operatorId: actor.operatorId } });
       if (!record) throw notFound();
       if (record.undoneAt) throw new HttpException(httpStatus.CONFLICT, 'This import was already removed', 'already_undone');
-      if (Date.now() - record.createdAt.getTime() > UNDO_HOURS * 3600_000) {
-        throw new HttpException(httpStatus.CONFLICT, 'An import can be removed within 24 hours', 'undo_expired');
-      }
       const ids = (await tx.reservation.findMany({ where: { importId: id }, select: { id: true } })).map(r => r.id);
       const touched = new Set(
         (

@@ -211,6 +211,8 @@ export interface Reservation {
   handover?: Handover;
   /** 29/10/2026 (« Payé par »): null when not said, always null on a Plazo booking (paid online). */
   paymentMethod?: PaymentMethod | null;
+  /** 29/10/2026: the file it was imported from (detail only). */
+  import?: { id: string; fileName: string; createdAt: string; undoneAt: string | null } | null;
   /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */
   commission?: ReservationCommission | null;
   commissionOverrideBp?: number | null;
@@ -2158,6 +2160,7 @@ export interface ReservationImportSummary {
   createdCount: number;
   removedCount: number;
   undoneAt: string | null;
-  undoableUntil: string | null;
+  /** 29/10/2026: « Retirer cet import » at any time, until it is done. */
+  undoable: boolean;
   by: string | null;
 }

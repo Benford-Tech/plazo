@@ -49,8 +49,6 @@ export const MAX_IMPORTED_STAY_DAYS = 366;
 /** Hour given to a date without a time: drop-off in the morning, return at the end of the day (as the mockup said). */
 export const DEFAULT_ARRIVAL_TIME = '08:00';
 export const DEFAULT_RETURN_TIME = '18:00';
-/** « Retirer cet import »: within 24 hours. */
-export const UNDO_HOURS = 24;
 
 /** Why a row cannot be imported. */
 export type ImportError =

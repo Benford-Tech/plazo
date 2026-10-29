@@ -75,6 +75,15 @@ describe("ReservationPage · prix payé (10/10/2026)", () => {
     auth.user = { role: "manager" };
   });
 
+  it("dit de quel fichier vient une réservation importée (29/10/2026)", async () => {
+    api.getReservation.mockResolvedValue(
+      reservation({ import: { id: "imp1", fileName: "planning.xlsx", createdAt: "2026-10-29T13:05:00.000Z", undoneAt: null } }),
+    );
+    renderPage();
+    expect(await screen.findByTestId("imported-from")).toHaveTextContent("« planning.xlsx » le");
+    expect(screen.getByRole("link", { name: "Voir les imports" })).toHaveAttribute("href", "/reservations/importer");
+  });
+
   it("modifie le prix d'une réservation importée, sur la fiche", async () => {
     api.getReservation.mockResolvedValue(reservation());
     api.setReservationPrice.mockResolvedValue({ id: "r1", priceCents: 3150 });

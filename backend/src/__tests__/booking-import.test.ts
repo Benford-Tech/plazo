@@ -190,14 +190,19 @@ describe('POST /internal/reservations/import', () => {
     expect(marc.overbooked).toBe(true);
   });
 
-  it('removes an import within 24 hours, keeping the bookings touched since', async () => {
-    const done = await api().post(IMPORT).set(auth(op.token)).send({ rows: rows(), dryRun: false });
+  it('removes an import at any time, keeping the bookings touched since', async () => {
+    const done = await api().post(IMPORT).set(auth(op.token)).send({ rows: rows(), fileName: 'planning.csv', dryRun: false });
     const karim = await prisma.reservation.findFirstOrThrow({ where: { customerName: 'Karim Benali' } });
     const edit = await api().patch(`/api/internal/reservations/${karim.id}`).set(auth(op.token)).send({ passengers: 3 });
     expect(edit.status).toBe(200);
+    // Each booking says the file it came from.
+    const detail = await api().get(`/api/internal/reservations/${karim.id}`).set(auth(op.token));
+    expect(detail.body.import).toMatchObject({ id: done.body.import.id, fileName: 'planning.csv', undoneAt: null });
 
+    // 29/10/2026: no more 24-hour limit.
+    await prisma.reservationImport.update({ where: { id: done.body.import.id }, data: { createdAt: new Date(Date.now() - 40 * 86400_000) } });
     const list = await api().get('/api/internal/reservations/imports').set(auth(op.token));
-    expect(list.body.data[0]).toMatchObject({ id: done.body.import.id, createdCount: 2, undoableUntil: expect.any(String) });
+    expect(list.body.data[0]).toMatchObject({ id: done.body.import.id, createdCount: 2, undoable: true });
 
     const undo = await api().post(`/api/internal/reservations/imports/${done.body.import.id}/undo`).set(auth(op.token));
     expect(undo.body).toEqual({ removed: 1, kept: 1 });
@@ -205,13 +210,25 @@ describe('POST /internal/reservations/import', () => {
     const twice = await api().post(`/api/internal/reservations/imports/${done.body.import.id}/undo`).set(auth(op.token));
     expect(twice.status).toBe(409);
     expect(twice.body.code).toBe('already_undone');
+    const after = await api().get('/api/internal/reservations/imports').set(auth(op.token));
+    expect(after.body.data[0]).toMatchObject({ undoable: false, removedCount: 1 });
+  });
 
-    await prisma.reservationImport.update({
-      where: { id: done.body.import.id },
-      data: { undoneAt: null, createdAt: new Date(Date.now() - 25 * 3600_000) },
-    });
-    const late = await api().post(`/api/internal/reservations/imports/${done.body.import.id}/undo`).set(auth(op.token));
-    expect(late.body.code).toBe('undo_expired');
+  it('finds an imported booking by its name without accents, in any order, or by its comparator number', async () => {
+    const accented = [
+      { line: 2, name: 'Gwénaël Le Bihan', phone: '0611223344', arrivalDate: '12/11/2030', returnDate: '19/11/2030', reference: 'AL-1234' },
+    ];
+    await api().post(IMPORT).set(auth(op.token)).send({ rows: accented, dryRun: false });
+    const search = async (q: string) =>
+      (
+        await api()
+          .get(`/api/internal/reservations?q=${encodeURIComponent(q)}`)
+          .set(auth(op.token))
+      ).body.docs.map((r: { customerName: string }) => r.customerName);
+    expect(await search('GWENAEL')).toEqual(['Gwénaël Le Bihan']);
+    expect(await search('bihan gwenael')).toEqual(['Gwénaël Le Bihan']);
+    expect(await search('al-1234')).toEqual(['Gwénaël Le Bihan']);
+    expect(await search('Durand')).toEqual([]);
   });
 
   it('is for managers only, and their own imports', async () => {

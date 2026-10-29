@@ -407,9 +407,8 @@ export default function ImportReservationsPage() {
                     {item.undoneAt && ` · ${t.removed(item.removedCount)}`}
                   </span>
                 </div>
-                {item.undoableUntil && (
+                {item.undoable && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[12px] text-muted-foreground">{t.undoUntil(dateTimeShort(item.undoableUntil))}</span>
                     <button
                       type="button"
                       disabled={undo.isPending}
