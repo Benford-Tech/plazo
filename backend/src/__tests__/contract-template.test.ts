@@ -231,6 +231,15 @@ describe('le contrat du parking (API)', () => {
     expect(before.body.contract.files).toEqual({ template: true, signed: false, proof: false });
     // Not signed yet: no file but the template.
     expect((await api().get(`/api/public/bookings/${b.reference}/contract/file?kind=signed`).set(bookingToken(b.token))).status).toBe(404);
+    // The parking's PDF opens before the signature too, for the traveller and for the team (29/10/2026).
+    for (const req of [
+      api().get(`/api/public/bookings/${b.reference}/contract/file?kind=template`).set(bookingToken(b.token)),
+      api().get(`/api/internal/reservations/${b.id}/contract/file?kind=template`).set(auth(op.token)),
+    ]) {
+      const unsignedPdf = await req.buffer().parse(binary);
+      expect(unsignedPdf.status).toBe(200);
+      expect((await PDFDocument.load(unsignedPdf.body)).getPageCount()).toBe(2);
+    }
 
     const signed = await api().post(`/api/internal/reservations/${b.id}/contract/sign`).set(auth(op.token)).send({ strokes: STROKES });
     expect(signed.status).toBe(200);
