@@ -22,7 +22,10 @@ import {
   checkBookingExtras,
   customKey,
   enabledOffersFrom,
+  extraAcceptedPush,
   extraDonePush,
+  extraDueAt,
+  expectedReturnOf,
   iconOf,
   legacyOfferList,
   extraOrderedPush,
@@ -32,6 +35,7 @@ import {
   OrderRefusal,
 } from '@/domain/extras';
 import { payoutDueAt } from '@/domain/payout';
+import { dayBounds, localDate } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -60,6 +64,7 @@ export type ExtraOrderView = {
   status: ReservationExtra['status'];
   withBooking: boolean;
   paidAt: string | null;
+  acceptedAt: string | null;
   doneAt: string | null;
   refusedAt: string | null;
   refusedReason: string | null;
@@ -88,6 +93,7 @@ function orderView(e: ReservationExtra, rows: readonly Pick<ParkingExtra, 'kind'
     status: e.status,
     withBooking: e.withBooking,
     paidAt: e.paidAt?.toISOString() ?? null,
+    acceptedAt: e.acceptedAt?.toISOString() ?? null,
     doneAt: e.doneAt?.toISOString() ?? null,
     refusedAt: e.refusedAt?.toISOString() ?? null,
     refusedReason: e.refusedReason,
@@ -762,13 +768,18 @@ export class ExtraService {
   private async staffViewOf(reservationId: string) {
     const orders = await prisma.reservationExtra.findMany({
       where: { reservationId, ...SHOWN },
-      include: { doneBy: { select: { firstName: true } }, refusedBy: { select: { firstName: true } } },
+      include: { doneBy: { select: { firstName: true } }, refusedBy: { select: { firstName: true } }, acceptedBy: { select: { firstName: true } } },
       orderBy: { createdAt: 'asc' },
     });
     const { parkingId } = await prisma.reservation.findUniqueOrThrow({ where: { id: reservationId }, select: { parkingId: true } });
     const rows = await this.serviceRows(parkingId);
     return {
-      extras: orders.map(e => ({ ...orderView(e, rows), doneBy: e.doneBy?.firstName ?? null, refusedBy: e.refusedBy?.firstName ?? null })),
+      extras: orders.map(e => ({
+        ...orderView(e, rows),
+        acceptedBy: e.acceptedBy?.firstName ?? null,
+        doneBy: e.doneBy?.firstName ?? null,
+        refusedBy: e.refusedBy?.firstName ?? null,
+      })),
     };
   }
 
@@ -783,6 +794,38 @@ export class ExtraService {
     const e = r.extras.find(x => x.id === extraId && SHOWN.status.in.includes(x.status));
     if (!e) throw notFound();
     return { r, e };
+  }
+
+  /**
+   * POST /internal/reservations/:id/extras/:extraId/accept (« Accepter », 29/10/2026): the team takes the service on, the
+   * traveller is told it will be done before the return. Once only (a second tap changes nothing); 409 not_to_do.
+   */
+  public async accept(actor: AuthenticatedStaff, id: string, extraId: string) {
+    const { e } = await this.ownOrder(actor, id, extraId);
+    if (e.status !== 'ordered') throw new HttpException(httpStatus.CONFLICT, 'This service is not to do', 'not_to_do');
+    const accepted = await prisma.$transaction(async tx => {
+      const { count } = await tx.reservationExtra.updateMany({
+        where: { id: e.id, status: 'ordered', acceptedAt: null },
+        data: { acceptedAt: new Date(), acceptedById: actor.id },
+      });
+      if (count) {
+        await this.audit.record(
+          actor,
+          { action: 'extra.accepted', entityType: 'reservation', entityId: id, details: { extraId: e.id, kind: e.kind } },
+          tx,
+        );
+      }
+      return count > 0;
+    });
+    if (accepted) {
+      await this.push
+        .notifyTravellers([id], extraAcceptedPush(e.label), {
+          data: { type: 'booking', event: 'extra_accepted', reservationId: id },
+          collapseId: `extra-${e.id}`,
+        })
+        .catch(() => 0);
+    }
+    return this.staffViewOf(id);
   }
 
   /** POST /internal/reservations/:id/extras/:extraId/done (« Fait »): the traveller hears it. 409 not_to_do. */
@@ -832,6 +875,98 @@ export class ExtraService {
       select: { id: true, kind: true, label: true, reservation: { select: { id: true, returnAt: true, plate: true, customerName: true } } },
       orderBy: { reservation: { returnAt: 'asc' } },
     });
+  }
+
+  /**
+   * GET /internal/extras?view=todo|done|refused (29/10/2026, « une vue des services à faire avant le retour des passagers »):
+   * every service of the operator's bookings, « à faire avant » = one hour before the expected return (the flight's
+   * landing when known). To do: still ordered on a booking not closed, the soonest first, the late ones on top. Done: today
+   * (the parking's day). Refused: the last 7 days. Counts for the three tabs.
+   */
+  public async board(actor: AuthenticatedStaff, rawView: unknown, now = new Date()) {
+    const view = rawView === 'done' || rawView === 'refused' ? rawView : 'todo';
+    const parking = await prisma.parking.findFirst({
+      where: { operatorId: actor.operatorId },
+      orderBy: { createdAt: 'asc' },
+      select: { timezone: true },
+    });
+    const timezone = parking?.timezone ?? 'Europe/Paris';
+    const today = dayBounds(localDate(now, timezone), timezone).start;
+    const weekAgo = new Date(now.getTime() - 7 * 86400000);
+    const visible = { operatorId: actor.operatorId, reservation: { AND: [STAFF_VISIBLE] } } satisfies Prisma.ReservationExtraWhereInput;
+    const todoWhere: Prisma.ReservationExtraWhereInput = {
+      ...visible,
+      status: 'ordered',
+      reservation: { AND: [STAFF_VISIBLE], status: { notIn: [...CLOSED_BOOKING_STATUSES, 'pending_payment'] } },
+    };
+    const doneWhere: Prisma.ReservationExtraWhereInput = { ...visible, status: 'done', doneAt: { gte: today } };
+    const refusedWhere: Prisma.ReservationExtraWhereInput = { ...visible, status: 'refused', refusedAt: { gte: weekAgo } };
+    const [todo, done, refused] = await Promise.all([
+      prisma.reservationExtra.count({ where: todoWhere }),
+      prisma.reservationExtra.count({ where: doneWhere }),
+      prisma.reservationExtra.count({ where: refusedWhere }),
+    ]);
+    const rows = await prisma.reservationExtra.findMany({
+      where: view === 'todo' ? todoWhere : view === 'done' ? doneWhere : refusedWhere,
+      take: 200,
+      include: {
+        acceptedBy: { select: { firstName: true } },
+        doneBy: { select: { firstName: true } },
+        refusedBy: { select: { firstName: true } },
+        reservation: {
+          select: {
+            id: true,
+            reference: true,
+            parkingId: true,
+            customerName: true,
+            plate: true,
+            vehicleModel: true,
+            vehicleColour: true,
+            status: true,
+            returnAt: true,
+            returnFlight: true,
+            flightScheduledAt: true,
+            flightEstimatedAt: true,
+            flightLandedAt: true,
+            fileRank: true,
+            spot: { select: { code: true } },
+            file: { select: { code: true } },
+          },
+        },
+      },
+    });
+    const icons = new Map<string, Awaited<ReturnType<ExtraService['serviceRows']>>>();
+    for (const parkingId of new Set(rows.map(e => e.reservation.parkingId))) icons.set(parkingId, await this.serviceRows(parkingId));
+    const items = rows.map(e => {
+      const r = e.reservation;
+      const dueAt = extraDueAt(r);
+      return {
+        ...orderView(e, icons.get(r.parkingId) ?? []),
+        acceptedBy: e.acceptedBy?.firstName ?? null,
+        doneBy: e.doneBy?.firstName ?? null,
+        refusedBy: e.refusedBy?.firstName ?? null,
+        dueAt: dueAt.toISOString(),
+        late: view === 'todo' && dueAt.getTime() < now.getTime(),
+        reservation: {
+          id: r.id,
+          reference: r.reference,
+          customerName: r.customerName,
+          plate: r.plate,
+          vehicleModel: r.vehicleModel,
+          vehicleColour: r.vehicleColour,
+          status: r.status,
+          returnAt: r.returnAt.toISOString(),
+          expectedReturnAt: expectedReturnOf(r).toISOString(),
+          returnFlight: r.returnFlight,
+          spot: r.spot?.code ?? null,
+          file: r.file ? { code: r.file.code, rank: r.fileRank } : null,
+        },
+      };
+    });
+    const at = (x: (typeof items)[number]) =>
+      view === 'todo' ? Date.parse(x.dueAt) : -Date.parse((view === 'done' ? x.doneAt : x.refusedAt) ?? x.dueAt);
+    items.sort((a, b) => at(a) - at(b));
+    return { view, timezone, now: now.toISOString(), counts: { todo, done, refused }, data: items };
   }
 
   // ---- Cron -------------------------------------------------------------------------------------------------------

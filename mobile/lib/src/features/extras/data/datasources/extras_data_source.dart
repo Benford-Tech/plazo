@@ -9,6 +9,7 @@ abstract class ExtrasDataSource {
   Future<TravellerExtrasModel> sync(String reference, String extraId);
   Future<TravellerExtrasModel> abandon(String reference, String extraId);
   Future<StaffExtrasModel> staff(String reservationId);
+  Future<StaffExtrasModel> accept(String reservationId, String extraId);
   Future<StaffExtrasModel> done(String reservationId, String extraId);
   Future<StaffExtrasModel> refuse(String reservationId, String extraId, String? reason);
   Future<ExtraSettingsModel> settings(String parkingId);
@@ -41,6 +42,9 @@ class ExtrasDataSourceImpl implements ExtrasDataSource {
 
   @override
   Future<StaffExtrasModel> staff(String reservationId) => client.staff(reservationId);
+
+  @override
+  Future<StaffExtrasModel> accept(String reservationId, String extraId) => client.accept(reservationId, extraId);
 
   @override
   Future<StaffExtrasModel> done(String reservationId, String extraId) => client.done(reservationId, extraId);

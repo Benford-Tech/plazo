@@ -42,6 +42,9 @@ abstract class ExtraOrderModel with _$ExtraOrderModel {
     /// Staff only: who marked it done or not possible (first name).
     String? doneBy,
     String? refusedBy,
+    /// Staff accepted it (« Accepter »): the traveller is told.
+    DateTime? acceptedAt,
+    String? acceptedBy,
   }) = _ExtraOrderModel;
 
   factory ExtraOrderModel.fromJson(Map<String, dynamic> json) => _$ExtraOrderModelFromJson(json);

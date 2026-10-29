@@ -265,3 +265,28 @@ export function extraOrderedPush(label: string, plate: string, customerName: str
   const who = plate.trim() || customerName;
   return { title: `Service commandé · ${label}`, body: `${who} · à faire avant le retour` };
 }
+
+/** The traveller's push when the team accepts a service (29/10/2026): it will be done before the return. */
+export function extraAcceptedPush(label: string): { title: string; body: string } {
+  return { title: `${label} : accepté`, body: "Le parking s'en occupe : ce sera fait avant votre retour." };
+}
+
+/** A service is to be done this long before the traveller is back (29/10/2026, « à faire avant le retour »). */
+export const EXTRA_DUE_BEFORE_MS = 60 * 60000;
+
+type ReturnTimes = {
+  returnAt: Date;
+  flightScheduledAt?: Date | null;
+  flightEstimatedAt?: Date | null;
+  flightLandedAt?: Date | null;
+};
+
+/** When the traveller is expected back: the flight's landing when it is known (landed, revised, scheduled), else the booked return. */
+export function expectedReturnOf(r: ReturnTimes): Date {
+  return r.flightLandedAt ?? r.flightEstimatedAt ?? r.flightScheduledAt ?? r.returnAt;
+}
+
+/** « À faire avant »: one hour before the expected return. */
+export function extraDueAt(r: ReturnTimes): Date {
+  return new Date(expectedReturnOf(r).getTime() - EXTRA_DUE_BEFORE_MS);
+}

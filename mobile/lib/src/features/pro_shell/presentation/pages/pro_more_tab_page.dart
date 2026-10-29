@@ -127,6 +127,12 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'pro_tabs.reservations'.tr(),
               onTap: () => context.router.push(const ProReservationsRoute()),
             ),
+            _Tile(
+              key: const Key('pmore-services'),
+              icon: Icons.auto_awesome_rounded,
+              label: 'extras.board.title'.tr(),
+              onTap: () => context.router.push(const ProExtrasRoute()),
+            ),
           ],
           if (_holds(staff, 'valet')) ...[
             const SizedBox(height: 14),

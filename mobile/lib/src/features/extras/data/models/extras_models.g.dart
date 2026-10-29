@@ -49,6 +49,10 @@ _ExtraOrderModel _$ExtraOrderModelFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['refundedAt'] as String),
       doneBy: json['doneBy'] as String?,
       refusedBy: json['refusedBy'] as String?,
+      acceptedAt: json['acceptedAt'] == null
+          ? null
+          : DateTime.parse(json['acceptedAt'] as String),
+      acceptedBy: json['acceptedBy'] as String?,
     );
 
 Map<String, dynamic> _$ExtraOrderModelToJson(_ExtraOrderModel instance) =>
@@ -66,6 +70,8 @@ Map<String, dynamic> _$ExtraOrderModelToJson(_ExtraOrderModel instance) =>
       'refundedAt': instance.refundedAt?.toIso8601String(),
       'doneBy': instance.doneBy,
       'refusedBy': instance.refusedBy,
+      'acceptedAt': instance.acceptedAt?.toIso8601String(),
+      'acceptedBy': instance.acceptedBy,
     };
 
 _TravellerExtrasModel _$TravellerExtrasModelFromJson(

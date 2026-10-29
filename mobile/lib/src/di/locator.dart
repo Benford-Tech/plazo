@@ -77,6 +77,7 @@ import '../features/pro_reservations/data/datasources/linked_emails_data_source.
 import '../features/pro_start/data/getting_started_data_source.dart';
 import '../features/pro_forecast/data/forecast_data_source.dart';
 import '../features/pro_valet/data/valet_runs_data_source.dart';
+import '../features/pro_extras/data/extras_board_data_source.dart';
 import '../features/pro_revenue/data/client/revenue_client.dart';
 import '../features/pro_revenue/data/datasources/revenue_data_source.dart';
 import '../features/pro_revenue/domain/repositories/revenue_repository.dart';

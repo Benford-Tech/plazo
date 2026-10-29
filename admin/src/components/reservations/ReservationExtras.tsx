@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
+import { Sparkles } from "lucide-react";
 import { EXTRA_ICONS } from "@/lib/extras";
 import { describeError, extrasFr } from "@/lib/fr";
 import { euros } from "@/lib/pricing";
@@ -39,6 +40,14 @@ export function ReservationExtras({
     queryClient.setQueryData(key, data);
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
+  const accept = useMutation({
+    mutationFn: (extraId: string) => adminApi.acceptExtra(reservationId, extraId),
+    onSuccess: data => {
+      onDone(data);
+      toast.success(t.acceptedToast);
+    },
+    onError: (err: Error) => toast.error(describeError(err, t.errors)),
+  });
   const done = useMutation({
     mutationFn: (extraId: string) => adminApi.markExtraDone(reservationId, extraId),
     onSuccess: data => {
@@ -74,7 +83,7 @@ export function ReservationExtras({
       </div>
       <ul className="space-y-2">
         {extras.map(e => {
-          const Icon = EXTRA_ICONS[e.kind];
+          const Icon = EXTRA_ICONS[e.kind] ?? Sparkles;
           return (
             <li key={e.id} data-testid={`order-${e.kind}`} className="space-y-2 rounded-lg border border-panel-line bg-background p-3">
               <div className="flex items-center gap-3">
@@ -86,6 +95,9 @@ export function ReservationExtras({
                   <span className="text-xs text-muted-foreground">
                     {euros(e.priceCents)} · {e.withBooking || !e.paidAt ? t.paidWithBooking : t.paidOn(dateTimeShort(e.paidAt))}
                   </span>
+                  {e.status === "ordered" && e.acceptedAt && (
+                    <span className="text-xs text-lime-deep">{t.acceptedLine(dateTimeShort(e.acceptedAt), e.acceptedBy ?? null)}</span>
+                  )}
                   {e.status === "done" && e.doneAt && <span className="text-xs text-ok-text">{t.doneLine(dateTimeShort(e.doneAt), e.doneBy)}</span>}
                   {e.status === "refused" && <span className="text-xs text-muted-foreground">{t.refusedLine(e.refusedReason)}</span>}
                 </span>
@@ -93,6 +105,16 @@ export function ReservationExtras({
               </div>
               {e.status === "ordered" && mayAct && refusing !== e.id && (
                 <div className="flex flex-wrap gap-2">
+                  {!e.acceptedAt && (
+                    <button
+                      type="button"
+                      disabled={accept.isPending}
+                      onClick={() => accept.mutate(e.id)}
+                      className="h-10 rounded-lg border border-lime-deep px-4 text-sm font-semibold text-lime-deep hover:bg-lime/10 disabled:opacity-50"
+                    >
+                      {t.accept}
+                    </button>
+                  )}
                   <button
                     type="button"
                     disabled={done.isPending}

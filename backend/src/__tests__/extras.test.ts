@@ -4,6 +4,7 @@ import { addDays, localDate } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { ExtraService } from '@/services/extra.service';
 import { PaymentService } from '@/services/payment.service';
+import { PushService } from '@/services/push.service';
 import { StripeApi, StripeService } from '@/services/stripe.service';
 import { addStaff, api, resetDatabase, setupOperator, publishListing, useBrevoSms } from './utils/helpers';
 
@@ -666,5 +667,70 @@ describe('services commandés après la réservation, même après le dépôt', 
     const held = (await book()).body;
     expect((await order(held.reference, held.manageToken, 'interior_wash')).body.code).toBe('not_online');
     expect((await order(held.reference, 'mauvais', 'interior_wash')).status).toBe(404);
+  });
+});
+
+describe('« Services à faire » et le voyageur prévenu (29/10/2026)', () => {
+  it('la liste des services à faire, « Accepter » puis « Fait », chaque étape poussée au voyageur', async () => {
+    const pushes = jest.spyOn(Container.get(PushService), 'notifyTravellers').mockResolvedValue(1 as never);
+    const op = await parkingWithExtras();
+    const paid = await paidInApp();
+    const wash = await orderAndPay(paid.reference, paid.manageToken, 'interior_wash');
+    const charge = await orderAndPay(paid.reference, paid.manageToken, 'ev_charge');
+    const returnAt = new Date(Date.now() + 30 * 60000);
+    const r = await prisma.reservation.update({
+      where: { reference: paid.reference },
+      data: { status: 'arrived', arrivedAt: new Date(), arrivalAt: new Date(Date.now() - 86400000), returnAt },
+    });
+
+    // Due one hour before the return: already late.
+    const todo = await api().get('/api/internal/extras').set(auth(op.token));
+    expect(todo.status).toBe(200);
+    expect(todo.body.counts).toEqual({ todo: 2, done: 0, refused: 0 });
+    expect(todo.body.data[0]).toMatchObject({
+      status: 'ordered',
+      acceptedAt: null,
+      late: true,
+      dueAt: new Date(returnAt.getTime() - 3600000).toISOString(),
+      reservation: { id: r.id, plate: 'GK-318-PX', expectedReturnAt: returnAt.toISOString() },
+    });
+    // A known landing moves the deadline.
+    const landing = new Date(Date.now() + 5 * 3600000);
+    await prisma.reservation.update({ where: { id: r.id }, data: { flightEstimatedAt: landing } });
+    const moved = await api().get('/api/internal/extras').set(auth(op.token));
+    expect(moved.body.data[0]).toMatchObject({ late: false, dueAt: new Date(landing.getTime() - 3600000).toISOString() });
+
+    const accepted = await api().post(`/api/internal/reservations/${r.id}/extras/${wash}/accept`).set(auth(op.token));
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.extras.find((e: any) => e.id === wash)).toMatchObject({
+      status: 'ordered',
+      acceptedAt: expect.any(String),
+      acceptedBy: expect.any(String),
+    });
+    expect(pushes).toHaveBeenLastCalledWith(
+      [r.id],
+      expect.objectContaining({ title: expect.stringContaining('accepté') }),
+      expect.objectContaining({ data: expect.objectContaining({ event: 'extra_accepted' }) }),
+    );
+    // Accepting twice tells the traveller once.
+    const calls = pushes.mock.calls.length;
+    await api().post(`/api/internal/reservations/${r.id}/extras/${wash}/accept`).set(auth(op.token));
+    expect(pushes.mock.calls.length).toBe(calls);
+
+    await api().post(`/api/internal/reservations/${r.id}/extras/${wash}/done`).set(auth(op.token));
+    expect(pushes).toHaveBeenLastCalledWith([r.id], expect.objectContaining({ title: 'Votre lavage intérieur est fait' }), expect.anything());
+    await api().post(`/api/internal/reservations/${r.id}/extras/${charge}/refuse`).set(auth(op.token)).send({ reason: 'Borne en panne' });
+    expect(pushes).toHaveBeenLastCalledWith([r.id], expect.objectContaining({ title: expect.stringContaining('remboursé') }), expect.anything());
+
+    const done = await api().get('/api/internal/extras?view=done').set(auth(op.token));
+    expect(done.body.counts).toEqual({ todo: 0, done: 1, refused: 1 });
+    expect(done.body.data).toEqual([expect.objectContaining({ id: wash, status: 'done', doneBy: expect.any(String) })]);
+    const refused = await api().get('/api/internal/extras?view=refused').set(auth(op.token));
+    expect(refused.body.data).toEqual([expect.objectContaining({ id: charge, status: 'refused', refusedReason: 'Borne en panne' })]);
+    // A service no longer to do cannot be accepted; another operator sees nothing.
+    expect((await api().post(`/api/internal/reservations/${r.id}/extras/${charge}/accept`).set(auth(op.token))).status).toBe(409);
+    const other = await setupOperator('Autre parking');
+    expect((await api().get('/api/internal/extras').set(auth(other.token))).body.counts).toEqual({ todo: 0, done: 0, refused: 0 });
+    pushes.mockRestore();
   });
 });

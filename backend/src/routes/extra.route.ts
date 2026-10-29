@@ -29,6 +29,14 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *   get:
  *     summary: The services ordered on a booking
  *     tags: [Extras]
+ * /internal/extras:
+ *   get:
+ *     summary: "« Services à faire » (29/10/2026): ?view=todo|done|refused → { counts, data[] with dueAt (1 h before the expected return), late, reservation }"
+ *     tags: [Extras]
+ * /internal/reservations/{id}/extras/{extraId}/accept:
+ *   post:
+ *     summary: « Accepter » (the traveller is told; once only)
+ *     tags: [Extras]
  * /internal/reservations/{id}/extras/{extraId}/done:
  *   post:
  *     summary: « Fait »
@@ -61,6 +69,8 @@ export class ExtraRoute implements Routes {
     this.router.get('/internal/parkings/:id/extras', StaffAuthMiddleware('parking:manage'), this.extras.settings);
     this.router.put('/internal/parkings/:id/extras', StaffAuthMiddleware('parking:manage'), this.extras.updateSettings);
     this.router.get('/internal/reservations/:id/extras', StaffAuthMiddleware('reservations:view'), this.extras.staffOrders);
+    this.router.get('/internal/extras', StaffAuthMiddleware('reservations:view'), this.extras.board);
+    this.router.post('/internal/reservations/:id/extras/:extraId/accept', StaffAuthMiddleware('reservations:status'), this.extras.accept);
     this.router.post('/internal/reservations/:id/extras/:extraId/done', StaffAuthMiddleware('reservations:status'), this.extras.done);
     this.router.post('/internal/reservations/:id/extras/:extraId/refuse', StaffAuthMiddleware('reservations:status'), this.extras.refuse);
 

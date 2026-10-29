@@ -29,6 +29,7 @@ import '../../features/pro_revenue/presentation/pages/pro_revenue_page.dart';
 import '../../features/pro_forecast/presentation/pages/pro_forecast_page.dart';
 import '../../features/pro_start/presentation/pages/pro_getting_started_page.dart';
 import '../../features/pro_valet/presentation/pages/pro_valet_page.dart';
+import '../../features/pro_extras/presentation/pages/pro_extras_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_account_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_parking_settings_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_team_page.dart';
@@ -101,12 +102,15 @@ class AppRouter extends RootStackRouter {
           AutoRoute(page: ProSpotPlanningRoute.page, path: 'places'),
           // « Voiturier au terminal » (27/10/2026): the valet's runs.
           AutoRoute(page: ProValetRoute.page, path: 'terminal'),
+          // « Services à faire » (29/10/2026, direction C): the valet's services before the returns.
+          AutoRoute(page: ProExtrasRoute.page, path: 'services'),
         ],
       ),
       AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),
       AutoRoute(page: ProVehicleRoute.page, path: '/pro/vehicule', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
+      AutoRoute(page: ProExtrasRoute.page, path: '/pro/services', guards: [proGuard]),
       AutoRoute(page: ProOccupationRoute.page, path: '/pro/occupation', guards: [proGuard]),
       AutoRoute(page: ProVehiclesRoute.page, path: '/pro/navettes', guards: [proGuard]),
       AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),

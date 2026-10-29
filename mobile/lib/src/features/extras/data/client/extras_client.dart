@@ -34,6 +34,9 @@ abstract class ExtrasClient {
   @GET('internal/reservations/{id}/extras')
   Future<StaffExtrasModel> staff(@Path('id') String id);
 
+  @POST('internal/reservations/{id}/extras/{extraId}/accept')
+  Future<StaffExtrasModel> accept(@Path('id') String id, @Path('extraId') String extraId);
+
   @POST('internal/reservations/{id}/extras/{extraId}/done')
   Future<StaffExtrasModel> done(@Path('id') String id, @Path('extraId') String extraId);
 

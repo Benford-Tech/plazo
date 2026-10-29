@@ -82,6 +82,15 @@ class FakeExtrasRepository implements ExtrasRepository {
   Future<Either<Failure, StaffExtrasModel>> staff(String reservationId) async => Right(staffView);
 
   @override
+  Future<Either<Failure, StaffExtrasModel>> accept(String reservationId, String extraId) async {
+    calls.add('accept:$extraId');
+    staffView = StaffExtrasModel(
+      extras: [staffView.extras.first.copyWith(acceptedAt: DateTime.utc(2026, 10, 29, 9), acceptedBy: 'Nadia')],
+    );
+    return Right(staffView);
+  }
+
+  @override
   Future<Either<Failure, StaffExtrasModel>> done(String reservationId, String extraId) async {
     calls.add('done:$extraId');
     staffView = StaffExtrasModel(
@@ -232,6 +241,22 @@ void main() {
       expect(repo.calls, ['done:x1']);
       expect(find.text('Fait'), findsOneWidget);
       expect(find.textContaining('Karim'), findsOneWidget);
+    });
+
+    testWidgets('« Accepter » : le prénom, puis plus de bouton', (tester) async {
+      await pumpLocalized(
+        tester,
+        const Scaffold(
+          body: SingleChildScrollView(child: StaffExtrasCard(reservationId: 'r1', canAct: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('extra-accept-ev_charge')));
+      await tester.pumpAndSettle();
+      expect(repo.calls, ['accept:x1']);
+      expect(find.textContaining('Accepté par Nadia'), findsOneWidget);
+      expect(find.byKey(const Key('extra-accept-ev_charge')), findsNothing);
+      expect(find.byKey(const Key('extra-done-ev_charge')), findsOneWidget);
     });
 
     testWidgets('« Pas possible » demande une raison puis rembourse', (tester) async {

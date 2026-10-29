@@ -20,6 +20,7 @@ class StaffExtrasUseCases {
   final ExtrasRepository _repository;
 
   Future<Either<Failure, StaffExtrasModel>> load(String reservationId) => _repository.staff(reservationId);
+  Future<Either<Failure, StaffExtrasModel>> accept(String reservationId, String extraId) => _repository.accept(reservationId, extraId);
   Future<Either<Failure, StaffExtrasModel>> done(String reservationId, String extraId) => _repository.done(reservationId, extraId);
   Future<Either<Failure, StaffExtrasModel>> refuse(String reservationId, String extraId, String? reason) =>
       _repository.refuse(reservationId, extraId, reason);

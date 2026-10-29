@@ -631,6 +631,22 @@ class ProContractRouteArgs {
 }
 
 /// generated route for
+/// [ProExtrasPage]
+class ProExtrasRoute extends PageRouteInfo<void> {
+  const ProExtrasRoute({List<PageRouteInfo>? children})
+    : super(ProExtrasRoute.name, initialChildren: children);
+
+  static const String name = 'ProExtrasRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProExtrasPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ProForecastPage]
 class ProForecastRoute extends PageRouteInfo<ProForecastRouteArgs> {
   ProForecastRoute({Key? key, String? anchor, List<PageRouteInfo>? children})
