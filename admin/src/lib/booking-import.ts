@@ -29,6 +29,7 @@ export const IMPORT_FIELDS = [
   "notes",
   "handover",
   "commission",
+  "payment",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -70,6 +71,7 @@ const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "vehicle", test: /^(vehicule|voiture|modele|marque|marque modele)$/ },
   { field: "handover", test: /^(service|services|prise en charge|type( de)? service|formule|voiturier)$/ },
   { field: "commission", test: /^(commission|com|frais( du)? comparateur)( eur| euros?| ttc)?$/ },
+  { field: "payment", test: /^(paiement|payment|moyen( de)? paiement|mode( de)? (paiement|reglement)|reglement|paye par|type( de)? paiement)$/ },
   { field: "notes", test: /^(notes?|remarques?|commentaires?|observations?|infos?)$/ },
 ];
 

@@ -30,6 +30,7 @@ import {
 } from "@/lib/pricing";
 import { dayLabel, formatRate, parsePercent } from "@/lib/commission";
 import { can } from "@/lib/roles";
+import { paidBy } from "@/lib/payment-method";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ValetPill } from "@/lib/valet-icon";
@@ -107,6 +108,15 @@ function PriceLine({
           <span className="tabular font-mono">
             {r.priceCents === null ? "—" : euros(r.priceCents)}
           </span>
+          {/* 29/10/2026 (« Payé par »). */}
+          {paidBy(r) && (
+            <span
+              data-testid="paid-by"
+              className="rounded-full bg-lime/30 px-2.5 py-0.5 text-sm font-semibold text-lime-deep"
+            >
+              {fr.paidBy[paidBy(r)!]}
+            </span>
+          )}
           {editable && (
             <button
               type="button"

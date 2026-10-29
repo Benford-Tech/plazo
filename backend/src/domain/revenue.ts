@@ -4,7 +4,8 @@
  * amount it carries (`priceCents`: paid on Plazo, read from a comparator's email, typed by the staff); one without
  * an amount is counted apart, never as zero.
  */
-import { ReservationChannel } from '@/database';
+import { PaymentMethod, ReservationChannel } from '@/database';
+import { PAID_BY_LABELS, PaidBy, paidBy } from './payment-method';
 import { billableDays } from './pricing';
 import { addDays, localDate } from './time';
 
@@ -24,6 +25,8 @@ export interface RevenueBooking {
   channel: ReservationChannel;
   channelDetail: string | null;
   priceCents: number | null;
+  /** 29/10/2026 (« Payé par »): how it was paid; absent or null: not said. */
+  paymentMethod?: PaymentMethod | null;
   /** What the comparator takes (19/10/2026), 0 when none: the service works it out (`commissionOf`). */
   commissionCents?: number | null;
 }
@@ -55,6 +58,8 @@ export interface RevenueReport {
   /** Bookings of the period without an amount: not counted. */
   withoutAmount: number;
   byChannel: RevenueChannel[];
+  /** 29/10/2026 (« Payé par »): the amounts by payment method, the largest first; `method` null: not said. */
+  byPaymentMethod: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: { date: string; count: number; totalCents: number; netCents: number }[];
 }
 
@@ -113,6 +118,15 @@ export function revenueReport(
     channels.set(group.key, line);
   }
 
+  const methods = new Map<PaidBy | null, { method: PaidBy | null; count: number; totalCents: number }>();
+  for (const b of priced) {
+    const method = paidBy({ channel: b.channel, paymentMethod: b.paymentMethod ?? null });
+    const line = methods.get(method) ?? { method, count: 0, totalCents: 0 };
+    line.count += 1;
+    line.totalCents += b.priceCents;
+    methods.set(method, line);
+  }
+
   const perDay = new Map(daysOf(from, to).map(date => [date, { date, count: 0, totalCents: 0, netCents: 0 }]));
   for (const b of priced) {
     const line = perDay.get(revenueDay(b, basis, timeZone))!;
@@ -134,6 +148,10 @@ export function revenueReport(
     averageDays: priced.length ? Math.round((days / priced.length) * 10) / 10 : null,
     withoutAmount: inPeriod.length - priced.length,
     byChannel: [...channels.values()].sort((a, b) => b.totalCents - a.totalCents || b.count - a.count),
+    // Not said comes last, whatever its amount.
+    byPaymentMethod: [...methods.values()].sort(
+      (a, b) => Number(a.method === null) - Number(b.method === null) || b.totalCents - a.totalCents || b.count - a.count,
+    ),
     byDay: [...perDay.values()],
   };
 }
@@ -145,6 +163,11 @@ function csvAmount(cents: number | null): string {
 
 function csvCell(value: string): string {
   return /[";\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function paidByLabel(b: RevenueBooking): string {
+  const method = paidBy({ channel: b.channel, paymentMethod: b.paymentMethod ?? null });
+  return method ? PAID_BY_LABELS[method] : '';
 }
 
 /** The bookings of a report as a CSV a spreadsheet opens as is: « ; » separated, UTF-8 with its BOM. */
@@ -161,7 +184,19 @@ export function revenueCsv(
       return day >= from && day <= to;
     })
     .sort((a, b) => revenueDay(a, basis, timeZone).localeCompare(revenueDay(b, basis, timeZone)) || a.reference.localeCompare(b.reference));
-  const header = ['Référence', 'Réservée le', 'Arrivée', 'Retour', 'Canal', 'Client', 'Plaque', 'Montant (€)', 'Commission (€)', 'Net (€)'];
+  const header = [
+    'Référence',
+    'Réservée le',
+    'Arrivée',
+    'Retour',
+    'Canal',
+    'Client',
+    'Plaque',
+    'Montant (€)',
+    'Payé par',
+    'Commission (€)',
+    'Net (€)',
+  ];
   const lines = rows.map(b =>
     [
       b.reference,
@@ -172,6 +207,7 @@ export function revenueCsv(
       b.customerName,
       b.plate,
       csvAmount(b.priceCents),
+      paidByLabel(b),
       csvAmount(b.priceCents === null ? null : (b.commissionCents ?? 0)),
       csvAmount(b.priceCents === null ? null : b.priceCents - (b.commissionCents ?? 0)),
     ]

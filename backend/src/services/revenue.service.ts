@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Prisma, ReservationChannel } from '@/database';
+import prisma, { PaymentMethod, Prisma, ReservationChannel } from '@/database';
 import { CommissionRate, comparatorKey, rateOn } from '@/domain/comparator-commission';
 import { can } from '@/domain/roles';
 import { isPriceLocked } from '@/domain/reservation';
@@ -93,6 +93,7 @@ const SELECT = {
   channel: true,
   channelDetail: true,
   priceCents: true,
+  paymentMethod: true,
   commissionOverrideBp: true,
   commissionOverrideCents: true,
   // A Plazo booking's commission is the platform's, frozen at payment.
@@ -247,26 +248,36 @@ export class RevenueService {
    * The amount of a booking that has none, or a corrected one (any status but cancelled); never a Plazo booking's,
    * which is what the traveller paid.
    */
-  public async setPrice(actor: AuthenticatedStaff, id: string, priceCents: number | null): Promise<{ id: string; priceCents: number | null }> {
+  public async setPrice(
+    actor: AuthenticatedStaff,
+    id: string,
+    priceCents: number | null,
+    paymentMethod?: PaymentMethod | null,
+  ): Promise<{ id: string; priceCents: number | null; paymentMethod: PaymentMethod | null }> {
     this.require(actor, 'reservations:manage');
     const before = await prisma.reservation.findFirst({ where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] } });
     if (!before) throw notFound();
     if (isPriceLocked(before)) throw fieldError('priceCents', 'price_locked');
     if (before.status === 'cancelled') throw new HttpException(httpStatus.BAD_REQUEST, 'This reservation is cancelled', 'reservation_closed');
     const after = await prisma.$transaction(async tx => {
-      const updated = await tx.reservation.update({ where: { id }, data: { priceCents } });
+      const updated = await tx.reservation.update({ where: { id }, data: { priceCents, paymentMethod } });
       await this.audit.record(
         actor,
         {
           action: 'reservation.updated',
           entityType: 'reservation',
           entityId: id,
-          details: { priceCents: { from: before.priceCents, to: priceCents } },
+          details: {
+            priceCents: { from: before.priceCents, to: priceCents },
+            ...(paymentMethod === undefined || paymentMethod === before.paymentMethod
+              ? {}
+              : { paymentMethod: { from: before.paymentMethod, to: paymentMethod } }),
+          },
         },
         tx,
       );
       return updated;
     });
-    return { id: after.id, priceCents: after.priceCents };
+    return { id: after.id, priceCents: after.priceCents, paymentMethod: after.paymentMethod };
   }
 }

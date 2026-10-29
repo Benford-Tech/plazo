@@ -629,6 +629,42 @@ export default function RevenuePage() {
             )}
           </section>
 
+          {/* 29/10/2026 (« le moyen de paiement », direction A « Payé par »). */}
+          {(report.byPaymentMethod ?? []).length > 0 && (
+            <section
+              aria-labelledby="revenue-methods"
+              className={cn(CARD, "space-y-3")}
+              data-testid="revenue-methods"
+            >
+              <h2 id="revenue-methods" className="text-base font-semibold">
+                {t.byPaymentMethod}
+              </h2>
+              <ul className="space-y-2.5">
+                {(report.byPaymentMethod ?? []).map((line, _, lines) => {
+                  const top = Math.max(1, ...lines.map((l) => l.totalCents));
+                  return (
+                    <li key={line.method ?? "none"} className="space-y-1">
+                      <div className="flex items-baseline gap-3 text-sm">
+                        <span className={cn("flex-1", !line.method && "text-muted-foreground")}>
+                          {line.method ? fr.paidBy[line.method] : t.paidByUnknown}
+                        </span>
+                        <span className="text-muted-foreground">{t.bookingsShort(line.count)}</span>
+                        <span className="tabular w-28 text-right font-mono">{euros(line.totalCents)}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-[#F1F2F0]" aria-hidden="true">
+                        <div
+                          className={cn("h-1.5 rounded-full", line.method ? "bg-lime-deep" : "bg-muted-foreground/40")}
+                          style={{ width: `${Math.max(2, Math.round((line.totalCents / top) * 100))}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-xs text-muted-foreground">{t.paidByHint}</p>
+            </section>
+          )}
+
           <section
             aria-labelledby="revenue-days"
             className={cn(CARD, "space-y-3")}

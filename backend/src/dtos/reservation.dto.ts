@@ -15,9 +15,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ChildSeatsDto } from './child-seats.dto';
-import { Handover, ReservationChannel, ReservationStatus } from '@/database';
+import { Handover, PaymentMethod, ReservationChannel, ReservationStatus } from '@/database';
 
 const HANDOVERS: Handover[] = ['shuttle', 'valet'];
+const PAYMENT_METHODS: PaymentMethod[] = ['card', 'cash', 'cheque', 'transfer', 'holiday_vouchers', 'comparator'];
 import { PLATE_OPTIONAL_CHANNELS, PLATE_RE } from '@/domain/reservation';
 
 export { PLATE_RE };
@@ -164,6 +165,11 @@ export class CreateReservationDto {
   @Min(0, { message: 'min_0' })
   @Max(10000000, { message: 'too_large' })
   public priceCents?: number;
+
+  /** 29/10/2026 (« Payé par »): how it was paid; never on a Plazo booking (paid online). */
+  @IsOptional()
+  @IsIn(PAYMENT_METHODS, { message: 'invalid_payment_method' })
+  public paymentMethod?: PaymentMethod | null;
 
   /**
    * 10/10/2026: the amount read in the comparator's email when the staff create its booking (« Compléter »), with a
@@ -313,6 +319,11 @@ export class UpdateReservationDto {
   @IsInt({ message: 'integer' })
   public priceCents?: number | null;
 
+  /** 29/10/2026 (« Payé par »): absent: unchanged; null: not said. */
+  @IsOptional()
+  @IsIn(PAYMENT_METHODS, { message: 'invalid_payment_method' })
+  public paymentMethod?: PaymentMethod | null;
+
   @IsOptional()
   @IsBoolean()
   public force?: boolean;
@@ -337,4 +348,9 @@ export class SetPriceDto {
   @Max(10000000, { message: 'too_large' })
   @IsInt({ message: 'integer' })
   public priceCents!: number | null;
+
+  /** 29/10/2026 (« Payé par »): absent: unchanged; null: not said. */
+  @IsOptional()
+  @IsIn(PAYMENT_METHODS, { message: 'invalid_payment_method' })
+  public paymentMethod?: PaymentMethod | null;
 }

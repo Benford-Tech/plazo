@@ -202,9 +202,15 @@ export type ReservationChannel =
 /** 27/10/2026: how the car changes hands: the shuttle, or a valet at the terminal (« Voiturier au terminal »). */
 export type Handover = "shuttle" | "valet";
 
+/** 29/10/2026 (« Payé par »): how a booking not made on Plazo was paid; `online` is a Plazo booking's. */
+export type PaymentMethod = "card" | "cash" | "cheque" | "transfer" | "holiday_vouchers" | "comparator";
+export type PaidBy = PaymentMethod | "online";
+
 export interface Reservation {
   id: string;
   handover?: Handover;
+  /** 29/10/2026 (« Payé par »): null when not said, always null on a Plazo booking (paid online). */
+  paymentMethod?: PaymentMethod | null;
   /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */
   commission?: ReservationCommission | null;
   commissionOverrideBp?: number | null;
@@ -501,6 +507,8 @@ export interface ReservationInput {
   /** « Sièges auto » (24/10/2026): each 0 to 4, fewer than the passengers; on an edit, absent = unchanged, null = none. */
   childSeats?: ChildSeats | null;
   handover?: Handover;
+  /** 29/10/2026: on an edit, absent = unchanged, null = not said. */
+  paymentMethod?: PaymentMethod | null;
   force?: boolean;
 }
 
@@ -1741,6 +1749,8 @@ export interface RevenueReport {
   averageDays: number | null;
   withoutAmount: number;
   byChannel: RevenueChannel[];
+  /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
+  byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: {
     date: string;
     count: number;

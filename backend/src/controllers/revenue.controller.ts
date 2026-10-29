@@ -55,7 +55,7 @@ export class RevenueController {
 
   /** PUT /internal/reservations/:id/price */
   public setPrice = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    const { priceCents } = req.body as SetPriceDto;
-    res.json(await this.revenue.setPrice(req.staff, String(req.params.id), priceCents ?? null));
+    const { priceCents, paymentMethod } = req.body as SetPriceDto;
+    res.json(await this.revenue.setPrice(req.staff, String(req.params.id), priceCents ?? null, paymentMethod));
   });
 }
