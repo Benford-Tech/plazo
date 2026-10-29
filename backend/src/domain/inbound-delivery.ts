@@ -8,8 +8,10 @@
  *   X-MS-Exchange-Inbox-Rules-Loop, Resent-* headers), or the Plazo address is only in the envelope (a redirect that
  *   keeps the original headers).
  * - `manual`: someone forwarded it by hand (the Plazo address in To, no rule's header, the sender is not a comparator).
+ * - `pasted` (29/10/2026): a staff member pasted its text in the inbox (« Coller un mail »); counted as `manual` in the
+ *   comparators' table.
  */
-export type Delivery = 'direct' | 'forwarded' | 'manual';
+export type Delivery = 'direct' | 'forwarded' | 'manual' | 'pasted';
 
 export interface MailHeader {
   key: string;

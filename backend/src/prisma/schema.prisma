@@ -597,6 +597,7 @@ enum InboundDelivery {
   direct // the comparator wrote to the Plazo address itself
   forwarded // a rule of the parking's mailbox sent it on
   manual // someone forwarded it by hand
+  pasted // a staff member pasted its text in the inbox (29/10/2026, « pouvoir importer en collant le contenu du mail »)
 }
 
 model InboundEmail {
@@ -631,6 +632,8 @@ model InboundEmail {
   autoRetries   Int                @default(0)
   // C (14/10/2026): how the email arrived (null: received before Plazo told them apart).
   delivery      InboundDelivery?
+  // 29/10/2026: the first name of who pasted it (delivery `pasted`), shown « Collé par Joanny ».
+  pastedBy      String?
   reservationId String?
   receivedAt    DateTime           @default(now())
   createdAt     DateTime           @default(now())

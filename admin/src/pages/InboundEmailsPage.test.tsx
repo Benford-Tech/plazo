@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api";
 import type { InboundEmail, InboundEmailView, InboundReanalysis } from "@/lib/types";
 import InboundEmailsPage from "./InboundEmailsPage";
 
-const api = vi.hoisted(() => ({ getInboundEmails: vi.fn(), handleInboundEmail: vi.fn(), archiveInboundEmail: vi.fn(), reanalyseInboundEmail: vi.fn() }));
+const api = vi.hoisted(() => ({ getInboundEmails: vi.fn(), handleInboundEmail: vi.fn(), archiveInboundEmail: vi.fn(), reanalyseInboundEmail: vi.fn(), pasteInboundEmail: vi.fn() }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 vi.mock("@/lib/api", async importOriginal => {
@@ -103,6 +103,7 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     api.handleInboundEmail.mockReset().mockImplementation((id: string) => Promise.resolve({ data: move(id, "done", "handled") }));
     api.archiveInboundEmail.mockReset().mockImplementation((id: string) => Promise.resolve({ data: move(id, "archived", "archived") }));
     api.reanalyseInboundEmail.mockReset();
+    api.pasteInboundEmail.mockReset();
     toast.success.mockReset();
     toast.error.mockReset();
   });
@@ -903,5 +904,31 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       expect(screen.getByTestId("where")).toHaveTextContent("/reservations null");
       expect(screen.queryByRole("tablist")).toBeNull();
     });
+  });
+  it("« Coller un mail » (29/10/2026) : le mail collé est analysé, rejoint son onglet et s'ouvre", async () => {
+    const pasted = email({ id: "p1", status: "imported", missing: [], fromName: null, fromAddress: null, delivery: "pasted", pastedBy: "Joanny", reservationId: "r1", reservationReference: "RAB123", subject: "ParkVia - Nouvelle notification" });
+    api.pasteInboundEmail.mockImplementation(async () => {
+      lists.done = [pasted, ...lists.done];
+      return { email: pasted, outcome: "imported" } satisfies InboundReanalysis;
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findAllByTestId("inbound-row");
+    await user.click(screen.getByTestId("paste-mail"));
+    const dialog = within(screen.getByTestId("paste-mail-dialog"));
+    await user.click(dialog.getByRole("button", { name: "Analyser ce mail" }));
+    expect(api.pasteInboundEmail).not.toHaveBeenCalled();
+    await user.type(dialog.getByTestId("paste-mail-text"), "Bonjour");
+    await user.click(dialog.getByRole("button", { name: "Analyser ce mail" }));
+    expect(dialog.getByRole("alert")).toHaveTextContent("trop court");
+    await user.clear(dialog.getByTestId("paste-mail-text"));
+    await user.type(dialog.getByTestId("paste-mail-text"), "ParkVia - Nouvelle notification de réservation PC90000001 du 23 octobre 2026");
+    await user.click(dialog.getByRole("button", { name: "Analyser ce mail" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Réservation RAB123 créée depuis ce mail."));
+    expect(api.pasteInboundEmail).toHaveBeenCalledWith({ text: "ParkVia - Nouvelle notification de réservation PC90000001 du 23 octobre 2026" });
+    expect(screen.queryByTestId("paste-mail-dialog")).toBeNull();
+    await waitFor(() => expect(tab(/Traités/)).toHaveAttribute("aria-selected", "true"));
+    expect(screen.getByTestId("search")).toHaveTextContent("mail=p1");
+    expect(await reading().findByText("Collé par Joanny")).toBeInTheDocument();
   });
 });

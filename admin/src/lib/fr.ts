@@ -3799,6 +3799,27 @@ export const inboundFr = {
       outage: (cause: InboundReadingOutageCause) =>
         `Analyse relancée, mais Claude n'a pas pu lire ce mail (${readingOutageCause[cause]}) : Plazo le relira dès que la lecture fonctionne de nouveau.`,
     },
+    /** 29/10/2026 (« pouvoir importer en collant le contenu du mail », direction A). */
+    paste: {
+      button: "Coller un mail",
+      title: "Coller un mail",
+      intro:
+        "Ouvrez le mail du comparateur, sélectionnez tout son texte (Ctrl+A, ou ⌘A sur Mac), copiez-le et collez-le ici. Plazo le lit comme s'il l'avait reçu.",
+      subject: "Objet du mail",
+      subjectHint: "facultatif, aide à le reconnaître",
+      text: "Texte du mail",
+      chars: (n: number) => `${n.toLocaleString("fr-FR")} caractère${n > 1 ? "s" : ""}`,
+      cancel: "Annuler",
+      submit: "Analyser ce mail",
+      submitting: "Analyse en cours…",
+      tooShort: "Collez le texte entier du mail : celui-ci est trop court.",
+      waiting: "Mail ajouté à « À traiter » : vérifiez ce que Plazo a compris, puis « Compléter ».",
+      by: (name: string | null) => (name ? `Collé par ${name}` : "Collé dans Plazo"),
+      errors: {
+        paste_limit: "Trop de mails collés cette heure-ci : réessayez dans un moment.",
+        operator_inactive: "Ce compte est suspendu : aucun mail ne peut être ajouté.",
+      } as Record<string, string>,
+    },
     /** The refusals of « Relancer l'analyse » worded for this screen (`text_gone`, `analysis_running`: `fr.errors`). */
     errors: {
       already_imported: "Ce mail est déjà rattaché à une réservation.",

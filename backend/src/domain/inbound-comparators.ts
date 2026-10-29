@@ -48,7 +48,7 @@ export function comparatorStates(rows: ComparatorRow[], providers: string[], now
       provider,
       lastReceivedAt: last.receivedAt.toISOString(),
       lastStatus: last.status,
-      arrival: direct ? 'direct' : (last.delivery ?? 'unknown'),
+      arrival: direct ? 'direct' : last.delivery === 'pasted' ? 'manual' : (last.delivery ?? 'unknown'),
     };
   });
 }
@@ -60,7 +60,7 @@ export function comparatorStates(rows: ComparatorRow[], providers: string[], now
 export function latestAutomatic(rows: ComparatorRow[], providers: string[]): { at: string; provider: string } | null {
   const sorted = [...rows].sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
   for (const row of sorted) {
-    if (row.delivery === 'manual') continue;
+    if (row.delivery === 'manual' || row.delivery === 'pasted') continue;
     const provider = comparatorOf(row, providers);
     if (provider) return { at: row.receivedAt.toISOString(), provider };
   }

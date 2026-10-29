@@ -848,6 +848,12 @@ export const adminApi = {
     apiRequest<InboundReanalysis>(`/internal/inbound/emails/${id}/reanalyse`, {
       method: "POST",
     }),
+  // « Coller un mail » (29/10/2026): read like a received mail, kept in the inbox.
+  pasteInboundEmail: (body: { text: string; subject?: string }) =>
+    apiRequest<InboundReanalysis>("/internal/inbound/emails/paste", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   // « Mails liés » (27/10/2026): the mails of a booking, oldest first.
   getReservationEmails: (reservationId: string) =>
     apiRequest<{ data: LinkedEmail[] }>(

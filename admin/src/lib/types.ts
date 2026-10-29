@@ -708,6 +708,9 @@ export interface InboundEmail {
    * Optional: an older server does not send it.
    */
   change?: InboundChange | null;
+  /** 29/10/2026 (« Coller un mail »): how the mail arrived, and who pasted it. Optional: an older server does not send them. */
+  delivery?: "direct" | "forwarded" | "manual" | "pasted" | null;
+  pastedBy?: string | null;
 }
 
 /** The fields a comparator's change may update (the server's `ImportChangeField`). */

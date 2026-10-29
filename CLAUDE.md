@@ -394,6 +394,20 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      mots de condition avant, « gratuite » / « possible » après, question) : « Pour toute annulation de votre réservation… »,
      « Toute réservation annulée… », « Si vous avez annulé », « Free cancellation… » (mots de condition dans les six mots avant, un deux-points ouvrant la nouvelle : « Aucune action n'est requise : votre réservation a été annulée » reste une annulation) ne font plus d'une confirmation une
      annulation ou une modification ; tests `inbound-reread.test.ts`, `inbound-kind.test.ts` (`confirmation-conditions.txt`).
+   - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
+     https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
+     de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet
+     facultatif, texte du mail, « Analyser ce mail », Échap ou clic hors de la fenêtre ferme) → `POST /internal/inbound/emails/paste`
+     `{ text, subject? }` (`reservations:manage`, `RefuseInDemo`, permis en consultation ; 400 `text` `required` · `too_short`
+     (40 caractères) · `too_long`, 429 `paste_limit` au-delà de 60 par heure et par loueur, 409 `operator_inactive`) :
+     `InboundEmailService.paste` lit le texte exactement comme un mail reçu (`analyse` : règles par comparateur, page Allopark par
+     les liens du texte, Claude, `createFromImport`, modifications et annulations, doublons), l'expéditeur et l'objet repris des
+     lignes « De : » / « Objet : » du texte quand il en a (`pastedSenderOf`, `pastedSubjectOf`), et le garde dans la boîte comme
+     les autres (`InboundEmail.delivery` `pasted`, `pastedBy` = prénom de qui l'a collé ; migration `inbound_pasted` ; compté
+     « Transféré à la main » dans le tableau des comparateurs, jamais « arrivé seul ») ; tracé `inbound.pasted` ; réponse
+     `{ email, outcome }` comme « Relancer l'analyse ». La page ouvre l'onglet du mail et le sélectionne, toast « Réservation …
+     créée depuis ce mail. » ou « Mail ajouté à « À traiter »… » ; liste et volet disent « Collé par Joanny ». Tests
+     `inbound-paste.test.ts`, `InboundEmailsPage.test.tsx`. Web seulement.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
