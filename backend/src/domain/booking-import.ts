@@ -36,6 +36,7 @@ export const IMPORT_FIELDS = [
   'handover',
   'commission',
   'payment',
+  'destination',
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -89,6 +90,9 @@ export interface ImportedBooking extends CustomerNames {
   /** The comparator's commission in cents as the file gives it (its exact amount), for a comparator's booking only. */
   commissionOverrideCents: number | null;
   paymentMethod: PaymentMethod | null;
+  /** 29/10/2026: the file's « Destination » as written, matched to a shuttle stop by the service (`withDestinations`). */
+  destination: string | null;
+  stopId: string | null;
   /** When the booking was made (the file's « réservée le »), null when the file does not say. */
   bookedAt: Date | null;
   /** Whether the stay is over, under way or to come at the time of the import. */
@@ -285,7 +289,7 @@ export function importedHandover(raw: string | undefined): Handover | null {
   const value = text(raw);
   if (!value) return 'shuttle';
   if (/voiturier|valet|terminal|jockey/i.test(value)) return 'valet';
-  if (/^(parking|navette|shuttle|standard|classique|parking navette|navette gratuite)$/i.test(value)) return 'shuttle';
+  if (/\b(parking|navette|shuttle|standard|classique|non|aucun)\b/i.test(value)) return 'shuttle';
   return null;
 }
 
@@ -332,6 +336,11 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
   const flight = (raw: string | undefined, label: string) => {
     const value = text(raw);
     if (!value) return null;
+    // 29/10/2026 (« Vol / Train »): a train is never a flight (« TGV 6612 » would read as one): it goes to the notes.
+    if (TRAIN.test(value)) {
+      unreadableFlights.push(`Train indiqué dans le fichier : ${value.slice(0, 40)}`);
+      return null;
+    }
     const formatted = formatFlight(value);
     if (!formatted) {
       unreadableFlights.push(`${label} indiqué dans le fichier : ${value.slice(0, 40)} (numéro non reconnu)`);
@@ -398,8 +407,42 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
       handover: handover ?? 'shuttle',
       commissionOverrideCents,
       paymentMethod: payment === 'invalid' ? null : payment,
+      destination: text(row.destination).slice(0, 80) || null,
+      stopId: null,
       bookedAt,
       timing,
     },
   };
+}
+
+/** A train number or name (« TGV 6612 », « Ouigo 7803 », « TER 17512 »), never read as a flight. */
+const TRAIN = /\b(tgv|train|sncf|ouigo|inoui|ter|intercit[eé]s?|eurostar|thalys|lyria|frecciarossa|renfe|trenitalia)\b/i;
+
+const foldName = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** Words that name the airport itself: the shuttle's built-in stop, no stop to set. */
+const AIRPORT = /\b(aeroport|airport|aerogare|terminal|t1|lys|saint exupery|st exupery)\b/;
+
+/**
+ * 29/10/2026 (« il manque … destination »): the file's « Destination » as the booking's shuttle stop (« Gare TGV »), the
+ * airport left as the default; anything else (the traveller's own destination, « Lisbonne ») goes to the notes.
+ */
+export function withDestinations<T extends { booking: ImportedBooking | null }>(rows: T[], stops: { id: string; name: string }[]): T[] {
+  const named = stops.map(s => ({ id: s.id, key: foldName(s.name) })).filter(s => s.key);
+  return rows.map(row => {
+    const b = row.booking;
+    if (!b?.destination) return row;
+    const key = foldName(b.destination);
+    const stop = key ? named.find(s => s.key === key || s.key.includes(key) || key.includes(s.key)) : undefined;
+    if (stop) return { ...row, booking: { ...b, stopId: stop.id } };
+    if (!key || AIRPORT.test(key)) return row;
+    const line = `Destination indiquée dans le fichier : ${b.destination}`;
+    return { ...row, booking: { ...b, notes: [b.notes, line].filter(Boolean).join('\n').slice(0, 1000) } };
+  });
 }

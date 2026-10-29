@@ -30,6 +30,7 @@ export const IMPORT_FIELDS = [
   "handover",
   "commission",
   "payment",
+  "destination",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 
@@ -52,6 +53,8 @@ const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "returnTime", test: /^(heure|h) (de )?(retour|sortie|depart|recuperation|fin)$/ },
   { field: "arrivalTime", test: /^(heure|h) (d )?(de )?(arrivee|depot|entree|debut)$/ },
   { field: "returnFlight", test: /^(n )?(no |num |numero )?(de )?vol (de )?retour$|^vol retour$|^return flight$/ },
+  // 29/10/2026: one « Vol / Train » column, no direction: the return (the one the shuttle waits for). A train goes to the notes.
+  { field: "returnFlight", test: /^(n )?(no |num |numero )?(de )?(vol|train|vol train|train vol|vol ou train|flight)( n| numero)?$/ },
   { field: "departureFlight", test: /^(n )?(no |num |numero )?(de )?vol (d )?(aller|depart)$|^vol aller$/ },
   { field: "returnDate", test: /^(date (de )?)?(retour|sortie|fin|recuperation|depart)( le)?( date)?$|^date (et heure )?(de |du )?(retour|sortie|fin|recuperation|depart)$|^au$|^return$/ },
   { field: "arrivalDate", test: /^(date (de )?)?(arrivee|depot|entree|debut|aller)( le)?( date)?$|^date (et heure )?(d |de )?(arrivee|depot|entree|debut)$|^du$|^arrival$/ },
@@ -59,7 +62,7 @@ const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "lastName", test: /^nom( de famille)?$|^last name$/ },
   { field: "name", test: /^(nom (du )?(client|voyageur)|client|voyageur|nom complet|nom et prenom|prenom et nom|name)$/ },
   { field: "phone", test: /^(tel|telephone|portable|mobile|gsm|phone|n tel|numero de telephone)$/ },
-  { field: "email", test: /^(e ?mail|mail|courriel|adresse (e ?)?mail)$/ },
+  { field: "email", test: /^(e ?mail|mail|courriel|adresse (e ?)?mail|adresse electronique)( (du )?client)?$/ },
   { field: "plate", test: /^(plaque|immat|immatriculation|plaque d immatriculation|vehicule immat|plate)$/ },
   { field: "passengers", test: /^(passagers?|nb (de )?(personnes|passagers|pers)|personnes|pax|nombre de personnes)$/ },
   { field: "price", test: /^(prix|montant|tarif|total|prix ttc|montant ttc|prix paye|ca|chiffre)( eur)?$/ },
@@ -69,9 +72,11 @@ const RULES: { field: ImportField; test: RegExp; weak?: true }[] = [
   { field: "reference", test: /^(n |no |num |numero )?(de )?(resa|reservation|reference|ref|dossier|booking)( n)?$|^reference externe$/ },
   { field: "status", test: /^(statut|etat|status)$/ },
   { field: "vehicle", test: /^(vehicule|voiture|modele|marque|marque modele)$/ },
-  { field: "handover", test: /^(service|services|prise en charge|type( de)? service|formule|voiturier)$/ },
+  // 29/10/2026: « Prise en charge (Parking ou voiturier) » too: the words in brackets follow.
+  { field: "handover", test: /^(service|services|prise en charge|type( de)? (service|prise en charge)|formule|voiturier|navette ou voiturier|parking ou voiturier)( .*)?$/ },
   { field: "commission", test: /^(commission|com|frais( du)? comparateur)( eur| euros?| ttc)?$/ },
   { field: "payment", test: /^(paiement|payment|moyen( de)? paiement|mode( de)? (paiement|reglement)|reglement|paye par|type( de)? paiement)$/ },
+  { field: "destination", test: /^(destination|desserte|lieu de depose|depose|gare|terminal|point de (depose|rendez vous))$/ },
   { field: "notes", test: /^(notes?|remarques?|commentaires?|observations?|infos?)$/ },
 ];
 

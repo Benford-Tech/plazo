@@ -8,6 +8,7 @@ import {
   parseImportPrice,
   parseImportTime,
   readImportRow,
+  withDestinations,
 } from '@/domain/booking-import';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -63,6 +64,7 @@ describe('reading a row', () => {
     expect(importedHandover('Parking navette')).toBe('shuttle');
     expect(importedHandover('Voiturier')).toBe('valet');
     expect(importedHandover('Lavage')).toBeNull();
+    expect(importedHandover('Parking + navette')).toBe('shuttle');
     const row = (channel: string, commission: string, handover = '') =>
       readImportRow({ line: 2, name: 'Claire Martin', arrivalDate: '12/11/2026', returnDate: '19/11/2026', channel, commission, handover }, TZ, NOW);
     const allopark = row('Allopark', '9,72 €', 'Voiturier');
@@ -72,6 +74,36 @@ describe('reading a row', () => {
     const unreadable = row('Allopark', 'beaucoup', 'Lavage');
     expect(unreadable.booking).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
     expect(unreadable.warnings).toEqual(expect.arrayContaining(['handover_unreadable', 'commission_unreadable']));
+  });
+
+  it('keeps a train out of the flights, and matches « Destination » to a shuttle stop (29/10/2026)', () => {
+    const row = readImportRow(
+      { line: 2, name: 'Claire Martin', arrivalDate: '12/11/2026', returnDate: '19/11/2026', returnFlight: 'TGV 6612', destination: 'Gare TGV' },
+      TZ,
+      NOW,
+    );
+    expect(row.booking).toMatchObject({ returnFlight: null, notes: 'Train indiqué dans le fichier : TGV 6612' });
+    expect(row.warnings).not.toContain('flight_unreadable');
+    const stops = [{ id: 's1', name: 'Gare Saint-Exupéry TGV' }];
+    const lisbon = readImportRow(
+      { line: 3, name: 'Paul Durand', arrivalDate: '12/11/2026', returnDate: '19/11/2026', destination: 'Lisbonne' },
+      TZ,
+      NOW,
+    );
+    const airport = readImportRow(
+      { line: 4, name: 'Anne Petit', arrivalDate: '12/11/2026', returnDate: '19/11/2026', destination: 'Aéroport' },
+      TZ,
+      NOW,
+    );
+    const station = readImportRow(
+      { line: 5, name: 'Marc Leroy', arrivalDate: '12/11/2026', returnDate: '19/11/2026', destination: 'gare saint exupery' },
+      TZ,
+      NOW,
+    );
+    const [l, a, g] = withDestinations([lisbon, airport, station], stops);
+    expect(l.booking).toMatchObject({ stopId: null, notes: 'Destination indiquée dans le fichier : Lisbonne' });
+    expect(a.booking).toMatchObject({ stopId: null, notes: null });
+    expect(g.booking).toMatchObject({ stopId: 's1' });
   });
 
   it('gives each stay its status from the dates, unless the file says it', () => {

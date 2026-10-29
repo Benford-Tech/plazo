@@ -9,6 +9,7 @@ import {
   MAX_IMPORT_ROWS,
   ReadRow,
   readImportRow,
+  withDestinations,
   dateOrderOf,
 } from '@/domain/booking-import';
 import { sameTraveller } from '@/domain/import-change';
@@ -226,7 +227,12 @@ export class BookingImportService {
     const now = new Date();
     // The file's date order, read from all its dates at once (a row alone can't tell « 03/04 » apart).
     const dateOrder = dateOrderOf(rows.flatMap(r => [r.arrivalDate, r.returnDate, r.bookedAt]));
-    const read = rows.map(r => readImportRow(r, parking.timezone, now, dateOrder));
+    // 29/10/2026: « Destination » names one of the parking's shuttle stops (« Gare TGV »), or goes to the notes.
+    const stops = await prisma.shuttleStop.findMany({ where: { parkingId: parking.id }, select: { id: true, name: true } });
+    const read = withDestinations(
+      rows.map(r => readImportRow(r, parking.timezone, now, dateOrder)),
+      stops,
+    );
 
     if (dryRun) {
       const classified = await this.classify(prisma, actor.operatorId, parking, read, now);
@@ -334,6 +340,8 @@ export class BookingImportService {
       handover: b.handover,
       commissionOverrideCents: b.commissionOverrideCents,
       paymentMethod: b.paymentMethod,
+      // A valet booking has no shuttle stop.
+      stopId: b.handover === 'valet' ? null : b.stopId,
       overbooked: row.overbooked,
       createdById: actor.id,
       importId,

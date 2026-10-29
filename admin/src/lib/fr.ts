@@ -4546,8 +4546,8 @@ export const bookingImportFr = {
     arrivalTime: "Arrivée (heure)",
     returnDate: "Départ (date)",
     returnTime: "Départ (heure)",
-    returnFlight: "Vol retour",
-    departureFlight: "Vol aller",
+    returnFlight: "Vol (ou train) retour",
+    departureFlight: "Vol (ou train) aller",
     passengers: "Passagers",
     price: "Prix payé",
     channel: "Canal",
@@ -4559,6 +4559,7 @@ export const bookingImportFr = {
     handover: "Prise en charge",
     commission: "Commission",
     payment: "Payé par",
+    destination: "Destination",
   } as Record<string, string>,
   required: { name: "Nom", arrivalDate: "Arrivée", returnDate: "Départ" } as Record<string, string>,
   filters: {

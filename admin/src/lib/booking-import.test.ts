@@ -116,4 +116,17 @@ describe("service and commission columns", () => {
     expect(mapping[5]).toBe("channel");
     expect(mapping[6]).toBe("payment");
   });
+
+  it("maps « Prise en charge (Parking ou voiturier) » to the service (29/10/2026)", () => {
+    expect(guessMapping(["Nom", "Prise en charge (Parking ou voiturier)"])[1]).toBe("handover");
+  });
+
+  it("maps « E-mail client », « Vol / Train » and « Destination » (29/10/2026)", () => {
+    expect(guessMapping(["E-mail client", "Vol / Train", "Destination", "N° de vol"])).toEqual([
+      "email",
+      "returnFlight",
+      "destination",
+      null,
+    ]);
+  });
 });
