@@ -490,8 +490,13 @@ workflows:
           for IPA in $UPLOADED; do
             NAME=$(basename "$IPA" .ipa)
             SLUG="${NAME%-v$VERSION_NAME-$NEXT}"
-            if eval app-store-connect publish --path "\"$IPA\"" --skip-package-upload --max-build-processing-wait 20 $SUBMIT \
-              --locale fr-FR --whats-new "\"@file:$CM_BUILD_DIR/release-notes-$SLUG.txt\""; then
+            # Tried twice (29/10/2026, Plazo Pro 1.0.123): Apple may take longer than 120 s to cancel the waiting
+            # submission, and the build can't be attached until it has (409 « pre-release build could not be added »).
+            submit() {
+              eval app-store-connect publish --path "\"$IPA\"" --skip-package-upload --max-build-processing-wait 20 $SUBMIT \
+                --locale fr-FR --whats-new "\"@file:$CM_BUILD_DIR/release-notes-$SLUG.txt\""
+            }
+            if submit || { echo "Nouvel essai de soumission dans 3 min"; sleep 180; submit; }; then
               echo "OK  $WHERE   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
             else
               echo "KO  $WHERE   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
