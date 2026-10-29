@@ -11,7 +11,8 @@ import '../../data/models/extras_models.dart';
 import '../bloc/staff_extras_bloc.dart';
 import 'extra_widgets.dart';
 
-/// Plazo Pro, on a booking's sheet: « Services commandés » (21/10/2026). Hidden when nothing was ordered.
+/// Plazo Pro, on a booking's sheet: « Services commandés » (21/10/2026). Hidden when nothing was ordered. « Accepter »
+/// (29/10/2026) tells the traveller the team will do it.
 class StaffExtrasCard extends StatelessWidget {
   const StaffExtrasCard({super.key, required this.reservationId, required this.canAct});
   final String reservationId;
@@ -97,6 +98,10 @@ class _StaffOrderRow extends StatelessWidget {
         if (order.refusedReason != null) '« ${order.refusedReason} »',
       ].join(' · '),
       'refunded' => 'extras.refunded_line'.tr(args: [price]),
+      _ when order.acceptedAt != null => [
+        'extras.paid_before_return'.tr(args: [price]),
+        'extras.accepted_by'.tr(args: [order.acceptedBy ?? '']).trim(),
+      ].join(' · '),
       _ => 'extras.paid_before_return'.tr(args: [price]),
     };
     return Padding(
@@ -132,6 +137,14 @@ class _StaffOrderRow extends StatelessWidget {
                   onPressed: disabled ? null : () => _refuse(context),
                   child: Text('extras.refuse'.tr(), style: AppText.strong(size: 13, color: AppColors.muted)),
                 ),
+                if (order.acceptedAt == null) ...[
+                  const SizedBox(width: 6),
+                  OutlinedButton(
+                    key: Key('extra-accept-${order.kind}'),
+                    onPressed: disabled ? null : () => context.read<StaffExtrasBloc>().add(StaffExtraAccepted(order.id)),
+                    child: Text('extras.accept'.tr()),
+                  ),
+                ],
                 const SizedBox(width: 6),
                 FilledButton(
                   key: Key('extra-done-${order.kind}'),

@@ -14,6 +14,7 @@ void _initDataSource() {
     ..registerLazySingleton<GettingStartedDataSource>(() => GettingStartedDataSourceImpl(locator()))
     ..registerLazySingleton<ForecastDataSource>(() => ForecastDataSourceImpl(locator()))
     ..registerLazySingleton<ValetRunsDataSource>(() => ValetRunsDataSourceImpl(locator()))
+    ..registerLazySingleton<ExtrasBoardDataSource>(() => ExtrasBoardDataSourceImpl(locator()))
     ..registerLazySingleton<LinkedEmailsDataSource>(() => LinkedEmailsDataSourceImpl(locator()))
     ..registerLazySingleton<NotificationsDataSource>(() => NotificationsDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReturnDataSource>(() => ReturnDataSourceImpl(locator(), locator(), locator()))

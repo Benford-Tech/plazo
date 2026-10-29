@@ -1504,7 +1504,8 @@
     "arrivals": "Arrivées",
     "returns": "Retours",
     "places": "Places",
-    "terminal": "Terminal"
+    "terminal": "Terminal",
+    "services": "Services"
   },
   "post": {
     "title": "Aujourd'hui, je suis…",
@@ -2199,14 +2200,39 @@
       "other": "{} à faire"
     },
     "mark_done": "Fait",
+    "accept": "Accepter",
+    "accepted_by": "Accepté par {}",
     "refuse": "Pas possible",
     "refuse_title": "{} : pas possible ?",
     "refuse_text": "Le client est remboursé de {} et prévenu.",
     "refuse_reason": "Raison (facultatif)",
     "refuse_confirm": "Rembourser",
     "staff_notice": {
+      "accepted": "Accepté : le client est prévenu.",
       "done": "Marqué fait : le client est prévenu.",
       "refused": "Remboursé : le client est prévenu."
+    },
+    "board": {
+      "title": "Services à faire",
+      "view_todo": "À faire · {}",
+      "view_done": "Faits · {}",
+      "view_refused": "Pas possibles · {}",
+      "group_late": "En retard",
+      "group_today": "Aujourd'hui",
+      "group_tomorrow": "Demain",
+      "group_later": "Plus tard",
+      "late_pill": "En retard · {}",
+      "before_pill": "Avant {}",
+      "return_line": "retour {}",
+      "flight_line": "vol {} {}",
+      "file": "File {} · {}",
+      "spot": "Place {}",
+      "no_place": "Sans place",
+      "accepted_by": "Accepté par {}",
+      "empty_todo": "Aucun service à faire avant les retours.",
+      "empty_done": "Aucun service fait aujourd'hui.",
+      "empty_refused": "Aucun service refusé ces 7 derniers jours.",
+      "error": "Impossible de charger les services : réessayez."
     },
     "settings": {
       "title": "Services additionnels",

@@ -16,6 +16,11 @@ class StaffExtrasStarted extends StaffExtrasEvent {
   final String reservationId;
 }
 
+class StaffExtraAccepted extends StaffExtrasEvent {
+  const StaffExtraAccepted(this.extraId);
+  final String extraId;
+}
+
 class StaffExtraDone extends StaffExtrasEvent {
   const StaffExtraDone(this.extraId);
   final String extraId;
@@ -40,7 +45,7 @@ abstract class StaffExtrasState with _$StaffExtrasState {
     StaffExtrasModel? data,
     String? busyId,
 
-    /// done | refused, or an API code in [errorCode].
+    /// accepted | done | refused, or an API code in [errorCode].
     String? notice,
     String? errorCode,
   }) = _StaffExtrasState;
@@ -53,6 +58,7 @@ abstract class StaffExtrasState with _$StaffExtrasState {
 class StaffExtrasBloc extends Bloc<StaffExtrasEvent, StaffExtrasState> {
   StaffExtrasBloc(this._extras) : super(const StaffExtrasState()) {
     on<StaffExtrasStarted>(_onStarted);
+    on<StaffExtraAccepted>((e, emit) => _act(emit, e.extraId, 'accepted', (id) => _extras.accept(id, e.extraId)));
     on<StaffExtraDone>((e, emit) => _act(emit, e.extraId, 'done', (id) => _extras.done(id, e.extraId)));
     on<StaffExtraRefused>((e, emit) => _act(emit, e.extraId, 'refused', (id) => _extras.refuse(id, e.extraId, e.reason)));
     on<StaffExtrasNoticeShown>((e, emit) => emit(state.copyWith(notice: null, errorCode: null)));

@@ -41,7 +41,7 @@ void main() {
     for (final title in ['MON POSTE DU JOUR', 'GÉRANT', 'CHAUFFEUR', 'ACCUEIL', 'VOITURIER', 'COMPTE']) {
       expect(find.text(title), findsOneWidget, reason: title);
     }
-    for (final key in ['pmore-post', 'pmore-start', 'pmore-revenue', 'pmore-team', 'pmore-plan', 'pmore-vehicles', 'pmore-settings', 'pmore-shuttle', 'pmore-reservations', 'pmore-planning', 'pmore-tutorials', 'pmore-account', 'pmore-logout']) {
+    for (final key in ['pmore-post', 'pmore-start', 'pmore-revenue', 'pmore-team', 'pmore-plan', 'pmore-vehicles', 'pmore-settings', 'pmore-shuttle', 'pmore-reservations', 'pmore-services', 'pmore-planning', 'pmore-tutorials', 'pmore-account', 'pmore-logout']) {
       expect(find.byKey(Key(key)), findsOneWidget, reason: key);
     }
     expect(find.byKey(const Key('pmore-vehicle')), findsNothing);

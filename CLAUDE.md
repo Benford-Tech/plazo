@@ -611,6 +611,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Espace pro web : carte « Services additionnels » de Parking › Réglages, bloc « Services commandés » de la fiche et de la
      fiche opérationnelle ; Plazo Pro : même bloc sur la fiche, réglages dans Plus › Réglages. Conditions générales (article 11).
      Le chiffre d'affaires ne compte pas encore les services.
+     **« Services à faire », A + C (29/10/2026, « une vue des services additionnels à faire avant le retour des passagers »,
+     maquettes https://claude.ai/artifact/9tmsMsH4pm8RhMTpUjviFD, « l'utilisateur reçoit une notif quand c'est accepté, refusé,
+     fait »)** : `GET /internal/extras?view=todo|done|refused` (`ExtraService.board`, `reservations:view` ; à faire = commandés d'une
+     réservation pas close, triés par `dueAt` = 1 h avant le retour attendu, l'atterrissage du vol quand il est connu
+     (`extraDueAt`, `EXTRA_DUE_BEFORE_MS`), `late` ; faits du jour local, refusés sur 7 jours ; `counts`, place ou file de la
+     voiture) ; « Accepter » `POST /internal/reservations/:id/extras/:extraId/accept` (`reservations:status`, 409 `not_to_do`,
+     `ReservationExtra.acceptedAt/acceptedById`, migration `extra_accepted`, tracé `extra.accepted`, push au voyageur
+     « Recharge électrique : accepté » une seule fois) ; « Fait » et « Pas possible » préviennent déjà le voyageur. **A** web :
+     page `/pro/reservations/services` (`ExtrasTodoPage`, lien « Services à faire » de Réservations ; onglets À faire · Faits
+     · Pas possibles `?vue=`, groupes En retard · Aujourd'hui · Demain · Plus tard, colonnes À faire avant · Service · Client
+     · voiture · Place · Payé, « Accepter » · « Fait » · « Pas possible » sur la ligne, relue toutes les 60 s) et « Accepter »
+     dans le bloc de la fiche. **C** Plazo Pro : onglet **Services** du poste Voiturier (`features/pro_extras`,
+     `ProExtrasPage`, `/pro/services`, cartes rouges en retard, ambre aujourd'hui ; Places passe dans Plus › Voiturier), Plus ›
+     Accueil › « Services à faire », « Accepter » dans `StaffExtrasCard`. Tests `extras.test.ts`, `ExtrasTodoPage.test.tsx`,
+     `extras_board_test.dart`, `extras_test.dart`.
    - **Mail du matin (21/10/2026, « un mail quotidien avec l'état des intégrations, le CA et le planning ; ce mail peut être
      désactivé », choix A « Tableau du jour » des maquettes https://claude.ai/artifact/Ge2zVYZ95ZfJ11tMKtQJtz)** : chaque matin, à
      l'heure choisie (07:00 par défaut, de 05:00 à 10:00, heure du premier parking), un mail aux couleurs de l'espace pro : planning
