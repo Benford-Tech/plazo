@@ -4590,6 +4590,7 @@ export const bookingImportFr = {
     commission_unreadable: "Commission illisible, taux du comparateur appliqué",
     handover_unreadable: "Service non reconnu, navette par défaut",
     payment_unreadable: "Moyen de paiement non reconnu, laissé vide",
+    email_not_traveller: "Adresse du comparateur, pas celle du client : e-mail laissé vide",
     passengers_unreadable: "Passagers illisibles, 1 par défaut",
     booked_at_unreadable: "Date de réservation illisible",
     full_night: "Nuit déjà complète",

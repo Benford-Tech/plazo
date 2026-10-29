@@ -1,3 +1,5 @@
+import { travellerEmail } from '@/domain/traveller-email';
+import { INBOUND_EMAIL_DOMAIN } from '@/config';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Handover, Parking, Prisma, Reservation, ReservationStatus } from '@/database';
@@ -297,7 +299,7 @@ export class ReservationService {
           passengers: parsed.passengers ?? 1,
           ...names,
           customerPhone: parsed.customerPhone!.trim(),
-          customerEmail: parsed.customerEmail?.trim().toLowerCase() || null,
+          customerEmail: travellerEmail(parsed.customerEmail, [INBOUND_EMAIL_DOMAIN]),
           plate,
           plateKey: key,
           returnFlight,

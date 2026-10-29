@@ -1,3 +1,4 @@
+import { travellerEmail } from './traveller-email';
 import { Handover, PaymentMethod, ReservationChannel, ReservationStatus } from '@/database';
 import { importedPaymentMethod } from './payment-method';
 import { KNOWN_COMPARATORS } from './comparator-commission';
@@ -66,7 +67,8 @@ export type ImportWarning =
   | 'full_night'
   | 'handover_unreadable'
   | 'commission_unreadable'
-  | 'payment_unreadable';
+  | 'payment_unreadable'
+  | 'email_not_traveller';
 
 export interface ImportedBooking extends CustomerNames {
   customerPhone: string;
@@ -380,7 +382,10 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
   const commissionOverrideCents =
     typeof commission === 'number' && (channel.channel === 'aggregator' || channel.channel === 'import') ? commission : null;
 
-  const email = text(row.email).toLowerCase();
+  // 29/10/2026: a comparator's or a robot's address in the e-mail column is not the traveller's: left empty, said in the preview.
+  const emailRaw = text(row.email);
+  const email = travellerEmail(emailRaw);
+  if (emailRaw && !email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) warnings.push('email_not_traveller');
   const notes = [text(row.notes).slice(0, 1000), ...unreadableFlights].filter(Boolean).join('\n');
 
   return {
@@ -390,7 +395,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
     booking: {
       ...names,
       customerPhone,
-      customerEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email.slice(0, 200) : null,
+      customerEmail: email,
       plate,
       plateKey: plateKey(plate),
       arrivalAt,

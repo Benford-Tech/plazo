@@ -1,3 +1,4 @@
+import { travellerEmailIn } from '../traveller-email';
 import { amountAfter, flatten, numericDateTime, PLATE } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
@@ -39,7 +40,7 @@ export const parkviaImporter: EmailImporter = {
     if (Number.isInteger(passengers) && passengers > 0) booking.passengers = passengers;
     booking.customerName = /\bNom\s*:\s*(.+?)\s+(?:T[ée]l|E-?mail|Num[ée]ro d'immatriculation)\b/i.exec(flat)?.[1]?.trim();
     booking.customerPhone = parkviaPhone(/T[ée]l(?:[ée]phone)?(?: portable)?\s*:?\s*([+\d][\d .]{5,20}(?:\s*\(\d{1,3}\))?)/i.exec(flat)?.[1]);
-    booking.customerEmail = /E-?mail\s*:?\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i.exec(flat)?.[1];
+    booking.customerEmail = travellerEmailIn(flat);
     booking.plate = new RegExp(String.raw`Num[ée]ro d'immatriculation\s*:?\s*(${PLATE.source})`, 'i').exec(flat)?.[1];
     return booking;
   },

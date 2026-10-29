@@ -1,3 +1,4 @@
+import { travellerEmail } from '../traveller-email';
 import { euroCents, frenchDateTime, valueAfterLabel } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
@@ -49,7 +50,7 @@ export const alloparkImporter: EmailImporter = {
     if (first) booking.customerFirstName = first;
     if (last) booking.customerLastName = last;
     booking.customerPhone = valueAfterLabel(lines, LABELS.phone, ALL_LABELS);
-    booking.customerEmail = valueAfterLabel(lines, LABELS.email, ALL_LABELS);
+    booking.customerEmail = travellerEmail(valueAfterLabel(lines, LABELS.email, ALL_LABELS)) ?? undefined;
     booking.plate = valueAfterLabel(lines, LABELS.plate, ALL_LABELS);
     booking.returnFlight = valueAfterLabel(lines, LABELS.returnFlight, ALL_LABELS);
     booking.departureFlight = valueAfterLabel(lines, LABELS.outboundFlight, ALL_LABELS);
