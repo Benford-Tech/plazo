@@ -95,9 +95,9 @@ describe("Importer des réservations (direction A)", () => {
     expect(api.importReservations).not.toHaveBeenCalled();
   });
 
-  it("lists the recent imports with « Retirer cet import » for 24 hours", async () => {
+  it("lists the recent imports with « Retirer cet import », at any time", async () => {
     api.getReservationImports.mockResolvedValue({
-      data: [{ id: "imp1", fileName: "planning.csv", createdAt: "2026-10-28T09:00:00.000Z", createdCount: 280, removedCount: 0, undoneAt: null, undoableUntil: "2026-10-29T09:00:00.000Z", by: "Gérant Test" }],
+      data: [{ id: "imp1", fileName: "planning.csv", createdAt: "2026-10-28T09:00:00.000Z", createdCount: 280, removedCount: 0, undoneAt: null, undoable: true, by: "Gérant Test" }],
     });
     api.undoReservationImport.mockResolvedValue({ removed: 279, kept: 1 });
     renderPage();

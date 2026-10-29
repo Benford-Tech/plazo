@@ -566,6 +566,24 @@ export default function ReservationPage() {
               />
               <CommissionLine reservation={r} />
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
+              {r.import && (
+                <Info label={t.imported}>
+                  <span data-testid="imported-from">
+                    {t.importedFrom(r.import.fileName, dateTimeShort(r.import.createdAt))}
+                  </span>
+                  {can(user?.role, "parking:manage") && (
+                    <>
+                      {" "}
+                      <Link
+                        to="/reservations/importer"
+                        className="text-base text-lime-deep underline-offset-4 hover:underline"
+                      >
+                        {t.importOpen}
+                      </Link>
+                    </>
+                  )}
+                </Info>
+              )}
             </dl>
           </div>
           {(r.notes || r.customerNote) && (

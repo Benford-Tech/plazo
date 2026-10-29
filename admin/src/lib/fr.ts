@@ -1563,6 +1563,10 @@ export const fr = {
     contact: "Contact",
     stay: "Séjour",
     created: "Créée le",
+    // 29/10/2026: the file a booking was imported from.
+    imported: "Importée",
+    importedFrom: (file: string, when: string) => `${file ? `« ${file} »` : "Depuis un fichier"} le ${when}`,
+    importOpen: "Voir les imports",
     searchPlaceholder: "Plaque, nom, téléphone ou référence",
     search: "Rechercher",
     noResult: "Aucune réservation trouvée.",
@@ -4595,7 +4599,7 @@ export const bookingImportFr = {
   cancel: "Annuler",
   importN: (n: number) => `Importer ${n} réservation${n > 1 ? "s" : ""}`,
   confirmTitle: (n: number) => `Importer ${n} réservation${n > 1 ? "s" : ""} ?`,
-  confirmText: "Elles apparaîtront dans le planning, les réservations et le chiffre d'affaires. Vous pourrez retirer cet import pendant 24 h.",
+  confirmText: "Elles apparaîtront dans le planning, les réservations et le chiffre d'affaires. Chacune garde le nom du fichier : vous pourrez retirer cet import plus tard.",
   confirm: "Importer",
   done: (n: number) => `${n} réservation${n > 1 ? "s" : ""} importée${n > 1 ? "s" : ""}.`,
   seeReservations: "Voir les réservations",
@@ -4603,7 +4607,6 @@ export const bookingImportFr = {
   recentLine: (n: number, when: string, by: string | null) => `${n} réservation${n > 1 ? "s" : ""} · ${when}${by ? ` · ${by}` : ""}`,
   removed: (n: number) => `retiré (${n} supprimée${n > 1 ? "s" : ""})`,
   undo: "Retirer cet import",
-  undoUntil: (when: string) => `possible jusqu'à ${when}`,
   undoTitle: "Retirer cet import ?",
   undoText: "Les réservations de cet import que personne n'a modifiées depuis seront supprimées. Les autres restent.",
   undoConfirm: "Retirer",
@@ -4617,6 +4620,6 @@ export const bookingImportFr = {
   apiErrors: {
     too_many_rows: "2 000 lignes au plus par import : coupez le fichier en plusieurs.",
     already_undone: "Cet import a déjà été retiré.",
-    undo_expired: "Un import se retire dans les 24 heures.",
+    undo_expired: "Cet import ne peut plus être retiré.",
   } as Record<string, string>,
 };
