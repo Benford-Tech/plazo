@@ -1,3 +1,4 @@
+import { travellerEmail } from '../traveller-email';
 import { importedPlate } from '../reservation';
 import { forwardedRecipientsOf } from '../inbound-email';
 import { cancellationIn, changeIn, euroCents, SUBJECT_CANCELLATION, SUBJECT_CHANGE } from './common';
@@ -358,7 +359,8 @@ export function parseAlloparkPage(html: string, reference: string): ParsedBookin
   if (last) booking.customerLastName = last;
   if (first || last) booking.customerName = [first, last].filter(Boolean).join(' ');
   const email = inputValue(form, 'email_customer');
-  if (email && EMAIL.test(email)) booking.customerEmail = email;
+  const traveller = travellerEmail(email);
+  if (traveller) booking.customerEmail = traveller;
   booking.priceCents = alloparkPagePrice(html);
 
   for (const key of Object.keys(booking) as (keyof ParsedBooking)[]) if (booking[key] === undefined) delete booking[key];

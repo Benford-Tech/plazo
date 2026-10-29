@@ -1,3 +1,4 @@
+import { travellerEmail } from './traveller-email';
 import { cleanNamePart, CustomerNames, customerNamesOf } from './customer-name';
 import type { ParsedBooking } from './importers/types';
 import { formatFlight, importedPlate, plateKey } from './reservation';
@@ -204,7 +205,7 @@ export function importChanges(current: ChangeableBooking, booking: ParsedBooking
     }
   }
 
-  const email = booking.customerEmail?.trim().toLowerCase();
+  const email = travellerEmail(booking.customerEmail);
   if (email && email !== (current.customerEmail ?? '').trim().toLowerCase()) {
     changes.push({ field: 'customerEmail', from: current.customerEmail, to: email });
     data.customerEmail = email;

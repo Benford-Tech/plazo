@@ -1,3 +1,4 @@
+import { travellerEmailIn } from '../traveller-email';
 import { amountAfter, flatten, NOM, numericDateTime, PHONE, PLATE } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
@@ -31,7 +32,7 @@ export const parclickImporter: EmailImporter = {
         .exec(flat)?.[1]
         ?.trim() ?? /\bBonjour\s+([^,!.]{2,60}?)\s*[,!]/.exec(flat)?.[1]?.trim();
     booking.customerPhone = new RegExp(String.raw`T[ée]l[ée]phone\s*:?\s*(${PHONE.source})`, 'i').exec(flat)?.[1]?.trim();
-    booking.customerEmail = /E-?mail\s*:?\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i.exec(flat)?.[1];
+    booking.customerEmail = travellerEmailIn(flat);
     booking.plate = new RegExp(String.raw`(?:Immatriculation|Plaque(?: d'immatriculation)?|Matricule)\s*:?\s*(${PLATE.source})`, 'i').exec(flat)?.[1];
     booking.priceCents = amountAfter(flat, /(?:Prix total|Montant total|Total pay[ée]|Total)/i);
     return booking;

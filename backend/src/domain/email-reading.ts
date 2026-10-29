@@ -4,6 +4,7 @@
  * import pipeline already understands. The call itself lives in `EmailReadingService`.
  */
 import { importedPlate } from './reservation';
+import { travellerEmail } from './traveller-email';
 import { fullName } from './staff-name';
 import type { ParsedBooking } from './importers/types';
 
@@ -270,7 +271,7 @@ export function toParsedBooking(reading: EmailReading): ParsedBooking {
     set('customerLastName', last);
   }
   set('customerPhone', cleanPhone(reading.customerPhone));
-  set('customerEmail', email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined);
+  set('customerEmail', travellerEmail(email) ?? undefined);
   // 15/10/2026: what is no plate (« Inconnue », a car model) is dropped: the booking is made without it, read on arrival.
   const plate = cleanPlate(reading.plate);
   set('plate', plate && importedPlate(plate) ? plate : undefined);

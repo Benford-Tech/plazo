@@ -1,3 +1,4 @@
+import { travellerEmailIn } from '../traveller-email';
 import { amountAfter, flatten, FLIGHT, NOM, numericDateTime, PHONE, PLATE } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
@@ -24,7 +25,7 @@ export const parkmundoImporter: EmailImporter = {
       .exec(flat)?.[1]
       ?.trim();
     booking.customerPhone = new RegExp(String.raw`(?:Num[ée]ro de )?t[ée]l[ée]phone\s*:?\s*(${PHONE.source})`, 'i').exec(flat)?.[1]?.trim();
-    booking.customerEmail = /E-?mail\s*:?\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i.exec(flat)?.[1];
+    booking.customerEmail = travellerEmailIn(flat);
 
     // The trip: the first two « date time [flight] » after « Détails du voyage » (else anywhere), drop-off then pick-up.
     const trip = flat.slice(Math.max(0, flat.search(/D[ée]tails du voyage/i)));

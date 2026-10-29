@@ -1,3 +1,4 @@
+import { travellerEmail } from '../traveller-email';
 import { formatFlight } from '../reservation';
 import { euroCents, numericDateTime, PLATE, stripAccents } from './common';
 import { EmailImporter, ParsedBooking } from './types';
@@ -91,7 +92,7 @@ export const parkhitImporter: EmailImporter = {
     if (back) booking.returnAt = numericDateTime(back, get(KEYS.returnTime) ?? '00:00');
     const passengers = Number(get(KEYS.passengers));
     if (Number.isInteger(passengers) && passengers > 0) booking.passengers = passengers;
-    booking.customerEmail = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/.exec(get(KEYS.email) ?? '')?.[0];
+    booking.customerEmail = travellerEmail(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/.exec(get(KEYS.email) ?? '')?.[0]) ?? undefined;
     booking.customerPhone = get(KEYS.phone);
     const plate = get(KEYS.plate)?.toUpperCase();
     if (plate && new RegExp(`^${PLATE.source}$`).test(plate)) booking.plate = plate;

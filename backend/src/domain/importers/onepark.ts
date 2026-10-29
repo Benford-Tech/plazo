@@ -1,3 +1,4 @@
+import { travellerEmailIn } from '../traveller-email';
 import { amountAfter, flatten, FLIGHT, frenchDateTime, NOM, numericDateTime, PHONE, PLATE } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
@@ -38,7 +39,7 @@ export const oneparkImporter: EmailImporter = {
     if (first) booking.customerFirstName = first;
     if (first && last) booking.customerLastName = last;
     booking.customerPhone = new RegExp(String.raw`(?:Portable|T[ée]l[ée]phone)\s*:?\s*(${PHONE.source})`, 'i').exec(flat)?.[1]?.trim();
-    booking.customerEmail = /E-?mail\s*:?\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i.exec(flat)?.[1];
+    booking.customerEmail = travellerEmailIn(flat);
 
     booking.arrivalAt = dateAfter(flat, String.raw`D[ée]but`);
     const pickUp = new RegExp(String.raw`r[ée]cup[ée]ration du v[ée]hicule\s*:?\s*${TEXT_DATE_TIME}`, 'i').exec(flat);
