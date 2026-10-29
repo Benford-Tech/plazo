@@ -2,6 +2,7 @@ import prisma from '@/database';
 import {
   dateOrderOf,
   importedChannel,
+  importedHandover,
   importedPhone,
   parseImportDate,
   parseImportPrice,
@@ -57,6 +58,22 @@ describe('reading a row', () => {
     expect(importedChannel('Zenpark')).toEqual({ channel: 'aggregator', channelDetail: 'Zenpark' });
   });
 
+  it('reads the service and keeps a commission only for a comparator', () => {
+    expect(importedHandover('')).toBe('shuttle');
+    expect(importedHandover('Parking navette')).toBe('shuttle');
+    expect(importedHandover('Voiturier')).toBe('valet');
+    expect(importedHandover('Lavage')).toBeNull();
+    const row = (channel: string, commission: string, handover = '') =>
+      readImportRow({ line: 2, name: 'Claire Martin', arrivalDate: '12/11/2026', returnDate: '19/11/2026', channel, commission, handover }, TZ, NOW);
+    const allopark = row('Allopark', '9,72 €', 'Voiturier');
+    expect(allopark.booking).toMatchObject({ commissionOverrideCents: 972, handover: 'valet' });
+    expect(row('', '5,00').booking?.commissionOverrideCents).toBe(500);
+    expect(row('Téléphone', '5,00').booking?.commissionOverrideCents).toBeNull();
+    const unreadable = row('Allopark', 'beaucoup', 'Lavage');
+    expect(unreadable.booking).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
+    expect(unreadable.warnings).toEqual(expect.arrayContaining(['handover_unreadable', 'commission_unreadable']));
+  });
+
   it('gives each stay its status from the dates, unless the file says it', () => {
     const row = (arrivalDate: string, returnDate: string, status = '') =>
       readImportRow({ line: 2, name: 'Claire Martin', arrivalDate, returnDate, status }, TZ, NOW).booking?.status;
@@ -99,6 +116,8 @@ describe('POST /internal/reservations/import', () => {
       returnDate: '10/09/2025 21:15',
       channel: 'Allopark',
       price: '54,00',
+      commission: '9,72',
+      handover: 'Voiturier',
       reference: 'al-884880719',
     },
     {
@@ -144,6 +163,8 @@ describe('POST /internal/reservations/import', () => {
       ['Claire Martin', 'returned', 'aggregator', 'AB-123-CD'],
       ['Karim Benali', 'upcoming', 'phone', 'FG-456-HJ'],
     ]);
+    expect(created[0]).toMatchObject({ commissionOverrideCents: 972, commissionOverrideBp: null, handover: 'valet' });
+    expect(created[1]).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
     expect(created[0].createdAt.toISOString()).toBe(created[0].arrivalAt.toISOString());
     expect(created[0].closingSentAt).not.toBeNull();
     expect(created[1].reminderExcludedAt).not.toBeNull();

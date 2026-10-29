@@ -107,3 +107,12 @@ describe("import of old bookings: the file", () => {
     expect(guessMapping(["Source", "Client"])).toEqual(["channel", "name"]);
   });
 });
+
+describe("service and commission columns", () => {
+  it("maps the Service and Commission headers", () => {
+    const mapping = guessMapping(["Nom", "Arrivée", "Départ", "Service", "Commission (€)", "Canal"]);
+    expect(mapping[3]).toBe("handover");
+    expect(mapping[4]).toBe("commission");
+    expect(mapping[5]).toBe("channel");
+  });
+});

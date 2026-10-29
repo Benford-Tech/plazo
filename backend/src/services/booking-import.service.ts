@@ -332,6 +332,8 @@ export class BookingImportService {
       externalReference: b.externalReference,
       priceCents: b.priceCents,
       importedPriceCents: b.channel === 'aggregator' ? b.priceCents : null,
+      handover: b.handover,
+      commissionOverrideCents: b.commissionOverrideCents,
       overbooked: row.overbooked,
       createdById: actor.id,
       importId,

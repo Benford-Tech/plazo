@@ -439,7 +439,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      est lu sur tout le fichier (`dateOrderOf` : mois d'abord seulement si une date ne peut être que « 11/20/2026 » et aucune
      « 20/11/2026 », `parseImportDate(raw, order)`), rendu en `dateOrder` et dit dans l'aperçu (« Dates lues au format
      mois/jour/année… ») ; « Canal », « Comparateur » ou « Plateforme » passent avant « Source », « Origine » ou « Provenance »
-     pour le canal (règles `weak` de `guessMapping`). Tests `booking-import.test.ts`
+     pour le canal (règles `weak` de `guessMapping`). **Service et commission (29/10/2026, « Service à l'import, Commission à l'import »)** : colonne « Service » / « Prise en charge » → `handover` (`importedHandover` : « Voiturier », « valet », « terminal » = voiturier ; vide, « Parking », « Navette » = navette ; autre mot = navette et avertissement `handover_unreadable`) ; colonne « Commission » / « Commission (€) » → `commissionOverrideCents`, l'exception de commission de la réservation, gardée seulement pour un comparateur ou un import sans canal (CHECK `reservations_commission_override`), illisible = taux du comparateur et `commission_unreadable`. Tests `booking-import.test.ts`
      (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
