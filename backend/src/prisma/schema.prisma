@@ -193,6 +193,7 @@ model Staff {
   decidedJoinRequests StaffJoinRequest[]  @relation("JoinRequestDecider")
   extrasDone          ReservationExtra[]  @relation("ExtraDoneBy")
   extrasRefused       ReservationExtra[]  @relation("ExtraRefusedBy")
+  extrasAccepted      ReservationExtra[]  @relation("ExtraAcceptedBy")
   valetArrivalRuns    Reservation[]       @relation("ValetArrivalRuns")
   valetDepartureRuns  Reservation[]       @relation("ValetDepartureRuns")
 
@@ -1860,6 +1861,9 @@ model ReservationExtra {
   stripeTransferId      String?
   payoutStatus          PayoutStatus?
   paidAt                DateTime?
+  // 29/10/2026: « Accepter » by the team (the traveller is told); the status stays `ordered` until done or refused.
+  acceptedAt            DateTime?
+  acceptedById          String?
   doneAt                DateTime?
   doneById              String?
   refusedAt             DateTime?
@@ -1873,6 +1877,7 @@ model ReservationExtra {
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   doneBy      Staff?      @relation("ExtraDoneBy", fields: [doneById], references: [id], onDelete: SetNull)
   refusedBy   Staff?      @relation("ExtraRefusedBy", fields: [refusedById], references: [id], onDelete: SetNull)
+  acceptedBy  Staff?      @relation("ExtraAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
 
   @@index([reservationId])
   @@index([operatorId, status])

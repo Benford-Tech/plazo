@@ -28,6 +28,17 @@ export class ExtraController {
     res.json(await this.extras.staffOrders(req.staff, param(req, 'id')));
   });
 
+  /** GET /internal/extras?view=todo|done|refused */
+  public board = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.extras.board(req.staff, req.query.view));
+  });
+
+  /** POST /internal/reservations/:id/extras/:extraId/accept */
+  public accept = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.extras.accept(req.staff, param(req, 'id'), param(req, 'extraId')));
+  });
+
   /** POST /internal/reservations/:id/extras/:extraId/done */
   public done = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.extras.markDone(req.staff, param(req, 'id'), param(req, 'extraId')));
