@@ -2134,6 +2134,8 @@ export interface ImportPreviewRow {
 export interface ImportPreview {
   dryRun: boolean;
   timezone: string;
+  /** The file's numeric dates: day first, or month first (an American export, 29/10/2026). */
+  dateOrder?: "dmy" | "mdy";
   counts: Record<ImportOutcome, number>;
   rows: ImportPreviewRow[];
   import: { id: string; created: number } | null;

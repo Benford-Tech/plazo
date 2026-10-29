@@ -4513,6 +4513,7 @@ export const bookingImportFr = {
   ignored: "ignorée",
   missing: (fields: string[]) => `Choisissez la colonne : ${fields.join(", ")}.`,
   reading: "Lecture des lignes…",
+  monthFirst: "Dates lues au format mois/jour/année, comme dans un fichier américain : « 11/20/2026 » est le 20 novembre 2026.",
   fields: {
     name: "Nom (complet)",
     firstName: "Prénom",

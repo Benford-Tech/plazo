@@ -9,6 +9,7 @@ import {
   MAX_IMPORT_ROWS,
   ReadRow,
   readImportRow,
+  dateOrderOf,
   UNDO_HOURS,
 } from '@/domain/booking-import';
 import { sameTraveller } from '@/domain/import-change';
@@ -224,11 +225,13 @@ export class BookingImportService {
     const dryRun = (body as Record<string, unknown>)?.dryRun !== false;
     const parking = await this.parkings.getPrimary(actor);
     const now = new Date();
-    const read = rows.map(r => readImportRow(r, parking.timezone, now));
+    // The file's date order, read from all its dates at once (a row alone can't tell « 03/04 » apart).
+    const dateOrder = dateOrderOf(rows.flatMap(r => [r.arrivalDate, r.returnDate, r.bookedAt]));
+    const read = rows.map(r => readImportRow(r, parking.timezone, now, dateOrder));
 
     if (dryRun) {
       const classified = await this.classify(prisma, actor.operatorId, parking, read, now);
-      return { dryRun: true, timezone: parking.timezone, ...this.view(classified), import: null };
+      return { dryRun: true, timezone: parking.timezone, dateOrder, ...this.view(classified), import: null };
     }
 
     return prisma.$transaction(
@@ -271,7 +274,7 @@ export class BookingImportService {
           },
           tx,
         );
-        return { dryRun: false, timezone: parking.timezone, ...view, import: { id: record.id, created: created.length } };
+        return { dryRun: false, timezone: parking.timezone, dateOrder, ...view, import: { id: record.id, created: created.length } };
       },
       { timeout: 60_000, maxWait: 10_000 },
     );

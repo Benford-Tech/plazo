@@ -145,7 +145,26 @@ export function parseImportTime(raw: string | undefined): string | null {
  * « 2025-09-03T07:30:00 », « 03/09/2025 07:30 », « 3 sept. 2025 », an Excel serial (« 45903.3125 »). Days before months
  * (French files). Null when unreadable.
  */
-export function parseImportDate(raw: string | undefined): DateParts | null {
+/** Day first (« 20/11/2026 », French) or month first (« 11/20/2026 », an American export). */
+export type DateOrder = 'dmy' | 'mdy';
+
+/**
+ * The order of the file's numeric dates (29/10/2026: an export read « 12/10/2026 » as 12 October when it meant 10 December):
+ * month first only when some date can only be month first (« 11/20/2026 ») and none can only be day first (« 20/11/2026 »).
+ */
+export function dateOrderOf(values: (string | undefined)[]): DateOrder {
+  let dayFirst = 0;
+  let monthFirst = 0;
+  for (const raw of values) {
+    const numeric = /^(\d{1,2})[/.-](\d{1,2})[/.-](?:\d{2}|\d{4})(?:\s|,|$)/.exec(text(raw));
+    if (!numeric) continue;
+    if (Number(numeric[1]) > 12) dayFirst += 1;
+    if (Number(numeric[2]) > 12) monthFirst += 1;
+  }
+  return monthFirst > 0 && dayFirst === 0 ? 'mdy' : 'dmy';
+}
+
+export function parseImportDate(raw: string | undefined, order: DateOrder = 'dmy'): DateParts | null {
   const value = text(raw);
   if (!value) return null;
   if (/^\d+(?:[.,]\d+)?$/.test(value)) return serialDate(Number(value.replace(',', '.')));
@@ -159,7 +178,8 @@ export function parseImportDate(raw: string | undefined): DateParts | null {
     rest = iso[4] ?? '';
   } else if (fr) {
     const y = Number(fr[3]);
-    parts = { y: fr[3].length === 2 ? 2000 + y : y, m: Number(fr[2]), d: Number(fr[1]) };
+    const [day, month] = order === 'mdy' ? [fr[2], fr[1]] : [fr[1], fr[2]];
+    parts = { y: fr[3].length === 2 ? 2000 + y : y, m: Number(month), d: Number(day) };
     rest = fr[4] ?? '';
   } else if (words) {
     const month = MONTHS[fold(words[2]).slice(0, 4)] ?? MONTHS[fold(words[2]).slice(0, 3)];
@@ -241,7 +261,7 @@ function instantOf(date: DateParts, time: string, timeZone: string): Date | null
 }
 
 /** One row read: its booking, or why it cannot be imported; what is worth a look on the side. */
-export function readImportRow(row: ImportRowInput, timeZone: string, now: Date): ReadRow {
+export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, order: DateOrder = 'dmy'): ReadRow {
   const errors: ImportError[] = [];
   const warnings: ImportWarning[] = [];
 
@@ -255,7 +275,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date):
       errors.push(side === 'arrival' ? 'arrival_missing' : 'return_missing');
       return null;
     }
-    const date = parseImportDate(dateRaw);
+    const date = parseImportDate(dateRaw, order);
     const time = text(timeRaw) ? parseImportTime(timeRaw) : (date?.time ?? fallback);
     const instant = date && time ? instantOf(date, time, timeZone) : null;
     if (!instant) errors.push(side === 'arrival' ? 'arrival_invalid' : 'return_invalid');
@@ -306,7 +326,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date):
 
   let bookedAt: Date | null = null;
   if (text(row.bookedAt)) {
-    const date = parseImportDate(row.bookedAt);
+    const date = parseImportDate(row.bookedAt, order);
     bookedAt = date ? instantOf(date, date.time ?? '12:00', timeZone) : null;
     if (!bookedAt) warnings.push('booked_at_unreadable');
     else if (bookedAt > now) bookedAt = now;
