@@ -232,20 +232,20 @@ export class ContractTemplateService {
 
   // ---- Signed contracts --------------------------------------------------------------------------------------------
 
-  private async contractOf(where: Prisma.ReservationWhereInput) {
-    const r = await prisma.reservation.findFirst({ where, include: { contract: { include: { template: true } } } });
-    if (!r?.contract) throw notFound();
-    return { reservation: r, contract: r.contract };
-  }
-
   private async fileOf(reservationWhere: Prisma.ReservationWhereInput, kind: unknown): Promise<ContractFile> {
     if (!FILE_KINDS.includes(kind as ContractFileKind)) throw new ValidationException({ kind: 'invalid' });
-    const { reservation, contract } = await this.contractOf(reservationWhere);
-    const names = signedFileNames(reservation.reference);
+    const reservation = await prisma.reservation.findFirst({ where: reservationWhere, include: { contract: { include: { template: true } } } });
+    if (!reservation) throw notFound();
+    const contract = reservation.contract;
     if (kind === 'template') {
-      if (!contract.template) throw notFound();
-      return this.serve(contract.template.blobKey, contract.template.fileName, contract.template.sha256);
+      // The PDF the traveller reads (29/10/2026, « impossible de visualiser le contrat et de le signer »): the one signed,
+      // or the one in force until the signature, as the paperwork view says (no contract row exists before it).
+      const template = contract ? contract.template : await this.current(reservation.operatorId);
+      if (!template) throw notFound();
+      return this.serve(template.blobKey, template.fileName, template.sha256);
     }
+    if (!contract) throw notFound();
+    const names = signedFileNames(reservation.reference);
     const key = kind === 'signed' ? contract.signedBlobKey : contract.proofBlobKey;
     if (!key) throw notFound();
     return this.serve(key, kind === 'signed' ? names.signed : names.proof, kind === 'signed' ? (contract.signedSha256 ?? undefined) : undefined);

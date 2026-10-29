@@ -1127,6 +1127,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    `PaperworkDataSource.contractFile` et ouverts par la feuille de partage, `ShareService.shareBytes`). Conditions générales
    (article 9) et politique de confidentialité (données gardées, durées) mises à jour. Tests `contract-template.test.ts`,
    `ContractTemplateCard.test.tsx`, `ContractsPage.test.tsx`.
+   **PDF du parking lisible avant la signature (29/10/2026, « impossible de visualiser le contrat et de le signer »)** :
+   `contract/file?kind=template` (voyageur et équipe) rendait 404 tant qu'aucun contrat n'était signé (pas de ligne
+   `reservation_contracts`) ; il sert désormais le PDF en vigueur du loueur, comme le dit la vue (`files.template`), puis celui signé.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 
