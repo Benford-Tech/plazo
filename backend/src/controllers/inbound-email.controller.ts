@@ -114,9 +114,10 @@ export class InboundEmailController {
   public paste = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const text = typeof req.body?.text === 'string' ? req.body.text : '';
     const subject = typeof req.body?.subject === 'string' ? req.body.subject : null;
-    if (!text.trim()) throw new ValidationException({ text: 'required' });
+    const html = typeof req.body?.html === 'string' ? req.body.html : null;
+    if (!text.trim() && !html?.trim()) throw new ValidationException({ text: 'required' });
     if (text.length > 200000) throw new ValidationException({ text: 'too_long' });
-    res.status(httpStatus.CREATED).json(await this.inbound.paste(req.staff, { text, subject }));
+    res.status(httpStatus.CREATED).json(await this.inbound.paste(req.staff, { text, subject, html }));
   });
 
   /** GET /internal/reservations/:id/emails (« Mails liés », 27/10/2026) */

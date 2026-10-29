@@ -220,7 +220,11 @@ function PasteMailDialog({ onClose, onPasted }: { onClose: () => void; onPasted:
   const p = t.list.paste;
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
+  // 29/10/2026 (« récupérer les infos dans les liens aussi »): the clipboard's HTML keeps the mail's links (« Consulter ma
+  // réservation »), which its plain text loses; sent with the text so Plazo opens the booking page like for a received mail.
+  const [html, setHtml] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const links = (html.match(/href\s*=\s*["']https?:/gi) ?? []).length;
   const area = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     area.current?.focus();
@@ -231,7 +235,7 @@ function PasteMailDialog({ onClose, onPasted }: { onClose: () => void; onPasted:
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   const paste = useMutation({
-    mutationFn: () => adminApi.pasteInboundEmail({ text, ...(subject.trim() ? { subject: subject.trim() } : {}) }),
+    mutationFn: () => adminApi.pasteInboundEmail({ text, ...(subject.trim() ? { subject: subject.trim() } : {}), ...(html ? { html } : {}) }),
     onSuccess: onPasted,
     onError: (err: Error) => setError(describeError(err, p.errors)),
   });
@@ -279,7 +283,14 @@ function PasteMailDialog({ onClose, onPasted }: { onClose: () => void; onPasted:
           <textarea
             ref={area}
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={e => {
+              setText(e.target.value);
+              if (!e.target.value) setHtml("");
+            }}
+            onPaste={e => {
+              const pasted = e.clipboardData.getData("text/html");
+              if (pasted) setHtml(prev => (text.trim() ? prev + pasted : pasted).slice(0, 3_000_000));
+            }}
             maxLength={100000}
             rows={12}
             data-testid="paste-mail-text"
@@ -292,7 +303,10 @@ function PasteMailDialog({ onClose, onPasted }: { onClose: () => void; onPasted:
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex-1 text-xs text-muted-foreground">{p.chars(text.length)}</span>
+          <span className="flex-1 text-xs text-muted-foreground" data-testid="paste-mail-count">
+            {p.chars(text.length)}
+            {links > 0 && ` · ${p.links(links)}`}
+          </span>
           <button type="button" onClick={onClose} disabled={paste.isPending} className={OUTLINE}>
             {p.cancel}
           </button>

@@ -406,8 +406,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      les autres (`InboundEmail.delivery` `pasted`, `pastedBy` = prénom de qui l'a collé ; migration `inbound_pasted` ; compté
      « Transféré à la main » dans le tableau des comparateurs, jamais « arrivé seul ») ; tracé `inbound.pasted` ; réponse
      `{ email, outcome }` comme « Relancer l'analyse ». La page ouvre l'onglet du mail et le sélectionne, toast « Réservation …
-     créée depuis ce mail. » ou « Mail ajouté à « À traiter »… » ; liste et volet disent « Collé par Joanny ». Tests
-     `inbound-paste.test.ts`, `InboundEmailsPage.test.tsx`. Web seulement.
+     créée depuis ce mail. » ou « Mail ajouté à « À traiter »… » ; liste et volet disent « Collé par Joanny ». **Les liens du
+     mail aussi (29/10/2026, « faut que tu ailles récupérer les infos dans les liens aussi »)** : le texte copié perd les liens
+     (« Consulter ma réservation ») ; le champ garde le HTML que le presse-papiers donne avec le texte (`onPaste`,
+     `clipboardData.getData("text/html")`, « N liens du mail récupérés » sous le champ) et l'envoie en `html` (3 Mo au plus, corps
+     JSON jusqu'à 4 Mo sur cette route, `INBOUND_PASTE_PATH` dans `app.ts`) : le serveur n'en garde que les liens (`alloparkLinks`),
+     pour ouvrir la page de la réservation Allopark comme pour un mail reçu, et lit le HTML seul quand rien d'autre n'est collé.
+     Tests `inbound-paste.test.ts`, `InboundEmailsPage.test.tsx`. Web seulement.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
