@@ -1,0 +1,43 @@
+name: Store images
+
+# Replace the screenshots of Plazo and Plazo Pro on Google Play and the App Store with the marketing images of
+# brand/stores/marketing/A (30/10/2026, « publie les images sur les stores »). Run by hand; « dry_run » only says what
+# would change. Secrets of the « stores » environment, as mobile-release.yml. .github/scripts/store_images.py.
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: "Apps (plazo, plazo-pro)"
+        default: "plazo plazo-pro"
+      stores:
+        description: "Stores (google, apple)"
+        default: "google apple"
+      dry_run:
+        description: "Seulement dire ce qui changerait"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    runs-on: ubuntu-24.04
+    environment: stores
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests==2.32.3 PyJWT==2.9.0 cryptography==43.0.3 google-auth==2.35.0
+      - name: Upload
+        env:
+          APPS: ${{ inputs.apps }}
+          STORES: ${{ inputs.stores }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: python .github/scripts/store_images.py
