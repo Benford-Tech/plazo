@@ -228,6 +228,7 @@ export function flightUpdate(info: FlightInfo | null, now: Date) {
     ...(landed ? { flightLandedAt: info.actualArrivalAt ?? info.estimatedArrivalAt ?? now } : {}),
     flightTerminal: info.terminal,
     flightGate: info.gate,
+    flightOrigin: info.departureAirport,
     flightCheckedAt: now,
   };
 }
@@ -242,6 +243,7 @@ export function departureUpdate(info: FlightInfo | null, now: Date) {
     departureScheduledAt: info.scheduledDepartureAt,
     departureEstimatedAt: info.actualDepartureAt ?? info.estimatedDepartureAt,
     departureTerminal: info.departureTerminal,
+    departureDestination: info.arrivalAirport,
     departureCheckedAt: now,
   };
 }

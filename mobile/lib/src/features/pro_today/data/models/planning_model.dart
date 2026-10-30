@@ -22,6 +22,18 @@ abstract class PlanningRowModel with _$PlanningRowModel {
     required String plate,
     String? returnFlight,
 
+    /// 30/10/2026 (« afficher l'heure du vol et la destination ») : the outbound flight and its take-off, the return
+    /// flight's landing, the stop's name (null: the airport) and the cities of the flights, read by the tracking.
+    String? departureFlight,
+    DateTime? departureScheduledAt,
+    DateTime? departureEstimatedAt,
+    DateTime? flightScheduledAt,
+    DateTime? flightEstimatedAt,
+    DateTime? flightLandedAt,
+    String? stopName,
+    String? departureCity,
+    String? returnCity,
+
     /// The stop serving the traveller (D-A); null: the airport.
     String? stopId,
     StaffSignalModel? arrivalSignal,

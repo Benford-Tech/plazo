@@ -17,7 +17,7 @@ import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
-import { lateOf, nextOf, splitAtNow, untilLabel } from "@/lib/planning-now";
+import { lateOf, nextOf, splitAtNow, travelOf, untilLabel } from "@/lib/planning-now";
 
 function NightCell({ night }: { night: NightLoad }) {
   const t = fr.planning;
@@ -244,9 +244,13 @@ function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" 
           <span className="min-w-0">
             <span className="block truncate text-lg font-semibold">{row.customerName}</span>
             <span className="block truncate text-sm text-muted-foreground">
-              {!isArrival && row.returnFlight ? `${row.returnFlight} · ` : ""}
-              {t.pax(row.passengers)}
+              {[t.pax(row.passengers), travelOf(row, kind).place].filter(Boolean).join(" · ")}
             </span>
+            {travelOf(row, kind).flight && (
+              <span data-testid={`next-${kind}-flight`} className="tabular block truncate font-mono text-xs font-bold text-info-text">
+                {travelOf(row, kind).flight}
+              </span>
+            )}
           </span>
           <span className="tabular whitespace-nowrap font-mono text-sm font-bold text-lime-deep">{untilLabel(atOf(row), now).text}</span>
         </button>
@@ -264,7 +268,14 @@ function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" 
               className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 text-left text-sm hover:underline"
             >
               <span className="tabular font-mono font-bold">{timeOf(atOf(r))}</span>
-              <span className="truncate font-semibold">{r.customerName}</span>
+              <span className="min-w-0">
+                <span className="block truncate font-semibold">{r.customerName}</span>
+                {(() => {
+                  const travel = travelOf(r, kind);
+                  const line = [travel.flight, travel.place].filter(Boolean).join(" · ");
+                  return line ? <span className="block truncate text-xs text-muted-foreground">{line}</span> : null;
+                })()}
+              </span>
               <span className="tabular whitespace-nowrap font-mono text-xs font-bold text-warn-text">{untilLabel(atOf(r), now).text}</span>
             </button>
           ))}

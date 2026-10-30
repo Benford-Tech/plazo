@@ -403,6 +403,10 @@ export interface LiveArrivals {
 
 /** A planning row: the booking, its traveller's live signal and the shuttle trip picking them up, if any. */
 export type PlanningRow = Reservation & {
+  /** 30/10/2026: the stop's name (null: the airport) and the cities of the flights, read by the tracking. */
+  stopName?: string | null;
+  departureCity?: string | null;
+  returnCity?: string | null;
   arrivalSignal?: ArrivalSignal | null;
   shuttleTrip?: Pick<
     ShuttleTripSummary,

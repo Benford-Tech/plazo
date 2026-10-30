@@ -20,6 +20,25 @@ _PlanningRowModel _$PlanningRowModelFromJson(Map<String, dynamic> json) =>
       customerName: json['customerName'] as String,
       plate: json['plate'] as String,
       returnFlight: json['returnFlight'] as String?,
+      departureFlight: json['departureFlight'] as String?,
+      departureScheduledAt: json['departureScheduledAt'] == null
+          ? null
+          : DateTime.parse(json['departureScheduledAt'] as String),
+      departureEstimatedAt: json['departureEstimatedAt'] == null
+          ? null
+          : DateTime.parse(json['departureEstimatedAt'] as String),
+      flightScheduledAt: json['flightScheduledAt'] == null
+          ? null
+          : DateTime.parse(json['flightScheduledAt'] as String),
+      flightEstimatedAt: json['flightEstimatedAt'] == null
+          ? null
+          : DateTime.parse(json['flightEstimatedAt'] as String),
+      flightLandedAt: json['flightLandedAt'] == null
+          ? null
+          : DateTime.parse(json['flightLandedAt'] as String),
+      stopName: json['stopName'] as String?,
+      departureCity: json['departureCity'] as String?,
+      returnCity: json['returnCity'] as String?,
       stopId: json['stopId'] as String?,
       arrivalSignal: json['arrivalSignal'] == null
           ? null
@@ -41,6 +60,15 @@ Map<String, dynamic> _$PlanningRowModelToJson(_PlanningRowModel instance) =>
       'customerName': instance.customerName,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'departureFlight': instance.departureFlight,
+      'departureScheduledAt': instance.departureScheduledAt?.toIso8601String(),
+      'departureEstimatedAt': instance.departureEstimatedAt?.toIso8601String(),
+      'flightScheduledAt': instance.flightScheduledAt?.toIso8601String(),
+      'flightEstimatedAt': instance.flightEstimatedAt?.toIso8601String(),
+      'flightLandedAt': instance.flightLandedAt?.toIso8601String(),
+      'stopName': instance.stopName,
+      'departureCity': instance.departureCity,
+      'returnCity': instance.returnCity,
       'stopId': instance.stopId,
       'arrivalSignal': instance.arrivalSignal,
       'handover': instance.handover,

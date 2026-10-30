@@ -354,7 +354,14 @@ export class PublicBookingService {
           departureFlight,
           ...(departureFlight === before.departureFlight
             ? {}
-            : { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }),
+            : {
+                departureStatus: null,
+                departureScheduledAt: null,
+                departureEstimatedAt: null,
+                departureTerminal: null,
+                departureDestination: null,
+                departureCheckedAt: null,
+              }),
         },
       });
       if (!count) throw locked();
