@@ -59,6 +59,8 @@ const CapacityStudyPage = lazy(
   () => import("@/pages/capacity/CapacityStudyPage"),
 );
 const ParkingPlanPage = lazy(() => import("@/pages/parking/ParkingPlanPage"));
+// The parking's PDF drawn by pdf.js: loaded with the editor only (30/10/2026).
+const ContractFieldsPage = lazy(() => import("@/pages/ContractFieldsPage"));
 const OccupationPage = lazy(() => import("@/pages/parking/OccupationPage"));
 const SpotPlanningPage = lazy(() => import("@/pages/parking/SpotPlanningPage"));
 
@@ -211,6 +213,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="parking:manage">
                     <ParkingPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/parking/contrat/:templateId/champs"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<ContractFieldsPage />)}
                   </RequirePermission>
                 }
               />

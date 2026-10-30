@@ -3,6 +3,7 @@ import httpStatus from 'http-status';
 import { Readable } from 'stream';
 import { Container, Service } from 'typedi';
 import prisma, { OperatorContractTemplate, Prisma, SignatureMethod } from '@/database';
+import { bookingFieldFacts, ContractField, fieldsOf, prefilledPdf, SAMPLE_FACTS, validateFields } from '@/domain/contract-fields';
 import { DEFAULT_TEMPLATE_TITLE, signedFileNames } from '@/domain/contract-template';
 import { checkPdf, cleanFileName, sha256Hex } from '@/domain/partner-contract';
 import { plateKey } from '@/domain/reservation';
@@ -32,6 +33,9 @@ export interface TemplateView {
   retiredAt: string | null;
   /** Contracts signed on this version. */
   signedCount: number;
+  /** Where each piece of information is stamped (30/10/2026, direction A); empty until the manager places them. */
+  fields: ContractField[];
+  fieldsSetAt: string | null;
 }
 
 export type ContractFileKind = 'template' | 'signed' | 'proof';
@@ -117,6 +121,8 @@ export class ContractTemplateService {
       uploadedBy: r.uploadedById ? (names.get(r.uploadedById) ?? null) : null,
       retiredAt: r.retiredAt?.toISOString() ?? null,
       signedCount: signed.get(r.id) ?? 0,
+      fields: fieldsOf(r.fields),
+      fieldsSetAt: r.fieldsSetAt?.toISOString() ?? null,
     }));
   }
 
@@ -196,6 +202,39 @@ export class ContractTemplateService {
     return this.forOperator(actor.operatorId);
   }
 
+  /**
+   * PUT /internal/contract-template/:id/fields (30/10/2026, « le contrat doit être pré-rempli », direction A): where
+   * each piece of information goes on the version in force. Every contract read or signed from now on is pre-filled.
+   */
+  public async setFields(actor: AuthenticatedStaff, templateId: string, raw: unknown) {
+    const row = await prisma.operatorContractTemplate.findFirst({ where: { id: templateId, operatorId: actor.operatorId } });
+    if (!row) throw notFound();
+    if (row.retiredAt) throw new HttpException(httpStatus.CONFLICT, 'This version is no longer in force', 'template_retired');
+    const checked = validateFields(raw, row.pageCount);
+    if ('error' in checked) throw new ValidationException({ fields: checked.error });
+    await prisma.operatorContractTemplate.update({
+      where: { id: row.id },
+      data: { fields: checked.fields as unknown as Prisma.InputJsonValue, fieldsSetAt: new Date() },
+    });
+    await this.audit.record(actor, {
+      action: 'contract_template.fields',
+      entityType: 'contract_template',
+      entityId: row.id,
+      details: { version: row.version, fields: checked.fields.map(f => f.key) },
+    });
+    return this.forOperator(actor.operatorId);
+  }
+
+  /** POST /internal/contract-template/:id/preview: the PDF stamped with example values, with the fields being placed. */
+  public async preview(operatorId: string, templateId: string, raw: unknown): Promise<ContractFile> {
+    const row = await prisma.operatorContractTemplate.findFirst({ where: { id: templateId, operatorId } });
+    if (!row) throw notFound();
+    const checked = validateFields(raw, row.pageCount);
+    if ('error' in checked) throw new ValidationException({ fields: checked.error });
+    const bytes = await prefilledPdf(await this.bytesOf(row), checked.fields, SAMPLE_FACTS, { strokes: null, label: 'Signature du client' });
+    return { stream: Readable.from(bytes), contentType: 'application/pdf', size: bytes.length, fileName: `apercu-${row.fileName}` };
+  }
+
   /** GET /internal/contract-template/:id/file */
   public async templateFile(operatorId: string, templateId: string): Promise<ContractFile> {
     const row = await prisma.operatorContractTemplate.findFirst({ where: { id: templateId, operatorId } });
@@ -234,7 +273,10 @@ export class ContractTemplateService {
 
   private async fileOf(reservationWhere: Prisma.ReservationWhereInput, kind: unknown): Promise<ContractFile> {
     if (!FILE_KINDS.includes(kind as ContractFileKind)) throw new ValidationException({ kind: 'invalid' });
-    const reservation = await prisma.reservation.findFirst({ where: reservationWhere, include: { contract: { include: { template: true } } } });
+    const reservation = await prisma.reservation.findFirst({
+      where: reservationWhere,
+      include: { contract: { include: { template: true } }, parking: { select: { timezone: true } } },
+    });
     if (!reservation) throw notFound();
     const contract = reservation.contract;
     if (kind === 'template') {
@@ -242,7 +284,13 @@ export class ContractTemplateService {
       // or the one in force until the signature, as the paperwork view says (no contract row exists before it).
       const template = contract ? contract.template : await this.current(reservation.operatorId);
       if (!template) throw notFound();
-      return this.serve(template.blobKey, template.fileName, template.sha256);
+      // Pre-filled with the booking (30/10/2026, direction A): the date of signature is the day it was signed, or today.
+      const fields = fieldsOf(template.fields);
+      if (!fields.length) return this.serve(template.blobKey, template.fileName, template.sha256);
+      const tz = reservation.parking.timezone;
+      const facts = bookingFieldFacts(reservation, d => localDateTime(d, tz), contract?.signedAt ?? new Date());
+      const bytes = await prefilledPdf(await this.bytesOf(template), fields, facts);
+      return { stream: Readable.from(bytes), contentType: 'application/pdf', size: bytes.length, fileName: template.fileName };
     }
     if (!contract) throw notFound();
     const names = signedFileNames(reservation.reference);

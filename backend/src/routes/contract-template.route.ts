@@ -26,6 +26,13 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  * /internal/contract-template/{templateId}/file:
  *   get:
  *     summary: The PDF of a version (application/pdf)
+ * /internal/contract-template/{templateId}/fields:
+ *   put:
+ *     summary: "Where each piece of information is stamped on the version in force (30/10/2026): { fields: [{ key, page, x, y, w, h, size? }] }, fractions of the page from its top left"
+ *     description: keys customer_name · phone · plate · vehicle · arrival_at · return_at · price · reference · return_flight · signed_on · signature; 400 validation_failed (fields invalid · too_many · invalid_key · invalid_page · invalid_box · invalid_size), 409 template_retired.
+ * /internal/contract-template/{templateId}/preview:
+ *   post:
+ *     summary: The PDF stamped with example values and the fields sent ({ fields }), application/pdf
  * /internal/contracts:
  *   get:
  *     summary: The signed contracts, the latest first (?from=&to=&q=&reserved=1&page=)
@@ -50,6 +57,8 @@ export class ContractTemplateRoute implements Routes {
     this.router.post('/internal/contract-template', manage, RefuseInDemo(), this.templates.upload);
     this.router.post('/internal/contract-template/revert', manage, RefuseInDemo(), this.templates.revert);
     this.router.get('/internal/contract-template/:templateId/file', manage, this.templates.templateFile);
+    this.router.put('/internal/contract-template/:templateId/fields', manage, RefuseInDemo(), this.templates.setFields);
+    this.router.post('/internal/contract-template/:templateId/preview', manage, this.templates.preview);
     this.router.get('/internal/contracts', manage, this.templates.register);
     this.router.get('/internal/contracts/export', manage, this.templates.exportCsv);
     this.router.get('/internal/reservations/:id/contract/file', StaffAuthMiddleware('reservations:view'), this.templates.staffFile);

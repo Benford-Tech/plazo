@@ -108,6 +108,7 @@ import type {
   RevenueSummary,
   GettingStarted,
   BookingContract,
+  ContractField,
   ContractTemplates,
   SignedContractFileKind,
   SignedContractsPage,
@@ -1097,6 +1098,19 @@ export const adminApi = {
     }),
   contractTemplateFile: (templateId: string) =>
     apiFile(`/internal/contract-template/${templateId}/file`),
+  // 30/10/2026: where each piece of information is stamped on the parking's PDF, and its preview with example values.
+  setContractFields: (templateId: string, fields: ContractField[]) =>
+    apiRequest<ContractTemplates>(
+      `/internal/contract-template/${templateId}/fields`,
+      { method: "PUT", body: json({ fields }) },
+    ),
+  contractFieldsPreview: async (templateId: string, fields: ContractField[]) => {
+    const res = await authorizedFetch(
+      `/internal/contract-template/${templateId}/preview`,
+      { method: "POST", body: json({ fields }) },
+    );
+    return res.blob();
+  },
   getSignedContracts: (query: SignedContractsQuery) =>
     apiRequest<SignedContractsPage>(
       `/internal/contracts?${signedContractsParams(query)}`,

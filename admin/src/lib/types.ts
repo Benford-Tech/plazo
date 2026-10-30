@@ -1973,6 +1973,33 @@ export interface ContractTemplate {
   uploadedBy: string | null;
   retiredAt: string | null;
   signedCount: number;
+  /** Where each piece of information is stamped on the PDF (30/10/2026); empty until placed. */
+  fields?: ContractField[];
+  fieldsSetAt?: string | null;
+}
+
+export type ContractFieldKey =
+  | "customer_name"
+  | "phone"
+  | "plate"
+  | "vehicle"
+  | "arrival_at"
+  | "return_at"
+  | "price"
+  | "reference"
+  | "return_flight"
+  | "signed_on"
+  | "signature";
+
+/** A box on a page: 0-based page, left, top, width and height as fractions (0–1) of the page from its top left. */
+export interface ContractField {
+  key: ContractFieldKey;
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  size?: number;
 }
 
 export interface ContractTemplates {

@@ -1628,6 +1628,9 @@ model OperatorContractTemplate {
   uploadedAt   DateTime  @default(now())
   retiredAt    DateTime?
   retiredById  String?
+  /// Where each piece of information goes on the PDF (30/10/2026, direction A): [{ key, page, x, y, w, h, size? }].
+  fields       Json?
+  fieldsSetAt  DateTime?
 
   contracts ReservationContract[]
 

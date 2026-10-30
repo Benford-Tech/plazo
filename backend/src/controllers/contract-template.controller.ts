@@ -49,6 +49,16 @@ export class ContractTemplateController {
     sendPdf(res, await this.templates.templateFile(req.staff.operatorId, param(req, 'templateId')));
   });
 
+  /** PUT /internal/contract-template/:templateId/fields */
+  public setFields = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.templates.setFields(req.staff, param(req, 'templateId'), req.body?.fields));
+  });
+
+  /** POST /internal/contract-template/:templateId/preview */
+  public preview = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    sendPdf(res, await this.templates.preview(req.staff.operatorId, param(req, 'templateId'), req.body?.fields));
+  });
+
   /** GET /internal/contracts */
   public register = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.templates.register(req.staff.operatorId, registerQuery(req)));
