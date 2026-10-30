@@ -49,7 +49,7 @@ Flutter), `SKIP_BACKEND_BUILD=1`, `SKIP_FLUTTER_BUILD=1` avec `WORK` (réutilise
 | 02 Résultats | 02 Planning du jour |
 | 03 Fiche d'un parking | 03 Fiche réservation, « Prochaine étape » |
 | 04 « C'est réservé ! » | 04 Parking : files de voiturier |
-| 05 Jour du dépôt : « Prévenez le parking » | 05 Navette : « Ma tournée » (poste Chauffeur) |
+| 05 Jour du dépôt : « Prévenez le parking » | 05 Navette : Aller · Retour (poste Chauffeur) |
 | 06 Jour du retour : compte à rebours | 06 Trajet en cours, position partagée |
 | 07 Retrouver ma voiture | 07 « Aujourd'hui, je suis… » |
 

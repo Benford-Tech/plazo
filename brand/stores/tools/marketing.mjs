@@ -53,10 +53,10 @@ const APPS = {
     folder: 'plazo-pro',
     screens: [
       ['01-tableau-de-bord', 'Votre journée en un écran', 'Sur le parking, arrivées, retours, navettes et points à traiter.'],
-      ['02-planning', 'Arrivées et retours du jour', 'Plaque, passagers et vol retour de chaque client.'],
+      ['02-planning', 'Arrivées et départs du jour', 'Une seule liste, et le prochain mouvement toujours en tête.'],
       ['03-reservation', 'Une étape, un bouton', 'Placer, déposer, récupérer, rendre.'],
       ['04-occupation', 'La bonne file, dès l’arrivée', 'La file conseillée suit le jour du retour.'],
-      ['05-ma-tournee', 'La ligne du jour de la navette', 'Créneaux d’après les vols, ou l’heure saisie quand le vol manque.'],
+      ['05-ma-tournee', 'Cochez, puis partez', 'Aller ou retour, par créneau : la destination vient de chaque réservation.'],
       ['06-trajet-en-cours', 'Trajet partagé avec l’équipe', 'La position n’est partagée que pendant le trajet.'],
       ['07-poste-du-jour', 'Chacun son poste', 'Gérant, accueil, chauffeur ou voiturier : les onglets suivent.'],
     ],

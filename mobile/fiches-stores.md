@@ -259,9 +259,8 @@ PARKING ET CLÉS
 • Planning des places sur 7 ou 14 jours.
 
 NAVETTE
-• Ligne du jour : les créneaux de navette calculés d'après les vols des voyageurs, ou l'heure de leur réservation quand le vol n'est pas connu.
-• Ma tournée : à emmener, en route, en séjour ; au retour : à récupérer, en route, rendus.
-• Démarrez un trajet avec votre véhicule et la desserte. Si votre parking a activé le suivi des navettes, votre position est partagée pendant le trajet seulement (90 minutes au plus), puis effacée dans les 10 minutes.
+• Aller et retour : les clients par créneau de départ, cochés puis emmenés ; la destination vient de chaque réservation.
+• Partez avec le véhicule du jour. Si votre parking a activé le suivi des navettes, votre position est partagée pendant le trajet seulement (90 minutes au plus), puis effacée dans les 10 minutes.
 • Messages des voyageurs : vol en retard, bagage perdu, mot du client.
 
 NOTIFICATIONS
@@ -341,7 +340,7 @@ Première version de Plazo Pro, l'application des équipes des parkings partenai
 • Aujourd'hui : véhicules sur le parking, arrivées, retours, navettes et points à traiter.
 • Réservations de tous les canaux par date d'arrivée, saisie au comptoir, prochaine étape en un bouton.
 • Parking : plan, places, files de voiturier et clés.
-• Navette : ligne du jour, ma tournée, trajets avec position partagée.
+• Navette : aller et retour par créneau, trajets avec position partagée.
 • Notifications réglables. Votre compte est créé par votre gérant.
 ```
 (478 caractères)
@@ -355,7 +354,7 @@ Première version de Plazo Pro, l'application des équipes des parkings d'aérop
 • Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec les voyageurs en approche.
 • Réservations : toutes les réservations du parking par date d'arrivée, quel que soit le canal ; recherche par plaque, nom ou référence ; saisie d'une réservation prise au téléphone ou au comptoir ; fiche avec la prochaine étape en un seul bouton.
 • Parking et clés : plan en couleurs, place proposée à chaque arrivée, files de voiturier, crochet des clés, planning des places.
-• Navette : ligne du jour calculée d'après les vols, ou l'heure de la réservation quand le vol n'est pas connu, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
+• Navette : aller et retour par créneau de départ, trajets avec véhicule et desserte, messages des voyageurs.
 • Notifications : arrivées, retours, navettes et nouvelles réservations, chacune réglable.
 
 L'application ne propose pas d'inscription : votre gérant crée votre compte.
@@ -617,7 +616,7 @@ Créer un **loueur de revue dédié**, avec des données fictives. Ne jamais uti
    - ajouter un véhicule de navette : Modèle « Navette 1 », Couleur vide, Places passagers 8 (l'app affiche le modèle, suivi de la couleur s'il y en a une) ;
    - régler le suivi des navettes sur « Équipe et clients », jamais sur « Pas de suivi » : sans suivi, aucune position n'est prise et le service de premier plan déclaré en 4.6 ne démarre pas. Tant que le point 0.10 n'est pas corrigé, c'est aussi ce qui rend la notification vraie ;
    - ne relier **aucun canal SMS**. Sans canal SMS, Plazo n'envoie aucun SMS aux voyageurs (`SmsService.sendTravellerSms` → `skipped`). Vérifier avant chaque soumission que le canal du loueur de revue est toujours sur aucun : le relecteur, qui est gérant, peut en relier un dans Plus › Réglages du parking ;
-   - créer 4 à 6 réservations fictives autour de la date d'envoi (arrivées et retours du jour et du lendemain, dont une avec un vol retour ; téléphones dans la tranche 06 39 98 xx xx, réservée à la fiction par l'ARCEP), pour que le tableau de bord, le planning, Ma tournée et l'Occupation aient du contenu (Apple refuse souvent une app sans contenu à tester, règle 2.1, et les captures de 5.2 en ont besoin). Les recréer si la revue tarde, car les dates passent ;
+   - créer 4 à 6 réservations fictives autour de la date d'envoi (arrivées et retours du jour et du lendemain, dont une avec un vol retour ; téléphones dans la tranche 06 39 98 xx xx, réservée à la fiction par l'ARCEP), pour que le tableau de bord, le planning, la navette et l'Occupation aient du contenu (Apple refuse souvent une app sans contenu à tester, règle 2.1, et les captures de 5.2 en ont besoin). Les recréer si la revue tarde, car les dates passent ;
    - tracer un plan simple (Parking › Plan), sinon « Placer » mène à une Occupation vide.
 3. Apple : cocher Sign-in required, puis saisir l'e-mail et le mot de passe. Google : Accès à l'application › « Toutes les fonctionnalités ou certaines sont restreintes » › une instruction avec le même nom d'utilisateur, le même mot de passe et le texte ci-dessous.
 4. Avant chaque soumission : vérifier que le compte de revue existe encore et se connecte (une fois le point 0.9 livré, le relecteur peut le supprimer), que le canal SMS est sur aucun, que le suivi est sur « Équipe et clients » et que les réservations fictives sont à jour.
@@ -758,7 +757,7 @@ embarquées, vecteurs de `brand/app/`) puis aplaties par `brand/stores/tools/fin
 2. Planning du jour : arrivées et retours.
 3. Fiche réservation avec « Prochaine étape ».
 4. Parking : les files de voiturier (« À sortir aujourd'hui », arrivées à ranger). Un plan en couleurs demande de tracer un plan pour le parking de revue (4.4).
-5. Navette : « Ma tournée » (poste Chauffeur).
+5. Navette : Aller · Retour (poste Chauffeur).
 6. Trajet en cours : « En route vers le terminal · position partagée ».
 7. « Aujourd'hui, je suis… » (poste du jour).
 
