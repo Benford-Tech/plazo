@@ -1,3 +1,4 @@
+import { airportCity } from '@/domain/airport-names';
 import { travellerEmail } from '@/domain/traveller-email';
 import { INBOUND_EMAIL_DOMAIN } from '@/config';
 import httpStatus from 'http-status';
@@ -466,7 +467,14 @@ export class ReservationService {
           ...(overbooked === undefined ? {} : { overbooked }),
           // A new flight starts its tracking over (the landing a traveller reported stays theirs).
           ...(diff.data.departureFlight
-            ? { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }
+            ? {
+                departureStatus: null,
+                departureScheduledAt: null,
+                departureEstimatedAt: null,
+                departureTerminal: null,
+                departureDestination: null,
+                departureCheckedAt: null,
+              }
             : {}),
           ...(diff.data.returnFlight
             ? {
@@ -475,6 +483,7 @@ export class ReservationService {
                 flightEstimatedAt: null,
                 flightTerminal: null,
                 flightGate: null,
+                flightOrigin: null,
                 flightCheckedAt: null,
                 ...(before.flightLandedSource === 'tracking' ? { flightLandedAt: null, flightLandedSource: null } : {}),
               }
@@ -860,7 +869,14 @@ export class ReservationService {
           // A new outbound flight starts its tracking over.
           ...(data.departureFlight === undefined
             ? {}
-            : { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }),
+            : {
+                departureStatus: null,
+                departureScheduledAt: null,
+                departureEstimatedAt: null,
+                departureTerminal: null,
+                departureDestination: null,
+                departureCheckedAt: null,
+              }),
           stopId,
           handover: data.handover,
           // Back to the shuttle: the valet runs taken are given up.
@@ -1383,10 +1399,12 @@ export class ReservationService {
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: active, arrivalAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { arrivalAt: 'asc' },
+        include: { stop: { select: { name: true } } },
       }),
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: active, returnAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { returnAt: 'asc' },
+        include: { stop: { select: { name: true } } },
       }),
       this.capacity.nights(parking, day, addDays(day, PLANNING_NIGHTS - 1)),
       this.sms.pendingWarning(parking.operatorId),
@@ -1399,8 +1417,8 @@ export class ReservationService {
       timezone: parking.timezone,
       // Read with the nights, against the plan's room (`CapacityService.nights`): no second read of the plan.
       parking: { id: parking.id, name: parking.name, bookableCapacity: nights[0].bookable },
-      arrivals,
-      returns,
+      arrivals: arrivals.map(planningRow),
+      returns: returns.map(planningRow),
       nights,
       stats: {
         arrivals: arrivals.length,
@@ -1410,6 +1428,14 @@ export class ReservationService {
       },
     };
   }
+}
+
+/**
+ * A row of the day planning (30/10/2026, « afficher l'heure du vol et la destination ») : the booking, the name of its stop
+ * (null: the airport) and the cities its flights go to and come from, when the tracking read them.
+ */
+function planningRow<T extends Reservation & { stop: { name: string } | null }>({ stop, ...row }: T) {
+  return { ...row, stopName: stop?.name ?? null, departureCity: airportCity(row.departureDestination), returnCity: airportCity(row.flightOrigin) };
 }
 
 /** 10/10/2026: an import's flight that is no flight number, logged by its field only (never what was typed). */

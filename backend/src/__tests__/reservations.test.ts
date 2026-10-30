@@ -490,3 +490,20 @@ describe('réservation sans plaque (15/10/2026, « ne pas planter à l’import 
     expect(byPlate.body.docs.map((r: { id: string }) => r.id)).not.toContain(plateless.id);
   });
 });
+
+describe('planning du jour : vols et destination (30/10/2026)', () => {
+  it('donne la desserte et les villes des vols lues par le suivi', async () => {
+    const { token } = await setupOperator();
+    const created = await api().post('/api/internal/reservations').set(auth(token)).send(booking());
+    expect(created.status).toBe(201);
+    const parking = await prisma.parking.findFirstOrThrow({ where: { id: created.body.data.parkingId } });
+    const stop = await prisma.shuttleStop.create({ data: { parkingId: parking.id, kind: 'station', name: 'Gare TGV', lat: 45.72, lng: 5.07 } });
+    await prisma.reservation.update({
+      where: { id: created.body.data.id },
+      data: { stopId: stop.id, departureDestination: 'LIS', flightOrigin: 'XYZ' },
+    });
+    const day = await api().get('/api/internal/planning?date=2026-10-04').set(auth(token));
+    expect(day.body.arrivals[0]).toMatchObject({ stopName: 'Gare TGV', departureCity: 'Lisbonne', returnCity: 'XYZ' });
+    expect(day.body.arrivals[0].stop).toBeUndefined();
+  });
+});

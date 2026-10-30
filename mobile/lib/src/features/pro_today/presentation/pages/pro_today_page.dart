@@ -141,6 +141,38 @@ String untilLabel(DateTime at, DateTime now) {
   return 'pro.next_in'.tr(args: [_duration(minutes.ceil())]);
 }
 
+/// The flight and where the traveller goes (30/10/2026, « afficher l'heure du vol et la destination si possible ») :
+/// « AF 7641 · décolle 10:35 · Lisbonne » and « vers Gare TGV » for an arrival, « TO 3627 · atterri 14:12 · de Porto » and
+/// « à l'aéroport » for a departure; null for a part that is not known (a valet booking has no stop).
+({String? flight, String? place}) travelOf(DayEntry e) {
+  final b = e.row.booking;
+  final parts = <String>[];
+  if (!e.isReturn) {
+    final flight = b.departureFlight;
+    if (flight != null && flight.isNotEmpty) {
+      parts.add(flight);
+      final at = b.departureEstimatedAt ?? b.departureScheduledAt;
+      if (at != null) parts.add('pro.takes_off'.tr(args: [hhmm(at)]));
+      if (b.departureCity != null) parts.add(b.departureCity!);
+    }
+  } else {
+    final flight = b.returnFlight;
+    if (flight != null && flight.isNotEmpty) {
+      parts.add(flight);
+      final expected = b.flightEstimatedAt ?? b.flightScheduledAt;
+      if (b.flightLandedAt != null) {
+        parts.add('pro.landed_at'.tr(args: [hhmm(b.flightLandedAt!)]));
+      } else if (expected != null) {
+        parts.add('pro.lands_at'.tr(args: [hhmm(expected)]));
+      }
+      if (b.returnCity != null) parts.add('pro.from_city'.tr(args: [b.returnCity!]));
+    }
+  }
+  final stop = b.stopName ?? 'pro.the_airport'.tr();
+  final place = b.handover == 'valet' ? null : (e.isReturn ? 'pro.at_place' : 'pro.to_place').tr(args: [stop]);
+  return (flight: parts.isEmpty ? null : parts.join(' · '), place: place);
+}
+
 bool isLate(DateTime at, DateTime now) => at.difference(now).inSeconds <= -60;
 
 String _duration(int minutes) {
@@ -719,6 +751,15 @@ class _NextCard extends StatelessWidget {
                   else ...[
                     Text(hhmm(e.at), style: AppText.tabular(size: 22)),
                     Text(e.row.booking.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 13)),
+                    if (travelOf(e).flight != null)
+                      Text(
+                        travelOf(e).flight!,
+                        key: Key(isReturn ? 'next-departure-flight' : 'next-arrival-flight'),
+                        maxLines: 2,
+                        style: AppText.tabular(size: 11.5, color: AppStatus.info),
+                      ),
+                    if (travelOf(e).place != null)
+                      Text(travelOf(e).place!, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.muted(size: 11.5)),
                     const SizedBox(height: 2),
                     Text(untilLabel(e.at, now), style: AppText.tabular(size: 12.5, color: AppColors.accent)),
                   ],
@@ -754,6 +795,8 @@ class _NextCard extends StatelessWidget {
                               style: AppText.strong(size: 12.5),
                             ),
                             Text(untilLabel(l.at, now), style: AppText.tabular(size: 11.5, color: AppStatus.warnText)),
+                            if (travelOf(l).flight != null)
+                              Text(travelOf(l).flight!, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.muted(size: 11)),
                           ],
                         ),
                       ),

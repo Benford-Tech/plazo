@@ -17,7 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$PlanningRowModel {
 
  String get id; String get reference; String get status; DateTime get arrivalAt; DateTime get returnAt;/// When the arrival was recorded (status « Sur place »); null while expected.
- DateTime? get arrivedAt; int get passengers; String get customerName; String get plate; String? get returnFlight;/// The stop serving the traveller (D-A); null: the airport.
+ DateTime? get arrivedAt; int get passengers; String get customerName; String get plate; String? get returnFlight;/// 30/10/2026 (« afficher l'heure du vol et la destination ») : the outbound flight and its take-off, the return
+/// flight's landing, the stop's name (null: the airport) and the cities of the flights, read by the tracking.
+ String? get departureFlight; DateTime? get departureScheduledAt; DateTime? get departureEstimatedAt; DateTime? get flightScheduledAt; DateTime? get flightEstimatedAt; DateTime? get flightLandedAt; String? get stopName; String? get departureCity; String? get returnCity;/// The stop serving the traveller (D-A); null: the airport.
  String? get stopId; StaffSignalModel? get arrivalSignal;/// « Voiturier au terminal » (27/10/2026): `valet` when a valet takes the car at the terminal (no shuttle).
  String get handover;
 /// Create a copy of PlanningRowModel
@@ -33,20 +35,20 @@ $PlanningRowModelCopyWith<PlanningRowModel> get copyWith => _$PlanningRowModelCo
 @override
 bool operator ==(Object other) {
   final _this = this as PlanningRowModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanningRowModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.arrivedAt, _this.arrivedAt) || other.arrivedAt == _this.arrivedAt)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.stopId, _this.stopId) || other.stopId == _this.stopId)&&(identical(other.arrivalSignal, _this.arrivalSignal) || other.arrivalSignal == _this.arrivalSignal)&&(identical(other.handover, _this.handover) || other.handover == _this.handover));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanningRowModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.arrivedAt, _this.arrivedAt) || other.arrivedAt == _this.arrivedAt)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.departureFlight, _this.departureFlight) || other.departureFlight == _this.departureFlight)&&(identical(other.departureScheduledAt, _this.departureScheduledAt) || other.departureScheduledAt == _this.departureScheduledAt)&&(identical(other.departureEstimatedAt, _this.departureEstimatedAt) || other.departureEstimatedAt == _this.departureEstimatedAt)&&(identical(other.flightScheduledAt, _this.flightScheduledAt) || other.flightScheduledAt == _this.flightScheduledAt)&&(identical(other.flightEstimatedAt, _this.flightEstimatedAt) || other.flightEstimatedAt == _this.flightEstimatedAt)&&(identical(other.flightLandedAt, _this.flightLandedAt) || other.flightLandedAt == _this.flightLandedAt)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.departureCity, _this.departureCity) || other.departureCity == _this.departureCity)&&(identical(other.returnCity, _this.returnCity) || other.returnCity == _this.returnCity)&&(identical(other.stopId, _this.stopId) || other.stopId == _this.stopId)&&(identical(other.arrivalSignal, _this.arrivalSignal) || other.arrivalSignal == _this.arrivalSignal)&&(identical(other.handover, _this.handover) || other.handover == _this.handover));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PlanningRowModel;
-  return Object.hash(runtimeType,_this.id,_this.reference,_this.status,_this.arrivalAt,_this.returnAt,_this.arrivedAt,_this.passengers,_this.customerName,_this.plate,_this.returnFlight,_this.stopId,_this.arrivalSignal,_this.handover);
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.status,_this.arrivalAt,_this.returnAt,_this.arrivedAt,_this.passengers,_this.customerName,_this.plate,_this.returnFlight,_this.departureFlight,_this.departureScheduledAt,_this.departureEstimatedAt,_this.flightScheduledAt,_this.flightEstimatedAt,_this.flightLandedAt,_this.stopName,_this.departureCity,_this.returnCity,_this.stopId,_this.arrivalSignal,_this.handover]);
 }
 
 @override
 String toString() {
   final _this = this as PlanningRowModel;
-  return 'PlanningRowModel(id: ${_this.id}, reference: ${_this.reference}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, arrivedAt: ${_this.arrivedAt}, passengers: ${_this.passengers}, customerName: ${_this.customerName}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, stopId: ${_this.stopId}, arrivalSignal: ${_this.arrivalSignal}, handover: ${_this.handover})';
+  return 'PlanningRowModel(id: ${_this.id}, reference: ${_this.reference}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, arrivedAt: ${_this.arrivedAt}, passengers: ${_this.passengers}, customerName: ${_this.customerName}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, departureFlight: ${_this.departureFlight}, departureScheduledAt: ${_this.departureScheduledAt}, departureEstimatedAt: ${_this.departureEstimatedAt}, flightScheduledAt: ${_this.flightScheduledAt}, flightEstimatedAt: ${_this.flightEstimatedAt}, flightLandedAt: ${_this.flightLandedAt}, stopName: ${_this.stopName}, departureCity: ${_this.departureCity}, returnCity: ${_this.returnCity}, stopId: ${_this.stopId}, arrivalSignal: ${_this.arrivalSignal}, handover: ${_this.handover})';
 }
 
 
@@ -57,7 +59,7 @@ abstract mixin class $PlanningRowModelCopyWith<$Res>  {
   factory $PlanningRowModelCopyWith(PlanningRowModel value, $Res Function(PlanningRowModel) _then) = _$PlanningRowModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String status, DateTime arrivalAt, DateTime returnAt, DateTime? arrivedAt, int passengers, String customerName, String plate, String? returnFlight, String? stopId, StaffSignalModel? arrivalSignal, String handover
+ String id, String reference, String status, DateTime arrivalAt, DateTime returnAt, DateTime? arrivedAt, int passengers, String customerName, String plate, String? returnFlight, String? departureFlight, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, DateTime? flightScheduledAt, DateTime? flightEstimatedAt, DateTime? flightLandedAt, String? stopName, String? departureCity, String? returnCity, String? stopId, StaffSignalModel? arrivalSignal, String handover
 });
 
 
@@ -74,7 +76,7 @@ class _$PlanningRowModelCopyWithImpl<$Res>
 
 /// Create a copy of PlanningRowModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? arrivedAt = freezed,Object? passengers = null,Object? customerName = null,Object? plate = null,Object? returnFlight = freezed,Object? stopId = freezed,Object? arrivalSignal = freezed,Object? handover = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? arrivedAt = freezed,Object? passengers = null,Object? customerName = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? stopName = freezed,Object? departureCity = freezed,Object? returnCity = freezed,Object? stopId = freezed,Object? arrivalSignal = freezed,Object? handover = null,}) {
   return _then(PlanningRowModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -86,6 +88,15 @@ as DateTime?,passengers: null == passengers ? _self.passengers : passengers // i
 as int,customerName: null == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
 as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
+as String?,departureFlight: freezed == departureFlight ? _self.departureFlight : departureFlight // ignore: cast_nullable_to_non_nullable
+as String?,departureScheduledAt: freezed == departureScheduledAt ? _self.departureScheduledAt : departureScheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,departureEstimatedAt: freezed == departureEstimatedAt ? _self.departureEstimatedAt : departureEstimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightScheduledAt: freezed == flightScheduledAt ? _self.flightScheduledAt : flightScheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightEstimatedAt: freezed == flightEstimatedAt ? _self.flightEstimatedAt : flightEstimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightLandedAt: freezed == flightLandedAt ? _self.flightLandedAt : flightLandedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,departureCity: freezed == departureCity ? _self.departureCity : departureCity // ignore: cast_nullable_to_non_nullable
+as String?,returnCity: freezed == returnCity ? _self.returnCity : returnCity // ignore: cast_nullable_to_non_nullable
 as String?,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
 as String?,arrivalSignal: freezed == arrivalSignal ? _self.arrivalSignal : arrivalSignal // ignore: cast_nullable_to_non_nullable
 as StaffSignalModel?,handover: null == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable
@@ -186,10 +197,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? departureFlight,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  DateTime? flightScheduledAt,  DateTime? flightEstimatedAt,  DateTime? flightLandedAt,  String? stopName,  String? departureCity,  String? returnCity,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlanningRowModel() when $default != null:
-return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.stopId,_that.arrivalSignal,_that.handover);case _:
+return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureScheduledAt,_that.departureEstimatedAt,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.stopName,_that.departureCity,_that.returnCity,_that.stopId,_that.arrivalSignal,_that.handover);case _:
   return orElse();
 
 }
@@ -207,10 +218,10 @@ return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.retu
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? departureFlight,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  DateTime? flightScheduledAt,  DateTime? flightEstimatedAt,  DateTime? flightLandedAt,  String? stopName,  String? departureCity,  String? returnCity,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)  $default,) {final _that = this;
 switch (_that) {
 case _PlanningRowModel():
-return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.stopId,_that.arrivalSignal,_that.handover);case _:
+return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureScheduledAt,_that.departureEstimatedAt,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.stopName,_that.departureCity,_that.returnCity,_that.stopId,_that.arrivalSignal,_that.handover);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +238,10 @@ return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.retu
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String status,  DateTime arrivalAt,  DateTime returnAt,  DateTime? arrivedAt,  int passengers,  String customerName,  String plate,  String? returnFlight,  String? departureFlight,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  DateTime? flightScheduledAt,  DateTime? flightEstimatedAt,  DateTime? flightLandedAt,  String? stopName,  String? departureCity,  String? returnCity,  String? stopId,  StaffSignalModel? arrivalSignal,  String handover)?  $default,) {final _that = this;
 switch (_that) {
 case _PlanningRowModel() when $default != null:
-return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.stopId,_that.arrivalSignal,_that.handover);case _:
+return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.returnAt,_that.arrivedAt,_that.passengers,_that.customerName,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureScheduledAt,_that.departureEstimatedAt,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.stopName,_that.departureCity,_that.returnCity,_that.stopId,_that.arrivalSignal,_that.handover);case _:
   return null;
 
 }
@@ -242,7 +253,7 @@ return $default(_that.id,_that.reference,_that.status,_that.arrivalAt,_that.retu
 @JsonSerializable()
 
 class _PlanningRowModel implements PlanningRowModel {
-  const _PlanningRowModel({required this.id, required this.reference, required this.status, required this.arrivalAt, required this.returnAt, this.arrivedAt, required this.passengers, required this.customerName, required this.plate, this.returnFlight, this.stopId, this.arrivalSignal, this.handover = 'shuttle'});
+  const _PlanningRowModel({required this.id, required this.reference, required this.status, required this.arrivalAt, required this.returnAt, this.arrivedAt, required this.passengers, required this.customerName, required this.plate, this.returnFlight, this.departureFlight, this.departureScheduledAt, this.departureEstimatedAt, this.flightScheduledAt, this.flightEstimatedAt, this.flightLandedAt, this.stopName, this.departureCity, this.returnCity, this.stopId, this.arrivalSignal, this.handover = 'shuttle'});
   factory _PlanningRowModel.fromJson(Map<String, dynamic> json) => _$PlanningRowModelFromJson(json);
 
 @override final  String id;
@@ -256,6 +267,17 @@ class _PlanningRowModel implements PlanningRowModel {
 @override final  String customerName;
 @override final  String plate;
 @override final  String? returnFlight;
+/// 30/10/2026 (« afficher l'heure du vol et la destination ») : the outbound flight and its take-off, the return
+/// flight's landing, the stop's name (null: the airport) and the cities of the flights, read by the tracking.
+@override final  String? departureFlight;
+@override final  DateTime? departureScheduledAt;
+@override final  DateTime? departureEstimatedAt;
+@override final  DateTime? flightScheduledAt;
+@override final  DateTime? flightEstimatedAt;
+@override final  DateTime? flightLandedAt;
+@override final  String? stopName;
+@override final  String? departureCity;
+@override final  String? returnCity;
 /// The stop serving the traveller (D-A); null: the airport.
 @override final  String? stopId;
 @override final  StaffSignalModel? arrivalSignal;
@@ -275,18 +297,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlanningRowModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.arrivedAt, arrivedAt) || other.arrivedAt == arrivedAt)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.stopId, stopId) || other.stopId == stopId)&&(identical(other.arrivalSignal, arrivalSignal) || other.arrivalSignal == arrivalSignal)&&(identical(other.handover, handover) || other.handover == handover));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlanningRowModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.arrivedAt, arrivedAt) || other.arrivedAt == arrivedAt)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.departureFlight, departureFlight) || other.departureFlight == departureFlight)&&(identical(other.departureScheduledAt, departureScheduledAt) || other.departureScheduledAt == departureScheduledAt)&&(identical(other.departureEstimatedAt, departureEstimatedAt) || other.departureEstimatedAt == departureEstimatedAt)&&(identical(other.flightScheduledAt, flightScheduledAt) || other.flightScheduledAt == flightScheduledAt)&&(identical(other.flightEstimatedAt, flightEstimatedAt) || other.flightEstimatedAt == flightEstimatedAt)&&(identical(other.flightLandedAt, flightLandedAt) || other.flightLandedAt == flightLandedAt)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.departureCity, departureCity) || other.departureCity == departureCity)&&(identical(other.returnCity, returnCity) || other.returnCity == returnCity)&&(identical(other.stopId, stopId) || other.stopId == stopId)&&(identical(other.arrivalSignal, arrivalSignal) || other.arrivalSignal == arrivalSignal)&&(identical(other.handover, handover) || other.handover == handover));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,reference,status,arrivalAt,returnAt,arrivedAt,passengers,customerName,plate,returnFlight,stopId,arrivalSignal,handover);
+    return Object.hashAll([runtimeType,id,reference,status,arrivalAt,returnAt,arrivedAt,passengers,customerName,plate,returnFlight,departureFlight,departureScheduledAt,departureEstimatedAt,flightScheduledAt,flightEstimatedAt,flightLandedAt,stopName,departureCity,returnCity,stopId,arrivalSignal,handover]);
 }
 
 @override
 String toString() {
-    return 'PlanningRowModel(id: $id, reference: $reference, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, arrivedAt: $arrivedAt, passengers: $passengers, customerName: $customerName, plate: $plate, returnFlight: $returnFlight, stopId: $stopId, arrivalSignal: $arrivalSignal, handover: $handover)';
+    return 'PlanningRowModel(id: $id, reference: $reference, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, arrivedAt: $arrivedAt, passengers: $passengers, customerName: $customerName, plate: $plate, returnFlight: $returnFlight, departureFlight: $departureFlight, departureScheduledAt: $departureScheduledAt, departureEstimatedAt: $departureEstimatedAt, flightScheduledAt: $flightScheduledAt, flightEstimatedAt: $flightEstimatedAt, flightLandedAt: $flightLandedAt, stopName: $stopName, departureCity: $departureCity, returnCity: $returnCity, stopId: $stopId, arrivalSignal: $arrivalSignal, handover: $handover)';
 }
 
 
@@ -297,7 +319,7 @@ abstract mixin class _$PlanningRowModelCopyWith<$Res> implements $PlanningRowMod
   factory _$PlanningRowModelCopyWith(_PlanningRowModel value, $Res Function(_PlanningRowModel) _then) = __$PlanningRowModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String status, DateTime arrivalAt, DateTime returnAt, DateTime? arrivedAt, int passengers, String customerName, String plate, String? returnFlight, String? stopId, StaffSignalModel? arrivalSignal, String handover
+ String id, String reference, String status, DateTime arrivalAt, DateTime returnAt, DateTime? arrivedAt, int passengers, String customerName, String plate, String? returnFlight, String? departureFlight, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, DateTime? flightScheduledAt, DateTime? flightEstimatedAt, DateTime? flightLandedAt, String? stopName, String? departureCity, String? returnCity, String? stopId, StaffSignalModel? arrivalSignal, String handover
 });
 
 
@@ -314,7 +336,7 @@ class __$PlanningRowModelCopyWithImpl<$Res>
 
 /// Create a copy of PlanningRowModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? arrivedAt = freezed,Object? passengers = null,Object? customerName = null,Object? plate = null,Object? returnFlight = freezed,Object? stopId = freezed,Object? arrivalSignal = freezed,Object? handover = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? arrivedAt = freezed,Object? passengers = null,Object? customerName = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? stopName = freezed,Object? departureCity = freezed,Object? returnCity = freezed,Object? stopId = freezed,Object? arrivalSignal = freezed,Object? handover = null,}) {
   return _then(_PlanningRowModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -326,6 +348,15 @@ as DateTime?,passengers: null == passengers ? _self.passengers : passengers // i
 as int,customerName: null == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
 as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
+as String?,departureFlight: freezed == departureFlight ? _self.departureFlight : departureFlight // ignore: cast_nullable_to_non_nullable
+as String?,departureScheduledAt: freezed == departureScheduledAt ? _self.departureScheduledAt : departureScheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,departureEstimatedAt: freezed == departureEstimatedAt ? _self.departureEstimatedAt : departureEstimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightScheduledAt: freezed == flightScheduledAt ? _self.flightScheduledAt : flightScheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightEstimatedAt: freezed == flightEstimatedAt ? _self.flightEstimatedAt : flightEstimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flightLandedAt: freezed == flightLandedAt ? _self.flightLandedAt : flightLandedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,departureCity: freezed == departureCity ? _self.departureCity : departureCity // ignore: cast_nullable_to_non_nullable
+as String?,returnCity: freezed == returnCity ? _self.returnCity : returnCity // ignore: cast_nullable_to_non_nullable
 as String?,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
 as String?,arrivalSignal: freezed == arrivalSignal ? _self.arrivalSignal : arrivalSignal // ignore: cast_nullable_to_non_nullable
 as StaffSignalModel?,handover: null == handover ? _self.handover : handover // ignore: cast_nullable_to_non_nullable

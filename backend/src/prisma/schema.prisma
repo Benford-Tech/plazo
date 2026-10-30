@@ -849,12 +849,14 @@ model Reservation {
   flightLandedSource       FlightLandedSource?
   flightTerminal           String?
   flightGate               String?
+  flightOrigin             String? // IATA of the airport the return flight comes from (30/10/2026)
   flightCheckedAt          DateTime? // last lookup at the provider (cache)
   // Outbound flight tracking (take-off), same provider and cache rules; nothing is sent on it.
   departureStatus          FlightStatus?
   departureScheduledAt     DateTime? // scheduled take-off
   departureEstimatedAt     DateTime? // revised take-off
   departureTerminal        String?
+  departureDestination     String? // IATA of the airport the outbound flight goes to (30/10/2026)
   departureCheckedAt       DateTime?
   // Where the car is parked (06/10/2026): recorded by whoever parks it, the traveller from the app
   // or a staff member (valet) from Plazo Pro, whose position prevails. Erased with the traveller

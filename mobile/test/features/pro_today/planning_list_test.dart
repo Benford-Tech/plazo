@@ -30,12 +30,25 @@ void main() {
     date: '2026-10-27',
     parking: const PlanningParkingModel(id: 'p1', name: 'Parking Test'),
     arrivals: [
-      at('a1', 'Théo Dubois', 'TS-238-PZ', 15, 10),
+      at(
+        'a1',
+        'Théo Dubois',
+        'TS-238-PZ',
+        15,
+        10,
+      ).copyWith(departureFlight: 'AF 7641', departureScheduledAt: DateTime(2026, 10, 27, 17, 35), departureCity: 'Lisbonne', stopName: 'Gare TGV'),
       at('a2', 'Chloé Moreau', 'BN-655-RT', 12, 10, status: 'arrived'),
       at('a3', 'Hugo Blanc', 'TS-244-PZ', 17, 5),
     ],
     returns: [
-      at('b1', 'Léa Petit', 'TS-212-PZ', 13, 40, status: 'shuttled_out').copyWith(returnFlight: 'TO 3627'),
+      at(
+        'b1',
+        'Léa Petit',
+        'TS-212-PZ',
+        13,
+        40,
+        status: 'shuttled_out',
+      ).copyWith(returnFlight: 'TO 3627', flightEstimatedAt: DateTime(2026, 10, 27, 13, 20), returnCity: 'Porto'),
       at('b2', 'Nadia Roux', 'TS-207-PZ', 16, 30, status: 'return_requested'),
       at('b3', 'Marc Petit', 'AZ-902-LC', 11, 0, status: 'back_at_parking'),
     ],
@@ -136,6 +149,11 @@ void main() {
     expect(find.descendant(of: late, matching: find.text('13:40 · Léa Petit')), findsOneWidget);
     expect(find.descendant(of: late, matching: find.text('en retard · 34 min')), findsOneWidget);
     expect(find.byKey(const Key('late-arrival')), findsNothing);
+    // The flight and where the traveller goes.
+    expect(find.descendant(of: arrival, matching: find.text('AF 7641 · décolle 17:35 · Lisbonne')), findsOneWidget);
+    expect(find.descendant(of: arrival, matching: find.text('vers Gare TGV')), findsOneWidget);
+    expect(find.descendant(of: departure, matching: find.text("à l'aéroport")), findsOneWidget);
+    expect(find.descendant(of: late, matching: find.text('TO 3627 · atterrit 13:20 · de Porto')), findsOneWidget);
     expect(find.descendant(of: arrival, matching: find.text('Théo Dubois')), findsOneWidget);
     expect(find.descendant(of: arrival, matching: find.text('dans 56 min')), findsOneWidget);
 
