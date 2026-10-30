@@ -153,12 +153,22 @@ describe("Planning : les prochains en tête (direction A)", () => {
       parking: { id: "p1", name: "Parking Démo LYS", bookableCapacity: 100 },
       arrivals: [
         booking("a1", "Marc Lopez", "LM-789-NP", "2026-10-30T12:20:00.000Z", { status: "arrived" }),
-        booking("a2", "Hugo Morel", "AB-482-KD", "2026-10-30T13:50:00.000Z"),
+        booking("a2", "Hugo Morel", "AB-482-KD", "2026-10-30T13:50:00.000Z", {
+          departureFlight: "AF 7641",
+          departureScheduledAt: "2026-10-30T15:35:00.000Z",
+          departureCity: "Lisbonne",
+          stopName: "Gare TGV",
+        }),
         booking("a3", "Inès Petit", "GH-456-JK", "2026-10-30T16:15:00.000Z"),
       ],
       returns: [
         booking("d1", "Anne Roux", "QR-321-ST", "2026-10-30T12:45:00.000Z", { status: "returned" }),
-        booking("d2", "Claire Durand", "TS-101-PZ", "2026-10-30T12:55:00.000Z", { status: "shuttled_out" }),
+        booking("d2", "Claire Durand", "TS-101-PZ", "2026-10-30T12:55:00.000Z", {
+          status: "shuttled_out",
+          returnFlight: "TO 3627",
+          flightEstimatedAt: "2026-10-30T12:40:00.000Z",
+          returnCity: "Porto",
+        }),
       ],
       nights: [],
       stats: { arrivals: 3, arrived: 1, returns: 2, returnsWithFlight: 0 },
@@ -178,6 +188,9 @@ describe("Planning : les prochains en tête (direction A)", () => {
     expect(within(arrival).getByText("Hugo Morel")).toBeInTheDocument();
     expect(within(arrival).getByText("14:50")).toBeInTheDocument();
     expect(within(arrival).getByText("dans 45 min")).toBeInTheDocument();
+    // The flight and where the traveller goes.
+    expect(within(arrival).getByTestId("next-arrival-flight")).toHaveTextContent("AF 7641 · décolle 16:35 · Lisbonne");
+    expect(within(arrival).getByText(/vers Gare TGV/)).toBeInTheDocument();
     // Claire is still away 10 minutes after her time: the next departure, late.
     const departure = screen.getByTestId("next-return");
     expect(within(departure).getByText("Claire Durand")).toBeInTheDocument();

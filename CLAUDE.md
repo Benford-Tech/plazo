@@ -446,7 +446,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      replié en tête de chaque colonne sous « Déjà passés · N » (`past-arrival`, `past-return`). **Les retards aussi (30/10/2026, « affiche les prochains départ, arrivée mais aussi ceux en retard »)** : la carte montre le
      prochain mouvement à venir (pas encore en retard), et dessous un encart ambre « En retard · N » avec chaque mouvement pas fait
      une minute après son heure (heure, client, « en retard · 34 min », un clic ouvre la fiche ; 3 sur le web, 2 dans Plazo Pro, puis
-     « et N autres ») : `lateOf` / `nextOf(…, now)` (web `late-arrival` / `late-return`, app `late-arrival` / `late-departure`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
+     « et N autres ») : `lateOf` / `nextOf(…, now)` (web `late-arrival` / `late-return`, app `late-arrival` / `late-departure`). **Vol et destination (30/10/2026, « afficher l'heure du vol et la
+     destination si possible »)** : sur les cartes et les retards, « AF 7641 · décolle 16:35 · Lisbonne » et « vers Gare TGV » pour une
+     arrivée, « TO 3627 · atterri 14:12 · de Porto » et « à l'aéroport » pour un départ (rien pour un voiturier) ; la ville vient du suivi
+     des vols, qui garde désormais l'aéroport d'arrivée du vol aller et celui de départ du vol retour (`Reservation.departureDestination` /
+     `flightOrigin`, codes IATA, migration `flight_airports`, effacés quand le vol change) ; `GET /internal/planning` rend aussi
+     `stopName`, `departureCity`, `returnCity` (`airportCity` de `domain/airport-names.ts` : ~150 villes en français, sinon le code) ;
+     `travelOf` (web `lib/planning-now.ts`, app `pro_today_page.dart`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
    - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
      avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
      les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`

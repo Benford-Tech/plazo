@@ -1,3 +1,4 @@
+import { timeOf } from "./datetime";
 import type { PlanningRow } from "./types";
 
 /**
@@ -45,4 +46,29 @@ export function untilLabel(at: string, now: number): { text: string; late: boole
   if (minutes <= -1) return { text: `en retard · ${duration(Math.floor(-minutes))}`, late: true };
   if (minutes < 1) return { text: "maintenant", late: false };
   return { text: `dans ${duration(Math.ceil(minutes))}`, late: false };
+}
+
+/**
+ * The flight and where the traveller goes (30/10/2026, « afficher l'heure du vol et la destination si possible ») :
+ * « AF 7641 · décolle 10:35 · Lisbonne » and « vers Gare TGV » for an arrival, « TO 3627 · atterri 14:12 · de Porto » and
+ * « à l'aéroport » for a departure; nothing for a part that is not known (a valet booking has no stop).
+ */
+export function travelOf(r: PlanningRow, kind: "arrival" | "return"): { flight: string | null; place: string | null } {
+  const parts: string[] = [];
+  if (kind === "arrival") {
+    if (r.departureFlight) {
+      parts.push(r.departureFlight);
+      const at = r.departureEstimatedAt ?? r.departureScheduledAt;
+      if (at) parts.push(`décolle ${timeOf(at)}`);
+      if (r.departureCity) parts.push(r.departureCity);
+    }
+  } else if (r.returnFlight) {
+    parts.push(r.returnFlight);
+    if (r.flightLandedAt) parts.push(`atterri ${timeOf(r.flightLandedAt)}`);
+    else if (r.flightEstimatedAt ?? r.flightScheduledAt) parts.push(`atterrit ${timeOf((r.flightEstimatedAt ?? r.flightScheduledAt)!)}`);
+    if (r.returnCity) parts.push(`de ${r.returnCity}`);
+  }
+  const place =
+    r.handover === "valet" ? null : kind === "arrival" ? `vers ${r.stopName ?? "l'aéroport"}` : `à ${r.stopName ?? "l'aéroport"}`;
+  return { flight: parts.length ? parts.join(" · ") : null, place };
 }

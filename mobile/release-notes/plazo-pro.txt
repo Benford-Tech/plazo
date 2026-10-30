@@ -1,5 +1,5 @@
 Première version de Plazo Pro, pour les équipes des parkings d'aéroport.
-• Planning du jour : prochain départ et prochaine arrivée en tête ; prévisionnel sur 3 mois.
+• Planning : prochains départs et arrivées, retards, vols ; prévisionnel sur 3 mois.
 • Réservations de tous vos canaux et leur mail d'origine.
 • Plan du parking, voitures rangées en files, clés.
 • Navette : Aller et Retour, sièges auto.
