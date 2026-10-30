@@ -78,7 +78,7 @@ export function ReturnMeetingPointForm() {
   const left = INSTRUCTIONS_MAX - form.instructions.length;
 
   return (
-    <Card>
+    <Card id="point-de-rendez-vous" className="scroll-mt-4">
       <CardContent className="space-y-4 pt-6">
         <div>
           <h2 className="text-xl font-semibold uppercase tracking-wide">{t.title}</h2>

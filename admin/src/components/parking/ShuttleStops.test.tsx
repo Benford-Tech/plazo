@@ -51,6 +51,22 @@ describe("Dessertes de la navette (D-A)", () => {
     await waitFor(() => expect(screen.queryByText("Gare Saint-Exupéry TGV")).not.toBeInTheDocument());
   });
 
+  it("« Modifier » sur l'aéroport mène au point de rendez-vous au retour", async () => {
+    const user = userEvent.setup();
+    const card = document.createElement("div");
+    card.id = "point-de-rendez-vous";
+    const label = document.createElement("input");
+    label.id = "mp-label";
+    card.appendChild(label);
+    document.body.appendChild(card);
+    card.scrollIntoView = vi.fn();
+    renderIn(<ShuttleStops />);
+    await user.click(await screen.findByRole("button", { name: "Modifier l'aéroport (point de rendez-vous au retour)" }));
+    expect(card.scrollIntoView).toHaveBeenCalled();
+    expect(label).toHaveFocus();
+    card.remove();
+  });
+
   it("modifie une desserte (nom et consignes), sans refaire la recherche", async () => {
     const user = userEvent.setup();
     api.updateStop.mockImplementation(async (id: string, patch: Record<string, unknown>) => ({ data: { ...station, ...patch } }));
