@@ -102,6 +102,7 @@ import '../features/pro_spot_planning/domain/usecases/spot_planning_use_cases.da
 import '../features/pro_spot_planning/presentation/bloc/pro_spot_planning_bloc.dart';
 import '../features/pro_settings/data/client/settings_client.dart';
 import '../features/pro_settings/data/datasources/settings_data_source.dart';
+import '../features/pro_settings/data/staff_photo_data_source.dart';
 import '../features/pro_settings/domain/repositories/settings_repository.dart';
 import '../features/pro_settings/domain/usecases/settings_use_cases.dart';
 import '../features/pro_settings/presentation/bloc/pro_settings_bloc.dart';

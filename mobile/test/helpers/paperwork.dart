@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:parking_app/src/di/locator.dart';
@@ -5,6 +7,7 @@ import 'package:parking_app/src/features/extras/presentation/bloc/extra_settings
 import 'package:parking_app/src/features/extras/presentation/bloc/staff_extras_bloc.dart';
 import 'package:parking_app/src/features/extras/presentation/bloc/traveller_extras_bloc.dart';
 import 'package:parking_app/src/features/paperwork/presentation/bloc/paperwork_bloc.dart';
+import 'package:parking_app/src/features/pro_settings/data/staff_photo_data_source.dart';
 
 class QuietPaperworkBloc extends MockBloc<PaperworkEvent, PaperworkState> implements PaperworkBloc {}
 
@@ -27,6 +30,7 @@ void registerQuietPaperwork() {
 
 /// The services for the car (21/10/2026) stay hidden: their blocs never load anything.
 void registerQuietExtras() {
+  registerQuietStaffPhoto();
   if (!locator.isRegistered<StaffExtrasBloc>()) {
     locator.registerFactory<StaffExtrasBloc>(() {
       final bloc = QuietStaffExtrasBloc();
@@ -48,4 +52,35 @@ void registerQuietExtras() {
       return bloc;
     });
   }
+}
+
+/// « Ma photo » of Mon compte (30/10/2026): no photo, nothing sent; records what the card asks for.
+class FakeStaffPhoto implements StaffPhotoDataSource {
+  DateTime? photoUpdatedAt;
+  bool demo = false;
+  final uploads = <Uint8List>[];
+  int removals = 0;
+
+  @override
+  Future<({DateTime? photoUpdatedAt, bool demo})> mine() async => (photoUpdatedAt: photoUpdatedAt, demo: demo);
+
+  @override
+  Future<void> upload(Uint8List bytes) async {
+    uploads.add(bytes);
+    photoUpdatedAt = DateTime.utc(2026, 10, 30, 9);
+  }
+
+  @override
+  Future<void> remove() async {
+    removals++;
+    photoUpdatedAt = null;
+  }
+
+  @override
+  Future<Uint8List?> load(String staffId, DateTime updatedAt) async => null;
+}
+
+/// Mon compte's photo card in the tests of other parts of the page.
+void registerQuietStaffPhoto() {
+  if (!locator.isRegistered<StaffPhotoDataSource>()) locator.registerSingleton<StaffPhotoDataSource>(FakeStaffPhoto());
 }

@@ -542,6 +542,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
+     **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
+     « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
+     « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
+     confirmation ; caché une fois la voiture déposée sans SMS) ; `GET /internal/reservations/:id/reminder` (`status`, `at`, `sentAt`,
+     `resend`, `canSend`, `refusal`) et `POST …/reminder/send` (`ReminderService.forReservation` / `sendOne`) : le premier envoi fait tout
+     le rappel (SMS, mail, push) même si la réservation est « Ne pas envoyer », un renvoi n'envoie que le SMS, 10 minutes au moins après
+     le dernier (`RESEND_AFTER_MS`, réservation par `reminderSentAt`) ; 409 `reminder_not_upcoming` (pas « Attendu » ou dépôt passé),
+     `reminder_no_mobile`, `reminder_no_channel`, `reminder_quiet_hours` (22:00 à 07:00), `reminder_too_soon` ; tracé `sms.reminder_sent`
+     (« a envoyé le SMS de la veille » dans l'Historique). Tests `reminders.test.ts`, `BookingReminderCard.test.tsx`.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail
@@ -1728,8 +1737,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   quitte le parking ou supprime son compte (`detachMember`) et avec le loueur ; `StaffPhotoService`. Web : carte « Ma photo » en
   tête de Mon compte (`PhotoCard`, `#photo` : choisir, cadrer dans un rond en glissant et en zoomant, envoyée en carré JPEG de
   512 px ; « Retirer » ; lecture seule en démo), `Avatar` (photo lue avec la session et gardée par sa date, sinon initiales sur une
-  pastille) dans le menu et la page Équipe. Visible de l'équipe seulement (pas du voyageur). Plazo Pro ne l'a pas encore. Tests
-  `staff-photo.test.ts`, `AdminLayout.test.tsx`, `PhotoCard.test.tsx`.
+  pastille) dans le menu et la page Équipe. Visible de l'équipe seulement (pas du voyageur). **Plazo Pro (30/10/2026, « ajoute la photo
+  dans Plazo Pro »)** : carte « Ma photo » en tête de Mon compte (`StaffPhotoCard`, `StaffAvatar` : photo ou initiales, « Prendre une
+  photo » avec l'appareil, « Choisir une photo » / « Changer ma photo » dans la galerie, réduite à 1 024 px en JPEG par `image_picker`,
+  « Retirer » ; lecture seule en démo), `StaffPhotoDataSource` par Dio sans freezed (date lue sur `GET /internal/staff/me`, photo
+  gardée en mémoire par sa date), l'étape `photo` de « Bien démarrer » y mène ; textes iOS de l'appareil photo et de la galerie mis à
+  jour ; la page Équipe de l'app n'affiche pas encore les photos. Tests
+  `staff-photo.test.ts`, `AdminLayout.test.tsx`, `PhotoCard.test.tsx`, `staff_photo_test.dart`.
   **Menu par rôle et « Bien démarrer » (26/10/2026, « réorganise le menu par rôle, gérant, chauffeur, accueil, ajoute un tutoriel
   pour bien démarrer avec Plazo Pro », choix « M-A + W-A + T-A + T-B » des maquettes https://claude.ai/artifact/6rWrzpDZ712eQCaRRCRwbs)** :
   **M-A** Plus de Plazo Pro en blocs : « Mon poste du jour » (poste, véhicule du jour pour un chauffeur, « Bien démarrer »),
@@ -1749,7 +1763,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (un appareil), `tracking` (suivi non coupé) ; voiturier `post`, `plan`, `keys` (clés laissées ou crochet notés une fois),
   `notifications` ; accueil `post`, `reservations` (une saisie par l'équipe), `inbox`, `notifications` ; **et pour tous, en
   dernier, `photo` (30/10/2026, « ajoute la demande de photo dans les étapes de Bien démarrer ») : cochée dès que le membre a sa
-  photo (`photoUpdatedAt`), lien web `/mon-compte#photo`, « À régler sur l'espace pro web » dans Plazo Pro** ; test
+  photo (`photoUpdatedAt`), lien web `/mon-compte#photo`, Mon compte dans Plazo Pro** ; test
   `getting-started.test.ts`. Web : **dans le rail de gauche** (même jour, « les étapes bien démarrer doivent être sur la nav
   bar de gauche » : la carte du tableau de bord est retirée) : sous les sections, bloc `GettingStartedNav` « BIEN DÉMARRER ·
   N / 7 étapes » avec sa barre, une ligne par étape (coche verte ou cercle, titre, détail en info-bulle) qui mène à la page de

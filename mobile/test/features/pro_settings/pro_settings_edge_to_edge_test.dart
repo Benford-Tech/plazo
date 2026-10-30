@@ -80,7 +80,8 @@ void main() {
     setSystemBars(tester, bottom: 0, left: 32, right: 48);
     await showAccount(tester, size: const Size(800, 400));
     expectClearOfSystemBars(tester, find.byKey(const Key('account-name')));
-    expectClearOfSystemBars(tester, find.byKey(const Key('account-first-name')));
+    // « Ma photo » (30/10/2026) is now the first card under the name: the name's fields are below the 400 px.
+    expectClearOfSystemBars(tester, find.byKey(const Key('account-photo')));
   });
 
   testWidgets('Réglages du parking : la note sur les SMS, en fin de page, reste au-dessus de la barre de navigation', (tester) async {

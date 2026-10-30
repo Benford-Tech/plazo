@@ -2249,3 +2249,20 @@ export interface HistoryEvent {
   changes: { field: string; from: string; to: string }[];
   info: Record<string, string | number | boolean | null>;
 }
+
+/** One booking's day-before SMS, on its page (30/10/2026). Local "YYYY-MM-DDTHH:mm" times. */
+export interface BookingReminder {
+  status: ReminderRowStatus;
+  at: string | null;
+  sentAt: string | null;
+  resend: boolean;
+  canSend: boolean;
+  refusal:
+    | "reminder_not_upcoming"
+    | "reminder_no_mobile"
+    | "reminder_no_channel"
+    | "reminder_quiet_hours"
+    | "reminder_too_soon"
+    | null;
+  timezone: string;
+}

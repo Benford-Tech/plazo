@@ -5,4 +5,4 @@ Première version de Plazo Pro, pour les équipes des parkings d'aéroport.
 • Navette : Aller et Retour, sièges auto.
 • Voiturier : courses au terminal, services avant les retours.
 • Contrat PDF signé au comptoir ; état des lieux en photos.
-• Menu « Plus » par rôle et guide « Bien démarrer ».
+• Menu « Plus » par rôle, « Bien démarrer » et votre photo.

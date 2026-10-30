@@ -11,6 +11,7 @@ import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { ReservationHistory } from "@/components/reservations/ReservationHistory";
+import { BookingReminderCard } from "@/components/reservations/BookingReminderCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -430,6 +431,8 @@ export default function ReservationPage() {
             mayAct={can(user?.role, "reservations:status")}
           />
           <BookingContractCard reservationId={r.id} status={r.status} />
+          {/* « SMS de la veille » (30/10/2026): sent by hand for this booking, or sent again. */}
+          {can(user?.role, "reservations:manage") && <BookingReminderCard reservationId={r.id} />}
           {/* « Mails liés » (27/10/2026): the mails this booking came from, for those who reach the inbox. */}
           {can(user?.role, "reservations:manage") && (
             <LinkedEmails reservationId={r.id} />

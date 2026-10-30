@@ -101,6 +101,22 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200: { description: "{ excluded }" }
  *       409: { description: "code = reminder_already_sent" }
  */
+/**
+ * @openapi
+ * /internal/reservations/{id}/reminder:
+ *   get:
+ *     tags: [Reminders]
+ *     summary: One booking's day-before SMS (planned, sent, why not) and whether it can leave now
+ *     responses:
+ *       200: { description: "{ status, at, sentAt, resend, canSend, refusal, timezone }" }
+ * /internal/reservations/{id}/reminder/send:
+ *   post:
+ *     tags: [Reminders]
+ *     summary: Send the day-before SMS now, or again (the SMS alone, 10 minutes after the last one at the earliest)
+ *     responses:
+ *       200: { description: "The booking's reminder, as GET returns it" }
+ *       409: { description: "code = reminder_not_upcoming · reminder_no_mobile · reminder_no_channel · reminder_quiet_hours · reminder_too_soon" }
+ */
 export class ReminderRoute implements Routes {
   public router = Router();
   public reminders = new ReminderController();
@@ -128,6 +144,9 @@ export class ReminderRoute implements Routes {
       ValidationMiddleware(TestReminderDto),
       this.reminders.test,
     );
+    // 30/10/2026: one booking's day-before SMS, on its page; sent (or sent again) by hand.
+    this.router.get('/internal/reservations/:id/reminder', StaffAuthMiddleware('reservations:view'), this.reminders.forReservation);
+    this.router.post('/internal/reservations/:id/reminder/send', StaffAuthMiddleware('reservations:manage'), this.reminders.sendOne);
     this.router.put(
       '/internal/reservations/:id/reminder',
       StaffAuthMiddleware('reservations:manage'),

@@ -365,3 +365,58 @@ describe('en consultation (« Ouvrir son espace », 10/10/2026)', () => {
     }
   });
 });
+
+describe('le SMS de la veille d’une réservation donnée (30/10/2026)', () => {
+  it('part à la main depuis sa fiche, se renvoie (le SMS seul) après 10 minutes, jamais la nuit', async () => {
+    const op = await setupOperator();
+    const reminders = Container.get(ReminderService);
+    const actor = await prisma.staff.findUniqueOrThrow({ where: { id: op.manager.id } });
+    const staff = { ...actor, operatorName: op.operator.name };
+    const r = await booking(op, '2027-06-16T08:30', { createdAt: at('2027-06-01T10:00') });
+
+    // No SMS channel yet: nothing can leave.
+    expect((await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'))).refusal).toBe('reminder_no_channel');
+    await useBrevoSms(op.operator.id);
+    const before = await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'));
+    expect(before).toMatchObject({ status: 'planned', at: '2027-06-15T18:00', sentAt: null, resend: false, canSend: true, refusal: null });
+
+    // At night, refused.
+    await expect(reminders.sendOne(staff, r.id, at('2027-06-14T23:00'))).rejects.toMatchObject({ code: 'reminder_quiet_hours' });
+
+    // « Ne pas envoyer » does not stop a send by hand.
+    await prisma.reservation.update({ where: { id: r.id }, data: { reminderExcludedAt: new Date() } });
+    const sent = await reminders.sendOne(staff, r.id, at('2027-06-14T10:00'));
+    expect(sent).toMatchObject({ status: 'sent', sentAt: '2027-06-14T10:00', resend: true, canSend: false, refusal: 'reminder_too_soon' });
+    expect(smsSent().filter(s => s.tag === 'booking_reminder')).toHaveLength(1);
+    await expect(reminders.sendOne(staff, r.id, at('2027-06-14T10:05'))).rejects.toMatchObject({ code: 'reminder_too_soon' });
+
+    // Ten minutes later: sent again, the SMS alone.
+    const again = await reminders.sendOne(staff, r.id, at('2027-06-14T10:11'));
+    expect(again.sentAt).toBe('2027-06-14T10:11');
+    expect(smsSent().filter(s => s.tag === 'booking_reminder')).toHaveLength(2);
+    // The cron never sends it a third time.
+    expect((await reminders.dispatchDue(at('2027-06-15T18:05'))).sent).toBe(0);
+
+    const history = await prisma.auditLog.findMany({ where: { entityId: r.id, action: 'sms.reminder_sent' }, orderBy: { createdAt: 'asc' } });
+    expect(history.map(h => (h.details as { resend: boolean }).resend)).toEqual([false, true]);
+
+    // A booking already dropped off: no reminder any more.
+    await prisma.reservation.update({ where: { id: r.id }, data: { status: 'arrived' } });
+    expect((await reminders.forReservation(staff, r.id, at('2027-06-14T12:00'))).refusal).toBe('reminder_not_upcoming');
+  });
+
+  it('se lit et s’envoie par l’API, jamais pour la réservation d’un autre loueur', async () => {
+    const op = await setupOperator();
+    const other = await setupOperator('Autre');
+    const r = await booking(op, `${addDays(localDate(new Date(), TZ), 5)}T08:30`);
+    const get = await api().get(`/api/internal/reservations/${r.id}/reminder`).set(auth(op.token));
+    expect(get.status).toBe(200);
+    expect(get.body).toMatchObject({ status: 'no_channel', refusal: 'reminder_no_channel', timezone: TZ });
+    expect((await api().get(`/api/internal/reservations/${r.id}/reminder`).set(auth(other.token))).status).toBe(404);
+    expect((await api().post(`/api/internal/reservations/${r.id}/reminder/send`).set(auth(other.token))).status).toBe(404);
+    const refused = await api().post(`/api/internal/reservations/${r.id}/reminder/send`).set(auth(op.token));
+    expect([refused.status, refused.body.code]).toEqual([409, 'reminder_no_channel']);
+    const driver = await addStaff(op.token, 'driver');
+    expect((await api().post(`/api/internal/reservations/${r.id}/reminder/send`).set(auth(driver.token))).status).toBe(403);
+  });
+});
