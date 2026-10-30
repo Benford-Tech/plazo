@@ -1742,7 +1742,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   photo » avec l'appareil, « Choisir une photo » / « Changer ma photo » dans la galerie, réduite à 1 024 px en JPEG par `image_picker`,
   « Retirer » ; lecture seule en démo), `StaffPhotoDataSource` par Dio sans freezed (date lue sur `GET /internal/staff/me`, photo
   gardée en mémoire par sa date), l'étape `photo` de « Bien démarrer » y mène ; textes iOS de l'appareil photo et de la galerie mis à
-  jour ; la page Équipe de l'app n'affiche pas encore les photos. Tests
+  jour ; **page Équipe (30/10/2026, « ajoute les photos dans la page Équipe de Plazo Pro »)** : chaque membre avec sa photo ou ses
+  initiales (`StaffAvatar` de 36 px, estompé pour un membre désactivé, `member-avatar-<id>` ; `TeamMemberModel.photoUpdatedAt`, déjà
+  servi par `GET /internal/staff`). Tests
   `staff-photo.test.ts`, `AdminLayout.test.tsx`, `PhotoCard.test.tsx`, `staff_photo_test.dart`.
   **Menu par rôle et « Bien démarrer » (26/10/2026, « réorganise le menu par rôle, gérant, chauffeur, accueil, ajoute un tutoriel
   pour bien démarrer avec Plazo Pro », choix « M-A + W-A + T-A + T-B » des maquettes https://claude.ai/artifact/6rWrzpDZ712eQCaRRCRwbs)** :

@@ -8,6 +8,7 @@ import 'package:parking_app/src/core/helpers/names.dart';
 import 'package:parking_app/src/core/networking/networking.dart';
 import 'package:parking_app/src/core/utils/either.dart';
 import 'package:parking_app/src/core/utils/use_case.dart';
+import 'package:parking_app/src/di/locator.dart';
 import 'package:parking_app/src/features/booking/presentation/pages/my_booking_page.dart';
 import 'package:parking_app/src/features/pro_auth/data/models/staff_model.dart';
 import 'package:parking_app/src/features/pro_auth/domain/usecases/login_use_case.dart';
@@ -18,6 +19,7 @@ import 'package:parking_app/src/features/pro_auth/domain/usecases/set_vehicle_us
 import 'package:parking_app/src/features/pro_auth/domain/usecases/update_name_use_case.dart';
 import 'package:parking_app/src/features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import 'package:parking_app/src/features/pro_settings/data/models/settings_models.dart';
+import 'package:parking_app/src/features/pro_settings/data/staff_photo_data_source.dart';
 import 'package:parking_app/src/features/pro_settings/domain/usecases/settings_use_cases.dart';
 import 'package:parking_app/src/features/pro_settings/presentation/bloc/pro_settings_bloc.dart';
 import 'package:parking_app/src/features/pro_settings/presentation/bloc/pro_team_bloc.dart';
@@ -282,6 +284,19 @@ void main() {
       expect(find.byKey(const Key('rename-first-s2')), findsNothing);
       expect(find.text('Dan Durand'), findsOneWidget);
       expect(find.text('Membre mis à jour'), findsOneWidget);
+    });
+
+    testWidgets('Équipe : la photo de chaque membre, ou ses initiales', (tester) async {
+      final photo = locator<StaffPhotoDataSource>() as FakeStaffPhoto;
+      when(() => get(any())).thenAnswer((_) async => Right([alex.copyWith(photoUpdatedAt: DateTime.utc(2026, 10, 30, 8)), dan]));
+      await pumpTeam(tester);
+      expect(find.byKey(const Key('member-avatar-s1')), findsOneWidget);
+      expect(find.byKey(const Key('member-avatar-s2')), findsOneWidget);
+      expect(photo.loads, contains('s1'));
+      expect(photo.loads, isNot(contains('s2')));
+      // No image came back: the initials stand in.
+      expect(find.text('AA'), findsOneWidget);
+      expect(find.text('D'), findsOneWidget);
     });
 
     testWidgets('nom refusé par le serveur : « Champ obligatoire. » sous « Nom », le formulaire reste ouvert', (tester) async {

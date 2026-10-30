@@ -23,6 +23,9 @@ _TeamMemberModel _$TeamMemberModelFromJson(Map<String, dynamic> json) =>
       postSetAt: json['postSetAt'] == null
           ? null
           : DateTime.parse(json['postSetAt'] as String),
+      photoUpdatedAt: json['photoUpdatedAt'] == null
+          ? null
+          : DateTime.parse(json['photoUpdatedAt'] as String),
       signIn:
           (json['signIn'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -43,6 +46,7 @@ Map<String, dynamic> _$TeamMemberModelToJson(_TeamMemberModel instance) =>
       'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
       'post': instance.post,
       'postSetAt': instance.postSetAt?.toIso8601String(),
+      'photoUpdatedAt': instance.photoUpdatedAt?.toIso8601String(),
       'signIn': instance.signIn,
     };
 
