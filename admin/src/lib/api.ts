@@ -23,6 +23,7 @@ import type {
   InboundSettings,
   InboundEmail,
   LinkedEmail,
+  BookingReminder,
   HistoryEvent,
   InboundEmailList,
   InboundReanalysis,
@@ -827,6 +828,11 @@ export const adminApi = {
       `/internal/parkings/${parkingId}/reminders/test`,
       { method: "POST", body: json(input) },
     ),
+  // 30/10/2026: one booking's day-before SMS, on its page; sent (or sent again) by hand.
+  getBookingReminder: (reservationId: string) =>
+    apiRequest<BookingReminder>(`/internal/reservations/${reservationId}/reminder`),
+  sendBookingReminder: (reservationId: string) =>
+    apiRequest<BookingReminder>(`/internal/reservations/${reservationId}/reminder/send`, { method: "POST" }),
   setReminderExcluded: (reservationId: string, excluded: boolean) =>
     apiRequest<{ excluded: boolean }>(
       `/internal/reservations/${reservationId}/reminder`,

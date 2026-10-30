@@ -32,6 +32,7 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
+import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
@@ -39,6 +40,25 @@ import { SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
 /** What happens to one booking's day-before SMS, as the pro space shows it. */
 export type ReminderRowStatus =
   'planned' | 'sent' | 'waiting' | 'failed' | 'excluded' | 'disabled' | 'no_mobile' | 'foreign' | 'no_channel' | 'not_sent' | NotDueReason;
+
+/** A resend by hand waits this long after the last one (30/10/2026). */
+export const RESEND_AFTER_MS = 10 * 60 * 1000;
+
+export type ManualReminderRefusal =
+  'reminder_not_upcoming' | 'reminder_no_mobile' | 'reminder_no_channel' | 'reminder_quiet_hours' | 'reminder_too_soon';
+
+/** One booking's day-before SMS, on its page (30/10/2026). Local "YYYY-MM-DDTHH:mm" times. */
+export interface BookingReminder {
+  status: ReminderRowStatus;
+  /** When it leaves (planned) or left. */
+  at: string | null;
+  sentAt: string | null;
+  /** The next send is a resend (the SMS alone). */
+  resend: boolean;
+  canSend: boolean;
+  refusal: ManualReminderRefusal | null;
+  timezone: string;
+}
 
 export interface ReminderRow {
   reservationId: string;
@@ -125,6 +145,7 @@ export class ReminderService {
   public notifications = Container.get(NotificationService);
   public sms = Container.get(SmsService);
   public push = Container.get(PushService);
+  public audit = Container.get(AuditService);
 
   // ---- Sending --------------------------------------------------------------------------------
 
@@ -170,9 +191,16 @@ export class ReminderService {
    * One booking's reminder: claimed first, so it never leaves twice. A failure never fails the caller, but it is
    * reported ('failed'), so that the cron can answer 500 when nothing left at all (08/10/2026: cron-job.org alerts).
    */
-  private async send(id: string, now: Date): Promise<'sent' | 'failed' | 'taken'> {
+  private async send(id: string, now: Date, manual?: { resend: boolean }): Promise<'sent' | 'failed' | 'taken'> {
+    // By hand (30/10/2026), the staff's choice wins over « Ne pas envoyer »; a resend claims a reminder that left at
+    // least RESEND_AFTER_MS ago, so that two clicks never send it twice.
+    const claim = manual
+      ? manual.resend
+        ? { reminderSentAt: { lt: new Date(now.getTime() - RESEND_AFTER_MS) } }
+        : { reminderSentAt: null }
+      : { reminderSentAt: null, reminderExcludedAt: null };
     const { count } = await prisma.reservation.updateMany({
-      where: { id, status: 'upcoming', reminderSentAt: null, reminderExcludedAt: null },
+      where: { id, status: 'upcoming', ...claim },
       data: { reminderSentAt: now },
     });
     if (!count) return 'taken';
@@ -180,6 +208,16 @@ export class ReminderService {
     const firstName = greetingName(record);
     const parkingName = record.parking.listing?.title ?? record.parking.name;
     try {
+      // A resend is the SMS alone: the mail and the push already left with the first one.
+      if (manual?.resend) {
+        const outcome = await this.sms.sendTravellerSms(record.operatorId, {
+          reservationId: record.id,
+          kind: 'booking_reminder',
+          to: record.customerPhone,
+          text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+        });
+        return outcome === 'failed' ? 'failed' : 'sent';
+      }
       if (record.parking.listing) await this.notifications.bookingReminder(toPublicBooking(record, now), this.sms.bookingLink(record));
       await this.sms.sendTravellerSms(record.operatorId, {
         reservationId: record.id,
@@ -222,6 +260,76 @@ export class ReminderService {
     for (const row of rows) if (await this.send(row.id, now)) sent += 1;
     logger.info(`[Reminders] ${sent} reminders sent now for parking ${parkingId}, evening ${date}`);
     return this.board(actor, parkingId, date, now);
+  }
+
+  // ---- One booking (30/10/2026, « pouvoir envoyer un SMS de la veille à une réservation donnée ») -------------
+
+  /** GET /internal/reservations/:id/reminder: its day-before SMS (planned, sent, why not) and whether it can leave now. */
+  public async forReservation(actor: AuthenticatedStaff, reservationId: string, now = new Date()): Promise<BookingReminder> {
+    const r = await this.reservationOf(actor, reservationId);
+    const tz = r.parking.timezone;
+    const [usualRow, sms, outbox] = await Promise.all([
+      prisma.reminderSettings.findUnique({ where: { parkingId: r.parkingId } }),
+      prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } }),
+      this.latestOutbox([r.id]),
+    ]);
+    const usual = usualRow ?? USUAL;
+    const evening = eveningOf(r.arrivalAt, tz);
+    const rules = await this.rules(r.parkingId, usual, [evening]);
+    const mode = sms?.mode ?? 'none';
+    const { status, at } = this.statusOf(r, { usual, rule: rules.get(evening)!, mode, outbox: outbox.get(r.id) ?? null, now, tz });
+    const refusal = this.sendRefusal(r, mode, now);
+    return {
+      status,
+      at: at ? localDateTime(at, tz) : null,
+      sentAt: r.reminderSentAt ? localDateTime(r.reminderSentAt, tz) : null,
+      resend: !!r.reminderSentAt,
+      canSend: !refusal,
+      refusal,
+      timezone: tz,
+    };
+  }
+
+  /** POST /internal/reservations/:id/reminder/send: the reminder now, or again (`resend`, the SMS alone). */
+  public async sendOne(actor: AuthenticatedStaff, reservationId: string, now = new Date()): Promise<BookingReminder> {
+    const r = await this.reservationOf(actor, reservationId);
+    const sms = await prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } });
+    const refusal = this.sendRefusal(r, sms?.mode ?? 'none', now);
+    if (refusal) throw new HttpException(httpStatus.CONFLICT, `The reminder cannot leave now (${refusal})`, refusal);
+    const resend = !!r.reminderSentAt;
+    const outcome = await this.send(r.id, now, { resend });
+    if (outcome === 'taken') throw new HttpException(httpStatus.CONFLICT, 'The reminder just left', 'reminder_too_soon');
+    await this.audit.record(actor, {
+      action: 'sms.reminder_sent',
+      entityType: 'reservation',
+      entityId: r.id,
+      details: { resend, failed: outcome === 'failed' },
+    });
+    logger.info(`[Reminders] Reminder ${resend ? 'sent again' : 'sent'} by hand for ${r.reference} (${outcome})`);
+    return this.forReservation(actor, reservationId, now);
+  }
+
+  private async reservationOf(actor: AuthenticatedStaff, reservationId: string) {
+    const r = await prisma.reservation.findFirst({
+      where: { id: reservationId, operatorId: actor.operatorId },
+      include: { parking: { select: { timezone: true } } },
+    });
+    if (!r) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    return r;
+  }
+
+  /** Why the reminder cannot leave by hand now, or null. */
+  private sendRefusal(
+    r: { status: string; arrivalAt: Date; customerPhone: string; reminderSentAt: Date | null; parking: { timezone: string } },
+    mode: SmsMode,
+    now: Date,
+  ): ManualReminderRefusal | null {
+    if (r.status !== 'upcoming' || r.arrivalAt <= now) return 'reminder_not_upcoming';
+    if (!smsRecipient(r.customerPhone)) return 'reminder_no_mobile';
+    if (mode === 'none') return 'reminder_no_channel';
+    if (inQuietHours(now, r.parking.timezone)) return 'reminder_quiet_hours';
+    if (r.reminderSentAt && now.getTime() - r.reminderSentAt.getTime() < RESEND_AFTER_MS) return 'reminder_too_soon';
+    return null;
   }
 
   // ---- The pro space --------------------------------------------------------------------------

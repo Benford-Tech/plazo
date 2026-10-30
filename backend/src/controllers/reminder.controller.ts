@@ -46,6 +46,17 @@ export class ReminderController {
   });
 
   /** PUT /internal/reservations/:id/reminder */
+  /** GET /internal/reservations/:id/reminder */
+  public forReservation = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.reminders.forReservation(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/reservations/:id/reminder/send */
+  public sendOne = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.reminders.sendOne(req.staff, req.params.id as string));
+  });
+
   public exclude = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: ExcludeReminderDto = req.body;
     res.json(await this.reminders.setExcluded(req.staff, req.params.id as string, data.excluded));

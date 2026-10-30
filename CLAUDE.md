@@ -543,6 +543,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
+     **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
+     « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
+     « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
+     confirmation ; caché une fois la voiture déposée sans SMS) ; `GET /internal/reservations/:id/reminder` (`status`, `at`, `sentAt`,
+     `resend`, `canSend`, `refusal`) et `POST …/reminder/send` (`ReminderService.forReservation` / `sendOne`) : le premier envoi fait tout
+     le rappel (SMS, mail, push) même si la réservation est « Ne pas envoyer », un renvoi n'envoie que le SMS, 10 minutes au moins après
+     le dernier (`RESEND_AFTER_MS`, réservation par `reminderSentAt`) ; 409 `reminder_not_upcoming` (pas « Attendu » ou dépôt passé),
+     `reminder_no_mobile`, `reminder_no_channel`, `reminder_quiet_hours` (22:00 à 07:00), `reminder_too_soon` ; tracé `sms.reminder_sent`
+     (« a envoyé le SMS de la veille » dans l'Historique). Tests `reminders.test.ts`, `BookingReminderCard.test.tsx`.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail

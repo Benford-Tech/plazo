@@ -4876,6 +4876,7 @@ export const historyFr = {
     "arrival.ended": "a arrêté de partager sa position",
     "return.landed": "a signalé son atterrissage",
     "return.notice": "a prévenu le parking",
+    "sms.reminder_sent": "a envoyé le SMS de la veille",
   } as Record<string, string>,
   other: "a fait une action",
   inspectionKind: { dropoff: "au dépôt", return: "au retour" } as Record<string, string>,
@@ -4883,4 +4884,32 @@ export const historyFr = {
   keysBack: "clés reprises",
   hook: (hook: string) => `crochet ${hook}`,
   note: "Remarque",
+};
+
+/** « SMS de la veille » of one booking, on its page (30/10/2026, « pouvoir envoyer un SMS de la veille à une réservation donnée »). */
+export const bookingReminderFr = {
+  title: "SMS de la veille",
+  planned: (when: string) => `Prévu ${when}`,
+  sent: (when: string) => `Envoyé ${when}`,
+  notYet: "Pas encore envoyé",
+  send: "Envoyer maintenant",
+  resend: "Renvoyer le SMS",
+  sending: "Envoi…",
+  confirmTitle: "Renvoyer le SMS de la veille ?",
+  confirmText: (when: string) => `Le client l'a déjà reçu ${when}. Seul le SMS part de nouveau.`,
+  confirm: "Renvoyer",
+  done: "SMS de la veille envoyé.",
+  doneAgain: "SMS de la veille renvoyé.",
+  failed: "Le SMS n'est pas parti : vérifiez le canal SMS dans Mon compte.",
+  tonight: "ce soir",
+  today: "aujourd'hui",
+  tomorrow: "demain",
+  at: (day: string, time: string) => `${day} à ${time}`,
+  refusal: {
+    reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
+    reminder_no_mobile: "Pas de numéro de mobile français pour ce client.",
+    reminder_no_channel: "Aucun canal SMS n'est réglé : à faire dans Mon compte.",
+    reminder_quiet_hours: "Aucun SMS ne part de 22:00 à 07:00.",
+    reminder_too_soon: "Envoyé il y a moins de 10 minutes : patientez avant de le renvoyer.",
+  } as Record<string, string>,
 };
