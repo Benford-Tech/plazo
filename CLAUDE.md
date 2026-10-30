@@ -1738,7 +1738,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `shuttles` (un véhicule en service, rendez-vous du retour), `listing` (grille et fiche, statut), `contract` (PDF en vigueur,
   sinon « Le modèle Plazo pour l'instant »), `sms` (ligne `reminder_settings`) ; chauffeur `post`, `vehicle`, `notifications`
   (un appareil), `tracking` (suivi non coupé) ; voiturier `post`, `plan`, `keys` (clés laissées ou crochet notés une fois),
-  `notifications` ; accueil `post`, `reservations` (une saisie par l'équipe), `inbox`, `notifications` ; test
+  `notifications` ; accueil `post`, `reservations` (une saisie par l'équipe), `inbox`, `notifications` ; **et pour tous, en
+  dernier, `photo` (30/10/2026, « ajoute la demande de photo dans les étapes de Bien démarrer ») : cochée dès que le membre a sa
+  photo (`photoUpdatedAt`), lien web `/mon-compte#photo`, « À régler sur l'espace pro web » dans Plazo Pro** ; test
   `getting-started.test.ts`. Web : **dans le rail de gauche** (même jour, « les étapes bien démarrer doivent être sur la nav
   bar de gauche » : la carte du tableau de bord est retirée) : sous les sections, bloc `GettingStartedNav` « BIEN DÉMARRER ·
   N / 7 étapes » avec sa barre, une ligne par étape (coche verte ou cercle, titre, détail en info-bulle) qui mène à la page de

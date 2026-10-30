@@ -9,13 +9,13 @@ const get = (token: string) => api().get('/api/internal/getting-started').set(au
 describe('GET /internal/getting-started', () => {
   beforeEach(resetDatabase);
 
-  it('lists the manager’s seven steps, ticked as the parking gets set up', async () => {
+  it('lists the manager’s eight steps, ticked as the parking gets set up', async () => {
     const op = await setupOperator();
     let res = await get(op.token);
     expect(res.status).toBe(200);
     expect(res.body.post).toBe('manager');
-    expect(res.body.total).toBe(7);
-    expect(res.body.steps.map((s: any) => s.key)).toEqual(['parking', 'bookings', 'team', 'shuttles', 'listing', 'contract', 'sms']);
+    expect(res.body.total).toBe(8);
+    expect(res.body.steps.map((s: any) => s.key)).toEqual(['parking', 'bookings', 'team', 'shuttles', 'listing', 'contract', 'sms', 'photo']);
     const byKey = (body: any) => Object.fromEntries(body.steps.map((s: any) => [s.key, s]));
     let steps = byKey(res.body);
     expect(steps.team.done).toBe(false);
@@ -39,6 +39,12 @@ describe('GET /internal/getting-started', () => {
     expect(steps.parking.detail).toBe('200 places déclarées');
     expect(steps.sms.done).toBe(true);
     expect(res.body.done).toBe(4);
+
+    // « Votre photo » (30/10/2026): ticked once the member has a photo.
+    expect(steps.photo).toMatchObject({ done: false, detail: 'Ajoutez votre photo dans Mon compte' });
+    await prisma.staff.update({ where: { id: op.manager.id }, data: { photoKey: 'staff-photos/x.jpg', photoUpdatedAt: new Date() } });
+    steps = byKey((await get(op.token)).body);
+    expect(steps.photo).toMatchObject({ done: true, detail: null });
   });
 
   it('gives a driver their own short list, following their post of the day', async () => {
@@ -47,7 +53,7 @@ describe('GET /internal/getting-started', () => {
     let res = await get(driver.token);
     expect(res.status).toBe(200);
     expect(res.body.post).toBe('driver');
-    expect(res.body.steps.map((s: any) => s.key)).toEqual(['post', 'vehicle', 'notifications', 'tracking']);
+    expect(res.body.steps.map((s: any) => s.key)).toEqual(['post', 'vehicle', 'notifications', 'tracking', 'photo']);
     expect(res.body.steps[0].done).toBe(false);
     expect(res.body.steps[3].done).toBe(true);
 
@@ -59,7 +65,7 @@ describe('GET /internal/getting-started', () => {
     await api().patch('/api/internal/staff/me/post').set(auth(op.token)).send({ post: 'valet' });
     res = await get(op.token);
     expect(res.body.post).toBe('valet');
-    expect(res.body.steps.map((s: any) => s.key)).toEqual(['post', 'plan', 'keys', 'notifications']);
+    expect(res.body.steps.map((s: any) => s.key)).toEqual(['post', 'plan', 'keys', 'notifications', 'photo']);
   });
 
   it('needs a staff session', async () => {

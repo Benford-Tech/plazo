@@ -780,6 +780,10 @@ export const fr = {
     todo: "À faire",
     open: "Ouvrir",
     steps: {
+      photo: {
+        title: "Votre photo",
+        body: "Votre équipe vous reconnaît dans le menu et dans Équipe.",
+      },
       parking: {
         title: "Votre parking",
         body: "Adresse, nombre de places, plan ou files de voiturier.",

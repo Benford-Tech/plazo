@@ -30,6 +30,8 @@ export class GettingStartedService {
   public async get(actor: AuthenticatedStaff): Promise<GettingStartedView> {
     const post = effectivePost(actor);
     const steps = post === 'manager' ? await this.manager(actor) : await this.member(actor, post);
+    // « Votre photo » (30/10/2026): last for every post, the team sees it in the menu and in Équipe.
+    steps.push({ key: 'photo', done: !!actor.photoUpdatedAt, detail: actor.photoUpdatedAt ? null : 'Ajoutez votre photo dans Mon compte' });
     return { post, steps, done: steps.filter(s => s.done).length, total: steps.length };
   }
 
