@@ -443,7 +443,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      elles passent seules au suivant (horloge de 5 s, liste relue). **Plazo Pro** : au-dessus de la liste du jour (`_NextCards`,
      `nextOf`, `untilLabel` de `pro_today_page.dart`, clé `planning-next`). **Web** : au-dessus des deux colonnes, chacune sur la
      sienne (`NextCard` de `PlanningPage.tsx`, `lib/planning-now.ts` : `nextOf`, `splitAtNow`, `untilLabel`), et ce qui est fait
-     replié en tête de chaque colonne sous « Déjà passés · N » (`past-arrival`, `past-return`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
+     replié en tête de chaque colonne sous « Déjà passés · N » (`past-arrival`, `past-return`). **Les retards aussi (30/10/2026, « affiche les prochains départ, arrivée mais aussi ceux en retard »)** : la carte montre le
+     prochain mouvement à venir (pas encore en retard), et dessous un encart ambre « En retard · N » avec chaque mouvement pas fait
+     une minute après son heure (heure, client, « en retard · 34 min », un clic ouvre la fiche ; 3 sur le web, 2 dans Plazo Pro, puis
+     « et N autres ») : `lateOf` / `nextOf(…, now)` (web `late-arrival` / `late-return`, app `late-arrival` / `late-departure`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
    - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
      avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
      les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`

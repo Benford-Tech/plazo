@@ -1467,6 +1467,8 @@ export const fr = {
     noNextArrival: "Plus d'arrivée aujourd'hui.",
     noNextDeparture: "Plus de départ aujourd'hui.",
     pastRows: (n: number) => `Déjà passés · ${n}`,
+    lateCount: (n: number) => `En retard · ${n}`,
+    lateMore: (n: number) => `et ${n} autre${n > 1 ? "s" : ""} dans la liste`,
     arrivalsCount: (total: number, here: number) =>
       `${total} · ${here} sur place`,
     noArrival: "Aucune arrivée ce jour.",

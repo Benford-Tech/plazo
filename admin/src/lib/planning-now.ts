@@ -23,10 +23,20 @@ const duration = (minutes: number) => {
   return `${Math.floor(minutes / 60)} h${m === 0 ? "" : ` ${String(m).padStart(2, "0")}`}`;
 };
 
-/** The column's earliest row not done yet. */
-export function nextOf(items: PlanningRow[], kind: "arrival" | "return"): PlanningRow | null {
-  const at = (r: PlanningRow) => new Date(kind === "arrival" ? r.arrivalAt : r.returnAt).getTime();
-  return items.filter(r => !isDone(r, kind)).reduce<PlanningRow | null>((best, r) => (best && at(best) <= at(r) ? best : r), null);
+const timeOfRow = (r: PlanningRow, kind: "arrival" | "return") => new Date(kind === "arrival" ? r.arrivalAt : r.returnAt).getTime();
+
+/** Late (30/10/2026, « mais aussi ceux en retard »): not done a minute or more after its time, the latest first. */
+export function lateOf(items: PlanningRow[], kind: "arrival" | "return", now: number): PlanningRow[] {
+  return items
+    .filter(r => !isDone(r, kind) && timeOfRow(r, kind) <= now - 60_000)
+    .sort((a, b) => timeOfRow(a, kind) - timeOfRow(b, kind));
+}
+
+/** The column's earliest row not done yet and not late. */
+export function nextOf(items: PlanningRow[], kind: "arrival" | "return", now: number): PlanningRow | null {
+  return items
+    .filter(r => !isDone(r, kind) && timeOfRow(r, kind) > now - 60_000)
+    .reduce<PlanningRow | null>((best, r) => (best && timeOfRow(best, kind) <= timeOfRow(r, kind) ? best : r), null);
 }
 
 /** « dans 25 min », « dans 1 h 05 », « maintenant », « en retard · 12 min ». */

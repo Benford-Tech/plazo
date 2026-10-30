@@ -119,14 +119,19 @@ List<DayEntry> mergeDay(List<TodayRow> arrivals, List<TodayRow> returns) {
 }
 
 /// The planning that moves with the day (direction A of 30/10/2026): the side's earliest movement not done yet.
-DayEntry? nextOf(List<DayEntry> entries, {required bool isReturn}) {
+/// Not late: a movement waits for its own card until a minute after its time.
+DayEntry? nextOf(List<DayEntry> entries, {required bool isReturn, required DateTime now}) {
   DayEntry? next;
   for (final e in entries) {
-    if (e.isReturn != isReturn || e.done) continue;
+    if (e.isReturn != isReturn || e.done || isLate(e.at, now)) continue;
     if (next == null || e.at.isBefore(next.at)) next = e;
   }
   return next;
 }
+
+/// « mais aussi ceux en retard » (30/10/2026): the side's movements not done a minute after their time, earliest first.
+List<DayEntry> lateOf(List<DayEntry> entries, {required bool isReturn, required DateTime now}) =>
+    entries.where((e) => e.isReturn == isReturn && !e.done && isLate(e.at, now)).toList()..sort((a, b) => a.at.compareTo(b.at));
 
 /// « dans 25 min », « dans 1 h 10 », « maintenant », « en retard · 12 min » (late: [isLate]).
 String untilLabel(DateTime at, DateTime now) {
@@ -646,30 +651,39 @@ class _NextCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget card(bool isReturn) => _NextCard(
+      entry: nextOf(entries, isReturn: isReturn, now: now),
+      late: lateOf(entries, isReturn: isReturn, now: now),
+      isReturn: isReturn,
+      now: now,
+    );
     return Padding(
       key: const Key('planning-next'),
       padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _NextCard(entry: nextOf(entries, isReturn: true), isReturn: true, now: now),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _NextCard(entry: nextOf(entries, isReturn: false), isReturn: false, now: now),
-          ),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: card(true)),
+            const SizedBox(width: 8),
+            Expanded(child: card(false)),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _NextCard extends StatelessWidget {
-  const _NextCard({required this.entry, required this.isReturn, required this.now});
+  const _NextCard({required this.entry, required this.late, required this.isReturn, required this.now});
   final DayEntry? entry;
+  final List<DayEntry> late;
   final bool isReturn;
   final DateTime now;
+
+  static const _shownLate = 2;
+
+  void _open(BuildContext context, DayEntry e) => context.router.push(ProReservationRoute(id: e.row.booking.id));
 
   @override
   Widget build(BuildContext context) {
@@ -678,36 +692,81 @@ class _NextCard extends StatelessWidget {
     final e = entry;
     final title = (isReturn ? 'pro.next_departure' : 'pro.next_arrival').tr().toUpperCase();
     return Material(
+      key: Key(isReturn ? 'next-departure' : 'next-arrival'),
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.card,
         side: BorderSide(color: colour, width: 2),
       ),
-      child: InkWell(
-        key: Key(isReturn ? 'next-departure' : 'next-arrival'),
-        borderRadius: AppRadius.card,
-        onTap: e == null ? null : () => context.router.push(ProReservationRoute(id: e.row.booking.id)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppText.label(size: 10.5, color: colour).copyWith(fontWeight: FontWeight.w800),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: e == null ? null : () => _open(context, e),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppText.label(size: 10.5, color: colour).copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 3),
+                  if (e == null)
+                    Text((isReturn ? 'pro.next_none_departure' : 'pro.next_none_arrival').tr(), style: AppText.muted(size: 12.5))
+                  else ...[
+                    Text(hhmm(e.at), style: AppText.tabular(size: 22)),
+                    Text(e.row.booking.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 13)),
+                    const SizedBox(height: 2),
+                    Text(untilLabel(e.at, now), style: AppText.tabular(size: 12.5, color: AppColors.accent)),
+                  ],
+                ],
               ),
-              const SizedBox(height: 3),
-              if (e == null)
-                Text((isReturn ? 'pro.next_none_departure' : 'pro.next_none_arrival').tr(), style: AppText.muted(size: 12.5))
-              else ...[
-                Text(hhmm(e.at), style: AppText.tabular(size: 22)),
-                Text(e.row.booking.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 13)),
-                const SizedBox(height: 2),
-                Text(untilLabel(e.at, now), style: AppText.tabular(size: 12.5, color: isLate(e.at, now) ? AppStatus.warnText : AppColors.accent)),
-              ],
-            ],
+            ),
           ),
-        ),
+          const Spacer(),
+          if (late.isNotEmpty)
+            Container(
+              key: Key(isReturn ? 'late-departure' : 'late-arrival'),
+              color: AppStatus.warnSoft,
+              padding: const EdgeInsets.fromLTRB(11, 7, 11, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'pro.late_count'.tr(args: ['${late.length}']).toUpperCase(),
+                    style: AppText.label(size: 10.5, color: AppStatus.warnText).copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  for (final l in late.take(_shownLate))
+                    InkWell(
+                      onTap: () => _open(context, l),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${hhmm(l.at)} · ${l.row.booking.customerName}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.strong(size: 12.5),
+                            ),
+                            Text(untilLabel(l.at, now), style: AppText.tabular(size: 11.5, color: AppStatus.warnText)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (late.length > _shownLate)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text('pro.late_more'.tr(args: ['${late.length - _shownLate}']), style: AppText.muted(size: 11.5)),
+                    ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

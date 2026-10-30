@@ -396,6 +396,8 @@
     "next_in": "dans {}",
     "next_now": "maintenant",
     "next_late": "en retard · {}",
+    "late_count": "En retard · {}",
+    "late_more": "et {} de plus dans la liste",
     "no_row": "Rien de prévu aujourd'hui.",
     "no_row_day": "Rien de prévu ce jour-là.",
     "arrivals": "Arrivées",

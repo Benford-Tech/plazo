@@ -136,7 +136,7 @@ describe("Planning : arrivées en direct", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    await screen.findByText("Camille Martin");
+    await screen.findByTestId("planning-row-r1");
     expect(screen.queryByTestId("sms-warning")).not.toBeInTheDocument();
   });
 });
