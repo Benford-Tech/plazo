@@ -5,6 +5,7 @@ import { isProspectDemoOperator } from './demo-guard';
 import { PRODUCT_NAME, signatureCodeSecret } from '@/config';
 import prisma, { OperatorContractTemplate, Prisma, Reservation } from '@/database';
 import { EmailMessage } from '@/domain/booking-messages';
+import { bookingFieldFacts, fieldsOf, signatureStamp } from '@/domain/contract-fields';
 import { buildSignedContractPdf, signedFileNames, templateDocument, templateVersion } from '@/domain/contract-template';
 import {
   CODE_MAX_ATTEMPTS,
@@ -38,7 +39,7 @@ import {
   MAX_RESERVE_LENGTH,
   missingForCompletion,
   photosCutoff,
-  REQUIRED_SLOTS,
+  GUIDED_SLOTS,
   sniffImage,
   travellerMayPhotograph,
 } from '@/domain/inspection';
@@ -420,22 +421,36 @@ export class PaperworkService {
     let signedSha256: string | null = null;
     if (this.storage.available()) {
       try {
-        const built = await buildSignedContractPdf(original, doc, {
-          productName: PRODUCT_NAME,
-          bookingReference: r.reference,
-          parkingTimeZone: r.parking.timezone,
-          signedAtLocal: localDateTime(signedAt, r.parking.timezone),
-          signedAt,
-          signerName: r.customerName,
-          method: proof.method,
-          device,
-          phoneMasked: proof.phoneMasked,
-          witnessName: actor?.firstName ?? null,
-          strokes: proof.strokes,
-          textSha256,
-          proofSha256,
-          template: template ? templateFacts(template) : null,
-        });
+        const tz = r.parking.timezone;
+        const fields = template ? fieldsOf(template.fields) : [];
+        const stamp = fields.length
+          ? {
+              fields,
+              facts: bookingFieldFacts(r, d => localDateTime(d, tz), signedAt),
+              signature: signatureStamp(proof.method, proof.strokes, localDateTime(signedAt, tz)),
+            }
+          : null;
+        const built = await buildSignedContractPdf(
+          original,
+          doc,
+          {
+            productName: PRODUCT_NAME,
+            bookingReference: r.reference,
+            parkingTimeZone: r.parking.timezone,
+            signedAtLocal: localDateTime(signedAt, r.parking.timezone),
+            signedAt,
+            signerName: r.customerName,
+            method: proof.method,
+            device,
+            phoneMasked: proof.phoneMasked,
+            witnessName: actor?.firstName ?? null,
+            strokes: proof.strokes,
+            textSha256,
+            proofSha256,
+            template: template ? templateFacts(template) : null,
+          },
+          stamp,
+        );
         const names = signedFileNames(r.reference);
         const folder = `contracts/${r.operatorId}/${r.id}`;
         const signedBlobKey = `${folder}/${names.signed}`;
@@ -932,5 +947,5 @@ export class PaperworkService {
   }
 
   /** The required slots, for the apps' guided capture. */
-  public static readonly requiredSlots = REQUIRED_SLOTS;
+  public static readonly requiredSlots = GUIDED_SLOTS;
 }

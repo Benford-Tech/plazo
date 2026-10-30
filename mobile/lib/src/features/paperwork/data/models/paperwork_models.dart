@@ -243,5 +243,6 @@ abstract class AddedPhotoModel with _$AddedPhotoModel {
   factory AddedPhotoModel.fromJson(Map<String, dynamic> json) => _$AddedPhotoModelFromJson(json);
 }
 
-/// The six guided photos, in the order they are asked for.
-const inspectionSlots = ['front', 'right', 'back', 'left', 'dashboard', 'interior'];
+/// The four guided photos, in the order they are asked for; none is required (30/10/2026, « ne demande que 4 photos et
+/// ne les rend pas obligatoire »). Reports from before keep their dashboard and interior photos, shown as taken.
+const inspectionSlots = ['front', 'right', 'back', 'left'];

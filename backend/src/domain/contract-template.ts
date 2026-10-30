@@ -1,5 +1,6 @@
 import { PDFDocument, PDFFont, PDFPage, rgb, StandardFonts } from 'pdf-lib';
 import { ContractDocument, ContractFacts, contractDocument } from './contract';
+import { ContractField, FieldFacts, StampedSignature, stampFields } from './contract-fields';
 import { pdfSafe, sha256Hex, wrap } from './partner-contract';
 
 /**
@@ -195,17 +196,21 @@ async function drawTemplatePages(pdf: PDFDocument, doc: ContractDocument) {
 }
 
 /**
- * The PDF signed (the parking's PDF untouched, or Plazo's template laid out, with the « Réservation et signature » page
+ * The PDF signed (the parking's PDF, pre-filled where its manager placed the fields, or Plazo's template laid out, with the « Réservation et signature » page
  * at its end) and the proof (that page alone, with the signed PDF's fingerprint too).
  */
 export async function buildSignedContractPdf(
   original: Buffer | null,
   doc: ContractDocument,
   f: SignatureFacts,
+  stamp: { fields: ContractField[]; facts: FieldFacts; signature: StampedSignature } | null = null,
 ): Promise<{ signed: Buffer; signedSha256: string; proof: Buffer }> {
   let pdf: PDFDocument;
-  if (original) pdf = await PDFDocument.load(original, { updateMetadata: false });
-  else {
+  if (original) {
+    pdf = await PDFDocument.load(original, { updateMetadata: false });
+    // The values in the places the manager chose, with the date of signature and the signature (30/10/2026, A).
+    if (stamp) await stampFields(pdf, stamp.fields, stamp.facts, stamp.signature);
+  } else {
     pdf = await PDFDocument.create();
     pdf.setTitle(pdfSafe(doc.title));
     pdf.setProducer(f.productName);

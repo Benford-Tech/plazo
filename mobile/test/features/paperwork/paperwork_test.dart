@@ -293,7 +293,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text("L'état de votre voiture au dépôt"), findsOneWidget);
-      expect(find.textContaining('Karim a pris 6 photos et noté 1 marque(s)'), findsOneWidget);
+      expect(find.textContaining('Karim a pris 4 photos et noté 1 marque(s)'), findsOneWidget);
       expect(find.text('Rayure, aile avant droite'), findsOneWidget);
       expect(find.text('48215 km'), findsOneWidget);
       await tester.scrollUntilVisible(find.byKey(const Key('traveller-accept')), 300, scrollable: find.byType(Scrollable).first);
@@ -352,7 +352,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Vos photos de la voiture'), findsOneWidget);
-      expect(find.text('1 / 6'), findsOneWidget);
+      expect(find.text('1 / 4'), findsOneWidget);
       expect(find.text('+ Droite'), findsOneWidget);
       await tester.enterText(find.byKey(const Key('my-photos-note')), 'Petite rayure arrière gauche.');
       await tester.scrollUntilVisible(find.byKey(const Key('my-photos-send')), 300, scrollable: find.byType(Scrollable).first);

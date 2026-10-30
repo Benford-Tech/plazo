@@ -107,7 +107,24 @@ export function ContractTemplateCard() {
                 <p className="text-sm text-muted-foreground">
                   {t.signedCount(current.signedCount)}
                 </p>
+                <p
+                  className={
+                    current.fields?.length
+                      ? "text-sm text-lime-deep"
+                      : "text-sm text-warn-text"
+                  }
+                  data-testid="contract-fields-line"
+                >
+                  {t.fieldsLine(current.fields?.length ?? 0)}
+                </p>
                 <div className="flex flex-wrap gap-2 pt-2">
+                  <Link
+                    to={`/parking/contrat/${current.id}/champs`}
+                    className={`${primaryButton} inline-flex items-center`}
+                    data-testid="contract-place-fields"
+                  >
+                    {t.placeFields}
+                  </Link>
                   <button
                     type="button"
                     className={ghostButton}
@@ -118,7 +135,7 @@ export function ContractTemplateCard() {
                   </button>
                   <button
                     type="button"
-                    className={primaryButton}
+                    className={ghostButton}
                     disabled={upload.isPending}
                     onClick={() => input.current?.click()}
                   >

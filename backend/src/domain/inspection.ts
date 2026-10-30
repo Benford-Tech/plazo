@@ -4,12 +4,17 @@
  * the comparison at the return and how long the photos are kept.
  */
 
-/** The six guided photos, in the order the app asks for them. */
-export const REQUIRED_SLOTS = ['front', 'right', 'back', 'left', 'dashboard', 'interior'] as const;
+/**
+ * The guided photos, in the order the app asks for them: the four sides (30/10/2026, « ne demande que 4 photos et ne
+ * les rend pas obligatoire »: none is required to complete a report).
+ */
+export const GUIDED_SLOTS = ['front', 'right', 'back', 'left'] as const;
+/** The dashboard and the interior, asked until 30/10/2026: still accepted and shown on the reports that have them. */
+export const LEGACY_SLOTS = ['dashboard', 'interior'] as const;
 /** A close-up of a damage: any number, up to MAX_DAMAGE_PHOTOS. */
 export const DAMAGE_SLOT = 'damage';
-export type PhotoSlot = (typeof REQUIRED_SLOTS)[number] | typeof DAMAGE_SLOT;
-export const SLOTS: readonly string[] = [...REQUIRED_SLOTS, DAMAGE_SLOT];
+export type PhotoSlot = (typeof GUIDED_SLOTS)[number] | (typeof LEGACY_SLOTS)[number] | typeof DAMAGE_SLOT;
+export const SLOTS: readonly string[] = [...GUIDED_SLOTS, ...LEGACY_SLOTS, DAMAGE_SLOT];
 
 export const MAX_DAMAGES = 20;
 export const MAX_DAMAGE_PHOTOS = 12;
@@ -59,13 +64,14 @@ export function cleanDamages(input: unknown): { ok: true; value: Damage[] } | { 
   return { ok: true, value };
 }
 
-/** The guided photos still missing (a report is complete once all six are there, mileage and fuel too). */
+/** The guided photos not taken yet (none is required). */
 export function missingSlots(slots: string[]): string[] {
-  return REQUIRED_SLOTS.filter(s => !slots.includes(s));
+  return GUIDED_SLOTS.filter(s => !slots.includes(s));
 }
 
+/** What a report still needs to be completed: the mileage and the fuel; the photos are optional (30/10/2026). */
 export function missingForCompletion(report: { slots: string[]; mileageKm: number | null; fuelQuarters: number | null }): string[] {
-  const missing: string[] = [...missingSlots(report.slots)];
+  const missing: string[] = [];
   if (report.mileageKm == null) missing.push('mileageKm');
   if (report.fuelQuarters == null) missing.push('fuelQuarters');
   return missing;

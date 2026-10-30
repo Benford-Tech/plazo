@@ -4348,6 +4348,65 @@ export const linkedEmailsFr = {
   dialog: "Mail lié à la réservation",
 };
 
+/** « Placer les informations » (30/10/2026, direction A): the fields stamped on the parking's PDF. */
+export const contractFieldsFr = {
+  crumb: "Réglages du parking",
+  title: "Placer les informations",
+  subtitle: (title: string, v: number) => `${title} · version ${v}`,
+  intro:
+    "Glissez chaque information à l'endroit prévu sur votre contrat (les pointillés). Plazo la remplit sur chaque contrat : avant la signature avec les données de la réservation, puis avec la date et la signature une fois signé.",
+  palette: "Informations à placer",
+  paletteHint: "Glissez-les sur la page, ou touchez-les pour les poser au milieu.",
+  keys: {
+    customer_name: "Nom du client",
+    phone: "Téléphone",
+    plate: "Immatriculation",
+    vehicle: "Véhicule",
+    arrival_at: "Date et heure de dépôt",
+    return_at: "Date et heure de retour",
+    price: "Prix payé",
+    reference: "Référence",
+    return_flight: "Vol retour",
+    signed_on: "Fait le (date de signature)",
+    signature: "Signature",
+  } as Record<string, string>,
+  samples: {
+    customer_name: "Claire Martin",
+    phone: "06 12 34 56 78",
+    plate: "GH-456-JK",
+    vehicle: "Renault Zoé blanche",
+    arrival_at: "12/11/2026 08:00",
+    return_at: "19/11/2026 18:30",
+    price: "54,00 €",
+    reference: "R7KQ2M",
+    return_flight: "TO 3627",
+    signed_on: "12/11/2026",
+    signature: "Signature du client",
+  } as Record<string, string>,
+  page: (n: number, total: number) => `Page ${n} / ${total}`,
+  previousPage: "Page précédente",
+  nextPage: "Page suivante",
+  selected: "Information choisie",
+  size: "Taille du texte",
+  remove: "Retirer",
+  removeAria: (label: string) => `Retirer « ${label} »`,
+  placedCount: (n: number) =>
+    n === 0 ? "Aucune information placée" : n === 1 ? "1 information placée" : `${n} informations placées`,
+  save: "Enregistrer",
+  saving: "Enregistrement…",
+  saved: "Informations enregistrées : vos prochains contrats sont pré-remplis.",
+  preview: "Aperçu avec un exemple",
+  previewing: "Préparation…",
+  loading: "Chargement du PDF…",
+  loadError: "Impossible d'ouvrir le PDF.",
+  noTemplate: "Déposez d'abord votre contrat en PDF dans Réglages du parking.",
+  errors: {
+    template_retired: "Cette version n'est plus en vigueur : rouvrez la version actuelle.",
+    invalid_box: "Une information sort de la page : replacez-la.",
+    too_many: "40 informations au plus.",
+  } as Record<string, string>,
+};
+
 export const contractTemplateFr = {
   title: "Contrat de stationnement",
   intro:
@@ -4377,6 +4436,11 @@ export const contractTemplateFr = {
         ? `1 contrat signé sur le modèle ${PRODUCT.name}`
         : `${n} contrats signés sur le modèle ${PRODUCT.name}`,
   view: "Voir le PDF",
+  placeFields: "Placer les informations",
+  fieldsLine: (n: number) =>
+    n === 0
+      ? "Pas encore pré-rempli : placez le nom, la plaque, les dates et la date de signature sur votre PDF."
+      : `Pré-rempli : ${n} information${n > 1 ? "s" : ""} placée${n > 1 ? "s" : ""} sur le PDF.`,
   replace: "Remplacer",
   upload: "Déposer mon PDF",
   choose: "Choisir un PDF",
