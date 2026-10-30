@@ -436,15 +436,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      mois l'un sous l'autre), la semaine en lignes ; toucher un jour revient au planning de ce jour. `ProTodayView.clock` (horloge
      fixe des tests : `planning_list_test.dart` datait la barre au vrai jour). Test `forecast_test.dart`.
    - **Le planning avance avec la journée (30/10/2026, « au fil de la journée il faut que le planning avance pour qu'on sache le
-     prochain départ et retour », maquettes https://claude.ai/artifact/DTyWFj3Fj4f99fNRA2yw1v, choix « A mobile et B web »)** :
+     prochain départ et retour », maquettes https://claude.ai/artifact/DTyWFj3Fj4f99fNRA2yw1v, choix « A mobile et B web », puis « finalement la A pour le web aussi »)** :
      aujourd'hui seulement ; fait = arrivée dont le client est venu, départ rendu au parking ou clos (la règle de « Déjà passés »).
-     **A Plazo Pro** : au-dessus de la liste du jour, deux cartes « Prochain départ » (indigo) et « Prochaine arrivée » (vert) :
-     heure, client, « dans 25 min » / « dans 1 h 05 » / « maintenant » / « en retard · 10 min » en ambre, toucher ouvre la fiche,
-     « Plus de départ aujourd'hui. » quand tout est fait (`_NextCards`, `nextOf`, `untilLabel` de `pro_today_page.dart`, clé
-     `planning-next`) ; elles passent seules au suivant (horloge de 5 s, liste relue). **B web** : dans chaque colonne du planning,
-     ce qui est fait estompé en haut, la ligne citron « Maintenant · 14:05 » puis ce qui vient avec « dans 45 min » dans l'heure ou
-     « en retard · … » ; la page s'ouvre sur la ligne (`lib/planning-now.ts` : `splitAtNow`, `untilLabel` ; `now-arrival`,
-     `now-return`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
+     Deux cartes « Prochaine arrivée » (vert) et « Prochain départ » (indigo) : heure, client, « dans 25 min » / « dans 1 h 05 » /
+     « maintenant » / « en retard · 10 min » en ambre, un clic ouvre la fiche, « Plus de départ aujourd'hui. » quand tout est fait ;
+     elles passent seules au suivant (horloge de 5 s, liste relue). **Plazo Pro** : au-dessus de la liste du jour (`_NextCards`,
+     `nextOf`, `untilLabel` de `pro_today_page.dart`, clé `planning-next`). **Web** : au-dessus des deux colonnes, chacune sur la
+     sienne (`NextCard` de `PlanningPage.tsx`, `lib/planning-now.ts` : `nextOf`, `splitAtNow`, `untilLabel`), et ce qui est fait
+     replié en tête de chaque colonne sous « Déjà passés · N » (`past-arrival`, `past-return`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
    - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
      avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
      les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`
