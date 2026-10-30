@@ -81,7 +81,7 @@ describe("Planning : arrivées en direct", () => {
     expect(within(card).getByText(/Position mise à jour il y a 2\d s · 8,4 km · arrivée estimée 07:52/)).toBeInTheDocument();
     // First in its column although it is not the earliest.
     const arrivals = card.closest("ul")!;
-    // Nothing done yet: the « Maintenant » line stands first, then the rows.
+    // The first row of its column (not the « Déjà passés » fold).
     expect(within(arrivals).getAllByRole("listitem").filter(li => li.id)[0]).toBe(card);
 
     expect(screen.getByText("Prévenu · « dans 20 min »")).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe("Planning : arrivées en direct", () => {
   });
 });
 
-describe("Planning : la ligne « Maintenant » (direction B)", () => {
+describe("Planning : les prochains en tête (direction A)", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-30T13:05:00.000Z")); // 14:05 in Paris
@@ -166,7 +166,7 @@ describe("Planning : la ligne « Maintenant » (direction B)", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("sépare ce qui est fait de ce qui vient, avec le temps qui reste, et s'ouvre sur la ligne", async () => {
+  it("montre la prochaine arrivée et le prochain départ, et replie ce qui est fait", async () => {
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <MemoryRouter>
@@ -174,15 +174,19 @@ describe("Planning : la ligne « Maintenant » (direction B)", () => {
         </MemoryRouter>
       </QueryClientProvider>,
     );
-    const line = await screen.findByTestId("now-arrival");
-    expect(within(line).getByText("Maintenant · 14:05")).toBeInTheDocument();
-    const rows = [...line.parentElement!.children].map(li => li.id || "now");
-    expect(rows).toEqual(["row-a1", "now", "row-a2", "row-a3"]);
+    const arrival = await screen.findByTestId("next-arrival");
+    expect(within(arrival).getByText("Hugo Morel")).toBeInTheDocument();
+    expect(within(arrival).getByText("14:50")).toBeInTheDocument();
+    expect(within(arrival).getByText("dans 45 min")).toBeInTheDocument();
+    // Claire is still away 10 minutes after her time: the next departure, late.
+    const departure = screen.getByTestId("next-return");
+    expect(within(departure).getByText("Claire Durand")).toBeInTheDocument();
+    expect(within(departure).getByText("en retard · 10 min")).toBeInTheDocument();
+
+    expect(screen.queryByTestId("planning-row-a1")).toBeNull();
+    expect(screen.getByTestId("past-arrival")).toHaveTextContent("Déjà passés · 1");
+    await userEvent.click(screen.getByTestId("past-arrival"));
     expect(screen.getByTestId("planning-row-a1").closest("li")).toHaveClass("opacity-50");
-    expect(screen.getByTestId("until-a2")).toHaveTextContent("dans 45 min");
-    expect(screen.queryByTestId("until-a3")).toBeNull();
-    // Claire is still away 10 minutes after her time: below the line, late.
-    expect(screen.getByTestId("until-d2")).toHaveTextContent("en retard · 10 min");
-    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("planning-row-d1")).toBeNull();
   });
 });

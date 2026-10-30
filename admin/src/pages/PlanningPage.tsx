@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BusFront, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
+import { Bell, BusFront, ChevronDown, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MovementPill } from "@/components/MovementPill";
@@ -17,7 +17,7 @@ import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
-import { splitAtNow, untilLabel } from "@/lib/planning-now";
+import { nextOf, splitAtNow, untilLabel } from "@/lib/planning-now";
 
 function NightCell({ night }: { night: NightLoad }) {
   const t = fr.planning;
@@ -85,13 +85,11 @@ function Row({
   kind,
   clock,
   dimmed = false,
-  until = null,
 }: {
   r: PlanningRow;
   kind: "arrival" | "return";
   clock: { fetchedAt: number; now: number };
   dimmed?: boolean;
-  until?: { text: string; late: boolean } | null;
 }) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
@@ -118,11 +116,6 @@ function Row({
         <span className="flex flex-col items-start gap-1">
           <span className="tabular font-mono text-xl font-bold text-lime-deep">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
           <MovementPill kind={isArrival ? "arrival" : "departure"} />
-          {until && (
-            <span data-testid={`until-${r.id}`} className={cn("tabular whitespace-nowrap font-mono text-xs font-bold", until.late ? "text-warn-text" : "text-lime-deep")}>
-              {until.text}
-            </span>
-          )}
         </span>
         {/* On a phone the plate sits above the name; side by side from sm up. */}
         <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3.5">
@@ -186,12 +179,13 @@ function Column({
   kind: "arrival" | "return";
   empty: string;
   clock: { fetchedAt: number; now: number };
-  /** Direction B (30/10/2026): today, the column splits at the « Maintenant » line. */
+  /** Direction A (30/10/2026): today, what is done is folded under « Déjà passés ». */
   today?: boolean;
 }) {
   const t = fr.planning;
   const movement = kind === "arrival" ? "arrival" : "departure";
   const live = today && items.length > 0 ? splitAtNow(items, kind) : null;
+  const [showPast, setShowPast] = useState(false);
   return (
     <section className="flex min-w-0 flex-col">
       <div className="flex items-baseline justify-between px-1 pb-2">
@@ -201,31 +195,68 @@ function Column({
         </h2>
         <span className="tabular font-mono text-muted-foreground">{count}</span>
       </div>
-      {live ? (
-        <ul className="flex flex-col gap-2">
-          {live.past.map(r => (
-            <Row key={r.id} r={r} kind={kind} clock={clock} dimmed />
-          ))}
-          <li data-testid={`now-${kind}`} data-now-line={live.past.length > 0 ? "after-past" : "top"} className="flex items-center gap-2 py-1" aria-label={t.nowLine(timeOf(new Date(clock.now).toISOString()))}>
-            <span aria-hidden="true" className="h-0.5 flex-1 bg-primary" />
-            <span className="tabular rounded-full bg-primary px-2.5 py-0.5 font-mono text-xs font-bold text-primary-foreground">
-              {t.nowLine(timeOf(new Date(clock.now).toISOString()))}
-            </span>
-            <span aria-hidden="true" className="h-0.5 flex-1 bg-primary" />
+      <ul className="flex flex-col gap-2">
+        {live && live.past.length > 0 && (
+          <li>
+            <button
+              type="button"
+              data-testid={`past-${kind}`}
+              aria-expanded={showPast}
+              onClick={() => setShowPast(v => !v)}
+              className="flex w-full items-center justify-between px-1 py-1 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              {t.pastRows(live.past.length)}
+              <ChevronDown className={cn("h-4 w-4 transition-transform", showPast && "rotate-180")} aria-hidden="true" />
+            </button>
           </li>
-          {live.coming.map(r => (
-            <Row key={r.id} r={r} kind={kind} clock={clock} until={untilLabel(kind === "arrival" ? r.arrivalAt : r.returnAt, clock.now)} />
-          ))}
-        </ul>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map(r => (
-            <Row key={r.id} r={r} kind={kind} clock={clock} />
-          ))}
-        </ul>
-      )}
+        )}
+        {(live ? [...(showPast ? live.past : []), ...live.coming] : items).map(r => (
+          <Row key={r.id} r={r} kind={kind} clock={clock} dimmed={!!live && live.past.includes(r)} />
+        ))}
+      </ul>
       {items.length === 0 && <p className="px-1 py-6 text-muted-foreground">{empty}</p>}
     </section>
+  );
+}
+
+/** « Prochaine arrivée » / « Prochain départ » over its column (direction A of 30/10/2026); moves on once done. */
+function NextCard({ row, kind, now }: { row: PlanningRow | null; kind: "arrival" | "return"; now: number }) {
+  const t = fr.planning;
+  const isArrival = kind === "arrival";
+  const card = useQuickCard();
+  const at = row ? (isArrival ? row.arrivalAt : row.returnAt) : null;
+  const until = at ? untilLabel(at, now) : null;
+  const colour = isArrival ? "border-ok" : "border-info";
+  const title = (
+    <span className={cn("text-xs font-extrabold uppercase tracking-wider", MOVEMENT_TEXT[isArrival ? "arrival" : "departure"])}>
+      {isArrival ? t.nextArrival : t.nextDeparture}
+    </span>
+  );
+  if (!row || !at || !until)
+    return (
+      <div data-testid={`next-${kind}`} className={cn("flex flex-col gap-1 rounded-lg border-2 bg-card px-4 py-3", colour)}>
+        {title}
+        <span className="text-sm text-muted-foreground">{isArrival ? t.noNextArrival : t.noNextDeparture}</span>
+      </div>
+    );
+  return (
+    <button
+      type="button"
+      data-testid={`next-${kind}`}
+      onClick={() => card.open(row.id)}
+      className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-0.5 rounded-lg border-2 bg-card px-4 py-3 text-left hover:brightness-[.97]", colour)}
+    >
+      <span className="col-span-3">{title}</span>
+      <span className="tabular font-mono text-3xl font-bold">{timeOf(at)}</span>
+      <span className="min-w-0">
+        <span className="block truncate text-lg font-semibold">{row.customerName}</span>
+        <span className="block truncate text-sm text-muted-foreground">
+          {!isArrival && row.returnFlight ? `${row.returnFlight} · ` : ""}
+          {t.pax(row.passengers)}
+        </span>
+      </span>
+      <span className={cn("tabular whitespace-nowrap font-mono text-sm font-bold", until.late ? "text-warn-text" : "text-lime-deep")}>{until.text}</span>
+    </button>
   );
 }
 
@@ -301,14 +332,6 @@ export default function PlanningPage() {
     else if (banner && !signals.some(s => s.id === banner.id)) setBanner(null);
   }, [signals, banner]);
 
-  // The page opens on the « Maintenant » line (direction B of 30/10/2026), once per day shown.
-  const scrolledTo = useRef<string | null>(null);
-  useEffect(() => {
-    if (!data || !isToday || scrolledTo.current === date) return;
-    scrolledTo.current = date;
-    document.querySelector<HTMLElement>('[data-now-line="after-past"]')?.scrollIntoView?.({ block: "center" });
-  }, [data, isToday, date]);
-
   const arrivals = data ? liveFirst(withLiveSignals(data.arrivals, "outbound", signals)) : [];
   const returns = data ? liveFirst(withShuttleTrips(withLiveSignals(data.returns, "return", signals), isToday ? live.data?.shuttleTrips : undefined)) : [];
 
@@ -354,6 +377,12 @@ export default function PlanningPage() {
               <NightCell key={n.date} night={n} />
             ))}
           </section>
+          {isToday && (
+            <div data-testid="planning-next" className="grid gap-3 sm:grid-cols-2 lg:gap-8">
+              <NextCard row={nextOf(arrivals, "arrival")} kind="arrival" now={now} />
+              <NextCard row={nextOf(returns, "return")} kind="return" now={now} />
+            </div>
+          )}
           <div className="grid gap-8 lg:grid-cols-2">
             <Column
               title={t.arrivals}
