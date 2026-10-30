@@ -1520,6 +1520,7 @@
     "shuttle": "Navette",
     "arrivals": "Arrivées",
     "returns": "Retours",
+    "planning": "Planning",
     "places": "Places",
     "terminal": "Terminal",
     "services": "Services"
@@ -1539,7 +1540,7 @@
     "text": {
       "manager": "La journée, l'équipe, le parking et la fiche Plazo.",
       "agent": "Au comptoir et au téléphone : réservations, arrivées, retours.",
-      "driver": "La navette, puis les arrivées et les retours du jour.",
+      "driver": "La navette, puis le planning du jour.",
       "valet": "Les arrivées à placer, les départs à sortir, les clés."
     }
   },
@@ -2391,7 +2392,7 @@
     },
     "pro_welcome_driver": {
       "s1_title": "Votre poste : chauffeur",
-      "s1_body": "Trois onglets pour la journée : Navette, Arrivées et Retours. « Plus » garde le reste.",
+      "s1_body": "Deux onglets pour la journée : Navette et Planning. « Plus » garde le reste.",
       "s2_title": "Embarquer en un geste",
       "s2_body": "Dans « Aller », cochez les clients qui montent, même « Attendu », puis partez : la destination vient de leur réservation (terminal, gare…).",
       "s3_title": "Le retour, pareil",

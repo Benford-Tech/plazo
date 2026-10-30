@@ -578,6 +578,22 @@ class ProArrivalsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProDriverPlanningPage]
+class ProDriverPlanningRoute extends PageRouteInfo<void> {
+  const ProDriverPlanningRoute({List<PageRouteInfo>? children})
+    : super(ProDriverPlanningRoute.name, initialChildren: children);
+
+  static const String name = 'ProDriverPlanningRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProDriverPlanningPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProContractPage]
 class ProContractRoute extends PageRouteInfo<ProContractRouteArgs> {
   ProContractRoute({

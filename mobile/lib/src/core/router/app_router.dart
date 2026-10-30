@@ -97,6 +97,7 @@ class AppRouter extends RootStackRouter {
           AutoRoute(page: ProMoreTabRoute.page, path: 'plus'),
           // Tabs of the driver's and the valet's posts (R-C).
           AutoRoute(page: ProShuttleRoute.page, path: 'navette'),
+          AutoRoute(page: ProDriverPlanningRoute.page, path: 'planning'),
           AutoRoute(page: ProArrivalsRoute.page, path: 'arrivees'),
           AutoRoute(page: ProReturnsRoute.page, path: 'retours'),
           AutoRoute(page: ProSpotPlanningRoute.page, path: 'places'),

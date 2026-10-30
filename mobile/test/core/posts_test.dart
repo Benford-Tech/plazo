@@ -5,12 +5,12 @@ import 'package:parking_app/src/features/pro_auth/data/models/staff_model.dart';
 
 void main() {
   test('R-C · les onglets suivent le poste du jour', () {
-    expect(tabsFor('driver').map((t) => t.route.routeName), [ProShuttleRoute.name, ProArrivalsRoute.name, ProReturnsRoute.name, ProMoreTabRoute.name]);
+    expect(tabsFor('driver').map((t) => t.route.routeName), [ProShuttleRoute.name, ProDriverPlanningRoute.name, ProMoreTabRoute.name]);
     expect(tabsFor('valet').map((t) => t.route.routeName), [ProOccupationRoute.name, ProValetRoute.name, ProExtrasRoute.name, ProTodayRoute.name, ProMoreTabRoute.name]);
     for (final post in ['agent', 'manager']) {
       expect(tabsFor(post).map((t) => t.route.routeName), [ProTodayRoute.name, ProReservationsRoute.name, ProOccupationRoute.name, ProMoreTabRoute.name]);
     }
-    expect(tabsFor('driver').map((t) => t.label), ['shuttle', 'arrivals', 'returns', 'more']);
+    expect(tabsFor('driver').map((t) => t.label), ['shuttle', 'planning', 'more']);
   });
 
   test('le poste actif est celui choisi, sinon le rôle', () {

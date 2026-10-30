@@ -56,6 +56,20 @@ Widget _withBlocs(Widget child) => MultiBlocProvider(
   child: child,
 );
 
+/// The driver's « Planning » tab (30/10/2026, direction A, « en mode chauffeur il faut un planning qui avance aussi ; la liste
+/// aller retour est redondante »): the manager's planning alone, the next arrival and departure on top with the late ones,
+/// then the day's list. It replaces the « Arrivées » and « Retours » tabs, whose lists the Navette tab already has.
+@RoutePage()
+class ProDriverPlanningPage extends StatelessWidget implements AutoRouteWrapper {
+  const ProDriverPlanningPage({super.key});
+
+  @override
+  Widget wrappedRoute(BuildContext context) => _withBlocs(this);
+
+  @override
+  Widget build(BuildContext context) => const ProTodayView(initialMode: TodayMode.planning, planningOnly: true);
+}
+
 /// The driver's "Arrivées" tab (R-C): the day's arrivals alone, « Embarquer » on the ones not gone yet (14/10/2026).
 @RoutePage()
 class ProArrivalsPage extends StatelessWidget implements AutoRouteWrapper {
@@ -183,12 +197,15 @@ String _duration(int minutes) {
 
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
-  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard, this.clock = DateTime.now});
+  const ProTodayView({super.key, this.only, this.boarding, this.onBoard, this.initialMode = TodayMode.dashboard, this.planningOnly = false, this.clock = DateTime.now});
 
   final TodaySide? only;
 
   /// Where the view opens when both sides are shown: the dashboard, or straight on the planning.
   final TodayMode initialMode;
+
+  /// The planning without the « Tableau de bord · Planning » bar (the driver's tab).
+  final bool planningOnly;
 
   /// The driver's tabs (14/10/2026): « Embarquer » / « Récupérer » on today's rows, for the Navette tab.
   final ShuttleBoardingRequests? boarding;
@@ -318,7 +335,7 @@ class _ProTodayViewState extends State<ProTodayView> {
       body: BlocBuilder<ProTodayBloc, ProTodayState>(
         builder: (context, state) {
           final wide = MediaQuery.sizeOf(context).width >= 760;
-          final dashboard = widget.only == null && _mode == TodayMode.dashboard;
+          final dashboard = widget.only == null && !widget.planningOnly && _mode == TodayMode.dashboard;
           return Column(
             children: [
               if (state.banner != null)
@@ -327,7 +344,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                   onSee: () => _see(state),
                   onClose: () => context.read<ProTodayBloc>().add(const ProTodayBannerDismissed()),
                 ),
-              if (widget.only == null)
+              if (widget.only == null && !widget.planningOnly)
                 KeyedSubtree(
                   key: const Key('today-modes'),
                   child: _ModeBar(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
