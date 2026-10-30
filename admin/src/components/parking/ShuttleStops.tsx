@@ -114,6 +114,19 @@ export function ShuttleStops() {
               <span className="block text-sm font-normal text-muted-foreground">{t.airportHelp}</span>
             </span>
             <Badge variant="secondary">{t.airport}</Badge>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label={t.editAirportLabel}
+              onClick={() => {
+                // The airport is the return meeting point: it is edited in its own form above.
+                document.getElementById("point-de-rendez-vous")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                document.getElementById("mp-label")?.focus({ preventScroll: true });
+              }}
+            >
+              {t.edit}
+            </Button>
           </li>
           {stops.map(s => (
             <li key={s.id} className="flex flex-wrap items-center gap-3 px-3 py-2">

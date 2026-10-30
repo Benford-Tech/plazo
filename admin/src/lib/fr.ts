@@ -1184,6 +1184,7 @@ export const fr = {
       "Les lieux desservis en plus de l'aéroport (gare TGV, hôtel…). Le chauffeur choisit la desserte au départ d'un trajet ; une réservation peut en indiquer une.",
     airport: "Aéroport",
     airportHelp: "Toujours desservi : le point de rendez-vous ci-dessus.",
+    editAirportLabel: "Modifier l'aéroport (point de rendez-vous au retour)",
     airportUnset: "Aéroport : point de rendez-vous à définir ci-dessus.",
     empty: "Aucune autre desserte : la navette ne va qu'à l'aéroport.",
     kind: "Type",
