@@ -69,6 +69,7 @@ class _ProGettingStartedPageState extends State<ProGettingStartedPage> {
     'notifications' => const ProNotificationsRoute(),
     'plan' => const ProPlanRoute(),
     'reservations' => const ProReservationsRoute(),
+    'photo' => const ProAccountRoute(),
     _ => null,
   };
 

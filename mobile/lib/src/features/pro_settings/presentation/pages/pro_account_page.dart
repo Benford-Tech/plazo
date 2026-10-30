@@ -17,6 +17,7 @@ import '../../../pro_auth/data/models/staff_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_auth/presentation/widgets/delete_account_sheet.dart';
 import '../bloc/pro_settings_bloc.dart';
+import '../widgets/staff_photo_card.dart';
 
 /// "Mon compte": who is signed in, their first and last name (« Votre nom », 09/10/2026), and a new password (the
 /// server then closes every session). 13/10/2026 (mockup 5): « Connexion » (Apple / Google linked, « Lier … »,
@@ -140,6 +141,8 @@ class _ProAccountPageState extends State<ProAccountPage> {
                     style: AppText.muted(),
                   ),
                   const SizedBox(height: 18),
+                  // « Ma photo » (30/10/2026), as on the web's Mon compte.
+                  if (staff != null) ...[StaffPhotoCard(staffId: staff.id, name: staff.name), const SizedBox(height: 14)],
                   if (staff != null) _SignInCard(staff: staff, auth: auth),
                   const SizedBox(height: 22),
                   Text('account.name_section'.tr().toUpperCase(), style: AppText.label(size: 11)),

@@ -619,7 +619,8 @@
     "photo_upload_failed": "La photo n'a pas pu être enregistrée. Réessayez.",
     "photo_not_found": "Cette photo n'existe plus.",
     "not_an_image": "Ce fichier n'est pas une photo.",
-    "contract_at_counter": "Le contrat se signe au comptoir du parking, le jour du dépôt."
+    "contract_at_counter": "Le contrat se signe au comptoir du parking, le jour du dépôt.",
+    "demo_read_only": "Démo : ce réglage ne se change pas."
   },
   "tabs": {
     "search": "Rechercher",
@@ -1700,7 +1701,19 @@
     "delete_with_apple": "Confirmer avec Apple",
     "delete_with_google": "Confirmer avec Google",
     "delete_elsewhere": "Pour confirmer, ouvrez l'app sur le téléphone où vous vous connectez avec {}, ou demandez un mot de passe à votre gérant.",
-    "deleted": "Votre compte a été supprimé."
+    "deleted": "Votre compte a été supprimé.",
+    "photo": {
+      "title": "Ma photo",
+      "intro": "Votre équipe vous reconnaît sur l'espace pro et dans l'application.",
+      "demo": "Démo : la photo ne se change pas.",
+      "camera": "Prendre une photo",
+      "choose": "Choisir une photo",
+      "change": "Changer ma photo",
+      "remove": "Retirer",
+      "saved": "Photo enregistrée.",
+      "removed": "Photo retirée.",
+      "denied": "Plazo Pro n'a pas accès à l'appareil photo ou aux photos : autorisez-le dans les réglages du téléphone."
+    }
   },
   "settings": {
     "title": "Réglages du parking",
@@ -2520,7 +2533,7 @@
       },
       "photo": {
         "title": "Votre photo",
-        "body": "Ajoutée dans Mon compte sur l'espace pro web : votre équipe vous reconnaît."
+        "body": "Ajoutée dans Mon compte : votre équipe vous reconnaît."
       }
     }
   },

@@ -54,9 +54,9 @@
 	<!-- Stripe's payment sheet can scan a bank card, and Plazo Pro photographs the vehicles for the condition reports
 	     (19/10/2026): Apple refuses a build whose SDKs use the camera without this text. -->
 	<key>NSCameraUsageDescription</key>
-	<string>L'appareil photo sert à photographier le véhicule pour l'état des lieux (dans l'application du parking) et à scanner votre carte bancaire au paiement, si vous le choisissez.</string>
+	<string>L'appareil photo sert à photographier le véhicule pour l'état des lieux, à prendre votre photo de profil dans l'application du parking et à scanner votre carte bancaire au paiement, si vous le choisissez.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Vos photos servent uniquement à joindre une photo du véhicule à l'état des lieux, si vous la choisissez dans votre galerie.</string>
+	<string>Vos photos servent uniquement à joindre une photo du véhicule à l'état des lieux, ou à choisir votre photo de profil dans l'application du parking, si vous la choisissez dans votre galerie.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

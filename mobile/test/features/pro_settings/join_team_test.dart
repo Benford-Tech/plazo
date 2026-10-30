@@ -21,6 +21,7 @@ import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_acc
 import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_team_page.dart';
 import 'package:parking_app/src/services/share_service.dart';
 
+import '../../helpers/paperwork.dart';
 import '../../helpers/pump_app.dart';
 
 class MockAuthBloc extends MockBloc<ProAuthEvent, ProAuthState> implements ProAuthBloc {}
@@ -90,6 +91,7 @@ void main() {
 
   setUpAll(() async {
     await setUpLocalizedTests();
+    registerQuietStaffPhoto();
     registerFallbackValue(NoParams());
     registerFallbackValue(const AcceptJoinParams(id: '', role: 'agent'));
     registerFallbackValue(const ProAuthLeaveRequested());

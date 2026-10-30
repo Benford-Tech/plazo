@@ -25,6 +25,7 @@ import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_acc
 import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_team_page.dart';
 
 import '../../helpers/fakes.dart';
+import '../../helpers/paperwork.dart';
 import '../../helpers/pump_app.dart';
 
 class MockLogin extends Mock implements LoginUseCase {}
@@ -76,6 +77,7 @@ const dan = TeamMemberModel(id: 's2', email: 'dan@demo.fr', name: 'Dan', firstNa
 void main() {
   setUpAll(() async {
     await setUpLocalizedTests();
+    registerQuietStaffPhoto();
     registerFallbackValue(NoParams());
     registerFallbackValue(const LoginParams(email: '', password: ''));
     registerFallbackValue(const UpdateNameParams(firstName: '', lastName: ''));
