@@ -510,6 +510,32 @@ workflows:
       - build/ios/ipa/*.ipa
       - build/ios/dsym/*/*.dSYM
 
+  store-images:
+    name: Stores — remplacer les captures (Google Play et App Store)
+    # 30/10/2026 (« publie les images sur les stores »): the marketing images of brand/stores/marketing/A replace the
+    # screenshots of both listings, by the Play Developer API (mobile_secrets) and the App Store Connect API (the
+    # lovenest-asc integration); the stores environment of GitHub has no store keys. .github/scripts/store_images.py.
+    # Nothing is built. By hand only.
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: lovenest-asc
+    environment:
+      <<: *env_versions
+      groups:
+        - mobile_secrets
+      vars:
+        APPS: plazo plazo-pro
+        STORES: google apple
+        DRY_RUN: "0"
+    scripts:
+      - name: Envoyer les captures
+        script: |
+          set -e
+          python3 -m venv "$CM_BUILD_DIR/venv"
+          "$CM_BUILD_DIR/venv/bin/pip" install -q requests==2.32.3 PyJWT==2.9.0 cryptography==43.0.3 google-auth==2.35.0
+          "$CM_BUILD_DIR/venv/bin/python" .github/scripts/store_images.py
+
   mobile-submit-app-store:
     name: App Store — soumettre à la revue un build déjà sur TestFlight (sans rebuild)
     # 29/10/2026 (build 6ae23b88, Plazo Pro 1.0.123 « KO App Store »): the IPA reached TestFlight but Apple was still
