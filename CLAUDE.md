@@ -1145,6 +1145,25 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    **PDF du parking lisible avant la signature (29/10/2026, « impossible de visualiser le contrat et de le signer »)** :
    `contract/file?kind=template` (voyageur et équipe) rendait 404 tant qu'aucun contrat n'était signé (pas de ligne
    `reservation_contracts`) ; il sert désormais le PDF en vigueur du loueur, comme le dit la vue (`files.template`), puis celui signé.
+   **Contrat pré-rempli, direction A « Calque placé par le gérant » (30/10/2026, « le contrat doit être pré-rempli avec les infos et
+   la date de signature », maquettes https://claude.ai/artifact/MQjG7RcXy893kwj2M7a9ii)** : le gérant place une fois, par version du
+   PDF, où va chaque information (`OperatorContractTemplate.fields` `[{ key, page, x, y, w, h, size? }]`, fractions de la page depuis
+   son coin haut gauche, et `fieldsSetAt` ; migration `contract_template_fields`) ; clés `customer_name` · `phone` · `plate` ·
+   `vehicle` · `arrival_at` · `return_at` · `price` · `reference` · `return_flight` · `signed_on` · `signature`
+   (`domain/contract-fields.ts` : `validateFields`, 40 au plus, cadre dans la page, 6 à 24 pt ; `fieldValues` « 30/10/2026 08:00 »,
+   « 54,00 € » ; `stampFields` écrit chaque valeur dans son cadre, réduite pour y tenir, sans ajouter de page). Le PDF lu avant la
+   signature (`contract/file?kind=template`, voyageur et équipe) est pré-rempli avec la réservation et « Fait le » = aujourd'hui (heure
+   du parking), le cadre de signature vide ; le PDF signé porte les mêmes valeurs, la date de signature et la signature (le tracé
+   manuscrit, ou « Signé par code SMS · 09:47 », `signatureStamp`), puis la page « Réservation et signature » comme avant (empreinte
+   du PDF d'origine inchangée dans le texte signé). Routes (gérants) : `PUT /internal/contract-template/:id/fields` (`RefuseInDemo`,
+   409 `template_retired`, 400 `fields` invalid · too_many · invalid_key · invalid_page · invalid_box · invalid_size, tracé
+   `contract_template.fields`) et `POST …/:id/preview` (`{ fields }` → le PDF avec des valeurs d'exemple). Web : « Placer les
+   informations » de la carte « Contrat de stationnement » (ligne « Pré-rempli : N informations placées » ou ambre « Pas encore
+   pré-rempli ») → page `/pro/parking/contrat/:templateId/champs` (`ContractFieldsPage`, chargée à part avec pdf.js, `lib/pdf-render.ts`) :
+   palette des informations (glisser sur la page ou toucher pour poser au milieu), la page du PDF dessinée avec les cadres en citron
+   (valeur d'exemple, déplacer, agrandir par le coin, retirer, taille du texte), pages ‹ ›, « Enregistrer », « Aperçu avec un
+   exemple ». Un PDF sans champs reste servi tel quel ; les rotations de page ne sont pas gérées. Tests `contract-fields.test.ts`,
+   `ContractFieldsPage.test.tsx`.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 
