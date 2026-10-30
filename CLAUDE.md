@@ -1106,8 +1106,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      → `{ found: false }` ou `{ found: true, match: 'code' | 'device', reference, manageToken, firstName, parking, arrivalAt,
      returnAt }` (l'attente est consommée) → feuille « Retrouvée pour vous · R7KQ2M · parking · date », « Ouvrir ma réservation »
      (clé enregistrée) ou « Ce n'est pas moi ». `AppLinkService`, `appLinkLimiter` (40 par 15 min), `visitorAddress(req)` dans
-     `rateLimiter.ts`, `SITE_API_KEY=test-site-key` dans le setup des tests. Reste à faire : l'empreinte de signature Play dans
-     `assetlinks.json` (sans elle Android ouvre le navigateur même avec l'app) et le lecteur de l'Install Referrer dans l'app (le
+     `rateLimiter.ts`, `SITE_API_KEY=test-site-key` dans le setup des tests. Empreinte de la signature Play de Plazo dans
+     `assetlinks.json` depuis le 30/10/2026 (Android ouvre l'app une fois installée ou mise à jour). Reste à faire : le lecteur de l'Install Referrer dans l'app (le
      code est déjà passé au store ; d'ici là Android est retrouvé comme iPhone, par l'adresse). Politique de confidentialité à
      compléter (hachage 24 h). Tests `app-link.test.ts`, `app-link.test.ts` (site), `app_link_test.dart`.
 

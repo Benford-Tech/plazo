@@ -394,7 +394,7 @@ Plus › Équipe, qu'un second compte (Apple) peut le taper, puis être accepté
 **À envoyer (valeurs non secrètes) :**
 - [x] l'Apple ID numérique de Plazo (`6821635235`) et de Plazo Pro (`6821635650`), posés le 11/10/2026 ;
 - [ ] les identifiants définitifs, s'ils changent, **avant** toute création dans les consoles ;
-- [ ] les empreintes **SHA-256** de la clé de signature Play (Play Console › Protégé avec Play › Signature d'application
+- [x] l'empreinte **SHA-256** de la clé de signature Play de Plazo (posée le 30/10/2026) (Play Console › Protégé avec Play › Signature d'application
   Play), pour `site/public/.well-known/assetlinks.json` (27/10/2026 : le lien court `https://www.plazo.fr/a/<code>` des SMS
   et des mails n'ouvre l'app Android qu'une fois cette empreinte en place ; d'ici là il ouvre le navigateur, qui propose
   l'installation et « J'ai déjà l'app ») ; le Team ID Apple est connu (`3BX4795V2Y`) et déjà dans

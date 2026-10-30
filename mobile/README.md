@@ -194,9 +194,8 @@ version web, « Payer » ouvre la page Stripe Checkout.
    `.p8` de l'équipe Apple (iOS) et la clé d'un compte de service Firebase (Android, projet Firebase à créer).
 5. **Liens de réservation qui ouvrent l'app** (11/10/2026) : le site sert `/.well-known/apple-app-site-association`
    (Team ID `3BX4795V2Y`, servi en JSON) et `/.well-known/assetlinks.json` depuis `site/public/.well-known/` ; le domaine
-   `www.plazo.fr` est dans `AndroidManifest.xml` (flavor traveller) et `ios/Runner/Runner.entitlements`. Reste à poser
-   l'**empreinte SHA-256 de la signature d'application Play** dans `assetlinks.json` (Play Console › Signature d'application
-   Play, après la création de la fiche).
+   `www.plazo.fr` est dans `AndroidManifest.xml` (flavor traveller) et `ios/Runner/Runner.entitlements`. L'**empreinte SHA-256 de la signature d'application Play** de Plazo est dans `assetlinks.json` depuis le 30/10/2026
+   (Play Console › Signature d'application Play).
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).

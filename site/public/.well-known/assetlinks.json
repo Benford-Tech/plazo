@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.benfordtech.plazo",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_THE_PLAY_APP_SIGNING_SHA256_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["CC:77:C2:DD:52:73:FE:98:C2:33:E8:0C:39:A4:D6:31:87:33:69:60:DD:71:1F:D6:8D:6A:57:23:55:6A:75:3B"]
     }
   }
 ]
