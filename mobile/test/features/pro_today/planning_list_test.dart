@@ -54,7 +54,7 @@ void main() {
     ],
   );
 
-  Future<MockTodayBloc> show(WidgetTester tester, {String? date, PlanningModel? data}) async {
+  Future<MockTodayBloc> show(WidgetTester tester, {String? date, PlanningModel? data, bool planningOnly = false}) async {
     final today = MockTodayBloc();
     whenListen(
       today,
@@ -70,7 +70,7 @@ void main() {
           BlocProvider<ProTodayBloc>.value(value: today),
           BlocProvider<LiveShuttlesBloc>.value(value: live),
         ],
-        child: ProTodayView(initialMode: TodayMode.planning, clock: () => now),
+        child: ProTodayView(initialMode: TodayMode.planning, planningOnly: planningOnly, clock: () => now),
       ),
       size: const Size(400, 1200),
     );
@@ -159,6 +159,14 @@ void main() {
 
     await show(tester, date: '2026-10-28');
     expect(find.byKey(const Key('planning-next')), findsNothing);
+  });
+
+  testWidgets('poste Chauffeur : le planning seul, sans la barre Tableau de bord · Planning, qui avance aussi (30/10/2026)', (tester) async {
+    await show(tester, planningOnly: true);
+    expect(find.byKey(const Key('today-modes')), findsNothing);
+    expect(find.byKey(const Key('planning-next')), findsOneWidget);
+    expect(find.byKey(const Key('late-departure')), findsOneWidget);
+    expect(find.byKey(const Key('planning-filter-all')), findsOneWidget);
   });
 
   test('untilLabel : maintenant, dans 1 h 05, en retard', () {

@@ -954,6 +954,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      bandes À emmener · En route · En séjour (retours : À récupérer · En route · Rendus) ; `leaveAt` sur `PickupRow` et
      `DepartureRow`, `DepartureRow.expected` (attendu ; grisé jusqu'au 14/10/2026), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
      `ShuttleState.band`, `_BandBar` ; `ShuttleTripsPanel` onglets `band-0/1/2`.
+     **Planning du chauffeur, direction A (30/10/2026, « en mode chauffeur il faut un planning qui avance aussi ; la liste aller
+     retour est redondante », maquettes https://claude.ai/artifact/LHCvDC42RBQ7q2uzwsjLjE)** : dans Plazo Pro, les onglets Arrivées et
+     Retours du poste Chauffeur, qui répétaient les listes Aller et Retour de la Navette, deviennent un seul onglet **Planning**
+     (`ProDriverPlanningPage`, `/pro/planning`, clé `ptab-planning`) : le planning du gérant sans la barre « Tableau de bord ·
+     Planning » (`ProTodayView.planningOnly`), donc la prochaine arrivée et le prochain départ, les retards, puis la liste du jour ; la
+     Navette garde Aller · Retour · En route pour cocher et partir. `ProArrivalsPage` / `ProReturnsPage` restent routées (`arrivees`,
+     `retours`) sans onglet. Le web n'a pas changé (son mode chauffeur n'avait pas ces onglets). Tests `posts_test.dart`,
+     `planning_list_test.dart`.
      **Ligne du jour cohérente avec l'heure (06/10/2026)** : aujourd'hui, seules les vagues à venir sont listées (`ShuttleWavesState.upcoming`,
      une vague est passée si elle est faite ou devait partir il y a plus de 30 min) ; les passées sont repliées sous « N créneaux passés »
      (app `waves-past`, web `waves-past`, heure du serveur) ; le compteur devient « N à venir ».
@@ -1268,7 +1276,7 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   (07/10/2026)),
   **R-C « Poste du jour » (04/10/2026)** : chaque membre choisit son poste (gérant, accueil, chauffeur, voiturier) parmi ceux
   que son rôle couvre (`allowedPosts` dans `domain/roles.ts`, `Staff.post/postSetAt`, `PATCH /internal/staff/me/post`) ; les quatre
-  onglets suivent le poste (`core/helpers/posts.dart` : chauffeur Navette · Arrivées · Retours · Plus, voiturier Parking ·
+  onglets suivent le poste (`core/helpers/posts.dart` : chauffeur Navette · Planning · Plus depuis le 30/10/2026 (avant : Navette · Arrivées · Retours · Plus), voiturier Parking ·
   Aujourd'hui · Places · Plus, accueil et gérant Aujourd'hui · Réservations · Parking · Plus), les droits restent ceux du rôle ;
   le gérant voit le poste du jour dans Équipe (web et app). Étapes de l'app pro :
   3 planning des places (fait : `/pro/planning-places`, feature `pro_spot_planning`), 4 équipe / compte / réglages (fait :

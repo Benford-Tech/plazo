@@ -17,7 +17,7 @@ const posts = ['manager', 'agent', 'driver', 'valet'];
 
 /// The tabs of each post: the pages of the day's work first, "Plus" keeps the rest.
 ///
-/// - driver: the shuttle, then the arrivals and returns of the day;
+/// - driver: the shuttle, then the day's planning (30/10/2026: one tab instead of « Arrivées » and « Retours »);
 /// - valet: the parking (arrivals to place, keys), the terminal runs, the services to do before the returns, the day
 ///   (five tabs; the spot planning is in Plus › Voiturier);
 /// - agent and manager: the day, the bookings, the parking.
@@ -29,8 +29,7 @@ List<ProTab> tabsFor(String post) {
     case 'driver':
       return [
         ProTab(route: ProShuttleRoute(), icon: Icons.directions_bus_rounded, label: 'shuttle', key: 'ptab-shuttle'),
-        const ProTab(route: ProArrivalsRoute(), icon: Icons.flight_takeoff_rounded, label: 'arrivals', key: 'ptab-arrivals'),
-        const ProTab(route: ProReturnsRoute(), icon: Icons.flight_land_rounded, label: 'returns', key: 'ptab-returns'),
+        const ProTab(route: ProDriverPlanningRoute(), icon: Icons.schedule_rounded, label: 'planning', key: 'ptab-planning'),
         more,
       ];
     case 'valet':
