@@ -113,6 +113,8 @@ def asc_session():
     key = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').strip()
     if not (issuer and key_id and key):
         return None
+    if key.startswith('@'):
+        print(f'  clé App Store Connect donnée en {key.split(":")[0]}:…')
     key = apple_key(key)
     now = int(time.time())
     token = jwt.encode({'iss': issuer, 'iat': now, 'exp': now + 1100, 'aud': 'appstoreconnect-v1'}, key,
@@ -126,6 +128,12 @@ def apple_key(raw):
     """The .p8 key as PEM, however it was handed over: PEM, PEM with literal \\n, a file path, or base64 (with or
     without its padding and PEM armour). Never printed."""
     raw = raw.strip().strip('"').strip("'")
+    # Codemagic's tools take « @env:NAME » and « @file:PATH », which its App Store Connect integration hands over.
+    for _ in range(3):
+        if raw.startswith('@env:'):
+            raw = os.environ.get(raw[5:], '').strip()
+        elif raw.startswith('@file:'):
+            raw = Path(os.path.expanduser(raw[6:])).read_text().strip()
     if os.path.isfile(raw):
         raw = Path(raw).read_text().strip()
     raw = raw.replace('\\n', '\n')
