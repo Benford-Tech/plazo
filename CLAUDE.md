@@ -495,6 +495,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      bloc sur la fiche réservation (`LinkedEmailsCard`, `LinkedEmailsDataSource` par Dio sans freezed), feuille du mail (texte
      sélectionnable, résumé, une ligne par changement « Date de retour : … → … »). Tests `reservation-emails.test.ts`,
      `LinkedEmails.test.tsx`, `InboundEmailsPage.test.tsx`, `linked_emails_card_test.dart`.
+   - **Historique d'une réservation, direction A (30/10/2026, « avoir un historique des actions et de l'auteur sur les
+     réservations », maquettes https://claude.ai/artifact/RwN9LbUC1vB2W2EvwYXkRJ)** : `GET /internal/reservations/:id/history`
+     (`ReservationHistoryService`, `reservations:view`, 404 pour un autre loueur, 300 entrées au plus) lit le journal `audit_logs`
+     de la réservation (passé compris) et le rend lisible (`domain/reservation-history.ts`) : du plus récent au plus ancien, chaque
+     action avec son auteur (`staff` : prénom et photo ; `traveller` : `by: 'traveller'`, signaux d'arrivée, création sur Plazo ;
+     `comparator` : `provider`, `source` « parkvia_cancellation »… ou le comparateur de la réservation pour un mail ; `system` :
+     Plazo, « (consultation) » pour le super admin), son groupe (`status` · `change` · `message` · `other`), les champs changés
+     avant → après (liste blanche `SHOWN_FIELDS`, dates à l'heure du parking, euros, libellés ; jamais les colonnes techniques) et
+     les seuls détails utiles (`info`) ; une modification sans champ montré est omise. Web : bloc « Historique · N actions » en bas
+     de la fiche réservation (`ReservationHistory` : pilules Tout · États · Modifications · Messages, jours « Aujourd'hui », « Hier »,
+     date, photo ou initiales du membre, pastilles d'état, « Voir les N plus anciennes » après 15). Plazo Pro ne l'a pas encore.
+     Tests `reservation-history.test.ts`, `ReservationHistory.test.tsx`.
    - **Listes chronologiques (10/10/2026, « Les réservations doivent être affichées de manière chronologique »)** : la liste
      Réservations (web `/pro/reservations`, app Plazo Pro) et Plateforme › Réservations vont par date d'arrivée, la plus
      ancienne d'abord (puis `id`) ; sans recherche (ni filtre de dates pour la plateforme), la page 1 commence à la première

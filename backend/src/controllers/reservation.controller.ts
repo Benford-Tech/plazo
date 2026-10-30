@@ -7,12 +7,19 @@ import { ArrivalService } from '@/services/arrival.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { ReservationService } from '@/services/reservation.service';
+import { ReservationHistoryService } from '@/services/reservation-history.service';
 import catchAsync from '@/utils/catchAsync';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : undefined);
 
 export class ReservationController {
   public reservationService = Container.get(ReservationService);
+
+  /** GET /internal/reservations/:id/history (30/10/2026) */
+  public history = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(ReservationHistoryService).history(req.staff, req.params.id as string));
+  });
 
   /** GET /internal/planning?date=YYYY-MM-DD */
   public planning = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
