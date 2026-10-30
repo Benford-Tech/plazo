@@ -21,6 +21,9 @@ abstract class TeamMemberModel with _$TeamMemberModel {
     String? post,
     DateTime? postSetAt,
 
+    /// The member's photo (30/10/2026), null when none; it keys the cached image.
+    DateTime? photoUpdatedAt,
+
     /// How the member signs in (13/10/2026): password, apple, google.
     @Default([]) List<String> signIn,
   }) = _TeamMemberModel;

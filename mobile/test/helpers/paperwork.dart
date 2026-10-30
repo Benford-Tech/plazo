@@ -60,6 +60,7 @@ class FakeStaffPhoto implements StaffPhotoDataSource {
   bool demo = false;
   final uploads = <Uint8List>[];
   int removals = 0;
+  final loads = <String>[];
 
   @override
   Future<({DateTime? photoUpdatedAt, bool demo})> mine() async => (photoUpdatedAt: photoUpdatedAt, demo: demo);
@@ -77,7 +78,10 @@ class FakeStaffPhoto implements StaffPhotoDataSource {
   }
 
   @override
-  Future<Uint8List?> load(String staffId, DateTime updatedAt) async => null;
+  Future<Uint8List?> load(String staffId, DateTime updatedAt) async {
+    loads.add(staffId);
+    return null;
+  }
 }
 
 /// Mon compte's photo card in the tests of other parts of the page.

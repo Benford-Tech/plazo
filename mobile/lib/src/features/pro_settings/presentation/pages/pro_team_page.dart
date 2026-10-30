@@ -20,6 +20,7 @@ import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/models/settings_models.dart';
 import '../../domain/usecases/settings_use_cases.dart';
 import '../bloc/pro_team_bloc.dart';
+import '../widgets/staff_photo_card.dart';
 
 const _roles = ['manager', 'agent', 'driver', 'valet'];
 
@@ -219,6 +220,13 @@ class _MemberTileState extends State<_MemberTile> {
         children: [
           Row(
             children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Opacity(
+                  opacity: m.isActive ? 1 : 0.5,
+                  child: StaffAvatar(key: Key('member-avatar-${m.id}'), staffId: m.id, name: m.name, photoUpdatedAt: m.photoUpdatedAt, size: 36),
+                ),
+              ),
               Expanded(
                 child: Text(
                   isMe ? '${m.name} · ${'team.you'.tr()}' : m.name,
