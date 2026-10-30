@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "@/components/AdminLayout";
 import type { Staff } from "@/lib/types";
@@ -54,7 +54,9 @@ describe("espace Plateforme dans le menu", () => {
   it("apparaît pour un administrateur de la plateforme", () => {
     auth.user = { ...manager, isPlatformAdmin: true };
     renderAt("/", <div />);
-    expect(screen.getByRole("link", { name: "Plateforme" })).toHaveAttribute("href", "/plateforme");
+    // Direction A (30/10/2026): in the account menu at the bottom of the rail.
+    fireEvent.click(screen.getAllByTestId("account-menu").at(-1)!);
+    expect(screen.getByRole("menuitem", { name: "Plateforme" })).toHaveAttribute("href", "/plateforme");
     expect(screen.getByRole("button", { name: "Changer de vue" })).toBeInTheDocument();
   });
 

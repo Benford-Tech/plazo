@@ -3,7 +3,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "./AdminLayout";
 
-const api = vi.hoisted(() => ({ getGettingStarted: vi.fn() }));
+const api = vi.hoisted(() => ({
+  getGettingStarted: vi.fn(),
+  navCounts: vi.fn(async () => ({ inbox: 3, extras: 2 })),
+}));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return {
@@ -11,6 +14,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
     adminApi: {
       ...actual.adminApi,
       getGettingStarted: () => api.getGettingStarted(),
+      navCounts: () => api.navCounts(),
     },
   };
 });
@@ -66,7 +70,7 @@ const renderLayout = () =>
     </QueryClientProvider>,
   );
 
-// W-A (26/10/2026, « réorganise le menu par rôle »): the rail in three sections.
+// Direction A (30/10/2026, « réorganise le menu sur le web »): four groups, their pages and the account at the bottom.
 describe("AdminLayout rail sections", () => {
   beforeEach(() => {
     api.getGettingStarted.mockResolvedValue(STEPS);
@@ -74,43 +78,74 @@ describe("AdminLayout rail sections", () => {
     localStorage.setItem("plazo:getting-started-welcome", "s1");
   });
 
-  it("groups the manager’s links under Exploitation, Gérant and Compte", () => {
+  it("groups the manager’s pages under Aujourd'hui, Réservations, Parking and Gérant", () => {
     auth.role = "manager";
     renderLayout();
-    const ops = screen.getByTestId("nav-section-operations");
-    expect(within(ops).getByText("Exploitation")).toBeInTheDocument();
-    expect(
-      within(ops)
+    const hrefs = (testId: string) =>
+      within(screen.getByTestId(testId))
         .getAllByRole("link")
-        .map((l) => l.getAttribute("href")),
-    ).toEqual(["/", "/planning", "/navettes", "/reservations", "/parking"]);
-    const manager = screen.getByTestId("nav-section-manager");
-    expect(within(manager).getByText("Gérant")).toBeInTheDocument();
+        .map((l) => l.getAttribute("href"));
+    expect(within(screen.getByTestId("nav-section-today")).getByText("Aujourd'hui")).toBeInTheDocument();
+    expect(hrefs("nav-section-today")).toEqual(["/", "/planning", "/navettes"]);
+    expect(hrefs("nav-section-reservations")).toEqual(["/reservations"]);
+    expect(hrefs("nav-section-parking")).toEqual(["/parking/occupation"]);
+    expect(hrefs("nav-section-manager")).toEqual([
+      "/chiffre-affaires",
+      "/plazo/fiche",
+      "/equipe",
+      "/contrats",
+      "/mon-contrat",
+    ]);
+  });
+
+  it("unfolds a group on its pages, with the counters of what waits", async () => {
+    auth.role = "manager";
+    renderLayout();
+    const group = screen.getByTestId("nav-item-/reservations");
+    // Folded: the group's total.
+    expect(await within(group).findByLabelText("5 à traiter")).toBeInTheDocument();
+    fireEvent.click(within(group).getByRole("button", { name: "Afficher les pages de Réservations" }));
+    const pages = screen.getByTestId("nav-children-/reservations");
     expect(
-      within(manager)
+      within(pages)
         .getAllByRole("link")
         .map((l) => l.getAttribute("href")),
     ).toEqual([
-      "/chiffre-affaires",
-      "/plazo",
-      "/equipe",
-      "/mon-contrat",
-      "/contrats",
+      "/reservations",
+      "/reservations/a-verifier",
+      "/reservations/services",
+      "/reservations/sms-veille",
+      "/reservations/importer",
     ]);
-    const account = screen.getByTestId("nav-section-account");
-    expect(
-      within(account)
-        .getAllByRole("link")
-        .map((l) => l.getAttribute("href")),
-    ).toEqual(["/mon-compte"]);
+    expect(within(pages).getByLabelText("3 à traiter")).toBeInTheDocument();
+    expect(within(pages).getByLabelText("2 à traiter")).toBeInTheDocument();
   });
 
-  it("shows no Gérant section to a driver", () => {
+  it("shows no Gérant section to a driver, nor the pages of the managers", () => {
     auth.role = "driver";
     renderLayout();
-    expect(screen.getByTestId("nav-section-operations")).toBeInTheDocument();
+    expect(screen.getByTestId("nav-section-today")).toBeInTheDocument();
     expect(screen.queryByTestId("nav-section-manager")).toBeNull();
-    expect(screen.getByTestId("nav-section-account")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Afficher les pages de Parking" }));
+    expect(
+      within(screen.getByTestId("nav-children-/parking"))
+        .getAllByRole("link")
+        .map((l) => l.getAttribute("href")),
+    ).toEqual(["/parking/occupation", "/parking/planning"]);
+  });
+
+  it("puts the account at the bottom: Mon compte, the photo and sign out", () => {
+    auth.role = "manager";
+    renderLayout();
+    const [rail] = screen.getAllByTestId("account-menu").slice(-1);
+    expect(within(rail).getByText("Joanny Simpore")).toBeInTheDocument();
+    expect(within(rail).getByText("Gérant")).toBeInTheDocument();
+    fireEvent.click(rail);
+    const menu = screen.getByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "Mon compte" })).toHaveAttribute("href", "/mon-compte");
+    expect(within(menu).getByRole("menuitem", { name: "Changer ma photo" })).toHaveAttribute("href", "/mon-compte#photo");
+    expect(within(menu).getByRole("menuitem", { name: "Se déconnecter" })).toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: "Plateforme" })).toBeNull();
   });
 
   // « les étapes bien démarrer doivent être sur la nav bar de gauche » (26/10/2026).

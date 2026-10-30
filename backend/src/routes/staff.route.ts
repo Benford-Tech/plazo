@@ -205,6 +205,31 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       403: { description: "In consultation (view_as_read_only), a platform owner (cannot_delete_platform)" }
  *       409: { description: "last_manager, trip_running" }
  */
+/**
+ * @swagger
+ * /internal/staff/me/photo:
+ *   post:
+ *     summary: Ma photo (30/10/2026) — the image's bytes (JPEG, PNG or WebP, 2 MB at most; the pro space sends a 512 px square JPEG); replaces the previous one
+ *     tags: [Staff]
+ *     requestBody: { required: true, content: { image/jpeg: { schema: { type: string, format: binary } } } }
+ *     responses:
+ *       200: { description: "{ photoUpdatedAt }" }
+ *       400: { description: "validation_failed: fields.photo = required | too_large | not_an_image" }
+ *       403: { description: "view_as_read_only, demo_read_only" }
+ *       503: { description: photos_unavailable (no photo store) }
+ *   delete:
+ *     summary: Retirer ma photo
+ *     tags: [Staff]
+ *     responses: { 204: { description: Removed (or there was none) } }
+ * /internal/staff/{id}/photo:
+ *   get:
+ *     summary: A member's photo, for their team (private cache); 404 photo_not_found when they have none
+ *     tags: [Staff]
+ * /internal/nav/counts:
+ *   get:
+ *     summary: "The menu's counters (30/10/2026): { inbox, extras } — mails « À traiter » (null without reservations:manage) and services still to do"
+ *     tags: [Staff]
+ */
 export class StaffRoute implements Routes {
   public router = Router();
   public staff = new StaffController();
@@ -233,6 +258,11 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(ChangePasswordDto),
       this.staff.changePassword,
     );
+    // 30/10/2026: one's own photo (a personal setting: refused in consultation and in the demo), seen by the team.
+    this.router.post('/internal/staff/me/photo', StaffAuthMiddleware(), RefuseInViewAs(), this.staff.setPhoto);
+    this.router.delete('/internal/staff/me/photo', StaffAuthMiddleware(), RefuseInViewAs(), this.staff.removePhoto);
+    this.router.get('/internal/staff/:id/photo', StaffAuthMiddleware(), this.staff.photo);
+    this.router.get('/internal/nav/counts', StaffAuthMiddleware('reservations:view'), this.staff.navCounts);
     this.router.get('/internal/staff', StaffAuthMiddleware('team:manage'), this.staff.list);
     this.router.post(
       '/internal/staff',

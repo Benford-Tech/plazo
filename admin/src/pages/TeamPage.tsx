@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/Avatar";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -397,57 +398,60 @@ export default function TeamPage() {
                 key={m.id}
                 className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between"
               >
-                <div className="space-y-0.5">
-                  <p className="font-medium">
-                    {m.name}
-                    {m.id === user?.id && (
-                      <span className="ml-1 text-sm text-muted-foreground">
-                        ({t.you})
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {m.email}
-                    {m.phone && ` · ${m.phone}`}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
-                    <Badge variant="secondary">{fr.roles[m.role]}</Badge>
-                    <Badge variant={m.isActive ? "outline" : "destructive"}>
-                      {m.isActive ? t.active : t.inactive}
-                    </Badge>
-                    {!!m.signIn?.length && (
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span className="sr-only">{t.signInPrefix}</span>
-                        {m.signIn.map((method) => (
-                          <SignInBadge key={method} method={method} />
-                        ))}
-                      </span>
-                    )}
-                    {m.post && m.post !== m.role && m.postSetAt && (
-                      <Badge
-                        variant="default"
-                        title={t.postSince(
-                          dateTime.format(new Date(m.postSetAt)),
-                        )}
-                      >
-                        {t.postToday} : {fr.roles[m.post]}
+                <div className="flex items-start gap-3">
+                  <Avatar staff={m} size={40} />
+                  <div className="space-y-0.5">
+                    <p className="font-medium">
+                      {m.name}
+                      {m.id === user?.id && (
+                        <span className="ml-1 text-sm text-muted-foreground">
+                          ({t.you})
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {m.email}
+                      {m.phone && ` · ${m.phone}`}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
+                      <Badge variant="secondary">{fr.roles[m.role]}</Badge>
+                      <Badge variant={m.isActive ? "outline" : "destructive"}>
+                        {m.isActive ? t.active : t.inactive}
                       </Badge>
-                    )}
-                    {m.vehicle && (
-                      <Badge variant="outline">
-                        {t.vehicleToday} :{" "}
-                        {[m.vehicle.model, m.vehicle.colour]
-                          .filter(Boolean)
-                          .join(" ")}
-                        {m.vehicle.plate ? ` · ${m.vehicle.plate}` : ""}
-                      </Badge>
-                    )}
-                    <span>
-                      {t.lastLogin} :{" "}
-                      {m.lastLoginAt
-                        ? dateTime.format(new Date(m.lastLoginAt))
-                        : fr.common.never}
-                    </span>
+                      {!!m.signIn?.length && (
+                        <span className="inline-flex flex-wrap items-center gap-1">
+                          <span className="sr-only">{t.signInPrefix}</span>
+                          {m.signIn.map((method) => (
+                            <SignInBadge key={method} method={method} />
+                          ))}
+                        </span>
+                      )}
+                      {m.post && m.post !== m.role && m.postSetAt && (
+                        <Badge
+                          variant="default"
+                          title={t.postSince(
+                            dateTime.format(new Date(m.postSetAt)),
+                          )}
+                        >
+                          {t.postToday} : {fr.roles[m.post]}
+                        </Badge>
+                      )}
+                      {m.vehicle && (
+                        <Badge variant="outline">
+                          {t.vehicleToday} :{" "}
+                          {[m.vehicle.model, m.vehicle.colour]
+                            .filter(Boolean)
+                            .join(" ")}
+                          {m.vehicle.plate ? ` · ${m.vehicle.plate}` : ""}
+                        </Badge>
+                      )}
+                      <span>
+                        {t.lastLogin} :{" "}
+                        {m.lastLoginAt
+                          ? dateTime.format(new Date(m.lastLoginAt))
+                          : fr.common.never}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 {m.id !== user?.id &&

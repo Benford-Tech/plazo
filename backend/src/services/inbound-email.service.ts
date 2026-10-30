@@ -1162,6 +1162,11 @@ export class InboundEmailService {
     return this.settings(actor);
   }
 
+  /** The menu's counter (30/10/2026): the mails « À traiter ». */
+  public async todoCount(operatorId: string): Promise<number> {
+    return prisma.inboundEmail.count({ where: { operatorId, status: { in: TO_CHECK } } });
+  }
+
   /**
    * The inbox (M-A, 08/10/2026): one tab (`view`, `todo` by default) newest first, with the three tabs' counts;
    * `status` narrows the tab's rows to one status (the older filter).
