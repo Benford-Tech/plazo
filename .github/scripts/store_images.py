@@ -49,7 +49,10 @@ PLAY_UPLOAD = 'https://androidpublisher.googleapis.com/upload/androidpublisher/v
 
 
 def play_session():
-    raw = os.environ.get('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON', '').strip()
+    # GitHub's « stores » environment, or Codemagic's mobile_secrets group (either name, codemagic.yaml).
+    raw = next((os.environ.get(n, '').strip() for n in ('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON',
+                'GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS', 'GCLOUD_SERVICE_ACCOUNT_CREDENTIALS')
+                if os.environ.get(n, '').strip()), '')
     if not raw:
         return None
     if not raw.startswith('{'):
