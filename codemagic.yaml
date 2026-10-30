@@ -526,7 +526,8 @@ workflows:
         - mobile_secrets
       vars:
         APPS: plazo plazo-pro
-        STORES: google apple
+        # Google Play was done on 30/10/2026 (build 6ae4ca3a): « google apple » to do both again.
+        STORES: apple
         DRY_RUN: "0"
     scripts:
       - name: Envoyer les captures

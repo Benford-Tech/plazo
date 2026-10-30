@@ -113,14 +113,34 @@ def asc_session():
     key = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').strip()
     if not (issuer and key_id and key):
         return None
-    if 'BEGIN' not in key:
-        key = base64.b64decode(key).decode()
+    key = apple_key(key)
     now = int(time.time())
     token = jwt.encode({'iss': issuer, 'iat': now, 'exp': now + 1100, 'aud': 'appstoreconnect-v1'}, key,
                        algorithm='ES256', headers={'kid': key_id, 'typ': 'JWT'})
     s = requests.Session()
     s.headers['Authorization'] = f'Bearer {token}'
     return s
+
+
+def apple_key(raw):
+    """The .p8 key as PEM, however it was handed over: PEM, PEM with literal \\n, a file path, or base64 (with or
+    without its padding and PEM armour). Never printed."""
+    raw = raw.strip().strip('"').strip("'")
+    if os.path.isfile(raw):
+        raw = Path(raw).read_text().strip()
+    raw = raw.replace('\\n', '\n')
+    if 'BEGIN' in raw:
+        return raw
+    body = ''.join(raw.split())
+    try:
+        decoded = base64.b64decode(body + '=' * (-len(body) % 4)).decode()
+        if 'BEGIN' in decoded:
+            return decoded
+    except (ValueError, UnicodeDecodeError):
+        pass
+    # The bare key body: wrap it in its armour.
+    lines = [body[i:i + 64] for i in range(0, len(body), 64)]
+    return '-----BEGIN PRIVATE KEY-----\n' + '\n'.join(lines) + '\n-----END PRIVATE KEY-----\n'
 
 
 def apple(app, s):
