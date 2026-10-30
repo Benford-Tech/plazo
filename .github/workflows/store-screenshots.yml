@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   screenshots:
-    runs-on: ubuntu-latest
+    # ubuntu-latest became 26.04 (30/10/2026), which Playwright 1.56 does not support.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
       postgres:
