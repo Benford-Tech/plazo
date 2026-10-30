@@ -1076,7 +1076,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    `canSign` faux pour le voyageur) et `POST /public/bookings/:ref/contract/code|sign` répondent 409 `contract_at_counter` ; copie
    envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
    **États des lieux** (`VehicleInspection`
-   `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : six photos guidées
+   `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : quatre photos guidées facultatives (avant, droite, arrière, gauche depuis le 30/10/2026,
+   « ne demande que 4 photos et ne les rend pas obligatoire » : `GUIDED_SLOTS`, « Terminer » ne demande plus que le kilométrage et le
+   carburant ; compteur et intérieur, `LEGACY_SLOTS`, restent acceptés pour les anciens rapports ; jusque-là six photos obligatoires
    (avant, droite, arrière, gauche, compteur, intérieur ; une photo reprise remplace la précédente) et jusqu'à 12 gros plans de dégâts,
    dégâts touchés sur la silhouette (x, y de 0 à 1, numérotés), kilométrage, carburant (0 à 4 quarts), remarques ; « Terminer »
    verrouille (400 avec les champs manquants) ; dépôt possible en `upcoming`/`arrived`, retour dès `arrived` jusqu'à `returned`. Le
@@ -1088,7 +1090,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    (20/10/2026, « les deux peuvent faire l'état des lieux », écran 5 des maquettes)** : `VehicleInspection.author` `staff` |
    `traveller` (migration `inspection_author`, unique par réservation, sens et auteur ; CHECK : un rapport du voyageur n'a pas de
    réponse) ; dans Plazo, « Vos photos au dépôt » (`upcoming`/`arrived`, avant de remettre les clés) et « Vos photos au retour »
-   (`back_at_parking`/`returned`), facultatives : les six photos guidées (pas de gros plan), un mot, « Envoyer mes photos au
+   (`back_at_parking`/`returned`), facultatives : les photos guidées (quatre depuis le 30/10/2026 ; pas de gros plan), un mot, « Envoyer mes photos au
    parking » (une photo au moins, puis verrouillé, empreinte `proofSha256`) ; routes `POST|PATCH /public/bookings/:ref/inspections/:kind/mine`,
    `POST …/mine/photos?slot=` (`photoUploadLimiter`, 40 par 15 min), `DELETE …/mine/photos/:photoId`, `POST …/mine/complete` ;
    vue `travellerReports { dropoff, return }` (le brouillon pour le voyageur, l'envoi seulement pour l'équipe) et

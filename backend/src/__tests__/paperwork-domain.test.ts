@@ -1,5 +1,5 @@
 import { cleanStrokes, codeMatches, contractDocument, contractText, hashCode, maskPhone } from '@/domain/contract';
-import { canAnswer, cleanDamages, compareReports, missingForCompletion, photosCutoff, sniffImage } from '@/domain/inspection';
+import { canAnswer, cleanDamages, compareReports, missingForCompletion, missingSlots, photosCutoff, sniffImage } from '@/domain/inspection';
 
 const FACTS = {
   operatorName: 'Parking Test',
@@ -72,17 +72,10 @@ describe('état des lieux', () => {
     expect(cleanDamages(Array.from({ length: 21 }, () => ({ x: 0, y: 0, label: 'a' })))).toEqual({ ok: false, code: 'too_many' });
   });
 
-  it('un état des lieux est complet avec les six photos, le kilométrage et le carburant', () => {
-    expect(missingForCompletion({ slots: ['front', 'back'], mileageKm: 10, fuelQuarters: null })).toEqual([
-      'right',
-      'left',
-      'dashboard',
-      'interior',
-      'fuelQuarters',
-    ]);
-    expect(
-      missingForCompletion({ slots: ['front', 'right', 'back', 'left', 'dashboard', 'interior', 'damage'], mileageKm: 0, fuelQuarters: 0 }),
-    ).toEqual([]);
+  it('un état des lieux est complet avec le kilométrage et le carburant ; les photos sont facultatives (30/10/2026)', () => {
+    expect(missingForCompletion({ slots: ['front', 'back'], mileageKm: 10, fuelQuarters: null })).toEqual(['fuelQuarters']);
+    expect(missingForCompletion({ slots: [], mileageKm: 0, fuelQuarters: 0 })).toEqual([]);
+    expect(missingSlots(['front', 'back'])).toEqual(['right', 'left']);
   });
 
   it('le voyageur répond tant que le dépôt n’est pas parti en navette', () => {

@@ -39,7 +39,7 @@ import {
   MAX_RESERVE_LENGTH,
   missingForCompletion,
   photosCutoff,
-  REQUIRED_SLOTS,
+  GUIDED_SLOTS,
   sniffImage,
   travellerMayPhotograph,
 } from '@/domain/inspection';
@@ -947,5 +947,5 @@ export class PaperworkService {
   }
 
   /** The required slots, for the apps' guided capture. */
-  public static readonly requiredSlots = REQUIRED_SLOTS;
+  public static readonly requiredSlots = GUIDED_SLOTS;
 }

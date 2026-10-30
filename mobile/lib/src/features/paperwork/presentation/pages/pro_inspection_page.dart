@@ -141,8 +141,7 @@ class _DraftState extends State<_Draft> {
     final r = widget.report;
     final owner = StaffOwner(widget.id);
     final busy = widget.state.busy;
-    final missingSlots = r.missing.where(inspectionSlots.contains).length;
-    final taken = inspectionSlots.length - missingSlots;
+    final taken = inspectionSlots.where((s) => r.photos.any((p) => p.slot == s)).length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
@@ -159,7 +158,7 @@ class _DraftState extends State<_Draft> {
             Expanded(child: Text('paperwork.photos'.tr().toUpperCase(), style: AppText.label(size: 11))),
             _Pill(
               text: 'paperwork.photos_count'.tr(args: ['$taken', '${inspectionSlots.length}']),
-              done: missingSlots == 0,
+              done: taken == inspectionSlots.length,
             ),
           ],
         ),
@@ -260,7 +259,7 @@ class _DraftState extends State<_Draft> {
           label: 'paperwork.complete'.tr(),
           icon: Icons.check_rounded,
           busy: busy && widget.state.busySlot == null,
-          onPressed: busy || missingSlots > 0
+          onPressed: busy
               ? null
               : () => _bloc.add(
                   PaperworkEdited(

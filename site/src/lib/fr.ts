@@ -183,7 +183,7 @@ const frBase = {
       paidLine: "Payé en ligne · reversé sur votre compte",
       signed: "Contrat signé",
       atCounter: "Au comptoir",
-      dropoff: "État des lieux au dépôt · 6 photos",
+      dropoff: "État des lieux au dépôt · 4 photos",
       atReturn: "Au retour :",
       already: "Déjà au dépôt",
       fresh: "Nouveau",

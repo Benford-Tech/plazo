@@ -20,7 +20,7 @@ import {
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 const bookingToken = (token: string) => ({ 'x-booking-token': token });
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7)]);
-const SLOTS = ['front', 'right', 'back', 'left', 'dashboard', 'interior'];
+const SLOTS = ['front', 'right', 'back', 'left'];
 const STROKES = [
   [
     [0.1, 0.5],
@@ -195,10 +195,10 @@ describe('état des lieux', () => {
     const b = await setup();
     const base = `/api/internal/reservations/${b.id}/inspections/dropoff`;
     await api().post(base).set(auth(b.op.token));
-    // Incomplete: every guided photo, mileage and fuel are asked for.
+    // Incomplete: the mileage and the fuel are asked for; the photos are optional (30/10/2026).
     const early = await api().post(`${base}/complete`).set(auth(b.op.token));
     expect(early.status).toBe(400);
-    expect(Object.keys(early.body.fields)).toEqual([...SLOTS, 'mileageKm', 'fuelQuarters']);
+    expect(Object.keys(early.body.fields)).toEqual(['mileageKm', 'fuelQuarters']);
     // The traveller sees nothing of a draft.
     expect((await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token))).body.dropoff).toBeNull();
     const notImage = await api()
@@ -210,14 +210,14 @@ describe('état des lieux', () => {
 
     const done = await takeReport(b.op.token, b.id, 'dropoff');
     expect(done.dropoff).toMatchObject({ editable: false, mileageKm: 48215, fuelQuarters: 3, decision: 'pending', canAnswer: true });
-    expect(done.dropoff.photos).toHaveLength(6);
+    expect(done.dropoff.photos).toHaveLength(4);
     expect(done.dropoff.damages).toEqual([{ n: 1, x: 0.8, y: 0.2, label: 'Rayure, aile avant droite', photoId: null }]);
-    expect(memory.files.size).toBe(6);
+    expect(memory.files.size).toBe(4);
     // Locked once completed.
     expect((await api().patch(base).set(auth(b.op.token)).send({ mileageKm: 1 })).body.code).toBe('inspection_completed');
 
     const seen = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
-    expect(seen.body.dropoff.photos).toHaveLength(6);
+    expect(seen.body.dropoff.photos).toHaveLength(4);
     const photo = await api()
       .get(`/api/public/bookings/${b.reference}/inspections/dropoff/photos/${seen.body.dropoff.photos[0].id}`)
       .set(bookingToken(b.token));
@@ -307,10 +307,10 @@ describe('état des lieux', () => {
       where: { id: { in: [quiet.id, disputed.id] } },
       data: { returnAt: longAgo, arrivalAt: new Date(longAgo.getTime() - 86400000) },
     });
-    expect(memory.files.size).toBe(18);
-    const result = await Container.get(PaperworkService).purge();
-    expect(result.photosErased).toBe(6);
     expect(memory.files.size).toBe(12);
+    const result = await Container.get(PaperworkService).purge();
+    expect(result.photosErased).toBe(4);
+    expect(memory.files.size).toBe(8);
     expect((await prisma.vehicleInspection.findFirstOrThrow({ where: { reservationId: quiet.id } })).photosErasedAt).not.toBeNull();
   });
 });
@@ -400,7 +400,7 @@ describe('les photos du voyageur', () => {
     // The staff takes its own report next to it, and sees the traveller's photos.
     await takeReport(b.op.token, b.id, 'dropoff');
     const both = await api().get(`/api/internal/reservations/${b.id}/paperwork`).set(auth(b.op.token));
-    expect(both.body.dropoff.photos).toHaveLength(6);
+    expect(both.body.dropoff.photos).toHaveLength(4);
     expect(both.body.travellerReports.dropoff.photos).toHaveLength(2);
     expect((await api().get(`/api/internal/reservations/${b.id}/inspections/dropoff/photos/${draftFront}`).set(auth(b.op.token))).status).toBe(200);
     // The traveller answers the staff's report, never their own.
