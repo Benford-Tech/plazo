@@ -2517,6 +2517,10 @@
       "inbox": {
         "title": "La boîte de réception",
         "body": "Les mails des comparateurs, à vérifier sur l'espace pro web."
+      },
+      "photo": {
+        "title": "Votre photo",
+        "body": "Ajoutée dans Mon compte sur l'espace pro web : votre équipe vous reconnaît."
       }
     }
   },

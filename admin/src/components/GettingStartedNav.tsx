@@ -24,6 +24,7 @@ const GETTING_STARTED_LINKS: Record<string, string> = {
   plan: "/parking/plan",
   inbox: "/reservations/a-verifier",
   reservations: "/reservations",
+  photo: "/mon-compte#photo",
 };
 
 const readHidden = () => {
