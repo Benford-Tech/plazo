@@ -17,6 +17,7 @@ import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
+import { splitAtNow, untilLabel } from "@/lib/planning-now";
 
 function NightCell({ night }: { night: NightLoad }) {
   const t = fr.planning;
@@ -79,7 +80,19 @@ function SignalLabel({ s }: { s: ArrivalSignal }) {
   return <span className="whitespace-nowrap text-xs font-bold uppercase text-lime-deep sm:text-sm">● {text}</span>;
 }
 
-function Row({ r, kind, clock }: { r: PlanningRow; kind: "arrival" | "return"; clock: { fetchedAt: number; now: number } }) {
+function Row({
+  r,
+  kind,
+  clock,
+  dimmed = false,
+  until = null,
+}: {
+  r: PlanningRow;
+  kind: "arrival" | "return";
+  clock: { fetchedAt: number; now: number };
+  dimmed?: boolean;
+  until?: { text: string; late: boolean } | null;
+}) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
   const onSite = r.status !== "upcoming";
@@ -88,7 +101,10 @@ function Row({ r, kind, clock }: { r: PlanningRow; kind: "arrival" | "return"; c
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
   const card = useQuickCard();
   return (
-    <li id={`row-${r.id}`} className={cn("overflow-hidden rounded-lg", MOVEMENT_CARD[isArrival ? "arrival" : "departure"], live && "ring-2 ring-lime-deep")}>
+    <li
+      id={`row-${r.id}`}
+      className={cn("overflow-hidden rounded-lg", MOVEMENT_CARD[isArrival ? "arrival" : "departure"], live && "ring-2 ring-lime-deep", dimmed && "opacity-50")}
+    >
       {/* C-A (06/10/2026): a row opens the operational card; the full page is one link further. */}
       <button
         type="button"
@@ -102,6 +118,11 @@ function Row({ r, kind, clock }: { r: PlanningRow; kind: "arrival" | "return"; c
         <span className="flex flex-col items-start gap-1">
           <span className="tabular font-mono text-xl font-bold text-lime-deep">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
           <MovementPill kind={isArrival ? "arrival" : "departure"} />
+          {until && (
+            <span data-testid={`until-${r.id}`} className={cn("tabular whitespace-nowrap font-mono text-xs font-bold", until.late ? "text-warn-text" : "text-lime-deep")}>
+              {until.text}
+            </span>
+          )}
         </span>
         {/* On a phone the plate sits above the name; side by side from sm up. */}
         <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3.5">
@@ -157,6 +178,7 @@ function Column({
   kind,
   empty,
   clock,
+  today = false,
 }: {
   title: string;
   count: string;
@@ -164,8 +186,12 @@ function Column({
   kind: "arrival" | "return";
   empty: string;
   clock: { fetchedAt: number; now: number };
+  /** Direction B (30/10/2026): today, the column splits at the « Maintenant » line. */
+  today?: boolean;
 }) {
+  const t = fr.planning;
   const movement = kind === "arrival" ? "arrival" : "departure";
+  const live = today && items.length > 0 ? splitAtNow(items, kind) : null;
   return (
     <section className="flex min-w-0 flex-col">
       <div className="flex items-baseline justify-between px-1 pb-2">
@@ -175,11 +201,29 @@ function Column({
         </h2>
         <span className="tabular font-mono text-muted-foreground">{count}</span>
       </div>
-      <ul className="flex flex-col gap-2">
-        {items.map(r => (
-          <Row key={r.id} r={r} kind={kind} clock={clock} />
-        ))}
-      </ul>
+      {live ? (
+        <ul className="flex flex-col gap-2">
+          {live.past.map(r => (
+            <Row key={r.id} r={r} kind={kind} clock={clock} dimmed />
+          ))}
+          <li data-testid={`now-${kind}`} data-now-line={live.past.length > 0 ? "after-past" : "top"} className="flex items-center gap-2 py-1" aria-label={t.nowLine(timeOf(new Date(clock.now).toISOString()))}>
+            <span aria-hidden="true" className="h-0.5 flex-1 bg-primary" />
+            <span className="tabular rounded-full bg-primary px-2.5 py-0.5 font-mono text-xs font-bold text-primary-foreground">
+              {t.nowLine(timeOf(new Date(clock.now).toISOString()))}
+            </span>
+            <span aria-hidden="true" className="h-0.5 flex-1 bg-primary" />
+          </li>
+          {live.coming.map(r => (
+            <Row key={r.id} r={r} kind={kind} clock={clock} until={untilLabel(kind === "arrival" ? r.arrivalAt : r.returnAt, clock.now)} />
+          ))}
+        </ul>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {items.map(r => (
+            <Row key={r.id} r={r} kind={kind} clock={clock} />
+          ))}
+        </ul>
+      )}
       {items.length === 0 && <p className="px-1 py-6 text-muted-foreground">{empty}</p>}
     </section>
   );
@@ -257,6 +301,14 @@ export default function PlanningPage() {
     else if (banner && !signals.some(s => s.id === banner.id)) setBanner(null);
   }, [signals, banner]);
 
+  // The page opens on the « Maintenant » line (direction B of 30/10/2026), once per day shown.
+  const scrolledTo = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data || !isToday || scrolledTo.current === date) return;
+    scrolledTo.current = date;
+    document.querySelector<HTMLElement>('[data-now-line="after-past"]')?.scrollIntoView?.({ block: "center" });
+  }, [data, isToday, date]);
+
   const arrivals = data ? liveFirst(withLiveSignals(data.arrivals, "outbound", signals)) : [];
   const returns = data ? liveFirst(withShuttleTrips(withLiveSignals(data.returns, "return", signals), isToday ? live.data?.shuttleTrips : undefined)) : [];
 
@@ -310,8 +362,9 @@ export default function PlanningPage() {
               kind="arrival"
               empty={t.noArrival}
               clock={clock}
+              today={isToday}
             />
-            <Column title={t.returns} count={String(data.stats.returns)} items={returns} kind="return" empty={t.noReturn} clock={clock} />
+            <Column title={t.returns} count={String(data.stats.returns)} items={returns} kind="return" empty={t.noReturn} clock={clock} today={isToday} />
           </div>
         </>
       )}

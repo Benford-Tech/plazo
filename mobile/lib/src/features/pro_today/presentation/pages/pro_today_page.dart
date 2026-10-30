@@ -12,6 +12,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/widgets/movement_kind.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_dashboard/presentation/bloc/pro_dashboard_bloc.dart';
 import '../../../pro_dashboard/presentation/widgets/dashboard_view.dart';
@@ -115,6 +116,32 @@ List<DayEntry> mergeDay(List<TodayRow> arrivals, List<TodayRow> returns) {
     return a.at.compareTo(b.at);
   });
   return all;
+}
+
+/// The planning that moves with the day (direction A of 30/10/2026): the side's earliest movement not done yet.
+DayEntry? nextOf(List<DayEntry> entries, {required bool isReturn}) {
+  DayEntry? next;
+  for (final e in entries) {
+    if (e.isReturn != isReturn || e.done) continue;
+    if (next == null || e.at.isBefore(next.at)) next = e;
+  }
+  return next;
+}
+
+/// « dans 25 min », « dans 1 h 10 », « maintenant », « en retard · 12 min » (late: [isLate]).
+String untilLabel(DateTime at, DateTime now) {
+  final minutes = at.difference(now).inSeconds / 60;
+  if (minutes <= -1) return 'pro.next_late'.tr(args: [_duration((-minutes).floor())]);
+  if (minutes < 1) return 'pro.next_now'.tr();
+  return 'pro.next_in'.tr(args: [_duration(minutes.ceil())]);
+}
+
+bool isLate(DateTime at, DateTime now) => at.difference(now).inSeconds <= -60;
+
+String _duration(int minutes) {
+  if (minutes < 60) return '$minutes min';
+  final m = minutes % 60;
+  return '${minutes ~/ 60} h${m == 0 ? '' : ' ${m.toString().padLeft(2, '0')}'}';
 }
 
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
@@ -340,6 +367,7 @@ class _ProTodayViewState extends State<ProTodayView> {
                     returns: state.returns.length,
                     onChanged: (f) => setState(() => _filter = f),
                   ),
+                  if (state.date == null) _NextCards(entries: mergeDay(state.arrivals, state.returns), now: _now),
                   Expanded(
                     child: _DayList(
                       entries: mergeDay(state.arrivals, state.returns).where((e) {
@@ -478,7 +506,6 @@ class _Column extends StatelessWidget {
   }
 }
 
-
 /// « Tout · 22 · ● Dépôts · 9 · ● Retours · 13 »: the chosen pill on the action colour, the other two with
 /// the dot of their kind (green drop-offs, indigo returns).
 class _FilterPills extends StatelessWidget {
@@ -530,7 +557,11 @@ class _FilterPills extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (dot != null) ...[
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: dot, shape: BoxShape.circle)),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
                 const SizedBox(width: 6),
               ],
               Text('$label · $count', style: AppText.strong(size: 12.5, color: on ? AppColors.onAccent : AppColors.muted)),
@@ -571,13 +602,16 @@ class _DayList extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(2, 4, 2, 10),
                 child: Row(
                   children: [
-                    Expanded(child: Text('pro.past_rows'.tr(args: ['${past.length}']).toUpperCase(), style: AppText.label(size: 12))),
+                    Expanded(
+                      child: Text('pro.past_rows'.tr(args: ['${past.length}']).toUpperCase(), style: AppText.label(size: 12)),
+                    ),
                     Icon(showPast ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: AppColors.muted, size: 20),
                   ],
                 ),
               ),
             ),
-            if (showPast) for (final e in past) _tile(context, e, dimmed: true),
+            if (showPast)
+              for (final e in past) _tile(context, e, dimmed: true),
           ],
           if (entries.isEmpty)
             Padding(
@@ -599,6 +633,82 @@ class _DayList extends StatelessWidget {
       dimmed: dimmed,
       positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
       onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
+    );
+  }
+}
+
+/// « Prochain départ » and « Prochaine arrivée » over today's list (direction A of 30/10/2026): the earliest
+/// movement of each side not done yet, with how long until it; each moves on by itself once its traveller is done.
+class _NextCards extends StatelessWidget {
+  const _NextCards({required this.entries, required this.now});
+  final List<DayEntry> entries;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const Key('planning-next'),
+      padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _NextCard(entry: nextOf(entries, isReturn: true), isReturn: true, now: now),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _NextCard(entry: nextOf(entries, isReturn: false), isReturn: false, now: now),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NextCard extends StatelessWidget {
+  const _NextCard({required this.entry, required this.isReturn, required this.now});
+  final DayEntry? entry;
+  final bool isReturn;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final kind = isReturn ? Movement.departure : Movement.arrival;
+    final colour = movementColor(kind);
+    final e = entry;
+    final title = (isReturn ? 'pro.next_departure' : 'pro.next_arrival').tr().toUpperCase();
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: BorderSide(color: colour, width: 2),
+      ),
+      child: InkWell(
+        key: Key(isReturn ? 'next-departure' : 'next-arrival'),
+        borderRadius: AppRadius.card,
+        onTap: e == null ? null : () => context.router.push(ProReservationRoute(id: e.row.booking.id)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(11, 9, 11, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppText.label(size: 10.5, color: colour).copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 3),
+              if (e == null)
+                Text((isReturn ? 'pro.next_none_departure' : 'pro.next_none_arrival').tr(), style: AppText.muted(size: 12.5))
+              else ...[
+                Text(hhmm(e.at), style: AppText.tabular(size: 22)),
+                Text(e.row.booking.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 13)),
+                const SizedBox(height: 2),
+                Text(untilLabel(e.at, now), style: AppText.tabular(size: 12.5, color: isLate(e.at, now) ? AppStatus.warnText : AppColors.accent)),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

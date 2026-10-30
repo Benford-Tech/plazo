@@ -1462,6 +1462,7 @@ export const fr = {
     free: (n: number) => `${n} libre${n > 1 ? "s" : ""}`,
     arrivals: "Arrivées",
     returns: "Départs",
+    nowLine: (time: string) => `Maintenant · ${time}`,
     arrivalsCount: (total: number, here: number) =>
       `${total} · ${here} sur place`,
     noArrival: "Aucune arrivée ce jour.",
