@@ -19,6 +19,7 @@ import { loadPlanCapacity } from './capacity.service';
 import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
+import { StaffPhotoService } from './staff-photo.service';
 import { ContractTemplateService } from './contract-template.service';
 import { PartnerContractService } from './partner-contract.service';
 import { PaymentService } from './payment.service';
@@ -390,6 +391,7 @@ export class PlatformService {
     const contractFiles = [
       ...(await Container.get(PartnerContractService).blobKeysOf(operatorId)),
       ...(await Container.get(ContractTemplateService).blobKeysOf(operatorId)),
+      ...(await Container.get(StaffPhotoService).blobKeysOf(operatorId)),
     ];
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.

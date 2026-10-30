@@ -15,6 +15,7 @@ import { ErrorMiddleware } from './middlewares/error.middleware';
 import { RawBodyMiddleware } from './middlewares/raw-body.middleware';
 import { MAX_PHOTO_BYTES } from './domain/inspection';
 import { MAX_CONTRACT_BYTES } from './domain/partner-contract';
+import { MAX_STAFF_PHOTO_BYTES } from './services/staff-photo.service';
 import { appLimiter, authLimiter, publicLimiter } from './middlewares/rateLimiter';
 import { logger, stream } from './utils/logger';
 import { BOOKING_IMPORT_PATH } from './routes/booking-import.route';
@@ -24,6 +25,8 @@ export const STRIPE_WEBHOOK_PATH = `${API_PREFIX}/public/stripe/webhook`;
 export const INSPECTION_PHOTO_PATH = new RegExp(
   `^${API_PREFIX}/(internal/reservations/[^/]+/inspections/(dropoff|return)/photos|public/bookings/[^/]+/inspections/(dropoff|return)/mine/photos)$`,
 );
+
+export const STAFF_PHOTO_PATH = `${API_PREFIX}/internal/staff/me/photo`;
 
 // The Plazo ↔ operator contract (20/10/2026): the PDF's bytes, 4 MB at most.
 export const PARTNER_CONTRACT_PATH = new RegExp(`^${API_PREFIX}/internal/platform/operators/[^/]+/contracts$`);
@@ -76,6 +79,8 @@ export class App {
     this.app.post(STRIPE_WEBHOOK_PATH, RawBodyMiddleware());
     // Condition report photos (19/10/2026): the image's bytes, shrunk by the app (3 MB at most).
     this.app.post(INSPECTION_PHOTO_PATH, RawBodyMiddleware(MAX_PHOTO_BYTES + 64 * 1024));
+    // A member's photo (30/10/2026): a square cropped by the pro space, 2 MB at most.
+    this.app.post(STAFF_PHOTO_PATH, RawBodyMiddleware(MAX_STAFF_PHOTO_BYTES + 64 * 1024));
     this.app.post(PARTNER_CONTRACT_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     this.app.post(CONTRACT_TEMPLATE_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     // A file of old bookings (28/10/2026): 2 000 rows at most, read under a larger limit than the other requests.

@@ -40,6 +40,8 @@ export interface Staff {
     seats: number | null;
   } | null;
   createdAt: string;
+  /** 30/10/2026: when the member's photo was last changed (null: none, the initials stand in). */
+  photoUpdatedAt?: string | null;
   operatorName?: string;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
   isPlatformAdmin?: boolean;

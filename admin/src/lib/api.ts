@@ -1111,6 +1111,23 @@ export const adminApi = {
     );
     return res.blob();
   },
+  // 30/10/2026: one's own photo (a cropped square JPEG), a member's photo for the team, and the menu's counters.
+  setMyPhoto: (photo: Blob) =>
+    apiRequest<{ photoUpdatedAt: string }>("/internal/staff/me/photo", {
+      method: "POST",
+      body: photo,
+      headers: { "Content-Type": photo.type || "image/jpeg" },
+    }),
+  removeMyPhoto: () =>
+    apiRequest<void>("/internal/staff/me/photo", { method: "DELETE" }),
+  staffPhoto: async (staffId: string, version: string) => {
+    const res = await authorizedFetch(
+      `/internal/staff/${staffId}/photo?v=${encodeURIComponent(version)}`,
+    );
+    return res.blob();
+  },
+  navCounts: () =>
+    apiRequest<{ inbox: number | null; extras: number }>("/internal/nav/counts"),
   getSignedContracts: (query: SignedContractsQuery) =>
     apiRequest<SignedContractsPage>(
       `/internal/contracts?${signedContractsParams(query)}`,

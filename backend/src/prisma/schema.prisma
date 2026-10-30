@@ -174,6 +174,10 @@ model Staff {
   // (anonymised: names, email, phone). CHECKs: neither while active.
   leftAt             DateTime?
   deletedAt          DateTime?
+  // 30/10/2026 (« pouvoir mettre sa photo »): the member's photo, a 512 px square in the private photo store, and when
+  // it was last changed (the apps' cache key). Shown to the team only.
+  photoKey           String?
+  photoUpdatedAt     DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @default(now()) @updatedAt
 

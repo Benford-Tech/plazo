@@ -5,6 +5,7 @@ import { BCRYPT_ROUNDS } from '@/config';
 import prisma, { Prisma, StaffRole } from '@/database';
 import { DELETED_ACCOUNT_NAME, deletedEmail } from '@/domain/join-request';
 import { AuditService } from './audit.service';
+import { PhotoStorageService } from './photo-storage.service';
 
 type Tx = Prisma.TransactionClient;
 type Client = Tx | typeof prisma;
@@ -22,8 +23,14 @@ export function unusablePassword(): Promise<string> {
   return hash(randomBytes(32).toString('base64url'), BCRYPT_ROUNDS);
 }
 
-/** Everything that lets the person act as a member: sessions, account links, phones, the usual shuttle. */
+/** Everything that lets the person act as a member: sessions, account links, phones, the usual shuttle, their photo. */
 export async function detachMember(tx: Tx, staffId: string) {
+  const photo = await tx.staff.findUnique({ where: { id: staffId }, select: { photoKey: true } });
+  if (photo?.photoKey) {
+    await tx.staff.update({ where: { id: staffId }, data: { photoKey: null, photoUpdatedAt: null } });
+    // Never throws; the key is cleared, so the photo is never served again.
+    await Container.get(PhotoStorageService).remove([photo.photoKey]);
+  }
   await tx.staffToken.deleteMany({ where: { staffId } });
   await tx.accountToken.deleteMany({ where: { staffId } });
   await tx.staffDevice.deleteMany({ where: { staffId } });

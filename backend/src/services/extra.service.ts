@@ -883,6 +883,17 @@ export class ExtraService {
    * landing when known). To do: still ordered on a booking not closed, the soonest first, the late ones on top. Done: today
    * (the parking's day). Refused: the last 7 days. Counts for the three tabs.
    */
+  /** The menu's counter (30/10/2026): the services still to do, as « Services à faire » counts them. */
+  public async todoCount(operatorId: string): Promise<number> {
+    return prisma.reservationExtra.count({
+      where: {
+        operatorId,
+        status: 'ordered',
+        reservation: { AND: [STAFF_VISIBLE], status: { notIn: [...CLOSED_BOOKING_STATUSES, 'pending_payment'] } },
+      },
+    });
+  }
+
   public async board(actor: AuthenticatedStaff, rawView: unknown, now = new Date()) {
     const view = rawView === 'done' || rawView === 'refused' ? rawView : 'todo';
     const parking = await prisma.parking.findFirst({

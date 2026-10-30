@@ -7,12 +7,49 @@ import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { JoinRequestService } from '@/services/join-request.service';
 import { StaffAccountService } from '@/services/staff-account.service';
 import { StaffService } from '@/services/staff.service';
+import { StaffPhotoService } from '@/services/staff-photo.service';
+import { InboundEmailService } from '@/services/inbound-email.service';
+import { ExtraService } from '@/services/extra.service';
+import { can } from '@/domain/roles';
 import catchAsync from '@/utils/catchAsync';
 
 export class StaffController {
   public staffService = Container.get(StaffService);
   public joinRequests = Container.get(JoinRequestService);
   public account = Container.get(StaffAccountService);
+
+  public photos = Container.get(StaffPhotoService);
+
+  /** POST /internal/staff/me/photo (30/10/2026) */
+  public setPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.photos.set(req.staff, req.body));
+  });
+
+  /** DELETE /internal/staff/me/photo */
+  public removePhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    await this.photos.remove(req.staff);
+    res.status(httpStatus.NO_CONTENT).end();
+  });
+
+  /** GET /internal/staff/:id/photo */
+  public photo = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const photo = await this.photos.get(req.staff, req.params.id as string);
+    res.set('Content-Type', photo.contentType);
+    // The pro space asks with the photo's date: a changed photo is a new address, so a long private cache is safe.
+    res.set('Cache-Control', 'private, max-age=86400');
+    if (photo.size != null) res.set('Content-Length', String(photo.size));
+    photo.stream.pipe(res);
+  });
+
+  /** GET /internal/nav/counts (30/10/2026): the menu's counters. */
+  public navCounts = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const [inbox, extras] = await Promise.all([
+      can(req.staff.role, 'reservations:manage') ? Container.get(InboundEmailService).todoCount(req.staff.operatorId) : null,
+      Container.get(ExtraService).todoCount(req.staff.operatorId),
+    ]);
+    res.set('Cache-Control', 'no-store');
+    res.json({ inbox, extras });
+  });
 
   /** GET /internal/staff/me */
   public me = catchAsync(async (req: RequestWithStaffSession, res: Response) => {

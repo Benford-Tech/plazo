@@ -22,9 +22,10 @@ import { TokenService } from './token.service';
 
 export type PublicStaff = Omit<Staff, 'password'> & { operatorName?: string };
 
-export function toPublicStaff<T extends Staff>(staff: T): Omit<T, 'password'> {
+/** Never the password's hash, nor where the photo is stored (30/10/2026: `photoUpdatedAt` says there is one). */
+export function toPublicStaff<T extends Staff>(staff: T): Omit<T, 'password' | 'photoKey'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...rest } = staff;
+  const { password, photoKey, ...rest } = staff;
   return rest;
 }
 

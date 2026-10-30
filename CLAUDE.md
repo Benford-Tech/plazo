@@ -1682,6 +1682,27 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   des pages ; `WelcomeCarousel`, `CoachMarks`), textes `tutorials.*` de `fr-FR.json` ; `--dart-define=TUTORIALS=false` pour les
   captures des stores et les essais sur émulateur, coupés aussi dans les tests (`setUpLocalizedTests`) sauf
   `test/shared/tutorials/tutorials_test.dart`.
+  **Menu du web, direction A, et photo de profil (30/10/2026, « Réorganise le menu sur le web. Pouvoir mettre sa photo »,
+  maquettes https://claude.ai/artifact/8XWAMJ28UwJFmvFBxuv66i)** : le rail de l'espace pro (`AdminLayout.tsx`, 236 px) a quatre
+  groupes par usage, Aujourd'hui (Tableau de bord, Planning › Jour · Prévisionnel, Navettes), Réservations (Toutes, Boîte de
+  réception, Services à faire, SMS de la veille, Importer un fichier), Parking (Occupation, Plan, Planning des places, Réglages) et
+  Gérant (Chiffre d'affaires, Sur Plazo › Fiche · Tarifs, Équipe, Contrats signés, Mon contrat Plazo) ; une entrée à pages se
+  déplie (ouverte tant qu'une de ses pages est affichée, chevron pour l'ouvrir à la main), chaque page selon les droits du rôle ;
+  compteurs ambre « Boîte de réception 3 », « Services à faire 2 » (total sur l'entrée repliée) par `GET /internal/nav/counts`
+  `{ inbox, extras }` (`reservations:view`, `inbox` nul sans `reservations:manage`, relu chaque minute) ; sur téléphone, les
+  entrées en rangée et les pages du groupe courant en seconde rangée (`nav-subrow`). Le compte est en bas du rail
+  (`AccountMenu` : photo, nom, rôle ; menu Mon compte · Changer ma photo · Plateforme pour son administrateur · Se déconnecter ;
+  sur téléphone la photo seule en haut) ; la barre haute ne garde que le parking, « Changer de vue » et « Masquer le CA ».
+  **Photo** : `Staff.photoKey` / `photoUpdatedAt` (migration `staff_photo` ; `photoKey` jamais servi, `toPublicStaff`) dans le
+  magasin Blob privé des photos ; `POST /internal/staff/me/photo` (octets bruts JPEG, PNG ou WebP, 2 Mo, `RawBodyMiddleware`,
+  `STAFF_PHOTO_PATH` ; remplace la précédente ; 400 `photo` required · too_large · not_an_image), `DELETE …/me/photo`
+  (`RefuseInViewAs` : refusées en consultation et en démo ; tracées `staff.photo_set` / `staff.photo_removed`),
+  `GET /internal/staff/:id/photo` (équipe du loueur, `Cache-Control: private`, 404 `photo_not_found`) ; effacée quand le membre
+  quitte le parking ou supprime son compte (`detachMember`) et avec le loueur ; `StaffPhotoService`. Web : carte « Ma photo » en
+  tête de Mon compte (`PhotoCard`, `#photo` : choisir, cadrer dans un rond en glissant et en zoomant, envoyée en carré JPEG de
+  512 px ; « Retirer » ; lecture seule en démo), `Avatar` (photo lue avec la session et gardée par sa date, sinon initiales sur une
+  pastille) dans le menu et la page Équipe. Visible de l'équipe seulement (pas du voyageur). Plazo Pro ne l'a pas encore. Tests
+  `staff-photo.test.ts`, `AdminLayout.test.tsx`, `PhotoCard.test.tsx`.
   **Menu par rôle et « Bien démarrer » (26/10/2026, « réorganise le menu par rôle, gérant, chauffeur, accueil, ajoute un tutoriel
   pour bien démarrer avec Plazo Pro », choix « M-A + W-A + T-A + T-B » des maquettes https://claude.ai/artifact/6rWrzpDZ712eQCaRRCRwbs)** :
   **M-A** Plus de Plazo Pro en blocs : « Mon poste du jour » (poste, véhicule du jour pour un chauffeur, « Bien démarrer »),
