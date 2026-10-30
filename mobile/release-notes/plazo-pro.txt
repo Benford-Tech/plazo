@@ -1,8 +1,8 @@
 Première version de Plazo Pro, pour les équipes des parkings d'aéroport.
-• Tableau de bord ; planning du jour en une liste et prévisionnel jusqu'à 3 mois.
+• Planning du jour : prochain départ et prochaine arrivée en tête ; prévisionnel sur 3 mois.
 • Réservations de tous vos canaux et leur mail d'origine.
 • Plan du parking, voitures rangées en files, clés.
 • Navette : Aller et Retour, sièges auto.
 • Voiturier : courses au terminal, services avant les retours.
-• Contrat PDF signé au comptoir, avec sa preuve ; état des lieux en photos.
+• Contrat PDF signé au comptoir ; état des lieux en photos.
 • Menu « Plus » par rôle, « Bien démarrer » et votre photo.
