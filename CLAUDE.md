@@ -1166,6 +1166,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    (valeur d'exemple, déplacer, agrandir par le coin, retirer, taille du texte), pages ‹ ›, « Enregistrer », « Aperçu avec un
    exemple ». Un PDF sans champs reste servi tel quel ; les rotations de page ne sont pas gérées. Tests `contract-fields.test.ts`,
    `ContractFieldsPage.test.tsx`.
+   **Kilométrage et vol ou train (30/10/2026, « sur les documents à signer il manque le kilométrage, le numéro de vol ou train »)** :
+   trois clés de plus, `departure_flight` (« Vol aller »), `travel` (« Vol ou train » : « Aller AF 7641 · Retour TO 3627 », un seul vol,
+   sinon le train écrit dans les notes par l'import, `trainOf` / `travelLine`) et `mileage` (« Kilométrage au dépôt » : celui de l'état
+   des lieux du dépôt fait par l'équipe, « 48 210 km », vide tant qu'il n'est pas saisi) ; le texte signé (modèle Plazo et page
+   « Réservation et signature ») porte aussi « Vol ou train : … » et « Kilométrage au dépôt : … » quand ils sont connus
+   (`ContractFacts.travel` / `mileageKm`).
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

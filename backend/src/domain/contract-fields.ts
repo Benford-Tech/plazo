@@ -19,6 +19,10 @@ export const CONTRACT_FIELD_KEYS = [
   'price',
   'reference',
   'return_flight',
+  // 30/10/2026 (« il manque le kilométrage, le numéro de vol ou train »).
+  'departure_flight',
+  'travel',
+  'mileage',
   'signed_on',
   'signature',
 ] as const;
@@ -91,6 +95,11 @@ export interface FieldFacts {
   priceCents: number | null;
   reference: string;
   returnFlight: string | null;
+  departureFlight: string | null;
+  /** A train written in the booking's notes (« TGV 6612 »): imports never take a train for a flight. */
+  train: string | null;
+  /** The mileage noted on the drop-off condition report, once the staff has typed it. */
+  mileageKm: number | null;
   /** Local day of the signature ("2026-10-30"): the signature's, or today's on the PDF read before signing. */
   signedOn: string;
 }
@@ -100,6 +109,21 @@ export function frenchDate(local: string): string {
   const [date, time] = local.split('T');
   const [y, m, d] = date.split('-');
   return time ? `${d}/${m}/${y} ${time.slice(0, 5)}` : `${d}/${m}/${y}`;
+}
+
+/** « Vol ou train »: the flights (aller / retour), else the train of the notes. */
+export function travelLine(f: Pick<FieldFacts, 'departureFlight' | 'returnFlight' | 'train'>): string {
+  const flights = [f.departureFlight, f.returnFlight].filter(Boolean);
+  if (flights.length === 2 && flights[0] !== flights[1]) return `Aller ${flights[0]} · Retour ${flights[1]}`;
+  if (flights.length) return flights[0]!;
+  return f.train ?? '';
+}
+
+/** The train an import or the staff wrote in the notes (« Train indiqué dans le fichier : TGV 6612 »). */
+export function trainOf(notes: string | null): string | null {
+  const line = notes?.split('\n').find(l => /^\s*train\b/i.test(l));
+  const value = line?.split(':').slice(1).join(':').trim();
+  return value ? value.slice(0, 40) : null;
 }
 
 /** The text stamped for each key (the signature is drawn apart). */
@@ -114,6 +138,9 @@ export function fieldValues(f: FieldFacts): Record<Exclude<ContractFieldKey, 'si
     price: f.priceCents == null ? '' : formatEuros(f.priceCents).replace(/ | /g, ' '),
     reference: f.reference,
     return_flight: f.returnFlight ?? '',
+    departure_flight: f.departureFlight ?? '',
+    travel: travelLine(f),
+    mileage: f.mileageKm == null ? '' : `${new Intl.NumberFormat('fr-FR').format(f.mileageKm).replace(/\u202f|\u00a0/g, ' ')} km`,
     signed_on: frenchDate(f.signedOn),
   };
 }
@@ -209,6 +236,9 @@ export const SAMPLE_FACTS: FieldFacts = {
   priceCents: 5400,
   reference: 'R7KQ2M',
   returnFlight: 'TO 3627',
+  departureFlight: 'TO 3626',
+  train: null,
+  mileageKm: 48210,
   signedOn: '2026-11-12',
 };
 
@@ -225,10 +255,14 @@ export function bookingFieldFacts(
     priceCents: number | null;
     reference: string;
     returnFlight: string | null;
+    departureFlight: string | null;
+    notes: string | null;
+    inspections?: Array<{ kind: string; author: string; mileageKm: number | null }>;
   },
   local: (d: Date) => string,
   signedAt: Date,
 ): FieldFacts {
+  const dropoff = r.inspections?.find(i => i.kind === 'dropoff' && i.author === 'staff');
   return {
     customerName: r.customerName,
     phone: r.customerPhone,
@@ -239,6 +273,9 @@ export function bookingFieldFacts(
     priceCents: r.priceCents,
     reference: r.reference,
     returnFlight: r.returnFlight,
+    departureFlight: r.departureFlight,
+    train: trainOf(r.notes),
+    mileageKm: dropoff?.mileageKm ?? null,
     signedOn: local(signedAt).slice(0, 10),
   };
 }

@@ -31,6 +31,10 @@ export interface ContractFacts {
   keysEntrusted: boolean;
   /** Paid online on Plazo. */
   paidOnline: boolean;
+  /** 30/10/2026 (« il manque le kilométrage, le numéro de vol ou train »): « Aller AF 7641 · Retour TO 3627 », or a train. */
+  travel?: string | null;
+  /** Noted on the drop-off condition report, once typed. */
+  mileageKm?: number | null;
 }
 
 export interface ContractDocument {
@@ -50,6 +54,10 @@ export function contractDocument(f: ContractFacts): ContractDocument {
     `Véhicule : ${vehicle}`,
     `Dépôt : ${formatLocalLong(f.arrivalAt)}`,
     `Retour : ${formatLocalLong(f.returnAt)}`,
+    ...(f.travel ? [`Vol ou train : ${f.travel}`] : []),
+    ...(f.mileageKm != null
+      ? [`Kilométrage au dépôt : ${new Intl.NumberFormat('fr-FR').format(f.mileageKm).replace(/\u202f|\u00a0/g, ' ')} km`]
+      : []),
     ...(price ? [`Prix : ${price}`] : []),
     `Clés : ${f.keysEntrusted ? 'confiées au parking' : 'gardées par le client'}`,
   ];

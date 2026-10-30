@@ -275,7 +275,11 @@ export class ContractTemplateService {
     if (!FILE_KINDS.includes(kind as ContractFileKind)) throw new ValidationException({ kind: 'invalid' });
     const reservation = await prisma.reservation.findFirst({
       where: reservationWhere,
-      include: { contract: { include: { template: true } }, parking: { select: { timezone: true } } },
+      include: {
+        contract: { include: { template: true } },
+        parking: { select: { timezone: true } },
+        inspections: { select: { kind: true, author: true, mileageKm: true } },
+      },
     });
     if (!reservation) throw notFound();
     const contract = reservation.contract;

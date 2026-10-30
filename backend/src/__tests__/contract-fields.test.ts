@@ -1,7 +1,7 @@
 import { PDFDocument, PDFPage, StandardFonts } from 'pdf-lib';
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { ContractField, fieldValues, prefilledPdf, SAMPLE_FACTS, signatureStamp, validateFields } from '@/domain/contract-fields';
+import { bookingFieldFacts, ContractField, fieldValues, prefilledPdf, SAMPLE_FACTS, signatureStamp, validateFields } from '@/domain/contract-fields';
 import { localDateTime } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { MemoryPhotoBackend, PhotoStorageService } from '@/services/photo-storage.service';
@@ -77,6 +77,37 @@ describe('le contrat pré-rempli (domaine)', () => {
       price: '54,00 €',
       signed_on: '12/11/2026',
     });
+    // 30/10/2026: the mileage of the drop-off report, the flights, or the train of the notes.
+    expect(fieldValues(SAMPLE_FACTS)).toMatchObject({
+      mileage: '48 210 km',
+      departure_flight: 'TO 3626',
+      travel: 'Aller TO 3626 · Retour TO 3627',
+    });
+    const booking = {
+      customerName: 'Léa Roux',
+      customerPhone: '0612345678',
+      plate: 'AB-123-CD',
+      vehicleModel: null,
+      vehicleColour: null,
+      arrivalAt: new Date('2026-11-12T07:00:00Z'),
+      returnAt: new Date('2026-11-14T17:00:00Z'),
+      priceCents: null,
+      reference: 'R1',
+      returnFlight: null,
+      departureFlight: null,
+      notes: 'Arrivée tôt\nTrain indiqué dans le fichier : TGV 6612',
+      inspections: [
+        { kind: 'dropoff', author: 'traveller', mileageKm: 1 },
+        { kind: 'dropoff', author: 'staff', mileageKm: 120500 },
+      ],
+    };
+    const facts = bookingFieldFacts(booking, d => d.toISOString().slice(0, 16), new Date('2026-11-12T07:00:00Z'));
+    expect(fieldValues(facts)).toMatchObject({ travel: 'TGV 6612', mileage: '120 500 km', departure_flight: '' });
+    expect(fieldValues(bookingFieldFacts({ ...booking, notes: null, inspections: [] }, d => d.toISOString(), new Date()))).toMatchObject({
+      travel: '',
+      mileage: '',
+    });
+
     const original = await samplePdf();
     const drawn = captureText();
     const before = await prefilledPdf(original, FIELDS, SAMPLE_FACTS);

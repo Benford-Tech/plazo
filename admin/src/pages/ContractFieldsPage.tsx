@@ -18,7 +18,10 @@ const KEYS: ContractFieldKey[] = [
   "return_at",
   "price",
   "reference",
+  "departure_flight",
   "return_flight",
+  "travel",
+  "mileage",
   "signed_on",
   "signature",
 ];
@@ -27,7 +30,7 @@ const PAGE_WIDTH = 620;
 
 /** A new box for this key, its top left at (x, y), kept in the page. */
 function newField(key: ContractFieldKey, page: number, x: number, y: number): ContractField {
-  const w = key === "signature" ? 0.3 : key === "customer_name" || key === "vehicle" ? 0.32 : 0.22;
+  const w = key === "signature" ? 0.3 : key === "customer_name" || key === "vehicle" || key === "travel" ? 0.32 : 0.22;
   const h = key === "signature" ? 0.08 : 0.024;
   return { key, page, x: clamp(x, 0, 1 - w), y: clamp(y, 0, 1 - h), w, h };
 }

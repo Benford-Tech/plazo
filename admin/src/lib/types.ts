@@ -1990,6 +1990,9 @@ export type ContractFieldKey =
   | "price"
   | "reference"
   | "return_flight"
+  | "departure_flight"
+  | "travel"
+  | "mileage"
   | "signed_on"
   | "signature";
 
