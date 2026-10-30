@@ -43,7 +43,11 @@ void main() {
 
   Future<MockTodayBloc> show(WidgetTester tester, {String? date, PlanningModel? data}) async {
     final today = MockTodayBloc();
-    whenListen(today, const Stream<ProTodayState>.empty(), initialState: ProTodayState(now: now, planning: data ?? planning, date: date));
+    whenListen(
+      today,
+      const Stream<ProTodayState>.empty(),
+      initialState: ProTodayState(now: now, planning: data ?? planning, date: date),
+    );
     final live = MockLiveBloc();
     whenListen(live, const Stream<LiveShuttlesState>.empty(), initialState: LiveShuttlesState(now: now));
     await pumpLocalized(
@@ -61,7 +65,9 @@ void main() {
   }
 
   List<String> visibleRows(WidgetTester tester) {
-    final keys = tester.widgetList<Container>(find.byWidgetPredicate((w) => w is Container && w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('row-')));
+    final keys = tester.widgetList<Container>(
+      find.byWidgetPredicate((w) => w is Container && w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('row-')),
+    );
     return [for (final k in keys) (k.key! as ValueKey<String>).value.substring(4)];
   }
 
@@ -105,12 +111,39 @@ void main() {
     await tester.pump();
     expect(visibleRows(tester), ['a1', 'a3']);
 
-    final bloc = await show(tester, date: '2026-10-28', data: planning.copyWith(arrivals: const [], returns: const []));
+    final bloc = await show(
+      tester,
+      date: '2026-10-28',
+      data: planning.copyWith(arrivals: const [], returns: const []),
+    );
     expect(find.text('MER. 28 OCT.'), findsOneWidget);
     expect(find.text('Rien de prévu ce jour-là.'), findsOneWidget);
     await tester.tap(find.byKey(const Key('today-back')));
     verify(() => bloc.add(any(that: isA<ProTodayDateChanged>().having((e) => e.date, 'date', null)))).called(1);
     await tester.tap(find.byKey(const Key('date-next-day')));
     verify(() => bloc.add(any(that: isA<ProTodayDateChanged>().having((e) => e.date, 'date', '2026-10-29')))).called(1);
+  });
+  testWidgets('aujourd\'hui, le prochain départ et la prochaine arrivée en tête, avec le temps qui reste', (tester) async {
+    await show(tester);
+    final departure = find.byKey(const Key('next-departure'));
+    final arrival = find.byKey(const Key('next-arrival'));
+    expect(find.text('PROCHAIN DÉPART'), findsOneWidget);
+    // Léa (13:40, still away) is the next departure, late; Théo (15:10) the next arrival, Chloé being there.
+    expect(find.descendant(of: departure, matching: find.text('13:40')), findsOneWidget);
+    expect(find.descendant(of: departure, matching: find.text('en retard · 34 min')), findsOneWidget);
+    expect(find.descendant(of: arrival, matching: find.text('Théo Dubois')), findsOneWidget);
+    expect(find.descendant(of: arrival, matching: find.text('dans 56 min')), findsOneWidget);
+
+    await show(tester, date: '2026-10-28');
+    expect(find.byKey(const Key('planning-next')), findsNothing);
+  });
+
+  test('untilLabel : maintenant, dans 1 h 05, en retard', () {
+    final t = DateTime(2026, 10, 27, 14, 0);
+    expect(untilLabel(t, t.subtract(const Duration(seconds: 20))), 'maintenant');
+    expect(untilLabel(t, t.subtract(const Duration(minutes: 65))), 'dans 1 h 05');
+    expect(untilLabel(t, t.subtract(const Duration(minutes: 120))), 'dans 2 h');
+    expect(untilLabel(t, t.add(const Duration(minutes: 3))), 'en retard · 3 min');
+    expect(nextOf(const [], isReturn: true), isNull);
   });
 }

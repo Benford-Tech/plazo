@@ -81,7 +81,8 @@ describe("Planning : arrivées en direct", () => {
     expect(within(card).getByText(/Position mise à jour il y a 2\d s · 8,4 km · arrivée estimée 07:52/)).toBeInTheDocument();
     // First in its column although it is not the earliest.
     const arrivals = card.closest("ul")!;
-    expect(within(arrivals).getAllByRole("listitem")[0]).toBe(card);
+    // Nothing done yet: the « Maintenant » line stands first, then the rows.
+    expect(within(arrivals).getAllByRole("listitem").filter(li => li.id)[0]).toBe(card);
 
     expect(screen.getByText("Prévenu · « dans 20 min »")).toBeInTheDocument();
     expect(screen.getByText("● Au point de rendez-vous")).toBeInTheDocument();
@@ -137,5 +138,51 @@ describe("Planning : arrivées en direct", () => {
     );
     await screen.findByText("Camille Martin");
     expect(screen.queryByTestId("sms-warning")).not.toBeInTheDocument();
+  });
+});
+
+describe("Planning : la ligne « Maintenant » (direction B)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-30T13:05:00.000Z")); // 14:05 in Paris
+    Element.prototype.scrollIntoView = vi.fn();
+    api.getLiveArrivals.mockResolvedValue({ serverTime: "2026-10-30T13:05:00.000Z", signals: [] });
+    api.getPlanning.mockResolvedValue({
+      date: "2026-10-30",
+      timezone: "Europe/Paris",
+      parking: { id: "p1", name: "Parking Démo LYS", bookableCapacity: 100 },
+      arrivals: [
+        booking("a1", "Marc Lopez", "LM-789-NP", "2026-10-30T12:20:00.000Z", { status: "arrived" }),
+        booking("a2", "Hugo Morel", "AB-482-KD", "2026-10-30T13:50:00.000Z"),
+        booking("a3", "Inès Petit", "GH-456-JK", "2026-10-30T16:15:00.000Z"),
+      ],
+      returns: [
+        booking("d1", "Anne Roux", "QR-321-ST", "2026-10-30T12:45:00.000Z", { status: "returned" }),
+        booking("d2", "Claire Durand", "TS-101-PZ", "2026-10-30T12:55:00.000Z", { status: "shuttled_out" }),
+      ],
+      nights: [],
+      stats: { arrivals: 3, arrived: 1, returns: 2, returnsWithFlight: 0 },
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("sépare ce qui est fait de ce qui vient, avec le temps qui reste, et s'ouvre sur la ligne", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <PlanningPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const line = await screen.findByTestId("now-arrival");
+    expect(within(line).getByText("Maintenant · 14:05")).toBeInTheDocument();
+    const rows = [...line.parentElement!.children].map(li => li.id || "now");
+    expect(rows).toEqual(["row-a1", "now", "row-a2", "row-a3"]);
+    expect(screen.getByTestId("planning-row-a1").closest("li")).toHaveClass("opacity-50");
+    expect(screen.getByTestId("until-a2")).toHaveTextContent("dans 45 min");
+    expect(screen.queryByTestId("until-a3")).toBeNull();
+    // Claire is still away 10 minutes after her time: below the line, late.
+    expect(screen.getByTestId("until-d2")).toHaveTextContent("en retard · 10 min");
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
   });
 });
