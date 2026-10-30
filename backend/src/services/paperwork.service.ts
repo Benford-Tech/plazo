@@ -5,7 +5,7 @@ import { isProspectDemoOperator } from './demo-guard';
 import { PRODUCT_NAME, signatureCodeSecret } from '@/config';
 import prisma, { OperatorContractTemplate, Prisma, Reservation } from '@/database';
 import { EmailMessage } from '@/domain/booking-messages';
-import { bookingFieldFacts, fieldsOf, signatureStamp } from '@/domain/contract-fields';
+import { bookingFieldFacts, fieldsOf, signatureStamp, trainOf, travelLine } from '@/domain/contract-fields';
 import { buildSignedContractPdf, signedFileNames, templateDocument, templateVersion } from '@/domain/contract-template';
 import {
   CODE_MAX_ATTEMPTS,
@@ -186,6 +186,8 @@ export class PaperworkService {
       priceCents: r.priceCents,
       keysEntrusted: services.includes('valet') || !!r.fileId || !!r.keyHook,
       paidOnline: r.paymentStatus === 'paid',
+      travel: travelLine({ departureFlight: r.departureFlight, returnFlight: r.returnFlight, train: trainOf(r.notes) }) || null,
+      mileageKm: r.inspections.find(i => i.kind === 'dropoff' && i.author === 'staff')?.mileageKm ?? null,
     };
   }
 
