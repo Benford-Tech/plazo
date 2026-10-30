@@ -128,9 +128,14 @@ void main() {
     final departure = find.byKey(const Key('next-departure'));
     final arrival = find.byKey(const Key('next-arrival'));
     expect(find.text('PROCHAIN DÉPART'), findsOneWidget);
-    // Léa (13:40, still away) is the next departure, late; Théo (15:10) the next arrival, Chloé being there.
-    expect(find.descendant(of: departure, matching: find.text('13:40')), findsOneWidget);
-    expect(find.descendant(of: departure, matching: find.text('en retard · 34 min')), findsOneWidget);
+    // Nadia (16:30) is the next departure; Léa (13:40, still away) is listed late under it.
+    expect(find.descendant(of: departure, matching: find.text('16:30')), findsOneWidget);
+    expect(find.descendant(of: departure, matching: find.text('dans 2 h 16')), findsOneWidget);
+    final late = find.byKey(const Key('late-departure'));
+    expect(find.descendant(of: late, matching: find.text('EN RETARD · 1')), findsOneWidget);
+    expect(find.descendant(of: late, matching: find.text('13:40 · Léa Petit')), findsOneWidget);
+    expect(find.descendant(of: late, matching: find.text('en retard · 34 min')), findsOneWidget);
+    expect(find.byKey(const Key('late-arrival')), findsNothing);
     expect(find.descendant(of: arrival, matching: find.text('Théo Dubois')), findsOneWidget);
     expect(find.descendant(of: arrival, matching: find.text('dans 56 min')), findsOneWidget);
 
@@ -144,6 +149,7 @@ void main() {
     expect(untilLabel(t, t.subtract(const Duration(minutes: 65))), 'dans 1 h 05');
     expect(untilLabel(t, t.subtract(const Duration(minutes: 120))), 'dans 2 h');
     expect(untilLabel(t, t.add(const Duration(minutes: 3))), 'en retard · 3 min');
-    expect(nextOf(const [], isReturn: true), isNull);
+    expect(nextOf(const [], isReturn: true, now: t), isNull);
+    expect(lateOf(const [], isReturn: true, now: t), isEmpty);
   });
 }

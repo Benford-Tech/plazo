@@ -17,7 +17,7 @@ import type { ArrivalSignal, NightLoad, PlanningRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
-import { nextOf, splitAtNow, untilLabel } from "@/lib/planning-now";
+import { lateOf, nextOf, splitAtNow, untilLabel } from "@/lib/planning-now";
 
 function NightCell({ night }: { night: NightLoad }) {
   const t = fr.planning;
@@ -220,43 +220,58 @@ function Column({
 }
 
 /** « Prochaine arrivée » / « Prochain départ » over its column (direction A of 30/10/2026); moves on once done. */
-function NextCard({ row, kind, now }: { row: PlanningRow | null; kind: "arrival" | "return"; now: number }) {
+function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" | "return"; now: number }) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
   const card = useQuickCard();
-  const at = row ? (isArrival ? row.arrivalAt : row.returnAt) : null;
-  const until = at ? untilLabel(at, now) : null;
-  const colour = isArrival ? "border-ok" : "border-info";
-  const title = (
-    <span className={cn("text-xs font-extrabold uppercase tracking-wider", MOVEMENT_TEXT[isArrival ? "arrival" : "departure"])}>
-      {isArrival ? t.nextArrival : t.nextDeparture}
-    </span>
-  );
-  if (!row || !at || !until)
-    return (
-      <div data-testid={`next-${kind}`} className={cn("flex flex-col gap-1 rounded-lg border-2 bg-card px-4 py-3", colour)}>
-        {title}
-        <span className="text-sm text-muted-foreground">{isArrival ? t.noNextArrival : t.noNextDeparture}</span>
-      </div>
-    );
+  const row = nextOf(items, kind, now);
+  const late = lateOf(items, kind, now);
+  const atOf = (r: PlanningRow) => (isArrival ? r.arrivalAt : r.returnAt);
+  const shownLate = late.slice(0, 3);
   return (
-    <button
-      type="button"
-      data-testid={`next-${kind}`}
-      onClick={() => card.open(row.id)}
-      className={cn("grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-0.5 rounded-lg border-2 bg-card px-4 py-3 text-left hover:brightness-[.97]", colour)}
-    >
-      <span className="col-span-3">{title}</span>
-      <span className="tabular font-mono text-3xl font-bold">{timeOf(at)}</span>
-      <span className="min-w-0">
-        <span className="block truncate text-lg font-semibold">{row.customerName}</span>
-        <span className="block truncate text-sm text-muted-foreground">
-          {!isArrival && row.returnFlight ? `${row.returnFlight} · ` : ""}
-          {t.pax(row.passengers)}
-        </span>
+    <div data-testid={`next-${kind}`} className={cn("flex flex-col gap-2 rounded-lg border-2 bg-card px-4 py-3", isArrival ? "border-ok" : "border-info")}>
+      <span className={cn("text-xs font-extrabold uppercase tracking-wider", MOVEMENT_TEXT[isArrival ? "arrival" : "departure"])}>
+        {isArrival ? t.nextArrival : t.nextDeparture}
       </span>
-      <span className={cn("tabular whitespace-nowrap font-mono text-sm font-bold", until.late ? "text-warn-text" : "text-lime-deep")}>{until.text}</span>
-    </button>
+      {row ? (
+        <button
+          type="button"
+          data-testid={`next-${kind}-row`}
+          onClick={() => card.open(row.id)}
+          className="grid grid-cols-[auto_1fr_auto] items-center gap-x-4 rounded-md text-left hover:bg-accent/40"
+        >
+          <span className="tabular font-mono text-3xl font-bold">{timeOf(atOf(row))}</span>
+          <span className="min-w-0">
+            <span className="block truncate text-lg font-semibold">{row.customerName}</span>
+            <span className="block truncate text-sm text-muted-foreground">
+              {!isArrival && row.returnFlight ? `${row.returnFlight} · ` : ""}
+              {t.pax(row.passengers)}
+            </span>
+          </span>
+          <span className="tabular whitespace-nowrap font-mono text-sm font-bold text-lime-deep">{untilLabel(atOf(row), now).text}</span>
+        </button>
+      ) : (
+        <span className="text-sm text-muted-foreground">{isArrival ? t.noNextArrival : t.noNextDeparture}</span>
+      )}
+      {late.length > 0 && (
+        <div data-testid={`late-${kind}`} className="flex flex-col gap-1 rounded-md bg-warn-soft px-3 py-2">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-warn-text">{t.lateCount(late.length)}</span>
+          {shownLate.map(r => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => card.open(r.id)}
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 text-left text-sm hover:underline"
+            >
+              <span className="tabular font-mono font-bold">{timeOf(atOf(r))}</span>
+              <span className="truncate font-semibold">{r.customerName}</span>
+              <span className="tabular whitespace-nowrap font-mono text-xs font-bold text-warn-text">{untilLabel(atOf(r), now).text}</span>
+            </button>
+          ))}
+          {late.length > shownLate.length && <span className="text-xs text-warn-text">{t.lateMore(late.length - shownLate.length)}</span>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -379,8 +394,8 @@ export default function PlanningPage() {
           </section>
           {isToday && (
             <div data-testid="planning-next" className="grid gap-3 sm:grid-cols-2 lg:gap-8">
-              <NextCard row={nextOf(arrivals, "arrival")} kind="arrival" now={now} />
-              <NextCard row={nextOf(returns, "return")} kind="return" now={now} />
+              <NextCard items={arrivals} kind="arrival" now={now} />
+              <NextCard items={returns} kind="return" now={now} />
             </div>
           )}
           <div className="grid gap-8 lg:grid-cols-2">
