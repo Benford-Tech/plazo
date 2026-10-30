@@ -10,6 +10,7 @@ import { NextStep } from "@/components/reservations/NextStep";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
+import { ReservationHistory } from "@/components/reservations/ReservationHistory";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -600,6 +601,8 @@ export default function ReservationPage() {
               )}
             </dl>
           )}
+          {/* « Historique » (30/10/2026, direction A): who did what on this booking. */}
+          <ReservationHistory reservationId={r.id} />
         </>
       )}
     </div>

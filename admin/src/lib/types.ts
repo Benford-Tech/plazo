@@ -2231,3 +2231,21 @@ export interface ReservationImportSummary {
   undoable: boolean;
   by: string | null;
 }
+
+/** « Historique » of a reservation (30/10/2026): one audit entry, written for reading. */
+export type HistoryGroup = "status" | "change" | "message" | "other";
+export interface HistoryEvent {
+  id: string;
+  at: string;
+  action: string;
+  group: HistoryGroup;
+  author: {
+    kind: "staff" | "traveller" | "comparator" | "system";
+    name: string | null;
+    staffId: string | null;
+    photoUpdatedAt: string | null;
+    viewAs: boolean;
+  };
+  changes: { field: string; from: string; to: string }[];
+  info: Record<string, string | number | boolean | null>;
+}

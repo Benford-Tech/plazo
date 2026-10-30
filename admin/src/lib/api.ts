@@ -23,6 +23,7 @@ import type {
   InboundSettings,
   InboundEmail,
   LinkedEmail,
+  HistoryEvent,
   InboundEmailList,
   InboundReanalysis,
   InboundEmailView,
@@ -865,6 +866,8 @@ export const adminApi = {
       body: JSON.stringify(body),
     }),
   // « Mails liés » (27/10/2026): the mails of a booking, oldest first.
+  getReservationHistory: (reservationId: string) =>
+    apiRequest<{ data: HistoryEvent[] }>(`/internal/reservations/${reservationId}/history`),
   getReservationEmails: (reservationId: string) =>
     apiRequest<{ data: LinkedEmail[] }>(
       `/internal/reservations/${reservationId}/emails`,

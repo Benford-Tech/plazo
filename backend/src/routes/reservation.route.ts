@@ -141,6 +141,16 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
  */
+/**
+ * @swagger
+ * /internal/reservations/{id}/history:
+ *   get:
+ *     summary: "Historique (30/10/2026): who did what on the reservation, newest first. { data: [{ id, at, action, group (status | change | message | other), author { kind (staff | traveller | comparator | system), name, staffId, photoUpdatedAt, viewAs }, changes [{ field, from, to }] (values written for reading), info }] }"
+ *     tags: [Reservations]
+ *     responses:
+ *       200: { description: The history }
+ *       404: { description: not_found (another operator's reservation) }
+ */
 export class ReservationRoute implements Routes {
   public router = Router();
   public reservations = new ReservationController();
@@ -166,6 +176,8 @@ export class ReservationRoute implements Routes {
       ValidationMiddleware(ParseEmailDto),
       this.reservations.parseEmail,
     );
+    // « Historique » (30/10/2026): who did what on the reservation, newest first.
+    this.router.get('/internal/reservations/:id/history', StaffAuthMiddleware('reservations:view'), this.reservations.history);
     this.router.get('/internal/reservations/:id', StaffAuthMiddleware('reservations:view'), this.reservations.get);
     this.router.patch(
       '/internal/reservations/:id',
