@@ -641,6 +641,92 @@ No payment and no in-app purchase in this app.
 
 Si le point 0.10 est corrigé, remplacer le titre de la notification Android par le nouveau texte (étape 5 ci-dessus et description de 4.6).
 
+### 4.4 bis Réponse à Apple, règle 2.1 « Information Needed » (31/10/2026)
+
+Apple a demandé, pour la première soumission, six informations dans le champ **Notes** d'App Review Information (App Store
+Connect › l'app › la version › App Review Information), puis une nouvelle soumission. Les textes ci-dessous les donnent dans
+l'ordre d'Apple, en anglais ; ils tiennent sous les 4 000 caractères du champ. Les remplacer **dans la console seulement** :
+`<VIDEO LINK>`, et les identifiants dans Sign-In Information (jamais ici).
+
+**À faire par Joanny avant de renvoyer** :
+1. **Comptes de revue de Plazo Pro**, un par type de compte (Apple le demande) :
+   - **Accueil** sur « Plazo (tests) » : Équipe › nouveau membre « App Review », rôle Accueil, adresse dédiée (pas le compte
+     `PLAZO_TEST_EMAIL` des workflows : le relecteur peut le supprimer). Ce rôle peut tenir les postes Accueil, Chauffeur et
+     Voiturier, et le flux continu de « Plazo (tests) » garde toujours des voyageurs à emmener et à récupérer. Jamais un gérant
+     sur « Plazo (tests) » (il pourrait changer le mot de passe du super admin).
+   - **Gérant** sur un loueur dédié « Parking Revue » (marche à suivre en 4.4, données fictives, aucun canal SMS).
+   - Vérifier la veille que les deux se connectent (le relecteur peut les supprimer : les recréer après chaque revue).
+2. **Vidéo sur un vrai iPhone** (enregistrement de l'écran de Centre de contrôle), de l'ouverture de l'app à la suppression du
+   compte, 3 à 4 minutes, mise en ligne en lien non répertorié (YouTube « Non répertoriée » ou Google Drive « Tous les
+   utilisateurs disposant du lien »). Plazo Pro, avec un **troisième compte jetable** (il est supprimé à la fin) :
+   ouverture → e-mail et mot de passe → « Aujourd'hui, je suis… » → tableau de bord et Planning (prochaine arrivée, prochain
+   départ) → Réservations › une fiche → onglet Parking → Plus › Navette : cocher deux personnes, « Partir vers … », mettre l'app
+   en arrière-plan (indicateur bleu), revenir, « Clients déposés · retour au parking » → Plus › Mon compte › « Supprimer mon
+   compte » › confirmer → retour à l'écran de connexion. Plazo : recherche → fiche → réservation → paiement avec la carte de
+   test → Mes réservations → retrouver une réservation par numéro et e-mail.
+3. **Distribution publique (règle 3.2)** : la réponse ci-dessous la défend (toute société de parking peut s'inscrire). Si Apple
+   maintient le refus, passer Plazo Pro en distribution « Unlisted » (formulaire d'Apple) plutôt qu'en app personnalisée :
+   les loueurs suivants n'auraient pas à passer par Apple Business Manager.
+
+#### Notes de Plazo Pro (anglais, à coller)
+
+```text
+1. SCREEN RECORDING (physical iPhone, from app launch to account deletion): <VIDEO LINK>
+
+2. PURPOSE AND AUDIENCE
+Plazo Pro is the staff app of private car parks located near airports (first market: Lyon Saint-Exupéry, France). These car parks keep the traveller's car during the trip and drive the traveller to the terminal and back by shuttle. The app is used only by their employees: managers, desk agents, shuttle drivers and valets. Travellers use our separate app "Plazo".
+Problem solved: bookings arrive from several websites and by phone, the team must know who arrives and leaves at what time, where each car and its keys are, and who to drive to the airport or pick up after landing. Today this is done on paper and by phone.
+Value: one shared real-time view of the day for the whole team (planning with the next arrival and departure, late ones, shuttle lists, car locations, bookings imported from the booking websites).
+Distribution: Plazo Pro is not made for one company. Any airport car park operator can register on https://www.plazo.fr/pro/inscription and use the same app with its own team; each operator's data is kept separate.
+
+3. HOW TO TEST
+The app is in French. No in-app sign-up: accounts are created by the car park manager (e-mail invitation), or a new employee signs in with Apple/Google and enters the car park's daily code, then a manager accepts the request.
+Account A (desk agent, car park "Plazo (tests)" with fictitious travellers that keep arriving): credentials in Sign-In Information.
+- Tap "Continuer", enter the password, "Se connecter". At "Aujourd'hui, je suis…" choose "Chauffeur".
+- "Planning" tab: next arrival, next departure, late ones, the day's list.
+- "Navette" tab: "Aller" (travellers to drive) / "Retour" (to pick up). Tick people, tap "Partir vers… · N pers.", allow location. Put the app in the background (blue indicator), come back, tap "Clients déposés · retour au parking".
+- "Plus" > "Mon poste du jour" to switch to "Accueil" (bookings) or "Voiturier".
+Account B (manager, fictitious car park "Parking Revue"): <EMAIL B> / <PASSWORD B>. Adds team, revenue and settings ("Plus").
+Account deletion: "Plus" > "Mon compte" > "Supprimer mon compte", confirm with the password.
+No user-generated content is shared between users (no public posts, chat or profiles), so there is nothing to report or block.
+No paid content, no subscription and no in-app purchase in this app; the car park's subscription is contracted outside the app.
+
+4. EXTERNAL SERVICES
+Our own API (Vercel, Paris region; PostgreSQL by Neon). Sign in with Apple and Google Sign-In (optional sign-in). OneSignal (push notifications). IGN, the French national mapping agency (map and aerial photo tiles). Brevo (transactional e-mails and SMS sent by our server). AeroDataBox (flight arrival times, server side). Anthropic Claude (server side only: reads booking confirmation e-mails forwarded by the car park to create bookings; no data from the device). Stripe SDK is linked but not used by this app.
+
+5. REGIONS
+The app works the same in every region where it is available (France). Content is in French. No feature differs by country.
+
+6. REGULATED INDUSTRY / THIRD-PARTY MATERIAL
+Not a regulated activity (car park management software). Benford Tech (SAS, RCS Vienne 910 729 102) publishes the app and owns its content. Maps and aerial photos: IGN Géoplateforme, open licence (Licence Ouverte Etalab 2.0), credited "© IGN" on the map.
+```
+
+#### Notes de Plazo (anglais, à coller si c'est cette app que vise le message)
+
+```text
+1. SCREEN RECORDING (physical iPhone, from app launch): <VIDEO LINK>
+
+2. PURPOSE AND AUDIENCE
+Plazo lets travellers book a private car park near an airport (first market: Lyon Saint-Exupéry, France), pay online and follow their stay: drop-off, free shuttle to the terminal, return flight, car pick-up. Audience: travellers who drive to the airport. Problem solved: comparing car parks by total price and shuttle, then not having to phone the car park on the trip day (the shuttle is shown live, the car park knows when the traveller lands).
+
+3. HOW TO TEST
+The app is in French. No account and no sign-up: a booking is opened with its number and the e-mail or phone used to book, so there is no account to delete.
+- "Rechercher": choose dates, "Rechercher", open a car park, "Réserver", fill in the form (please use "Review" as the last name), accept the terms, pay.
+- Payment: <TEST CARD 4242 4242 4242 4242, any future date, any CVC / or: real card, refund on request>.
+- Existing booking: "Mes réservations" > "Ajouter une réservation", number <REFERENCE>, e-mail <EMAIL>.
+No user-generated content (no reviews, chat or public profiles), so nothing to report or block.
+Payment: the parking stay is a physical service used outside the app (guideline 3.1.3(e)), paid by card through Stripe. No digital content is sold.
+
+4. EXTERNAL SERVICES
+Our own API (Vercel, Paris region; PostgreSQL by Neon). Stripe (card payment of the stay). OneSignal (notifications about the booking). IGN (maps). Brevo (confirmation e-mails and SMS, server side). AeroDataBox (flight times, server side). Anthropic Claude (server side, car park staff tools only; never the traveller's data entered in this app).
+
+5. REGIONS
+Same app and features in every region where it is available. Content in French; car parks listed today are in France.
+
+6. REGULATED INDUSTRY / THIRD-PARTY MATERIAL
+Car park booking is not a regulated activity. Benford Tech (SAS, RCS Vienne 910 729 102) publishes the app and is the platform that takes the payment and pays the car park. Maps: IGN, open licence, credited "© IGN".
+```
+
 ### 4.5 Conformité export (les deux apps)
 
 - `ITSAppUsesNonExemptEncryption = false` est déjà dans `Info.plist`. App Store Connect ne pose donc aucune question à l'envoi, et aucune déclaration française n'est nécessaire. Ce choix est justifié : TLS standard pour les seuls échanges de l'app, aucun algorithme propriétaire, et une fonction principale sans rapport avec la sécurité de l'information.
