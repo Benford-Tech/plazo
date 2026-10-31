@@ -648,17 +648,21 @@ Connect › l'app › la version › App Review Information), puis une nouvelle 
 l'ordre d'Apple, en anglais ; ils tiennent sous les 4 000 caractères du champ. Les remplacer **dans la console seulement** :
 `<VIDEO LINK>`, et les identifiants dans Sign-In Information (jamais ici).
 
+**Comptes de revue (créés le 31/10/2026)** : loueur fictif « Parking Revue » (inscription publique, 50 places, aéroport LYS,
+fiche Plazo restée en brouillon donc absente du site, suivi des navettes « Équipe et clients », navette « Navette 1 » de 8
+places, aucun canal SMS), avec 57 réservations fictives `RV-101-PZ` à `RV-157-PZ` (trois arrivées par jour du 27/10 au
+14/11/2026, séjours de 3 ou 4 nuits, téléphones 06 39 98 01 xx, SMS de la veille exclu, aucun e-mail). Trois comptes,
+adresses `apple-review-gerant@`, `apple-review-accueil@` et `apple-review-video@plazo.fr` (le catch-all les renvoie à
+`FALLBACK_ADDRESS`) : Gérant, Accueil (postes Accueil, Chauffeur, Voiturier) et un Accueil jetable pour la vidéo. Mots de
+passe dans le gestionnaire de Joanny, jamais ici. Après le 14/11/2026, ou si le relecteur supprime un compte, recréer les
+réservations et les comptes (demander à Claude). Le compte `PLAZO_TEST_EMAIL` de « Plazo (tests) » n'est jamais donné à Apple.
+
 **À faire par Joanny avant de renvoyer** :
-1. **Comptes de revue de Plazo Pro**, un par type de compte (Apple le demande) :
-   - **Accueil** sur « Plazo (tests) » : Équipe › nouveau membre « App Review », rôle Accueil, adresse dédiée (pas le compte
-     `PLAZO_TEST_EMAIL` des workflows : le relecteur peut le supprimer). Ce rôle peut tenir les postes Accueil, Chauffeur et
-     Voiturier, et le flux continu de « Plazo (tests) » garde toujours des voyageurs à emmener et à récupérer. Jamais un gérant
-     sur « Plazo (tests) » (il pourrait changer le mot de passe du super admin).
-   - **Gérant** sur un loueur dédié « Parking Revue » (marche à suivre en 4.4, données fictives, aucun canal SMS).
-   - Vérifier la veille que les deux se connectent (le relecteur peut les supprimer : les recréer après chaque revue).
+1. Mettre l'adresse et le mot de passe du compte **Accueil** dans Sign-In Information, ceux du **Gérant** à la place de
+   `<EMAIL B> / <PASSWORD B>` dans les notes.
 2. **Vidéo sur un vrai iPhone** (enregistrement de l'écran de Centre de contrôle), de l'ouverture de l'app à la suppression du
    compte, 3 à 4 minutes, mise en ligne en lien non répertorié (YouTube « Non répertoriée » ou Google Drive « Tous les
-   utilisateurs disposant du lien »). Plazo Pro, avec un **troisième compte jetable** (il est supprimé à la fin) :
+   utilisateurs disposant du lien »). Plazo Pro, avec le compte jetable `apple-review-video@plazo.fr` (supprimé à la fin) :
    ouverture → e-mail et mot de passe → « Aujourd'hui, je suis… » → tableau de bord et Planning (prochaine arrivée, prochain
    départ) → Réservations › une fiche → onglet Parking → Plus › Navette : cocher deux personnes, « Partir vers … », mettre l'app
    en arrière-plan (indicateur bleu), revenir, « Clients déposés · retour au parking » → Plus › Mon compte › « Supprimer mon
@@ -681,12 +685,12 @@ Distribution: Plazo Pro is not made for one company. Any airport car park operat
 
 3. HOW TO TEST
 The app is in French. No in-app sign-up: accounts are created by the car park manager (e-mail invitation), or a new employee signs in with Apple/Google and enters the car park's daily code, then a manager accepts the request.
-Account A (desk agent, car park "Plazo (tests)" with fictitious travellers that keep arriving): credentials in Sign-In Information.
+Account A (desk agent of "Parking Revue", a fictitious car park with fictitious bookings every day): credentials in Sign-In Information.
 - Tap "Continuer", enter the password, "Se connecter". At "Aujourd'hui, je suis…" choose "Chauffeur".
 - "Planning" tab: next arrival, next departure, late ones, the day's list.
 - "Navette" tab: "Aller" (travellers to drive) / "Retour" (to pick up). Tick people, tap "Partir vers… · N pers.", allow location. Put the app in the background (blue indicator), come back, tap "Clients déposés · retour au parking".
 - "Plus" > "Mon poste du jour" to switch to "Accueil" (bookings) or "Voiturier".
-Account B (manager, fictitious car park "Parking Revue"): <EMAIL B> / <PASSWORD B>. Adds team, revenue and settings ("Plus").
+Account B (manager of the same car park): <EMAIL B> / <PASSWORD B>. Adds team, revenue and settings ("Plus").
 Account deletion: "Plus" > "Mon compte" > "Supprimer mon compte", confirm with the password.
 No user-generated content is shared between users (no public posts, chat or profiles), so there is nothing to report or block.
 No paid content, no subscription and no in-app purchase in this app; the car park's subscription is contracted outside the app.
