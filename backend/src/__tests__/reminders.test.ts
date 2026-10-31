@@ -367,7 +367,7 @@ describe('en consultation (« Ouvrir son espace », 10/10/2026)', () => {
 });
 
 describe('le SMS de la veille d’une réservation donnée (30/10/2026)', () => {
-  it('part à la main depuis sa fiche, se renvoie (le SMS seul) après 10 minutes, jamais la nuit', async () => {
+  it('part à la main depuis sa fiche, se renvoie (le SMS seul) après 10 minutes, même la nuit', async () => {
     const op = await setupOperator();
     const reminders = Container.get(ReminderService);
     const actor = await prisma.staff.findUniqueOrThrow({ where: { id: op.manager.id } });
@@ -380,8 +380,8 @@ describe('le SMS de la veille d’une réservation donnée (30/10/2026)', () => 
     const before = await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'));
     expect(before).toMatchObject({ status: 'planned', at: '2027-06-15T18:00', sentAt: null, resend: false, canSend: true, refusal: null });
 
-    // At night, refused.
-    await expect(reminders.sendOne(staff, r.id, at('2027-06-14T23:00'))).rejects.toMatchObject({ code: 'reminder_quiet_hours' });
+    // At night too (31/10/2026): only the automatic sends keep the quiet hours.
+    expect((await reminders.forReservation(staff, r.id, at('2027-06-14T23:00'))).refusal).toBeNull();
 
     // « Ne pas envoyer » does not stop a send by hand.
     await prisma.reservation.update({ where: { id: r.id }, data: { reminderExcludedAt: new Date() } });
