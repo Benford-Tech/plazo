@@ -254,11 +254,15 @@ jobs:
           COMMON=()
           [ -n "$API_BASE_URL" ] && COMMON+=(--dart-define=API_BASE_URL="$API_BASE_URL")
           [ -n "$SITE_URL" ] && COMMON+=(--dart-define=SITE_URL="$SITE_URL")
-          [ -n "$STRIPE_MERCHANT_ID" ] && COMMON+=(--dart-define=STRIPE_MERCHANT_ID="$STRIPE_MERCHANT_ID")
           for FLAVOR in traveller pro; do
             EXTRA=()
             case "$FLAVOR" in
-              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              traveller)
+                SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"
+                # Apple Pay only with the entitlement the profile allows (step above): a merchant id without it would
+                # show a button that cannot pay.
+                [ -n "${APPLE_PAY_DEFINE:-}" ] && EXTRA+=("$APPLE_PAY_DEFINE")
+                ;;
               pro)
                 SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"
                 # Plazo Pro « Continuer avec Google » on Android needs the Web client ID (empty: no button).
@@ -405,6 +409,42 @@ jobs:
           else
             echo "::warning::le profil App Store de Plazo Pro n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple"
           fi
+      - name: Apple Pay (Plazo) selon son profil App Store
+        run: |
+          set -euo pipefail
+          # 31/10/2026 (« ajoute le paiement apple »): Plazo shows Apple Pay in its payment sheet only when its App Store
+          # profile carries the Apple Pay capability with a merchant id. Then the entitlement is added for this build only
+          # and the IPA gets STRIPE_MERCHANT_ID (the variable when the profile holds it, else the profile's first one).
+          ENTITLEMENTS="ios/Runner/Runner.entitlements"
+          MERCHANTS=""
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO")
+                I=0
+                while M=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.in-app-payments:$I" "$DECODED" 2>/dev/null); do
+                  MERCHANTS="$MERCHANTS $M"; I=$((I + 1))
+                done
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          MERCHANTS=$(echo "$MERCHANTS" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' ' ')
+          if [ -z "$MERCHANTS" ]; then
+            echo "::warning::le profil App Store de Plazo n'a pas la capacité Apple Pay (Merchant ID) : Plazo est construit sans Apple Pay (mobile/publier-sur-les-stores.md, « Apple Pay »)"
+            exit 0
+          fi
+          CHOSEN=""
+          for M in $MERCHANTS; do [ "$M" = "${STRIPE_MERCHANT_ID:-}" ] && CHOSEN="$M"; done
+          [ -n "$CHOSEN" ] || CHOSEN=$(echo $MERCHANTS | awk '{print $1}')
+          /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.in-app-payments" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+          /usr/libexec/PlistBuddy -c "Add :com.apple.developer.in-app-payments array" -c "Add :com.apple.developer.in-app-payments:0 string $CHOSEN" "$ENTITLEMENTS"
+          echo "APPLE_PAY_DEFINE=--dart-define=STRIPE_MERCHANT_ID=$CHOSEN" >> "$GITHUB_ENV"
+          echo "Apple Pay : capacité présente ($CHOSEN), bouton Apple Pay activé dans la feuille de paiement de Plazo"
       - name: Dépendances
         run: flutter pub get
       - name: Profils dans le projet Xcode (un export options plist par app)
@@ -427,11 +467,15 @@ jobs:
           COMMON=()
           [ -n "$API_BASE_URL" ] && COMMON+=(--dart-define=API_BASE_URL="$API_BASE_URL")
           [ -n "$SITE_URL" ] && COMMON+=(--dart-define=SITE_URL="$SITE_URL")
-          [ -n "$STRIPE_MERCHANT_ID" ] && COMMON+=(--dart-define=STRIPE_MERCHANT_ID="$STRIPE_MERCHANT_ID")
           for FLAVOR in traveller pro; do
             EXTRA=()
             case "$FLAVOR" in
-              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              traveller)
+                SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"
+                # Apple Pay only with the entitlement the profile allows (step above): a merchant id without it would
+                # show a button that cannot pay.
+                [ -n "${APPLE_PAY_DEFINE:-}" ] && EXTRA+=("$APPLE_PAY_DEFINE")
+                ;;
               pro)
                 SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"
                 [ -n "${APPLE_SIGN_IN_DEFINE:-}" ] && EXTRA+=("$APPLE_SIGN_IN_DEFINE")

@@ -1709,6 +1709,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
   détail dans `mobile/publier-sur-les-stores.md`.
   **Soumettre sans reconstruire (29/10/2026, Plazo Pro 1.0.123 « KO App Store » : l'IPA était sur TestFlight, mais Apple annulait encore l'ancienne soumission, 409 « pre-release build could not be added »)** : workflow Codemagic `mobile-submit-app-store` (à la main, `SUBMIT_APPS` = `plazo-pro` par défaut, ou `plazo plazo-pro`) : dernier build TestFlight de chaque app soumis à la revue (`builds submit-to-app-store`, version `MAJEUR.MINEUR.<numéro>`, notes de version, trois essais à 3 min d'écart), sans rien construire ; lancé par `codemagic-build.yml` › `start`. Le numéro ne monte qu'à un nouveau build : relancer le bilan d'un build ne le change pas.
+  **Apple Pay dans Plazo (31/10/2026, « ajoute le paiement apple »)** : la feuille Stripe de l'app le gérait déjà
+  (`STRIPE_MERCHANT_ID`) ; l'étape « Apple Pay (Plazo) selon son profil App Store » de `mobile-release.yml` lit les Merchant
+  IDs du profil App Store de `com.benfordtech.plazo` et, s'il y en a, ajoute `com.apple.developer.in-app-payments` à
+  `Runner.entitlements` pour ce build et passe `STRIPE_MERCHANT_ID` au seul flavor voyageur (sinon Plazo est construit sans
+  Apple Pay, avertissement) ; réglages Apple et Stripe (Merchant ID `merchant.com.benfordtech.plazo`, certificat de
+  traitement depuis Stripe, capacité de l'App ID, profil recréé par `ios_create_signing`) dans `publier-sur-les-stores.md`,
+  section 3 ter. Le site passe par Stripe Checkout, qui montre Apple Pay seul.
   **Pipeline des stores sur GitHub Actions (23/10/2026, « Refais le pipeline codemagic dans github avec la publication sur les
   deux stores » ; Codemagic répondait 402 « Billing error »)** : `.github/workflows/mobile-release.yml` « Mobile release (Google
   Play + App Store) », tag `mobile-v…` ou à la main (stores, piste Google Play, brouillon, revue Apple et sortie, APK,

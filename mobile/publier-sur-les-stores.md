@@ -115,7 +115,10 @@ GitHub › dépôt `Benford-Tech/plazo` › **Settings › Environments › New 
 | `API_BASE_URL`, `SITE_URL`, `STRIPE_MERCHANT_ID` | facultatives, comme sur Codemagic |
 
 Sign in with Apple suit le profil comme sur Codemagic : le bouton Apple n'apparaît que si le profil App Store de Plazo Pro
-porte la capacité. Codemagic ne se déclenche plus sur les tags : un tag ne publie qu'une fois, par GitHub.
+porte la capacité. Apple Pay de même pour Plazo (31/10/2026) : le bouton Apple Pay de la feuille de paiement n'apparaît que si le profil
+App Store de Plazo porte la capacité Apple Pay avec un Merchant ID (étape « Apple Pay (Plazo) selon son profil App Store » :
+la clé `com.apple.developer.in-app-payments` est ajoutée pour ce build et `STRIPE_MERCHANT_ID` vient du profil). Mise en
+place en section 3 ter. Codemagic ne se déclenche plus sur les tags : un tag ne publie qu'une fois, par GitHub.
 
 ## 0. À décider avant de commencer
 
@@ -164,7 +167,7 @@ porte la capacité. Codemagic ne se déclenche plus sur les tags : un tag ne pub
    Yoon (étape 3.4), collé tel quel (pas en base64) : le même fichier que pour Yoon s'il est encore là, sinon une nouvelle
    clé du même compte.
    - Une variable « Secret » ne se relit plus : pour la changer, la supprimer puis la recréer.
-   - Plus tard, facultatif : `STRIPE_MERCHANT_ID` (Apple Pay), quand Claude aura ajouté Apple Pay à l'app.
+   - Apple Pay : section 3 ter (le pipeline GitHub lit le Merchant ID dans le profil ; `STRIPE_MERCHANT_ID` est facultatif).
 6. [ ] **Les déclenchements** : après le prochain tag `mobile-v…`, ouvrir l'onglet **Webhooks** de l'app. Si aucune
    livraison n'apparaît, ajouter le webhook dans GitHub : `plazo` › **Settings › Webhooks › Add webhook**, URL
    `https://api.codemagic.io/hooks/<appId>` (la partie qui suit `codemagic.io/app/` dans l'adresse), type
@@ -388,6 +391,27 @@ reste un compte e-mail et mot de passe ; les notes de revue peuvent expliquer qu
 Plus › Équipe, qu'un second compte (Apple) peut le taper, puis être accepté.
 
 ---
+
+## 3 ter. Apple Pay dans Plazo (31/10/2026, « ajoute le paiement apple »)
+
+Le code est prêt : la feuille de paiement Stripe de Plazo propose Apple Pay dès que l'app est construite avec un Merchant ID
+et la capacité Apple Pay. Le site n'a rien à faire : la page de paiement Stripe (Checkout) montre Apple Pay d'elle-même dans
+Safari, tant qu'Apple Pay est allumé dans Stripe. Il reste quatre réglages, chez Apple et chez Stripe, qu'aucune API ne fait :
+
+1. [ ] **Stripe** › Paramètres › Moyens de paiement : **Apple Pay** allumé (compte en clés réelles).
+2. [ ] **Apple Developer** › Certificates, Identifiers & Profiles › Identifiers › **+** › **Merchant IDs** : description
+   « Plazo », identifiant **`merchant.com.benfordtech.plazo`**.
+3. [ ] **Certificat de traitement** : Stripe › Paramètres › **Apple Pay** › onglet « iOS certificates » › **Add new
+   application** › télécharger la demande (`.certSigningRequest`) ; Apple › ce Merchant ID › **Apple Pay Payment Processing
+   Certificate** › **Create Certificate** › « Non » à la question de la Chine › envoyer la demande de Stripe ›
+   télécharger le `.cer` › le déposer dans Stripe (même écran). Sans lui, la feuille montre Apple Pay mais le paiement échoue.
+4. [ ] **Apple Developer** › Identifiers › **`com.benfordtech.plazo`** › cocher **Apple Pay Payment Processing** › **Edit**
+   › cocher `merchant.com.benfordtech.plazo` › Save. Le profil App Store de Plazo devient « Invalid » : lancer le workflow
+   GitHub « Mobile release » une fois avec **ios_create_signing** coché, il en crée un nouveau qui porte la capacité.
+
+Puis une publication : le journal de l'étape « Apple Pay (Plazo) selon son profil App Store » dit « capacité présente
+(merchant.com.benfordtech.plazo) », et la feuille de paiement de Plazo sur iPhone propose Apple Pay. Plazo Pro ne paie
+rien : il n'a ni la capacité ni le bouton.
 
 ## 4. Ce qu'il faut renvoyer à Claude, et ce qu'il ne faut jamais coller
 
