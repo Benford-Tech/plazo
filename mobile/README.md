@@ -144,8 +144,9 @@ version web, « Payer » ouvre la page Stripe Checkout.
   le certificat de traitement Apple Pay à générer **depuis Stripe** (*Paramètres → Apple Pay*), ajouter la capacité
   **Apple Pay** à l'App ID et la clé `com.apple.developer.in-app-payments` (tableau avec le Merchant ID) dans
   `ios/Runner/Runner.entitlements` (non ajoutée tant que l'identifiant n'existe pas : le profil de signature la
-  refuserait), puis construire avec `--dart-define=STRIPE_MERCHANT_ID=merchant.…` (pour les stores : variable
-  `STRIPE_MERCHANT_ID` du groupe Codemagic `mobile_secrets`). Sans lui, la feuille propose la carte seule. L'appareil
+  refuserait), puis construire avec `--dart-define=STRIPE_MERCHANT_ID=merchant.…` (pour les stores, depuis le 31/10/2026 : le
+  pipeline GitHub lit le Merchant ID dans le profil App Store de Plazo et ajoute la clé pour ce build ; marche à suivre
+  dans `publier-sur-les-stores.md`, section 3 ter). Sans lui, la feuille propose la carte seule. L'appareil
   photo (`NSCameraUsageDescription`) ne sert qu'au scan de carte de la feuille Stripe ; Apple refuse le build sans ce texte.
 - Webhook Stripe : ajouter `payment_intent.succeeded` et `payment_intent.payment_failed` aux évènements du compte
   (voir README à la racine).
