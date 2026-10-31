@@ -558,7 +558,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `resend`, `canSend`, `refusal`) et `POST …/reminder/send` (`ReminderService.forReservation` / `sendOne`) : le premier envoi fait tout
      le rappel (SMS, mail, push) même si la réservation est « Ne pas envoyer », un renvoi n'envoie que le SMS, 10 minutes au moins après
      le dernier (`RESEND_AFTER_MS`, réservation par `reminderSentAt`) ; 409 `reminder_not_upcoming` (pas « Attendu » ou dépôt passé),
-     `reminder_no_mobile`, `reminder_no_channel`, `reminder_quiet_hours` (22:00 à 07:00), `reminder_too_soon` ; tracé `sms.reminder_sent`
+     `reminder_no_mobile`, `reminder_no_channel`, `reminder_too_soon` (`reminder_quiet_hours` n'est plus renvoyé depuis le 31/10/2026, « enlève les plages d'envoi des SMS pour que je puisse en envoyer quand je veux » : un envoi à la main part à toute heure, seuls les envois automatiques gardent la pause de 22:00 à 07:00) ; tracé `sms.reminder_sent`
      (« a envoyé le SMS de la veille » dans l'Historique). Tests `reminders.test.ts`, `BookingReminderCard.test.tsx`.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le

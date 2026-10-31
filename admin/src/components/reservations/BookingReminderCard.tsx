@@ -50,7 +50,7 @@ function statusLine(r: BookingReminder): string {
 /**
  * « SMS de la veille » of one booking (30/10/2026, « pouvoir envoyer un SMS de la veille à une réservation donnée »,
  * choice A): when it leaves or left, and « Envoyer maintenant » / « Renvoyer le SMS » (confirmed; the SMS alone, 10
- * minutes after the last one at the earliest, never from 22:00 to 07:00). For a booking still to come or already
+ * minutes after the last one at the earliest, at any hour since 31/10/2026). For a booking still to come or already
  * reminded; for those who manage the bookings.
  */
 export function BookingReminderCard({ reservationId }: { reservationId: string }) {

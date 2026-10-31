@@ -320,14 +320,15 @@ export class ReminderService {
 
   /** Why the reminder cannot leave by hand now, or null. */
   private sendRefusal(
-    r: { status: string; arrivalAt: Date; customerPhone: string; reminderSentAt: Date | null; parking: { timezone: string } },
+    r: { status: string; arrivalAt: Date; customerPhone: string; reminderSentAt: Date | null },
     mode: SmsMode,
     now: Date,
   ): ManualReminderRefusal | null {
     if (r.status !== 'upcoming' || r.arrivalAt <= now) return 'reminder_not_upcoming';
     if (!smsRecipient(r.customerPhone)) return 'reminder_no_mobile';
     if (mode === 'none') return 'reminder_no_channel';
-    if (inQuietHours(now, r.parking.timezone)) return 'reminder_quiet_hours';
+    // 31/10/2026 (« enlève les plages d'envoi des SMS pour que je puisse en envoyer quand je veux »): a send by hand
+    // leaves at any hour; only the automatic sends keep the quiet hours (dispatchDue).
     if (r.reminderSentAt && now.getTime() - r.reminderSentAt.getTime() < RESEND_AFTER_MS) return 'reminder_too_soon';
     return null;
   }
