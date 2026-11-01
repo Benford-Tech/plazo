@@ -129,6 +129,25 @@ export class CapacityService {
    * Nights of a stay that are already full (one more vehicle would exceed the bookable capacity):
    * staff bookings, imports, the form's preview, the site's search and booking, late payments.
    */
+  /**
+   * 01/11/2026 (« le badge doit suivre l'occupation réelle »): whether a booking is over the capacity now, on the nights
+   * of its stay still to come (today included): one of them holds more cars than the bookable spots, this one counted.
+   * False for a booking that holds no spot (cancelled, no-show, handed back) or whose stay is over. The flag stored at
+   * creation (`Reservation.overbooked`) only says the stay was full then.
+   */
+  public async overbookedNow(
+    parking: Pick<Parking, 'id' | 'timezone' | 'totalCapacity' | 'safetyMarginPct'>,
+    booking: { status: string; arrivalAt: Date; returnAt: Date },
+    now = new Date(),
+  ): Promise<boolean> {
+    if (RELEASED_STATUSES.includes(booking.status as never) || booking.status === 'returned') return false;
+    const today = localDate(now, parking.timezone);
+    const stay = occupiedNights(booking.arrivalAt, booking.returnAt, parking.timezone).filter(n => n >= today);
+    if (!stay.length) return false;
+    const nights = await this.nights(parking, stay[0], stay[stay.length - 1]);
+    return nights.some(n => n.overbooked);
+  }
+
   public async fullNights(
     parking: Pick<Parking, 'id' | 'timezone' | 'totalCapacity' | 'safetyMarginPct'>,
     arrivalAt: Date,
