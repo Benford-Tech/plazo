@@ -4,6 +4,7 @@ import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
 import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, readingOutageOf, toParsedBooking } from '@/domain/email-reading';
+import { parseWebsiteForm } from '@/domain/importers/website-form';
 import { COMPARATOR_PROVIDERS, EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
@@ -546,9 +547,13 @@ export class InboundEmailService {
     if (type.kind === 'change') return this.alloparkChange(input, type.reference!, null, rules, type.sure ? 'rules' : 'wording', claude);
     // 16/10/2026: a catalogued booking template (Allopark's confirmation, Onepark's notice, Parclick's or ParkMundo's
     // confirmation) is a booking: no one confirms it, Claude only fills what the importer and the page left blank.
-    const known = type.kind === 'booking' && type.sure;
+    // 01/11/2026 (« apprends ça aussi »): the booking form of the parking's own website (« Envoyé depuis … »), read without
+    // Claude like a comparator's template.
+    const website = type.kind === 'unknown' && text ? parseWebsiteForm(text, new Date(), await this.timezoneOf(operatorId)) : null;
+    if (website) logger.info(`${label} website booking form`);
+    const known = (type.kind === 'booking' && type.sure) || !!website;
     // What the importers read of the email itself.
-    const found = type.kind === 'booking' && type.provider && text ? parseBookingEmail(text, type.provider, known) : null;
+    const found = website ?? (type.kind === 'booking' && type.provider && text ? parseBookingEmail(text, type.provider, known) : null);
     let parsed = found;
     // 10/10/2026: Allopark's emails leave « Vos informations » blank (plate, phone, name…); the booking page they link to
     // shows them, so it is opened before Claude is asked anything. Also for an Allopark email the importer did not
@@ -578,7 +583,8 @@ export class InboundEmailService {
     let reading: ReadingMeta | null = null;
     let unsure = false;
     const gaps = parsed ? soughtForImport(parsed) : [];
-    const ask = decided ? gaps.length > 0 && type.provider !== 'Allopark' : !parsed || gaps.length > 0 || fromPage;
+    // Neither for the website form, whose email holds no more than what was read.
+    const ask = website ? false : decided ? gaps.length > 0 && type.provider !== 'Allopark' : !parsed || gaps.length > 0 || fromPage;
     if (ask && text && this.reader.available()) {
       const attempt = await this.readEmail(input, claude);
       if (attempt.outcome === 'answered') {
@@ -2192,7 +2198,9 @@ function linksOf(item: InboundItem): string[] {
 
 /** The fields a booking still lacks before it can be created without staff. */
 function missingForImport(booking: ParsedBooking): (typeof REQUIRED_FOR_IMPORT)[number][] {
-  return REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
+  // 01/11/2026: the parking's website form asks an e-mail and no phone: the e-mail reaches the traveller.
+  const noPhoneNeeded = booking.channel === 'website' && !!booking.customerEmail;
+  return REQUIRED_FOR_IMPORT.filter(key => !booking[key] && !(key === 'customerPhone' && noPhoneNeeded));
 }
 
 /** 15/10/2026: the fields Plazo still looks for (Allopark's page, Claude): the required ones and the plate. */

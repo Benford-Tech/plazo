@@ -1,6 +1,8 @@
 /** What an importer could read from a pasted confirmation; anything missing is completed by staff. */
 export interface ParsedBooking {
   provider: string; // display name, stored as channelDetail
+  /** 01/11/2026: the parking's own website form (importers/website-form.ts) is no comparator: channel `website`. */
+  channel?: 'website';
   externalReference?: string;
   arrivalAt?: string; // local to the parking, "YYYY-MM-DDTHH:mm"
   returnAt?: string;

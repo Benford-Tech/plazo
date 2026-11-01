@@ -309,6 +309,59 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect(settings.body.comparators.map((c: { provider: string }) => c.provider)).toContain('Park Hit');
   });
 
+  it('le formulaire du site du parking (01/11/2026) : importé sans Claude, canal site, sans année ni téléphone', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const at = (days: number) => {
+      const d = new Date(Date.now() + days * 86400000);
+      return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+    };
+    const form = (services: string) =>
+      [
+        'Nom',
+        'Camille Exemple',
+        'E-mail',
+        'camille@example.com',
+        "Date et heure d'arrivée",
+        `${at(9)} à 18h30`,
+        'Date et heure de départ',
+        `${at(14)} à 13h30`,
+        "Plaque d'immatriculation",
+        'AB-123-CD',
+        'Services',
+        services,
+        'Envoyé depuis Parking Exemple Lyon Aéroport',
+      ].join('\n');
+    const mail = item(op.address, form('Parking'), {
+      From: { Name: 'Parking Exemple', Address: 'wordpress@parking-exemple.fr' },
+      Subject: 'Nouvelle réservation',
+    });
+    expect((await post([mail])).body).toMatchObject({ imported: 1 });
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, plate: 'AB-123-CD' } });
+    expect(booking).toMatchObject({
+      status: 'upcoming',
+      channel: 'website',
+      channelDetail: null,
+      customerFirstName: 'Camille',
+      customerLastName: 'Exemple',
+      customerEmail: 'camille@example.com',
+      customerPhone: '',
+      notes: null,
+    });
+    expect(booking.returnAt.getTime() - booking.arrivalAt.getTime()).toBe(5 * 86400000 - 5 * 3600000);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'imported', reservationId: booking.id, provider: 'Site du parking' });
+    // The same form again: the same traveller and arrival find the booking.
+    await post([mail]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
+    // Never listed with the comparators.
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    expect(settings.body.comparators.map((c: { provider: string }) => c.provider)).not.toContain('Site du parking');
+    // A valet service asked on the site goes to the notes.
+    await post([item(op.address, form('Voiturier').replace('AB-123-CD', 'EF-456-GH'), { From: mail.From, Subject: 'Nouvelle réservation' })]);
+    const valet = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, plate: 'EF-456-GH' } });
+    expect(valet.notes).toBe('Service demandé sur le site : Voiturier');
+  });
+
   it('le récapitulatif Onepark (20/10/2026) complète la plaque et le numéro, garde la plaque de l’équipe et laisse à l’équipe ce qui diffère', async () => {
     const op = await connected();
     claudeIs('absent');

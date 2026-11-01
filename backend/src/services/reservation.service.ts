@@ -294,12 +294,14 @@ export class ReservationService {
           reference,
           operatorId,
           parkingId: parking.id,
-          channel: 'aggregator',
-          channelDetail: parsed.provider,
+          // 01/11/2026: the parking's own website form is its website channel, not a comparator's.
+          channel: parsed.channel ?? 'aggregator',
+          channelDetail: parsed.channel === 'website' ? null : parsed.provider,
           ...stay,
           passengers: parsed.passengers ?? 1,
           ...names,
-          customerPhone: parsed.customerPhone!.trim(),
+          // The website form gives an e-mail and no phone (missingForImport): « '' », to type in.
+          customerPhone: parsed.customerPhone?.trim() ?? '',
           customerEmail: travellerEmail(parsed.customerEmail, [INBOUND_EMAIL_DOMAIN]),
           plate,
           plateKey: key,
