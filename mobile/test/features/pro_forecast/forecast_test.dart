@@ -63,11 +63,17 @@ void main() {
       expect(find.descendant(of: full, matching: find.text('Complet')), findsOneWidget);
       expect(find.descendant(of: find.byKey(const Key('forecast-day-2026-10-29')), matching: find.text('90 %')), findsOneWidget);
       expect(find.text('1 nuit complète'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('forecast-parked-2026-10-29')), matching: find.text('90')), findsOneWidget);
+      expect(find.textContaining("Jusqu'à 100 voitures"), findsOneWidget);
+      expect(find.text('Voitures garées la nuit'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('forecast-view-quarter')));
       await tester.pumpAndSettle();
       expect(source.calls.last, ('2026-10-01', 92));
+      await tester.dragUntilVisible(find.byKey(const Key('forecast-month-2026-12-01')), find.byType(ListView), const Offset(0, -300));
       expect(find.byKey(const Key('forecast-month-2026-12-01')), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, 5000));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('forecast-view-week')));
       await tester.pumpAndSettle();

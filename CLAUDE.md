@@ -428,7 +428,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`ReservationService.forecast`, `reservations:view`, 1 à 92 jours, 31 par défaut) → `{ today, timezone, from, to,
      bookableCapacity, days: [{ date, arrivals, returns, parked, bookable, free, overbooked }] }` : réservations enregistrées, tous
      canaux, sans annulées, non venues ni attentes de paiement, jour local du parking ; nuits par `CapacityService.nights` (capacité
-     réelle, marge comprise) ; aucune prévision inventée. Tests `planning-forecast.test.ts`,
+     réelle, marge comprise) ; aucune prévision inventée. **Voitures sur place, choix C (01/11/2026, « dans le prévisionnel affiche le nombre de voiture sur place », maquettes https://claude.ai/artifact/WNy9iwEzDsRQ2yNdUsoYVG)** : chaque jour porte, à côté de ↑ / ↓, une pastille voiture avec le nombre de voitures garées la nuit (`parked` ; web `forecast-parked-<date>`, bulle « 47 voitures garées la nuit », lu aussi par le lecteur d'écran ; app `_Parked`, troisième ligne de la case, et dans la ligne de la semaine, où la jauge porte désormais sa charge en dessous) ; légende « Voitures garées la nuit » ; résumé « Jusqu'à 76 voitures (sam. 7, 100 %) » au lieu de « Nuit la plus chargée ». Tests `planning-forecast.test.ts`,
      `forecast.test.ts`, `ForecastPage.test.tsx`. **Dans Plazo Pro (28/10/2026, « Ajoute-le aussi dans Plazo Pro »)** : bouton
      calendrier `date-forecast` au bout de la barre de date du planning (`PlanningDateBar.onForecast`) → page `/pro/previsionnel`
      (`features/pro_forecast` : `ProForecastPage`, `ForecastDataSource` par Dio sans freezed, `domain/forecast_period.dart` = les

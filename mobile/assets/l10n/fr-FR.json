@@ -2602,6 +2602,7 @@
     "legend": {
       "arrivals": "Arrivées",
       "departures": "Départs",
+      "parked": "Voitures garées la nuit",
       "high": "Plus de 85 %",
       "full": "Complet"
     },
@@ -2609,7 +2610,7 @@
     "full": "Complet",
     "overbooked": "Complet +{n}",
     "summary": "{arrivals} arrivées · {departures} départs",
-    "busiest": "Nuit la plus chargée : {pct} % ({day})",
+    "busiest": "Jusqu'à {cars} voitures ({day}, {pct} %)",
     "full_nights": {
       "one": "{} nuit complète",
       "other": "{} nuits complètes"
