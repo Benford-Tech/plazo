@@ -705,7 +705,16 @@ The app works the same in every region where it is available (France). Content i
 Not a regulated activity (car park management software). Benford Tech (SAS, RCS Vienne 910 729 102) publishes the app and owns its content. Maps and aerial photos: IGN Géoplateforme, open licence (Licence Ouverte Etalab 2.0), credited "© IGN" on the map.
 ```
 
-#### Notes de Plazo (anglais, à coller si c'est cette app que vise le message)
+#### Notes de Plazo (anglais, à coller ; 01/11/2026, « plazo n'a pas de connexion plutôt une réservation à importer »)
+
+Plazo n'a ni compte ni connexion : le relecteur **retrouve une réservation** (« Mes réservations › Ajouter une réservation »,
+numéro + e-mail ou téléphone). Réservation fictive créée le 01/11/2026 sur « Parking Revue » (fiche en brouillon, absente du
+site, aucun canal SMS) : **RLY23Q**, téléphone **06 39 98 01 99**, « Apple Review », du 12/11/2026 09:30 au 16/11/2026 18:45,
+vol retour AF 7641, plaque RV-199-PZ, SMS de la veille exclu ; vérifiée par `POST /public/bookings/lookup`. Retrouvable jusqu'à
+30 jours après le retour ; la recréer si la revue va au-delà. Les paiements sont en clés réelles depuis le 14/10/2026 : le
+relecteur peut parcourir la recherche et la fiche, mais une réservation payée serait réelle (remboursée sur demande).
+Vidéo (vrai iPhone) : ouverture → Rechercher (dates, résultats, fiche d'un parking) → Mes réservations › Ajouter une
+réservation › RLY23Q + 06 39 98 01 99 → la réservation (navette, sièges auto, contrat à lire, photos) → Plus.
 
 ```text
 1. SCREEN RECORDING (physical iPhone, from app launch): <VIDEO LINK>
@@ -714,21 +723,24 @@ Not a regulated activity (car park management software). Benford Tech (SAS, RCS 
 Plazo lets travellers book a private car park near an airport (first market: Lyon Saint-Exupéry, France), pay online and follow their stay: drop-off, free shuttle to the terminal, return flight, car pick-up. Audience: travellers who drive to the airport. Problem solved: comparing car parks by total price and shuttle, then not having to phone the car park on the trip day (the shuttle is shown live, the car park knows when the traveller lands).
 
 3. HOW TO TEST
-The app is in French. No account and no sign-up: a booking is opened with its number and the e-mail or phone used to book, so there is no account to delete.
-- "Rechercher": choose dates, "Rechercher", open a car park, "Réserver", fill in the form (please use "Review" as the last name), accept the terms, pay.
-- Payment: <TEST CARD 4242 4242 4242 4242, any future date, any CVC / or: real card, refund on request>.
-- Existing booking: "Mes réservations" > "Ajouter une réservation", number <REFERENCE>, e-mail <EMAIL>.
+The app is in French. There is no account, no sign-up and no login in Plazo: a booking is opened with its booking number and the phone number or e-mail used to book. Nothing is stored about the user except the bookings they open, so there is no account to delete (a booking can be removed from the list on the device).
+Test booking (fictitious car park "Parking Revue", fictitious traveller "Apple Review", 12 to 16 November 2026):
+- Tab "Mes réservations" > "Ajouter une réservation".
+- Booking number: RLY23Q
+- E-mail or phone: 06 39 98 01 99
+- The booking opens: dates, car park, shuttle, return flight, child seats, parking contract to read, photos of the car, cancellation rules.
+Search and booking flow: tab "Rechercher", choose dates, "Rechercher", open a car park, "Réserver". Payment is made by card through Stripe with live keys, so please do not complete a payment (or tell us and we refund it at once); the test booking above shows everything that follows a booking.
 No user-generated content (no reviews, chat or public profiles), so nothing to report or block.
-Payment: the parking stay is a physical service used outside the app (guideline 3.1.3(e)), paid by card through Stripe. No digital content is sold.
+Payment: the parking stay is a physical service used outside the app (guideline 3.1.3(e)), paid by card through Stripe. No digital content is sold, no subscription, no in-app purchase.
 
 4. EXTERNAL SERVICES
-Our own API (Vercel, Paris region; PostgreSQL by Neon). Stripe (card payment of the stay). OneSignal (notifications about the booking). IGN (maps). Brevo (confirmation e-mails and SMS, server side). AeroDataBox (flight times, server side). Anthropic Claude (server side, car park staff tools only; never the traveller's data entered in this app).
+Our own API (Vercel, Paris region; PostgreSQL by Neon). Stripe (card payment of the stay). OneSignal (notifications about the booking). IGN, the French national mapping agency (maps). Brevo (confirmation e-mails and SMS, server side). AeroDataBox (flight times, server side). Anthropic Claude (server side, car park staff tools only; never the traveller's data entered in this app).
 
 5. REGIONS
 Same app and features in every region where it is available. Content in French; car parks listed today are in France.
 
 6. REGULATED INDUSTRY / THIRD-PARTY MATERIAL
-Car park booking is not a regulated activity. Benford Tech (SAS, RCS Vienne 910 729 102) publishes the app and is the platform that takes the payment and pays the car park. Maps: IGN, open licence, credited "© IGN".
+Car park booking is not a regulated activity. Benford Tech (SAS, RCS Vienne 910 729 102) publishes the app and is the platform that takes the payment and pays the car park. Maps: IGN Géoplateforme, open licence (Licence Ouverte Etalab 2.0), credited "© IGN".
 ```
 
 ### 4.5 Conformité export (les deux apps)
