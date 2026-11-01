@@ -28,6 +28,17 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Revenue]
  *     responses:
  *       200: { description: "{ today, month: { from, to, totalCents, count, withoutAmount }, todayCents, weekCents }" }
+ * /internal/revenue/months:
+ *   get:
+ *     summary: « Mois par mois » (01/11/2026) — the 12 months ending with `to` (this month by default), each with its total, commissions, net, bookings with an amount and without; the oldest first
+ *     tags: [Revenue]
+ *     parameters:
+ *       - { in: query, name: to, schema: { type: string, example: "2026-11" } }
+ *       - { in: query, name: basis, schema: { type: string, enum: [arrival, booked], default: arrival } }
+ *     responses:
+ *       200: { description: "{ today, basis, months: [{ month, from, to, totalCents, commissionCents, netCents, count, withoutAmount }], totalCents, netCents }" }
+ *       400: { description: "fields.to invalid_month, fields.basis invalid_basis" }
+ *       403: { description: forbidden (managers only) }
  * /internal/revenue/export:
  *   get:
  *     summary: The period's bookings as a CSV (« ; », UTF-8 with BOM), with or without an amount
@@ -77,6 +88,7 @@ export class RevenueRoute implements Routes {
   constructor() {
     this.router.get('/internal/revenue', StaffAuthMiddleware('revenue:view'), this.revenue.report);
     this.router.get('/internal/revenue/summary', StaffAuthMiddleware('revenue:view'), this.revenue.summary);
+    this.router.get('/internal/revenue/months', StaffAuthMiddleware('revenue:view'), this.revenue.months);
     this.router.get('/internal/revenue/export', StaffAuthMiddleware('revenue:view'), this.revenue.export);
     this.router.put(
       '/internal/reservations/:id/price',

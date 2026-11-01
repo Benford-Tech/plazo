@@ -94,7 +94,10 @@ export const fr = {
   valetRuns: {
     title: "Courses au terminal",
     meetingPoint: (point: string) => `Rendez-vous : ${point}`,
-    kinds: { arrival: "Arrivée", departure: "Départ" } as Record<"arrival" | "departure", string>,
+    kinds: { arrival: "Arrivée", departure: "Départ" } as Record<
+      "arrival" | "departure",
+      string
+    >,
     todo: "À prendre",
     taken: "Prise",
     done: "Faite",
@@ -595,7 +598,8 @@ export const fr = {
   // 30/10/2026 (« pouvoir mettre sa photo »): the card of Mon compte and the cropping.
   photo: {
     title: "Ma photo",
-    intro: "Votre équipe la voit dans le menu, la page Équipe et à côté de votre prénom.",
+    intro:
+      "Votre équipe la voit dans le menu, la page Équipe et à côté de votre prénom.",
     choose: "Choisir une photo",
     change: "Changer ma photo",
     remove: "Retirer",
@@ -607,12 +611,15 @@ export const fr = {
     cancel: "Annuler",
     saved: "Photo enregistrée.",
     removed: "Photo retirée.",
-    unreadable: "Cette image ne s'ouvre pas dans le navigateur. Choisissez un JPEG ou un PNG.",
+    unreadable:
+      "Cette image ne s'ouvre pas dans le navigateur. Choisissez un JPEG ou un PNG.",
     errors: {
       too_large: "Photo trop lourde, même recadrée. Choisissez-en une autre.",
       not_an_image: "Ce fichier n'est pas une image.",
-      photos_unavailable: "L'enregistrement des photos n'est pas encore activé.",
-      view_as_read_only: "En consultation, la photo du membre ne se change pas.",
+      photos_unavailable:
+        "L'enregistrement des photos n'est pas encore activé.",
+      view_as_read_only:
+        "En consultation, la photo du membre ne se change pas.",
       demo_read_only: "Démo : la photo ne se change pas.",
     } as Record<string, string>,
   },
@@ -623,6 +630,20 @@ export const fr = {
     today: "Aujourd'hui",
     week: "7 jours",
     custom: "Dates…",
+    // « Mois par mois » (01/11/2026, choice B).
+    prevMonth: "Mois précédent",
+    nextMonth: "Mois suivant",
+    months: {
+      title: (first: string, last: string) =>
+        `Mois par mois · ${first} → ${last}`,
+      total: (amount: string) => `Total 12 mois : ${amount}`,
+      totalNet: (amount: string) => `Net sur 12 mois : ${amount}`,
+      hint: "Cliquez un mois pour l'afficher en dessous. Le mois en cours compte aussi les arrivées à venir déjà réservées.",
+      month: "Mois",
+      withoutAmount: "Sans prix",
+      open: (month: string, amount: string) =>
+        `${month} : ${amount}, afficher ce mois`,
+    },
     from: "Du",
     to: "au",
     apply: "Afficher",
@@ -642,7 +663,8 @@ export const fr = {
     byPaymentMethod: "Par moyen de paiement",
     paidByUnknown: "Non précisé",
     bookingsShort: (n: number) => `${n} rés.`,
-    paidByHint: "Choisissez « Payé par » dans le formulaire de chaque réservation. Aussi dans l'export CSV.",
+    paidByHint:
+      "Choisissez « Payé par » dans le formulaire de chaque réservation. Aussi dans l'export CSV.",
     channel: "Canal",
     count: "Réservations",
     amount: "Chiffre d'affaires",
@@ -1433,22 +1455,40 @@ export const fr = {
     tabs: { day: "Jour", forecast: "Prévisionnel" },
     tabsLabel: "Vue du planning",
     title: "Planning prévisionnel",
-    views: { semaine: "Semaine", mois: "Mois", "3mois": "3 mois" } as Record<string, string>,
+    views: { semaine: "Semaine", mois: "Mois", "3mois": "3 mois" } as Record<
+      string,
+      string
+    >,
     viewsLabel: "Période affichée",
     previous: "Période précédente",
     next: "Période suivante",
     today: "Aujourd'hui",
-    legend: { arrivals: "Arrivées", departures: "Départs", parked: "Voitures garées la nuit", high: "Plus de 85 %", full: "Complet" },
-    parkedTitle: (n: number) => `${n} voiture${n > 1 ? "s" : ""} garée${n > 1 ? "s" : ""} la nuit`,
+    legend: {
+      arrivals: "Arrivées",
+      departures: "Départs",
+      parked: "Voitures garées la nuit",
+      high: "Plus de 85 %",
+      full: "Complet",
+    },
+    parkedTitle: (n: number) =>
+      `${n} voiture${n > 1 ? "s" : ""} garée${n > 1 ? "s" : ""} la nuit`,
     weekdays: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
     full: "Complet",
     overbooked: (n: number) => `Complet +${n}`,
     summary: (arrivals: number, departures: number) =>
       `${arrivals} arrivée${arrivals > 1 ? "s" : ""} · ${departures} départ${departures > 1 ? "s" : ""}`,
-    busiest: (cars: number, pct: number, day: string) => `Jusqu'à ${cars} voiture${cars > 1 ? "s" : ""} (${day}, ${pct} %)`,
-    fullNights: (n: number) => `${n} nuit${n > 1 ? "s" : ""} complète${n > 1 ? "s" : ""}`,
+    busiest: (cars: number, pct: number, day: string) =>
+      `Jusqu'à ${cars} voiture${cars > 1 ? "s" : ""} (${day}, ${pct} %)`,
+    fullNights: (n: number) =>
+      `${n} nuit${n > 1 ? "s" : ""} complète${n > 1 ? "s" : ""}`,
     note: "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
-    dayLabel: (date: string, arrivals: number, departures: number, parked: number, load: string) =>
+    dayLabel: (
+      date: string,
+      arrivals: number,
+      departures: number,
+      parked: number,
+      load: string,
+    ) =>
       `${date} : ${arrivals} arrivée${arrivals > 1 ? "s" : ""}, ${departures} départ${departures > 1 ? "s" : ""}, ${parked} voiture${parked > 1 ? "s" : ""} garée${parked > 1 ? "s" : ""} la nuit, ${load}. Ouvrir le planning du jour.`,
     loadPct: (pct: number) => `occupation ${pct} %`,
   },
@@ -1569,7 +1609,10 @@ export const fr = {
     stopAirport: "Aéroport",
     // « Voiturier au terminal » (27/10/2026, direction B).
     handover: "Prise en charge",
-    handovers: { shuttle: "Navette", valet: "Voiturier au terminal" } as Record<"shuttle" | "valet", string>,
+    handovers: { shuttle: "Navette", valet: "Voiturier au terminal" } as Record<
+      "shuttle" | "valet",
+      string
+    >,
     handoverValetHelp:
       "Un voiturier prend la voiture au terminal à l'arrivée et la ramène au retour : le client ne prend pas la navette.",
     passengers: "Passagers",
@@ -1625,7 +1668,8 @@ export const fr = {
     created: "Créée le",
     // 29/10/2026: the file a booking was imported from.
     imported: "Importée",
-    importedFrom: (file: string, when: string) => `${file ? `« ${file} »` : "Depuis un fichier"} le ${when}`,
+    importedFrom: (file: string, when: string) =>
+      `${file ? `« ${file} »` : "Depuis un fichier"} le ${when}`,
     importOpen: "Voir les imports",
     searchPlaceholder: "Plaque, nom, téléphone ou référence",
     search: "Rechercher",
@@ -3868,18 +3912,24 @@ export const inboundFr = {
       subject: "Objet du mail",
       subjectHint: "facultatif, aide à le reconnaître",
       text: "Texte du mail",
-      chars: (n: number) => `${n.toLocaleString("fr-FR")} caractère${n > 1 ? "s" : ""}`,
+      chars: (n: number) =>
+        `${n.toLocaleString("fr-FR")} caractère${n > 1 ? "s" : ""}`,
       /** 29/10/2026: the mail's links kept from the clipboard (Plazo follows them, the Allopark booking page first). */
-      links: (n: number) => `${n} lien${n > 1 ? "s" : ""} du mail récupéré${n > 1 ? "s" : ""}`,
+      links: (n: number) =>
+        `${n} lien${n > 1 ? "s" : ""} du mail récupéré${n > 1 ? "s" : ""}`,
       cancel: "Annuler",
       submit: "Analyser ce mail",
       submitting: "Analyse en cours…",
       tooShort: "Collez le texte entier du mail : celui-ci est trop court.",
-      waiting: "Mail ajouté à « À traiter » : vérifiez ce que Plazo a compris, puis « Compléter ».",
-      by: (name: string | null) => (name ? `Collé par ${name}` : "Collé dans Plazo"),
+      waiting:
+        "Mail ajouté à « À traiter » : vérifiez ce que Plazo a compris, puis « Compléter ».",
+      by: (name: string | null) =>
+        name ? `Collé par ${name}` : "Collé dans Plazo",
       errors: {
-        paste_limit: "Trop de mails collés cette heure-ci : réessayez dans un moment.",
-        operator_inactive: "Ce compte est suspendu : aucun mail ne peut être ajouté.",
+        paste_limit:
+          "Trop de mails collés cette heure-ci : réessayez dans un moment.",
+        operator_inactive:
+          "Ce compte est suspendu : aucun mail ne peut être ajouté.",
       } as Record<string, string>,
     },
     /** The refusals of « Relancer l'analyse » worded for this screen (`text_gone`, `analysis_running`: `fr.errors`). */
@@ -4416,7 +4466,8 @@ export const contractFieldsFr = {
   intro:
     "Glissez chaque information à l'endroit prévu sur votre contrat (les pointillés). Plazo la remplit sur chaque contrat : avant la signature avec les données de la réservation, puis avec la date et la signature une fois signé.",
   palette: "Informations à placer",
-  paletteHint: "Glissez-les sur la page, ou touchez-les pour les poser au milieu.",
+  paletteHint:
+    "Glissez-les sur la page, ou touchez-les pour les poser au milieu.",
   keys: {
     customer_name: "Nom du client",
     phone: "Téléphone",
@@ -4457,7 +4508,11 @@ export const contractFieldsFr = {
   remove: "Retirer",
   removeAria: (label: string) => `Retirer « ${label} »`,
   placedCount: (n: number) =>
-    n === 0 ? "Aucune information placée" : n === 1 ? "1 information placée" : `${n} informations placées`,
+    n === 0
+      ? "Aucune information placée"
+      : n === 1
+        ? "1 information placée"
+        : `${n} informations placées`,
   save: "Enregistrer",
   saving: "Enregistrement…",
   saved: "Informations enregistrées : vos prochains contrats sont pré-remplis.",
@@ -4467,7 +4522,8 @@ export const contractFieldsFr = {
   loadError: "Impossible d'ouvrir le PDF.",
   noTemplate: "Déposez d'abord votre contrat en PDF dans Réglages du parking.",
   errors: {
-    template_retired: "Cette version n'est plus en vigueur : rouvrez la version actuelle.",
+    template_retired:
+      "Cette version n'est plus en vigueur : rouvrez la version actuelle.",
     invalid_box: "Une information sort de la page : replacez-la.",
     too_many: "40 informations au plus.",
   } as Record<string, string>,
@@ -4679,22 +4735,38 @@ export const extrasFr = {
     crumb: "Réservations › Services à faire",
     intro:
       "Les services commandés par vos clients sur Plazo, à faire une heure avant leur retour (l'atterrissage quand le vol est suivi). Le client reçoit une notification quand vous acceptez, quand c'est fait ou si ce n'est pas possible.",
-    tabs: { todo: "À faire", done: "Faits aujourd'hui", refused: "Pas possibles" } as Record<string, string>,
-    columns: { due: "À faire avant", service: "Service", client: "Client · voiture", place: "Place", paid: "Payé" },
+    tabs: {
+      todo: "À faire",
+      done: "Faits aujourd'hui",
+      refused: "Pas possibles",
+    } as Record<string, string>,
+    columns: {
+      due: "À faire avant",
+      service: "Service",
+      client: "Client · voiture",
+      place: "Place",
+      paid: "Payé",
+    },
     late: "En retard",
     today: "Aujourd'hui",
     tomorrow: "Demain",
     later: "Plus tard",
     returnLine: (time: string) => `retour ${time}`,
-    flightLine: (flight: string, time: string) => `vol ${flight} · atterrit ${time}`,
+    flightLine: (flight: string, time: string) =>
+      `vol ${flight} · atterrit ${time}`,
     overdue: "dépassé",
     inLine: (text: string) => `dans ${text}`,
-    file: (code: string, rank: number | null) => (rank ? `File ${code} · ${rank === 1 ? "1re" : `${rank}e`}` : `File ${code}`),
+    file: (code: string, rank: number | null) =>
+      rank
+        ? `File ${code} · ${rank === 1 ? "1re" : `${rank}e`}`
+        : `File ${code}`,
     spot: (code: string) => `Place ${code}`,
     noPlace: "Pas encore rangée",
     accepted: (by: string | null) => (by ? `Accepté par ${by}` : "Accepté"),
-    doneAt: (time: string, by: string | null) => `Fait à ${time}${by ? ` par ${by}` : ""}`,
-    refusedAt: (when: string, reason: string | null) => `${when}${reason ? ` · ${reason}` : ""} · remboursé`,
+    doneAt: (time: string, by: string | null) =>
+      `Fait à ${time}${by ? ` par ${by}` : ""}`,
+    refusedAt: (when: string, reason: string | null) =>
+      `${when}${reason ? ` · ${reason}` : ""} · remboursé`,
     empty: {
       todo: "Aucun service à faire. Les commandes de vos clients arriveront ici.",
       done: "Aucun service fait aujourd'hui.",
@@ -4719,9 +4791,11 @@ export const bookingImportFr = {
   firstRow: "première ligne = titres des colonnes",
   columns: "Colonnes reconnues · choisissez pour corriger",
   ignored: "ignorée",
-  missing: (fields: string[]) => `Choisissez la colonne : ${fields.join(", ")}.`,
+  missing: (fields: string[]) =>
+    `Choisissez la colonne : ${fields.join(", ")}.`,
   reading: "Lecture des lignes…",
-  monthFirst: "Dates lues au format mois/jour/année, comme dans un fichier américain : « 11/20/2026 » est le 20 novembre 2026.",
+  monthFirst:
+    "Dates lues au format mois/jour/année, comme dans un fichier américain : « 11/20/2026 » est le 20 novembre 2026.",
   fields: {
     name: "Nom (complet)",
     firstName: "Prénom",
@@ -4748,7 +4822,11 @@ export const bookingImportFr = {
     payment: "Payé par",
     destination: "Destination",
   } as Record<string, string>,
-  required: { name: "Nom", arrivalDate: "Arrivée", returnDate: "Départ" } as Record<string, string>,
+  required: {
+    name: "Nom",
+    arrivalDate: "Arrivée",
+    returnDate: "Départ",
+  } as Record<string, string>,
   filters: {
     all: "Toutes",
     create: "À créer",
@@ -4756,7 +4834,16 @@ export const bookingImportFr = {
     duplicate: "Déjà dans Plazo",
     error: "Erreur",
   },
-  columnsTable: { line: "Ligne", state: "État", client: "Client", plate: "Plaque", arrival: "Arrivée", departure: "Départ", channel: "Canal", price: "Prix" },
+  columnsTable: {
+    line: "Ligne",
+    state: "État",
+    client: "Client",
+    plate: "Plaque",
+    arrival: "Arrivée",
+    departure: "Départ",
+    channel: "Canal",
+    price: "Prix",
+  },
   timing: { past: "Séjour passé", current: "En cours", future: "À venir" },
   sameReference: (ref: string) => `Déjà dans Plazo : ${ref}`,
   sameLine: (line: number) => `Comme la ligne ${line}`,
@@ -4777,7 +4864,8 @@ export const bookingImportFr = {
     commission_unreadable: "Commission illisible, taux du comparateur appliqué",
     handover_unreadable: "Service non reconnu, navette par défaut",
     payment_unreadable: "Moyen de paiement non reconnu, laissé vide",
-    email_not_traveller: "Adresse du comparateur, pas celle du client : e-mail laissé vide",
+    email_not_traveller:
+      "Adresse du comparateur, pas celle du client : e-mail laissé vide",
     passengers_unreadable: "Passagers illisibles, 1 par défaut",
     booked_at_unreadable: "Date de réservation illisible",
     full_night: "Nuit déjà complète",
@@ -4788,26 +4876,33 @@ export const bookingImportFr = {
   cancel: "Annuler",
   importN: (n: number) => `Importer ${n} réservation${n > 1 ? "s" : ""}`,
   confirmTitle: (n: number) => `Importer ${n} réservation${n > 1 ? "s" : ""} ?`,
-  confirmText: "Elles apparaîtront dans le planning, les réservations et le chiffre d'affaires. Chacune garde le nom du fichier : vous pourrez retirer cet import plus tard.",
+  confirmText:
+    "Elles apparaîtront dans le planning, les réservations et le chiffre d'affaires. Chacune garde le nom du fichier : vous pourrez retirer cet import plus tard.",
   confirm: "Importer",
-  done: (n: number) => `${n} réservation${n > 1 ? "s" : ""} importée${n > 1 ? "s" : ""}.`,
+  done: (n: number) =>
+    `${n} réservation${n > 1 ? "s" : ""} importée${n > 1 ? "s" : ""}.`,
   seeReservations: "Voir les réservations",
   recent: "Imports récents",
-  recentLine: (n: number, when: string, by: string | null) => `${n} réservation${n > 1 ? "s" : ""} · ${when}${by ? ` · ${by}` : ""}`,
+  recentLine: (n: number, when: string, by: string | null) =>
+    `${n} réservation${n > 1 ? "s" : ""} · ${when}${by ? ` · ${by}` : ""}`,
   removed: (n: number) => `retiré (${n} supprimée${n > 1 ? "s" : ""})`,
   undo: "Retirer cet import",
   undoTitle: "Retirer cet import ?",
-  undoText: "Les réservations de cet import que personne n'a modifiées depuis seront supprimées. Les autres restent.",
+  undoText:
+    "Les réservations de cet import que personne n'a modifiées depuis seront supprimées. Les autres restent.",
   undoConfirm: "Retirer",
   undone: (removed: number, kept: number) =>
     `${removed} réservation${removed > 1 ? "s" : ""} retirée${removed > 1 ? "s" : ""}${kept ? `, ${kept} gardée${kept > 1 ? "s" : ""} (modifiées depuis)` : ""}.`,
   fileErrors: {
-    not_a_workbook: "Ce fichier Excel n'a pas pu être lu. Enregistrez-le en .xlsx ou en CSV, puis réessayez.",
-    old_excel: "Les fichiers .xls (ancien Excel) ne sont pas lus : enregistrez-le en .xlsx ou en CSV.",
+    not_a_workbook:
+      "Ce fichier Excel n'a pas pu être lu. Enregistrez-le en .xlsx ou en CSV, puis réessayez.",
+    old_excel:
+      "Les fichiers .xls (ancien Excel) ne sont pas lus : enregistrez-le en .xlsx ou en CSV.",
     empty: "Ce fichier ne contient aucune ligne sous les titres.",
   } as Record<string, string>,
   apiErrors: {
-    too_many_rows: "2 000 lignes au plus par import : coupez le fichier en plusieurs.",
+    too_many_rows:
+      "2 000 lignes au plus par import : coupez le fichier en plusieurs.",
     already_undone: "Cet import a déjà été retiré.",
     undo_expired: "Cet import ne peut plus être retiré.",
   } as Record<string, string>,
@@ -4817,7 +4912,12 @@ export const bookingImportFr = {
 export const historyFr = {
   title: "Historique",
   count: (n: number) => `${n} action${n > 1 ? "s" : ""}`,
-  filters: { all: "Tout", status: "États", change: "Modifications", message: "Messages" },
+  filters: {
+    all: "Tout",
+    status: "États",
+    change: "Modifications",
+    message: "Messages",
+  },
   empty: "Rien à afficher pour ce filtre.",
   today: "Aujourd'hui",
   yesterday: "Hier",
@@ -4886,7 +4986,10 @@ export const historyFr = {
     "sms.reminder_sent": "a envoyé le SMS de la veille",
   } as Record<string, string>,
   other: "a fait une action",
-  inspectionKind: { dropoff: "au dépôt", return: "au retour" } as Record<string, string>,
+  inspectionKind: { dropoff: "au dépôt", return: "au retour" } as Record<
+    string,
+    string
+  >,
   keysLeft: "clés laissées",
   keysBack: "clés reprises",
   hook: (hook: string) => `crochet ${hook}`,
@@ -4903,7 +5006,8 @@ export const bookingReminderFr = {
   resend: "Renvoyer le SMS",
   sending: "Envoi…",
   confirmTitle: "Renvoyer le SMS de la veille ?",
-  confirmText: (when: string) => `Le client l'a déjà reçu ${when}. Seul le SMS part de nouveau.`,
+  confirmText: (when: string) =>
+    `Le client l'a déjà reçu ${when}. Seul le SMS part de nouveau.`,
   confirm: "Renvoyer",
   done: "SMS de la veille envoyé.",
   doneAgain: "SMS de la veille renvoyé.",
@@ -4913,10 +5017,13 @@ export const bookingReminderFr = {
   tomorrow: "demain",
   at: (day: string, time: string) => `${day} à ${time}`,
   refusal: {
-    reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
+    reminder_not_upcoming:
+      "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
     reminder_no_mobile: "Pas de numéro de mobile français pour ce client.",
-    reminder_no_channel: "Aucun canal SMS n'est réglé : à faire dans Mon compte.",
+    reminder_no_channel:
+      "Aucun canal SMS n'est réglé : à faire dans Mon compte.",
     reminder_quiet_hours: "Aucun SMS ne part de 22:00 à 07:00.",
-    reminder_too_soon: "Envoyé il y a moins de 10 minutes : patientez avant de le renvoyer.",
+    reminder_too_soon:
+      "Envoyé il y a moins de 10 minutes : patientez avant de le renvoyer.",
   } as Record<string, string>,
 };

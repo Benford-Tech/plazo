@@ -1779,6 +1779,28 @@ export interface RevenueReport {
   }[];
 }
 
+/** « Mois par mois » (01/11/2026, choice B): one month's figures. */
+export interface RevenueMonth {
+  /** « YYYY-MM ». */
+  month: string;
+  from: string;
+  to: string;
+  totalCents: number;
+  commissionCents: number;
+  netCents: number;
+  count: number;
+  withoutAmount: number;
+}
+
+/** GET /internal/revenue/months: the 12 months ending with the one asked, the oldest first. */
+export interface RevenueMonths {
+  today: string;
+  basis: RevenueBasis;
+  months: RevenueMonth[];
+  totalCents: number;
+  netCents: number;
+}
+
 export interface RevenueSummary {
   today: string;
   month: {

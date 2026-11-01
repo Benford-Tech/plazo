@@ -7,6 +7,7 @@ import RevenuePage from "./RevenuePage";
 
 const api = vi.hoisted(() => ({
   getRevenue: vi.fn(),
+  getRevenueMonths: vi.fn(),
   exportRevenue: vi.fn(),
   setReservationPrice: vi.fn(),
   setComparatorCommission: vi.fn(),
@@ -107,11 +108,38 @@ function renderPage() {
   );
 }
 
+/** « Mois par mois »: 12 months ending with October 2026, 10 000 € a month but September. */
+function months() {
+  const list = Array.from({ length: 12 }, (_, i) => {
+    const month = new Date(Date.UTC(2025, 10 + i, 1)).toISOString().slice(0, 7);
+    const last = new Date(Date.UTC(2025, 11 + i, 0)).toISOString().slice(0, 10);
+    const total = month === "2026-09" ? 1248000 : 1000000;
+    return {
+      month,
+      from: `${month}-01`,
+      to: last,
+      totalCents: total,
+      commissionCents: 100000,
+      netCents: total - 100000,
+      count: 200,
+      withoutAmount: month === "2026-10" ? 2 : 0,
+    };
+  });
+  return {
+    today: "2026-10-09",
+    basis: "arrival",
+    months: list,
+    totalCents: list.reduce((sum, m) => sum + m.totalCents, 0),
+    netCents: list.reduce((sum, m) => sum + m.netCents, 0),
+  };
+}
+
 describe("RevenuePage (CA-B, 09/10/2026)", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-10-09T10:00:00Z"));
     api.getRevenue.mockReset().mockResolvedValue(report());
+    api.getRevenueMonths.mockReset().mockResolvedValue(months());
     api.exportRevenue.mockReset();
     api.setReservationPrice
       .mockReset()
@@ -135,7 +163,9 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     expect(screen.getByTestId("revenue-count")).toHaveTextContent("109");
     expect(screen.getByText("dont 2 sans montant")).toBeInTheDocument();
     expect(screen.getByText("5,2 jours en moyenne")).toBeInTheDocument();
-    const table = screen.getByRole("table");
+    const table = within(
+      screen.getByRole("region", { name: "Par canal" }),
+    ).getByRole("table");
     expect(
       within(table).getByRole("rowheader", { name: "Allopark" }),
     ).toBeInTheDocument();
@@ -150,9 +180,52 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     expect(
       screen.getByText(/9 oct\. : 123,00\s€, 3 réservations/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Octobre" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+    expect(
+      within(screen.getByTestId("revenue-month-nav")).getByRole("button", {
+        name: "Octobre 2026",
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("« Mois par mois » (01/11/2026) : les 12 mois en barres et en tableau ; un clic affiche le mois", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const card = await screen.findByTestId("revenue-months");
+    expect(api.getRevenueMonths).toHaveBeenCalledWith("2026-10", "arrival");
+    expect(card).toHaveTextContent("Mois par mois · nov. 2025 → oct. 2026");
+    expect(card).toHaveTextContent(/Total 12 mois : 122\s480,00\s€/);
+    expect(within(card).getAllByRole("row")).toHaveLength(13);
+    await user.click(screen.getByTestId("revenue-month-2026-09"));
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-09-01",
+        "2026-09-30",
+        "arrival",
+      ),
+    );
+    expect(
+      within(screen.getByTestId("revenue-month-nav")).getByRole("button", {
+        name: "Septembre 2026",
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await user.click(
+      within(card).getByRole("button", { name: "Février 2026" }),
+    );
+    await waitFor(() =>
+      expect(api.getRevenue).toHaveBeenLastCalledWith(
+        "2026-02-01",
+        "2026-02-28",
+        "arrival",
+      ),
+    );
+    // A month older than the 12 shown: the card moves to end with it.
+    for (let i = 0; i < 4; i++)
+      await user.click(screen.getByRole("button", { name: "Mois précédent" }));
+    await waitFor(() =>
+      expect(api.getRevenueMonths).toHaveBeenLastCalledWith(
+        "2025-10",
+        "arrival",
+      ),
     );
   });
 
@@ -171,7 +244,9 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     expect(card).toHaveTextContent("Par moyen de paiement");
     expect(card).toHaveTextContent("Au comparateur");
     expect(card).toHaveTextContent("En ligne sur Plazo");
-    expect(card.textContent?.indexOf("Non précisé")).toBeGreaterThan(card.textContent!.indexOf("En ligne"));
+    expect(card.textContent?.indexOf("Non précisé")).toBeGreaterThan(
+      card.textContent!.indexOf("En ligne"),
+    );
   });
 
   it("change de période et de mode de comptage", async () => {
@@ -186,7 +261,7 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
         "arrival",
       ),
     );
-    await user.click(screen.getByRole("button", { name: "Septembre" }));
+    await user.click(screen.getByRole("button", { name: "Mois précédent" }));
     await waitFor(() =>
       expect(api.getRevenue).toHaveBeenLastCalledWith(
         "2026-09-01",
@@ -319,6 +394,7 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
 describe("RevenuePage · chiffre d'affaires masqué (27/10/2026)", () => {
   beforeEach(() => {
     api.getRevenue.mockReset().mockResolvedValue(report());
+    api.getRevenueMonths.mockReset().mockResolvedValue(months());
     localStorage.setItem("plazo:revenue-hidden", "1");
   });
   afterEach(() => localStorage.removeItem("plazo:revenue-hidden"));
@@ -330,6 +406,7 @@ describe("RevenuePage · chiffre d'affaires masqué (27/10/2026)", () => {
     );
     expect(screen.queryByText(/4 812,50/)).toBeNull();
     expect(api.getRevenue).not.toHaveBeenCalled();
+    expect(api.getRevenueMonths).not.toHaveBeenCalled();
     await userEvent.click(
       screen.getByRole("button", { name: "Afficher le chiffre d'affaires" }),
     );
