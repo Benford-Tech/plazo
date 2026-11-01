@@ -335,7 +335,10 @@ export class OccupationService {
     }
     let keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
     // 01/11/2026 (« Le numéro de crochet correspond au numéro de place »): keys left go on the hook of the car's place.
-    if (data.left && !keyHook) keyHook = await placeHookOf(reservation);
+    const placeHook = await placeHookOf(reservation);
+    if (data.left && !keyHook) keyHook = placeHook;
+    // « Clés laissées » undone: the place's hook, set with it, goes too (a hook typed apart stays).
+    if (!data.left && data.keyHook === undefined && keyHook && keyHook === placeHook) keyHook = null;
     // A hook number means the keys are in the team's hands.
     const left = data.left || !!keyHook;
     const keysLeftAt = left ? (reservation.keysLeftAt ?? new Date()) : null;

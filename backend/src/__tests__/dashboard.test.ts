@@ -153,7 +153,7 @@ describe('GET /internal/dashboard', () => {
     expect(cleared.body.data.keysLeftAt).toBeTruthy();
     // Undone: the alert comes back; another operator's token is refused.
     const undone = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false });
-    expect(undone.body.data.keysLeftAt).toBeNull();
+    expect(undone.body.data).toMatchObject({ keysLeftAt: null, keyHook: null });
     dash = await api().get('/api/internal/dashboard').set(auth(op.token));
     expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).toContain('keys_missing');
     // « Rendu » forgets it.
