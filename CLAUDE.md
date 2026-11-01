@@ -394,6 +394,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      mots de condition avant, « gratuite » / « possible » après, question) : « Pour toute annulation de votre réservation… »,
      « Toute réservation annulée… », « Si vous avez annulé », « Free cancellation… » (mots de condition dans les six mots avant, un deux-points ouvrant la nouvelle : « Aucune action n'est requise : votre réservation a été annulée » reste une annulation) ne font plus d'une confirmation une
      annulation ou une modification ; tests `inbound-reread.test.ts`, `inbound-kind.test.ts` (`confirmation-conditions.txt`).
+   - **Formulaire du site du parking (01/11/2026, « apprends ça aussi »)** : le mail que le site du loueur envoie pour une
+     réservation faite chez lui (« Envoyé depuis Safe Parking Lyon Aéroport » ; une étiquette par ligne et sa valeur dessous, ou
+     « Étiquette : valeur » : Nom, E-mail, Date et heure d'arrivée « 10/11 à 18h30 », Date et heure de départ, Plaque
+     d'immatriculation, Services) est lu sans Claude (`domain/importers/website-form.ts`, `isWebsiteForm` : les deux « Date et
+     heure » et « Envoyé depuis » ; `parseWebsiteForm` ; apostrophe `&#039;` d'un formulaire WordPress comprise) quand les règles
+     ne connaissent pas le mail : date sans année = la prochaine, jamais plus de 60 jours en arrière (`websiteDateTime`, fuseau du
+     parking) ; réservation créée au canal `website` (`ParsedBooking.channel`, `channelDetail` nul, aucune commission), sans
+     téléphone quand l'e-mail est donné (`missingForImport`, `customerPhone` `''` à saisir), un service autre que « Parking » en
+     note (« Service demandé sur le site : Voiturier ») ; « Site du parking » n'est jamais listé avec les comparateurs. Tests
+     `website-form.test.ts`, `inbound-rules.test.ts`.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet
