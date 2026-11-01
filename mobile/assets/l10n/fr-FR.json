@@ -2617,5 +2617,16 @@
     },
     "note": "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
     "error": "Le planning prévisionnel n'a pas pu être chargé. Tirez pour réessayer."
+  },
+  "keys": {
+    "title": "Clés",
+    "none": "Clés ?",
+    "left": "Laissées",
+    "hook": "Crochet n°",
+    "hook_n": "Crochet {}",
+    "hook_label": "N° du crochet",
+    "save": "OK",
+    "left_at": "Clés laissées à {}",
+    "not_on_site": "La voiture n'est pas au parking : les clés ne se notent qu'entre l'arrivée et la remise."
   }
 }

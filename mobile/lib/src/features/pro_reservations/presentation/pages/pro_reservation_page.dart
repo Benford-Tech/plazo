@@ -20,6 +20,7 @@ import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../extras/presentation/widgets/staff_extras_card.dart';
 import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
+import '../../../pro_keys/presentation/keys_control.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
@@ -139,6 +140,9 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
   }
 }
 
+/// The car stands on the parking (ON_SITE_STATUSES of backend/src/domain/reservation.ts): its keys can be noted.
+const _onSiteStatuses = {'arrived', 'shuttled_out', 'return_requested', 'back_at_parking'};
+
 class _Sheet extends StatelessWidget {
   const _Sheet({required this.reservation, required this.role, required this.busy});
   final ReservationModel reservation;
@@ -157,6 +161,7 @@ class _Sheet extends StatelessWidget {
             return can(role, decision ? 'reservations:manage' : 'reservations:status');
           }).toList();
     final channel = 'res.channel.${r.channel}'.tr(args: [Product.name]);
+    final onSite = _onSiteStatuses.contains(r.status);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
@@ -224,7 +229,8 @@ class _Sheet extends StatelessWidget {
               ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
             else
               ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
-            if (r.keyHook != null) ('occupation.key_hook'.tr(), r.keyHook!),
+            // On the parking the keys are changed below (direction A, 01/11/2026); otherwise only read.
+            if (r.keyHook != null && !onSite) ('occupation.key_hook'.tr(), r.keyHook!),
             if (r.boardingCheckIn != null) ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),
             if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
               (
@@ -238,6 +244,16 @@ class _Sheet extends StatelessWidget {
             onPressed: () => context.router.push(ProOccupationRoute(focus: r.id)),
             child: Text('occupation.title'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
           ),
+          // Direction A (01/11/2026): « Clés ? · Laissées · Crochet n° » while the car is on the parking.
+          child: onSite && can(role, 'reservations:status')
+              ? KeysControl(
+                  key: ValueKey('res-keys-${r.id}'),
+                  reservationId: r.id,
+                  keyHook: r.keyHook,
+                  keysLeftAt: r.keysLeftAt,
+                  onChanged: (k) => context.read<ProReservationBloc>().add(ProReservationReplaced(r.copyWith(keyHook: k.keyHook, keysLeftAt: k.keysLeftAt))),
+                )
+              : null,
         ),
         // « Contrat signé et état des lieux » (19/10/2026): the contract and both condition reports.
         if (r.status != 'cancelled' && r.status != 'no_show')
@@ -495,11 +511,14 @@ class _HandoverSheetState extends State<_HandoverSheet> {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, this.rows = const [], this.text, this.trailing});
+  const _Section({required this.title, this.rows = const [], this.text, this.trailing, this.child});
   final String title;
   final List<(String, String)> rows;
   final String? text;
   final Widget? trailing;
+
+  /// Under the rows (the keys of the car).
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -532,6 +551,7 @@ class _Section extends StatelessWidget {
                 ],
               ),
             ),
+          if (child != null) ...[const SizedBox(height: 8), Text('keys.title'.tr().toUpperCase(), style: AppText.label(size: 11)), const SizedBox(height: 6), child!],
         ],
       ),
     );

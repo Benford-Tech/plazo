@@ -8,6 +8,7 @@ import '../../../../core/helpers/formatters.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
+import '../../../pro_keys/presentation/keys_control.dart';
 import '../../../pro_revenue/presentation/bloc/revenue_summary_bloc.dart';
 import '../../../pro_revenue/presentation/widgets/revenue_tile.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
@@ -634,7 +635,6 @@ class _VehicleTile extends StatelessWidget {
     final stay = v.stayClass == null ? null : 'dashboard.stay_${v.stayClass}'.tr();
     final place = v.spotCode == null ? 'dashboard.no_spot'.tr() : [v.spotCode!, if (stay != null && !stay.startsWith('dashboard.')) stay].join(' · ');
     final meta = [
-      (v.keyHook == null ? 'dashboard.no_keys'.tr() : 'dashboard.keys_hook'.tr(args: [v.keyHook!]), v.keyHook == null),
       if (v.returnFlight != null) ('dashboard.flight_at'.tr(args: [v.returnFlight!, hhmm(estimated ?? returnAt ?? DateTime.now())]), false),
       (
         v.returnsToday
@@ -700,6 +700,15 @@ class _VehicleTile extends StatelessWidget {
                       child: Text(text, style: AppText.tabular(size: 10.5, weight: 500, color: warn ? AppStatus.warnText : AppColors.muted)),
                     ),
                 ],
+              ),
+              // Direction A (01/11/2026): the keys in three positions, one touch each; the alerts reload after.
+              const SizedBox(height: 8),
+              KeysControl(
+                key: ValueKey('keys-control-${v.id}'),
+                reservationId: v.id,
+                keyHook: v.keyHook,
+                keysLeftAt: v.keysLeftAt == null ? null : DateTime.tryParse(v.keysLeftAt!),
+                onChanged: (_) => context.read<ProDashboardBloc>().add(const ProDashboardPolled()),
               ),
             ],
           ),

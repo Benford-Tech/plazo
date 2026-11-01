@@ -48,6 +48,9 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       overbooked: json['overbooked'] as bool? ?? false,
       spotId: json['spotId'] as String?,
       keyHook: json['keyHook'] as String?,
+      keysLeftAt: json['keysLeftAt'] == null
+          ? null
+          : DateTime.parse(json['keysLeftAt'] as String),
       stopId: json['stopId'] as String?,
       carLat: (json['carLat'] as num?)?.toDouble(),
       carLng: (json['carLng'] as num?)?.toDouble(),
@@ -118,6 +121,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'overbooked': instance.overbooked,
       'spotId': instance.spotId,
       'keyHook': instance.keyHook,
+      'keysLeftAt': instance.keysLeftAt?.toIso8601String(),
       'stopId': instance.stopId,
       'carLat': instance.carLat,
       'carLng': instance.carLng,
