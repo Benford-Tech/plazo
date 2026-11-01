@@ -1,7 +1,7 @@
 import { Service } from 'typedi';
 import prisma, { Parking, Prisma } from '@/database';
 import { bookableCapacity, effectiveCapacity, type CapacitySource, type PlanCapacity } from '@/domain/capacity';
-import { RELEASED_STATUSES } from '@/domain/reservation';
+import { ON_SITE_STATUSES, RELEASED_STATUSES } from '@/domain/reservation';
 import { addDays, localDate } from '@/domain/time';
 
 export interface NightLoad {
@@ -123,6 +123,43 @@ export class CapacityService {
       free: bookable - row.count,
       overbooked: row.count > bookable,
     }));
+  }
+
+  /**
+   * 01/11/2026 (« le nombre de voitures sur place n'est pas correct »): the cars really parked each night, for the forecast.
+   * `nights` counts the stays as booked (what the capacity checks need); here a car counts from the day it was dropped
+   * (`arrivedAt`, else its booked arrival) to the day it was handed back (`returnedAt`, else its booked return): a car handed
+   * back early is gone, a car still on site after its return date is still there tonight, and a booking still expected
+   * whose arrival is past counts from today only (it did not come on the nights before). Cancelled bookings, no-shows and
+   * unpaid holds never count.
+   */
+  public async parkedNights(parking: Pick<Parking, 'id' | 'timezone'>, from: string, to: string, now = new Date()): Promise<Map<string, number>> {
+    const tz = parking.timezone;
+    const today = localDate(now, tz);
+    const local = (column: string) => Prisma.sql`((${Prisma.raw(column)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date`;
+    const rows = await prisma.$queryRaw<{ night: Date; count: number }[]>`
+      WITH stays AS (
+        SELECT
+          CASE
+            WHEN r.status::text = 'upcoming' THEN GREATEST(${local('r."arrivalAt"')}, ${today}::date)
+            ELSE ${local('COALESCE(r."arrivedAt", r."arrivalAt")')}
+          END AS first,
+          CASE
+            WHEN r.status::text = 'returned' THEN ${local('COALESCE(r."returnedAt", r."returnAt")')}
+            WHEN r.status::text = ANY(${ON_SITE_STATUSES}::text[]) THEN GREATEST(${local('r."returnAt"')}, ${addDays(today, 1)}::date)
+            ELSE ${local('r."returnAt"')}
+          END AS stop
+        FROM reservations r
+        WHERE r."parkingId" = ${parking.id}
+          AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
+          AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
+      )
+      SELECT d::date AS night, COUNT(s.first)::int AS count
+      FROM generate_series(${from}::date, ${to}::date, interval '1 day') AS d
+      LEFT JOIN stays s ON s.first <= d::date AND d::date < GREATEST(s.stop, s.first + 1)
+      GROUP BY d
+      ORDER BY d`;
+    return new Map(rows.map(row => [row.night.toISOString().slice(0, 10), row.count]));
   }
 
   /**
