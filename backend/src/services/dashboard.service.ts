@@ -12,7 +12,7 @@ import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
-import { loadPlanCapacity, parkingCapacity } from './capacity.service';
+import { loadPlanCapacity, parkingCapacity, RETURN_OVERDUE_MS } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ExtraService } from './extra.service';
 import { ParkingService } from './parking.service';
@@ -33,7 +33,7 @@ const KEYS_MINUTES = 20;
 /** An expected traveller still unplaced this long after their time is probably not coming. */
 const NO_SHOW_MINUTES = 180;
 /** A car still on the parking this long after its expected return is flagged (left without « Rendu »). */
-const RETURN_OVERDUE_MINUTES = 180;
+const RETURN_OVERDUE_MINUTES = RETURN_OVERDUE_MS / 60000;
 /** How far back a booking still « Attendu » is flagged as a possible no-show. */
 const NO_SHOW_LOOKBACK_DAYS = 90;
 
@@ -132,6 +132,8 @@ export interface Dashboard {
   parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number; storedInFiles: boolean };
   counts: {
     onSite: number;
+    /** On-site cars hours past their return, not counted in `onSite` (« Retour dépassé »). */
+    returnOverdue: number;
     arrivalsToday: number;
     arrivedToday: number;
     returnsToday: number;
@@ -236,7 +238,16 @@ export class DashboardService {
       status: ReservationStatus;
       boardingTripId: string | null;
     }) => !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
-    const occupied = onSite.filter(placed).length;
+    // 01/11/2026 (« il devrait avoir 39 voitures sur place »): a car hours past its return (its flight's landing when
+    // later), not on a trip, left without « Rendu »: no longer counted on the parking, listed in « Retour dépassé ».
+    const overdueDue = (r: { returnAt: Date; flightLandedAt: Date | null; flightEstimatedAt: Date | null }) => {
+      const landing = r.flightLandedAt ?? r.flightEstimatedAt;
+      return landing && landing > r.returnAt ? landing : r.returnAt;
+    };
+    const overdue = onSite.filter(r => !tripOf(r.id) && now.getTime() - overdueDue(r).getTime() >= RETURN_OVERDUE_MINUTES * 60000);
+    const overdueIds = new Set(overdue.map(r => r.id));
+    const present = onSite.filter(r => !overdueIds.has(r.id));
+    const occupied = present.filter(placed).length;
     // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
     // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
     // The plan is read once, above, and the capacity derived from it here.
@@ -391,10 +402,8 @@ export class DashboardService {
     }
     // 01/11/2026: still counted on the parking hours after its return (its flight's landing when later), not on a trip:
     // the car left without « Rendu » and keeps inflating « Sur le parking » and the overbooking.
-    for (const r of onSite) {
-      const landing = r.flightLandedAt ?? r.flightEstimatedAt;
-      const due = landing && landing > r.returnAt ? landing : r.returnAt;
-      if (tripOf(r.id) || now.getTime() - due.getTime() < RETURN_OVERDUE_MINUTES * 60000) continue;
+    for (const r of overdue) {
+      const due = overdueDue(r);
       alerts.push({
         kind: 'return_overdue',
         severity: 'watch',
@@ -555,7 +564,8 @@ export class DashboardService {
         storedInFiles: capacity.capacitySource === 'files',
       },
       counts: {
-        onSite: onSite.length,
+        onSite: present.length,
+        returnOverdue: overdue.length,
         arrivalsToday: planning.stats.arrivals,
         arrivedToday: planning.stats.arrived,
         returnsToday: planning.stats.returns,
