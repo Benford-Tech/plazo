@@ -723,7 +723,7 @@ réservation › RLY23Q + 06 39 98 01 99 → la réservation (navette, sièges a
 Plazo lets travellers book a private car park near an airport (first market: Lyon Saint-Exupéry, France), pay online and follow their stay: drop-off, free shuttle to the terminal, return flight, car pick-up. Audience: travellers who drive to the airport. Problem solved: comparing car parks by total price and shuttle, then not having to phone the car park on the trip day (the shuttle is shown live, the car park knows when the traveller lands).
 
 3. HOW TO TEST
-The app is in French. There is no account, no sign-up and no login in Plazo: a booking is opened with its booking number and the phone number or e-mail used to book. Nothing is stored about the user except the bookings they open, so there is no account to delete (a booking can be removed from the list on the device).
+The app is in French. There is no account, no sign-up and no login in Plazo: a booking is opened with its booking number and the phone number or e-mail used to book. Since there is no account, there is no account to delete.
 Test booking (fictitious car park "Parking Revue", fictitious traveller "Apple Review", 12 to 16 November 2026):
 - Tab "Mes réservations" > "Ajouter une réservation".
 - Booking number: RLY23Q
