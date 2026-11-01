@@ -1472,7 +1472,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,
   ni dans le sitemap, et sa fiche est en `noindex` (22/10/2026 : le parking de test de la plateforme, loueur « … (tests) », est servi
-  `isDemo` par l'API publique, `isTestOperatorName`, après que la Search Console a listé « Parking test Plazo ») ; liens internes vers l'adresse canonique d'un aéroport (`airportPath` : `/` pour Lyon).
+  `isDemo` par l'API publique, `isTestOperatorName`, après que la Search Console a listé « Parking test Plazo ») ; **01/11/2026, « crée une fausse annonce sur le parking de démo »** : un loueur « … (tests) » n'encaisse
+  jamais d'argent réel non plus (`PaymentService.modeFor` : `unavailable` sous clés réelles, comme `isDemo`), et le loueur fictif de la
+  revue d'Apple devient « Parking Revue (tests) » (migration `review_operator_tests`) pour porter une annonce de démonstration) ; liens internes vers l'adresse canonique d'un aéroport (`airportPath` : `/` pour Lyon).
   **C-A « Le guide sur la page Lyon » (08/10/2026)** : titre « Votre parking à l'aéroport de Lyon Saint-Exupéry », guide sous la liste
   des parkings (`src/lib/airport-guides.ts`, composant `AirportGuide` : « Sur cette page », aéroport ou privé avec tableau comparatif
   empilé sur téléphone, prix d'une semaine, navette, voiturier, accès, conseils) et « Questions fréquentes » (4 générales + 5 de Lyon,

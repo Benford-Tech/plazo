@@ -327,6 +327,24 @@ describe('paiement en ligne : place tenue pendant le paiement', () => {
     }
   });
 
+  it('un compte de test (« … (tests) ») non plus, avec des clés réelles (01/11/2026)', async () => {
+    const { operator } = await publishedParking();
+    await prisma.operator.update({ where: { id: operator.id }, data: { name: 'Parking Revue (tests)' } });
+    const key = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = 'sk_live_fake';
+    process.env.STRIPE_ALLOW_LIVE = 'true';
+    try {
+      const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
+      expect(page.body.parking).toMatchObject({ payment: 'unavailable', isDemo: true });
+      const res = await book();
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('online_booking_unavailable');
+    } finally {
+      process.env.STRIPE_SECRET_KEY = key;
+      delete process.env.STRIPE_ALLOW_LIVE;
+    }
+  });
+
   it('sans commission configurée non plus', async () => {
     await publishedParking({ commissionBps: null });
     expect((await api().get('/api/public/airports/lyon-saint-exupery')).body.listings[0].payment).toBe('unavailable');
