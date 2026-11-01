@@ -112,6 +112,23 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     expect(importedNames(read('onepark-notification-short.html')!)).toMatchObject({ customerFirstName: 'camille', customerLastName: 'exemple' });
   });
 
+  it('Onepark, avis court (01/11/2026) : séjour à cheval sur deux années (« jan. 2027 ») et numéro suisse', () => {
+    expect(read('onepark-notification-short-ch.html')).toMatchObject({
+      provider: 'Onepark',
+      customerName: 'Valérie Exemple',
+      customerPhone: '+41 76 000 00 00',
+      arrivalAt: '2026-12-28T08:30',
+      returnAt: '2027-01-05T08:30',
+      priceCents: 4000,
+    });
+    const mail = {
+      subject: 'Nouvelle réservation',
+      from: 'Onepark <noreply@onepark.co>',
+      text: textOf({ RawHtmlBody: html('onepark-notification-short-ch.html') }),
+    };
+    expect(classifyMail(mail)).toMatchObject({ provider: 'Onepark', kind: 'booking', sure: true, rule: 'onepark.booking' });
+  });
+
   it('Park Hit (25/10/2026) : la fiche « Clé : valeur » de son avis au parking, vols sans compagnie dans les notes', () => {
     const text = readFileSync(join(__dirname, 'fixtures', 'parkhit-notification.txt'), 'utf8');
     expect(parseConfirmationEmail(text)).toEqual({

@@ -119,7 +119,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (avis au parking : prénom, nom, portable, début, fin du forfait, montant, modèle, plaque, passagers, vol retour ; le retour
      est la « récupération prévue » quand elle est donnée, sinon la fin du forfait ; **avis court du 20/10/2026** : « Début : ven.
      23 oct. 2026 à 09:00 » en lettres, « Montant résa », nom entier dans « Nom » sans « Prénom » (découpé par `importedNames`),
-     « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html` ; **récapitulatif du
+     « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html` ; mois abrégés « jan. », « fév. », « mar. », « aoû. », « sep. » lus aussi (01/11/2026 : « Fin : mar. 05 jan. 2027 » laissait le retour vide ; fixture `onepark-notification-short-ch.html`, numéro suisse) ; **récapitulatif du
      jour du 20/10/2026** « Voici le résumé des réservations en cours et à venir » : règle `onepark.summary` (genre « Autre »,
      sans Claude), `parseOneparkSummary` (numéro, nom, immatriculation, arrivée, départ ; pas de téléphone, donc jamais une
      réservation créée à lui seul… jusqu'au 20/10/2026), `ReservationService.completeFromSummary` : chaque séjour complète la réservation Onepark qui a ce
