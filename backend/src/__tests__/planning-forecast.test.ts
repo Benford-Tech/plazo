@@ -52,6 +52,39 @@ describe('GET /internal/planning/forecast', () => {
     expect(day(today)).toMatchObject({ arrivals: 0, returns: 0, parked: 0 });
   });
 
+  it('compte les voitures vraiment là (01/11/2026) : rendue en avance, encore là après sa date, attendue jamais venue', async () => {
+    const op = await setupOperator();
+    const create = async (plate: string, arrival: string, ret: string) =>
+      (
+        await api()
+          .post('/api/internal/reservations')
+          .set(auth(op.token))
+          .send({ ...booking(plate, arrival, ret), force: true })
+      ).body.data.id as string;
+    const at = (date: string, time = '10:00') => new Date(`${date}T${time}:00Z`);
+    // Handed back two days early: gone from that day.
+    const early = await create('aa111aa', addDays(today, -3), addDays(today, 3));
+    await prisma.reservation.update({
+      where: { id: early },
+      data: { status: 'returned', arrivedAt: at(addDays(today, -3)), returnedAt: at(addDays(today, 1)) },
+    });
+    // Due back yesterday, still on site: there tonight.
+    const late = await create('bb222bb', addDays(today, -4), addDays(today, -1));
+    await prisma.reservation.update({ where: { id: late }, data: { status: 'arrived', arrivedAt: at(addDays(today, -4)) } });
+    // Expected two days ago, never came: not parked on the nights before today.
+    await create('cc333cc', addDays(today, -2), addDays(today, 2));
+
+    const res = await api()
+      .get(`/api/internal/planning/forecast?from=${addDays(today, -3)}&days=7`)
+      .set(auth(op.token));
+    const parked = (date: string) => res.body.days.find((d: { date: string }) => d.date === date).parked;
+    expect(parked(addDays(today, -3))).toBe(2); // early + late
+    expect(parked(addDays(today, -1))).toBe(2); // early + late (its last booked night was the night before)
+    expect(parked(today)).toBe(3); // early + late, still there + the expected one, from today
+    expect(parked(addDays(today, 1))).toBe(1); // early gone, late's stay ended at tonight: only the expected one
+    expect(parked(addDays(today, 3))).toBe(0);
+  });
+
   it('borne la période à 92 jours et prend aujourd’hui par défaut', async () => {
     const op = await setupOperator();
     const long = await api().get('/api/internal/planning/forecast?days=400').set(auth(op.token));

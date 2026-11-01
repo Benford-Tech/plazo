@@ -1367,7 +1367,13 @@ export class ReservationService {
         AND (r."paymentStatus" IS NULL OR r."paymentStatus"::text <> 'expired')
         AND r.${Prisma.raw(`"${column}"`)} >= ${startAt} AND r.${Prisma.raw(`"${column}"`)} < ${endAt}
       GROUP BY 1`;
-    const [arrivals, returns, nights] = await Promise.all([movements('arrivalAt'), movements('returnAt'), this.capacity.nights(parking, start, end)]);
+    // 01/11/2026: the cars really there each night (handed back early, still there after their date…), not the stays as booked.
+    const [arrivals, returns, nights, parkedOf] = await Promise.all([
+      movements('arrivalAt'),
+      movements('returnAt'),
+      this.capacity.nights(parking, start, end),
+      this.capacity.parkedNights(parking, start, end),
+    ]);
     const byDay = (rows: { day: Date; n: number }[]) => new Map(rows.map(r => [r.day.toISOString().slice(0, 10), r.n]));
     const arrivalsOf = byDay(arrivals);
     const returnsOf = byDay(returns);
@@ -1377,15 +1383,18 @@ export class ReservationService {
       from: start,
       to: end,
       bookableCapacity: nights[0]?.bookable ?? 0,
-      days: nights.map(night => ({
-        date: night.date,
-        arrivals: arrivalsOf.get(night.date) ?? 0,
-        returns: returnsOf.get(night.date) ?? 0,
-        parked: night.count,
-        bookable: night.bookable,
-        free: night.free,
-        overbooked: night.overbooked,
-      })),
+      days: nights.map(night => {
+        const parked = parkedOf.get(night.date) ?? 0;
+        return {
+          date: night.date,
+          arrivals: arrivalsOf.get(night.date) ?? 0,
+          returns: returnsOf.get(night.date) ?? 0,
+          parked,
+          bookable: night.bookable,
+          free: night.bookable - parked,
+          overbooked: parked > night.bookable,
+        };
+      }),
     };
   }
 
