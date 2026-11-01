@@ -104,6 +104,12 @@ describe('GET /internal/dashboard', () => {
       flightStatus: 'delayed',
     });
     expect(res.body.breakdown).toMatchObject({ toTreat: 2, freeSpots: 1, returnsThisWeek: 3 });
+
+    // 01/11/2026 (« Les voitures avec crochets ont une place »): Louis's keys on hook 7, his car counts as placed.
+    await api().put(`/api/internal/reservations/${c.id}/keys`).set(auth(op.token)).send({ left: true, keyHook: '7' });
+    const hooked = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(hooked.body.alerts.map((x: { kind: string }) => x.kind)).not.toContain('no_spot');
+    expect((hooked.body.vehicles as { id: string }[]).find(v => v.id === c.id)).toMatchObject({ spotCode: '7', keyHook: '7' });
   });
 
   it("26/10/2026 : « Clés laissées » en un clic éteint l'alerte des clés et se voit sur le véhicule", async () => {

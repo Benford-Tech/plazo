@@ -224,11 +224,18 @@ export class DashboardService {
     ]);
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
-    const placed = (r: { spotId: string | null; fileId: string | null }) => !!r.spotId || !!r.fileId;
+    // 01/11/2026 (« Les voitures avec crochets ont une place »): the hook is the car's place (`placeHookOf`), so a car whose
+    // keys hang on a hook is placed, even with no spot or file recorded.
+    const placed = (r: { spotId: string | null; fileId: string | null; keyHook?: string | null }) => !!r.spotId || !!r.fileId || !!r.keyHook?.trim();
     // A car to put away: checked in, no spot or file; one checked in at boarding (« Embarquer en un geste ») stays so once
     // the drop-off has ended, its traveller gone to the terminal.
-    const toPutAway = (r: { spotId: string | null; fileId: string | null; status: ReservationStatus; boardingTripId: string | null }) =>
-      !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
+    const toPutAway = (r: {
+      spotId: string | null;
+      fileId: string | null;
+      keyHook?: string | null;
+      status: ReservationStatus;
+      boardingTripId: string | null;
+    }) => !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
     const occupied = onSite.filter(placed).length;
     // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
     // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
@@ -600,7 +607,7 @@ export class DashboardService {
         status: r.status,
         arrivalAt: r.arrivalAt.toISOString(),
         returnAt: r.returnAt.toISOString(),
-        spotCode: r.spot?.code ?? r.file?.code ?? null,
+        spotCode: r.spot?.code ?? r.file?.code ?? (r.keyHook?.trim() || null),
         stayClass: r.spot?.stayClass ?? null,
         keyHook: r.keyHook,
         keysLeftAt: r.keysLeftAt?.toISOString() ?? null,
