@@ -34,7 +34,7 @@ const PUBLIC_OPERATOR_FIELDS = {
   stripePayoutsEnabled: true,
   isDemo: true,
   name: true,
-} as const satisfies Record<keyof typeof OPERATOR_PAYMENT_FIELDS | 'name', true>;
+} as const satisfies Record<keyof typeof OPERATOR_PAYMENT_FIELDS, true>;
 
 /** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
 export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;
