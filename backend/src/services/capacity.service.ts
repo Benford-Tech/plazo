@@ -4,6 +4,9 @@ import { bookableCapacity, effectiveCapacity, type CapacitySource, type PlanCapa
 import { ON_SITE_STATUSES, RELEASED_STATUSES } from '@/domain/reservation';
 import { addDays, localDate } from '@/domain/time';
 
+/** A car still « on site » this long after its return (its flight's landing when later) is taken as gone (01/11/2026). */
+export const RETURN_OVERDUE_MS = 3 * 3600000;
+
 export interface NightLoad {
   date: string; // YYYY-MM-DD, local to the parking
   count: number; // vehicles present that night
@@ -137,6 +140,7 @@ export class CapacityService {
     const tz = parking.timezone;
     const today = localDate(now, tz);
     const local = (column: string) => Prisma.sql`((${Prisma.raw(column)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date`;
+    const overdueBefore = new Date(now.getTime() - RETURN_OVERDUE_MS);
     const rows = await prisma.$queryRaw<{ night: Date; count: number }[]>`
       WITH stays AS (
         SELECT
@@ -146,6 +150,10 @@ export class CapacityService {
           END AS first,
           CASE
             WHEN r.status::text = 'returned' THEN ${local('COALESCE(r."returnedAt", r."returnAt")')}
+            -- 01/11/2026: hours past its return (its flight's landing when later), the car is taken as gone.
+            WHEN r.status::text = ANY(${ON_SITE_STATUSES}::text[])
+              AND GREATEST(r."returnAt", COALESCE(r."flightLandedAt", r."flightEstimatedAt", r."returnAt")) <= ${overdueBefore}
+              THEN ${local('r."returnAt"')}
             WHEN r.status::text = ANY(${ON_SITE_STATUSES}::text[]) THEN GREATEST(${local('r."returnAt"')}, ${addDays(today, 1)}::date)
             ELSE ${local('r."returnAt"')}
           END AS stop

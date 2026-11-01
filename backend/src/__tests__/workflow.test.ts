@@ -183,7 +183,10 @@ describe('un seul geste par étape (A, 06/10/2026)', () => {
       where: { id: stillHere.id },
       data: { status: 'arrived', arrivalAt: new Date(Date.now() - 4 * 86400000), returnAt: new Date(Date.now() - 3600000) },
     });
-    const alerts = (await api().get('/api/internal/dashboard').set(auth(op.token))).body.alerts as { kind: string; reservationId: string }[];
+    const dash = (await api().get('/api/internal/dashboard').set(auth(op.token))).body;
+    const alerts = dash.alerts as { kind: string; reservationId: string }[];
+    // « il devrait avoir 39 voitures sur place »: the overdue car is no longer counted on the parking.
+    expect(dash.counts).toMatchObject({ onSite: 1, returnOverdue: 1 });
     expect(alerts.find(a => a.kind === 'no_show_suspected' && a.reservationId === old.id)).toBeTruthy();
     expect(alerts.filter(a => a.kind === 'return_overdue').map(a => a.reservationId)).toEqual([left.id]);
     expect(alerts.find(a => a.kind === 'return_overdue')).toMatchObject({ severity: 'watch', customerName: 'Léa Petit' });

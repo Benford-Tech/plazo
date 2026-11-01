@@ -505,7 +505,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `return_overdue` « Retour dépassé, toujours au parking » (`DashboardService` : réservation sur place 3 h après son retour, ou après
      l'atterrissage du vol quand il est plus tard, `RETURN_OVERDUE_MINUTES`, hors trajet en cours ; `since` = le retour prévu) et
      `no_show_suspected` cherché sur 90 jours au lieu de 24 h (`NO_SHOW_LOOKBACK_DAYS`), place pré-affectée comprise ; un toucher
-     ouvre la fiche, dont la prochaine étape est « Rendre » ou « Non venu ». Durées « depuis 5 h » / « depuis 3 j » au-delà de l'heure
+     ouvre la fiche, dont la prochaine étape est « Rendre » ou « Non venu ». **Et plus comptées (01/11/2026, « il devrait avoir 39 voitures sur place »)** : une voiture en retour dépassé (même règle, `RETURN_OVERDUE_MS` de `capacity.service.ts`) n'est plus comptée « Sur le parking » (`counts.onSite`, places libres) ni garée cette nuit dans le prévisionnel (`parkedNights` : partie à son retour prévu) ; elle reste dans la liste des véhicules et l'alerte, `counts.returnOverdue` donne leur nombre. Durées « depuis 5 h » / « depuis 3 j » au-delà de l'heure
      (web `fr.dashboard.alerts.since` de `fr.ts`, app `dashboard.since_hours|since_days`). Test `workflow.test.ts`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation

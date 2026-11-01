@@ -68,9 +68,15 @@ describe('GET /internal/planning/forecast', () => {
       where: { id: early },
       data: { status: 'returned', arrivedAt: at(addDays(today, -3)), returnedAt: at(addDays(today, 1)) },
     });
-    // Due back yesterday, still on site: there tonight.
-    const late = await create('bb222bb', addDays(today, -4), addDays(today, -1));
-    await prisma.reservation.update({ where: { id: late }, data: { status: 'arrived', arrivedAt: at(addDays(today, -4)) } });
+    // Due back an hour ago, still on site: there tonight.
+    const late = await create('bb222bb', addDays(today, -4), addDays(today, 1));
+    await prisma.reservation.update({
+      where: { id: late },
+      data: { status: 'arrived', arrivedAt: at(addDays(today, -4)), returnAt: new Date(Date.now() - 3600000) },
+    });
+    // Due back yesterday and never handed back (« il devrait avoir 39 voitures sur place »): taken as gone after its return.
+    const stale = await create('dd444dd', addDays(today, -4), addDays(today, -1));
+    await prisma.reservation.update({ where: { id: stale }, data: { status: 'arrived', arrivedAt: at(addDays(today, -4)) } });
     // Expected two days ago, never came: not parked on the nights before today.
     await create('cc333cc', addDays(today, -2), addDays(today, 2));
 
@@ -78,8 +84,8 @@ describe('GET /internal/planning/forecast', () => {
       .get(`/api/internal/planning/forecast?from=${addDays(today, -3)}&days=7`)
       .set(auth(op.token));
     const parked = (date: string) => res.body.days.find((d: { date: string }) => d.date === date).parked;
-    expect(parked(addDays(today, -3))).toBe(2); // early + late
-    expect(parked(addDays(today, -1))).toBe(2); // early + late (its last booked night was the night before)
+    expect(parked(addDays(today, -3))).toBe(3); // early + late + stale
+    expect(parked(addDays(today, -1))).toBe(2); // early + late (stale's last booked night was the night before)
     expect(parked(today)).toBe(3); // early + late, still there + the expected one, from today
     expect(parked(addDays(today, 1))).toBe(1); // early gone, late's stay ended at tonight: only the expected one
     expect(parked(addDays(today, 3))).toBe(0);
