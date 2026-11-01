@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ArrowUp, Car, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PlanningTabs } from "@/components/planning/PlanningTabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,7 +48,7 @@ function DayCell({
       type="button"
       data-testid={`forecast-day-${date}`}
       onClick={() => onOpen(date)}
-      aria-label={day && gauge ? t.dayLabel(longDate(date), day.arrivals, day.returns, full ? load : t.loadPct(gauge.pct)) : longDate(date)}
+      aria-label={day && gauge ? t.dayLabel(longDate(date), day.arrivals, day.returns, day.parked, full ? load : t.loadPct(gauge.pct)) : longDate(date)}
       className={cn(
         "flex min-w-0 flex-col gap-1 rounded-lg border bg-panel p-1.5 text-left transition hover:border-lime-deep",
         big ? "min-h-28 sm:p-2.5" : "min-h-[76px]",
@@ -65,6 +65,10 @@ function DayCell({
           <span className={cn("flex flex-wrap gap-x-1.5 font-mono font-semibold leading-tight", big ? "text-sm" : "text-[11px]")}>
             <span className="text-ok-text">↑{day.arrivals}</span>
             <span className="text-info-text">↓{day.returns}</span>
+            <span data-testid={`forecast-parked-${date}`} title={t.parkedTitle(day.parked)} className="inline-flex items-center gap-0.5 text-lime-deep">
+              <Car className={big ? "h-3.5 w-3.5" : "h-3 w-3"} aria-hidden="true" />
+              {day.parked}
+            </span>
           </span>
           <span className="mt-auto h-1.5 w-full overflow-hidden rounded-full bg-panel-2" aria-hidden="true">
             <span className={cn("block h-full rounded-full", BAR[gauge.level])} style={{ width: `${Math.min(100, gauge.pct)}%` }} />
@@ -114,6 +118,7 @@ function Legend() {
     <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
       {item(<ArrowUp className="h-4 w-4 text-ok-text" aria-hidden="true" />, t.arrivals)}
       {item(<ArrowDown className="h-4 w-4 text-info-text" aria-hidden="true" />, t.departures)}
+      {item(<Car className="h-4 w-4 text-lime-deep" aria-hidden="true" />, t.parked)}
       {item(<span className="h-2 w-5 rounded-full bg-warn" aria-hidden="true" />, t.high)}
       {item(<span className="h-2 w-5 rounded-full bg-bad" aria-hidden="true" />, t.full)}
     </p>
@@ -200,7 +205,7 @@ export default function ForecastPage() {
         <>
           <p data-testid="forecast-summary" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <span className="font-semibold">{t.summary(arrivals, departures)}</span>
-            {busiest && busiest.parked > 0 && <span className="text-muted-foreground">{t.busiest(gaugeOf(busiest).pct, shortDay(busiest.date))}</span>}
+            {busiest && busiest.parked > 0 && <span className="text-muted-foreground">{t.busiest(busiest.parked, gaugeOf(busiest).pct, shortDay(busiest.date))}</span>}
             {fullNights > 0 && <span className="font-semibold text-bad-text">{t.fullNights(fullNights)}</span>}
           </p>
           {view === "semaine" ? (

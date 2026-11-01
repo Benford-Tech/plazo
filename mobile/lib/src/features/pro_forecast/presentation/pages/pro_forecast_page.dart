@@ -228,6 +228,7 @@ class _Legend extends StatelessWidget {
       children: [
         item(const Icon(Icons.arrow_upward_rounded, size: 15, color: AppStatus.okText), 'arrivals'),
         item(const Icon(Icons.arrow_downward_rounded, size: 15, color: AppStatus.info), 'departures'),
+        item(const Icon(Icons.directions_car_rounded, size: 15, color: AppColors.accent), 'parked'),
         item(bar(AppStatus.warn), 'high'),
         item(bar(AppStatus.bad), 'full'),
       ],
@@ -258,6 +259,7 @@ class _Summary extends StatelessWidget {
           Text(
             'forecast.busiest'.tr(
               namedArgs: {
+                'cars': '${busiest.parked}',
                 'pct': '${gaugeOf(parked: busiest.parked, bookable: busiest.bookable).pct}',
                 'day': DateFormat('EEE d', 'fr_FR').format(DateTime.parse(busiest.date)),
               },
@@ -282,7 +284,29 @@ String _load(ForecastDay day, ({int pct, GaugeLevel level}) g) => g.level == Gau
     ? (day.overbooked ? 'forecast.overbooked'.tr(namedArgs: {'n': '${day.parked - day.bookable}'}) : 'forecast.full'.tr())
     : '${g.pct} %';
 
-/// One day: its number (or « lun. 26 » in the week list), ↑ arrivals, ↓ departures, the gauge and its load.
+/// Cars parked the night of that day: a small car and the count.
+class _Parked extends StatelessWidget {
+  const _Parked({required this.date, required this.count, required this.size});
+  final String date;
+  final int count;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    key: Key('forecast-parked-$date'),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(Icons.directions_car_rounded, size: size + 1, color: AppColors.accent),
+      const SizedBox(width: 2),
+      Text(
+        '$count',
+        style: AppText.tabular(size: size, weight: 600, color: AppColors.accent),
+      ),
+    ],
+  );
+}
+
+/// One day: its number (or « lun. 26 » in the week list), ↑ arrivals, ↓ departures, cars parked, the gauge and its load.
 class _DayCell extends StatelessWidget {
   const _DayCell({required this.date, required this.day, required this.today, required this.onOpen});
   final String date;
@@ -317,6 +341,11 @@ class _DayCell extends StatelessWidget {
                 if (d != null && g != null) ...[
                   Text('↑${d.arrivals}', style: AppText.tabular(size: 10.5, weight: 600, color: AppStatus.okText)),
                   Text('↓${d.returns}', style: AppText.tabular(size: 10.5, weight: 600, color: AppStatus.info)),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: _Parked(date: date, count: d.parked, size: 10.5),
+                  ),
                   const SizedBox(height: 2),
                   _Gauge(pct: g.pct, color: _bar[g.level]!),
                   const SizedBox(height: 2),
@@ -461,18 +490,29 @@ class _WeekRow extends StatelessWidget {
             child: Row(
               children: [
                 SizedBox(
-                  width: 92,
+                  width: 84,
                   child: Text(label, style: AppText.tabular(size: 13.5, color: isToday ? AppColors.accent : AppColors.ink)),
                 ),
                 Text('↑${day.arrivals}', style: AppText.tabular(size: 14, color: AppStatus.okText)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Text('↓${day.returns}', style: AppText.tabular(size: 14, color: AppStatus.info)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _Gauge(pct: g.pct, color: _bar[g.level]!),
-                ),
+                const SizedBox(width: 8),
+                _Parked(date: day.date, count: day.parked, size: 14),
                 const SizedBox(width: 10),
-                Text(_load(day, g), style: AppText.tabular(size: 12.5, weight: 600, color: _text[g.level]!)),
+                // The gauge with its load under it, so the row keeps room for the car count on a narrow phone.
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _Gauge(pct: g.pct, color: _bar[g.level]!),
+                      const SizedBox(height: 3),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(_load(day, g), style: AppText.tabular(size: 12, weight: 600, color: _text[g.level]!)),
+                      ),
+                    ],
+                  ),
+                ),
                 const Icon(Icons.chevron_right_rounded, color: AppColors.muted, size: 20),
               ],
             ),

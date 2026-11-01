@@ -70,6 +70,16 @@ describe("Planning prévisionnel (direction A)", () => {
     expect(screen.getByTestId("forecast-summary")).toHaveTextContent("1 nuit complète");
   });
 
+  it("montre le nombre de voitures garées la nuit de chaque jour", async () => {
+    renderAt("/planning/previsionnel?date=2026-10-28");
+    await screen.findByTestId("forecast-day-2026-10-30");
+    expect(screen.getByTestId("forecast-parked-2026-10-29")).toHaveTextContent("90");
+    expect(screen.getByTestId("forecast-parked-2026-10-29")).toHaveAttribute("title", "90 voitures garées la nuit");
+    expect(screen.getByTestId("forecast-day-2026-10-29")).toHaveAccessibleName(expect.stringContaining("90 voitures garées la nuit"));
+    expect(screen.getByTestId("forecast-summary")).toHaveTextContent("Jusqu'à 100 voitures");
+    expect(screen.getByText("Voitures garées la nuit")).toBeInTheDocument();
+  });
+
   it("passe en trois mois et ouvre le planning d’un jour", async () => {
     renderAt("/planning/previsionnel?date=2026-10-28");
     await screen.findByTestId("forecast-day-2026-10-30");

@@ -1438,17 +1438,18 @@ export const fr = {
     previous: "Période précédente",
     next: "Période suivante",
     today: "Aujourd'hui",
-    legend: { arrivals: "Arrivées", departures: "Départs", high: "Plus de 85 %", full: "Complet" },
+    legend: { arrivals: "Arrivées", departures: "Départs", parked: "Voitures garées la nuit", high: "Plus de 85 %", full: "Complet" },
+    parkedTitle: (n: number) => `${n} voiture${n > 1 ? "s" : ""} garée${n > 1 ? "s" : ""} la nuit`,
     weekdays: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
     full: "Complet",
     overbooked: (n: number) => `Complet +${n}`,
     summary: (arrivals: number, departures: number) =>
       `${arrivals} arrivée${arrivals > 1 ? "s" : ""} · ${departures} départ${departures > 1 ? "s" : ""}`,
-    busiest: (pct: number, day: string) => `Nuit la plus chargée : ${pct} % (${day})`,
+    busiest: (cars: number, pct: number, day: string) => `Jusqu'à ${cars} voiture${cars > 1 ? "s" : ""} (${day}, ${pct} %)`,
     fullNights: (n: number) => `${n} nuit${n > 1 ? "s" : ""} complète${n > 1 ? "s" : ""}`,
     note: "Réservations enregistrées, tous canaux, sans les annulées. Les nuits sont comptées sur la capacité réelle du parking.",
-    dayLabel: (date: string, arrivals: number, departures: number, load: string) =>
-      `${date} : ${arrivals} arrivée${arrivals > 1 ? "s" : ""}, ${departures} départ${departures > 1 ? "s" : ""}, ${load}. Ouvrir le planning du jour.`,
+    dayLabel: (date: string, arrivals: number, departures: number, parked: number, load: string) =>
+      `${date} : ${arrivals} arrivée${arrivals > 1 ? "s" : ""}, ${departures} départ${departures > 1 ? "s" : ""}, ${parked} voiture${parked > 1 ? "s" : ""} garée${parked > 1 ? "s" : ""} la nuit, ${load}. Ouvrir le planning du jour.`,
     loadPct: (pct: number) => `occupation ${pct} %`,
   },
   planning: {
