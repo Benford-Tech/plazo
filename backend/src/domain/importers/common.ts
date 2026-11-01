@@ -14,6 +14,12 @@ const MONTHS: Record<string, number> = {
   janv: 1,
   fevr: 2,
   avr: 4,
+  // Onepark's short notice abbreviates « jan. », « fév. », « mar. » (01/11/2026 sample: « mar. 05 jan. 2027 »).
+  jan: 1,
+  fev: 2,
+  mar: 3,
+  aou: 8,
+  sep: 9,
   juil: 7,
   sept: 9,
   oct: 10,
