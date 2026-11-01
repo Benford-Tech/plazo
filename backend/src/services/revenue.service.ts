@@ -10,7 +10,10 @@ import {
   RevenueBasis,
   RevenueBooking,
   revenueCsv,
+  revenueByMonth,
   revenueDay,
+  RevenueMonth,
+  monthsEndingWith,
   revenueReport,
   RevenueReport,
 } from '@/domain/revenue';
@@ -58,6 +61,19 @@ export interface RevenuePage extends Omit<RevenueReport, 'byChannel'> {
     detail: string | null;
   }[];
 }
+
+/** « Mois par mois » (01/11/2026, choice B): the last 12 months of the page. */
+export interface RevenueMonths {
+  today: string;
+  basis: RevenueBasis;
+  months: RevenueMonth[];
+  totalCents: number;
+  netCents: number;
+}
+
+/** How many months « Mois par mois » shows. */
+const MONTHS_SHOWN = 12;
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export interface RevenueSummary {
   /** Local date the figures stop at. */
@@ -203,6 +219,32 @@ export class RevenueService {
       todayCents: sumOf(today, today),
       weekCents: sumOf(weekStart, today),
       commissions: await this.commissionLines(actor, month.byChannel, today),
+    };
+  }
+
+  /** « Mois par mois »: the 12 months ending with `to` (this month by default), counted as the page counts. */
+  public async months(actor: AuthenticatedStaff, query: { to?: unknown; basis?: unknown }, now: Date = new Date()): Promise<RevenueMonths> {
+    this.require(actor, 'revenue:view');
+    const parking = await this.parkings.getPrimary(actor);
+    const timeZone = parking.timezone;
+    const today = localDate(now, timeZone);
+    const to = query.to === undefined || query.to === '' ? today.slice(0, 7) : query.to;
+    if (typeof to !== 'string' || !MONTH_RE.test(to)) throw fieldError('to', 'invalid_month');
+    const basis = query.basis === undefined || query.basis === '' ? 'arrival' : query.basis;
+    if (!REVENUE_BASES.includes(basis as RevenueBasis)) throw fieldError('basis', 'invalid_basis');
+    const months = monthsEndingWith(to, MONTHS_SHOWN);
+    const bookings = (await this.bookings(
+      actor,
+      { from: months[0].from, to: months[months.length - 1].to, basis: basis as RevenueBasis },
+      timeZone,
+    )) as RevenueBooking[];
+    const lines = revenueByMonth(bookings, months, basis as RevenueBasis, timeZone);
+    return {
+      today,
+      basis: basis as RevenueBasis,
+      months: lines,
+      totalCents: lines.reduce((sum, m) => sum + m.totalCents, 0),
+      netCents: lines.reduce((sum, m) => sum + m.netCents, 0),
     };
   }
 

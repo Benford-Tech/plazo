@@ -1,5 +1,5 @@
 import prisma, { ReservationChannel, ReservationStatus } from '@/database';
-import { revenueCsv, revenueReport, type RevenueBooking } from '@/domain/revenue';
+import { monthsEndingWith, revenueByMonth, revenueCsv, revenueReport, type RevenueBooking } from '@/domain/revenue';
 import { parseInstant } from '@/domain/time';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -66,6 +66,27 @@ describe('le chiffre d’affaires (domaine)', () => {
       byChannel: [],
     });
     expect(revenueReport(list, { ...period, basis: 'booked' })).toMatchObject({ totalCents: 3400, count: 1 });
+  });
+
+  it('« Mois par mois » : les 12 mois finissant au mois donné, chacun compté comme le rapport', () => {
+    const months = monthsEndingWith('2026-11', 12);
+    expect(months).toHaveLength(12);
+    expect(months[0]).toEqual({ month: '2025-12', from: '2025-12-01', to: '2025-12-31' });
+    expect(months[2]).toEqual({ month: '2026-02', from: '2026-02-01', to: '2026-02-28' });
+    expect(months[11]).toEqual({ month: '2026-11', from: '2026-11-01', to: '2026-11-30' });
+    const lines = revenueByMonth(
+      [
+        booking({ arrival: '2026-10-31T23:30', priceCents: 1000 }),
+        booking({ arrival: '2026-11-01T00:30', priceCents: 2000 }),
+        booking({ arrival: '2026-11-20T08:00', priceCents: null }),
+      ],
+      months,
+      'arrival',
+      TZ,
+    );
+    expect(lines.find(m => m.month === '2026-10')).toMatchObject({ totalCents: 1000, count: 1, withoutAmount: 0 });
+    expect(lines.find(m => m.month === '2026-11')).toMatchObject({ totalCents: 2000, count: 1, withoutAmount: 1 });
+    expect(lines.find(m => m.month === '2026-01')).toMatchObject({ totalCents: 0, count: 0 });
   });
 
   it('exporte un CSV que le tableur ouvre tel quel', () => {
@@ -175,6 +196,24 @@ describe('GET /internal/revenue', () => {
       weekCents: 4500,
       month: { from: `${today.slice(0, 7)}-01`, totalCents: 4500, count: 1, withoutAmount: 1 },
     });
+  });
+
+  it('GET /internal/revenue/months : les 12 mois jusqu’au mois demandé, sans les annulées ; réservé aux gérants', async () => {
+    const op = await setupOperator();
+    await create(op, '2026-10-03T08:00', 'aggregator', 'Onepark', 4500);
+    await create(op, '2026-11-04T08:00', 'aggregator', 'Allopark', 3000);
+    await create(op, '2026-11-05T08:00', 'aggregator', 'Allopark', 3400, 'cancelled');
+    await create(op, '2025-11-05T08:00', 'aggregator', 'Allopark', 7700);
+    const res = await api().get('/api/internal/revenue/months?to=2026-11').set(auth(op.token));
+    expect(res.status).toBe(200);
+    expect(res.body.months).toHaveLength(12);
+    expect(res.body.months[0].month).toBe('2025-12');
+    expect(res.body.months[11]).toMatchObject({ month: '2026-11', totalCents: 3000, count: 1 });
+    expect(res.body.months[10]).toMatchObject({ month: '2026-10', totalCents: 4500, count: 1 });
+    expect(res.body).toMatchObject({ basis: 'arrival', totalCents: 7500 });
+    expect((await api().get('/api/internal/revenue/months?to=2026-13').set(auth(op.token))).body.fields).toEqual({ to: 'invalid_month' });
+    const agent = await addStaff(op.token, 'agent');
+    expect((await api().get('/api/internal/revenue/months').set(auth(agent.token))).status).toBe(403);
   });
 
   it('PUT /internal/reservations/:id/price : complète ou corrige un montant, jamais celui d’une réservation Plazo', async () => {

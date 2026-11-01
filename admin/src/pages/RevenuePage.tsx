@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,7 +9,12 @@ import { describeError, fr } from "@/lib/fr";
 import { formatRate, parsePercent, rateToInput } from "@/lib/commission";
 import { euros, parseEuros } from "@/lib/pricing";
 import { useRevenueHidden } from "@/lib/revenue-mask";
-import type { RevenueBasis, RevenueChannel, RevenueReport } from "@/lib/types";
+import type {
+  RevenueBasis,
+  RevenueChannel,
+  RevenueMonth,
+  RevenueReport,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const t = fr.revenue;
@@ -18,7 +23,7 @@ const PILL = "flex h-9 items-center rounded-full border px-3.5 text-sm";
 const BUTTON =
   "flex h-10 items-center justify-center gap-2 rounded-lg border border-panel-line bg-panel px-3.5 text-sm font-medium hover:bg-panel-2 disabled:opacity-50";
 
-type PeriodKey = "today" | "week" | "month" | "lastMonth" | "custom";
+type PeriodKey = "today" | "week" | "month" | "custom";
 interface Period {
   key: PeriodKey;
   from: string;
@@ -41,22 +46,44 @@ const dayMonth = (date: string) =>
   }).format(new Date(`${date}T12:00:00Z`));
 const lastDayOfMonth = (first: string) =>
   addDays(`${addDays(first, 32).slice(0, 7)}-01`, -1);
+/** « Novembre 2026 » */
+const monthYear = (date: string) =>
+  capitalise(
+    new Intl.DateTimeFormat("fr-FR", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(`${date}T12:00:00Z`)),
+  );
+/** « nov. » */
+const monthShort = (date: string) =>
+  new Intl.DateTimeFormat("fr-FR", { month: "short", timeZone: "UTC" }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
+/** The month of `first` (« YYYY-MM-01 »), `delta` months away, as a period. */
+function monthPeriod(first: string, delta = 0): Period {
+  let from = `${first.slice(0, 7)}-01`;
+  for (let i = 0; i < Math.abs(delta); i++)
+    from =
+      delta > 0
+        ? `${addDays(from, 32).slice(0, 7)}-01`
+        : `${addDays(from, -1).slice(0, 7)}-01`;
+  return { key: "month", from, to: lastDayOfMonth(from) };
+}
+/** « 4,3 k » above a bar. */
+const shortEuros = (cents: number) =>
+  cents >= 100000
+    ? `${(cents / 100000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} k`
+    : `${Math.round(cents / 100)}`;
 
 /** The ready-made periods, as of the parking's today. */
 function periodsOf(
   today: string,
 ): Record<Exclude<PeriodKey, "custom">, Period> {
-  const monthStart = `${today.slice(0, 7)}-01`;
-  const lastMonthStart = `${addDays(monthStart, -1).slice(0, 7)}-01`;
   return {
     today: { key: "today", from: today, to: today },
     week: { key: "week", from: addDays(today, -6), to: today },
-    month: { key: "month", from: monthStart, to: lastDayOfMonth(monthStart) },
-    lastMonth: {
-      key: "lastMonth",
-      from: lastMonthStart,
-      to: addDays(monthStart, -1),
-    },
+    month: monthPeriod(today),
   };
 }
 
@@ -209,6 +236,175 @@ function RateCell({ line, from }: { line: RevenueChannel; from: string }) {
   );
 }
 
+/**
+ * « Mois par mois » (01/11/2026, « pouvoir afficher le CA de chaque mois », choice B): the 12 months ending with this
+ * one (or with the month shown when it lies outside them) in bars and in a table; a click shows that month below.
+ */
+function MonthsCard({
+  today,
+  selected,
+  basis,
+  view,
+  onPick,
+}: {
+  today: string;
+  selected: string | null;
+  basis: RevenueBasis;
+  view: "gross" | "net";
+  onPick: (month: RevenueMonth) => void;
+}) {
+  const current = today.slice(0, 7);
+  const windowStart = monthPeriod(`${current}-01`, -11).from.slice(0, 7);
+  const end =
+    selected && (selected > current || selected < windowStart)
+      ? selected
+      : current;
+  const query = useQuery({
+    queryKey: ["revenue-months", end, basis],
+    queryFn: () => adminApi.getRevenueMonths(end, basis),
+  });
+  const data = query.data;
+  if (query.isError)
+    return <p className={CARD}>{describeError(query.error)}</p>;
+  if (!data) return <Skeleton className="h-56 w-full" />;
+  const value = (m: RevenueMonth) =>
+    view === "net" ? m.netCents : m.totalCents;
+  const max = Math.max(1, ...data.months.map(value));
+  const first = data.months[0];
+  const last = data.months[data.months.length - 1];
+  const label = (m: RevenueMonth) => monthYear(m.from);
+  return (
+    <section
+      aria-labelledby="revenue-months"
+      data-testid="revenue-months"
+      className={cn(CARD, "space-y-4")}
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="revenue-months" className="text-base font-semibold">
+          {t.months.title(
+            `${monthShort(first.from)} ${first.from.slice(0, 4)}`,
+            `${monthShort(last.from)} ${last.from.slice(0, 4)}`,
+          )}
+        </h2>
+        <span className="tabular font-mono text-sm">
+          {view === "net"
+            ? t.months.totalNet(euros(data.netCents))
+            : t.months.total(euros(data.totalCents))}
+        </span>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="grid h-48 min-w-[620px] grid-cols-12 items-end gap-2">
+          {data.months.map((m) => {
+            const isSelected = m.month === selected;
+            const future = m.month > current;
+            return (
+              <button
+                key={m.month}
+                type="button"
+                data-testid={`revenue-month-${m.month}`}
+                aria-pressed={isSelected}
+                aria-label={t.months.open(label(m), euros(value(m)))}
+                onClick={() => onPick(m)}
+                className="flex h-full flex-col items-center justify-end gap-1 rounded-md hover:bg-panel-2"
+              >
+                <span className="tabular whitespace-nowrap font-mono text-[10.5px]">
+                  {shortEuros(value(m))}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "block w-full rounded-t-md",
+                    isSelected
+                      ? "bg-primary outline outline-2 outline-lime-deep"
+                      : future
+                        ? "bg-lime-deep/25"
+                        : "bg-lime-deep",
+                  )}
+                  style={{
+                    height: `${Math.max(2, Math.round((value(m) / max) * 100))}%`,
+                  }}
+                />
+                <span
+                  className={cn(
+                    "text-[11px]",
+                    m.month === current
+                      ? "font-bold text-lime-deep"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {monthShort(m.from)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">{t.months.hint}</p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+              <th className="py-2 font-medium">{t.months.month}</th>
+              <th className="py-2 text-right font-medium">{t.count}</th>
+              <th className="py-2 text-right font-medium">{t.amount}</th>
+              <th className="py-2 text-right font-medium">{t.commission}</th>
+              <th className="py-2 text-right font-medium">{t.net}</th>
+              <th className="py-2 text-right font-medium">
+                {t.months.withoutAmount}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-panel-line">
+            {[...data.months].reverse().map((m) => (
+              <tr
+                key={m.month}
+                onClick={() => onPick(m)}
+                className={cn(
+                  "cursor-pointer hover:bg-panel-2",
+                  m.month === selected && "bg-primary/15 font-semibold",
+                )}
+              >
+                <td className="py-2">
+                  <button
+                    type="button"
+                    className="text-left hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPick(m);
+                    }}
+                  >
+                    {label(m)}
+                  </button>
+                </td>
+                <td className="tabular py-2 text-right font-mono">{m.count}</td>
+                <td className="tabular py-2 text-right font-mono">
+                  {euros(m.totalCents)}
+                </td>
+                <td className="tabular py-2 text-right font-mono">
+                  {m.commissionCents > 0
+                    ? `− ${euros(m.commissionCents)}`
+                    : "—"}
+                </td>
+                <td className="tabular py-2 text-right font-mono">
+                  {euros(m.netCents)}
+                </td>
+                <td
+                  className={cn(
+                    "tabular py-2 text-right font-mono",
+                    m.withoutAmount > 0 && "text-amber-600",
+                  )}
+                >
+                  {m.withoutAmount}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function RevenuePage() {
   const today = todayLocal();
   const presets = periodsOf(today);
@@ -228,15 +424,18 @@ export default function RevenuePage() {
   });
   const report = query.data;
 
-  const labels: Record<Exclude<PeriodKey, "custom">, string> = {
+  const labels: Record<"today" | "week", string> = {
     today: t.today,
     week: t.week,
-    month: monthName(presets.month.from),
-    lastMonth: monthName(presets.lastMonth.from),
   };
+  // The month shown by « ‹ mois › »: the one on screen, else this month.
+  const shownMonth = period.key === "month" ? period : presets.month;
   const totalLabel =
-    period.key === "month" || period.key === "lastMonth"
-      ? labels[period.key].toLowerCase()
+    period.key === "month"
+      ? (period.from.slice(0, 4) === today.slice(0, 4)
+          ? monthName(period.from)
+          : monthYear(period.from)
+        ).toLowerCase()
       : t.span(dayMonth(period.from), dayMonth(period.to));
   const shown = (line: { totalCents: number; netCents?: number }) =>
     view === "net" ? (line.netCents ?? line.totalCents) : line.totalCents;
@@ -297,24 +496,59 @@ export default function RevenuePage() {
           aria-label={t.periods}
           className="flex flex-wrap gap-1.5"
         >
-          {(Object.keys(labels) as Exclude<PeriodKey, "custom">[]).map(
-            (key) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={period.key === key}
-                onClick={() => setPeriod(presets[key])}
-                className={cn(
-                  PILL,
-                  period.key === key
-                    ? "border-primary bg-primary font-semibold text-primary-foreground"
-                    : "border-panel-line bg-panel hover:bg-panel-2",
-                )}
-              >
-                {labels[key]}
-              </button>
-            ),
-          )}
+          {(Object.keys(labels) as ("today" | "week")[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={period.key === key}
+              onClick={() => setPeriod(presets[key])}
+              className={cn(
+                PILL,
+                period.key === key
+                  ? "border-primary bg-primary font-semibold text-primary-foreground"
+                  : "border-panel-line bg-panel hover:bg-panel-2",
+              )}
+            >
+              {labels[key]}
+            </button>
+          ))}
+          <span
+            data-testid="revenue-month-nav"
+            className={cn(
+              "flex h-9 items-center overflow-hidden rounded-full border text-sm",
+              period.key === "month"
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-panel-line bg-panel",
+            )}
+          >
+            <button
+              type="button"
+              aria-label={t.prevMonth}
+              onClick={() => setPeriod(monthPeriod(shownMonth.from, -1))}
+              className="flex h-full items-center px-2 hover:bg-black/5"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-pressed={period.key === "month"}
+              onClick={() => setPeriod(shownMonth)}
+              className={cn(
+                "h-full px-2",
+                period.key === "month" && "font-semibold",
+              )}
+            >
+              {monthYear(shownMonth.from)}
+            </button>
+            <button
+              type="button"
+              aria-label={t.nextMonth}
+              onClick={() => setPeriod(monthPeriod(shownMonth.from, 1))}
+              className="flex h-full items-center px-2 hover:bg-black/5"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </span>
           <button
             type="button"
             aria-pressed={period.key === "custom"}
@@ -410,6 +644,14 @@ export default function RevenuePage() {
           ))}
         </span>
       </div>
+
+      <MonthsCard
+        today={today}
+        selected={period.key === "month" ? period.from.slice(0, 7) : null}
+        basis={basis}
+        view={view}
+        onPick={(m) => setPeriod(monthPeriod(m.from))}
+      />
 
       {query.isError ? (
         <p className={CARD}>{describeError(query.error)}</p>
@@ -645,16 +887,37 @@ export default function RevenuePage() {
                   return (
                     <li key={line.method ?? "none"} className="space-y-1">
                       <div className="flex items-baseline gap-3 text-sm">
-                        <span className={cn("flex-1", !line.method && "text-muted-foreground")}>
-                          {line.method ? fr.paidBy[line.method] : t.paidByUnknown}
+                        <span
+                          className={cn(
+                            "flex-1",
+                            !line.method && "text-muted-foreground",
+                          )}
+                        >
+                          {line.method
+                            ? fr.paidBy[line.method]
+                            : t.paidByUnknown}
                         </span>
-                        <span className="text-muted-foreground">{t.bookingsShort(line.count)}</span>
-                        <span className="tabular w-28 text-right font-mono">{euros(line.totalCents)}</span>
+                        <span className="text-muted-foreground">
+                          {t.bookingsShort(line.count)}
+                        </span>
+                        <span className="tabular w-28 text-right font-mono">
+                          {euros(line.totalCents)}
+                        </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-[#F1F2F0]" aria-hidden="true">
+                      <div
+                        className="h-1.5 rounded-full bg-[#F1F2F0]"
+                        aria-hidden="true"
+                      >
                         <div
-                          className={cn("h-1.5 rounded-full", line.method ? "bg-lime-deep" : "bg-muted-foreground/40")}
-                          style={{ width: `${Math.max(2, Math.round((line.totalCents / top) * 100))}%` }}
+                          className={cn(
+                            "h-1.5 rounded-full",
+                            line.method
+                              ? "bg-lime-deep"
+                              : "bg-muted-foreground/40",
+                          )}
+                          style={{
+                            width: `${Math.max(2, Math.round((line.totalCents / top) * 100))}%`,
+                          }}
                         />
                       </div>
                     </li>

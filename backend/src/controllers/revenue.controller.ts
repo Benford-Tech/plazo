@@ -44,6 +44,12 @@ export class RevenueController {
     res.json(await this.revenue.summary(req.staff));
   });
 
+  /** GET /internal/revenue/months?to=&basis= */
+  public months = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.revenue.months(req.staff, req.query));
+  });
+
   /** GET /internal/revenue/export?from=&to=&basis= */
   public export = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const { filename, body } = await this.revenue.csv(req.staff, req.query);

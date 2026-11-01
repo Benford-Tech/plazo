@@ -623,6 +623,18 @@ export const fr = {
     today: "Aujourd'hui",
     week: "7 jours",
     custom: "Dates…",
+    // « Mois par mois » (01/11/2026, choice B).
+    prevMonth: "Mois précédent",
+    nextMonth: "Mois suivant",
+    months: {
+      title: (first: string, last: string) => `Mois par mois · ${first} → ${last}`,
+      total: (amount: string) => `Total 12 mois : ${amount}`,
+      totalNet: (amount: string) => `Net sur 12 mois : ${amount}`,
+      hint: "Cliquez un mois pour l'afficher en dessous. Le mois en cours compte aussi les arrivées à venir déjà réservées.",
+      month: "Mois",
+      withoutAmount: "Sans prix",
+      open: (month: string, amount: string) => `${month} : ${amount}, afficher ce mois`,
+    },
     from: "Du",
     to: "au",
     apply: "Afficher",

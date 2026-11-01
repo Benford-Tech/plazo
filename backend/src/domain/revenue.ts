@@ -216,3 +216,54 @@ export function revenueCsv(
   );
   return `﻿${[header.join(';'), ...lines].join('\r\n')}\r\n`;
 }
+
+/** One month of « Mois par mois » (01/11/2026, choice B): its figures, like a report's total. */
+export interface RevenueMonth {
+  /** « YYYY-MM ». */
+  month: string;
+  from: string;
+  to: string;
+  totalCents: number;
+  commissionCents: number;
+  netCents: number;
+  count: number;
+  withoutAmount: number;
+}
+
+/** The last local day of the month that holds `day`. */
+export function lastDayOfMonth(day: string): string {
+  return addDays(`${addDays(`${day.slice(0, 7)}-01`, 32).slice(0, 7)}-01`, -1);
+}
+
+/** The `count` months ending with `lastMonth` (« YYYY-MM »), the oldest first. */
+export function monthsEndingWith(lastMonth: string, count: number): { month: string; from: string; to: string }[] {
+  const months: { month: string; from: string; to: string }[] = [];
+  let first = `${lastMonth}-01`;
+  for (let i = 0; i < count; i++) {
+    months.unshift({ month: first.slice(0, 7), from: first, to: lastDayOfMonth(first) });
+    first = `${addDays(first, -1).slice(0, 7)}-01`;
+  }
+  return months;
+}
+
+/** « Mois par mois »: each month's report figures, counted as `revenueReport` counts them. */
+export function revenueByMonth(
+  bookings: RevenueBooking[],
+  months: { month: string; from: string; to: string }[],
+  basis: RevenueBasis,
+  timeZone: string,
+): RevenueMonth[] {
+  return months.map(m => {
+    const r = revenueReport(bookings, { from: m.from, to: m.to, basis, timeZone });
+    return {
+      month: m.month,
+      from: m.from,
+      to: m.to,
+      totalCents: r.totalCents,
+      commissionCents: r.commissionCents,
+      netCents: r.netCents,
+      count: r.count,
+      withoutAmount: r.withoutAmount,
+    };
+  });
+}
