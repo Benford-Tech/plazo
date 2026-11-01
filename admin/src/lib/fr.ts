@@ -944,7 +944,13 @@ export const fr = {
       title: "À traiter maintenant",
       urgentCount: (n: number) => `${n} urgent${n > 1 ? "s" : ""}`,
       empty: "Rien à traiter : tout est en ordre.",
-      since: (minutes: number) => `depuis ${minutes} min`,
+      // 01/11/2026: hours and days past 60 minutes (« Retour dépassé » can be days old).
+      since: (minutes: number) =>
+        minutes >= 2 * 24 * 60
+          ? `depuis ${Math.floor(minutes / (24 * 60))} j`
+          : minutes >= 60
+            ? `depuis ${Math.floor(minutes / 60)} h`
+            : `depuis ${minutes} min`,
       severity: { urgent: "Urgent", watch: "À surveiller", todo: "À faire" },
       kind: {
         no_spot: "Sur place sans place",
@@ -960,6 +966,7 @@ export const fr = {
         departure_delayed: "Vol aller retardé",
         wave_overflow: "Vague au-delà d'une navette",
         no_show_suspected: "Attendu, toujours pas là",
+        return_overdue: "Retour dépassé, toujours au parking",
         blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
         join_request: "Demande pour rejoindre l'équipe",

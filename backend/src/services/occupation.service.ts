@@ -10,6 +10,7 @@ import { dayBounds, localDate, nightsBetween } from '@/domain/time';
 import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
+import { placeHookOf } from './place-hook';
 import { BOARDING_CHECK_IN_SELECT, withBoardingCheckIn } from '@/domain/shuttle';
 import { AuditService } from './audit.service';
 import { TravellerMessagesService } from './traveller-messages.service';
@@ -238,7 +239,11 @@ export class OccupationService {
       const clash = await this.overlapOn(spot.id, reservation, reservation.id);
       if (clash) throw new HttpException(httpStatus.CONFLICT, `Spot ${spot.code} is taken by ${clash.reference}`, 'spot_taken');
     }
-    const keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
+    // 01/11/2026: keys left and hung on the car's place follow the car to its new spot (unless a hook was typed apart).
+    const oldHook = await placeHookOf(reservation);
+    const followsPlace = !!reservation.keysLeftAt && (!reservation.keyHook || reservation.keyHook === oldHook);
+    const keyHook =
+      data.keyHook !== undefined ? data.keyHook?.trim() || null : followsPlace ? (spot?.code ?? reservation.keyHook) : reservation.keyHook;
     // The valet's fix where the car stands (06/10/2026); the staff's position always wins.
     const car = data.car
       ? {
@@ -328,7 +333,12 @@ export class OccupationService {
     if (!ON_SITE_STATUSES.includes(reservation.status)) {
       throw new HttpException(httpStatus.BAD_REQUEST, 'The vehicle is not on site', 'vehicle_not_on_site');
     }
-    const keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
+    let keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
+    // 01/11/2026 (« Le numéro de crochet correspond au numéro de place »): keys left go on the hook of the car's place.
+    const placeHook = await placeHookOf(reservation);
+    if (data.left && !keyHook) keyHook = placeHook;
+    // « Clés laissées » undone: the place's hook, set with it, goes too (a hook typed apart stays).
+    if (!data.left && data.keyHook === undefined && keyHook && keyHook === placeHook) keyHook = null;
     // A hook number means the keys are in the team's hands.
     const left = data.left || !!keyHook;
     const keysLeftAt = left ? (reservation.keysLeftAt ?? new Date()) : null;

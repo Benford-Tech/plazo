@@ -104,6 +104,12 @@ describe('GET /internal/dashboard', () => {
       flightStatus: 'delayed',
     });
     expect(res.body.breakdown).toMatchObject({ toTreat: 2, freeSpots: 1, returnsThisWeek: 3 });
+
+    // 01/11/2026 (« Les voitures avec crochets ont une place »): Louis's keys on hook 7, his car counts as placed.
+    await api().put(`/api/internal/reservations/${c.id}/keys`).set(auth(op.token)).send({ left: true, keyHook: '7' });
+    const hooked = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(hooked.body.alerts.map((x: { kind: string }) => x.kind)).not.toContain('no_spot');
+    expect((hooked.body.vehicles as { id: string }[]).find(v => v.id === c.id)).toMatchObject({ spotCode: '7', keyHook: '7' });
   });
 
   it("26/10/2026 : « Clés laissées » en un clic éteint l'alerte des clés et se voit sur le véhicule", async () => {
@@ -124,27 +130,30 @@ describe('GET /internal/dashboard', () => {
     const left = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true });
     expect(left.status).toBe(200);
     expect(left.body.data.keysLeftAt).toBeTruthy();
-    expect(left.body.data.keyHook).toBeNull();
+    // 01/11/2026: the hook is the car's place.
+    const spotCode = plan.body.spots[0].code as string;
+    expect(left.body.data.keyHook).toBe(spotCode);
     dash = await api().get('/api/internal/dashboard').set(auth(op.token));
     expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).not.toContain('keys_missing');
-    expect(dash.body.vehicles.find((v: { id: string }) => v.id === b.id)).toMatchObject({ keyHook: null, keysLeftAt: left.body.data.keysLeftAt });
+    expect(dash.body.vehicles.find((v: { id: string }) => v.id === b.id)).toMatchObject({ keyHook: spotCode, keysLeftAt: left.body.data.keysLeftAt });
     const detail = await api().get(`/api/internal/reservations/${b.id}`).set(auth(op.token));
     expect(detail.body.keysLeftAt).toBe(left.body.data.keysLeftAt);
     const audit = await prisma.auditLog.findMany({ where: { action: 'reservation.keys', entityId: b.id } });
     expect(audit).toHaveLength(1);
-    expect(audit[0].details).toMatchObject({ left: true, keyHook: null });
+    expect(audit[0].details).toMatchObject({ left: true, keyHook: spotCode });
 
     // The hook number through the same route (web vehicles table): a hook implies the keys were left.
     const hooked = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false, keyHook: ' 7 ' });
     expect(hooked.status).toBe(200);
     expect(hooked.body.data).toMatchObject({ keyHook: '7' });
     expect(hooked.body.data.keysLeftAt).toBeTruthy();
+    // Keys left without a typed hook: back on the place's hook.
     const cleared = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: true, keyHook: null });
-    expect(cleared.body.data).toMatchObject({ keyHook: null });
+    expect(cleared.body.data).toMatchObject({ keyHook: spotCode });
     expect(cleared.body.data.keysLeftAt).toBeTruthy();
     // Undone: the alert comes back; another operator's token is refused.
     const undone = await api().put(`/api/internal/reservations/${b.id}/keys`).set(auth(op.token)).send({ left: false });
-    expect(undone.body.data.keysLeftAt).toBeNull();
+    expect(undone.body.data).toMatchObject({ keysLeftAt: null, keyHook: null });
     dash = await api().get('/api/internal/dashboard').set(auth(op.token));
     expect(dash.body.alerts.map((x: { kind: string }) => x.kind)).toContain('keys_missing');
     // « Rendu » forgets it.
