@@ -177,6 +177,9 @@ abstract class DashboardVehicleModel with _$DashboardVehicleModel {
     String? spotCode,
     String? stayClass,
     String? keyHook,
+
+    /// 26/10/2026: when the keys were left without a hook (« Clés laissées »); null: « Clés ? » unless hung.
+    String? keysLeftAt,
     String? returnFlight,
     String? flightStatus,
     String? flightScheduledAt,

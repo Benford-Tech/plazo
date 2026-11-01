@@ -138,12 +138,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Camille Martin · TO 3627'), findsNothing);
     expect(find.text('A-01-01 · zone court'), findsOneWidget);
-    expect(find.text('Clés : crochet 12'), findsOneWidget);
+    // Direction A (01/11/2026): the keys in three positions on each tile.
+    expect(find.text('Crochet 12'), findsOneWidget);
     expect(find.text('Retour du jour'), findsOneWidget);
     expect(find.text('Retardé +40 min'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Clés ?'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(find.text('Crochet n°'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Sans place'), findsNWidgets(2));
-    expect(find.text('Clés ?'), findsOneWidget);
+    expect(find.text('Crochet n°'), findsOneWidget);
   });
 
   testWidgets('16/10/2026 · « Import » À voir quand Claude n’a pas pu lire un mail dans l’heure, avec la cause', (tester) async {

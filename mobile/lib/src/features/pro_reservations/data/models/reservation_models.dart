@@ -52,6 +52,9 @@ abstract class ReservationModel with _$ReservationModel {
     String? spotId,
     String? keyHook,
 
+    /// 26/10/2026: when the keys were left (« Clés laissées »), a hook or not; null: « Clés ? ».
+    DateTime? keysLeftAt,
+
     /// The stop serving the traveller (D-A); null: the airport.
     String? stopId,
     double? carLat,
