@@ -500,6 +500,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réservables, celle-ci comprise ; faux pour une réservation annulée, non venue, rendue ou terminée) ; la colonne
      `Reservation.overbooked` et la trace `reservation.created_overbooked` gardent l'état de l'enregistrement. Fiche web et Plazo Pro
      inchangées (elles lisent ce champ). Test `reservations.test.ts`.
+   - **Voitures oubliées au parking (01/11/2026, « Il y a réellement 39 voitures », choix « les 2 premiers »)** : « Sur le parking »
+     compte les statuts, pas la cour ; deux alertes du tableau de bord (web et Plazo Pro, « à surveiller ») font clore ce qui traîne :
+     `return_overdue` « Retour dépassé, toujours au parking » (`DashboardService` : réservation sur place 3 h après son retour, ou après
+     l'atterrissage du vol quand il est plus tard, `RETURN_OVERDUE_MINUTES`, hors trajet en cours ; `since` = le retour prévu) et
+     `no_show_suspected` cherché sur 90 jours au lieu de 24 h (`NO_SHOW_LOOKBACK_DAYS`), place pré-affectée comprise ; un toucher
+     ouvre la fiche, dont la prochaine étape est « Rendre » ou « Non venu ». Durées « depuis 5 h » / « depuis 3 j » au-delà de l'heure
+     (web `fr.dashboard.alerts.since` de `fr.ts`, app `dashboard.since_hours|since_days`). Test `workflow.test.ts`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la

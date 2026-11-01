@@ -151,6 +151,44 @@ describe('un seul geste par étape (A, 06/10/2026)', () => {
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: late.id } })).status).toBe('upcoming');
   });
 
+  it('01/11/2026 : un client attendu depuis plusieurs jours est encore signalé ; une voiture au parking 3 h après son retour aussi', async () => {
+    const op = await setupOperator();
+    const old = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(op.token))
+        .send(booking('AB-123-CD', 'Camille Martin', { arrivalAt: `${today()}T00:05`, returnAt: `${today()}T23:30` }))
+    ).body.data;
+    await prisma.reservation.update({
+      where: { id: old.id },
+      data: { arrivalAt: new Date(Date.now() - 5 * 86400000), returnAt: new Date(Date.now() - 2 * 86400000) },
+    });
+    const left = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(op.token))
+        .send(booking('EF-456-GH', 'Léa Petit', { arrivalAt: `${today()}T00:05`, returnAt: `${today()}T23:30` }))
+    ).body.data;
+    const stillHere = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(op.token))
+        .send(booking('JK-789-LM', 'Hugo Bernard', { arrivalAt: `${today()}T00:05`, returnAt: `${today()}T23:30` }))
+    ).body.data;
+    await prisma.reservation.update({
+      where: { id: left.id },
+      data: { status: 'arrived', arrivalAt: new Date(Date.now() - 4 * 86400000), returnAt: new Date(Date.now() - 4 * 3600000) },
+    });
+    await prisma.reservation.update({
+      where: { id: stillHere.id },
+      data: { status: 'arrived', arrivalAt: new Date(Date.now() - 4 * 86400000), returnAt: new Date(Date.now() - 3600000) },
+    });
+    const alerts = (await api().get('/api/internal/dashboard').set(auth(op.token))).body.alerts as { kind: string; reservationId: string }[];
+    expect(alerts.find(a => a.kind === 'no_show_suspected' && a.reservationId === old.id)).toBeTruthy();
+    expect(alerts.filter(a => a.kind === 'return_overdue').map(a => a.reservationId)).toEqual([left.id]);
+    expect(alerts.find(a => a.kind === 'return_overdue')).toMatchObject({ severity: 'watch', customerName: 'Léa Petit' });
+  });
+
   it('l’équipe reçoit « Nouvelle réservation » pour ce qu’elle n’a pas saisi elle-même, selon son réglage', async () => {
     const op = await setupOperator();
     const agent = await addStaff(op.token, 'agent');

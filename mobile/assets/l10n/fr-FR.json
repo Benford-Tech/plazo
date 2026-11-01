@@ -1365,6 +1365,7 @@
       "departure_delayed": "Vol aller retardé",
       "wave_overflow": "Vague au-delà d'une navette",
       "no_show_suspected": "Attendu, toujours pas là",
+      "return_overdue": "Retour dépassé, toujours au parking",
       "inbound_to_check": "Mails à vérifier",
       "blocked_return": "Retour du jour bloqué : sortir d'abord",
       "join_request": "Demande pour rejoindre l'équipe",

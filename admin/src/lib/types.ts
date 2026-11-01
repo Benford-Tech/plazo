@@ -1411,6 +1411,7 @@ export type AlertKind =
   | "departure_delayed"
   | "wave_overflow"
   | "no_show_suspected"
+  | "return_overdue"
   | "inbound_to_check"
   | "blocked_return"
   // 13/10/2026: someone asks to join the team with the code of the day (managers; opens Équipe).

@@ -556,9 +556,10 @@ class _AlertRow extends StatelessWidget {
     final minutes = alert.minutes;
     final since = minutes == null || const {'flight_delayed', 'departure_delayed', 'wave_overflow'}.contains(alert.kind)
         ? null
-        : joinRequest && minutes >= 24 * 60
+        // 01/11/2026: hours and days for every alert past the hour (« Retour dépassé » can be days old).
+        : minutes >= 2 * 24 * 60
         ? 'dashboard.since_days'.tr(args: ['${minutes ~/ (24 * 60)}'])
-        : joinRequest && minutes >= 60
+        : minutes >= 60
         ? 'dashboard.since_hours'.tr(args: ['${minutes ~/ 60}'])
         : 'dashboard.since'.tr(args: ['$minutes']);
     final id = alert.reservationId;
