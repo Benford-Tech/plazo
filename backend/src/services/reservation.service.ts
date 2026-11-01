@@ -1171,8 +1171,15 @@ export class ReservationService {
     if (!found) throw notFound();
     const { boardingTrip, ...reservation } = found;
     const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
+    // 01/11/2026: the « Surréservation » badge follows the parking's real load, not the flag stored at creation.
+    const parking = await prisma.parking.findUnique({
+      where: { id: reservation.parkingId },
+      select: { id: true, timezone: true, totalCapacity: true, safetyMarginPct: true },
+    });
+    const overbooked = parking ? await this.capacity.overbookedNow(parking, reservation) : false;
     return {
       ...reservation,
+      overbooked,
       childSeats: childSeatsOf(reservation),
       // What the comparator takes and what the operator keeps (19/10/2026), for the managers only.
       commission: await this.commissionFor(actor, reservation),

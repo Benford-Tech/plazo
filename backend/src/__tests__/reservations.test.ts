@@ -107,6 +107,30 @@ describe('capacité par nuit', () => {
     expect(planning.body.nights[0]).toMatchObject({ date: '2026-10-04', count: 2, bookable: 1, overbooked: true });
   });
 
+  it('le badge suit l’occupation réelle : il disparaît quand une place se libère', async () => {
+    const { token } = await smallParking(1);
+    const day = (n: number) => addDays(localDate(new Date(), 'Europe/Paris'), n);
+    const stay = { arrivalAt: `${day(2)}T08:00`, returnAt: `${day(5)}T10:00` };
+    const first = await api().post('/api/internal/reservations').set(auth(token)).send(booking(stay));
+    const forced = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ ...stay, plate: 'AB-123-CD', force: true }));
+    expect(forced.body.data.overbooked).toBe(true);
+    expect((await api().get(`/api/internal/reservations/${forced.body.data.id}`).set(auth(token))).body.overbooked).toBe(true);
+    // The other one cancelled: the night is no longer over, the badge goes, though the creation stays traced.
+    await api().post(`/api/internal/reservations/${first.body.data.id}/status`).set(auth(token)).send({ status: 'cancelled' });
+    expect((await api().get(`/api/internal/reservations/${forced.body.data.id}`).set(auth(token))).body.overbooked).toBe(false);
+    // Over again when the parking fills up again, and never on a cancelled booking.
+    await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ ...stay, plate: 'EF-456-GH', force: true }));
+    expect((await api().get(`/api/internal/reservations/${forced.body.data.id}`).set(auth(token))).body.overbooked).toBe(true);
+    await api().post(`/api/internal/reservations/${forced.body.data.id}/status`).set(auth(token)).send({ status: 'cancelled' });
+    expect((await api().get(`/api/internal/reservations/${forced.body.data.id}`).set(auth(token))).body.overbooked).toBe(false);
+  });
+
   it('ne donne jamais la dernière place à deux demandes simultanées', async () => {
     const { token } = await smallParking(1);
     const results = await Promise.all([1, 2, 3].map(() => api().post('/api/internal/reservations').set(auth(token)).send(booking())));

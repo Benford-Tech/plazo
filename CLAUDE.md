@@ -484,6 +484,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      page Allopark, à la lecture par Claude, à `createFromImport` et aux modifications (`importChanges` ne remplace jamais l'e-mail
      par celui du comparateur) ; test `traveller-email.test.ts`. Tests `booking-import.test.ts`
      (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
+   - **Badge « Surréservation » selon l'occupation réelle (01/11/2026, « pourquoi Surréservation pour AR-549-DJ », puis « le badge
+     doit suivre l'occupation réelle »)** : `GET /internal/reservations/:id` rend `overbooked` calculé à la lecture
+     (`CapacityService.overbookedNow` : une nuit restante du séjour, aujourd'hui compris, compte plus de voitures que les places
+     réservables, celle-ci comprise ; faux pour une réservation annulée, non venue, rendue ou terminée) ; la colonne
+     `Reservation.overbooked` et la trace `reservation.created_overbooked` gardent l'état de l'enregistrement. Fiche web et Plazo Pro
+     inchangées (elles lisent ce champ). Test `reservations.test.ts`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
