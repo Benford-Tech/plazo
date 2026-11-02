@@ -49,10 +49,29 @@ describe('le chiffre d’affaires (domaine)', () => {
       { channel: 'plazo', detail: null, count: 1, totalCents: 5290, commissionCents: 0, netCents: 5290 },
       { channel: 'aggregator', detail: 'Onepark', count: 1, totalCents: 4500, commissionCents: 0, netCents: 4500 },
     ]);
+    // Nothing direct here: the phone booking has no amount.
+    expect(report.direct).toEqual({ count: 0, totalCents: 0 });
     expect(report.byDay).toHaveLength(31);
     expect(report.byDay.find(d => d.date === '2026-10-09')).toEqual({ date: '2026-10-09', count: 2, totalCents: 8100, netCents: 8100 });
     // Billable days: 4, 4, 9 and 4.
     expect(report.averageDays).toBe(5.3);
+  });
+
+  it('« En direct » : téléphone, comptoir et site du parking, jamais Plazo, un comparateur ni un import', () => {
+    const report = revenueReport(
+      [
+        booking({ arrival: '2026-10-02T08:00', channel: 'phone', channelDetail: null, priceCents: 4000 }),
+        booking({ arrival: '2026-10-03T08:00', channel: 'counter', channelDetail: null, priceCents: 3000 }),
+        booking({ arrival: '2026-10-04T08:00', channel: 'website', channelDetail: null, priceCents: 2000 }),
+        booking({ arrival: '2026-10-05T08:00', channel: 'plazo', channelDetail: null, priceCents: 5000 }),
+        booking({ arrival: '2026-10-06T08:00', channel: 'import', channelDetail: null, priceCents: 1000 }),
+        booking({ arrival: '2026-10-07T08:00', priceCents: 6000 }),
+        booking({ arrival: '2026-10-08T08:00', channel: 'counter', channelDetail: null, priceCents: null }),
+      ],
+      period,
+    );
+    expect(report.direct).toEqual({ count: 3, totalCents: 9000 });
+    expect(report.totalCents).toBe(21000);
   });
 
   it('compte au jour de réservation quand on le demande ; rien sur la période : des zéros, pas de moyenne', () => {

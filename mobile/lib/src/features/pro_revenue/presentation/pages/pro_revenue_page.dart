@@ -14,6 +14,7 @@ import '../../domain/revenue_period.dart';
 import '../bloc/pro_revenue_bloc.dart';
 import '../widgets/revenue_chart.dart';
 import '../widgets/revenue_labels.dart';
+import '../../../../shared/widgets/direct_badge.dart';
 
 /// Text on the dark green band, under the lime total (P-B's mockup).
 const _bandSoft = Color(0xFFD9F0C2);
@@ -401,6 +402,38 @@ class _MissingRow extends StatelessWidget {
   }
 }
 
+/// « En direct · 962,50 € · 20 % du chiffre · 12 réservations, sans commission ».
+class _DirectLine extends StatelessWidget {
+  const _DirectLine({required this.report});
+  final RevenueReportModel report;
+
+  @override
+  Widget build(BuildContext context) {
+    final direct = report.byChannel.where((l) => isDirectBooking(l.channel));
+    final total = direct.fold(0, (sum, l) => sum + l.totalCents);
+    final count = direct.fold(0, (sum, l) => sum + l.count);
+    final share = report.totalCents == 0 ? 0 : (total * 100 / report.totalCents).round();
+    return Container(
+      key: const Key('revenue-direct'),
+      margin: const EdgeInsets.only(top: 6, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: const BoxDecoration(color: AppColors.tintSoft, borderRadius: AppRadius.chip),
+      child: Row(
+        children: [
+          const DirectBadge(),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              count == 0 ? 'revenue.direct_none'.tr() : 'revenue.direct'.tr(args: [formatEuros(total), '$share', '$count']),
+              style: AppText.body(size: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChannelsCard extends StatelessWidget {
   const _ChannelsCard({required this.report});
   final RevenueReportModel report;
@@ -413,6 +446,8 @@ class _ChannelsCard extends StatelessWidget {
         children: [
           _heading('revenue.by_channel'.tr()),
           const SizedBox(height: 4),
+          // 02/11/2026: what was booked with the parking itself (phone, counter, own website), with no commission.
+          if (report.byChannel.isNotEmpty) _DirectLine(report: report),
           if (report.byChannel.isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -433,6 +468,11 @@ class _ChannelsCard extends StatelessWidget {
                         TextSpan(
                           children: [
                             TextSpan(text: revenueLineName(line), style: AppText.strong(size: 14)),
+                            if (isDirectBooking(line.channel))
+                              const WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Padding(padding: EdgeInsets.only(left: 6), child: DirectBadge(compact: true)),
+                              ),
                             TextSpan(
                               text: '  ${line.count}',
                               semanticsLabel: ', ${'revenue.bookings_count'.tr(args: ['${line.count}'])}',

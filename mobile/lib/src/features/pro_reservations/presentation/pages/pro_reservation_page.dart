@@ -30,6 +30,7 @@ import '../bloc/pro_reservation_bloc.dart';
 import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
 import '../../../../shared/live_sync/live_sync.dart';
+import '../../../../shared/widgets/direct_badge.dart';
 
 /// One booking: the sheet, the contact, the stay, the vehicle's spot, and the status buttons.
 @RoutePage()
@@ -141,6 +142,7 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
       vehicleModel: r.vehicleModel,
       vehicleColour: r.vehicleColour,
       priceCents: r.priceCents,
+      paymentMethod: r.paymentMethod,
       childSeats: r.childSeats,
       handover: r.handover,
     );
@@ -203,9 +205,11 @@ class _Sheet extends StatelessWidget {
             if (r.valet) ('res.care'.tr(), 'res.care_valet'.tr()),
             // 24/10/2026: « Sièges auto · 1 siège bébé · 1 réhausseur », once asked.
             if (r.childSeats.any) ('child_seats.title'.tr(), childSeatsSummary(r.childSeats)),
-            ('res.channel_label'.tr(), r.channelDetail != null ? '$channel · ${r.channelDetail}' : channel),
+            // 02/11/2026: « Téléphone · En direct », booked with the parking itself.
+            ('res.channel_label'.tr(), [channel, ?r.channelDetail, if (isDirectBooking(r.channel)) 'res.direct.badge'.tr()].join(' · ')),
             if (r.externalReference != null) ('res.external_reference'.tr(), r.externalReference!),
-            if (r.priceCents != null) ('res.price'.tr(), '${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €'),
+            if (r.priceCents != null)
+              ('res.price'.tr(), ['${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €', if (r.paymentMethod != null) 'res.payment.${r.paymentMethod}'.tr()].join(' · ')),
           ],
         ),
         _Section(

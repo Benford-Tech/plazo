@@ -1763,6 +1763,8 @@ export interface RevenueReport {
   averageDays: number | null;
   withoutAmount: number;
   byChannel: RevenueChannel[];
+  /** 02/11/2026: phone, counter and own website (no commission); absent from an older API. */
+  direct?: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
   byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: {

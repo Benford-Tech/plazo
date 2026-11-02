@@ -48,6 +48,10 @@ abstract class ReservationModel with _$ReservationModel {
     DateTime? returnNoticeAt,
     String? externalReference,
     int? priceCents,
+
+    /// 29/10/2026 (« Payé par »), in the app since 02/11/2026: card · cash · cheque · transfer · holiday_vouchers ·
+    /// comparator; null: not said (never set on a Plazo booking).
+    String? paymentMethod,
     @Default(false) bool overbooked,
     String? spotId,
     String? keyHook,
@@ -159,6 +163,10 @@ abstract class ReservationInput with _$ReservationInput {
     String? vehicleColour,
     String? externalReference,
     int? priceCents,
+
+    /// 02/11/2026: how it was paid (`paymentMethod` of the API); always sent on an edit, null clearing it, but never for
+    /// a Plazo booking (paid online, 400 `price_locked`).
+    String? paymentMethod,
     @Default(false) bool force,
 
     /// 24/10/2026: the child car seats for the shuttle; an edit sends them only once changed (`seats` of [toBody]).
@@ -182,6 +190,8 @@ abstract class ReservationInput with _$ReservationInput {
     if (!force) json.remove('force');
     // A plain map rather than the object (the same body whatever encodes it).
     json['childSeats'] = childSeats.toJson();
+    if (patch && channel != 'plazo') json['paymentMethod'] = paymentMethod;
+    if (channel == 'plazo') json.remove('paymentMethod');
     if (patch) {
       json.remove('externalReference');
       json.remove('priceCents');

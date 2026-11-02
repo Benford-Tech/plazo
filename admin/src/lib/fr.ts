@@ -1447,6 +1447,15 @@ export const fr = {
     cancelled: "Annuler la réservation",
     no_show: "Marquer non venu",
   } satisfies Record<ReservationStatus, string>,
+  // 02/11/2026: booked with the parking itself (phone, counter, its own website).
+  direct: {
+    badge: "En direct",
+    title: "Réservée en direct auprès du parking, sans intermédiaire ni commission",
+    revenue: (amount: string, share: number, count: number) =>
+      `${amount} · ${share} % du chiffre · ${count} réservation${count > 1 ? "s" : ""}, sans commission`,
+    revenueNone: "Aucune réservation en direct sur la période.",
+    formHelp: "Téléphone, comptoir et site du parking comptent « En direct » dans le chiffre d'affaires.",
+  },
   channels: {
     website: "Site",
     phone: "Téléphone",

@@ -249,6 +249,25 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     );
   });
 
+  it("met en avant les réservations « En direct » (02/11/2026) : part du chiffre et poignée de main", async () => {
+    api.getRevenue.mockResolvedValue(
+      report({
+        direct: { count: 12, totalCents: 96250 },
+        byChannel: [
+          ...report().byChannel,
+          { channel: "phone", detail: null, count: 12, totalCents: 96250, commissionCents: 0, netCents: 96250, comparatorKey: null, rate: null },
+        ],
+      }),
+    );
+    renderPage();
+    const line = await screen.findByTestId("revenue-direct");
+    expect(line).toHaveTextContent("En direct");
+    expect(line).toHaveTextContent("20 % du chiffre · 12 réservations, sans commission");
+    const phone = screen.getByRole("rowheader", { name: /Téléphone/ });
+    expect(within(phone).getByTestId("direct-badge")).toBeInTheDocument();
+    expect(within(screen.getByRole("rowheader", { name: "Allopark" })).queryByTestId("direct-badge")).toBeNull();
+  });
+
   it("change de période et de mode de comptage", async () => {
     const user = userEvent.setup();
     renderPage();

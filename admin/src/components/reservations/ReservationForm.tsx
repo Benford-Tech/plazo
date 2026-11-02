@@ -21,6 +21,8 @@ import { PAYMENT_METHODS } from "@/lib/payment-method";
 import type { Handover, ParsedBooking, PaymentMethod, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ValetIcon } from "@/lib/valet-icon";
+import { DirectBadge } from "@/components/DirectBadge";
+import { isDirectBooking } from "@/lib/direct-booking";
 
 const STAFF_CHANNELS: ReservationChannel[] = ["phone", "counter", "aggregator"];
 
@@ -591,6 +593,12 @@ export function ReservationForm({
             </button>
           ))}
         </div>
+        {isDirectBooking(form.channel) && (
+          <p className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+            <DirectBadge />
+            {fr.direct.formHelp}
+          </p>
+        )}
       </fieldset>
       {form.channel === "aggregator" && (
         <Field id="channelDetail" label={t.channelDetail} error={fieldErrors.channelDetail}>
