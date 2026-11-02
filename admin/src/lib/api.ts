@@ -1143,6 +1143,7 @@ export const adminApi = {
   },
   navCounts: () =>
     apiRequest<{ inbox: number | null; extras: number }>("/internal/nav/counts"),
+  liveSync: () => apiRequest<{ version: string }>("/internal/sync"),
   getSignedContracts: (query: SignedContractsQuery) =>
     apiRequest<SignedContractsPage>(
       `/internal/contracts?${signedContractsParams(query)}`,

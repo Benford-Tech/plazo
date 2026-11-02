@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState, type ComponentType, type SVGProps } from "react";
 import { NavLink, Outlet, matchPath, useLocation, useNavigate } from "react-router-dom";
+import { useLiveSync } from "@/lib/live-sync";
 import { adminApi } from "@/lib/api";
 import { AccountMenu } from "./AccountMenu";
 import { useAuth } from "@/contexts/AuthContext";
@@ -163,6 +164,7 @@ export function AdminLayout() {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
+  useLiveSync(can(user?.role, "reservations:view"));
   const countOf = (c?: Counter) => (c && counts ? (counts[c] ?? 0) : 0);
   const isIn = (item: NavItem) =>
     item.to === "/" ? pathname === "/" : !!matchPath({ path: item.match ?? item.to, end: !item.match }, pathname) || pathname === item.to;

@@ -16,5 +16,7 @@ void _initServices() {
           ? StripePaymentSheetService()
           : DemoPaymentSheetService(() => locator<AppRouter>().navigatorKey.currentContext, mode: DemoPaymentSheetService.configuredMode),
     )
-    ..registerLazySingleton<BookingDraftStore>(BookingDraftStore.new);
+    ..registerLazySingleton<BookingDraftStore>(BookingDraftStore.new)
+    // Live sync between the web pro space and Plazo Pro (02/11/2026).
+    ..registerLazySingleton<LiveSync>(() => LiveSync.dio(locator()));
 }

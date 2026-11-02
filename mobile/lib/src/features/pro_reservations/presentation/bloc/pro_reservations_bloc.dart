@@ -34,6 +34,11 @@ class ProReservationsRefreshed extends ProReservationsEvent {
   const ProReservationsRefreshed();
 }
 
+/// Live sync (02/11/2026): something changed elsewhere; the rows are read again without a spinner nor losing the pages.
+class ProReservationsSynced extends ProReservationsEvent {
+  const ProReservationsSynced();
+}
+
 /// A booking changed elsewhere (detail, form): the list row follows.
 class ProReservationsUpdated extends ProReservationsEvent {
   const ProReservationsUpdated(this.reservation);
@@ -65,6 +70,7 @@ class ProReservationsBloc extends Bloc<ProReservationsEvent, ProReservationsStat
   ProReservationsBloc(this._list) : super(const ProReservationsState()) {
     on<ProReservationsStarted>((e, emit) => _load(emit, query: state.query));
     on<ProReservationsRefreshed>((e, emit) => _load(emit, query: state.query));
+    on<ProReservationsSynced>(_onSynced);
     on<ProReservationsSearched>(_onSearched);
     on<ProReservationsMoreRequested>(_onMore);
     on<ProReservationsEarlierRequested>(_onEarlier);
@@ -82,6 +88,20 @@ class ProReservationsBloc extends Bloc<ProReservationsEvent, ProReservationsStat
   static List<ReservationModel> _inserted(List<ReservationModel> items, ReservationModel booking) {
     final at = items.indexWhere((r) => r.arrivalAt.isAfter(booking.arrivalAt));
     return [...items]..insert(at < 0 ? items.length : at, booking);
+  }
+
+  Future<void> _onSynced(ProReservationsSynced event, Emitter<ProReservationsState> emit) async {
+    if (state.viewState != ViewState.success) return;
+    final q = state.query;
+    final result = await _list(ListReservationsParams(query: q.trim().isEmpty ? null : q.trim(), page: 1));
+    if (state.query != q || state.viewState != ViewState.success) return;
+    result.fold((_) {}, (page) {
+      var items = state.items.map((r) => page.docs.firstWhere((d) => d.id == r.id, orElse: () => r)).toList();
+      for (final d in page.docs) {
+        if (!items.any((r) => r.id == d.id)) items = _inserted(items, d);
+      }
+      emit(state.copyWith(items: items, total: page.totalDocs));
+    });
   }
 
   Future<void> _onSearched(ProReservationsSearched event, Emitter<ProReservationsState> emit) async {

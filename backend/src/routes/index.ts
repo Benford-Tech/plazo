@@ -15,6 +15,7 @@ import { PaperworkRoute } from './paperwork.route';
 import { ExtraRoute } from './extra.route';
 import { ContractTemplateRoute } from './contract-template.route';
 import { GettingStartedRoute } from './getting-started.route';
+import { LiveSyncRoute } from './live-sync.route';
 import { ValetRoute } from './valet.route';
 import { PartnerContractRoute } from './partner-contract.route';
 import { PaymentRoute } from './payment.route';
@@ -44,6 +45,7 @@ const AppRoutes = [
   new PartnerContractRoute(),
   new ContractTemplateRoute(),
   new GettingStartedRoute(),
+  new LiveSyncRoute(),
   new ValetRoute(),
   new DashboardRoute(),
   new RevenueRoute(),

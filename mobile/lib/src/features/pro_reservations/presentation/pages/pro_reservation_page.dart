@@ -29,6 +29,7 @@ import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
 import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// One booking: the sheet, the contact, the stay, the vehicle's spot, and the status buttons.
 @RoutePage()
@@ -38,7 +39,13 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
   final String id;
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProReservationBloc>()..add(ProReservationStarted(id)), child: this);
+  Widget wrappedRoute(BuildContext context) => BlocProvider(
+    create: (_) => locator<ProReservationBloc>()..add(ProReservationStarted(id)),
+    // Live sync (02/11/2026): a status, the keys or the place changed on the web shows here at once.
+    child: Builder(
+      builder: (context) => LiveSyncListener(onChange: () => context.read<ProReservationBloc>().add(const ProReservationSynced()), child: this),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {

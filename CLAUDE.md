@@ -1853,6 +1853,20 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   photos (`PhotoStorageService`), effacés avec le loueur ; `contract` dans la liste des loueurs. Politique de confidentialité, section 10.
   Valeur de preuve d'une signature simple : à confirmer avec le juriste en même temps que les CGU.
 
+- **Synchronisation en direct entre l'espace pro web et Plazo Pro (02/11/2026, « les actions doivent être synchroniser entre
+  l'espace admin et l'application », choix « Statut d'une réservation, Clés / place / file, Navette, Tout, en direct »)** :
+  `GET /internal/sync` (`LiveSyncService`, `reservations:view`, `no-store`) rend `{ version }`, qui change à chaque écriture du
+  loueur (dernière ligne d'`audit_logs`, dernier `reservations.updatedAt` : imports, mails et flux de test compris ; index
+  `[operatorId, updatedAt]`, migration `live_sync_index`). **Web** : `useLiveSync` (`lib/live-sync.ts`, monté dans `AdminLayout`)
+  le lit toutes les 5 s quand l'onglet est visible et, quand il bouge, relit toutes les requêtes React Query affichées
+  (`invalidateQueries`). **Plazo Pro** : `LiveSync` (`shared/live_sync/live_sync.dart`, singleton du localisateur) le lit toutes
+  les 5 s tant qu'un écran écoute et que l'app est au premier plan ; `LiveSyncListener` relit le tableau de bord
+  (`ProDashboardPolled`), le planning du jour (`ProTodayPolled`), la Navette (`ShuttlePolled`, `LiveShuttlesPolled`),
+  l'Occupation (`ProOccupationRefreshed`), la liste des réservations (`ProReservationsSynced` : sans roue ni perte des pages) et la
+  fiche (`ProReservationSynced` : sans roue, jamais pendant une action), les Services à faire et les courses du Terminal ;
+  `LiveSync.enabled` coupé dans les tests (`setUpLocalizedTests`). Tests `live-sync.test.ts`, `live-sync.test.tsx`,
+  `live_sync_test.dart`.
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,

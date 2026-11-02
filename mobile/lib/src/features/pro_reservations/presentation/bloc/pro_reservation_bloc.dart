@@ -17,6 +17,11 @@ class ProReservationStarted extends ProReservationEvent {
   final String id;
 }
 
+/// Live sync (02/11/2026): the booking changed elsewhere; read again quietly (no spinner, an error keeps what is shown).
+class ProReservationSynced extends ProReservationEvent {
+  const ProReservationSynced();
+}
+
 class ProReservationStatusChanged extends ProReservationEvent {
   const ProReservationStatusChanged(this.status, {this.note});
   final String status;
@@ -65,6 +70,7 @@ const Map<String, List<String>> statusTransitions = {
 class ProReservationBloc extends Bloc<ProReservationEvent, ProReservationState> {
   ProReservationBloc(this._get, this._changeStatus) : super(const ProReservationState()) {
     on<ProReservationStarted>(_onStarted);
+    on<ProReservationSynced>(_onSynced);
     on<ProReservationStatusChanged>(_onStatus);
     on<ProReservationReplaced>((e, emit) => emit(state.copyWith(reservation: e.reservation)));
     on<ProReservationErrorDismissed>((e, emit) => emit(state.copyWith(errorCode: null, notice: null, actionState: ViewState.idle)));
@@ -82,6 +88,15 @@ class ProReservationBloc extends Bloc<ProReservationEvent, ProReservationState> 
       (f) => emit(state.copyWith(viewState: ViewState.error, errorCode: _code(f))),
       (r) => emit(state.copyWith(viewState: ViewState.success, reservation: r)),
     );
+  }
+
+  Future<void> _onSynced(ProReservationSynced event, Emitter<ProReservationState> emit) async {
+    final current = state.reservation;
+    if (current == null || state.actionState == ViewState.processing) return;
+    final result = await _get(current.id);
+    result.fold((_) {}, (r) {
+      if (state.actionState != ViewState.processing && state.reservation?.id == r.id) emit(state.copyWith(reservation: r));
+    });
   }
 
   Future<void> _onStatus(ProReservationStatusChanged event, Emitter<ProReservationState> emit) async {
