@@ -7,6 +7,7 @@ import { ComparatorCommissionCard } from "@/components/parking/ComparatorCommiss
 import { ContractTemplateCard } from "@/components/parking/ContractTemplateCard";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
+import { ParkingLogoCard } from "@/components/parking/ParkingLogoCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
@@ -247,6 +248,7 @@ export default function ParkingPage() {
           </form>
         </CardContent>
       </Card>
+      <ParkingLogoCard />
       <InboundEmailCard />
       <ComparatorCommissionCard />
       <ReturnMeetingPointForm />

@@ -66,6 +66,7 @@ export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfT
   return {
     ...rest,
     vehicle: staff.vehicle ?? null,
+    operatorLogoUpdatedAt: staff.operatorLogoUpdatedAt ? staff.operatorLogoUpdatedAt.toISOString() : null,
     // 13/10/2026: whether the person has a password of their own, and the Apple / Google identities linked to them.
     hasPassword: !!staff.passwordSetAt,
     identities: [...identities]
@@ -163,6 +164,8 @@ export class StaffService {
       select: { vehicleId: true, vehicleSetAt: true, vehicle: true, passwordSetAt: true, identities: { select: { provider: true, email: true } } },
     });
     const timezone = await this.timezone(actor);
+    // 02/11/2026: the logo of the operator in view (the consulted one for a platform admin), read fresh after a change.
+    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { logoUpdatedAt: true } });
     const vehicle = fresh?.vehicle && holdsVehicleToday(fresh, timezone) ? vehicleOfTheDay(fresh.vehicle) : null;
     return toSessionUser(
       {
@@ -170,6 +173,7 @@ export class StaffService {
         vehicleId: fresh?.vehicleId ?? null,
         vehicleSetAt: fresh?.vehicleSetAt ?? null,
         passwordSetAt: fresh ? fresh.passwordSetAt : actor.passwordSetAt,
+        operatorLogoUpdatedAt: operator?.logoUpdatedAt ?? null,
         vehicle,
       },
       fresh?.identities ?? [],

@@ -14,6 +14,9 @@ _StaffModel _$StaffModelFromJson(Map<String, dynamic> json) => _StaffModel(
   email: json['email'] as String,
   role: json['role'] as String,
   operatorName: json['operatorName'] as String?,
+  operatorLogoUpdatedAt: json['operatorLogoUpdatedAt'] == null
+      ? null
+      : DateTime.parse(json['operatorLogoUpdatedAt'] as String),
   post: json['post'] as String?,
   postSetAt: json['postSetAt'] == null
       ? null
@@ -35,23 +38,25 @@ _StaffModel _$StaffModelFromJson(Map<String, dynamic> json) => _StaffModel(
       const [],
 );
 
-Map<String, dynamic> _$StaffModelToJson(_StaffModel instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'firstName': instance.firstName,
-      'lastName': instance.lastName,
-      'email': instance.email,
-      'role': instance.role,
-      'operatorName': instance.operatorName,
-      'post': instance.post,
-      'postSetAt': instance.postSetAt?.toIso8601String(),
-      'effectivePost': instance.effectivePost,
-      'allowedPosts': instance.allowedPosts,
-      'vehicle': instance.vehicle,
-      'hasPassword': instance.hasPassword,
-      'identities': instance.identities,
-    };
+Map<String, dynamic> _$StaffModelToJson(
+  _StaffModel instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'firstName': instance.firstName,
+  'lastName': instance.lastName,
+  'email': instance.email,
+  'role': instance.role,
+  'operatorName': instance.operatorName,
+  'operatorLogoUpdatedAt': instance.operatorLogoUpdatedAt?.toIso8601String(),
+  'post': instance.post,
+  'postSetAt': instance.postSetAt?.toIso8601String(),
+  'effectivePost': instance.effectivePost,
+  'allowedPosts': instance.allowedPosts,
+  'vehicle': instance.vehicle,
+  'hasPassword': instance.hasPassword,
+  'identities': instance.identities,
+};
 
 _TodayVehicleModel _$TodayVehicleModelFromJson(Map<String, dynamic> json) =>
     _TodayVehicleModel(

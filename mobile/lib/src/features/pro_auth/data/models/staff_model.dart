@@ -21,6 +21,9 @@ abstract class StaffModel with _$StaffModel {
     required String role,
     String? operatorName,
 
+    /// 02/11/2026 (direction B): when the parking's logo was last set (null: none), shown next to the Plazo Pro sign.
+    DateTime? operatorLogoUpdatedAt,
+
     /// The post held today (R-C, 04/10/2026), null until chosen; among [allowedPosts].
     String? post,
     DateTime? postSetAt,

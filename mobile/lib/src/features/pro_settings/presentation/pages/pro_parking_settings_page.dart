@@ -15,6 +15,7 @@ import '../../../extras/presentation/widgets/extra_settings_section.dart';
 import '../../data/datasources/settings_data_source.dart';
 import '../../data/models/settings_models.dart';
 import '../bloc/pro_settings_bloc.dart';
+import '../widgets/parking_logo_section.dart';
 
 /// Same rule as the server (bookableCapacity): the share kept back by the safety margin.
 int bookablePreview(int total, int margin) => total <= 0 ? 0 : (total * (100 - margin.clamp(0, 50)) / 100).floor();
@@ -60,6 +61,9 @@ class ProParkingSettingsPage extends StatelessWidget implements AutoRouteWrapper
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                     children: [
                       _ParkingForm(parking: p, state: state),
+                      const SizedBox(height: 24),
+                      // 02/11/2026 (direction B): the logo next to the Plazo Pro sign.
+                      const ParkingLogoSection(),
                       const SizedBox(height: 24),
                       _TrackingSection(state: state),
                       const SizedBox(height: 24),
@@ -287,11 +291,7 @@ class _TrackingSectionState extends State<_TrackingSection> {
   static const _levels = ['off', 'team', 'everyone'];
 
   /// Who sees what, per level: the team's live map, the travellers, "EN DIRECT" in the search results.
-  static const _sees = {
-    'off': (false, false, false),
-    'team': (true, false, false),
-    'everyone': (true, true, true),
-  };
+  static const _sees = {'off': (false, false, false), 'team': (true, false, false), 'everyone': (true, true, true)};
 
   late String _choice = widget.state.parking?.shuttleTracking ?? 'team';
 

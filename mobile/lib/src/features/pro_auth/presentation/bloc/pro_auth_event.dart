@@ -26,6 +26,12 @@ class ProAuthVehicleChosen extends ProAuthEvent {
   final String? vehicleId;
 }
 
+/// The parking's logo was set or removed here (02/11/2026): the bar shows the new one at once.
+class ProAuthLogoChanged extends ProAuthEvent {
+  const ProAuthLogoChanged(this.logoUpdatedAt);
+  final DateTime? logoUpdatedAt;
+}
+
 /// « Votre nom » (09/10/2026): one's own first and last name.
 class ProAuthNameSubmitted extends ProAuthEvent {
   const ProAuthNameSubmitted({required this.firstName, required this.lastName});

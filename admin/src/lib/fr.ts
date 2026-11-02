@@ -616,6 +616,27 @@ export const fr = {
       demo_read_only: "Démo : la photo ne se change pas.",
     } as Record<string, string>,
   },
+  // 02/11/2026 (direction B): the parking's logo, next to the Plazo Pro sign for the team.
+  parkingLogo: {
+    title: "Logo du parking",
+    intro: "Il s'affiche à côté de Plazo Pro, dans l'application et l'espace pro, pour toute votre équipe. Vos clients ne le voient pas.",
+    choose: "Ajouter le logo",
+    change: "Changer le logo",
+    remove: "Retirer",
+    hint: "PNG, JPEG, WebP ou SVG. Il est mis dans un carré de 512 px.",
+    drop: "Glissez une image ici",
+    none: "Pas encore de logo : Plazo Pro s'affiche seul.",
+    saved: "Logo enregistré.",
+    removed: "Logo retiré.",
+    unreadable: "Cette image ne s'ouvre pas dans le navigateur. Choisissez un PNG ou un JPEG.",
+    alt: "Logo de {name}",
+    errors: {
+      too_large: "Logo trop lourd. Choisissez-en un autre.",
+      not_an_image: "Ce fichier n'est pas une image.",
+      photos_unavailable: "L'enregistrement des images n'est pas encore activé.",
+      demo_read_only: "Démo : le logo ne se change pas.",
+    } as Record<string, string>,
+  },
   // CA-B + CA-A (09/10/2026): the revenue of the bookings, managers only.
   revenue: {
     title: "Chiffre d'affaires",

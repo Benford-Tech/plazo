@@ -20,7 +20,13 @@ export interface ActingAs {
  * `demo`: a session of the prospects' demo (21/10/2026, « Parking des Cèdres (démo) »): what would leave Plazo (team,
  * passwords, payments, SMS settings, devices) is refused (RefuseInViewAs), and nothing it does is sent outside.
  */
-export type AuthenticatedStaff = Staff & { operatorName: string; actingAs?: ActingAs; demo?: boolean };
+export type AuthenticatedStaff = Staff & {
+  operatorName: string;
+  /** 02/11/2026: when the operator's logo was last set (null: none), for the logo next to the Plazo Pro sign. */
+  operatorLogoUpdatedAt?: Date | null;
+  actingAs?: ActingAs;
+  demo?: boolean;
+};
 
 export interface RequestWithStaff extends Request {
   staff: AuthenticatedStaff;
