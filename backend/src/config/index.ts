@@ -251,6 +251,15 @@ export function oneSignalSettings(): { appId: string; restApiKey: string } | nul
   return appId && restApiKey ? { appId, restApiKey } : null;
 }
 
+// 02/11/2026: Web Push to the browsers of the pro space (VAPID keys made with `npx web-push generate-vapid-keys`). Read
+// on every call like OneSignal; without both keys the browsers are never asked and nothing is sent.
+export function webPushSettings(): { publicKey: string; privateKey: string; subject: string } | null {
+  const publicKey = process.env.VAPID_PUBLIC_KEY?.trim() || '';
+  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim() || '';
+  const subject = process.env.VAPID_SUBJECT?.trim() || 'mailto:contact@plazo.fr';
+  return publicKey && privateKey ? { publicKey, privateKey, subject } : null;
+}
+
 // The traveller app is another OneSignal app (another Android package / iOS bundle). Without its own
 // values, the staff app's are used (one OneSignal app for both during the tests).
 export function oneSignalTravellerSettings(): { appId: string; restApiKey: string } | null {

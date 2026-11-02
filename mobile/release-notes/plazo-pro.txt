@@ -1,8 +1,9 @@
-Plazo Pro, pour les équipes des parkings d'aéroport, en direct avec le web.
+Plazo Pro, pour les équipes des parkings d'aéroport.
 • Planning : prochains départs, retards, vols ; prévisionnel 3 mois.
 • Réservations de tous canaux, « En direct » repéré.
 • Plan du parking, files, clés notées en un toucher.
 • Navette : Aller et Retour, sièges auto.
 • Voiturier : courses au terminal, services avant les retours.
-• Contrat PDF signé au comptoir ; état des lieux en photos.
-• Menu par rôle, « Bien démarrer », votre photo, le logo du parking.
+• Contrat signé au comptoir, état des lieux en photos.
+• Cloche des notifications et réglages par événement.
+• Menu par rôle, photo, logo du parking.

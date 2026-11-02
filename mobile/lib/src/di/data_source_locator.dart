@@ -27,6 +27,7 @@ void _initDataSource() {
     ..registerLazySingleton<SettingsDataSource>(() => SettingsDataSourceImpl(locator()))
     ..registerLazySingleton<StaffPhotoDataSource>(() => StaffPhotoDataSourceImpl(locator()))
     ..registerLazySingleton<OperatorLogoDataSource>(() => OperatorLogoDataSourceImpl(locator()))
+    ..registerLazySingleton<BellDataSource>(() => BellDataSourceImpl(locator()))
     ..registerLazySingleton<PaperworkDataSource>(() => PaperworkDataSourceImpl(locator(), locator(), locator()))
     ..registerLazySingleton<ExtrasDataSource>(() => ExtrasDataSourceImpl(locator(), locator()));
 }

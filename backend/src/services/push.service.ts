@@ -1,10 +1,12 @@
-import { Service } from 'typedi';
+import { Container, Service } from 'typedi';
 import { oneSignalSettings, oneSignalTravellerSettings } from '@/config';
 import prisma, { Prisma, ReservationChannel } from '@/database';
 import { PushMessage } from '@/domain/arrival-messages';
 import type { ImportChange } from '@/domain/import-change';
 import { bookingCancelledPush, bookingChangedPush, newBookingPush } from '@/domain/reservation-messages';
+import { NotificationEvent, channelsOf } from '@/domain/staff-notifications';
 import { localDateTime } from '@/domain/time';
+import { NOTIFIED_STAFF_SELECT, NotifiedRow, StaffNotificationService } from './staff-notification.service';
 import { logger } from '@/utils/logger';
 
 export const ONESIGNAL_NOTIFICATIONS_URL = 'https://api.onesignal.com/notifications?c=push';
@@ -27,7 +29,49 @@ export type PushAudience =
   | 'bookingChanges'
   | 'team'
   // 27/10/2026: the valets (role or today's post) and the managers, for « Course à prendre ».
-  | 'valets';
+  | 'valets'
+  // 02/11/2026: a mail waiting in the inbox (« Mail à vérifier »), whoever asked for it.
+  | 'inbox';
+
+/** 02/11/2026: the event of « Mes notifications » each audience belongs to (the bell and the browsers follow it). */
+const AUDIENCE_EVENT: Record<PushAudience, NotificationEvent> = {
+  arrivals: 'arrival',
+  returns: 'return',
+  shuttles: 'shuttle',
+  platform: 'platform',
+  bookings: 'booking_new',
+  bookingDigest: 'booking_new',
+  bookingChanges: 'booking_change',
+  team: 'team',
+  valets: 'valet',
+  inbox: 'inbox',
+};
+
+/** The older audience rule of the phones, on a member already read (`wantsAudience` in SQL). */
+function inAudience(s: NotifiedRow, audience: PushAudience): boolean {
+  switch (audience) {
+    case 'arrivals':
+      return s.notifyArrivals;
+    case 'returns':
+      return s.notifyReturns;
+    case 'shuttles':
+      return s.notifyShuttles;
+    case 'platform':
+      return s.notifyPlatform;
+    case 'bookings':
+      return s.bookingNotify === 'immediate';
+    case 'bookingDigest':
+      return s.bookingNotify === 'hourly';
+    case 'bookingChanges':
+      return s.bookingNotify === 'immediate' || s.bookingNotify === 'hourly';
+    case 'team':
+      return s.role === 'manager';
+    case 'valets':
+      return s.role === 'valet' || s.role === 'manager' || s.post === 'valet';
+    case 'inbox':
+      return true;
+  }
+}
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -44,6 +88,10 @@ export interface PushOptions {
   excludeStaffId?: string;
   /** Seconds OneSignal keeps the push for an offline phone (default one hour: an arrival is useless later). */
   ttl?: number;
+  /** 02/11/2026: the event of « Mes notifications » when it is not the audience's (a service ordered). */
+  event?: NotificationEvent;
+  /** The phones only: the hourly digest repeats bookings the bell and the browsers already had one by one. */
+  phoneOnly?: boolean;
 }
 
 type Settings = { appId: string; restApiKey: string };
@@ -65,7 +113,9 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
                 ? { role: 'manager' }
                 : audience === 'valets'
                   ? { OR: [{ role: { in: ['valet', 'manager'] } }, { post: 'valet' }] }
-                  : { notifyPlatform: true };
+                  : audience === 'inbox'
+                    ? { id: '__none__' }
+                    : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to
@@ -76,6 +126,7 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
 @Service()
 export class PushService {
   public timeoutMs = 5000;
+  public bell = Container.get(StaffNotificationService);
 
   public enabled(): boolean {
     return oneSignalSettings() !== null;
@@ -224,16 +275,78 @@ export class PushService {
     }
   }
 
-  /** Sends a push to the operator's staff. Returns the number of recipients. */
+  /**
+   * Sends a notification to the operator's staff: their phones (OneSignal, the older audiences), and since 02/11/2026
+   * the bell and their browsers, each by « Mes notifications ». Returns the number of phones reached (0 without
+   * OneSignal: the bell and the browsers still get it).
+   */
   public async notifyStaff(operatorId: string, audience: PushAudience, message: PushMessage, options: PushOptions = {}): Promise<number> {
+    const event = options.event ?? AUDIENCE_EVENT[audience];
+    let staff: (NotifiedRow & { devices: { subscriptionId: string }[] })[];
+    try {
+      staff = await prisma.staff.findMany({
+        where: { operatorId, isActive: true, ...(options.excludeStaffId ? { id: { not: options.excludeStaffId } } : {}) },
+        select: { ...NOTIFIED_STAFF_SELECT, devices: { select: { subscriptionId: true } } },
+      });
+    } catch (error) {
+      logger.warn(`[Push] could not read the team of operator ${operatorId}: ${error instanceof Error ? error.message : 'unknown error'}`);
+      return 0;
+    }
+    if (!options.phoneOnly) {
+      await this.bell.deliver(
+        operatorId,
+        event,
+        message,
+        { bell: this.bell.pick(staff, event, 'bell'), browser: this.bell.pick(staff, event, 'browser') },
+        options.data,
+      );
+    }
     const settings = oneSignalSettings();
     if (!settings) return 0;
     try {
-      const ids = await this.subscriptionsFor(operatorId, audience, options.excludeStaffId);
+      const ids = staff.filter(s => inAudience(s, audience) && channelsOf(s, event).phone).flatMap(s => s.devices.map(d => d.subscriptionId));
       await this.sendAll(settings, ids, message, options);
       return ids.length;
     } catch (error) {
       logger.warn(`[Push] could not notify operator ${operatorId}: ${error instanceof Error ? error.message : 'unknown error'}`);
+      return 0;
+    }
+  }
+
+  /** 02/11/2026: a platform message in the bell (and the browsers) of every active staff member who wants it. */
+  public async bellPlatform(message: PushMessage, operatorId?: string | null): Promise<void> {
+    try {
+      const staff = await prisma.staff.findMany({
+        where: { isActive: true, operator: { status: 'active', ...(operatorId ? { id: operatorId } : {}) } },
+        select: { ...NOTIFIED_STAFF_SELECT, operatorId: true },
+      });
+      const byOperator = new Map<string, NotifiedRow[]>();
+      for (const s of staff) byOperator.set(s.operatorId, [...(byOperator.get(s.operatorId) ?? []), s]);
+      for (const [id, members] of byOperator) {
+        await this.bell.deliver(
+          id,
+          'platform',
+          message,
+          { bell: this.bell.pick(members, 'platform', 'bell'), browser: this.bell.pick(members, 'platform', 'browser') },
+          { type: 'platform' },
+        );
+      }
+    } catch (error) {
+      logger.warn(`[Bell] platform message not recorded: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  /** 02/11/2026: « M'envoyer une notification de test » to every phone of this member (0 without OneSignal). */
+  public async testPhones(staffId: string, message: PushMessage): Promise<number> {
+    const settings = oneSignalSettings();
+    if (!settings) return 0;
+    const devices = await prisma.staffDevice.findMany({ where: { staffId }, select: { subscriptionId: true } });
+    const ids = devices.map(d => d.subscriptionId);
+    try {
+      await this.sendAll(settings, ids, message, { data: { type: 'test' }, ttl: 600 });
+      return ids.length;
+    } catch (error) {
+      logger.warn(`[Push] test push failed: ${error instanceof Error ? error.message : 'unknown error'}`);
       return 0;
     }
   }

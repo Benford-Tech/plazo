@@ -578,17 +578,17 @@ class ProArrivalsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [ProDriverPlanningPage]
-class ProDriverPlanningRoute extends PageRouteInfo<void> {
-  const ProDriverPlanningRoute({List<PageRouteInfo>? children})
-    : super(ProDriverPlanningRoute.name, initialChildren: children);
+/// [ProBellPage]
+class ProBellRoute extends PageRouteInfo<void> {
+  const ProBellRoute({List<PageRouteInfo>? children})
+    : super(ProBellRoute.name, initialChildren: children);
 
-  static const String name = 'ProDriverPlanningRoute';
+  static const String name = 'ProBellRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return WrappedRoute(child: const ProDriverPlanningPage());
+      return const ProBellPage();
     },
   );
 }
@@ -644,6 +644,22 @@ class ProContractRouteArgs {
 
   @override
   int get hashCode => key.hashCode ^ id.hashCode;
+}
+
+/// generated route for
+/// [ProDriverPlanningPage]
+class ProDriverPlanningRoute extends PageRouteInfo<void> {
+  const ProDriverPlanningRoute({List<PageRouteInfo>? children})
+    : super(ProDriverPlanningRoute.name, initialChildren: children);
+
+  static const String name = 'ProDriverPlanningRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProDriverPlanningPage());
+    },
+  );
 }
 
 /// generated route for

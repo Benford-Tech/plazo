@@ -39,6 +39,7 @@ import { AuditService } from './audit.service';
 import { EmailReadingService, ReadingAttempt } from './email-reading.service';
 import { MailProviderService } from './mail-provider.service';
 import { MailProviderId } from '@/domain/mail-provider';
+import { PushService } from './push.service';
 import { ImportCancellationResult, ImportChangeResult, ReservationService } from './reservation.service';
 
 /** The email's text is kept this long for "À vérifier", then cleared; the row itself goes after 90 days. */
@@ -404,6 +405,7 @@ export class InboundEmailService {
   public reader = Container.get(EmailReadingService);
   public alloparkPage = Container.get(AlloparkPageService);
   public mailProviders = Container.get(MailProviderService);
+  public push = Container.get(PushService);
 
   /**
    * The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it.
@@ -491,6 +493,18 @@ export class InboundEmailService {
         ...(analysis.change ? { change: storedChange(analysis.change) } : {}),
       },
     });
+    // 02/11/2026 (« Mes notifications »): « Mail à vérifier » to whoever asked for it (bell, browser, phone).
+    if (TO_CHECK.includes(status)) {
+      await this.push.notifyStaff(
+        operator.id,
+        'inbox',
+        {
+          title: 'Mail à vérifier',
+          body: [analysis.provider ?? base.fromName ?? base.fromAddress, base.subject ?? '(sans objet)'].filter(Boolean).join(' · '),
+        },
+        { data: { type: 'inbox', emailId: id }, collapseId: `inbox-${id}` },
+      );
+    }
     return status;
   }
 

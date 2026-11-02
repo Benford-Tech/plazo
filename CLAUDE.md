@@ -1883,6 +1883,31 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `LiveSync.enabled` coupé dans les tests (`setUpLocalizedTests`). Tests `live-sync.test.ts`, `live-sync.test.tsx`,
   `live_sync_test.dart`.
 
+- **Notifications : cloche, navigateur et « Mes notifications » (02/11/2026, « Mets en place les notifs », choix « les quatre » puis
+  « C'est bon, go » sur les maquettes https://claude.ai/artifact/4cuK17SNEJq2m3qLWqNXnU)** : dix événements (`domain/staff-notifications.ts` :
+  `booking_new`, `booking_change`, `inbox` « Mail à vérifier » (nouveau, envoyé par `InboundEmailService.receiveItem` quand un mail reçu
+  reste « À traiter »), `extra`, `arrival`, `return`, `shuttle`, `valet`, `team`, `platform`) et trois canaux (téléphone OneSignal, navigateur
+  Web Push, cloche) ; `channelsOf` : réglages d'office par rôle (`BROWSER`, `BELL`), le téléphone des événements qui ont une colonne
+  (arrivées, retours, navettes, Plazo, nouvelles réservations = `bookingNotify`) reste cette colonne, les autres changements de la
+  personne dans `Staff.notificationChannels` (JSON) ; `inbox` seulement avec `reservations:manage`, `team` avec `team:manage`.
+  `PushService.notifyStaff` lit l'équipe une fois et envoie au téléphone (règle d'audience d'avant ∧ réglage), à la cloche et aux
+  navigateurs (`StaffNotificationService.deliver`) ; `phoneOnly` pour le récapitulatif horaire (la cloche a eu chaque réservation) ;
+  `event` pour un service commandé ; messages de la plateforme aussi dans la cloche (`bellPlatform`). Tables `staff_notifications`
+  (cloche, 30 jours, purge de nuit `bellPurged`) et `staff_web_push_subscriptions` (migration `staff_notifications`). Routes
+  `GET /internal/notifications` (`?filter=bookings|shuttle|team`, `?before=`, 40 par page, `unread`), `…/count`, `POST …/read`
+  `{ ids? }`, `GET|PUT …/channels`, `POST …/browsers` et `…/browsers/remove`, `POST …/test` (cloche, navigateurs, téléphones ;
+  `RefuseInViewAs`). **Web** : cloche de la barre haute (et de la rangée du téléphone) avec le nombre de non lues relu toutes les
+  30 s (`NotificationBell`, `BellList` : filtres, jours, « Tout marquer lu », un clic ouvre la cible), page `/pro/notifications`,
+  carte « Mes notifications » de Mon compte (`NotificationChannelsCard`, `#notifications` : tableau Téléphone · Navigateur ·
+  Cloche, « Activer sur ce navigateur » par `lib/web-push.ts` et le service worker `admin/public/sw.js`, mes appareils, test).
+  **Plazo Pro** : cloche dans la barre des onglets (`BellButton`, `BrandAppBar(pro: true)` d'une page racine ; `BellButton.enabled`
+  coupé dans les tests), page `/pro/cloche` (`ProBellPage`), section « Où arrive chaque notification » de Plus › Notifications
+  (`ChannelsSection` : téléphone et cloche, test) ; `BellDataSource` par Dio sans freezed. **Navigateur : clés VAPID à poser sur
+  Vercel** (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` sensible, `VAPID_SUBJECT` facultatif, `mailto:contact@plazo.fr` par défaut ;
+  `npx web-push generate-vapid-keys`) : sans elles la colonne Navigateur est grisée et `POST …/browsers` répond 409
+  `web_push_unavailable`. Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
+  `bell_test.dart`.
+
 - **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
   puis « B » des maquettes https://claude.ai/artifact/U5yH8L745Z13325mqadks1)** : `Operator.logoKey` / `logoUpdatedAt` (migration
   `operator_logo` ; `logoKey` jamais servi) dans le magasin Blob privé des photos ; `POST /internal/operator/logo` (octets bruts PNG,

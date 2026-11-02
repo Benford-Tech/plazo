@@ -70,6 +70,8 @@ export class BookingDigestService {
           collapseId: `digest-${operator.id}`,
           // The 07:00 digest covers the night: a phone switched on at 08:05 must still get it.
           ttl: DIGEST_PUSH_TTL_SECONDS,
+          // The bell and the browsers had each booking already (02/11/2026).
+          phoneOnly: true,
         });
         if (recipients > 0) result.sent += 1;
       }

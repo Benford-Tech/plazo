@@ -30,6 +30,7 @@ import { ParkingLogo } from "./ParkingLogo";
 import { DemoBanner } from "./DemoBanner";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { RevenueMaskToggle } from "./platform/RevenueMaskToggle";
+import { NotificationBell } from "./notifications/NotificationBell";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
@@ -199,7 +200,8 @@ export function AdminLayout() {
                 <ParkingLogo version={user.operatorLogoUpdatedAt} name={user.operatorName} size={28} />
               </>
             )}
-            <div className="ml-auto lg:hidden">
+            <div className="ml-auto flex items-center gap-2 lg:hidden">
+              <NotificationBell />
               <AccountMenu platformAdmin={platformAdmin} onLogout={handleLogout} compact />
             </div>
           </div>
@@ -304,6 +306,7 @@ export function AdminLayout() {
             <span className={cn(platformAdmin ? "" : "ml-auto")}>
               <RevenueMaskToggle />
             </span>
+            <NotificationBell />
           </header>
           <EmailVerificationBanner />
           <ContractBanner />
