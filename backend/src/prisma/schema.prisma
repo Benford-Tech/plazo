@@ -914,6 +914,7 @@ model Reservation {
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
+  @@index([operatorId, updatedAt])
   @@index([status, holdExpiresAt])
   @@index([payoutStatus, arrivalAt])
   @@index([importId])

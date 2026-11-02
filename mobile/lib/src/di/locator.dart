@@ -6,6 +6,7 @@ import '../core/constants/app_constants.dart';
 import '../core/networking/networking.dart';
 import '../core/router/app_router.dart';
 import '../core/router/pro_auth_guard.dart';
+import '../shared/live_sync/live_sync.dart';
 import '../features/arrival/data/client/arrival_client.dart';
 import '../features/arrival/data/datasources/arrival_data_source.dart';
 import '../features/arrival/domain/repositories/arrival_repository.dart';

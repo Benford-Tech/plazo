@@ -29,6 +29,7 @@ import '../widgets/date_bar.dart';
 import '../widgets/today_row.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// The staff's day: one chronological list of the drop-offs and returns on a phone (direction A of
 /// 27/10/2026, pills to keep one kind), two columns on a wide screen; live statuses polled every
@@ -53,7 +54,10 @@ Widget _withBlocs(Widget child) => MultiBlocProvider(
     // Lazy: only the managers' revenue card reads it, so nobody else asks the server.
     BlocProvider(create: (_) => locator<RevenueSummaryBloc>()..add(const RevenueSummaryStarted())),
   ],
-  child: child,
+  // Live sync (02/11/2026): the day's lists follow the changes made on the web or another phone.
+  child: Builder(
+    builder: (context) => LiveSyncListener(onChange: () => context.read<ProTodayBloc>().add(const ProTodayPolled()), child: child),
+  ),
 );
 
 /// The driver's « Planning » tab (30/10/2026, direction A, « en mode chauffeur il faut un planning qui avance aussi ; la liste

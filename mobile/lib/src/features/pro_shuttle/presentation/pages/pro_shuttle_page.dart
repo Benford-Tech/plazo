@@ -31,6 +31,7 @@ import '../widgets/vehicle_sheet.dart';
 import '../../../../shared/widgets/movement_kind.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// R4, the driver's "Navette" screen. B (22/10/2026, « le workflow n'est pas bon ») : three tabs, « Aller » (the
 /// travellers to take, by time slot of the planning), « Retour » (the ones to fetch, the same way) and « En route » (the
@@ -67,7 +68,16 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
         ),
         BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
       ],
-      child: this,
+      // Live sync (02/11/2026): a client checked in, a trip started or ended elsewhere shows at once.
+      child: Builder(
+        builder: (context) => LiveSyncListener(
+          onChange: () {
+            context.read<ShuttleBloc>().add(const ShuttlePolled());
+            context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
+          },
+          child: this,
+        ),
+      ),
     );
   }
 

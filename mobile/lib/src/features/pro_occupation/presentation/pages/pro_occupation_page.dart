@@ -23,6 +23,7 @@ import '../../data/models/occupation_models.dart';
 import '../bloc/pro_occupation_bloc.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 const _occupied = Color(0xFF6EC071);
 const _leaving = Color(0xFFA3E635);
@@ -57,7 +58,13 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
 
   @override
   Widget wrappedRoute(BuildContext context) =>
-      BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(ProOccupationStarted(focus: focus)), child: this);
+      BlocProvider(
+        create: (_) => locator<ProOccupationBloc>()..add(ProOccupationStarted(focus: focus)),
+        // Live sync (02/11/2026): a car placed or moved, keys hung, elsewhere shows at once.
+        child: Builder(
+          builder: (context) => LiveSyncListener(onChange: () => context.read<ProOccupationBloc>().add(const ProOccupationRefreshed()), child: this),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) => TutorialSpot(tutorial: Tutorials.proOccupation, child: _page(context));
