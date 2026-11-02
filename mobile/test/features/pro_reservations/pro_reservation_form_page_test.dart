@@ -61,6 +61,10 @@ void main() {
   testWidgets('sièges auto (24/10/2026) : les compteurs sous les passagers, envoyés à la modification une fois changés', (tester) async {
     final save = await pumpForm(tester, imported.copyWith(passengers: 3));
     when(() => save(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'validation_failed', fields: {'childSeats': 'child_seats_exceed_passengers'})));
+    // Folded until opened (direction A, 02/11/2026).
+    expect(find.byKey(const Key('f-child-seats')), findsNothing);
+    await tester.tap(find.byKey(const Key('f-child-seats-add')));
+    await tester.pump();
     expect(find.text('Sièges auto pour la navette'), findsOneWidget);
     expect(find.byKey(const Key('f-child-seats')), findsOneWidget);
     await tester.tap(find.byKey(const Key('child-seat-more-infant')));
@@ -83,5 +87,51 @@ void main() {
     await pumpForm(tester, imported.copyWith(channel: 'plazo', channelDetail: null));
     expect(priceField(tester).enabled, isFalse);
     expect(find.text('Payé en ligne sur Plazo : le prix ne se modifie pas.'), findsOneWidget);
+  });
+
+  testWidgets('direction A (02/11/2026) : cartes par sujet, « En direct » au téléphone, passagers en − +, payé par', (tester) async {
+    final save = await pumpForm(tester, imported.copyWith(channel: 'phone', channelDetail: null, passengers: 2));
+    when(() => save(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'validation_failed')));
+    for (final title in ['SÉJOUR', 'CLIENT', 'VOITURE', 'VOYAGE ET NAVETTE', 'CANAL ET PRIX']) {
+      expect(find.text(title), findsOneWidget);
+    }
+    expect(find.byKey(const Key('f-direct')), findsOneWidget);
+    expect(find.text('En direct'), findsOneWidget);
+    // A comparator is not direct.
+    await tester.scrollUntilVisible(find.byKey(const Key('f-channel-aggregator')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('f-channel-aggregator')));
+    await tester.pump();
+    expect(find.byKey(const Key('f-direct')), findsNothing);
+    expect(find.byKey(const Key('f-detail')), findsOneWidget);
+    await tester.scrollUntilVisible(find.byKey(const Key('f-channel-counter')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('f-channel-counter')));
+    await tester.pump();
+    expect(find.byKey(const Key('f-direct')), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.byKey(const Key('f-passengers-more')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('f-passengers-more')));
+    await tester.pump();
+    await tester.scrollUntilVisible(find.byKey(const Key('f-paid-cash')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('f-paid-cash')));
+    await tester.pump();
+    // The notes stay folded behind « + Ajouter ».
+    expect(find.byKey(const Key('f-notes')), findsNothing);
+    await tester.scrollUntilVisible(find.byKey(const Key('f-notes-add')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('f-notes-add')));
+    await tester.pump();
+    expect(find.byKey(const Key('f-notes')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('f-save')));
+    await tester.pumpAndSettle();
+    final params = verify(() => save(captureAny())).captured.single as SaveReservationParams;
+    expect(params.input.channel, 'counter');
+    expect(params.input.passengers, 3);
+    expect(params.input.toBody(patch: true), containsPair('paymentMethod', 'cash'));
+  });
+
+  test('payé par : jamais envoyé pour une réservation Plazo, effacé à la modification quand on le retire', () {
+    expect(imported.copyWith(channel: 'plazo', paymentMethod: 'card').toBody(patch: true).containsKey('paymentMethod'), isFalse);
+    expect(imported.toBody(patch: true), containsPair('paymentMethod', null));
+    expect(imported.toBody().containsKey('paymentMethod'), isFalse);
   });
 }
