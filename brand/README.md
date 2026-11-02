@@ -30,6 +30,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `png/symbol-512.png`, `png/symbol-1024.png`, `png/symbol-dark-512.png` | Exports du symbole. |
 | `png/app-icon-1024.png`, `png/android-foreground-1024.png` | Sources de l'icône d'app (flutter_launcher_icons). |
 | `app/tools/native_icons.py` | Écrit les icônes natives de l'app sans SDK Flutter (mêmes fichiers que `flutter_launcher_icons` : mipmaps et avant-plans adaptatifs Android des flavors `main` et `pro`, jeux iOS `AppIcon` et `AppIcon-pro`, icônes web, copies de `mobile/assets/brand`). |
+| `app/tools/splash_pro.mjs` | Écran de lancement de Plazo Pro (direction A « Citron », 02/11/2026) : la plaque « Plazo PRO » de la connexion et « by Benford Tech », en PNG pour Android (flavor `pro` : `splash_wordmark`, `splash_icon`, `splash_branding`) et iOS (`LaunchPro`, `LaunchProBy`). `node brand/app/tools/splash_pro.mjs` depuis la racine, après un changement de `product.json`. |
 | `tools/build_svg.py`, `tools/export_png.mjs` | Générateurs (voir « Régénérer »). |
 
 Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/app/apple-icon.png`,
