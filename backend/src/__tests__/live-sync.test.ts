@@ -21,18 +21,16 @@ describe('GET /internal/sync', () => {
     const first = await version(driver.token);
     expect(await version(op.token)).toBe(first);
 
-    const created = await api()
-      .post('/api/internal/reservations')
-      .set(auth(op.token))
-      .send({
-        customerFirstName: 'Jean',
-        customerLastName: 'Dupont',
-        customerPhone: '0612345678',
-        plate: 'AB-123-CD',
-        arrivalAt: new Date(Date.now() + 86400000).toISOString(),
-        returnAt: new Date(Date.now() + 4 * 86400000).toISOString(),
-        channel: 'phone',
-      });
+    const created = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'phone',
+      arrivalAt: '2026-10-04T06:30',
+      returnAt: '2026-10-07T15:05',
+      passengers: 2,
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '06 12 34 56 78',
+      plate: 'gk318px',
+    });
     expect(created.status).toBe(201);
     const afterCreate = await version(driver.token);
     expect(afterCreate).not.toBe(first);
