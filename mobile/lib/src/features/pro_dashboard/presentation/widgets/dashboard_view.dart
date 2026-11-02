@@ -15,6 +15,7 @@ import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../../../pro_start/presentation/widgets/getting_started_card.dart';
 import '../../data/models/dashboard_model.dart';
 import '../bloc/pro_dashboard_bloc.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// Rounded panels of the "Flotte" mockup (12 px), whatever the flavor's own radius.
 const _radius = BorderRadius.all(Radius.circular(12));
@@ -40,6 +41,11 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    // Live sync (02/11/2026): a change made on the web or another phone shows here at once.
+    return LiveSyncListener(onChange: () => context.read<ProDashboardBloc>().add(const ProDashboardPolled()), child: _board(context));
+  }
+
+  Widget _board(BuildContext context) {
     return BlocBuilder<ProDashboardBloc, ProDashboardState>(
       builder: (context, state) {
         final d = state.data;
@@ -556,9 +562,10 @@ class _AlertRow extends StatelessWidget {
     final minutes = alert.minutes;
     final since = minutes == null || const {'flight_delayed', 'departure_delayed', 'wave_overflow'}.contains(alert.kind)
         ? null
-        : joinRequest && minutes >= 24 * 60
+        // 01/11/2026: hours and days for every alert past the hour (« Retour dépassé » can be days old).
+        : minutes >= 2 * 24 * 60
         ? 'dashboard.since_days'.tr(args: ['${minutes ~/ (24 * 60)}'])
-        : joinRequest && minutes >= 60
+        : minutes >= 60
         ? 'dashboard.since_hours'.tr(args: ['${minutes ~/ 60}'])
         : 'dashboard.since'.tr(args: ['$minutes']);
     final id = alert.reservationId;

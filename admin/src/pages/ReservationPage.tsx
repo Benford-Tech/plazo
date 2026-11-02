@@ -35,6 +35,8 @@ import { can } from "@/lib/roles";
 import { paidBy } from "@/lib/payment-method";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DirectBadge } from "@/components/DirectBadge";
+import { isDirectBooking } from "@/lib/direct-booking";
 import { ValetPill } from "@/lib/valet-icon";
 
 // The next statuses come from the API (GET /internal/reservations/:id, 06/10/2026): one table, on the server.
@@ -558,6 +560,7 @@ export default function ReservationPage() {
               <Info label={t.channel}>
                 {fr.channels[r.channel]}
                 {r.channelDetail ? ` · ${r.channelDetail}` : ""}
+                {isDirectBooking(r.channel) && <DirectBadge className="ml-2" />}
                 {r.externalReference && (
                   <span className="tabular ml-2 font-mono text-muted-foreground">
                     {r.externalReference}

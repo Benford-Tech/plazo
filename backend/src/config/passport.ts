@@ -39,6 +39,7 @@ export const staffJwtStrategy = new JwtStrategy(
           ...staff,
           operatorId: target.id,
           operatorName: target.name,
+          operatorLogoUpdatedAt: target.logoUpdatedAt,
           role: 'manager',
           actingAs: { realOperatorId: operator.id, realOperatorName: operator.name, platformAccount },
         };
@@ -46,7 +47,11 @@ export const staffJwtStrategy = new JwtStrategy(
       }
 
       if (operator.status !== 'active') return done(null, false, { code: 'account_suspended' });
-      done(null, { ...staff, operatorName: operator.name, ...(operator.prospectDemo ? { demo: true } : {}) }, { tokenUid: token.uid });
+      done(
+        null,
+        { ...staff, operatorName: operator.name, operatorLogoUpdatedAt: operator.logoUpdatedAt, ...(operator.prospectDemo ? { demo: true } : {}) },
+        { tokenUid: token.uid },
+      );
     } catch (error) {
       done(error, false);
     }

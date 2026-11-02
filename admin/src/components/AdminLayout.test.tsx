@@ -6,6 +6,7 @@ import { AdminLayout } from "./AdminLayout";
 const api = vi.hoisted(() => ({
   getGettingStarted: vi.fn(),
   navCounts: vi.fn(async () => ({ inbox: 3, extras: 2 })),
+  liveSync: vi.fn(async () => ({ version: "1" })),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -15,6 +16,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
       ...actual.adminApi,
       getGettingStarted: () => api.getGettingStarted(),
       navCounts: () => api.navCounts(),
+      liveSync: () => api.liveSync(),
     },
   };
 });

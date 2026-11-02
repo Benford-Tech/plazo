@@ -4,11 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:parking_app/src/features/booking/presentation/widgets/app_link_resume.dart';
+import 'package:parking_app/src/shared/live_sync/live_sync.dart';
 import 'package:parking_app/src/shared/theme/theme.dart';
 import 'package:parking_app/src/shared/tutorials/tutorial_service.dart';
 import 'package:parking_app/src/shared/widgets/ign_map.dart';
 import 'package:parking_app/src/shared/widgets/live_dot.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:parking_app/src/features/pro_bell/presentation/bell_button.dart';
 
 /// Loads the French texts once, without network (no map tiles) nor endless animations.
 Future<void> setUpLocalizedTests() async {
@@ -23,6 +25,9 @@ Future<void> setUpLocalizedTests() async {
   TutorialService.enabled = false;
   // The short link's first-launch check talks to the API: never in the widget tests.
   AppLinkResumeGate.enabled = false;
+  // The live sync polls the API: its own test only.
+  LiveSync.enabled = false;
+  BellButton.enabled = false;
 }
 
 /// The app's own fonts instead of the test font (whose glyphs are all one em wide), for the tests that check whether

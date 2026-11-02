@@ -143,6 +143,10 @@ une décision de Joanny. Cocher au fur et à mesure.
   réelle, et un évènement du mode test du webhook est ignoré (désactiver les webhooks de test après la bascule). Restent :
   activation du compte, Connect et moyens de paiement en mode réel, deux webhooks réels, clés réelles dans Vercel,
   `STRIPE_ALLOW_LIVE=true`, redéploiement, puis `pk_live_` servie par `/api/public/payments/config`.
+- [ ] **Notifications dans le navigateur (02/11/2026)** : poser dans Vercel (projet `plazo`, Production) `VAPID_PUBLIC_KEY` et
+  `VAPID_PRIVATE_KEY` (sensible), générées une fois par `npx web-push generate-vapid-keys` sur son propre ordinateur, puis
+  redéployer : la colonne « Navigateur » de Mon compte › Mes notifications s'allume et « Activer sur ce navigateur » apparaît. Ne
+  jamais les changer ensuite (chaque navigateur devrait être réactivé). La cloche et les téléphones marchent sans elles.
 - [ ] **Photos de l'état des lieux (19/10/2026)** : relier un Blob store au projet Vercel (Storage › Create › Blob, accès
   privé, région Paris si proposée, puis « Connect to project » sur `plazo`) : Vercel pose `BLOB_READ_WRITE_TOKEN` et les photos
   s'enregistrent après le redéploiement ; sans lui, Plazo Pro affiche « Les photos ne sont pas encore activées » et l'état des

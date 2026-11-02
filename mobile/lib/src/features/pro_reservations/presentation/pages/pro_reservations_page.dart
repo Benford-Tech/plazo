@@ -16,6 +16,7 @@ import '../bloc/pro_reservations_bloc.dart';
 import '../widgets/reservation_tile.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// App pro, step 1 (04/10/2026): the bookings, searched by plate, name, phone or reference.
 @RoutePage()
@@ -23,7 +24,13 @@ class ProReservationsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProReservationsPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProReservationsBloc>()..add(const ProReservationsStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) => BlocProvider(
+    create: (_) => locator<ProReservationsBloc>()..add(const ProReservationsStarted()),
+    // Live sync (02/11/2026): the rows follow the changes made on the web or another phone.
+    child: Builder(
+      builder: (context) => LiveSyncListener(onChange: () => context.read<ProReservationsBloc>().add(const ProReservationsSynced()), child: this),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) => const TutorialSpot(tutorial: Tutorials.proReservations, child: _View());

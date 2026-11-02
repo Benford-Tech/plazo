@@ -27,11 +27,13 @@ import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
+import { isTestOperatorName } from '@/domain/test-feed';
 
 type Client = Prisma.TransactionClient | typeof prisma;
 // stripeRefundId null: a test payment cancelled once the keys are live (nothing to refund at Stripe).
 type RefundFields = { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string | null; payoutStatus: 'cancelled' | 'reversed' };
-type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'>;
+type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'> &
+  Partial<Pick<Operator, 'name'>>;
 type StripeAccount = Pick<Operator, 'stripeAccountId' | 'stripeAccountLive'>;
 
 /** The app's payment sheet: the PaymentIntent to confirm, or the news that the booking is paid. */
@@ -73,6 +75,7 @@ export const OPERATOR_PAYMENT_FIELDS = {
   stripeAccountLive: true,
   stripePayoutsEnabled: true,
   isDemo: true,
+  name: true,
 } as const;
 
 const unavailable = () => new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
@@ -180,7 +183,8 @@ export class PaymentService {
   public modeFor(operator: PaymentOperator): BookingPaymentMode {
     if (!this.enabled()) return 'unavailable';
     // Demo parkings: bookable with test keys only (end-to-end trials), never with real money.
-    if (operator.isDemo && isLiveStripeKey(stripeSecretKey())) return 'unavailable';
+    // 01/11/2026: so are the test accounts (« … (tests) »), shown as demos on Plazo: a fictitious car park never takes real money.
+    if ((operator.isDemo || isTestOperatorName(operator.name)) && isLiveStripeKey(stripeSecretKey())) return 'unavailable';
     return this.commissionBps(operator) !== null ? 'online' : 'unavailable';
   }
 

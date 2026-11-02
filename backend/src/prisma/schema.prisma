@@ -31,6 +31,11 @@ model Operator {
   // Loueurs and Annonces lists (filter « Archivés ») and the reminder, flight and file crons, keeps all its data;
   // « Désarchiver » brings it back as suspended, « Réactiver » as active. CHECK: archived implies suspended.
   archivedAt             DateTime?
+  // 02/11/2026 (« pouvoir personnaliser Plazo avec l'icône du parking », direction B): the parking's logo, shown to its
+  // team next to the Plazo Pro sign (app bar of Plazo Pro, top of the web rail). Kept in the private photo store; never
+  // served to travellers. logoKey is never sent; logoUpdatedAt names the version the apps cache.
+  logoKey                String?
+  logoUpdatedAt          DateTime?
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
   commissionBps          Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
@@ -181,25 +186,29 @@ model Staff {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @default(now()) @updatedAt
 
-  operator            Operator            @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  tokens              StaffToken[]
-  accountTokens       AccountToken[]
-  auditLogs           AuditLog[]
-  createdReservations Reservation[]
-  reservationImports  ReservationImport[]
-  capacityStudies     CapacityStudy[]
-  devices             StaffDevice[]
-  shuttleTrips        ShuttleTrip[]
-  shuttleVehicles     ShuttleVehicle[]    @relation("UsualDriver")
-  vehicle             ShuttleVehicle?     @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
-  identities          StaffIdentity[]
-  joinRequests        StaffJoinRequest[]  @relation("JoinRequestMember")
-  decidedJoinRequests StaffJoinRequest[]  @relation("JoinRequestDecider")
-  extrasDone          ReservationExtra[]  @relation("ExtraDoneBy")
-  extrasRefused       ReservationExtra[]  @relation("ExtraRefusedBy")
-  extrasAccepted      ReservationExtra[]  @relation("ExtraAcceptedBy")
-  valetArrivalRuns    Reservation[]       @relation("ValetArrivalRuns")
-  valetDepartureRuns  Reservation[]       @relation("ValetDepartureRuns")
+  operator             Operator                   @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tokens               StaffToken[]
+  accountTokens        AccountToken[]
+  auditLogs            AuditLog[]
+  createdReservations  Reservation[]
+  reservationImports   ReservationImport[]
+  capacityStudies      CapacityStudy[]
+  devices              StaffDevice[]
+  /// 02/11/2026 (« Mes notifications »): what the member changed by hand, per event and channel (domain/staff-notifications.ts).
+  notificationChannels Json?
+  notifications        StaffNotification[]
+  webPushSubscriptions StaffWebPushSubscription[]
+  shuttleTrips         ShuttleTrip[]
+  shuttleVehicles      ShuttleVehicle[]           @relation("UsualDriver")
+  vehicle              ShuttleVehicle?            @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
+  identities           StaffIdentity[]
+  joinRequests         StaffJoinRequest[]         @relation("JoinRequestMember")
+  decidedJoinRequests  StaffJoinRequest[]         @relation("JoinRequestDecider")
+  extrasDone           ReservationExtra[]         @relation("ExtraDoneBy")
+  extrasRefused        ReservationExtra[]         @relation("ExtraRefusedBy")
+  extrasAccepted       ReservationExtra[]         @relation("ExtraAcceptedBy")
+  valetArrivalRuns     Reservation[]              @relation("ValetArrivalRuns")
+  valetDepartureRuns   Reservation[]              @relation("ValetDepartureRuns")
 
   @@index([operatorId])
   @@map("staff")
@@ -914,6 +923,7 @@ model Reservation {
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
+  @@index([operatorId, updatedAt])
   @@index([status, holdExpiresAt])
   @@index([payoutStatus, arrivalAt])
   @@index([importId])
@@ -1141,6 +1151,46 @@ model StaffDevice {
 
   @@index([staffId])
   @@map("staff_devices")
+}
+
+// 02/11/2026: the bell of the pro space and Plazo Pro, one row per member and notification, kept 30 days.
+model StaffNotification {
+  id         String    @id @default(cuid())
+  operatorId String
+  staffId    String
+  event      String // NotificationEvent of domain/staff-notifications.ts
+  title      String
+  body       String
+  /// Where tapping it leads in the pro space (« /reservations/… »), null: nowhere.
+  target     String?
+  data       Json?
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, createdAt])
+  @@index([createdAt])
+  @@map("staff_notifications")
+}
+
+// 02/11/2026: a browser of the pro space that accepted notifications (Web Push, VAPID).
+model StaffWebPushSubscription {
+  id         String    @id @default(cuid())
+  staffId    String
+  endpoint   String    @unique
+  p256dh     String
+  auth       String
+  /// « Chrome · Mac », from the browser.
+  label      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  lastSentAt DateTime?
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("staff_web_push_subscriptions")
 }
 
 // State of a tracked return flight, as the provider reports it (AeroDataBox or AirLabs).

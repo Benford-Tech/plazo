@@ -12,7 +12,7 @@ import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
-import { loadPlanCapacity, parkingCapacity } from './capacity.service';
+import { loadPlanCapacity, parkingCapacity, RETURN_OVERDUE_MS } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ExtraService } from './extra.service';
 import { ParkingService } from './parking.service';
@@ -32,6 +32,10 @@ const DELAY_MINUTES = 15;
 const KEYS_MINUTES = 20;
 /** An expected traveller still unplaced this long after their time is probably not coming. */
 const NO_SHOW_MINUTES = 180;
+/** A car still on the parking this long after its expected return is flagged (left without « Rendu »). */
+const RETURN_OVERDUE_MINUTES = RETURN_OVERDUE_MS / 60000;
+/** How far back a booking still « Attendu » is flagged as a possible no-show. */
+const NO_SHOW_LOOKBACK_DAYS = 90;
 
 export type AlertSeverity = 'urgent' | 'watch' | 'todo';
 export type AlertKind =
@@ -48,8 +52,12 @@ export type AlertKind =
   | 'departure_cancelled'
   | 'departure_delayed'
   | 'wave_overflow'
-  // Decision A (06/10/2026): expected hours ago, no car placed; the staff decide (never automatic).
+  // Decision A (06/10/2026): expected hours ago, no car placed; the staff decide (never automatic). 01/11/2026: every
+  // arrival still expected 3 hours after its time (90 days back), not only the last 24 hours.
   | 'no_show_suspected'
+  // 01/11/2026 (« Il y a réellement 39 voitures »): still counted on the parking 3 hours after its return (or its flight's
+  // landing, when later): left without being marked « Rendu ». `since` = the expected return.
+  | 'return_overdue'
   // M-A (06/10/2026): forwarded confirmation emails waiting for the staff.
   | 'inbound_to_check'
   // O-A (06/10/2026): a car returning today stands behind one that leaves later.
@@ -124,6 +132,8 @@ export interface Dashboard {
   parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number; storedInFiles: boolean };
   counts: {
     onSite: number;
+    /** On-site cars hours past their return, not counted in `onSite` (« Retour dépassé »). */
+    returnOverdue: number;
     arrivalsToday: number;
     arrivedToday: number;
     returnsToday: number;
@@ -216,12 +226,28 @@ export class DashboardService {
     ]);
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
-    const placed = (r: { spotId: string | null; fileId: string | null }) => !!r.spotId || !!r.fileId;
+    // 01/11/2026 (« Les voitures avec crochets ont une place »): the hook is the car's place (`placeHookOf`), so a car whose
+    // keys hang on a hook is placed, even with no spot or file recorded.
+    const placed = (r: { spotId: string | null; fileId: string | null; keyHook?: string | null }) => !!r.spotId || !!r.fileId || !!r.keyHook?.trim();
     // A car to put away: checked in, no spot or file; one checked in at boarding (« Embarquer en un geste ») stays so once
     // the drop-off has ended, its traveller gone to the terminal.
-    const toPutAway = (r: { spotId: string | null; fileId: string | null; status: ReservationStatus; boardingTripId: string | null }) =>
-      !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
-    const occupied = onSite.filter(placed).length;
+    const toPutAway = (r: {
+      spotId: string | null;
+      fileId: string | null;
+      keyHook?: string | null;
+      status: ReservationStatus;
+      boardingTripId: string | null;
+    }) => !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
+    // 01/11/2026 (« il devrait avoir 39 voitures sur place »): a car hours past its return (its flight's landing when
+    // later), not on a trip, left without « Rendu »: no longer counted on the parking, listed in « Retour dépassé ».
+    const overdueDue = (r: { returnAt: Date; flightLandedAt: Date | null; flightEstimatedAt: Date | null }) => {
+      const landing = r.flightLandedAt ?? r.flightEstimatedAt;
+      return landing && landing > r.returnAt ? landing : r.returnAt;
+    };
+    const overdue = onSite.filter(r => !tripOf(r.id) && now.getTime() - overdueDue(r).getTime() >= RETURN_OVERDUE_MINUTES * 60000);
+    const overdueIds = new Set(overdue.map(r => r.id));
+    const present = onSite.filter(r => !overdueIds.has(r.id));
+    const occupied = present.filter(placed).length;
     // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
     // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
     // The plan is read once, above, and the capacity derived from it here.
@@ -349,14 +375,17 @@ export class DashboardService {
       }
     }
     // Expected for hours, nothing placed: probably a no-show (the staff decide).
-    // Looked up over the last 24 h, not today's planning only: a traveller expected yesterday evening
-    // and still missing after midnight is the same case.
+    // 01/11/2026: looked up over 90 days, not the last 24 h only: a booking left « Attendu » counts in the forecast and the
+    // overbooking as long as nobody closes it.
     const lateArrivals = await prisma.reservation.findMany({
       where: {
         parkingId: parking.id,
+        // A spot pre-assigned before the arrival is no placement: the car still is not there.
         status: 'upcoming',
-        spotId: null,
-        arrivalAt: { gte: new Date(now.getTime() - 24 * 3600000), lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000) },
+        arrivalAt: {
+          gte: new Date(now.getTime() - NO_SHOW_LOOKBACK_DAYS * 24 * 3600000),
+          lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000),
+        },
       },
       select: { id: true, reference: true, customerName: true, plate: true, arrivalAt: true },
       orderBy: { arrivalAt: 'asc' },
@@ -369,6 +398,19 @@ export class DashboardService {
         detail: null,
         since: r.arrivalAt.toISOString(),
         minutes: minutesSince(r.arrivalAt),
+      });
+    }
+    // 01/11/2026: still counted on the parking hours after its return (its flight's landing when later), not on a trip:
+    // the car left without « Rendu » and keeps inflating « Sur le parking » and the overbooking.
+    for (const r of overdue) {
+      const due = overdueDue(r);
+      alerts.push({
+        kind: 'return_overdue',
+        severity: 'watch',
+        ...row(r),
+        detail: null,
+        since: r.returnAt.toISOString(),
+        minutes: minutesSince(due),
       });
     }
     // S-C (07/10/2026): on a parking stored in files, a return of the day behind a car leaving later.
@@ -522,7 +564,8 @@ export class DashboardService {
         storedInFiles: capacity.capacitySource === 'files',
       },
       counts: {
-        onSite: onSite.length,
+        onSite: present.length,
+        returnOverdue: overdue.length,
         arrivalsToday: planning.stats.arrivals,
         arrivedToday: planning.stats.arrived,
         returnsToday: planning.stats.returns,
@@ -574,7 +617,7 @@ export class DashboardService {
         status: r.status,
         arrivalAt: r.arrivalAt.toISOString(),
         returnAt: r.returnAt.toISOString(),
-        spotCode: r.spot?.code ?? r.file?.code ?? null,
+        spotCode: r.spot?.code ?? r.file?.code ?? (r.keyHook?.trim() || null),
         stayClass: r.spot?.stayClass ?? null,
         keyHook: r.keyHook,
         keysLeftAt: r.keysLeftAt?.toISOString() ?? null,

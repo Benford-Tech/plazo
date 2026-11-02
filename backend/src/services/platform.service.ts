@@ -19,6 +19,7 @@ import { loadPlanCapacity } from './capacity.service';
 import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
+import { OperatorLogoService } from './operator-logo.service';
 import { StaffPhotoService } from './staff-photo.service';
 import { ContractTemplateService } from './contract-template.service';
 import { PartnerContractService } from './partner-contract.service';
@@ -129,6 +130,7 @@ export class PlatformService {
     const options = { data: { type: 'platform' }, ...(url ? { url } : {}) };
     const recipients =
       audience === 'travellers' ? await this.push.broadcastTravellers(ids, message, options) : await this.push.broadcastStaff(ids, message, options);
+    if (audience !== 'travellers') await this.push.bellPlatform(message, operatorId);
     const row = await prisma.platformNotification.create({
       data: { audience, operatorId, title: message.title, body: message.body, url, recipients, sentById: actor.id, sentByName: actor.name },
       include: { operator: { select: { name: true } } },
@@ -392,6 +394,7 @@ export class PlatformService {
       ...(await Container.get(PartnerContractService).blobKeysOf(operatorId)),
       ...(await Container.get(ContractTemplateService).blobKeysOf(operatorId)),
       ...(await Container.get(StaffPhotoService).blobKeysOf(operatorId)),
+      ...(await Container.get(OperatorLogoService).blobKeysOf(operatorId)),
     ];
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.

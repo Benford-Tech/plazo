@@ -616,6 +616,27 @@ export const fr = {
       demo_read_only: "Démo : la photo ne se change pas.",
     } as Record<string, string>,
   },
+  // 02/11/2026 (direction B): the parking's logo, next to the Plazo Pro sign for the team.
+  parkingLogo: {
+    title: "Logo du parking",
+    intro: "Il s'affiche à côté de Plazo Pro, dans l'application et l'espace pro, pour toute votre équipe. Vos clients ne le voient pas.",
+    choose: "Ajouter le logo",
+    change: "Changer le logo",
+    remove: "Retirer",
+    hint: "PNG, JPEG, WebP ou SVG. Il est mis dans un carré de 512 px.",
+    drop: "Glissez une image ici",
+    none: "Pas encore de logo : Plazo Pro s'affiche seul.",
+    saved: "Logo enregistré.",
+    removed: "Logo retiré.",
+    unreadable: "Cette image ne s'ouvre pas dans le navigateur. Choisissez un PNG ou un JPEG.",
+    alt: "Logo de {name}",
+    errors: {
+      too_large: "Logo trop lourd. Choisissez-en un autre.",
+      not_an_image: "Ce fichier n'est pas une image.",
+      photos_unavailable: "L'enregistrement des images n'est pas encore activé.",
+      demo_read_only: "Démo : le logo ne se change pas.",
+    } as Record<string, string>,
+  },
   // CA-B + CA-A (09/10/2026): the revenue of the bookings, managers only.
   revenue: {
     title: "Chiffre d'affaires",
@@ -944,7 +965,13 @@ export const fr = {
       title: "À traiter maintenant",
       urgentCount: (n: number) => `${n} urgent${n > 1 ? "s" : ""}`,
       empty: "Rien à traiter : tout est en ordre.",
-      since: (minutes: number) => `depuis ${minutes} min`,
+      // 01/11/2026: hours and days past 60 minutes (« Retour dépassé » can be days old).
+      since: (minutes: number) =>
+        minutes >= 2 * 24 * 60
+          ? `depuis ${Math.floor(minutes / (24 * 60))} j`
+          : minutes >= 60
+            ? `depuis ${Math.floor(minutes / 60)} h`
+            : `depuis ${minutes} min`,
       severity: { urgent: "Urgent", watch: "À surveiller", todo: "À faire" },
       kind: {
         no_spot: "Sur place sans place",
@@ -960,6 +987,7 @@ export const fr = {
         departure_delayed: "Vol aller retardé",
         wave_overflow: "Vague au-delà d'une navette",
         no_show_suspected: "Attendu, toujours pas là",
+        return_overdue: "Retour dépassé, toujours au parking",
         blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
         join_request: "Demande pour rejoindre l'équipe",
@@ -1419,6 +1447,78 @@ export const fr = {
     cancelled: "Annuler la réservation",
     no_show: "Marquer non venu",
   } satisfies Record<ReservationStatus, string>,
+  // 02/11/2026 (« Mes notifications »): the bell, the browsers, where each event goes.
+  bell: {
+    open: (n: number) => (n ? `Notifications, ${n} non lue${n > 1 ? "s" : ""}` : "Notifications"),
+    title: "Notifications",
+    unread: (n: number) => `${n} non lue${n > 1 ? "s" : ""}`,
+    markAll: "Tout marquer lu",
+    filters: { all: "Tout", bookings: "Réservations", shuttle: "Navette", team: "Équipe" },
+    empty: "Rien de nouveau. Les notifications des 30 derniers jours s'affichent ici.",
+    seeAll: "Voir tout",
+    settings: "Réglages des notifications",
+    more: "Voir les plus anciennes",
+    today: "Aujourd'hui",
+    yesterday: "Hier",
+    pageTitle: "Notifications",
+    pageIntro: "Les 30 derniers jours. Un clic ouvre ce dont parle la notification.",
+    failed: "Les notifications n'ont pas pu être lues.",
+  },
+  notifChannels: {
+    title: "Mes notifications",
+    intro: (role: string) => `Réglées d'office selon votre rôle : ${role}. Chacun peut changer les siennes.`,
+    columns: { phone: "Téléphone", browser: "Navigateur", bell: "Cloche" },
+    groups: { bookings: "Réservations", clients: "Clients et navette", team: "Équipe et Plazo" },
+    events: {
+      booking_new: ["Nouvelle réservation", "Plazo, comparateurs, mails importés"],
+      booking_change: ["Modifiée ou annulée par un comparateur", ""],
+      inbox: ["Mail à vérifier", "un mail reçu que Plazo n'a pas pu importer seul"],
+      extra: ["Service additionnel commandé", ""],
+      arrival: ["Client en route, au rendez-vous", "arrivées"],
+      return: ["Client atterri, retour demandé", "retours"],
+      shuttle: ["Navette partie et revenue", ""],
+      valet: ["Course voiturier à prendre", ""],
+      team: ["Demande pour rejoindre l'équipe", "gérants"],
+      platform: ["Messages de Plazo", ""],
+    },
+    bookings: { immediate: "À chaque réservation", hourly: "Toutes les heures", never: "Jamais" },
+    browserOff: "Ce navigateur n'affiche pas encore les notifications de Plazo.",
+    browserOn: "Ce navigateur affiche les notifications de Plazo.",
+    browserDenied: "Ce navigateur refuse les notifications de Plazo : autorisez-les dans les réglages du site (cadenas à gauche de l'adresse).",
+    browserUnsupported: "Ce navigateur ne sait pas afficher de notifications.",
+    browserUnavailable: "Les notifications du navigateur ne sont pas encore en service sur Plazo.",
+    enable: "Activer sur ce navigateur",
+    disable: "Ne plus les afficher ici",
+    enabled: "Notifications activées sur ce navigateur.",
+    disabled: "Ce navigateur n'affichera plus les notifications.",
+    devices: "Mes appareils",
+    phone: (platform: string | null) => (platform === "ios" ? "iPhone · Plazo Pro" : platform === "android" ? "Android · Plazo Pro" : "Téléphone · Plazo Pro"),
+    since: (date: string) => `enregistré le ${date}`,
+    lastSent: (date: string) => `dernier envoi ${date}`,
+    noDevice: "Aucun appareil : installez Plazo Pro sur votre téléphone, ou activez ce navigateur.",
+    test: "M'envoyer une notification de test",
+    testHelp: "Elle part dans la cloche, sur ce navigateur s'il est activé et sur vos téléphones.",
+    testSent: (r: { browsers: number; phones: number; phonesConfigured: boolean }) =>
+      [
+        "Notification envoyée dans la cloche",
+        r.browsers ? `${r.browsers} navigateur${r.browsers > 1 ? "s" : ""}` : null,
+        r.phonesConfigured ? (r.phones ? `${r.phones} téléphone${r.phones > 1 ? "s" : ""}` : "aucun téléphone enregistré") : "téléphones pas encore reliés",
+      ]
+        .filter(Boolean)
+        .join(", ") + ".",
+    saved: "Réglage enregistré.",
+    roles: { manager: "Gérant", agent: "Accueil", driver: "Chauffeur", valet: "Voiturier" },
+    readOnly: "Consultation ou démo : les réglages ne se modifient pas.",
+  },
+  // 02/11/2026: booked with the parking itself (phone, counter, its own website).
+  direct: {
+    badge: "En direct",
+    title: "Réservée en direct auprès du parking, sans intermédiaire ni commission",
+    revenue: (amount: string, share: number, count: number) =>
+      `${amount} · ${share} % du chiffre · ${count} réservation${count > 1 ? "s" : ""}, sans commission`,
+    revenueNone: "Aucune réservation en direct sur la période.",
+    formHelp: "Téléphone, comptoir et site du parking comptent « En direct » dans le chiffre d'affaires.",
+  },
   channels: {
     website: "Site",
     phone: "Téléphone",

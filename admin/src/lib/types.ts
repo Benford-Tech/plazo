@@ -43,6 +43,8 @@ export interface Staff {
   /** 30/10/2026: when the member's photo was last changed (null: none, the initials stand in). */
   photoUpdatedAt?: string | null;
   operatorName?: string;
+  /** 02/11/2026: when the parking's logo was last set (null: none), shown next to the Plazo Pro sign. */
+  operatorLogoUpdatedAt?: string | null;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
   isPlatformAdmin?: boolean;
   /** False until a self sign-up confirms its email (the listing cannot be sent for review before). */
@@ -1411,6 +1413,7 @@ export type AlertKind =
   | "departure_delayed"
   | "wave_overflow"
   | "no_show_suspected"
+  | "return_overdue"
   | "inbound_to_check"
   | "blocked_return"
   // 13/10/2026: someone asks to join the team with the code of the day (managers; opens Équipe).
@@ -1760,6 +1763,8 @@ export interface RevenueReport {
   averageDays: number | null;
   withoutAmount: number;
   byChannel: RevenueChannel[];
+  /** 02/11/2026: phone, counter and own website (no commission); absent from an older API. */
+  direct?: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
   byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: {
@@ -2291,4 +2296,60 @@ export interface BookingReminder {
     | "reminder_too_soon"
     | null;
   timezone: string;
+}
+
+/** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */
+export type NotificationEvent =
+  | "booking_new"
+  | "booking_change"
+  | "inbox"
+  | "extra"
+  | "arrival"
+  | "return"
+  | "shuttle"
+  | "valet"
+  | "team"
+  | "platform";
+
+export interface BellNotification {
+  id: string;
+  event: NotificationEvent;
+  title: string;
+  body: string;
+  /** Path in the pro space, without /pro (« /reservations/… »). */
+  target: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface BellPage {
+  data: BellNotification[];
+  hasMore: boolean;
+  unread: number;
+}
+
+export type BellFilter = "all" | "bookings" | "shuttle" | "team";
+
+export interface ChannelSet {
+  phone: boolean;
+  browser: boolean;
+  bell: boolean;
+}
+
+export interface NotificationChannels {
+  role: StaffRole;
+  bookings: "immediate" | "hourly" | "never";
+  channels: Partial<Record<NotificationEvent, ChannelSet>>;
+  webPush: { available: boolean; publicKey: string | null };
+  devices: {
+    phones: { platform: string | null; updatedAt: string }[];
+    browsers: { id: string; label: string | null; endpoint: string; createdAt: string; lastSentAt: string | null }[];
+  };
+}
+
+export interface NotificationTestResult {
+  bell: boolean;
+  browsers: number;
+  phones: number;
+  phonesConfigured: boolean;
 }

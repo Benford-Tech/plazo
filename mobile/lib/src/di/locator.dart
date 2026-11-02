@@ -6,6 +6,7 @@ import '../core/constants/app_constants.dart';
 import '../core/networking/networking.dart';
 import '../core/router/app_router.dart';
 import '../core/router/pro_auth_guard.dart';
+import '../shared/live_sync/live_sync.dart';
 import '../features/arrival/data/client/arrival_client.dart';
 import '../features/arrival/data/datasources/arrival_data_source.dart';
 import '../features/arrival/domain/repositories/arrival_repository.dart';
@@ -103,6 +104,8 @@ import '../features/pro_spot_planning/domain/usecases/spot_planning_use_cases.da
 import '../features/pro_spot_planning/presentation/bloc/pro_spot_planning_bloc.dart';
 import '../features/pro_settings/data/client/settings_client.dart';
 import '../features/pro_settings/data/datasources/settings_data_source.dart';
+import '../features/pro_settings/data/operator_logo_data_source.dart';
+import '../features/pro_bell/data/bell_data_source.dart';
 import '../features/pro_settings/data/staff_photo_data_source.dart';
 import '../features/pro_settings/domain/repositories/settings_repository.dart';
 import '../features/pro_settings/domain/usecases/settings_use_cases.dart';

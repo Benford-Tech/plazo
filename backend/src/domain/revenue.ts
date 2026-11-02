@@ -5,6 +5,7 @@
  * an amount is counted apart, never as zero.
  */
 import { PaymentMethod, ReservationChannel } from '@/database';
+import { isDirectBooking } from './direct-booking';
 import { PAID_BY_LABELS, PaidBy, paidBy } from './payment-method';
 import { billableDays } from './pricing';
 import { addDays, localDate } from './time';
@@ -58,6 +59,11 @@ export interface RevenueReport {
   /** Bookings of the period without an amount: not counted. */
   withoutAmount: number;
   byChannel: RevenueChannel[];
+  /**
+   * 02/11/2026: the bookings made with the parking itself (phone, counter, its own website: `isDirectBooking`), with
+   * no commission; `totalCents` out of the report's `totalCents`.
+   */
+  direct: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): the amounts by payment method, the largest first; `method` null: not said. */
   byPaymentMethod: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: { date: string; count: number; totalCents: number; netCents: number }[];
@@ -148,6 +154,9 @@ export function revenueReport(
     averageDays: priced.length ? Math.round((days / priced.length) * 10) / 10 : null,
     withoutAmount: inPeriod.length - priced.length,
     byChannel: [...channels.values()].sort((a, b) => b.totalCents - a.totalCents || b.count - a.count),
+    direct: priced
+      .filter(b => isDirectBooking(b.channel))
+      .reduce((sum, b) => ({ count: sum.count + 1, totalCents: sum.totalCents + b.priceCents }), { count: 0, totalCents: 0 }),
     // Not said comes last, whatever its amount.
     byPaymentMethod: [...methods.values()].sort(
       (a, b) => Number(a.method === null) - Number(b.method === null) || b.totalCents - a.totalCents || b.count - a.count,

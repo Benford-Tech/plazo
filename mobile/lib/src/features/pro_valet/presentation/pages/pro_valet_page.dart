@@ -17,6 +17,7 @@ import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/segmented.dart';
 import '../../../../shared/widgets/valet_icon.dart';
 import '../../data/valet_runs_data_source.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// « Terminal » (27/10/2026, direction B of https://claude.ai/artifact/5Xu8o9kZgNxKTjfpG3HxqP): the valet's tab. Each
 /// valet booking gives two runs (arrival, departure); a valet takes one (« Je prends »), the team sees who went, and
@@ -92,40 +93,54 @@ class _ProValetPageState extends State<ProValetPage> {
   @override
   Widget build(BuildContext context) {
     final d = _data;
-    final counts = {for (final b in const ['todo', 'taken', 'done']) b: _runs(b).length};
+    final counts = {
+      for (final b in const ['todo', 'taken', 'done']) b: _runs(b).length,
+    };
     final runs = _runs(_band);
-    return Scaffold(
-      appBar: BrandAppBar(pro: true, title: 'valet.title'.tr()),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          key: const Key('valet-runs'),
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-          children: [
-            if (d != null && d.meetingPoint.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    const ValetIcon(size: 18),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text('valet.meeting_point'.tr(args: [d.meetingPoint]), style: AppText.muted())),
-                  ],
+    // Live sync (02/11/2026): a run or a service changed elsewhere shows at once.
+    return LiveSyncListener(
+      onChange: _load,
+      child: Scaffold(
+        appBar: BrandAppBar(pro: true, title: 'valet.title'.tr()),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            key: const Key('valet-runs'),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
+            children: [
+              if (d != null && d.meetingPoint.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      const ValetIcon(size: 18),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text('valet.meeting_point'.tr(args: [d.meetingPoint]), style: AppText.muted()),
+                      ),
+                    ],
+                  ),
                 ),
+              Segmented<String>(
+                key: const Key('valet-bands'),
+                values: const ['todo', 'taken', 'done'],
+                labels: [
+                  for (final b in const ['todo', 'taken', 'done']) 'valet.band_$b'.tr(args: ['${counts[b]}']),
+                ],
+                selected: _band,
+                onChanged: (b) => setState(() => _band = b),
               ),
-            Segmented<String>(
-              key: const Key('valet-bands'),
-              values: const ['todo', 'taken', 'done'],
-              labels: [for (final b in const ['todo', 'taken', 'done']) 'valet.band_$b'.tr(args: ['${counts[b]}'])],
-              selected: _band,
-              onChanged: (b) => setState(() => _band = b),
-            ),
-            const SizedBox(height: 12),
-            if (d == null && !_failed) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-            if (_failed && d == null) Text('valet.error'.tr(), style: AppText.muted()),
-            if (d != null && runs.isEmpty) Text('valet.empty_$_band'.tr(), key: const Key('valet-empty'), style: AppText.muted()),
-            for (final run in runs) _RunCard(run: run, point: d!.meetingPoint, busy: _busy.contains(run.id), onAct: (a) => _act(run, a)),
-          ],
+              const SizedBox(height: 12),
+              if (d == null && !_failed)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              if (_failed && d == null) Text('valet.error'.tr(), style: AppText.muted()),
+              if (d != null && runs.isEmpty) Text('valet.empty_$_band'.tr(), key: const Key('valet-empty'), style: AppText.muted()),
+              for (final run in runs) _RunCard(run: run, point: d!.meetingPoint, busy: _busy.contains(run.id), onAct: (a) => _act(run, a)),
+            ],
+          ),
         ),
       ),
     );
@@ -167,7 +182,10 @@ class _RunCard extends StatelessWidget {
                 children: [
                   Text(hhmm(run.meetAt), style: AppText.tabular(size: 17, color: AppColors.accent)),
                   const SizedBox(width: 8),
-                  Text(kind.toUpperCase(), style: AppText.label(size: 11, color: AppStatus.info).copyWith(fontWeight: FontWeight.w800)),
+                  Text(
+                    kind.toUpperCase(),
+                    style: AppText.label(size: 11, color: AppStatus.info).copyWith(fontWeight: FontWeight.w800),
+                  ),
                   const Spacer(),
                   if (run.state == 'taken')
                     Text(
@@ -184,7 +202,9 @@ class _RunCard extends StatelessWidget {
                 children: [
                   FrenchPlate(run.plate),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(run.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.body(size: 14.5))),
+                  Expanded(
+                    child: Text(run.customerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.body(size: 14.5)),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),

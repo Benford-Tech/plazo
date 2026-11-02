@@ -262,7 +262,36 @@
       "other": "Un mot du voyageur"
     },
     "file": "File",
-    "boarding_check_in": "Pointage"
+    "boarding_check_in": "Pointage",
+    "form": {
+      "stay": "Séjour",
+      "client": "Client",
+      "vehicle": "Voiture",
+      "trip": "Voyage et navette",
+      "channel": "Canal et prix",
+      "nights": "{} nuit(s)",
+      "free": "Places libres",
+      "add": "+ Ajouter",
+      "child_seats_add": "+ Des enfants ? Sièges auto",
+      "team_note": "Note pour l'équipe",
+      "paid_by": "Payé par",
+      "summary_shuttle": "Navette",
+      "summary_valet": "Voiturier",
+      "passengers_less": "Un passager de moins",
+      "passengers_more": "Un passager de plus"
+    },
+    "direct": {
+      "badge": "En direct",
+      "help": "Réservée auprès du parking, sans intermédiaire ni commission : comptée « En direct » dans le chiffre d'affaires."
+    },
+    "payment": {
+      "card": "CB",
+      "cash": "Espèces",
+      "cheque": "Chèque",
+      "transfer": "Virement",
+      "holiday_vouchers": "Chèques-vacances",
+      "comparator": "Au comparateur"
+    }
   },
   "occupation": {
     "title": "Places",
@@ -1365,6 +1394,7 @@
       "departure_delayed": "Vol aller retardé",
       "wave_overflow": "Vague au-delà d'une navette",
       "no_show_suspected": "Attendu, toujours pas là",
+      "return_overdue": "Retour dépassé, toujours au parking",
       "inbound_to_check": "Mails à vérifier",
       "blocked_return": "Retour du jour bloqué : sortir d'abord",
       "join_request": "Demande pour rejoindre l'équipe",
@@ -1755,7 +1785,17 @@
     "terminal_lead": "Présence au terminal avant le décollage (minutes)",
     "terminal_lead_help": "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
     "landing_delay": "Délai après l'atterrissage (minutes)",
-    "landing_delay_help": "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous."
+    "landing_delay_help": "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
+    "logo": {
+      "title": "Logo du parking",
+      "intro": "Il s'affiche à côté de Plazo Pro pour toute votre équipe. Vos clients ne le voient pas.",
+      "choose": "Ajouter le logo",
+      "change": "Changer le logo",
+      "remove": "Retirer",
+      "none": "Pas encore de logo : Plazo Pro s'affiche seul.",
+      "saved": "Logo enregistré.",
+      "removed": "Logo retiré."
+    }
   },
   "sms": {
     "title": "SMS aux voyageurs",
@@ -1934,7 +1974,9 @@
     "save": "Enregistrer",
     "saved": "Montant enregistré : {}, {}",
     "closed": "Réservation annulée entre-temps : elle ne compte plus.",
-    "gone": "Réservation introuvable : elle a peut-être été supprimée."
+    "gone": "Réservation introuvable : elle a peut-être été supprimée.",
+    "direct": "{} · {} % du chiffre · {} réservation(s), sans commission",
+    "direct_none": "Aucune réservation en direct sur la période."
   },
   "sign_in": {
     "password": "E-mail",
@@ -2628,5 +2670,46 @@
     "save": "OK",
     "left_at": "Clés laissées à {}",
     "not_on_site": "La voiture n'est pas au parking : les clés ne se notent qu'entre l'arrivée et la remise."
+  },
+  "bell": {
+    "open": "Notifications",
+    "open_unread": "Notifications, {} non lue(s)",
+    "title": "Notifications",
+    "mark_all": "Tout lu",
+    "empty": "Rien de nouveau. Les notifications des 30 derniers jours s'affichent ici.",
+    "failed": "Les notifications n'ont pas pu être lues.",
+    "more": "Voir les plus anciennes",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "filter": {
+      "all": "Tout",
+      "bookings": "Réservations",
+      "shuttle": "Navette",
+      "team": "Équipe"
+    }
+  },
+  "notif_channels": {
+    "title": "Où arrive chaque notification",
+    "intro": "Téléphone : une notification sur ce téléphone. Cloche : la liste en haut de l'appli et de l'espace web.",
+    "phone": "Téléphone",
+    "bell": "Cloche",
+    "events": {
+      "booking_new": "Nouvelle réservation",
+      "booking_change": "Modifiée ou annulée par un comparateur",
+      "inbox": "Mail à vérifier",
+      "extra": "Service additionnel commandé",
+      "arrival": "Client en route, au rendez-vous",
+      "return": "Client atterri, retour demandé",
+      "shuttle": "Navette partie et revenue",
+      "valet": "Course voiturier à prendre",
+      "team": "Demande pour rejoindre l'équipe",
+      "platform": "Messages de Plazo"
+    },
+    "phone_above": "réglé plus haut",
+    "test": "M'envoyer une notification de test",
+    "test_sent": "Envoyée dans la cloche et sur {} téléphone(s).",
+    "test_no_phone": "Envoyée dans la cloche. Aucun téléphone enregistré : activez les notifications ci-dessus.",
+    "test_not_configured": "Envoyée dans la cloche. Les notifications des téléphones ne sont pas encore reliées.",
+    "failed": "Le réglage n'a pas pu être enregistré."
   }
 }

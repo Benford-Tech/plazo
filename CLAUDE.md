@@ -494,12 +494,35 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      page Allopark, à la lecture par Claude, à `createFromImport` et aux modifications (`importChanges` ne remplace jamais l'e-mail
      par celui du comparateur) ; test `traveller-email.test.ts`. Tests `booking-import.test.ts`
      (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
+   - **« Nouvelle réservation » de Plazo Pro, direction A, et réservations « En direct » (02/11/2026, « A redesigner »
+     d'après une capture du formulaire, maquettes https://claude.ai/artifact/F1fJx1zzNB8imgomRMDCNa, « A il faut aussi marquer
+     les réservations en direct pour les stats et une icône parlante »)** : le formulaire de Plazo Pro (`ProReservationFormPage`)
+     passe en cartes blanches par sujet (Séjour : arrivée sur fond vert, retour sur fond indigo, nuits et nuits complètes ;
+     Client ; Voiture : plaque, modèle, couleur ; Voyage et navette : vols aller et retour côte à côte, passagers en − + (`f-passengers-less`
+     / `-more`), sièges auto repliés derrière « + Des enfants ? Sièges auto » (`f-child-seats-add`), prise en charge ; Canal et prix :
+     canaux en pastilles `f-channel-<canal>`, prix, « Payé par » en pastilles `f-paid-<moyen>` (un second toucher retire ; jamais pour
+     une réservation Plazo) ; « Message du client » et « Note pour l'équipe » repliés derrière « + Ajouter ») et une barre fixe en bas
+     (« Jean Dupont · 7 nuits · Navette », prix, « Enregistrer ») ; `ReservationInput.paymentMethod` / `ReservationModel.paymentMethod`
+     (toujours envoyé à la modification, nul l'efface). **En direct** = réservée auprès du parking lui-même, sans intermédiaire ni
+     commission : canaux `phone`, `counter`, `website` (`domain/direct-booking.ts`, `isDirectBooking` ; miroirs `admin/src/lib/direct-booking.ts`
+     et `mobile/lib/src/shared/widgets/direct_badge.dart`), icône poignée de main (`Handshake` de lucide, `Icons.handshake_rounded`,
+     `DirectBadge`) : `GET /internal/revenue` rend `direct { count, totalCents }` ; Chiffre d'affaires web et app : ligne « En direct ·
+     962,50 € · 20 % du chiffre · 12 réservations, sans commission » (`revenue-direct`) et poignée de main sur les lignes de canal
+     directes ; liste Réservations (web et app) : poignée de main après le nom ; fiche : « Canal · Téléphone · En direct » ; formulaire
+     web et app : « En direct » sous le canal choisi. Tests `revenue.test.ts`, `RevenuePage.test.tsx`, `pro_reservation_form_page_test.dart`.
    - **Badge « Surréservation » selon l'occupation réelle (01/11/2026, « pourquoi Surréservation pour AR-549-DJ », puis « le badge
      doit suivre l'occupation réelle »)** : `GET /internal/reservations/:id` rend `overbooked` calculé à la lecture
      (`CapacityService.overbookedNow` : une nuit restante du séjour, aujourd'hui compris, compte plus de voitures que les places
      réservables, celle-ci comprise ; faux pour une réservation annulée, non venue, rendue ou terminée) ; la colonne
      `Reservation.overbooked` et la trace `reservation.created_overbooked` gardent l'état de l'enregistrement. Fiche web et Plazo Pro
      inchangées (elles lisent ce champ). Test `reservations.test.ts`.
+   - **Voitures oubliées au parking (01/11/2026, « Il y a réellement 39 voitures », choix « les 2 premiers »)** : « Sur le parking »
+     compte les statuts, pas la cour ; deux alertes du tableau de bord (web et Plazo Pro, « à surveiller ») font clore ce qui traîne :
+     `return_overdue` « Retour dépassé, toujours au parking » (`DashboardService` : réservation sur place 3 h après son retour, ou après
+     l'atterrissage du vol quand il est plus tard, `RETURN_OVERDUE_MINUTES`, hors trajet en cours ; `since` = le retour prévu) et
+     `no_show_suspected` cherché sur 90 jours au lieu de 24 h (`NO_SHOW_LOOKBACK_DAYS`), place pré-affectée comprise ; un toucher
+     ouvre la fiche, dont la prochaine étape est « Rendre » ou « Non venu ». **Et plus comptées (01/11/2026, « il devrait avoir 39 voitures sur place »)** : une voiture en retour dépassé (même règle, `RETURN_OVERDUE_MS` de `capacity.service.ts`) n'est plus comptée « Sur le parking » (`counts.onSite`, places libres) ni garée cette nuit dans le prévisionnel (`parkedNights` : partie à son retour prévu) ; elle reste dans la liste des véhicules et l'alerte, `counts.returnOverdue` donne leur nombre. Durées « depuis 5 h » / « depuis 3 j » au-delà de l'heure
+     (web `fr.dashboard.alerts.since` de `fr.ts`, app `dashboard.since_hours|since_days`). Test `workflow.test.ts`.
    - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
      champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
      web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
@@ -884,7 +907,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `keys_missing` s'éteint, fiche, fiche opérationnelle et « Rendre » disent « Clés laissées » tant qu'aucun crochet n'est noté
      (le crochet, posé depuis l'Occupation, l'emporte) ; « Rendu » l'efface avec le crochet (`statusSideEffects`) ; `left: false`
      annule (web : un clic sur la pilule verte « Clés laissées · 09:47 » l'annule, 26/10/2026, « il doit être possible de changer
-     l'état des clés laissées »). `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. **Plazo Pro, direction A (01/11/2026, « dans l'appli il faut pouvoir modifier la clé depuis le tableau de bord ou en modifiant la fiche de réservation », maquettes https://claude.ai/artifact/WHeLKNSZSZXoQXRoLGb8jq)** : sélecteur « Clés ? · Laissées · Crochet n° » (`features/pro_keys` : `KeysControl`, `KeysDataSource` par Dio sans freezed, `PUT …/keys` `{ left, keyHook }`) sur chaque voiture du tableau de bord (à la place de la pastille « Clés ? », tableau relu après un changement) et dans le bloc Véhicule de la fiche réservation tant que la voiture est au parking (`ON_SITE_STATUSES`, `reservations:status`) ; un toucher enregistre, un second toucher sur « Laissées » revient à « Clés ? », « Crochet n° » ouvre un champ pour le numéro, « Clés laissées à 09:47 » dessous ; l'état d'avant revient si le serveur refuse ; `keysLeftAt` sur `DashboardVehicleModel` et `ReservationModel`. Test `keys_control_test.dart`.
+     l'état des clés laissées »). `DashboardVehicle.keysLeftAt`, `Reservation.keysLeftAt`. **Plazo Pro, direction A (01/11/2026, « dans l'appli il faut pouvoir modifier la clé depuis le tableau de bord ou en modifiant la fiche de réservation », maquettes https://claude.ai/artifact/WHeLKNSZSZXoQXRoLGb8jq)** : sélecteur « Clés ? · Laissées · Crochet n° » (`features/pro_keys` : `KeysControl`, `KeysDataSource` par Dio sans freezed, `PUT …/keys` `{ left, keyHook }`) sur chaque voiture du tableau de bord (à la place de la pastille « Clés ? », tableau relu après un changement) et dans le bloc Véhicule de la fiche réservation tant que la voiture est au parking (`ON_SITE_STATUSES`, `reservations:status`) ; un toucher enregistre, un second toucher sur « Laissées » revient à « Clés ? », « Crochet n° » ouvre un champ pour le numéro, « Clés laissées à 09:47 » dessous ; l'état d'avant revient si le serveur refuse ; `keysLeftAt` sur `DashboardVehicleModel` et `ReservationModel`. Test `keys_control_test.dart`. **Crochet = place (01/11/2026, « Le numéro de crochet correspond au numéro de place », choix « File + rang »)** : des clés laissées sans numéro tapé vont au crochet de la place de la voiture (`services/place-hook.ts`, `placeHookOf` : code de la place « A-12 », ou dans une file son code et la place de la voiture comptée depuis le fond « F07-3 », qui ne bouge pas quand les voitures de devant vont et viennent) : `setKeys` avec `left: true` et sans crochet le pose, et une voiture déplacée (`OccupationService.assign`, `FileService.assign`) emporte ce crochet vers sa nouvelle place, jamais un numéro tapé à part. **Une voiture à crochet a une place (01/11/2026, « Les voitures avec crochets ont une place »)** : au tableau de bord, une voiture dont les clés ont un crochet compte comme placée même sans place ni file enregistrée (`placed` de `DashboardService`) : ni alerte `no_spot`, ni « Sans place », et la colonne place montre le crochet (`spotCode` = place, sinon file, sinon crochet). Tests `dashboard.test.ts`, `files.test.ts`.
    - **Véhicules sur le parking, direction A (26/10/2026, « améliore l'ergonomie d'affichage des véhicules sur le parking, il
      doit être possible de changer l'état des clés laissées », choix « A » des maquettes
      https://claude.ai/artifact/4p2CFzeMX6c1HxgRpXq9pP, section 5)** : `components/dashboard/VehiclesTable.tsx` remplace les cartes
@@ -1465,7 +1488,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,
   ni dans le sitemap, et sa fiche est en `noindex` (22/10/2026 : le parking de test de la plateforme, loueur « … (tests) », est servi
-  `isDemo` par l'API publique, `isTestOperatorName`, après que la Search Console a listé « Parking test Plazo ») ; liens internes vers l'adresse canonique d'un aéroport (`airportPath` : `/` pour Lyon).
+  `isDemo` par l'API publique, `isTestOperatorName`, après que la Search Console a listé « Parking test Plazo ») ; **01/11/2026, « crée une fausse annonce sur le parking de démo »** : un loueur « … (tests) » n'encaisse
+  jamais d'argent réel non plus (`PaymentService.modeFor` : `unavailable` sous clés réelles, comme `isDemo`), et le loueur fictif de la
+  revue d'Apple devient « Parking Revue (tests) » (migration `review_operator_tests`) pour porter une annonce de démonstration) ; liens internes vers l'adresse canonique d'un aéroport (`airportPath` : `/` pour Lyon).
   **C-A « Le guide sur la page Lyon » (08/10/2026)** : titre « Votre parking à l'aéroport de Lyon Saint-Exupéry », guide sous la liste
   des parkings (`src/lib/airport-guides.ts`, composant `AirportGuide` : « Sur cette page », aéroport ou privé avec tableau comparatif
   empilé sur téléphone, prix d'une semaine, navette, voiturier, accès, conseils) et « Questions fréquentes » (4 générales + 5 de Lyon,
@@ -1843,6 +1868,61 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   bruts `application/pdf`, `?fileName=&title=`, `RawBodyMiddleware`) et `/internal/contract…` ; PDF dans le magasin Blob privé des
   photos (`PhotoStorageService`), effacés avec le loueur ; `contract` dans la liste des loueurs. Politique de confidentialité, section 10.
   Valeur de preuve d'une signature simple : à confirmer avec le juriste en même temps que les CGU.
+
+- **Synchronisation en direct entre l'espace pro web et Plazo Pro (02/11/2026, « les actions doivent être synchroniser entre
+  l'espace admin et l'application », choix « Statut d'une réservation, Clés / place / file, Navette, Tout, en direct »)** :
+  `GET /internal/sync` (`LiveSyncService`, `reservations:view`, `no-store`) rend `{ version }`, qui change à chaque écriture du
+  loueur (dernière ligne d'`audit_logs`, dernier `reservations.updatedAt` : imports, mails et flux de test compris ; index
+  `[operatorId, updatedAt]`, migration `live_sync_index`). **Web** : `useLiveSync` (`lib/live-sync.ts`, monté dans `AdminLayout`)
+  le lit toutes les 5 s quand l'onglet est visible et, quand il bouge, relit toutes les requêtes React Query affichées
+  (`invalidateQueries`). **Plazo Pro** : `LiveSync` (`shared/live_sync/live_sync.dart`, singleton du localisateur) le lit toutes
+  les 5 s tant qu'un écran écoute et que l'app est au premier plan ; `LiveSyncListener` relit le tableau de bord
+  (`ProDashboardPolled`), le planning du jour (`ProTodayPolled`), la Navette (`ShuttlePolled`, `LiveShuttlesPolled`),
+  l'Occupation (`ProOccupationRefreshed`), la liste des réservations (`ProReservationsSynced` : sans roue ni perte des pages) et la
+  fiche (`ProReservationSynced` : sans roue, jamais pendant une action), les Services à faire et les courses du Terminal ;
+  `LiveSync.enabled` coupé dans les tests (`setUpLocalizedTests`). Tests `live-sync.test.ts`, `live-sync.test.tsx`,
+  `live_sync_test.dart`.
+
+- **Notifications : cloche, navigateur et « Mes notifications » (02/11/2026, « Mets en place les notifs », choix « les quatre » puis
+  « C'est bon, go » sur les maquettes https://claude.ai/artifact/4cuK17SNEJq2m3qLWqNXnU)** : dix événements (`domain/staff-notifications.ts` :
+  `booking_new`, `booking_change`, `inbox` « Mail à vérifier » (nouveau, envoyé par `InboundEmailService.receiveItem` quand un mail reçu
+  reste « À traiter »), `extra`, `arrival`, `return`, `shuttle`, `valet`, `team`, `platform`) et trois canaux (téléphone OneSignal, navigateur
+  Web Push, cloche) ; `channelsOf` : réglages d'office par rôle (`BROWSER`, `BELL`), le téléphone des événements qui ont une colonne
+  (arrivées, retours, navettes, Plazo, nouvelles réservations = `bookingNotify`) reste cette colonne, les autres changements de la
+  personne dans `Staff.notificationChannels` (JSON) ; `inbox` seulement avec `reservations:manage`, `team` avec `team:manage`.
+  `PushService.notifyStaff` lit l'équipe une fois et envoie au téléphone (règle d'audience d'avant ∧ réglage), à la cloche et aux
+  navigateurs (`StaffNotificationService.deliver`) ; `phoneOnly` pour le récapitulatif horaire (la cloche a eu chaque réservation) ;
+  `event` pour un service commandé ; messages de la plateforme aussi dans la cloche (`bellPlatform`). Tables `staff_notifications`
+  (cloche, 30 jours, purge de nuit `bellPurged`) et `staff_web_push_subscriptions` (migration `staff_notifications`). Routes
+  `GET /internal/notifications` (`?filter=bookings|shuttle|team`, `?before=`, 40 par page, `unread`), `…/count`, `POST …/read`
+  `{ ids? }`, `GET|PUT …/channels`, `POST …/browsers` et `…/browsers/remove`, `POST …/test` (cloche, navigateurs, téléphones ;
+  `RefuseInViewAs`). **Web** : cloche de la barre haute (et de la rangée du téléphone) avec le nombre de non lues relu toutes les
+  30 s (`NotificationBell`, `BellList` : filtres, jours, « Tout marquer lu », un clic ouvre la cible), page `/pro/notifications`,
+  carte « Mes notifications » de Mon compte (`NotificationChannelsCard`, `#notifications` : tableau Téléphone · Navigateur ·
+  Cloche, « Activer sur ce navigateur » par `lib/web-push.ts` et le service worker `admin/public/sw.js`, mes appareils, test).
+  **Plazo Pro** : cloche dans la barre des onglets (`BellButton`, `BrandAppBar(pro: true)` d'une page racine ; `BellButton.enabled`
+  coupé dans les tests), page `/pro/cloche` (`ProBellPage`), section « Où arrive chaque notification » de Plus › Notifications
+  (`ChannelsSection` : téléphone et cloche, test) ; `BellDataSource` par Dio sans freezed. **Navigateur : clés VAPID à poser sur
+  Vercel** (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` sensible, `VAPID_SUBJECT` facultatif, `mailto:contact@plazo.fr` par défaut ;
+  `npx web-push generate-vapid-keys`) : sans elles la colonne Navigateur est grisée et `POST …/browsers` répond 409
+  `web_push_unavailable`. Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
+  `bell_test.dart`.
+
+- **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
+  puis « B » des maquettes https://claude.ai/artifact/U5yH8L745Z13325mqadks1)** : `Operator.logoKey` / `logoUpdatedAt` (migration
+  `operator_logo` ; `logoKey` jamais servi) dans le magasin Blob privé des photos ; `POST /internal/operator/logo` (octets bruts PNG,
+  JPEG ou WebP, 2 Mo, `RawBodyMiddleware`, `OPERATOR_LOGO_PATH` ; gérants `parking:manage`, `RefuseInDemo`, permis en consultation ;
+  400 `logo` required · too_large · not_an_image ; tracé `operator.logo_set`), `DELETE …` (`operator.logo_removed`),
+  `GET /internal/operator/logo?v=` (toute l'équipe, `Cache-Control: private`, 404 `logo_not_found`) ; `OperatorLogoService`, effacé avec
+  le loueur ; `operatorLogoUpdatedAt` dans `/staff/me` (loueur consulté compris). Jamais montré aux voyageurs ; l'icône de l'app sur
+  l'écran d'accueil ne change pas (Apple et Google ne le permettent pas). Web : `ParkingLogo` après le panneau Plazo Pro, derrière un
+  filet, en haut du rail, et devant le nom du parking dans la barre haute ; carte « Logo du parking » en tête de Parking › Réglages
+  (`ParkingLogoCard` : ajouter, changer, retirer, glisser une image ; SVG accepté et dessiné en carré PNG de 512 px par le navigateur,
+  `squareLogo` ; aperçu de la barre ; lecture seule en démo) ; la synchro en direct ne relit pas les images (`NOT_SYNCED` de
+  `live-sync.ts`). Plazo Pro : `BrandAppBar(pro: true)` sans titre montre le panneau, un filet et le logo (`_ProSign`,
+  `shared/widgets/parking_logo.dart`, `OperatorLogoDataSource` par Dio, gardé en mémoire par sa date, `StaffModel.operatorLogoUpdatedAt`,
+  `ProAuthLogoChanged`) ; section « Logo du parking » en tête de Plus › Réglages du parking (`ParkingLogoSection` : galerie, réduite à
+  512 px, retirer, aperçu). Tests `operator-logo.test.ts`, `ParkingLogoCard.test.tsx`, `parking_logo_test.dart`.
 
 ## Personnel
 

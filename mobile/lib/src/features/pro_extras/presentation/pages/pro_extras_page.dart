@@ -17,6 +17,7 @@ import '../../../../shared/widgets/segmented.dart';
 import '../../../extras/presentation/widgets/extra_widgets.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/extras_board_data_source.dart';
+import '../../../../shared/live_sync/live_sync.dart';
 
 /// « Services » (29/10/2026, direction C of https://claude.ai/artifact/9tmsMsH4pm8RhMTpUjviFD): the services the travellers
 /// ordered, sorted by the time they must be done by (one hour before the expected return), the late ones on top. The
@@ -99,7 +100,10 @@ class _ProExtrasPageState extends State<ProExtrasPage> {
   }
 
   Future<void> _refuse(ExtrasBoardRow row) async {
-    final reason = await showDialog<String>(context: context, builder: (_) => _RefuseDialog(row: row));
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => _RefuseDialog(row: row),
+    );
     if (reason != null) await _act(row, 'refuse', reason: reason);
   }
 
@@ -115,7 +119,10 @@ class _ProExtrasPageState extends State<ProExtrasPage> {
       final key = row.late ? 'late' : (!due.isAfter(today) ? 'today' : (due == tomorrow ? 'tomorrow' : 'later'));
       groups[key]!.add(row);
     }
-    return [for (final e in groups.entries) if (e.value.isNotEmpty) (e.key, e.value)];
+    return [
+      for (final e in groups.entries)
+        if (e.value.isNotEmpty) (e.key, e.value),
+    ];
   }
 
   @override
@@ -123,48 +130,58 @@ class _ProExtrasPageState extends State<ProExtrasPage> {
     final role = context.watch<ProAuthBloc>().state.staff?.role;
     final canAct = can(role, 'reservations:status');
     final d = _data;
-    return Scaffold(
-      appBar: BrandAppBar(pro: true, title: 'extras.board.title'.tr()),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          key: const Key('extras-board'),
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-          children: [
-            Segmented<String>(
-              key: const Key('extras-views'),
-              values: _views,
-              labels: [for (final v in _views) 'extras.board.view_$v'.tr(args: ['${d?.counts[v] ?? 0}'])],
-              selected: _view,
-              onChanged: _select,
-            ),
-            const SizedBox(height: 12),
-            if (d == null && !_failed) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-            if (_failed && d == null) Text('extras.board.error'.tr(), style: AppText.muted()),
-            if (d != null && d.view == _view && d.rows.isEmpty)
-              Text('extras.board.empty_$_view'.tr(), key: const Key('extras-empty'), style: AppText.muted()),
-            if (d != null && d.view == _view)
-              for (final (group, rows) in _groups(d)) ...[
-                if (group.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(2, 6, 2, 8),
-                    child: Text(
-                      '${'extras.board.group_$group'.tr()} · ${rows.length}'.toUpperCase(),
-                      style: AppText.label(size: 11, color: group == 'late' ? AppStatus.badText : AppColors.muted),
+    // Live sync (02/11/2026): a run or a service changed elsewhere shows at once.
+    return LiveSyncListener(
+      onChange: _load,
+      child: Scaffold(
+        appBar: BrandAppBar(pro: true, title: 'extras.board.title'.tr()),
+        body: RefreshIndicator(
+          onRefresh: _load,
+          child: ListView(
+            key: const Key('extras-board'),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
+            children: [
+              Segmented<String>(
+                key: const Key('extras-views'),
+                values: _views,
+                labels: [
+                  for (final v in _views) 'extras.board.view_$v'.tr(args: ['${d?.counts[v] ?? 0}']),
+                ],
+                selected: _view,
+                onChanged: _select,
+              ),
+              const SizedBox(height: 12),
+              if (d == null && !_failed)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              if (_failed && d == null) Text('extras.board.error'.tr(), style: AppText.muted()),
+              if (d != null && d.view == _view && d.rows.isEmpty)
+                Text('extras.board.empty_$_view'.tr(), key: const Key('extras-empty'), style: AppText.muted()),
+              if (d != null && d.view == _view)
+                for (final (group, rows) in _groups(d)) ...[
+                  if (group.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(2, 6, 2, 8),
+                      child: Text(
+                        '${'extras.board.group_$group'.tr()} · ${rows.length}'.toUpperCase(),
+                        style: AppText.label(size: 11, color: group == 'late' ? AppStatus.badText : AppColors.muted),
+                      ),
                     ),
-                  ),
-                for (final row in rows)
-                  _ExtraCard(
-                    row: row,
-                    group: group,
-                    canAct: canAct && _view == 'todo',
-                    busy: _busy.contains(row.id),
-                    onAccept: () => _act(row, 'accept'),
-                    onDone: () => _act(row, 'done'),
-                    onRefuse: () => _refuse(row),
-                  ),
-              ],
-          ],
+                  for (final row in rows)
+                    _ExtraCard(
+                      row: row,
+                      group: group,
+                      canAct: canAct && _view == 'todo',
+                      busy: _busy.contains(row.id),
+                      onAccept: () => _act(row, 'accept'),
+                      onDone: () => _act(row, 'done'),
+                      onRefuse: () => _refuse(row),
+                    ),
+                ],
+            ],
+          ),
         ),
       ),
     );
@@ -199,9 +216,7 @@ class _ExtraCard extends StatelessWidget {
         : group == 'today'
         ? (AppStatus.warnSoft, AppStatus.warnText, AppStatus.warn)
         : (AppColors.panel2, AppColors.ink, AppColors.line);
-    final pill = !todo
-        ? null
-        : (late ? 'extras.board.late_pill' : 'extras.board.before_pill').tr(args: [_dueLabel(row.dueAt)]);
+    final pill = !todo ? null : (late ? 'extras.board.late_pill' : 'extras.board.before_pill').tr(args: [_dueLabel(row.dueAt)]);
     final flightReturn = row.returnFlight != null && row.expectedReturnAt != row.returnAt;
     final returnLine = flightReturn
         ? 'extras.board.flight_line'.tr(args: [row.returnFlight!, hhmm(row.expectedReturnAt)])
@@ -231,102 +246,101 @@ class _ExtraCard extends StatelessWidget {
           border: Border.all(color: late ? AppStatus.badSoft : AppColors.line),
         ),
         child: DecoratedBox(
-          decoration: BoxDecoration(border: Border(left: BorderSide(color: edge, width: 4))),
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: edge, width: 4)),
+          ),
           child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => context.router.push(ProReservationRoute(id: row.reservationId)),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    if (pill != null)
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                          decoration: BoxDecoration(color: pillBg, borderRadius: AppRadius.pill),
-                          child: Text(
-                            pill.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.body(size: 12, weight: 700, color: pillFg),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        returnLine,
-                        textAlign: TextAlign.end,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.tabular(size: 12, color: AppColors.muted),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    ExtraIconTile(row.kind, size: 30),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(row.label, style: AppText.strong(size: 16))),
-                    Text(formatEuros(row.priceCents), style: AppText.tabular(size: 13)),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  [row.plate, if (vehicle.isNotEmpty) vehicle, place].where((s) => s.isNotEmpty).join(' · '),
-                  style: AppText.body(size: 13),
-                ),
-                Text(row.customerName, style: AppText.muted(size: 12.5)),
-                if (status != null) ...[
-                  const SizedBox(height: 4),
-                  Text(status, style: AppText.body(size: 12.5, weight: 600, color: row.accepted && todo ? AppColors.accent : AppColors.muted)),
-                ],
-                if (canAct && todo) ...[
-                  const SizedBox(height: 10),
-                  // « Accepter » on its own line first, then « Fait » and « Pas possible » side by side (a phone's width).
-                  if (!row.accepted) ...[
-                    OutlinedButton(
-                      key: Key('extras-accept-${row.id}'),
-                      onPressed: busy ? null : onAccept,
-                      style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                      child: Text('extras.accept'.tr()),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+            borderRadius: BorderRadius.circular(14),
+            onTap: () => context.router.push(ProReservationRoute(id: row.reservationId)),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: FilledButton(
-                          key: Key('extras-done-${row.id}'),
-                          onPressed: busy ? null : onDone,
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, 48),
-                            backgroundColor: AppColors.action,
-                            foregroundColor: AppColors.onAccent,
+                      if (pill != null)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            decoration: BoxDecoration(color: pillBg, borderRadius: AppRadius.pill),
+                            child: Text(
+                              pill.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.body(size: 12, weight: 700, color: pillFg),
+                            ),
                           ),
-                          child: Text('extras.mark_done'.tr()),
                         ),
-                      ),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton(
-                          key: Key('extras-refuse-${row.id}'),
-                          onPressed: busy ? null : onRefuse,
-                          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
-                          child: Text('extras.refuse'.tr()),
+                        child: Text(
+                          returnLine,
+                          textAlign: TextAlign.end,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.tabular(size: 12, color: AppColors.muted),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ExtraIconTile(row.kind, size: 30),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(row.label, style: AppText.strong(size: 16))),
+                      Text(formatEuros(row.priceCents), style: AppText.tabular(size: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text([row.plate, if (vehicle.isNotEmpty) vehicle, place].where((s) => s.isNotEmpty).join(' · '), style: AppText.body(size: 13)),
+                  Text(row.customerName, style: AppText.muted(size: 12.5)),
+                  if (status != null) ...[
+                    const SizedBox(height: 4),
+                    Text(status, style: AppText.body(size: 12.5, weight: 600, color: row.accepted && todo ? AppColors.accent : AppColors.muted)),
+                  ],
+                  if (canAct && todo) ...[
+                    const SizedBox(height: 10),
+                    // « Accepter » on its own line first, then « Fait » and « Pas possible » side by side (a phone's width).
+                    if (!row.accepted) ...[
+                      OutlinedButton(
+                        key: Key('extras-accept-${row.id}'),
+                        onPressed: busy ? null : onAccept,
+                        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                        child: Text('extras.accept'.tr()),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            key: Key('extras-done-${row.id}'),
+                            onPressed: busy ? null : onDone,
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(0, 48),
+                              backgroundColor: AppColors.action,
+                              foregroundColor: AppColors.onAccent,
+                            ),
+                            child: Text('extras.mark_done'.tr()),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            key: Key('extras-refuse-${row.id}'),
+                            onPressed: busy ? null : onRefuse,
+                            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+                            child: Text('extras.refuse'.tr()),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
           ),
         ),
       ),

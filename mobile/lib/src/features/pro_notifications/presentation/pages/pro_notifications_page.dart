@@ -9,6 +9,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../pro_bell/presentation/channels_section.dart';
 import '../bloc/pro_notifications_bloc.dart';
 
 /// Per-person setting: notified of arrivals (drop-offs), returns, or both; new bookings at once,
@@ -112,6 +113,9 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
                   const SizedBox(height: 10),
                   Text('pro.devices'.tr(args: ['${prefs.devices}']), style: AppText.muted(size: 12.5)),
                 ],
+                // 02/11/2026 (« Mes notifications »): per event, the phone and the bell; a test.
+                const SizedBox(height: 22),
+                const ChannelsSection(),
                 if (state.errorMessage != null) ...[
                   const SizedBox(height: 10),
                   Text(state.errorMessage!, style: AppText.body(size: 14, color: AppColors.danger)),

@@ -21,6 +21,7 @@ import { ExtraService } from '@/services/extra.service';
 import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
+import { StaffNotificationService } from '@/services/staff-notification.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
 
@@ -210,6 +211,8 @@ export class CronController {
     const appLinkClaimsDeleted = await Container.get(AppLinkService).purge();
     // Prospects 3 years after the last contact (or their creation); the opt-out list stays.
     const prospectsDeleted = await this.prospecting.purge();
+    // 02/11/2026: the bell forgets after 30 days.
+    const bellPurged = await Container.get(StaffNotificationService).purge();
     // 21/10/2026: the prospects' demo starts every day afresh (never throws).
     const demoReset = await this.demo.reset();
     logger.info(
@@ -240,6 +243,7 @@ export class CronController {
       loginAttemptsDeleted,
       appLinkClaimsDeleted,
       prospectsDeleted,
+      bellPurged,
     });
   });
 }

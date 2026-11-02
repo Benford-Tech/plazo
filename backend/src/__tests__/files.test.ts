@@ -39,6 +39,26 @@ const files = [
 ];
 
 describe('files (S-C, 07/10/2026)', () => {
+  it('01/11/2026 : les clés laissées vont au crochet de la place, file et rang (F01-2), et suivent la voiture', async () => {
+    const { token, parking } = await setupOperator();
+    const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });
+    const [f01, f02] = put.body.data;
+    const first = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('GK-318-PX', today()))).body.data;
+    const second = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('AB-123-CD', today()))).body.data;
+    await api().post(`/api/internal/reservations/${first.id}/file`).set(auth(token)).send({ fileId: f01.id });
+    await api().post(`/api/internal/reservations/${second.id}/file`).set(auth(token)).send({ fileId: f01.id });
+    const left = await api().put(`/api/internal/reservations/${second.id}/keys`).set(auth(token)).send({ left: true });
+    expect(left.status).toBe(200);
+    expect(left.body.data.keyHook).toBe('F01-2');
+    const typed = await api().put(`/api/internal/reservations/${first.id}/keys`).set(auth(token)).send({ left: true, keyHook: '9' });
+    expect(typed.body.data.keyHook).toBe('9');
+    // Moved to F02: the keys on the place's hook follow; a hook typed apart stays.
+    await api().post(`/api/internal/reservations/${second.id}/file`).set(auth(token)).send({ fileId: f02.id });
+    await api().post(`/api/internal/reservations/${first.id}/file`).set(auth(token)).send({ fileId: f02.id });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: second.id } })).keyHook).toBe('F02-1');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: first.id } })).keyHook).toBe('9');
+  });
+
   it('saves the files of the plan, refuses a duplicate code and keeps a file that holds cars', async () => {
     const { token, parking } = await setupOperator();
     const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });
