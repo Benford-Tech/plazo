@@ -494,6 +494,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      page Allopark, à la lecture par Claude, à `createFromImport` et aux modifications (`importChanges` ne remplace jamais l'e-mail
      par celui du comparateur) ; test `traveller-email.test.ts`. Tests `booking-import.test.ts`
      (serveur et web), `ImportReservationsPage.test.tsx`. Web seulement.
+   - **« Nouvelle réservation » de Plazo Pro, direction A, et réservations « En direct » (02/11/2026, « A redesigner »
+     d'après une capture du formulaire, maquettes https://claude.ai/artifact/F1fJx1zzNB8imgomRMDCNa, « A il faut aussi marquer
+     les réservations en direct pour les stats et une icône parlante »)** : le formulaire de Plazo Pro (`ProReservationFormPage`)
+     passe en cartes blanches par sujet (Séjour : arrivée sur fond vert, retour sur fond indigo, nuits et nuits complètes ;
+     Client ; Voiture : plaque, modèle, couleur ; Voyage et navette : vols aller et retour côte à côte, passagers en − + (`f-passengers-less`
+     / `-more`), sièges auto repliés derrière « + Des enfants ? Sièges auto » (`f-child-seats-add`), prise en charge ; Canal et prix :
+     canaux en pastilles `f-channel-<canal>`, prix, « Payé par » en pastilles `f-paid-<moyen>` (un second toucher retire ; jamais pour
+     une réservation Plazo) ; « Message du client » et « Note pour l'équipe » repliés derrière « + Ajouter ») et une barre fixe en bas
+     (« Jean Dupont · 7 nuits · Navette », prix, « Enregistrer ») ; `ReservationInput.paymentMethod` / `ReservationModel.paymentMethod`
+     (toujours envoyé à la modification, nul l'efface). **En direct** = réservée auprès du parking lui-même, sans intermédiaire ni
+     commission : canaux `phone`, `counter`, `website` (`domain/direct-booking.ts`, `isDirectBooking` ; miroirs `admin/src/lib/direct-booking.ts`
+     et `mobile/lib/src/shared/widgets/direct_badge.dart`), icône poignée de main (`Handshake` de lucide, `Icons.handshake_rounded`,
+     `DirectBadge`) : `GET /internal/revenue` rend `direct { count, totalCents }` ; Chiffre d'affaires web et app : ligne « En direct ·
+     962,50 € · 20 % du chiffre · 12 réservations, sans commission » (`revenue-direct`) et poignée de main sur les lignes de canal
+     directes ; liste Réservations (web et app) : poignée de main après le nom ; fiche : « Canal · Téléphone · En direct » ; formulaire
+     web et app : « En direct » sous le canal choisi. Tests `revenue.test.ts`, `RevenuePage.test.tsx`, `pro_reservation_form_page_test.dart`.
    - **Badge « Surréservation » selon l'occupation réelle (01/11/2026, « pourquoi Surréservation pour AR-549-DJ », puis « le badge
      doit suivre l'occupation réelle »)** : `GET /internal/reservations/:id` rend `overbooked` calculé à la lecture
      (`CapacityService.overbookedNow` : une nuit restante du séjour, aujourd'hui compris, compte plus de voitures que les places

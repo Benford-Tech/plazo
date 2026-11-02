@@ -262,7 +262,36 @@
       "other": "Un mot du voyageur"
     },
     "file": "File",
-    "boarding_check_in": "Pointage"
+    "boarding_check_in": "Pointage",
+    "form": {
+      "stay": "Séjour",
+      "client": "Client",
+      "vehicle": "Voiture",
+      "trip": "Voyage et navette",
+      "channel": "Canal et prix",
+      "nights": "{} nuit(s)",
+      "free": "Places libres",
+      "add": "+ Ajouter",
+      "child_seats_add": "+ Des enfants ? Sièges auto",
+      "team_note": "Note pour l'équipe",
+      "paid_by": "Payé par",
+      "summary_shuttle": "Navette",
+      "summary_valet": "Voiturier",
+      "passengers_less": "Un passager de moins",
+      "passengers_more": "Un passager de plus"
+    },
+    "direct": {
+      "badge": "En direct",
+      "help": "Réservée auprès du parking, sans intermédiaire ni commission : comptée « En direct » dans le chiffre d'affaires."
+    },
+    "payment": {
+      "card": "CB",
+      "cash": "Espèces",
+      "cheque": "Chèque",
+      "transfer": "Virement",
+      "holiday_vouchers": "Chèques-vacances",
+      "comparator": "Au comparateur"
+    }
   },
   "occupation": {
     "title": "Places",
@@ -1945,7 +1974,9 @@
     "save": "Enregistrer",
     "saved": "Montant enregistré : {}, {}",
     "closed": "Réservation annulée entre-temps : elle ne compte plus.",
-    "gone": "Réservation introuvable : elle a peut-être été supprimée."
+    "gone": "Réservation introuvable : elle a peut-être été supprimée.",
+    "direct": "{} · {} % du chiffre · {} réservation(s), sans commission",
+    "direct_none": "Aucune réservation en direct sur la période."
   },
   "sign_in": {
     "password": "E-mail",

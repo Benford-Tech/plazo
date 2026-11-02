@@ -6,6 +6,7 @@ import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/movement_kind.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../data/models/reservation_models.dart';
+import '../../../../shared/widgets/direct_badge.dart';
 
 /// "sam. 4 oct. 06:30" from an instant, in the phone's time (the parking's, in practice).
 String dayTime(DateTime instant) => DateFormat('EEE d MMM HH:mm', 'fr_FR').format(instant.toLocal());
@@ -62,7 +63,12 @@ class ReservationTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.customerName, style: AppText.strong(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Row(
+                          children: [
+                            Flexible(child: Text(r.customerName, style: AppText.strong(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            if (isDirectBooking(r.channel)) const Padding(padding: EdgeInsets.only(left: 6), child: DirectBadge(compact: true)),
+                          ],
+                        ),
                         const SizedBox(height: 2),
                         Text('${dayTime(r.arrivalAt)} → ${dayTime(r.returnAt)}', style: AppText.muted(size: 12.5)),
                         if (kind != null) ...[

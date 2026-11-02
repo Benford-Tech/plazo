@@ -15,6 +15,8 @@ import { can } from "@/lib/roles";
 import { paidBy } from "@/lib/payment-method";
 import type { Reservation } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DirectBadge } from "@/components/DirectBadge";
+import { isDirectBooking } from "@/lib/direct-booking";
 
 export default function ReservationsPage() {
   const { user } = useAuth();
@@ -129,7 +131,7 @@ export default function ReservationsPage() {
             <Link to={`/reservations/${r.id}`} className="flex min-h-16 min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-1 py-2 hover:bg-accent">
               <Plate value={r.plate} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-lg font-semibold">{r.customerName}</span>
+                <span className="flex items-center gap-1.5 text-lg font-semibold"><span className="truncate">{r.customerName}</span>{isDirectBooking(r.channel) && <DirectBadge compact />}</span>
                 <span className="tabular block text-sm text-muted-foreground">
                   <span className="font-mono">{r.reference}</span> · {dateTimeShort(r.arrivalAt)} → {dateTimeShort(r.returnAt)}
                 </span>

@@ -16,6 +16,8 @@ import type {
   RevenueReport,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DirectBadge } from "@/components/DirectBadge";
+import { isDirectBooking } from "@/lib/direct-booking";
 
 const t = fr.revenue;
 const CARD = "rounded-xl border border-panel-line bg-panel p-4 sm:p-5";
@@ -721,6 +723,23 @@ export default function RevenuePage() {
             <h2 id="revenue-channels" className="text-base font-semibold">
               {t.byChannel}
             </h2>
+            {report.direct && (
+              <p
+                data-testid="revenue-direct"
+                className="flex flex-wrap items-center gap-2 rounded-xl bg-lime/15 px-3 py-2 text-sm"
+              >
+                <DirectBadge />
+                <span>
+                  {report.direct.count === 0
+                    ? fr.direct.revenueNone
+                    : fr.direct.revenue(
+                        euros(report.direct.totalCents),
+                        report.totalCents ? Math.round((report.direct.totalCents / report.totalCents) * 100) : 0,
+                        report.direct.count,
+                      )}
+                </span>
+              </p>
+            )}
             {report.byChannel.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t.noRevenue}</p>
             ) : (
@@ -779,7 +798,10 @@ export default function RevenuePage() {
                             scope="row"
                             className="px-1.5 py-2.5 text-left font-semibold"
                           >
-                            {channelName(line)}
+                            <span className="inline-flex items-center gap-1.5">
+                              {channelName(line)}
+                              {isDirectBooking(line.channel) && <DirectBadge compact />}
+                            </span>
                           </th>
                           <td className="tabular px-1.5 py-2.5 text-right font-mono">
                             {line.count}
