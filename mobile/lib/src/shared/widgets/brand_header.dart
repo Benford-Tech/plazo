@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/constants/app_constants.dart';
 import '../theme/theme.dart';
 import '../../features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../features/pro_bell/presentation/bell_button.dart';
 import 'brand_logo.dart';
 import 'parking_logo.dart';
 
@@ -42,7 +43,8 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
                 Text(subtitle!, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.muted(size: 12.5)),
               ],
             ),
-      actions: actions,
+      // 02/11/2026: the bell on the bars of Plazo Pro's tabs (a page pushed over them has its own back arrow).
+      actions: pro && isPro && BellButton.enabled && !(ModalRoute.of(context)?.canPop ?? false) ? [...?actions, const BellButton()] : actions,
     );
   }
 }

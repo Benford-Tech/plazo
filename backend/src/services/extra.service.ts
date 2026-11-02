@@ -689,6 +689,7 @@ export class ExtraService {
       await this.push.notifyStaff(e.operatorId, 'bookingChanges', extraOrderedPush(e.label, e.reservation.plate, e.reservation.customerName), {
         data: { type: 'booking', event: 'extra_ordered', reservationId: e.reservationId },
         collapseId: `extra-${e.id}`,
+        event: 'extra',
       });
     } catch (error) {
       logger.warn(`[Extras] Team not told of service ${extraId}: ${error instanceof Error ? error.name : 'unknown error'}`);

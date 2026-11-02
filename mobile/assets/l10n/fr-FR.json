@@ -2670,5 +2670,46 @@
     "save": "OK",
     "left_at": "Clés laissées à {}",
     "not_on_site": "La voiture n'est pas au parking : les clés ne se notent qu'entre l'arrivée et la remise."
+  },
+  "bell": {
+    "open": "Notifications",
+    "open_unread": "Notifications, {} non lue(s)",
+    "title": "Notifications",
+    "mark_all": "Tout lu",
+    "empty": "Rien de nouveau. Les notifications des 30 derniers jours s'affichent ici.",
+    "failed": "Les notifications n'ont pas pu être lues.",
+    "more": "Voir les plus anciennes",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "filter": {
+      "all": "Tout",
+      "bookings": "Réservations",
+      "shuttle": "Navette",
+      "team": "Équipe"
+    }
+  },
+  "notif_channels": {
+    "title": "Où arrive chaque notification",
+    "intro": "Téléphone : une notification sur ce téléphone. Cloche : la liste en haut de l'appli et de l'espace web.",
+    "phone": "Téléphone",
+    "bell": "Cloche",
+    "events": {
+      "booking_new": "Nouvelle réservation",
+      "booking_change": "Modifiée ou annulée par un comparateur",
+      "inbox": "Mail à vérifier",
+      "extra": "Service additionnel commandé",
+      "arrival": "Client en route, au rendez-vous",
+      "return": "Client atterri, retour demandé",
+      "shuttle": "Navette partie et revenue",
+      "valet": "Course voiturier à prendre",
+      "team": "Demande pour rejoindre l'équipe",
+      "platform": "Messages de Plazo"
+    },
+    "phone_above": "réglé plus haut",
+    "test": "M'envoyer une notification de test",
+    "test_sent": "Envoyée dans la cloche et sur {} téléphone(s).",
+    "test_no_phone": "Envoyée dans la cloche. Aucun téléphone enregistré : activez les notifications ci-dessus.",
+    "test_not_configured": "Envoyée dans la cloche. Les notifications des téléphones ne sont pas encore reliées.",
+    "failed": "Le réglage n'a pas pu être enregistré."
   }
 }

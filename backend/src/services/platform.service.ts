@@ -130,6 +130,7 @@ export class PlatformService {
     const options = { data: { type: 'platform' }, ...(url ? { url } : {}) };
     const recipients =
       audience === 'travellers' ? await this.push.broadcastTravellers(ids, message, options) : await this.push.broadcastStaff(ids, message, options);
+    if (audience !== 'travellers') await this.push.bellPlatform(message, operatorId);
     const row = await prisma.platformNotification.create({
       data: { audience, operatorId, title: message.title, body: message.body, url, recipients, sentById: actor.id, sentByName: actor.name },
       include: { operator: { select: { name: true } } },

@@ -16,6 +16,7 @@ import '../../features/pro_auth/presentation/pages/pro_join_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_vehicle_page.dart';
+import '../../features/pro_bell/presentation/pro_bell_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
@@ -110,6 +111,7 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),
       AutoRoute(page: ProVehicleRoute.page, path: '/pro/vehicule', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
+      AutoRoute(page: ProBellRoute.page, path: '/pro/cloche', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
       AutoRoute(page: ProExtrasRoute.page, path: '/pro/services', guards: [proGuard]),
       AutoRoute(page: ProOccupationRoute.page, path: '/pro/occupation', guards: [proGuard]),

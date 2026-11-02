@@ -116,6 +116,12 @@ import type {
   SignedContractFileKind,
   SignedContractsPage,
   SignedContractsQuery,
+  BellFilter,
+  BellPage,
+  ChannelSet,
+  NotificationChannels,
+  NotificationEvent,
+  NotificationTestResult,
 } from "./types";
 
 import type {
@@ -1157,6 +1163,27 @@ export const adminApi = {
     return res.blob();
   },
   liveSync: () => apiRequest<{ version: string }>("/internal/sync"),
+  // 02/11/2026: the bell, « Mes notifications », the browsers.
+  bell: (filter: BellFilter = "all", before?: string) => {
+    const params = new URLSearchParams();
+    if (filter !== "all") params.set("filter", filter);
+    if (before) params.set("before", before);
+    const q = params.toString();
+    return apiRequest<BellPage>(`/internal/notifications${q ? `?${q}` : ""}`);
+  },
+  bellCount: () => apiRequest<{ unread: number }>("/internal/notifications/count"),
+  markBellRead: (ids?: string[]) =>
+    apiRequest<{ unread: number }>("/internal/notifications/read", { method: "POST", body: JSON.stringify(ids ? { ids } : {}) }),
+  notificationChannels: () => apiRequest<NotificationChannels>("/internal/notifications/channels"),
+  setNotificationChannels: (channels: Partial<Record<NotificationEvent, Partial<ChannelSet>>>) =>
+    apiRequest<NotificationChannels>("/internal/notifications/channels", { method: "PUT", body: JSON.stringify({ channels }) }),
+  subscribeBrowser: (sub: { endpoint: string; keys: { p256dh: string; auth: string }; label: string }) =>
+    apiRequest<NotificationChannels>("/internal/notifications/browsers", { method: "POST", body: JSON.stringify(sub) }),
+  unsubscribeBrowser: (endpoint: string) =>
+    apiRequest<NotificationChannels>("/internal/notifications/browsers/remove", { method: "POST", body: JSON.stringify({ endpoint }) }),
+  setBookingNotify: (bookings: "immediate" | "hourly" | "never") =>
+    apiRequest<unknown>("/internal/notifications/preferences", { method: "PATCH", body: JSON.stringify({ bookings }) }),
+  testNotification: () => apiRequest<NotificationTestResult>("/internal/notifications/test", { method: "POST" }),
   getSignedContracts: (query: SignedContractsQuery) =>
     apiRequest<SignedContractsPage>(
       `/internal/contracts?${signedContractsParams(query)}`,

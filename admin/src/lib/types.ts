@@ -2297,3 +2297,59 @@ export interface BookingReminder {
     | null;
   timezone: string;
 }
+
+/** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */
+export type NotificationEvent =
+  | "booking_new"
+  | "booking_change"
+  | "inbox"
+  | "extra"
+  | "arrival"
+  | "return"
+  | "shuttle"
+  | "valet"
+  | "team"
+  | "platform";
+
+export interface BellNotification {
+  id: string;
+  event: NotificationEvent;
+  title: string;
+  body: string;
+  /** Path in the pro space, without /pro (« /reservations/… »). */
+  target: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface BellPage {
+  data: BellNotification[];
+  hasMore: boolean;
+  unread: number;
+}
+
+export type BellFilter = "all" | "bookings" | "shuttle" | "team";
+
+export interface ChannelSet {
+  phone: boolean;
+  browser: boolean;
+  bell: boolean;
+}
+
+export interface NotificationChannels {
+  role: StaffRole;
+  bookings: "immediate" | "hourly" | "never";
+  channels: Partial<Record<NotificationEvent, ChannelSet>>;
+  webPush: { available: boolean; publicKey: string | null };
+  devices: {
+    phones: { platform: string | null; updatedAt: string }[];
+    browsers: { id: string; label: string | null; endpoint: string; createdAt: string; lastSentAt: string | null }[];
+  };
+}
+
+export interface NotificationTestResult {
+  bell: boolean;
+  browsers: number;
+  phones: number;
+  phonesConfigured: boolean;
+}
