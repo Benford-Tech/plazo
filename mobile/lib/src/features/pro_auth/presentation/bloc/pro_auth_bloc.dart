@@ -51,6 +51,10 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     on<ProAuthPostChosen>(_onPostChosen);
     on<ProAuthVehicleChosen>(_onVehicleChosen);
     on<ProAuthNameSubmitted>(_onNameSubmitted);
+    on<ProAuthLogoChanged>((event, emit) {
+      final staff = state.staff;
+      if (staff != null) emit(state.copyWith(staff: staff.copyWith(operatorLogoUpdatedAt: event.logoUpdatedAt)));
+    });
     on<ProAuthNameNoticeShown>((event, emit) => emit(state.copyWith(nameState: ViewState.idle)));
     on<ProAuthSessionExpired>((event, emit) {
       if (state.status == ProAuthStatus.signedIn) emit(_fresh(ProAuthStatus.signedOut, errorCode: 'session_expired'));

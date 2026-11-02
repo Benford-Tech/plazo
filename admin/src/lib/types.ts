@@ -43,6 +43,8 @@ export interface Staff {
   /** 30/10/2026: when the member's photo was last changed (null: none, the initials stand in). */
   photoUpdatedAt?: string | null;
   operatorName?: string;
+  /** 02/11/2026: when the parking's logo was last set (null: none), shown next to the Plazo Pro sign. */
+  operatorLogoUpdatedAt?: string | null;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
   isPlatformAdmin?: boolean;
   /** False until a self sign-up confirms its email (the listing cannot be sent for review before). */

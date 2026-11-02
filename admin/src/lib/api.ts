@@ -1143,6 +1143,19 @@ export const adminApi = {
   },
   navCounts: () =>
     apiRequest<{ inbox: number | null; extras: number }>("/internal/nav/counts"),
+  // 02/11/2026 (direction B): the parking's logo, a 512 px square PNG, for the team.
+  setOperatorLogo: (logo: Blob) =>
+    apiRequest<{ logoUpdatedAt: string }>("/internal/operator/logo", {
+      method: "POST",
+      body: logo,
+      headers: { "Content-Type": logo.type || "image/png" },
+    }),
+  removeOperatorLogo: () =>
+    apiRequest<void>("/internal/operator/logo", { method: "DELETE" }),
+  operatorLogo: async (version: string) => {
+    const res = await authorizedFetch(`/internal/operator/logo?v=${encodeURIComponent(version)}`);
+    return res.blob();
+  },
   liveSync: () => apiRequest<{ version: string }>("/internal/sync"),
   getSignedContracts: (query: SignedContractsQuery) =>
     apiRequest<SignedContractsPage>(

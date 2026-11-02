@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../theme/theme.dart';
+import '../../features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import 'brand_logo.dart';
+import 'parking_logo.dart';
 
 /// The orange header of direction D (T-A): the logo (or a page title in Playfair italic).
 class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -28,7 +31,7 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: isPro ? AppColors.brand : AppColors.background,
       leading: leading,
       title: title == null
-          ? BrandLogo(height: 30, pro: pro)
+          ? (pro ? const _ProSign() : const BrandLogo(height: 30))
           : subtitle == null
           ? Text(title!, style: AppText.title(size: 24, color: AppColors.brownOrInk))
           : Column(
@@ -40,6 +43,29 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
               ],
             ),
       actions: actions,
+    );
+  }
+}
+
+/// The Plazo Pro sign, then (direction B of 02/11/2026) a thin line and the parking's logo once one is set.
+class _ProSign extends StatelessWidget {
+  const _ProSign();
+
+  @override
+  Widget build(BuildContext context) {
+    final staff = context.watch<ProAuthBloc?>()?.state.staff;
+    final logo = staff?.operatorLogoUpdatedAt;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const BrandLogo(height: 30, pro: true),
+        if (logo != null) ...[
+          const SizedBox(width: 12),
+          Container(width: 1, height: 28, color: AppColors.line),
+          const SizedBox(width: 12),
+          ParkingLogo(updatedAt: logo, size: 32, label: staff?.operatorName),
+        ],
+      ],
     );
   }
 }

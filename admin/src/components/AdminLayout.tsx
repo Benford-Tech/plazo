@@ -26,6 +26,7 @@ import { ContractBanner } from "./ContractBanner";
 import { GettingStartedNav } from "./GettingStartedNav";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Logo } from "./Logo";
+import { ParkingLogo } from "./ParkingLogo";
 import { DemoBanner } from "./DemoBanner";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { RevenueMaskToggle } from "./platform/RevenueMaskToggle";
@@ -191,6 +192,13 @@ export function AdminLayout() {
         <aside className="sticky top-0 z-20 flex shrink-0 flex-col border-b border-panel-line bg-panel-shell lg:h-screen lg:w-[236px] lg:border-b-0 lg:border-r">
           <div className="flex items-center gap-3 px-4 pt-3 lg:px-4 lg:pb-3 lg:pt-5">
             <Logo height={28} suffix="Pro" className="shrink-0" />
+            {/* 02/11/2026 (direction B): the parking's logo next to the sign, after a thin line. */}
+            {user?.operatorLogoUpdatedAt && (
+              <>
+                <span aria-hidden="true" className="h-7 w-px shrink-0 bg-panel-line" />
+                <ParkingLogo version={user.operatorLogoUpdatedAt} name={user.operatorName} size={28} />
+              </>
+            )}
             <div className="ml-auto lg:hidden">
               <AccountMenu platformAdmin={platformAdmin} onLogout={handleLogout} compact />
             </div>
@@ -288,6 +296,7 @@ export function AdminLayout() {
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="hidden h-12 items-center gap-4 border-b border-panel-line bg-panel-shell px-6 lg:flex">
+            <ParkingLogo version={user?.operatorLogoUpdatedAt} name={user?.operatorName} size={22} className="-mr-2" />
             <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">
               {user?.operatorName}
             </span>

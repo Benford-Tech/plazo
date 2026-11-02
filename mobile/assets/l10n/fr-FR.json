@@ -1756,7 +1756,17 @@
     "terminal_lead": "Présence au terminal avant le décollage (minutes)",
     "terminal_lead_help": "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
     "landing_delay": "Délai après l'atterrissage (minutes)",
-    "landing_delay_help": "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous."
+    "landing_delay_help": "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
+    "logo": {
+      "title": "Logo du parking",
+      "intro": "Il s'affiche à côté de Plazo Pro pour toute votre équipe. Vos clients ne le voient pas.",
+      "choose": "Ajouter le logo",
+      "change": "Changer le logo",
+      "remove": "Retirer",
+      "none": "Pas encore de logo : Plazo Pro s'affiche seul.",
+      "saved": "Logo enregistré.",
+      "removed": "Logo retiré."
+    }
   },
   "sms": {
     "title": "SMS aux voyageurs",

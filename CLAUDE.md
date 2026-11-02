@@ -1867,6 +1867,22 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `LiveSync.enabled` coupé dans les tests (`setUpLocalizedTests`). Tests `live-sync.test.ts`, `live-sync.test.tsx`,
   `live_sync_test.dart`.
 
+- **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
+  puis « B » des maquettes https://claude.ai/artifact/U5yH8L745Z13325mqadks1)** : `Operator.logoKey` / `logoUpdatedAt` (migration
+  `operator_logo` ; `logoKey` jamais servi) dans le magasin Blob privé des photos ; `POST /internal/operator/logo` (octets bruts PNG,
+  JPEG ou WebP, 2 Mo, `RawBodyMiddleware`, `OPERATOR_LOGO_PATH` ; gérants `parking:manage`, `RefuseInDemo`, permis en consultation ;
+  400 `logo` required · too_large · not_an_image ; tracé `operator.logo_set`), `DELETE …` (`operator.logo_removed`),
+  `GET /internal/operator/logo?v=` (toute l'équipe, `Cache-Control: private`, 404 `logo_not_found`) ; `OperatorLogoService`, effacé avec
+  le loueur ; `operatorLogoUpdatedAt` dans `/staff/me` (loueur consulté compris). Jamais montré aux voyageurs ; l'icône de l'app sur
+  l'écran d'accueil ne change pas (Apple et Google ne le permettent pas). Web : `ParkingLogo` après le panneau Plazo Pro, derrière un
+  filet, en haut du rail, et devant le nom du parking dans la barre haute ; carte « Logo du parking » en tête de Parking › Réglages
+  (`ParkingLogoCard` : ajouter, changer, retirer, glisser une image ; SVG accepté et dessiné en carré PNG de 512 px par le navigateur,
+  `squareLogo` ; aperçu de la barre ; lecture seule en démo) ; la synchro en direct ne relit pas les images (`NOT_SYNCED` de
+  `live-sync.ts`). Plazo Pro : `BrandAppBar(pro: true)` sans titre montre le panneau, un filet et le logo (`_ProSign`,
+  `shared/widgets/parking_logo.dart`, `OperatorLogoDataSource` par Dio, gardé en mémoire par sa date, `StaffModel.operatorLogoUpdatedAt`,
+  `ProAuthLogoChanged`) ; section « Logo du parking » en tête de Plus › Réglages du parking (`ParkingLogoSection` : galerie, réduite à
+  512 px, retirer, aperçu). Tests `operator-logo.test.ts`, `ParkingLogoCard.test.tsx`, `parking_logo_test.dart`.
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,

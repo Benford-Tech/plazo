@@ -31,6 +31,11 @@ model Operator {
   // Loueurs and Annonces lists (filter « Archivés ») and the reminder, flight and file crons, keeps all its data;
   // « Désarchiver » brings it back as suspended, « Réactiver » as active. CHECK: archived implies suspended.
   archivedAt             DateTime?
+  // 02/11/2026 (« pouvoir personnaliser Plazo avec l'icône du parking », direction B): the parking's logo, shown to its
+  // team next to the Plazo Pro sign (app bar of Plazo Pro, top of the web rail). Kept in the private photo store; never
+  // served to travellers. logoKey is never sent; logoUpdatedAt names the version the apps cache.
+  logoKey                String?
+  logoUpdatedAt          DateTime?
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
   commissionBps          Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
