@@ -1692,7 +1692,9 @@ export const fr = {
     customerEmail: "Email (facultatif)",
     email: "Email",
     plate: "Plaque",
+    plateOptional: "Plaque (facultatif)",
     returnFlight: "Vol retour",
+    returnFlightOptional: "Vol retour (facultatif)",
     returnFlightHelp:
       "Pour suivre l'atterrissage et prévoir la navette retour.",
     departureFlight: "Vol aller (facultatif)",

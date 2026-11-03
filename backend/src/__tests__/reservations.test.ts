@@ -48,7 +48,7 @@ describe('création', () => {
     const bad = await api()
       .post('/api/internal/reservations')
       .set(auth(token))
-      .send(booking({ passengers: 0, customerPhone: 'abc', plate: '' }));
+      .send(booking({ passengers: 0, customerPhone: 'abc', plate: 'é!' }));
     expect(bad.status).toBe(400);
     expect(bad.body.fields).toMatchObject({ passengers: 'passengers_range', customerPhone: 'invalid_phone', plate: 'invalid_plate' });
     const order = await api()
@@ -444,7 +444,7 @@ describe('réservation sans plaque (15/10/2026, « ne pas planter à l’import 
   const patch = (token: string, id: string, body: Record<string, unknown>) =>
     api().patch(`/api/internal/reservations/${id}`).set(auth(token)).send(body);
 
-  it('« Compléter » un mail de comparateur sans plaque : créée avec une plaque vide ; un autre canal l’exige toujours', async () => {
+  it('sans plaque : créée avec une plaque vide, quel que soit le canal (03/11/2026, « vol retour + plaque facultatif »)', async () => {
     const { token } = await setupOperator();
     const blank = await post(token, booking({ channel: 'aggregator', channelDetail: 'Allopark', plate: '' }));
     expect(blank.status).toBe(201);
@@ -456,10 +456,18 @@ describe('réservation sans plaque (15/10/2026, « ne pas planter à l’import 
     expect(absent.body.data.plate).toBe('');
     // A comparator's plate is still checked when given.
     expect((await post(token, booking({ channel: 'aggregator', plate: 'é!' }))).body.fields).toMatchObject({ plate: 'invalid_plate' });
+    let day = 6;
     for (const plate of ['', '   ', null, '--']) {
-      const refused = await post(token, booking({ channel: 'phone', plate }));
-      expect(refused.status).toBe(400);
-      expect(refused.body.fields).toMatchObject({ plate: 'invalid_plate' });
+      const { returnFlight: _flight, ...noFlight } = booking({
+        channel: 'phone',
+        plate,
+        arrivalAt: `2026-10-${String(day).padStart(2, '0')}T06:30`,
+        returnAt: `2026-10-${String(day++ + 3).padStart(2, '0')}T15:05`,
+      });
+      void _flight;
+      const accepted = await post(token, noFlight);
+      expect(accepted.status).toBe(201);
+      expect(accepted.body.data).toMatchObject({ plate: '', plateKey: '', returnFlight: null });
     }
   });
 
@@ -483,12 +491,9 @@ describe('réservation sans plaque (15/10/2026, « ne pas planter à l’import 
     }
     expect(await prisma.reservation.findUniqueOrThrow({ where: { id: plated.id } })).toMatchObject({ plate: 'GK-318-PX' });
 
-    // A booking without a plate does not become a phone or counter booking without one.
-    for (const channel of ['phone', 'counter']) {
-      const res = await patch(token, plateless.id, { channel, plate: '' });
-      expect([res.status, res.body.fields]).toEqual([400, { plate: 'required' }]);
-    }
-    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: plateless.id } })).toMatchObject({ channel: 'aggregator' });
+    // A booking without a plate may become a phone or counter booking without one (03/11/2026).
+    const counter = await patch(token, plateless.id, { channel: 'counter', plate: '' });
+    expect([counter.status, counter.body.data.channel, counter.body.data.plate]).toEqual([200, 'counter', '']);
     const moved = await patch(token, plateless.id, { channel: 'phone', plate: 'ef 456 gh' });
     expect([moved.status, moved.body.data.channel, moved.body.data.plate]).toEqual([200, 'phone', 'EF-456-GH']);
     await patch(token, plateless.id, { channel: 'aggregator' });

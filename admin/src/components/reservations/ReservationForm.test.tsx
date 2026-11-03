@@ -61,7 +61,7 @@ async function fillStay() {
   await userEvent.type(screen.getByLabelText("Prénom"), "Sophie");
   await userEvent.type(screen.getByLabelText("Nom"), "Laurent");
   await userEvent.type(screen.getByLabelText("Téléphone"), "0612345678");
-  await userEvent.type(screen.getByLabelText("Plaque"), "gk318px");
+  await userEvent.type(screen.getByLabelText("Plaque (facultatif)"), "gk318px");
 }
 
 describe("ReservationForm", () => {
@@ -156,7 +156,7 @@ describe("ReservationForm", () => {
     updateReservation.mockResolvedValue({ data: { id: "r9" } });
     const onSaved = renderForm(vi.fn(), { reservation: booked({ passengers: 3, childSeats: { infant: 1, toddler: 0, booster: 0 } }) });
     expect(screen.getByTestId("child-seats-infant")).toHaveTextContent("1");
-    await userEvent.type(screen.getByLabelText("Vol retour"), "TO 3627");
+    await userEvent.type(screen.getByLabelText("Vol retour (facultatif)"), "TO 3627");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("childSeats");
@@ -234,7 +234,7 @@ describe("ReservationForm", () => {
     const onSaved = renderForm(vi.fn(), { reservation: booked({ customerFirstName: "Dupont", customerLastName: "", customerName: "Dupont" }) });
     expect(screen.getByLabelText("Nom")).toHaveValue("");
     expect(screen.getByLabelText("Nom")).not.toBeRequired();
-    await userEvent.type(screen.getByLabelText("Vol retour"), "TO 3627");
+    await userEvent.type(screen.getByLabelText("Vol retour (facultatif)"), "TO 3627");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     const input = updateReservation.mock.calls[0][1];
@@ -382,13 +382,12 @@ describe("ReservationForm", () => {
   });
 
   describe("15/10/2026 : plaque facultative pour un comparateur (« ne pas planter à l'import quand la plaque est manquante »)", () => {
-    it("pas requise pour une nouvelle réservation de comparateur, requise par téléphone", async () => {
+    it("pas requise pour une nouvelle réservation, quel que soit le canal (03/11/2026)", async () => {
       renderForm();
-      expect(screen.getByLabelText("Plaque")).toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).not.toBeRequired();
+      expect(screen.getByLabelText("Vol retour (facultatif)")).not.toBeRequired();
       await userEvent.click(screen.getByRole("button", { name: "Comparateur" }));
-      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
-      await userEvent.click(screen.getByRole("button", { name: "Téléphone" }));
-      expect(screen.getByLabelText("Plaque")).toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).not.toBeRequired();
     });
 
     it("« Compléter » un mail sans plaque : la plaque n'est pas requise et part vide", async () => {
@@ -405,23 +404,23 @@ describe("ReservationForm", () => {
           passengers: 2,
         },
       });
-      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
-      expect(screen.getByLabelText("Plaque")).toHaveValue("");
+      expect(screen.getByLabelText("Plaque (facultatif)")).not.toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).toHaveValue("");
       await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
       await waitFor(() => expect(onSaved).toHaveBeenCalled());
       expect(createReservation.mock.calls[0][0]).toMatchObject({ channel: "aggregator", channelDetail: "Onepark", plate: "" });
     });
 
-    it("à la modification : pas requise tant que la réservation n'a pas de plaque, requise pour passer au téléphone", async () => {
+    it("à la modification : pas requise tant que la réservation n'a pas de plaque, même au téléphone", async () => {
       renderForm(vi.fn(), { reservation: booked({ channel: "aggregator", channelDetail: "Allopark", plate: "" }) });
-      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).not.toBeRequired();
       await userEvent.click(screen.getByRole("button", { name: "Téléphone" }));
-      expect(screen.getByLabelText("Plaque")).toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).not.toBeRequired();
     });
 
     it("à la modification d'une réservation avec plaque : requise", () => {
       renderForm(vi.fn(), { reservation: booked({ channel: "aggregator", channelDetail: "Allopark" }) });
-      expect(screen.getByLabelText("Plaque")).toBeRequired();
+      expect(screen.getByLabelText("Plaque (facultatif)")).toBeRequired();
     });
   });
 });

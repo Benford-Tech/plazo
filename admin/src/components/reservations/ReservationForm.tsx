@@ -472,17 +472,16 @@ export function ReservationForm({
             className={inputClass}
           />
         </Field>
-        <Field id="plate" label={t.plate} error={fieldErrors.plate}>
+        <Field id="plate" label={t.plateOptional} error={fieldErrors.plate}>
           <div className="flex h-12 items-stretch overflow-hidden rounded-[4px] border-[1.5px] border-[#F3F3F0]">
             <span aria-hidden="true" className="flex w-5 items-end justify-center bg-plate-band pb-1 text-xs font-bold text-white">
               F
             </span>
             <input
               id="plate"
-              // 15/10/2026: a comparator's booking may come without its plate (« Compléter »: read on arrival); a plate,
-              // once typed, is never erased (the server refuses it), nor does a booking without one move to the phone or the
-              // counter without it.
-              required={!!reservation?.plate.trim() || (form.channel !== "aggregator" && form.channel !== reservation?.channel)}
+              // 03/11/2026 (« vol retour + plaque facultatif »): a booking may come without its plate (read on arrival);
+              // a plate, once typed, is never erased (the server refuses it).
+              required={!!reservation?.plate.trim()}
               autoCapitalize="characters"
               value={form.plate}
               onChange={set("plate")}
@@ -504,7 +503,7 @@ export function ReservationForm({
               className={cn(inputClass, "tabular font-mono uppercase")}
             />
           </Field>
-          <Field id="returnFlight" label={t.returnFlight} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
+          <Field id="returnFlight" label={t.returnFlightOptional} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
             <input
               id="returnFlight"
               autoCapitalize="characters"
