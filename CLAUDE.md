@@ -1168,7 +1168,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `assetlinks.json` depuis le 30/10/2026 (Android ouvre l'app une fois installée ou mise à jour). **03/11/2026 (Play Console)** : trois
      empreintes et la relation `get_login_creds` ; `vercel.json` › `redirects` renvoie `plazo.fr` vers www sauf `/.well-known/`, pour que
      `https://plazo.fr/.well-known/assetlinks.json` soit servi sans redirection une fois le domaine `plazo.fr` relié à la production dans Vercel
-     (au lieu de « Redirect to www.plazo.fr »). Reste à faire : le lecteur de l'Install Referrer dans l'app (le
+     (au lieu de « Redirect to www.plazo.fr ») ; en attendant, le relais `email-worker/` sert cette seule adresse (route Cloudflare
+     `plazo.fr/.well-known/assetlinks.json` de `wrangler.toml`, `fetch()` qui relit le fichier de www, tout autre chemin renvoyé vers www). Reste à faire : le lecteur de l'Install Referrer dans l'app (le
      code est déjà passé au store ; d'ici là Android est retrouvé comme iPhone, par l'adresse). Politique de confidentialité à
      compléter (hachage 24 h). Tests `app-link.test.ts`, `app-link.test.ts` (site), `app_link_test.dart`.
 

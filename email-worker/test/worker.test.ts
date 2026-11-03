@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import worker, { RAW_MAX_BYTES, retryAllopark, type Env } from "../src/index";
+import worker, { RAW_MAX_BYTES, retryAllopark, serveApex, type Env } from "../src/index";
 import { alloparkForwarded } from "./samples";
 
 function message(raw: string, to = "parkair-lyon-7f3a@plazo.fr") {
@@ -152,5 +152,26 @@ describe("scheduled() (11/10/2026, « Lance l'analyse automatiquement pour allop
     } finally {
       error.mockRestore();
     }
+  });
+});
+
+describe("fetch() : assetlinks.json sur plazo.fr (03/11/2026)", () => {
+  it("sert le fichier de www sans redirection, en JSON", async () => {
+    const body = '[{"relation":["delegate_permission/common.get_login_creds"]}]';
+    const fetchMock = vi.fn(async () => new Response(body));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await serveApex(new Request("https://plazo.fr/.well-known/assetlinks.json"));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/json");
+    expect(await res.text()).toBe(body);
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe("https://www.plazo.fr/.well-known/assetlinks.json");
+  });
+
+  it("renvoie tout autre chemin vers www, et ne sert rien si www ne l'a pas", async () => {
+    const other = await serveApex(new Request("https://plazo.fr/ma-reservation?x=1"));
+    expect(other.status).toBe(308);
+    expect(other.headers.get("location")).toBe("https://www.plazo.fr/ma-reservation?x=1");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    expect((await serveApex(new Request("https://plazo.fr/.well-known/assetlinks.json"))).status).toBe(404);
   });
 });
