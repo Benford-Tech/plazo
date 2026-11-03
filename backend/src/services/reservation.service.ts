@@ -14,7 +14,6 @@ import {
   importedPlate,
   isPriceLocked,
   newReference,
-  PLATE_OPTIONAL_CHANNELS,
   plateKey,
   RELEASED_STATUSES,
   STATUS_TRANSITIONS,
@@ -197,10 +196,9 @@ export class ReservationService {
     if (seatsRefusal) throw fieldError('childSeats', seatsRefusal);
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
-    // 15/10/2026: a comparator's booking may come without its plate (« Compléter » an email without it): stored ''.
+    // A booking may come without its plate (comparators 15/10/2026, every channel 03/11/2026): stored '', read on arrival.
     // A plate without a letter or a digit (« -- ») is none: '' stands for « no plate » (plateKey '').
     const plate = typeof data.plate === 'string' && plateKey(data.plate) ? formatPlate(data.plate) : '';
-    if (!plate && !PLATE_OPTIONAL_CHANNELS.includes(data.channel)) throw fieldError('plate', 'invalid_plate');
 
     return prisma
       .$transaction(async tx => {
@@ -845,11 +843,6 @@ export class ReservationService {
       // plate as it is; a plate is never erased.
       const plate = typeof data.plate === 'string' && plateKey(data.plate) ? formatPlate(data.plate) : undefined;
       if (plate === undefined && data.plate !== undefined && before.plateKey) throw fieldError('plate', 'required');
-      // Nor does a booking without a plate move to a channel that needs one (the phone, the counter) unless it is typed.
-      const channel = data.channel ?? before.channel;
-      if (channel !== before.channel && !PLATE_OPTIONAL_CHANNELS.includes(channel) && !plateKey(plate ?? before.plate)) {
-        throw fieldError('plate', 'required');
-      }
       // Child car seats (24/10/2026): fewer than the passengers, one adult at least.
       const seats = data.childSeats === undefined ? childSeatsOf(before) : { ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) };
       const seatsRefusal = childSeatsRefusal(seats, data.passengers ?? before.passengers);

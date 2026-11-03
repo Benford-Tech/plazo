@@ -1,5 +1,5 @@
 import { randomInt } from 'crypto';
-import { ReservationChannel, ReservationStatus } from '@/database';
+import { ReservationStatus } from '@/database';
 
 /** What a plate may be when typed (the staff's forms, the site): letters, digits, spaces and dashes. */
 export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
@@ -9,7 +9,6 @@ export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
  * a plate (comparators often leave it out; it is read on arrival), stored as '' (never null: the apps in the stores read
  * a string).
  */
-export const PLATE_OPTIONAL_CHANNELS: readonly ReservationChannel[] = ['aggregator', 'import'];
 
 /** Statuses that no longer hold a spot. */
 export const RELEASED_STATUSES: ReservationStatus[] = ['cancelled', 'no_show'];

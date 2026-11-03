@@ -255,7 +255,7 @@ class _FormState extends State<_Form> {
                   children: [
                     PlateField(
                       controller: _plate,
-                      label: 'res.plate'.tr(),
+                      label: 'res.plate_optional'.tr(),
                       errorText: err('plate'),
                       onChanged: (v) => _set((x) => x.copyWith(plate: v)),
                     ),
@@ -311,7 +311,7 @@ class _FormState extends State<_Form> {
                             controller: _flight,
                             textCapitalization: TextCapitalization.characters,
                             decoration: InputDecoration(
-                              labelText: 'res.return_flight'.tr(),
+                              labelText: 'res.return_flight_optional'.tr(),
                               hintText: 'TO 3627',
                               errorText: err('returnFlight'),
                               errorMaxLines: 2,

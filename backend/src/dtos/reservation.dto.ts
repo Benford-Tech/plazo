@@ -19,7 +19,7 @@ import { Handover, PaymentMethod, ReservationChannel, ReservationStatus } from '
 
 const HANDOVERS: Handover[] = ['shuttle', 'valet'];
 const PAYMENT_METHODS: PaymentMethod[] = ['card', 'cash', 'cheque', 'transfer', 'holiday_vouchers', 'comparator'];
-import { PLATE_OPTIONAL_CHANNELS, PLATE_RE } from '@/domain/reservation';
+import { PLATE_RE } from '@/domain/reservation';
 
 export { PLATE_RE };
 
@@ -94,12 +94,11 @@ export class CreateReservationDto {
   public customerEmail?: string;
 
   /**
-   * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): optional for a comparator's booking (« Compléter »
-   * an email without the plate: it is read on arrival); absent, null or blank, it is stored ''. Required for the other channels.
+   * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): optional for a comparator's booking; since
+   * 03/11/2026 (« vol retour + plaque facultatif ») optional for every channel: absent, null or blank, it is stored '' (read on
+   * arrival). A plate that is given is still checked.
    */
-  @ValidateIf(
-    body => !PLATE_OPTIONAL_CHANNELS.includes(body.channel) || !(body.plate == null || (typeof body.plate === 'string' && body.plate.trim() === '')),
-  )
+  @ValidateIf(body => !(body.plate == null || (typeof body.plate === 'string' && body.plate.trim() === '')))
   @IsString()
   @Matches(PLATE_RE, { message: 'invalid_plate' })
   public plate?: string | null;

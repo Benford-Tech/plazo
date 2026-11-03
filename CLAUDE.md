@@ -512,6 +512,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      962,50 € · 20 % du chiffre · 12 réservations, sans commission » (`revenue-direct`) et poignée de main sur les lignes de canal
      directes ; liste Réservations (web et app) : poignée de main après le nom ; fiche : « Canal · Téléphone · En direct » ; formulaire
      web et app : « En direct » sous le canal choisi. Tests `revenue.test.ts`, `RevenuePage.test.tsx`, `pro_reservation_form_page_test.dart`.
+   - **Plaque et vol retour facultatifs (03/11/2026, « vol retour + plaque facultatif »)** : une réservation saisie par l'équipe se crée
+     sans plaque quel que soit le canal (téléphone, comptoir, site compris ; plus de `PLATE_OPTIONAL_CHANNELS`) : plaque vide `''`, lue à
+     l'arrivée, une plaque donnée toujours contrôlée, une plaque enregistrée jamais effacée (PATCH 400 `required`), et une réservation
+     sans plaque peut passer au téléphone ou au comptoir ; le vol retour l'était déjà ; formulaires web et Plazo Pro : « Plaque
+     (facultatif) » et « Vol retour (facultatif) ». La réservation en ligne du voyageur (site et app) demande toujours sa plaque.
    - **Supprimer une réservation (03/11/2026, « Pouvoir supprimer une réservation… elle s'archive 45 jours », maquettes
      https://claude.ai/artifact/JD6yJ7YvnSpFkrKp5nCM1D, « go avec tes hypothèses »)** : gérants seulement (`parking:manage`), jamais une
      réservation payée sur Plazo (409 `plazo_booking` : l'annuler) ni une voiture au parking (409 `vehicle_on_site`) ;
