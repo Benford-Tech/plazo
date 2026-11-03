@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
 import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
+import '../../data/datasources/reservation_trash_data_source.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
 import '../widgets/linked_emails_card.dart';
@@ -286,7 +288,13 @@ class _Sheet extends StatelessWidget {
           const SizedBox(height: 8),
           Text('res.next_step'.tr().toUpperCase(), style: AppText.label(size: 11)),
           const SizedBox(height: 8),
-          _NextStep(reservation: r, next: next, busy: busy),
+          _NextStep(
+            reservation: r,
+            next: next,
+            busy: busy,
+            // 03/11/2026: managers delete a booking typed by mistake (never paid on Plazo, never a car at the parking).
+            canDelete: can(role, 'parking:manage') && r.channel != 'plazo' && r.status != 'pending_payment' && !onSite,
+          ),
           const SizedBox(height: 8),
         ],
       ],
@@ -296,10 +304,11 @@ class _Sheet extends StatelessWidget {
 
 /// The journey's next gesture for this booking, as one button (C-B), and the other statuses behind "Autres actions".
 class _NextStep extends StatelessWidget {
-  const _NextStep({required this.reservation, required this.next, required this.busy});
+  const _NextStep({required this.reservation, required this.next, required this.busy, this.canDelete = false});
   final ReservationModel reservation;
   final List<String> next;
   final bool busy;
+  final bool canDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +361,7 @@ class _NextStep extends StatelessWidget {
           Text(step.$3, style: AppText.muted(size: 12.5), textAlign: TextAlign.center),
         ] else if (r.closed)
           Text('res.next.none_closed'.tr(), style: AppText.muted(size: 13), textAlign: TextAlign.center),
-        if (others.isNotEmpty || board) ...[
+        if (others.isNotEmpty || board || canDelete) ...[
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.center,
@@ -360,7 +369,9 @@ class _NextStep extends StatelessWidget {
               key: const Key('more-actions'),
               enabled: !busy,
               onSelected: (s) {
-                if (s == 'board') {
+                if (s == 'delete') {
+                  _delete(context);
+                } else if (s == 'board') {
                   // The driver's Navette tab (this sheet closes), with the traveller ticked next to the others.
                   openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.dropoff(_departureOf(r)));
                 } else if (s == 'returned') {
@@ -380,6 +391,20 @@ class _NextStep extends StatelessWidget {
                     value: s,
                     child: Text('res.action.$s'.tr(), style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink)),
                   ),
+                if (canDelete) ...[
+                  if (others.isNotEmpty || board) const PopupMenuDivider(),
+                  PopupMenuItem(
+                    key: const Key('status-delete'),
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                        const SizedBox(width: 8),
+                        Flexible(child: Text('res.trash.action'.tr(), style: AppText.body(size: 14, color: AppColors.danger))),
+                      ],
+                    ),
+                  ),
+                ],
               ],
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -428,6 +453,52 @@ class _NextStep extends StatelessWidget {
     bloc.add(ProReservationStatusChanged('returned', note: result.isEmpty ? null : result));
   }
 
+  /// « Supprimer » (03/11/2026): the question with an optional reason, then back to the list with « Annuler » for 8 s.
+  Future<void> _delete(BuildContext context) async {
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => const _DeleteSheet(),
+    );
+    if (reason == null || !context.mounted) return;
+    final trash = locator<ReservationTrashDataSource>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final id = reservation.id;
+    try {
+      await trash.delete(id, reason: reason);
+    } on DioException catch (e) {
+      final code = e.errorCode;
+      messenger.showSnackBar(
+        SnackBar(content: Text(code == 'plazo_booking' || code == 'vehicle_on_site' ? 'res.trash.$code'.tr() : e.errorMessage)),
+      );
+      return;
+    }
+    // Forced (the page's PopScope would hand the deleted booking back to the list); the list syncs itself.
+    if (navigator.canPop()) navigator.pop();
+    messenger.showSnackBar(
+      SnackBar(
+        key: const Key('deleted-snack'),
+        duration: const Duration(seconds: 8),
+        content: Text('res.trash.deleted'.tr()),
+        action: SnackBarAction(
+          label: 'res.trash.undo'.tr(),
+          onPressed: () async {
+            try {
+              final overbooked = await trash.restore(id);
+              messenger.showSnackBar(SnackBar(content: Text((overbooked ? 'res.trash.restored_overbooked' : 'res.trash.restored').tr())));
+            } on DioException catch (e) {
+              messenger.showSnackBar(SnackBar(content: Text(e.errorMessage)));
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirm(BuildContext context, String status, VoidCallback go) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -441,6 +512,62 @@ class _NextStep extends StatelessWidget {
       ),
     );
     if (ok == true) go();
+  }
+}
+
+/// « Supprimer cette réservation ? » (03/11/2026): pops the reason ("" when none) on confirm, null to keep it.
+class _DeleteSheet extends StatefulWidget {
+  const _DeleteSheet();
+
+  @override
+  State<_DeleteSheet> createState() => _DeleteSheetState();
+}
+
+class _DeleteSheetState extends State<_DeleteSheet> {
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final purge = DateFormat('d MMMM', 'fr_FR').format(DateTime.now().add(const Duration(days: 45)));
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('res.trash.title'.tr(), style: AppText.strong(size: 18)),
+          const SizedBox(height: 8),
+          Text('res.trash.body'.tr(args: [purge]), style: AppText.muted(size: 13.5)),
+          const SizedBox(height: 14),
+          TextField(
+            key: const Key('delete-reason'),
+            controller: _reason,
+            maxLength: 200,
+            decoration: InputDecoration(labelText: 'res.trash.reason'.tr(), hintText: 'res.trash.reason_hint'.tr()),
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            key: const Key('delete-confirm'),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(48)),
+            onPressed: () => Navigator.of(context).pop(_reason.text.trim()),
+            child: Text('res.trash.confirm'.tr()),
+          ),
+          const SizedBox(height: 4),
+          TextButton(
+            key: const Key('delete-keep'),
+            style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('res.trash.keep'.tr()),
+          ),
+        ],
+      ),
+    );
   }
 }
 
