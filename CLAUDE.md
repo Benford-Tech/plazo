@@ -2155,6 +2155,13 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   droite, l'un sous l'autre sur téléphone ; champ d'adresse caché à l'étape 2 pour les gestionnaires de mots de passe ;
   « Inscrire mon parking » et « Essayer la démo » sous le panneau). Rien ne nomme un parking avant la connexion (l'app sert
   plusieurs parkings).
+  **Écran de lancement, direction A « Citron » (02/11/2026, « Un splash screen avec plazo pro by Benford Tech », maquettes
+  https://claude.ai/artifact/1K4MuXuzpvd3ycDdywawi9)** : Plazo Pro seulement : fond citron, la plaque de la connexion (« Plazo » citron
+  sur vert foncé, « PRO » à côté) au centre et « by Benford Tech » en bas (nom et société de `product.json`) ; images rendues par
+  `brand/app/tools/splash_pro.mjs` (Chromium, polices de l'app) : Android (flavor `pro`) `launch_background.xml` jusqu'à Android 11,
+  `values-v31` / `values-night-v31` pour l'écran du système à partir d'Android 12 (`splash_icon` dans le rond, `splash_branding` en bas) ;
+  iOS `LaunchScreenPro.storyboard` (images `LaunchPro`, `LaunchProBy`), choisi par `LAUNCH_SCREEN_NAME` des configurations `-pro`
+  (`UILaunchStoryboardName` = `$(LAUNCH_SCREEN_NAME)`). L'app Plazo garde son lancement.
 - **App Plazo voyageur (Flutter)** : **direction T-A « Parking » (choix T-A + F-A du 05/10/2026, d'après la maquette de Joanny)** :
   fond gris clair `#ECECEE`, cartes blanches très arrondies (22 px) à ombre douce, **plus d'en-tête orange** (barre sur le
   fond gris, logo ou titre brun), une seule carte orange `#FF6600` par écran (parking recommandé, bouton d'action), pilules
