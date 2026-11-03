@@ -122,6 +122,7 @@ import type {
   NotificationChannels,
   NotificationEvent,
   NotificationTestResult,
+  DeletedReservation,
 } from "./types";
 
 import type {
@@ -1438,6 +1439,18 @@ export const adminApi = {
       `${geoBase(scope)}/geocode?${new URLSearchParams({ q }).toString()}`,
     ),
 
+  /** 03/11/2026: to the trash for 45 days (managers). */
+  deleteReservation: (id: string, reason?: string) =>
+    apiRequest<{ id: string; deletedAt: string; purgeAt: string }>(`/internal/reservations/${id}`, {
+      method: "DELETE",
+      body: json(reason ? { reason } : {}),
+    }),
+  restoreReservation: (id: string) =>
+    apiRequest<{ reservation: Reservation; overbooked: boolean }>(`/internal/reservations/${id}/restore`, {
+      method: "POST",
+    }),
+  deletedReservations: () =>
+    apiRequest<{ retentionDays: number; data: DeletedReservation[] }>("/internal/reservations/deleted"),
   changeReservationStatus: (
     id: string,
     status: ReservationStatus,

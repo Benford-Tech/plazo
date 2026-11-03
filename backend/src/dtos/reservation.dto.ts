@@ -354,3 +354,11 @@ export class SetPriceDto {
   @IsIn(PAYMENT_METHODS, { message: 'invalid_payment_method' })
   public paymentMethod?: PaymentMethod | null;
 }
+
+/** DELETE /internal/reservations/:id (03/11/2026): why, optional. */
+export class DeleteReservationDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reason?: string | null;
+}

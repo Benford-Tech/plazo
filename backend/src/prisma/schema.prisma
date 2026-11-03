@@ -889,6 +889,11 @@ model Reservation {
   closingSentAt            DateTime?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
+  /// 03/11/2026: deleted by a manager (an input error, a duplicate, a test): hidden everywhere, restorable 45 days
+  /// (Réservations › Supprimées), then erased for good with its mails, contract and photos (nightly purge).
+  deletedAt                DateTime?
+  deletedById              String?
+  deleteReason             String?
   anonymizedAt             DateTime?
   /// 28/10/2026: the file import that created the booking (« importer des anciennes réservations »); null otherwise.
   importId                 String?
@@ -928,6 +933,7 @@ model Reservation {
   @@index([payoutStatus, arrivalAt])
   @@index([importId])
   @@map("reservations")
+  @@index([operatorId, deletedAt])
 }
 
 /// 28/10/2026 (« importer des anciennes réservations dans plazo et avoir un aperçu avant de valider », direction A): one

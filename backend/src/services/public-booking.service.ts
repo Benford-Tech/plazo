@@ -234,7 +234,7 @@ export class PublicBookingService {
     const phone = phoneKey(traveller.phone);
     const [{ count: byPhone }] = await tx.$queryRaw<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM reservations
-      WHERE channel = 'plazo' AND status::text = ANY(${ACTIVE_STATUSES}::text[]) AND "returnAt" > ${now}
+      WHERE channel = 'plazo' AND "deletedAt" IS NULL AND status::text = ANY(${ACTIVE_STATUSES}::text[]) AND "returnAt" > ${now}
         AND right(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 9) = ${phone}`;
     if (byEmail >= MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT || byPhone >= MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT) {
       throw new HttpException(httpStatus.CONFLICT, 'Too many bookings in progress for this traveller', 'too_many_bookings');

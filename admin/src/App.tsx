@@ -19,6 +19,7 @@ import ImportReservationsPage from "@/pages/ImportReservationsPage";
 import InboundEmailsPage from "@/pages/InboundEmailsPage";
 import RemindersPage from "@/pages/RemindersPage";
 import ExtrasTodoPage from "@/pages/ExtrasTodoPage";
+import DeletedReservationsPage from "@/pages/DeletedReservationsPage";
 import RevenuePage from "@/pages/RevenuePage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
@@ -175,6 +176,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="parking:manage">
                     <ImportReservationsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/reservations/supprimees"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <DeletedReservationsPage />
                   </RequirePermission>
                 }
               />

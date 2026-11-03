@@ -106,6 +106,7 @@ export class CapacityService {
       CROSS JOIN plan
       LEFT JOIN reservations r
         ON r."parkingId" = ${parking.id}
+        AND r."deletedAt" IS NULL
         AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
         -- A place held for an online payment counts until its hold ends (even before the sweep).
         AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
@@ -159,6 +160,7 @@ export class CapacityService {
           END AS stop
         FROM reservations r
         WHERE r."parkingId" = ${parking.id}
+          AND r."deletedAt" IS NULL
           AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
           AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
       )

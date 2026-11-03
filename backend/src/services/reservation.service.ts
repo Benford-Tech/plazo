@@ -1,3 +1,4 @@
+import { ReservationTrashService } from './reservation-trash.service';
 import { airportCity } from '@/domain/airport-names';
 import { travellerEmail } from '@/domain/traveller-email';
 import { INBOUND_EMAIL_DOMAIN } from '@/config';
@@ -1229,7 +1230,7 @@ export class ReservationService {
     const folded = Prisma.sql`translate(lower("customerName"), ${ACCENTED}, ${UNACCENTED})`;
     const conditions = words.map(w => Prisma.sql`${folded} LIKE ${`%${w.replace(/[\\%_]/g, c => `\\${c}`)}%`}`);
     const rows = await prisma.$queryRaw<{ id: string }[]>`
-      SELECT id FROM reservations WHERE "operatorId" = ${operatorId} AND ${Prisma.join(conditions, ' AND ')} LIMIT 500`;
+      SELECT id FROM reservations WHERE "operatorId" = ${operatorId} AND "deletedAt" IS NULL AND ${Prisma.join(conditions, ' AND ')} LIMIT 500`;
     return rows.map(r => r.id);
   }
 
@@ -1275,12 +1276,14 @@ export class ReservationService {
       q ? 0 : prisma.reservation.count({ where: { AND: [where, { arrivalAt: { lt: today } }] } }),
       managers ? prisma.reservation.count({ where: this.noPriceWhere(actor.operatorId) }) : null,
     ]);
+    // « Supprimées · 4 » (03/11/2026): for the managers only, who may delete and restore.
+    const deletedCount = can(actor.role, 'parking:manage') ? await Container.get(ReservationTrashService).count(actor.operatorId) : null;
     const { skip, take, ...pages } = chronologicalPage(totalDocs, before, limit, query.page);
     const rows = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
     // What each comparator takes (19/10/2026): the managers see what they keep under each price.
     const commissions = can(actor.role, 'revenue:view') ? await Container.get(CommissionService).of(actor.operatorId, timezone, rows) : [];
     const docs = rows.map((r, i) => ({ ...r, commission: commissions[i] ?? null }));
-    return { docs, totalDocs, limit, ...pages, noPriceCount };
+    return { docs, totalDocs, limit, ...pages, noPriceCount, deletedCount };
   }
 
   /**
@@ -1363,6 +1366,7 @@ export class ReservationService {
       SELECT ((r.${Prisma.raw(`"${column}"`)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date AS day, COUNT(*)::int AS n
       FROM reservations r
       WHERE r."parkingId" = ${parking.id}
+        AND r."deletedAt" IS NULL
         AND r.status::text NOT IN ('cancelled', 'no_show', 'pending_payment')
         AND (r."paymentStatus" IS NULL OR r."paymentStatus"::text <> 'expired')
         AND r.${Prisma.raw(`"${column}"`)} >= ${startAt} AND r.${Prisma.raw(`"${column}"`)} < ${endAt}
