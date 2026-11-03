@@ -356,3 +356,18 @@ export function signatureCodeSecret(): string {
     .update('plazo:signature-codes')
     .digest('hex');
 }
+
+// 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli): Plazo's WhatsApp Business number, through Meta's Cloud API.
+// WHATSAPP_TOKEN (a System User's permanent token) and WHATSAPP_PHONE_NUMBER_ID turn it on; WHATSAPP_APP_SECRET checks
+// the webhook's signature and WHATSAPP_VERIFY_TOKEN answers Meta's subscription check. The message is one approved
+// « Utility » template (WHATSAPP_TEMPLATE, default plazo_message, language WHATSAPP_TEMPLATE_LANGUAGE, default fr) with
+// three body variables: the parking, the booking's reference and the text of the SMS it replaces.
+export const whatsappConfig = () => ({
+  token: process.env.WHATSAPP_TOKEN?.trim() || '',
+  phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() || '',
+  appSecret: process.env.WHATSAPP_APP_SECRET?.trim() || '',
+  verifyToken: process.env.WHATSAPP_VERIFY_TOKEN?.trim() || '',
+  template: process.env.WHATSAPP_TEMPLATE?.trim() || 'plazo_message',
+  language: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'fr',
+  graphVersion: process.env.WHATSAPP_GRAPH_VERSION?.trim() || 'v21.0',
+});

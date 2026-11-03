@@ -14,8 +14,10 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { decryptSecret, encryptSecret, SecretBoxError } from '@/utils/secret-box';
+import { isWhatsappKind } from '@/domain/whatsapp';
 import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
+import { WhatsappService } from './whatsapp.service';
 import { GatewayCredentials, GatewayError, GatewayState, SMS_GATEWAY_CLOUD_URL, SmsGatewayClient } from './sms-gateway.service';
 
 /** An SMS is retried (and kept waiting at the gateway) for this long, then abandoned. */
@@ -86,11 +88,32 @@ export class SmsService {
   public gateway = Container.get(SmsGatewayClient);
   public notifications = Container.get(NotificationService);
   public audit = Container.get(AuditService);
+  public whatsapp = Container.get(WhatsappService);
 
   // ---- Routing ------------------------------------------------------------------------------------
 
-  /** Every SMS to a traveller goes through here. Never throws: a notification never fails the action. */
+  /**
+   * Every message to a traveller goes through here. Never throws: a notification never fails the action. 03/11/2026
+   * (« Plazo envoie par WhatsApp », SMS en repli): the confirmation, day-before and landing messages go first by WhatsApp
+   * when the parking turned it on; the SMS below is then the fallback (WhatsappService).
+   */
   public async sendTravellerSms(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
+    if (isWhatsappKind(sms.kind)) {
+      try {
+        const recipient = smsRecipient(sms.to);
+        if (recipient && !(await isProspectDemoOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
+          const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
+          if (await this.whatsapp.trySend(operatorId, sms, recipient, (settings?.mode ?? 'none') !== 'none')) return 'sent';
+        }
+      } catch (error) {
+        logger.error(`[WhatsApp] ${sms.kind} failed for operator ${operatorId}: ${error instanceof Error ? error.name : 'unknown error'}`);
+      }
+    }
+    return this.sendSmsOnly(operatorId, sms);
+  }
+
+  /** The SMS alone, through the parking's channel: also the fallback of a WhatsApp message that was not delivered. */
+  public async sendSmsOnly(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
       // 21/10/2026: the prospects' demo never sends anything.

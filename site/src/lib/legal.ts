@@ -31,12 +31,12 @@ export interface LegalDoc {
  * - Terms: 19/10/2026, the signed contract and the condition reports (articles 9 and 11); 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
  *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ * - Privacy: 03/11/2026, the messages by WhatsApp (Meta) with the SMS as fallback; 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "30 octobre 2026";
 export const NOTICE_VERSION = "22 octobre 2026";
-export const PRIVACY_VERSION = "30 octobre 2026";
+export const PRIVACY_VERSION = "3 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -350,7 +350,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           [
             "Enregistrer et confirmer votre réservation, encaisser le paiement, rembourser une annulation, transmettre la réservation au parking : exécution du contrat.",
             "Faire signer le contrat de stationnement, établir l’état du véhicule au dépôt et au retour et traiter un éventuel dommage : exécution du contrat.",
-            "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, SMS ou notification : exécution du contrat.",
+            "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, WhatsApp, SMS ou notification : exécution du contrat.",
             "Suivre vos vols pour caler la navette : exécution du contrat.",
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
             `Sécuriser le service, prévenir la fraude et les abus, garder la trace des modifications des réservations, traiter vos réclamations et défendre nos droits : intérêt légitime de ${p} et du parking.`,
@@ -373,6 +373,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             `Brevo (e-mails, dont les messages du formulaire de contact et la lettre ${p} avec la liste de ses inscrits, et, selon le choix du parking, SMS) ;`,
             "Cloudflare (réception des e-mails de confirmation que les parkings nous transfèrent, relayés aussitôt vers notre serveur) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
+            "selon le choix du parking, Meta (WhatsApp Business), qui transmet la confirmation, le rappel de la veille et le rendez-vous à l’atterrissage depuis le numéro WhatsApp de Plazo : votre numéro et le texte du message passent alors par WhatsApp ; si vous n’avez pas WhatsApp ou ne recevez pas le message, il part par SMS ;",
             "OneSignal (notifications de l’application) ;",
             "Vercel Blob (stockage privé des photos de l’état des lieux, les vôtres comprises, qui ne sont montrées qu’à l’équipe du parking et à vous) ;",
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",
@@ -387,7 +388,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "transferts",
         title: "5. Transferts hors de l’Union européenne",
         blocks: [
-          "Certains prestataires (Vercel, Neon, Stripe, OneSignal, Cloudflare) sont des sociétés américaines et peuvent accéder aux données depuis les États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne pour les sociétés adhérant au Data Privacy Framework UE–États-Unis, ou à défaut par les clauses contractuelles types de la Commission européenne.",
+          "Certains prestataires (Vercel, Neon, Stripe, OneSignal, Cloudflare, Meta) sont des sociétés américaines et peuvent accéder aux données depuis les États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne pour les sociétés adhérant au Data Privacy Framework UE–États-Unis, ou à défaut par les clauses contractuelles types de la Commission européenne.",
         ],
       },
       {
@@ -404,6 +405,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
+            "Suivi des messages WhatsApp (numéro du destinataire et état de remise) : 30 jours ; le texte n’est gardé que le temps de l’envoyer par SMS s’il n’est pas remis, 2 heures au plus.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,
             `Lettre ${p} : votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre ; une inscription que vous ne confirmez pas n’est ajoutée à aucune liste. Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire ; vous pouvez en demander l’effacement (article 8). Pour limiter les e-mails de confirmation envoyés à une même adresse, son empreinte reste en mémoire 48 heures au plus.`,

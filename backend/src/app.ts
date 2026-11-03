@@ -23,6 +23,8 @@ import { BOOKING_IMPORT_PATH } from './routes/booking-import.route';
 import { INBOUND_PASTE_PATH } from './routes/inbound-email.route';
 
 export const STRIPE_WEBHOOK_PATH = `${API_PREFIX}/public/stripe/webhook`;
+// Meta signs the exact bytes of its WhatsApp deliveries (03/11/2026).
+export const WHATSAPP_WEBHOOK_PATH = `${API_PREFIX}/public/whatsapp/webhook`;
 export const INSPECTION_PHOTO_PATH = new RegExp(
   `^${API_PREFIX}/(internal/reservations/[^/]+/inspections/(dropoff|return)/photos|public/bookings/[^/]+/inspections/(dropoff|return)/mine/photos)$`,
 );
@@ -79,6 +81,7 @@ export class App {
     // Stripe signs the exact bytes it sends: its webhook gets the raw body (a Buffer), before the
     // JSON parser (which then leaves the request alone). See RawBodyMiddleware for Vercel.
     this.app.post(STRIPE_WEBHOOK_PATH, RawBodyMiddleware());
+    this.app.post(WHATSAPP_WEBHOOK_PATH, RawBodyMiddleware());
     // Condition report photos (19/10/2026): the image's bytes, shrunk by the app (3 MB at most).
     this.app.post(INSPECTION_PHOTO_PATH, RawBodyMiddleware(MAX_PHOTO_BYTES + 64 * 1024));
     // A member's photo (30/10/2026): a square cropped by the pro space, 2 MB at most.
@@ -96,9 +99,9 @@ export class App {
 
     this.app.use(API_PREFIX, appLimiter);
     this.app.use(`${API_PREFIX}/internal/auth`, authLimiter);
-    // Stripe's webhook deliveries come in bursts from a few addresses: not limited as a traveller.
+    // Stripe's and Meta's webhook deliveries come in bursts from a few addresses: not limited as a traveller.
     this.app.use(`${API_PREFIX}/public`, (req, res, next) =>
-      req.originalUrl.split('?')[0] === STRIPE_WEBHOOK_PATH ? next() : publicLimiter(req, res, next),
+      [STRIPE_WEBHOOK_PATH, WHATSAPP_WEBHOOK_PATH].includes(req.originalUrl.split('?')[0]) ? next() : publicLimiter(req, res, next),
     );
   }
 

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { SmsMode } from '@/database';
 
 /** E.164: "+" then 7 to 15 digits (the pro space lets the manager type spaces; they are removed before). */
@@ -38,4 +38,10 @@ export class UpdateSmsSettingsDto {
 export class TestSmsDto {
   @Matches(E164_RE, { message: 'invalid_phone' })
   public to: string;
+}
+
+/** PUT /internal/whatsapp/settings (03/11/2026). */
+export class UpdateWhatsappSettingsDto {
+  @IsBoolean({ message: 'invalid' })
+  public enabled: boolean;
 }

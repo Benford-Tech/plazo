@@ -588,6 +588,34 @@ Pour relier le téléphone (un Android allumé, chargé, avec des SMS illimités
 La boîte d'envoi (`sms_outbox`) garde le destinataire et l'empreinte SHA-256 du texte, jamais le texte (reconstruit
 depuis la réservation pour un nouvel essai) ; ses lignes sont purgées après 30 jours par le cron de nuit.
 
+### WhatsApp aux voyageurs (SMS en repli)
+
+Depuis le 03/11/2026, chaque parking peut allumer **Parking › Réglages › WhatsApp aux voyageurs** : la confirmation, le
+rappel de la veille et le rendez-vous à l'atterrissage partent d'abord par WhatsApp, depuis **le numéro WhatsApp Business
+de Plazo** (API Cloud de Meta) ; si Meta refuse le message, le dit échoué (voyageur sans WhatsApp) ou ne l'a pas remis au
+bout de 5 minutes, le SMS du canal ci-dessus part à la place (une seule fois). Le code de signature et les tests restent
+par SMS. Le texte n'est gardé que 2 heures (le temps du repli) ; les lignes (`whatsapp_messages` : numéro, état, code de
+Meta) sont purgées après 30 jours.
+
+Mise en place, une fois pour toute la plateforme :
+1. **business.facebook.com** : le portefeuille Meta Business de Benford Tech, avec la **vérification de l'entreprise**
+   (Kbis, quelques jours).
+2. **developers.facebook.com** › *Créer une app* › type *Entreprise*, produit **WhatsApp** ; y ajouter le **numéro**
+   (un numéro qui n'est pas déjà utilisé dans l'appli WhatsApp), nom affiché « Plazo » (validé par Meta). Noter son
+   **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`.
+3. *Paramètres de l'entreprise* › *Utilisateurs système* : un utilisateur système **admin**, lui donner l'app et le compte
+   WhatsApp, générer un **jeton permanent** avec `whatsapp_business_messaging` et `whatsapp_business_management` →
+   `WHATSAPP_TOKEN`. *App* › *Paramètres* › *Général* : la **clé secrète** → `WHATSAPP_APP_SECRET`.
+4. *WhatsApp Manager* › *Modèles de message* › *Créer* : catégorie **Utilitaire**, nom **`plazo_message`**, langue
+   **Français** (`fr`), corps :
+   `Message de {{1}} pour votre réservation {{2}} : {{3}}` (exemples : « Safe Parking Lyon », « R7KQ2M », « nous vous
+   attendons demain à 06:30 ») ; l'envoyer à la validation. Un autre nom ou une autre langue : `WHATSAPP_TEMPLATE`,
+   `WHATSAPP_TEMPLATE_LANGUAGE`.
+5. *App* › *WhatsApp* › *Configuration* › *Webhook* : URL `https://www.plazo.fr/api/public/whatsapp/webhook`, jeton de
+   vérification = une longue valeur au hasard, aussi posée dans `WHATSAPP_VERIFY_TOKEN` (avant de cliquer *Vérifier*) ;
+   s'abonner au champ **messages**.
+6. Poser les cinq variables sur Vercel (production), redéployer ; le loueur allume WhatsApp et s'envoie un test.
+
 ### SMS de la veille et planificateur externe
 
 Chaque parking choisit dans **Réservations › SMS de la veille** l'heure du rappel (16:00 à 21:30), son texte, et peut
