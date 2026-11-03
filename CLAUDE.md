@@ -510,6 +510,23 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      962,50 € · 20 % du chiffre · 12 réservations, sans commission » (`revenue-direct`) et poignée de main sur les lignes de canal
      directes ; liste Réservations (web et app) : poignée de main après le nom ; fiche : « Canal · Téléphone · En direct » ; formulaire
      web et app : « En direct » sous le canal choisi. Tests `revenue.test.ts`, `RevenuePage.test.tsx`, `pro_reservation_form_page_test.dart`.
+   - **Supprimer une réservation (03/11/2026, « Pouvoir supprimer une réservation… elle s'archive 45 jours », maquettes
+     https://claude.ai/artifact/JD6yJ7YvnSpFkrKp5nCM1D, « go avec tes hypothèses »)** : gérants seulement (`parking:manage`), jamais une
+     réservation payée sur Plazo (409 `plazo_booking` : l'annuler) ni une voiture au parking (409 `vehicle_on_site`) ;
+     `Reservation.deletedAt/deletedById/deleteReason` (migration `reservation_deleted`, raison ≤ 200, CHECK) ; **le client Prisma de
+     `database/index.ts` ajoute `deletedAt: null` à toute lecture et mise à jour de réservation** (extension `hide-deleted-reservations`,
+     typée comme le client ordinaire), le SQL brut sur `reservations` filtre `"deletedAt" IS NULL` lui-même (capacité, prévisionnel,
+     recherche par nom, limites du site) et seule la corbeille lit les supprimées (`prismaWithDeleted`). `ReservationTrashService` :
+     `DELETE /internal/reservations/:id` `{ reason? }` (place ou file libérée, signal d'arrivée clos, tracé `reservation.deleted`, rien
+     envoyé au client) → `{ id, deletedAt, purgeAt }`, `POST …/:id/restore` (remise telle quelle sans sa place, tracé
+     `reservation.restored`) → `{ reservation, overbooked }`, `GET /internal/reservations/deleted` (45 jours, qui, quand, pourquoi,
+     `purgeAt`), `deletedCount` de la liste pour les gérants ; purge de nuit (`purge-expired-tokens` › `reservationsPurged`) : effacée
+     pour de bon 45 jours après, avec ses mails liés, contrat, états des lieux et photos (fichiers d'abord) et son historique. Web :
+     « Supprimer la réservation… » sous la prochaine étape de la fiche (`DeleteReservation` : question, raison facultative, toast
+     « Annuler » 8 s), pilule « Supprimées · N » de Réservations → `/pro/reservations/supprimees` (`DeletedReservationsPage`, « Restaurer »,
+     « dans 3 j » en rouge). Plazo Pro : « Supprimer la réservation… » en bas d'« Autres actions » (aussi pour une réservation close),
+     feuille avec la raison, puis retour à la liste et « Annuler » 8 s (`ReservationTrashDataSource` par Dio) ; la corbeille reste sur
+     le web. Tests `reservation-trash.test.ts`, `DeleteReservation.test.tsx`, `pro_reservation_delete_test.dart`.
    - **Badge « Surréservation » selon l'occupation réelle (01/11/2026, « pourquoi Surréservation pour AR-549-DJ », puis « le badge
      doit suivre l'occupation réelle »)** : `GET /internal/reservations/:id` rend `overbooked` calculé à la lecture
      (`CapacityService.overbookedNow` : une nuit restante du séjour, aujourd'hui compris, compte plus de voitures que les places

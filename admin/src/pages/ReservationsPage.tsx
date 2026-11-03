@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { MovementPill } from "@/components/MovementPill";
@@ -91,8 +91,10 @@ export default function ReservationsPage() {
         </button>
       </form>
 
-      {priced && (data.noPriceCount! > 0 || noPrice) && (
+      {((priced && (data.noPriceCount! > 0 || noPrice)) || (data?.deletedCount ?? 0) > 0) && (
         <div className="flex flex-wrap items-center gap-2">
+          {priced && (data.noPriceCount! > 0 || noPrice) && (
+          <>
           <button
             type="button"
             aria-pressed={!noPrice}
@@ -114,6 +116,19 @@ export default function ReservationsPage() {
             ● {n.filter(data.noPriceCount!)}
           </button>
           {noPrice && <span className="text-sm text-muted-foreground">{n.filterHint}</span>}
+          </>
+          )}
+          {/* « Supprimées · 4 » (03/11/2026): the managers' trash, kept 45 days. */}
+          {(data?.deletedCount ?? 0) > 0 && (
+            <Link
+              to="/reservations/supprimees"
+              data-testid="deleted-link"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-panel-line bg-panel px-4 text-sm hover:bg-panel-2"
+            >
+              <Trash2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              {fr.trash.pill(data!.deletedCount!)}
+            </Link>
+          )}
         </div>
       )}
       {data && <p className="text-sm text-muted-foreground">{q ? t.orderSearch : data.page >= 1 ? t.orderFromToday : t.orderBeforeToday}</p>}

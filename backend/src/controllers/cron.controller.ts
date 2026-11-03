@@ -1,3 +1,4 @@
+import { ReservationTrashService } from '@/services/reservation-trash.service';
 import { ProspectDemoService } from '@/services/prospect-demo.service';
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
@@ -213,6 +214,8 @@ export class CronController {
     const prospectsDeleted = await this.prospecting.purge();
     // 02/11/2026: the bell forgets after 30 days.
     const bellPurged = await Container.get(StaffNotificationService).purge();
+    // 03/11/2026: the reservations deleted 45 days ago, erased for good with their mails, contract and photos.
+    const reservationsPurged = await Container.get(ReservationTrashService).purge();
     // 21/10/2026: the prospects' demo starts every day afresh (never throws).
     const demoReset = await this.demo.reset();
     logger.info(
@@ -244,6 +247,7 @@ export class CronController {
       appLinkClaimsDeleted,
       prospectsDeleted,
       bellPurged,
+      reservationsPurged,
     });
   });
 }

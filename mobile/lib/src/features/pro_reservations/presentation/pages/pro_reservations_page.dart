@@ -62,7 +62,12 @@ class _ViewState extends State<_View> {
   Future<void> _open(BuildContext context, PageRouteInfo route) async {
     final bloc = context.read<ProReservationsBloc>();
     final result = await context.router.push<ReservationModel?>(route);
-    if (result != null) bloc.add(ProReservationsUpdated(result));
+    if (result != null) {
+      bloc.add(ProReservationsUpdated(result));
+    } else {
+      // Nothing handed back (a booking deleted, 03/11/2026, or a form left): read the list again, quietly.
+      bloc.add(const ProReservationsSynced());
+    }
   }
 
   @override

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ReservationController } from '@/controllers/reservation.controller';
-import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
+import { ChangeStatusDto, CreateReservationDto, DeleteReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -176,6 +176,15 @@ export class ReservationRoute implements Routes {
       ValidationMiddleware(ParseEmailDto),
       this.reservations.parseEmail,
     );
+    // 03/11/2026: deleting a reservation (managers), kept 45 days in Réservations › Supprimées. Before `/:id`.
+    this.router.get('/internal/reservations/deleted', StaffAuthMiddleware('parking:manage'), this.reservations.deleted);
+    this.router.delete(
+      '/internal/reservations/:id',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(DeleteReservationDto, 'body', true),
+      this.reservations.remove,
+    );
+    this.router.post('/internal/reservations/:id/restore', StaffAuthMiddleware('parking:manage'), this.reservations.restore);
     // « Historique » (30/10/2026): who did what on the reservation, newest first.
     this.router.get('/internal/reservations/:id/history', StaffAuthMiddleware('reservations:view'), this.reservations.history);
     this.router.get('/internal/reservations/:id', StaffAuthMiddleware('reservations:view'), this.reservations.get);

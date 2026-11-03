@@ -1,13 +1,14 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
+import { ChangeStatusDto, CreateReservationDto, DeleteReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ArrivalService } from '@/services/arrival.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { ReservationService } from '@/services/reservation.service';
 import { ReservationHistoryService } from '@/services/reservation-history.service';
+import { ReservationTrashService } from '@/services/reservation-trash.service';
 import catchAsync from '@/utils/catchAsync';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : undefined);
@@ -19,6 +20,23 @@ export class ReservationController {
   public history = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');
     res.json(await Container.get(ReservationHistoryService).history(req.staff, req.params.id as string));
+  });
+
+  /** DELETE /internal/reservations/:id { reason? } (03/11/2026): to the trash for 45 days. */
+  public remove = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const body = (req.body ?? {}) as DeleteReservationDto;
+    res.json(await Container.get(ReservationTrashService).remove(req.staff, req.params.id as string, body.reason));
+  });
+
+  /** POST /internal/reservations/:id/restore */
+  public restore = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await Container.get(ReservationTrashService).restore(req.staff, req.params.id as string));
+  });
+
+  /** GET /internal/reservations/deleted */
+  public deleted = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(ReservationTrashService).list(req.staff));
   });
 
   /** GET /internal/planning?date=YYYY-MM-DD */

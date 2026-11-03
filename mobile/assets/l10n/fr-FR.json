@@ -291,6 +291,21 @@
       "transfer": "Virement",
       "holiday_vouchers": "Chèques-vacances",
       "comparator": "Au comparateur"
+    },
+    "trash": {
+      "action": "Supprimer la réservation…",
+      "title": "Supprimer cette réservation ?",
+      "body": "Elle quitte le planning, les places et le chiffre d'affaires, sans message au client. Restaurable 45 jours depuis Réservations › Supprimées (espace pro web), effacée le {}.",
+      "reason": "Raison (facultatif)",
+      "reason_hint": "Doublon, erreur de saisie…",
+      "confirm": "Supprimer",
+      "keep": "Garder",
+      "deleted": "Réservation supprimée.",
+      "undo": "Annuler",
+      "restored": "Réservation restaurée.",
+      "restored_overbooked": "Réservation restaurée. Attention : une de ses nuits est complète.",
+      "plazo_booking": "Une réservation payée sur Plazo ne se supprime pas : annulez-la.",
+      "vehicle_on_site": "La voiture est au parking : rendez-la, ou marquez « Non venu », avant de la supprimer."
     }
   },
   "occupation": {

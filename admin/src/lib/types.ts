@@ -540,6 +540,8 @@ export interface ReservationPage extends Paginated<Reservation> {
   pageNumber?: number;
   /** 21/10/2026: how many bookings have no price (managers only; null for the other roles). */
   noPriceCount?: number | null;
+  /** « Supprimées · 4 » (03/11/2026): managers only, null otherwise. */
+  deletedCount?: number | null;
 }
 
 /** A booking without a price on the dashboard's « Les compléter » card (21/10/2026). */
@@ -2352,4 +2354,22 @@ export interface NotificationTestResult {
   browsers: number;
   phones: number;
   phonesConfigured: boolean;
+}
+
+/** A reservation in Réservations › Supprimées (03/11/2026): kept 45 days, then erased. */
+export interface DeletedReservation {
+  id: string;
+  reference: string;
+  customerName: string;
+  plate: string;
+  channel: ReservationChannel;
+  channelDetail: string | null;
+  status: ReservationStatus;
+  arrivalAt: string;
+  returnAt: string;
+  priceCents: number | null;
+  deletedAt: string;
+  purgeAt: string;
+  deleteReason: string | null;
+  deletedBy: { firstName: string | null } | null;
 }

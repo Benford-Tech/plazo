@@ -1511,6 +1511,44 @@ export const fr = {
     readOnly: "Consultation ou démo : les réglages ne se modifient pas.",
   },
   // 02/11/2026: booked with the parking itself (phone, counter, its own website).
+  /** 03/11/2026, « Pouvoir supprimer une réservation… elle s'archive 45 jours ». */
+  trash: {
+    pill: (n: number) => `Supprimées · ${n}`,
+    deleteButton: "Supprimer la réservation…",
+    deleteHelp: "Une erreur de saisie, un doublon ou un essai. Pour un client qui ne vient plus, annulez plutôt.",
+    dialogTitle: (name: string) => `Supprimer la réservation de ${name} ?`,
+    dialogBody:
+      "Elle disparaît des listes, du planning, du prévisionnel, des places et du chiffre d'affaires. Aucun message n'est envoyé au client.",
+    restoreLine: "Vous pourrez la restaurer pendant 45 jours depuis Réservations › Supprimées.",
+    purgeLine: (date: string) => `Le ${date}, elle sera effacée pour de bon, avec ses mails liés, son contrat et ses photos.`,
+    reasonLabel: "Raison (facultatif)",
+    reasonPlaceholder: "Doublon de la réservation saisie au téléphone",
+    keep: "Garder",
+    confirm: "Supprimer",
+    deleting: "Suppression…",
+    deleted: "Réservation supprimée.",
+    undo: "Annuler",
+    restoredToast: "Réservation restaurée.",
+    restoredOverbooked: "Réservation restaurée. Attention : une de ses nuits est complète (surréservation).",
+    errors: {
+      plazo_booking: "Une réservation payée sur Plazo ne se supprime pas : annulez-la (le client est remboursé selon les conditions).",
+      vehicle_on_site: "La voiture est au parking : rendez-la, ou marquez « Non venu », avant de supprimer la réservation.",
+      not_found: "Cette réservation n'existe plus.",
+    } as Record<string, string>,
+    title: "Réservations supprimées",
+    back: "Réservations",
+    intro: (days: number) =>
+      `Gardées ${days} jours après leur suppression, puis effacées pour de bon. Elles ne comptent nulle part : ni planning, ni places, ni chiffre d'affaires.`,
+    empty: "Aucune réservation supprimée.",
+    columns: { who: "Client · plaque", stay: "Séjour", deleted: "Supprimée", purge: "Effacée le" },
+    by: (name: string | null, when: string) => (name ? `par ${name} · ${when}` : when),
+    noReason: "Sans raison",
+    inDays: (n: number) => (n <= 0 ? "cette nuit" : n === 1 ? "dans 1 j" : `dans ${n} j`),
+    restore: "Restaurer",
+    restoring: "Restauration…",
+    restoreHelp:
+      "Restaurer remet la réservation telle qu'elle était, avec son état, sans sa place ; si ses nuits sont devenues complètes entre-temps, Plazo prévient mais restaure quand même.",
+  },
   direct: {
     badge: "En direct",
     title: "Réservée en direct auprès du parking, sans intermédiaire ni commission",
@@ -4981,6 +5019,8 @@ export const historyFr = {
     "reservation.valet_run_taken": "a pris la course du voiturier",
     "reservation.valet_run_released": "a rendu la course du voiturier",
     "reservation.import_removed": "a retiré l'import",
+    "reservation.deleted": "a supprimé la réservation",
+    "reservation.restored": "a restauré la réservation",
     "extra.accepted": "a accepté un service",
     "extra.done": "a fait un service",
     "extra.paid": "a payé un service",

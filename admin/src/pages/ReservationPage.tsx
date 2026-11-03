@@ -7,6 +7,7 @@ import { ChildSeatIcon } from "@/components/ChildSeatIcon";
 import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
+import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
@@ -428,6 +429,8 @@ export default function ReservationPage() {
       ) : (
         <>
           <NextStep reservation={r} />
+          {/* 03/11/2026: managers delete a booking typed by mistake; restorable 45 days. */}
+          {can(user?.role, "parking:manage") && <DeleteReservation reservation={r} />}
           <ReservationExtras
             reservationId={r.id}
             mayAct={can(user?.role, "reservations:status")}

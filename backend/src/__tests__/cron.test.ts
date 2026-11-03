@@ -27,6 +27,8 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       carLocationsPurged: 0,
       // The bell forgets after 30 days (02/11/2026).
       bellPurged: 0,
+      // Reservations deleted 45 days ago (03/11/2026).
+      reservationsPurged: 0,
       inboundEmails: { textsCleared: 0, rowsDeleted: 0 },
       reservationsAnonymized: 0,
       inspectionPhotosErased: 0,
