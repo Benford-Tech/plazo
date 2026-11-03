@@ -2,6 +2,7 @@ import { Container } from 'typedi';
 import prisma from '@/database';
 import { channelsOf } from '@/domain/staff-notifications';
 import { ONESIGNAL_NOTIFICATIONS_URL, PushService } from '@/services/push.service';
+import { StaffNotificationService, resetWebPushKeyCache } from '@/services/staff-notification.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /** 02/11/2026 (« Mets en place les notifs »): the bell, « Mes notifications » and the browsers. */
@@ -16,9 +17,15 @@ beforeEach(async () => {
   delete process.env.ONESIGNAL_REST_API_KEY;
   delete process.env.VAPID_PUBLIC_KEY;
   delete process.env.VAPID_PRIVATE_KEY;
+  // Browser notifications off unless a test turns them on (Plazo would otherwise make its own keys).
+  process.env.WEB_PUSH = 'off';
+  resetWebPushKeyCache();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ id: 'n1' }), { status: 200 }));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  delete process.env.WEB_PUSH;
+});
 
 describe('channelsOf (domain)', () => {
   const base = {
@@ -107,7 +114,6 @@ describe('the bell', () => {
     await Container.get(PushService).notifyStaff(op.operator.id, 'team', { title: 'Demande', body: 'z' });
     await prisma.staffNotification.updateMany({ data: { createdAt: new Date(Date.now() - 31 * 86400000) } });
     expect((await api().get('/api/internal/notifications').set(auth(op.token))).body.data).toEqual([]);
-    const { StaffNotificationService } = await import('@/services/staff-notification.service');
     expect(await Container.get(StaffNotificationService).purge()).toBe(1);
   });
 });
@@ -153,7 +159,7 @@ describe('« Mes notifications »', () => {
     expect(pushCalls()).toHaveLength(1);
   });
 
-  it('refuses a browser without VAPID keys, and sends a test to the bell and the phones', async () => {
+  it('refuses a browser when browser notifications are off, and sends a test to the bell and the phones', async () => {
     const op = await setupOperator();
     const sub = await api()
       .post('/api/internal/notifications/browsers')
@@ -168,7 +174,27 @@ describe('« Mes notifications »', () => {
     expect((await api().get('/api/internal/notifications/count').set(auth(op.token))).body.unread).toBe(1);
   });
 
+  it('makes its own key pair once when Vercel has none, and keeps it', async () => {
+    delete process.env.WEB_PUSH;
+    await prisma.webPushKey.deleteMany();
+    const op = await setupOperator();
+    const first = await api().get('/api/internal/notifications/channels').set(auth(op.token));
+    expect(first.body.webPush.available).toBe(true);
+    expect(first.body.webPush.publicKey).toMatch(/^[A-Za-z0-9_-]{80,}$/);
+    // Another instance (no cache) reads the same pair back, never a new one.
+    resetWebPushKeyCache();
+    const again = await api().get('/api/internal/notifications/channels').set(auth(op.token));
+    expect(again.body.webPush.publicKey).toBe(first.body.webPush.publicKey);
+    expect(await prisma.webPushKey.count()).toBe(1);
+    const res = await api()
+      .post('/api/internal/notifications/browsers')
+      .set(auth(op.token))
+      .send({ endpoint: 'https://push.example.com/own', keys: { p256dh: 'k', auth: 'a' } });
+    expect(res.status).toBe(200);
+  });
+
   it('registers a browser once VAPID keys are set', async () => {
+    delete process.env.WEB_PUSH;
     // A throwaway key pair, valid P-256 (web-push generates them).
     const webpush = await import('web-push');
     const keys = webpush.generateVAPIDKeys();

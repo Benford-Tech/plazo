@@ -1,6 +1,6 @@
 import { Container, Service } from 'typedi';
 import webpush from 'web-push';
-import { PUBLIC_SITE_URL, webPushSettings } from '@/config';
+import { PUBLIC_SITE_URL, webPushDisabled, webPushSettings, webPushSubject } from '@/config';
 import prisma, { Prisma } from '@/database';
 import type { PushMessage } from '@/domain/arrival-messages';
 import {
@@ -37,6 +37,26 @@ export type NotifiedRow = NotifiedStaff & { id: string };
 
 const PAGE_SIZE = 40;
 
+type VapidKeys = { publicKey: string; privateKey: string; subject: string };
+/** Plazo's own pair, read once per instance (it never changes once created). */
+let storedKeys: Promise<VapidKeys | null> | null = null;
+
+/** Tests: forget the pair read from the database. */
+export function resetWebPushKeyCache(): void {
+  storedKeys = null;
+}
+
+async function loadStoredKeys(): Promise<VapidKeys | null> {
+  const existing = await prisma.webPushKey.findUnique({ where: { id: 'default' } });
+  if (existing) return { publicKey: existing.publicKey, privateKey: existing.privateKey, subject: webPushSubject() };
+  const fresh = webpush.generateVAPIDKeys();
+  // Two instances starting together: the first insert wins, both read it back.
+  await prisma.webPushKey.createMany({ data: [{ id: 'default', ...fresh }], skipDuplicates: true });
+  const row = await prisma.webPushKey.findUniqueOrThrow({ where: { id: 'default' } });
+  logger.info('[WebPush] browser notification keys created');
+  return { publicKey: row.publicKey, privateKey: row.privateKey, subject: webPushSubject() };
+}
+
 /** « 21:42 » categories of the bell's filters. */
 export const BELL_FILTERS: Record<string, NotificationEvent[]> = {
   bookings: ['booking_new', 'booking_change', 'inbox', 'extra'],
@@ -52,6 +72,24 @@ export const BELL_FILTERS: Record<string, NotificationEvent[]> = {
 export class StaffNotificationService {
   public audit = Container.get(AuditService);
   public timeoutMs = 5000;
+
+  /**
+   * The VAPID keys: Vercel's when set, else Plazo's own pair (created on first use, 03/11/2026: no key to generate by
+   * hand). Null with `WEB_PUSH=off` or when the database cannot be read.
+   */
+  public async webPushKeys(): Promise<VapidKeys | null> {
+    if (webPushDisabled()) return null;
+    const fromEnv = webPushSettings();
+    if (fromEnv) return fromEnv;
+    if (!storedKeys) {
+      storedKeys = loadStoredKeys().catch(error => {
+        storedKeys = null;
+        logger.warn(`[WebPush] could not read the keys: ${error instanceof Error ? error.message : 'unknown error'}`);
+        return null;
+      });
+    }
+    return storedKeys;
+  }
 
   /** Writes the bell rows and sends to the browsers of these members. */
   public async deliver(
@@ -84,8 +122,9 @@ export class StaffNotificationService {
 
   /** Sends to every browser of these members; a browser that is gone (404 / 410) is forgotten. Returns how many took it. */
   public async sendBrowsers(staffIds: string[], message: PushMessage, target: string | null, tag: string): Promise<number> {
-    const settings = webPushSettings();
-    if (!settings || !staffIds.length) return 0;
+    if (!staffIds.length) return 0;
+    const settings = await this.webPushKeys();
+    if (!settings) return 0;
     try {
       const subscriptions = await prisma.staffWebPushSubscription.findMany({ where: { staffId: { in: staffIds } } });
       if (!subscriptions.length) return 0;
@@ -185,6 +224,7 @@ export class StaffNotificationService {
 
   public async channels(actor: AuthenticatedStaff) {
     const staff = await prisma.staff.findUniqueOrThrow({ where: { id: actor.id }, select: NOTIFIED_STAFF_SELECT });
+    const keys = await this.webPushKeys();
     const [phones, browsers] = await Promise.all([
       prisma.staffDevice.findMany({ where: { staffId: actor.id }, select: { platform: true, updatedAt: true }, orderBy: { updatedAt: 'desc' } }),
       prisma.staffWebPushSubscription.findMany({
@@ -197,7 +237,7 @@ export class StaffNotificationService {
       role: staff.role,
       bookings: staff.bookingNotify,
       channels: channelMatrix(staff),
-      webPush: { available: webPushSettings() !== null, publicKey: webPushSettings()?.publicKey ?? null },
+      webPush: { available: keys !== null, publicKey: keys?.publicKey ?? null },
       devices: {
         phones: phones.map(p => ({ platform: p.platform, updatedAt: p.updatedAt.toISOString() })),
         browsers: browsers.map(b => ({
@@ -237,7 +277,7 @@ export class StaffNotificationService {
   // ------------------------------------------------------------------ browsers
 
   public async subscribeBrowser(actor: AuthenticatedStaff, sub: { endpoint: string; p256dh: string; auth: string; label?: string | null }) {
-    if (!webPushSettings()) throw new HttpException(409, 'Browser notifications are not configured', 'web_push_unavailable');
+    if (!(await this.webPushKeys())) throw new HttpException(409, 'Browser notifications are not configured', 'web_push_unavailable');
     if (!/^https:\/\//.test(sub.endpoint)) throw new HttpException(400, 'Invalid endpoint', 'validation_failed', { endpoint: 'invalid' });
     await prisma.staffWebPushSubscription.upsert({
       where: { endpoint: sub.endpoint },

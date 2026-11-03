@@ -253,11 +253,22 @@ export function oneSignalSettings(): { appId: string; restApiKey: string } | nul
 
 // 02/11/2026: Web Push to the browsers of the pro space (VAPID keys made with `npx web-push generate-vapid-keys`). Read
 // on every call like OneSignal; without both keys the browsers are never asked and nothing is sent.
+/**
+ * The VAPID keys set on Vercel, if any. Without them Plazo uses its own pair, kept in `web_push_keys`
+ * (`StaffNotificationService.webPushKeys`); `WEB_PUSH=off` turns browser notifications off altogether.
+ */
 export function webPushSettings(): { publicKey: string; privateKey: string; subject: string } | null {
   const publicKey = process.env.VAPID_PUBLIC_KEY?.trim() || '';
   const privateKey = process.env.VAPID_PRIVATE_KEY?.trim() || '';
-  const subject = process.env.VAPID_SUBJECT?.trim() || 'mailto:contact@plazo.fr';
-  return publicKey && privateKey ? { publicKey, privateKey, subject } : null;
+  return publicKey && privateKey ? { publicKey, privateKey, subject: webPushSubject() } : null;
+}
+
+export function webPushSubject(): string {
+  return process.env.VAPID_SUBJECT?.trim() || 'mailto:contact@plazo.fr';
+}
+
+export function webPushDisabled(): boolean {
+  return process.env.WEB_PUSH?.trim().toLowerCase() === 'off';
 }
 
 // The traveller app is another OneSignal app (another Android package / iOS bundle). Without its own

@@ -1902,10 +1902,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Cloche, « Activer sur ce navigateur » par `lib/web-push.ts` et le service worker `admin/public/sw.js`, mes appareils, test).
   **Plazo Pro** : cloche dans la barre des onglets (`BellButton`, `BrandAppBar(pro: true)` d'une page racine ; `BellButton.enabled`
   coupé dans les tests), page `/pro/cloche` (`ProBellPage`), section « Où arrive chaque notification » de Plus › Notifications
-  (`ChannelsSection` : téléphone et cloche, test) ; `BellDataSource` par Dio sans freezed. **Navigateur : clés VAPID à poser sur
-  Vercel** (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` sensible, `VAPID_SUBJECT` facultatif, `mailto:contact@plazo.fr` par défaut ;
-  `npx web-push generate-vapid-keys`) : sans elles la colonne Navigateur est grisée et `POST …/browsers` répond 409
-  `web_push_unavailable`. Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
+  (`ChannelsSection` : téléphone et cloche, test) ; `BellDataSource` par Dio sans freezed. **Navigateur : clés VAPID créées par Plazo
+  (03/11/2026, « Fais le »)** : sans `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` sur Vercel (qui l'emportent quand elles sont posées),
+  le serveur crée sa propre paire au premier besoin et la garde dans `web_push_keys` (ligne `default`, migration `web_push_keys`,
+  jamais changée ensuite ; `StaffNotificationService.webPushKeys`, lue une fois par instance, deux instances lisent la même ligne) ;
+  `VAPID_SUBJECT` facultatif (`mailto:contact@plazo.fr`) ; `WEB_PUSH=off` coupe les notifications du navigateur (colonne grisée,
+  `POST …/browsers` 409 `web_push_unavailable`). Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
   `bell_test.dart`.
 
 - **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
