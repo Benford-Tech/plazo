@@ -229,8 +229,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur). **Canal SMS réglable par le super
      admin (27/10/2026, « le super admin peut configurer les paramètres des SMS »)** : `PUT /internal/sms/settings`, `POST /internal/sms/test`
      et `POST /internal/sms/disable` passent de `RefuseInViewAs` à `RefuseInDemo` (permis en consultation, tracés `view_as.write` ; la
-     démo reste refusée) ; la carte « SMS aux voyageurs » de Mon compte est modifiable en consultation, en lecture seule dans la démo
-     seulement (`user.demo`, texte « Démo : … »).
+     démo reste refusée) ; la carte « SMS aux voyageurs » est modifiable en consultation, en lecture seule dans la démo
+     seulement (`user.demo`, texte « Démo : … ») ; **elle est dans Parking › Réglages depuis le 03/11/2026** (« mets le dans les réglages
+     parkings », le super admin ne la trouvait plus dans Mon compte) : `TravellerSms` sous « Mails entrants » de `ParkingPage`, ancre
+     `/parking/reglages#sms` (liens du planning et de « SMS de la veille »), plus dans Mon compte.
      **Son propre loueur n'est pas une consultation (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »)** :
      « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
      pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,

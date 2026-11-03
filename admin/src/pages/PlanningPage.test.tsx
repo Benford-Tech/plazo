@@ -124,7 +124,7 @@ describe("Planning : arrivées en direct", () => {
     );
     const warning = await screen.findByTestId("sms-warning");
     expect(warning).toHaveTextContent("3 SMS en attente · téléphone injoignable");
-    expect(within(warning).getByRole("link", { name: "SMS aux voyageurs ›" })).toHaveAttribute("href", "/mon-compte");
+    expect(within(warning).getByRole("link", { name: "SMS aux voyageurs ›" })).toHaveAttribute("href", "/parking/reglages#sms");
     auth.user = { role: "driver" };
   });
 
