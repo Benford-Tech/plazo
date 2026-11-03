@@ -131,7 +131,7 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(calls(GRAPH)).toHaveLength(1);
     expect(calls(BREVO_SMS_URL)).toHaveLength(0);
     const params = JSON.parse(calls(GRAPH)[0][1].body).template.components[0].parameters.map((p: any) => p.text);
-    expect(params).toEqual(['Parking Test', '-', 'Bonjour Camille, · nous vous attendons demain à 06:30.']);
+    expect(params).toEqual([op.operator.name, '-', 'Bonjour Camille, · nous vous attendons demain à 06:30.']);
     const row = await prisma.whatsappMessage.findFirstOrThrow();
     expect(row).toMatchObject({ status: 'sent', waMessageId: 'wamid.1', to: '+33612345678', kind: 'booking_reminder' });
     expect(row.fallbackText).toContain('Bonjour Camille');

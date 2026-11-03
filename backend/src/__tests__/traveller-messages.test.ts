@@ -203,6 +203,7 @@ describe('le fil de messages du voyageur (B)', () => {
       morning: expect.any(Object),
       extras: { refunded: 0, failed: 0, expired: 0 },
       valet: { announced: 0 },
+      whatsapp: { fallbacks: 0, forgotten: 0 },
     });
   });
 
