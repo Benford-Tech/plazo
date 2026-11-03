@@ -1,10 +1,17 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.benfordtech.plazo",
-      "sha256_cert_fingerprints": ["CC:77:C2:DD:52:73:FE:98:C2:33:E8:0C:39:A4:D6:31:87:33:69:60:DD:71:1F:D6:8D:6A:57:23:55:6A:75:3B"]
+      "sha256_cert_fingerprints": [
+        "CC:77:C2:DD:52:73:FE:98:C2:33:E8:0C:39:A4:D6:31:87:33:69:60:DD:71:1F:D6:8D:6A:57:23:55:6A:75:3B",
+        "E7:6C:6A:B8:D4:11:2B:57:CA:60:C5:9E:D8:58:2F:A5:83:33:69:B1:63:17:C9:C9:1B:71:43:CE:5B:74:AE:C7",
+        "20:76:CB:15:15:6F:C8:2C:4D:3F:34:5E:1E:C5:90:8C:66:9B:3F:D9:B6:97:D0:5B:4D:E9:7A:6B:21:DB:82:8B"
+      ]
     }
   }
 ]
