@@ -8,6 +8,7 @@ import { ContractTemplateCard } from "@/components/parking/ContractTemplateCard"
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingLogoCard } from "@/components/parking/ParkingLogoCard";
+import { TravellerSms } from "@/components/account/TravellerSms";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
@@ -250,6 +251,8 @@ export default function ParkingPage() {
       </Card>
       <ParkingLogoCard />
       <InboundEmailCard />
+      {/* 03/11/2026 (« mets le dans les réglages parkings »): moved from Mon compte, for the managers and the platform in consultation. */}
+      <TravellerSms />
       <ComparatorCommissionCard />
       <ReturnMeetingPointForm />
       {parking && <ShuttleTrackingCard parking={parking} />}

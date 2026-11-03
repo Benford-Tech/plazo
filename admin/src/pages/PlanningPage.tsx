@@ -320,7 +320,7 @@ function SmsWarning({ pending, manager }: { pending: number; manager: boolean })
       <span className="font-bold uppercase text-lime-deep">{t.smsWarning(pending)}</span>
       <span className="text-muted-foreground">{t.smsWarningHint}</span>
       {manager && (
-        <Link to="/mon-compte" className="font-semibold underline-offset-4 hover:underline">
+        <Link to="/parking/reglages#sms" className="font-semibold underline-offset-4 hover:underline">
           {fr.sms.title} ›
         </Link>
       )}

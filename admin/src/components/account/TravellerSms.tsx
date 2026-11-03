@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
@@ -22,7 +23,7 @@ const MODES: SmsMode[] = ["gateway", "brevo", "none"];
 const STATUS_POLL_MS = 60_000;
 
 /**
- * « SMS aux voyageurs » (Mon compte): the operator chooses how its SMS go out — its own Android
+ * « SMS aux voyageurs » (Parking › Réglages since 03/11/2026): the operator chooses how its SMS go out — its own Android
  * phone through the free "SMS Gateway for Android" app, Plazo (Brevo, charged), or none — links the
  * phone and watches it. Managers only; read-only in the prospects' demo (the API
  * refuses those writes too).
@@ -49,11 +50,19 @@ export function TravellerSms() {
     refetchInterval: STATUS_POLL_MS,
   });
 
+  // « SMS aux voyageurs › » links land on Parking › Réglages#sms (03/11/2026).
+  const { hash } = useLocation();
+  const box = useRef<HTMLElement>(null);
+  const loaded = !!settings.data;
+  useEffect(() => {
+    if (hash === "#sms" && loaded) box.current?.scrollIntoView?.({ block: "start" });
+  }, [hash, loaded]);
+
   if (!manager || !settings.data) return null;
   const s = settings.data;
 
   return (
-    <section aria-labelledby="sms-title" className="flex flex-col gap-3">
+    <section ref={box} id="sms" aria-labelledby="sms-title" className="flex scroll-mt-6 flex-col gap-3">
       <h2 id="sms-title" className="text-2xl font-semibold">
         {t.title}
       </h2>

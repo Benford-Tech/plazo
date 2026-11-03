@@ -5059,7 +5059,7 @@ export const bookingReminderFr = {
   confirm: "Renvoyer",
   done: "SMS de la veille envoyé.",
   doneAgain: "SMS de la veille renvoyé.",
-  failed: "Le SMS n'est pas parti : vérifiez le canal SMS dans Mon compte.",
+  failed: "Le SMS n'est pas parti : vérifiez le canal SMS dans Parking › Réglages.",
   tonight: "ce soir",
   today: "aujourd'hui",
   tomorrow: "demain",
@@ -5067,7 +5067,7 @@ export const bookingReminderFr = {
   refusal: {
     reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
     reminder_no_mobile: "Pas de numéro de mobile français pour ce client.",
-    reminder_no_channel: "Aucun canal SMS n'est réglé : à faire dans Mon compte.",
+    reminder_no_channel: "Aucun canal SMS n'est réglé : à faire dans Parking › Réglages.",
     reminder_quiet_hours: "Aucun SMS ne part de 22:00 à 07:00.",
     reminder_too_soon: "Envoyé il y a moins de 10 minutes : patientez avant de le renvoyer.",
   } as Record<string, string>,

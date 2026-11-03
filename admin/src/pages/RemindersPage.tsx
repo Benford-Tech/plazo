@@ -231,7 +231,7 @@ function SettingsTiles({ board, onSaved }: { board: ReminderBoard; onSaved: (b: 
         </p>
         <p className="text-sm text-muted-foreground">{s.channelNote[mode]}</p>
         {mode === "none" && board.can.edit && (
-          <Link to="/mon-compte" className="text-sm font-semibold text-lime-deep hover:underline">
+          <Link to="/parking/reglages#sms" className="text-sm font-semibold text-lime-deep hover:underline">
             {s.chooseChannel}
           </Link>
         )}
