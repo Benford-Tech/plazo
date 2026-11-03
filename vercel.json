@@ -41,6 +41,14 @@
       "bindings": [{ "type": "service", "service": "backend", "format": "url", "env": "BACKEND_URL" }]
     }
   },
+  "redirects": [
+    {
+      "source": "/((?!\\.well-known/).*)",
+      "has": [{ "type": "host", "value": "plazo.fr" }],
+      "destination": "https://www.plazo.fr/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": { "service": "backend" } },
     { "source": "/pro/:path*", "destination": { "service": "admin" } },
