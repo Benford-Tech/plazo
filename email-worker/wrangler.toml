@@ -12,6 +12,10 @@ preview_urls = false
 # the Worker needs is declared here or passed by the GitHub Actions deploy, nothing is set in the dashboard.
 keep_vars = true
 
+# 03/11/2026: Google reads https://plazo.fr/.well-known/assetlinks.json only without a redirect, and Vercel redirects
+# the apex to www: this route sends that one URL to fetch() in src/index.ts, which serves the file of www.
+routes = [{ pattern = "plazo.fr/.well-known/assetlinks.json", zone_name = "plazo.fr" }]
+
 # Workers Logs (dashboard › plazo › Logs): every invocation, with its console.error lines and the platform's own errors
 # (EXCEEDED_CPU…); declared here so that a deploy keeps it on, as the dashboard asks.
 [observability]
@@ -22,10 +26,6 @@ head_sampling_rate = 1
 # the Allopark emails whose booking page could not be read at reception (scheduled() in src/index.ts).
 [triggers]
 crons = ["*/10 * * * *"]
-
-# 03/11/2026: Google reads https://plazo.fr/.well-known/assetlinks.json only without a redirect, and Vercel redirects
-# the apex to www: this route sends that one URL to fetch() in src/index.ts, which serves the file of www.
-routes = [{ pattern = "plazo.fr/.well-known/assetlinks.json", zone_name = "plazo.fr" }]
 
 [vars]
 PLAZO_INBOUND_URL = "https://www.plazo.fr/api/public/inbound/email"
