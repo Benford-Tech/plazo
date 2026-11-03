@@ -159,7 +159,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     const lyon = await create(1, { airportCode: 'LYS' });
     await create(2, { airportCode: 'GNB' });
     await create(3, { airportCode: 'NCE' });
-    await create(4, { airportCode: 'GVA' }); // Geneva: no French region
+    await create(4, { airportCode: 'BVE' }); // Brive: no region (straddles two)
     await create(5, { airportCode: null });
     const manual = await create(6, { airportCode: 'LYS', region: 'Occitanie' });
     await prisma.prospect.update({ where: { id: lyon.id }, data: { status: 'replied' } });
@@ -172,7 +172,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     expect(byEmail['contact4@parking-fictif.example'].region).toBeNull();
     expect(byEmail['contact6@parking-fictif.example'].region).toEqual({ key: 'occitanie', label: 'Occitanie', manual: true });
     expect(byEmail['contact6@parking-fictif.example'].regionOverride).toBe('occitanie');
-    expect(all.body.regions).toHaveLength(18);
+    expect(all.body.regions).toHaveLength(19);
     expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes' });
     expect(all.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 2, 'provence-alpes-cote-d-azur': 1, occitanie: 1, none: 2, bretagne: 0 });
 
@@ -260,15 +260,13 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const first = sent.find(e => e.to[0].email === 'contact1@parking-fictif.example')!;
     expect(first.sender).toEqual({ name: 'Plazo', email: 'bonjour@plazo.test' });
     expect(first.replyTo).toEqual({ email: admin.manager.email });
-    expect(first.subject).toBe('Parking Fictif 1 : vos réservations des comparateurs dans un seul planning');
+    expect(first.subject).toBe('Parking Fictif 1 : vos réservations, sans recopie');
     expect(first.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
     expect(first.headers['List-Unsubscribe']).toMatch(/^<https:\/\/site\.example\/api\/public\/prospecting\/unsubscribe\/[^>]+>, <mailto:/);
     expect(first.textContent).toContain('Benford Tech');
     expect(first.htmlContent).toContain('Ne plus recevoir de messages de Plazo');
     // Without a first name, the subject still names the parking.
-    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe(
-      'Parking Fictif 2 : vos réservations des comparateurs dans un seul planning',
-    );
+    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe('Parking Fictif 2 : vos réservations, sans recopie');
 
     const row = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(row).toMatchObject({ status: 'contacted', step: 1, sendingAt: null, enrolledById: admin.manager.id });
@@ -359,7 +357,10 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const [one, two] = await Promise.all([service.runDue(due), service.runDue(due)]);
     expect(one.sent + two.sent).toBe(1);
     expect(emails()).toHaveLength(3);
-    expect(emails()[2]).toMatchObject({ subject: 'Une question sur vos retours de navette', to: [{ email: 'contact1@parking-fictif.example' }] });
+    expect(emails()[2]).toMatchObject({
+      subject: "Vos clients appellent-ils à l'atterrissage ?",
+      to: [{ email: 'contact1@parking-fictif.example' }],
+    });
     const afterTwo = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(afterTwo.step).toBe(2);
     expect(await service.runDue(due)).toMatchObject({ sent: 0 });

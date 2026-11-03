@@ -1,3 +1,4 @@
+import { airportCity } from './airport-names';
 import { createHash } from 'crypto';
 import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml } from './account-messages';
 import { EmailMessage } from './booking-messages';
@@ -47,46 +48,50 @@ export type TemplateValues = Record<VariableName, string>;
 
 /** Plazo's own texts, until the platform admin writes theirs (« Modifier les mails »). */
 export function defaultSteps(productName: string): SequenceStep[] {
-  // 19/10/2026 (« faire penser que nous sommes une équipe de devs expérimentés ») : a team voice that shows its craft
-  // through facts that hold today (comparator mails read without retyping, flight tracking, valet files, apps, Stripe),
-  // never through claims nobody can check (years of experience, customer counts).
+  // 03/11/2026 (« dis qu'on a déjà plusieurs clients des applis mobiles pour le parking et le voyageur. Vends bien Plazo ! »,
+  // rewritten with the marketing email-sequence skill): hook, benefits, one call to action per mail (the demo, then a call),
+  // subjects under 50 characters. Every feature named is live today; no figure, testimonial or customer name.
   return [
     {
       step: 1,
       enabled: true,
       delayDays: 0,
-      subject: '{parking} : vos réservations des comparateurs dans un seul planning',
+      subject: '{parking} : vos réservations, sans recopie',
       body:
         'Bonjour {prénom},\n\n' +
-        `Nous sommes l'équipe de développeurs derrière ${productName}, un logiciel conçu pour les parkings avec navette autour ` +
-        'des aéroports, avec un premier parking voiturier près de Lyon Saint-Exupéry. Nous vous écrivons au sujet de {parking}.\n\n' +
-        'Ce que nous avons construit, et qui tourne déjà :\n' +
-        "- les mails de confirmation d'Allopark, Onepark, Parclick et ParkMundo sont lus automatiquement et deviennent des " +
-        'réservations, modifications comprises, sans rien recopier ;\n' +
-        "- les vols retour sont suivis en temps réel : le chauffeur voit qui récupérer, dans l'ordre d'atterrissage ;\n" +
-        '- le voiturier sait dans quelle file ranger chaque voiture pour ne jamais en bloquer une au départ ;\n' +
-        "- l'équipe a son application iPhone et Android, le gérant son tableau de bord et son chiffre d'affaires.\n\n" +
-        `Vos clients peuvent aussi réserver et payer en ligne sur ${productName}, par Stripe.\n\n` +
-        'Nous préparons nous-mêmes votre espace (plan du parking sur la photo aérienne, tarifs, réception des mails) : ' +
-        "vous n'avez rien à installer.\n\n" +
-        'Auriez-vous 15 minutes cette semaine pour que nous vous le montrions sur votre propre parking ?\n\n' +
+        'Combien de temps votre équipe passe-t-elle chaque jour à recopier les réservations des comparateurs ?\n\n' +
+        `${productName} est le logiciel des parkings d'aéroport avec navette ou voiturier. Plusieurs parkings l'utilisent déjà au ` +
+        `quotidien, avec deux applications mobiles : ${productName} Pro pour votre équipe, ${productName} pour vos clients.\n\n` +
+        'Ce qui change dès la première semaine :\n' +
+        "- Les réservations d'Allopark, Onepark, Parclick, ParkMundo, ParkVia ou Park Hit arrivent seules dans votre planning.\n" +
+        '- Chaque vol retour est suivi : votre chauffeur sait qui récupérer et quand, le client reçoit le point de ' +
+        'rendez-vous par SMS.\n' +
+        '- Vos clients suivent la navette en direct sur leur téléphone.\n' +
+        '- Votre voiturier range chaque voiture sans en bloquer une au départ.\n\n' +
+        'Nous préparons tout pour vous : plan du parking, tarifs, réception des mails. Rien à installer.\n\n' +
+        'Essayez la démo en deux minutes : {lien_demo}\n\n' +
+        `Ou répondez simplement à ce mail : je vous montre ${productName} sur {parking} en 15 minutes.\n\n` +
         'Bien à vous,',
     },
     {
       step: 2,
       enabled: true,
       delayDays: 4,
-      subject: 'Une question sur vos retours de navette',
+      subject: "Vos clients appellent-ils à l'atterrissage ?",
       body:
         'Bonjour {prénom},\n\n' +
-        "Aujourd'hui, comment savez-vous quand partir chercher un client au retour ? Bien souvent, on attend son appel à " +
-        "l'atterrissage.\n\n" +
-        `Dans ${productName}, chaque vol retour est suivi auprès d'un service de données aériennes : un retard décale l'heure ` +
-        'de passage, le chauffeur voit la liste des clients à récupérer se mettre à jour, et le client reçoit un SMS avec le ' +
-        'point de rendez-vous.\n\n' +
-        'Nous livrons des améliorations chaque semaine, à partir de ce que nous disent les équipes sur le terrain : si quelque ' +
-        "chose vous manque, c'est le genre de demande que nous traitons vite.\n\n" +
-        'Nous pouvons vous le montrer en 15 minutes, au téléphone ou sur place. Quel moment vous arrangerait ?\n\n' +
+        "Au retour de vacances, c'est souvent le même scénario : le client atterrit, appelle le parking, attend. Et votre " +
+        'équipe jongle entre le téléphone et le volant.\n\n' +
+        `Avec ${productName}, le téléphone ne sonne plus :\n` +
+        "- le vol retour est suivi en temps réel, un retard décale tout seul l'heure de passage ;\n" +
+        `- la liste du chauffeur se met à jour dans l'application ${productName} Pro ;\n` +
+        `- le client reçoit le point de rendez-vous par SMS et voit la navette arriver dans l'application ${productName}.\n\n` +
+        "Au comptoir, le contrat se signe et l'état des lieux se fait en photos sur le téléphone : en cas de rayure " +
+        'contestée, vous avez la preuve.\n\n' +
+        "Et vous suivez tout depuis votre tableau de bord : arrivées, retours, voitures sur place, chiffre d'affaires net " +
+        'des commissions des comparateurs.\n\n' +
+        'Voyez-le sur la démo : {lien_demo}\n\n' +
+        'Quel moment vous arrangerait pour 15 minutes au téléphone ?\n\n' +
         'Bien à vous,',
     },
     {
@@ -96,9 +101,11 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: 'Je ne vous dérange plus',
       body:
         'Bonjour {prénom},\n\n' +
-        "C'est notre dernier message, nous ne voulons pas encombrer votre boîte. Si un jour vous voulez voir " +
-        `${productName} sur l'exemple de {parking}, il suffit de répondre à ce mail : nous vous préparons une démonstration ` +
-        'avec votre propre parking.\n\n' +
+        "C'est mon dernier message, je ne veux pas encombrer votre boîte.\n\n" +
+        "Si un jour la recopie des réservations ou les appels à l'atterrissage vous pèsent, répondez simplement à ce " +
+        'mail : nous préparons une démonstration sur {parking}, avec vos propres places.\n\n' +
+        `Vos places peuvent aussi se vendre en ligne sur ${productName}, payées d'avance : un canal de vente de plus.\n\n` +
+        'La démo reste ouverte : {lien_demo}\n\n' +
         'Bonne continuation,',
     },
   ];
@@ -167,7 +174,8 @@ export function templateValues(prospect: ProspectForTemplate, airportName: strin
     prénom: prospect.contactFirstName ?? '',
     nom: prospect.contactLastName ?? '',
     parking: prospect.companyName,
-    aéroport: airportName ?? prospect.airportCode ?? '',
+    // An airport Plazo does not serve (Genève, Zurich… for the Swiss prospects, 03/11/2026): its city, not the bare code.
+    aéroport: airportName ?? airportCity(prospect.airportCode) ?? '',
     ville: prospect.town ?? '',
   };
 }

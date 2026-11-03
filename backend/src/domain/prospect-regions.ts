@@ -1,6 +1,6 @@
 /**
  * Classement des prospects par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » +
- * « De l'aéroport »): the French administrative region of a prospect, read from its airport, unless the platform admin
+ * « De l'aéroport »): the French administrative region (or Switzerland, 03/11/2026) of a prospect, read from its airport, unless the platform admin
  * chose one by hand. Pure; shared by the list, its filter and counts, the form and the CSV import.
  */
 
@@ -23,6 +23,8 @@ export const REGIONS = [
   { key: 'guyane', label: 'Guyane' },
   { key: 'la-reunion', label: 'La Réunion' },
   { key: 'mayotte', label: 'Mayotte' },
+  // 03/11/2026 (« rajoute des prospects en Suisse »): Switzerland as a whole, after the French regions.
+  { key: 'suisse', label: 'Suisse' },
 ] as const;
 
 export type RegionKey = (typeof REGIONS)[number]['key'];
@@ -120,6 +122,12 @@ export const AIRPORT_REGIONS: Readonly<Record<string, RegionKey>> = {
   RUN: 'la-reunion', // La Réunion-Roland-Garros
   ZSE: 'la-reunion', // Saint-Pierre-Pierrefonds
   DZA: 'mayotte', // Dzaoudzi-Pamandzi
+  // Suisse (EuroAirport BSL / MLH stays in Grand Est: it stands in France)
+  GVA: 'suisse', // Genève
+  ZRH: 'suisse', // Zurich
+  BRN: 'suisse', // Berne-Belp
+  LUG: 'suisse', // Lugano-Agno
+  SIR: 'suisse', // Sion
 };
 
 export const isRegionKey = (value: unknown): value is RegionKey => typeof value === 'string' && LABELS.has(value);
@@ -170,6 +178,9 @@ const BY_NAME = new Map<string, RegionKey>([
   ['paca', 'provence-alpes-cote-d-azur'],
   ['idf', 'ile-de-france'],
   ['reunion', 'la-reunion'],
+  ['ch', 'suisse'],
+  ['switzerland', 'suisse'],
+  ['schweiz', 'suisse'],
 ]);
 
 /**

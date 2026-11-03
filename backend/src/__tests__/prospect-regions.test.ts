@@ -69,6 +69,8 @@ describe('régions des aéroports', () => {
       FDF: 'martinique',
       CAY: 'guyane',
       DZA: 'mayotte',
+      GVA: 'suisse',
+      ZRH: 'suisse',
     };
     for (const [code, region] of Object.entries(expected)) expect([code, regionOfAirport(code)]).toEqual([code, region]);
     // Every code is a 3-letter IATA code and every region a known key.
@@ -81,7 +83,7 @@ describe('régions des aéroports', () => {
   it('un code inconnu ou vide n’a pas de région ; la casse et les espaces sont ignorés', () => {
     expect(regionOfAirport('lys')).toBe('auvergne-rhone-alpes');
     expect(regionOfAirport(' cdg ')).toBe('ile-de-france');
-    expect(regionOfAirport('GVA')).toBeNull();
+    expect(regionOfAirport('gva')).toBe('suisse');
     expect(regionOfAirport('XXX')).toBeNull();
     expect(regionOfAirport(null)).toBeNull();
     expect(regionOfAirport('')).toBeNull();
@@ -92,7 +94,7 @@ describe('régions des aéroports', () => {
     expect(effectiveRegion({ region: null, airportCode: 'LYS' })).toBe('auvergne-rhone-alpes');
     expect(effectiveRegion({ region: 'occitanie', airportCode: 'LYS' })).toBe('occitanie');
     expect(effectiveRegion({ region: 'bretagne', airportCode: null })).toBe('bretagne');
-    expect(effectiveRegion({ region: null, airportCode: 'GVA' })).toBeNull();
+    expect(effectiveRegion({ region: null, airportCode: 'BVE' })).toBeNull();
     expect(effectiveRegion({ region: 'atlantide', airportCode: 'NTE' })).toBe('pays-de-la-loire');
     expect(regionView({ region: null, airportCode: 'BVA' })).toEqual({ key: 'hauts-de-france', label: 'Hauts-de-France', manual: false });
     expect(regionView({ region: 'ile-de-france', airportCode: 'BVA' })).toEqual({ key: 'ile-de-france', label: 'Île-de-France', manual: true });
@@ -107,6 +109,8 @@ describe('régions des aéroports', () => {
     expect(parseRegion('PACA')).toBe('provence-alpes-cote-d-azur');
     expect(parseRegion('Réunion')).toBe('la-reunion');
     expect(parseRegion('pays-de-la-loire')).toBe('pays-de-la-loire');
+    expect(parseRegion('Suisse')).toBe('suisse');
+    expect(parseRegion('CH')).toBe('suisse');
     expect(parseRegion('Rhône')).toBeNull();
     expect(parseRegion('')).toBeNull();
   });
@@ -115,8 +119,8 @@ describe('régions des aéroports', () => {
     const labels = sortedRegions().map(r => r.label);
     expect(labels.slice(0, 4)).toEqual(['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire']);
     expect(labels.indexOf('Île-de-France')).toBe(labels.indexOf('Hauts-de-France') + 1);
-    expect(labels).toHaveLength(18);
-    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261019090000_prospect_region/migration.sql'), 'utf8');
+    expect(labels).toHaveLength(19);
+    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261103170000_prospect_region_switzerland/migration.sql'), 'utf8');
     const inCheck = [...sql.matchAll(/'([a-z-]+)'/g)].map(m => m[1]).sort();
     expect(inCheck).toEqual([...REGION_KEYS].sort());
   });
