@@ -39,6 +39,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       joinAttemptsDeleted: 0,
       identitiesDeleted: 0,
       usedIdentityTokensDeleted: 0,
+      whatsappPurged: 0,
       loginAttemptsDeleted: 0,
       // Prospection (18/10/2026): 3 years after the last contact.
       prospectsDeleted: 0,

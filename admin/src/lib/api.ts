@@ -47,6 +47,7 @@ import type {
   SmsSettings,
   SmsSettingsInput,
   SmsStatus,
+  WhatsappSettings,
   PlatformReservations,
   ReminderBoard,
   ReminderSettingsInput,
@@ -1284,6 +1285,19 @@ export const adminApi = {
   disableSms: () =>
     apiRequest<SmsSettings>("/internal/sms/disable", { method: "POST" }),
   getSmsStatus: () => apiRequest<SmsStatus>("/internal/sms/status"),
+  // 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli).
+  getWhatsappSettings: () =>
+    apiRequest<WhatsappSettings>("/internal/whatsapp/settings"),
+  updateWhatsappSettings: (enabled: boolean) =>
+    apiRequest<WhatsappSettings>("/internal/whatsapp/settings", {
+      method: "PUT",
+      body: json({ enabled }),
+    }),
+  testWhatsapp: (to: string) =>
+    apiRequest<{ outcome: "sent" }>("/internal/whatsapp/test", {
+      method: "POST",
+      body: json({ to }),
+    }),
 
   getPlatformPayments: () =>
     apiRequest<PlatformPayments>("/internal/platform/payments"),

@@ -1223,6 +1223,14 @@ export interface SmsSettingsInput {
   baseUrl?: string | null;
 }
 
+/** GET /internal/whatsapp/settings (03/11/2026) */
+export interface WhatsappSettings {
+  available: boolean;
+  enabled: boolean;
+  smsFallback: boolean;
+  month: { whatsapp: number; read: number; fallbacks: number; failed: number };
+}
+
 /** GET /internal/sms/status */
 export interface SmsStatus {
   mode: SmsMode;

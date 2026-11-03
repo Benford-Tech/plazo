@@ -43,8 +43,20 @@ describe('files (S-C, 07/10/2026)', () => {
     const { token, parking } = await setupOperator();
     const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });
     const [f01, f02] = put.body.data;
-    const first = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('GK-318-PX', today()))).body.data;
-    const second = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('AB-123-CD', today()))).body.data;
+    // Dropped off at midnight: already on site whatever the hour the test runs (06:30 is still to come at 00:20 in Paris).
+    const midnight = { arrivalAt: `${today()}T00:00` };
+    const first = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking('GK-318-PX', today(), midnight))
+    ).body.data;
+    const second = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking('AB-123-CD', today(), midnight))
+    ).body.data;
     await api().post(`/api/internal/reservations/${first.id}/file`).set(auth(token)).send({ fileId: f01.id });
     await api().post(`/api/internal/reservations/${second.id}/file`).set(auth(token)).send({ fileId: f01.id });
     const left = await api().put(`/api/internal/reservations/${second.id}/keys`).set(auth(token)).send({ left: true });

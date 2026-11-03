@@ -1128,6 +1128,24 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      push « Votre voiture est garée » (`parkedNotifiedAt`), push « Bon voyage ! » à la fin de la dépose, SMS d'atterrissage pour
      tous les canaux, mail et push de clôture après la remise (`closingSentAt`) ; `domain/booking-messages.ts`,
      `services/traveller-messages.service.ts` ; un message n'échoue jamais l'action qui le déclenche.
+   - **WhatsApp aux voyageurs, SMS en repli (03/11/2026, « Pour envoyer des messages WhatsApp », « Plazo envoie par WhatsApp »,
+     « On va passer par un compte business WhatsApp », « Et les SMS en repli » ; maquettes
+     https://claude.ai/artifact/3nwfqZj6WGWwWooC2jbLKf, direction A)** : la confirmation, le rappel de la veille et le rendez-vous à
+     l'atterrissage (`WHATSAPP_KINDS`) partent d'abord par WhatsApp, depuis le numéro WhatsApp Business de Plazo (API Cloud de Meta,
+     `WhatsappService`, `domain/whatsapp.ts`) quand le parking l'a allumé (`OperatorSmsSettings.whatsappEnabled`, migration
+     `whatsapp_messages`) : un seul modèle « Utilitaire » `plazo_message` (`Message de {{1}} pour votre réservation {{2}} : {{3}}` :
+     parking, référence, texte du SMS mis sur une ligne par `whatsappParam`) ; `SmsService.sendTravellerSms` essaie WhatsApp puis
+     `sendSmsOnly` ; repli SMS une seule fois (ligne réservée) quand Meta refuse à l'envoi, le webhook dit `failed`
+     (`POST /public/whatsapp/webhook`, signé `X-Hub-Signature-256` avec `WHATSAPP_APP_SECRET` ; `GET` répond au contrôle de Meta avec
+     `WHATSAPP_VERIFY_TOKEN`) ou rien n'est remis après 5 minutes (passage de 15 minutes de `remind-tomorrow`, `whatsapp` dans sa
+     réponse) ; sans canal SMS, WhatsApp seul. Table `whatsapp_messages` (numéro, état `sent` · `delivered` · `read` · `failed` ·
+     `fallback`, code de Meta, `fallbackText` gardé 2 h au plus, lignes purgées à 30 jours). Code de signature et tests toujours par SMS.
+     Routes `GET/PUT /internal/whatsapp/settings` (`{ available, enabled, smsFallback, month }`, 409 `whatsapp_unavailable`),
+     `POST /internal/whatsapp/test` (502 avec le code de Meta). Web : carte « WhatsApp aux voyageurs » au-dessus des SMS dans Parking ›
+     Réglages (`WhatsappCard`). Variables `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
+     (marche à suivre chez Meta dans le README) ; politique de confidentialité (Meta parmi les prestataires et les transferts). Pas
+     encore : la liste des messages sur la fiche réservation, le choix par le voyageur (B), les réponses WhatsApp (non lues).
+     Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

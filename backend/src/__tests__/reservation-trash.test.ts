@@ -1,5 +1,6 @@
 import { Container } from 'typedi';
 import prisma, { prismaWithDeleted, ReservationChannel, ReservationStatus } from '@/database';
+import { localDate } from '@/domain/time';
 import { ReservationTrashService } from '@/services/reservation-trash.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -57,7 +58,8 @@ describe('supprimer une réservation', () => {
     expect(list.body.deletedCount).toBe(1);
     expect((await api().get(`/api/internal/reservations/${doomed.id}`).set(auth(op.token))).status).toBe(404);
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
-    const date = new Date(Date.now() + DAY).toISOString().slice(0, 10);
+    // The parking's day (Europe/Paris), not UTC's: between 22:00 and 24:00 UTC the two differ.
+    const date = localDate(new Date(Date.now() + DAY), 'Europe/Paris');
     const forecast = await api().get(`/api/internal/planning/forecast?from=${date}&days=1`).set(auth(op.token));
     expect(forecast.body.days[0].arrivals).toBe(1);
 

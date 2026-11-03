@@ -14,6 +14,7 @@ import { purgeLoginAttempts } from '@/services/password-attempts';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
+import { WhatsappService } from '@/services/whatsapp.service';
 import { PaymentService } from '@/services/payment.service';
 import { MorningEmailService } from '@/services/morning-email.service';
 import { ProspectingService } from '@/services/prospecting.service';
@@ -52,6 +53,17 @@ export class CronController {
   public valet = Container.get(ValetService);
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
+  public whatsapp = Container.get(WhatsappService);
+
+  /** WhatsApp messages not delivered after 5 minutes go by SMS (03/11/2026). Never throws (rides on remind-tomorrow). */
+  private async whatsappPass(): Promise<Awaited<ReturnType<WhatsappService['sweep']>> | { error: true }> {
+    try {
+      return await this.whatsapp.sweep();
+    } catch (error) {
+      logger.error(`[Cron] WhatsApp pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { error: true };
+    }
+  }
 
   /** Services for the car (21/10/2026) still to do on a closed booking: refunded. Never throws (rides on remind-tomorrow). */
   private async extrasPass(): Promise<Awaited<ReturnType<ExtraService['settle']>> | { error: true }> {
@@ -153,10 +165,11 @@ export class CronController {
     const morning = await this.morningPass();
     const extras = await this.extrasPass();
     const valet = await this.valetPass();
+    const whatsapp = await this.whatsappPass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}`,
     );
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras, valet });
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras, valet, whatsapp });
   });
 
   /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */
@@ -192,6 +205,8 @@ export class CronController {
     // SMS: retry or abandon the waiting ones, and the 30-day retention of the outbox (recipients' numbers).
     const sms = await this.sms.refreshAll();
     const smsPurged = await this.sms.purgeOld();
+    // 03/11/2026: WhatsApp messages (number and status, no text) after 30 days.
+    const whatsappPurged = await this.whatsapp.purgeOld();
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const carLocationsPurged = await this.returns.purgeCarLocations();
@@ -232,6 +247,7 @@ export class CronController {
       shuttleTripsEnded,
       smsAbandoned: sms.abandoned,
       smsPurged,
+      whatsappPurged,
       travellerDevicesPurged,
       carLocationsPurged,
       inboundEmails,

@@ -314,6 +314,10 @@ export const fr = {
     sms_password_unreadable:
       "Le mot de passe enregistré ne peut plus être lu : saisissez-le à nouveau.",
     brevo_unavailable: `${PRODUCT.name} ne peut pas envoyer de SMS pour le moment : choisissez le téléphone du parking.`,
+    whatsapp_unavailable: `Le numéro WhatsApp de ${PRODUCT.name} n'est pas encore en service.`,
+    meta_131026: "Ce numéro n'a pas WhatsApp, ou ne peut pas recevoir ce message.",
+    meta_131030: "Ce numéro n'est pas autorisé par le compte WhatsApp de test : ajoutez-le chez Meta.",
+    meta_132001: "Le modèle de message n'est pas encore validé par Meta.",
     sms_gateway_unauthorized:
       "Identifiant ou mot de passe refusé par l'appli : recopiez ceux affichés dans « Cloud server ».",
     sms_gateway_unreachable:
@@ -1835,6 +1839,28 @@ export const fr = {
       WEEKLY: { title: "Chaque semaine", text: "le lundi, séjours terminés" },
       MONTHLY: { title: "Chaque mois", text: "le 1er, séjours terminés" },
     } satisfies Record<PayoutSchedule, { title: string; text: string }>,
+  },
+  whatsapp: {
+    title: "WhatsApp aux voyageurs",
+    headline: "Envoyer par WhatsApp",
+    intro:
+      "Confirmation, rappel de la veille et rendez-vous à l'atterrissage partent d'abord par WhatsApp ; si le voyageur n'a pas WhatsApp ou ne le reçoit pas dans les 5 minutes, le SMS part à la place.",
+    toggle: "Envoyer par WhatsApp",
+    on: "Actif",
+    off: "Éteint",
+    sender: `Envoyé depuis le WhatsApp de ${PRODUCT.name}, avec le nom de votre parking dans chaque message.`,
+    unavailable: `Bientôt : le numéro WhatsApp de ${PRODUCT.name} attend sa validation par Meta.`,
+    noFallback:
+      "Pas de SMS en repli : réglez l'envoi des SMS ci-dessous, sinon un voyageur sans WhatsApp ne reçoit rien.",
+    month: (whatsapp: number, read: number, fallbacks: number) =>
+      `Ce mois-ci : ${whatsapp} par WhatsApp (${read} lus), ${fallbacks} par SMS en repli.`,
+    signatureNote: "Le code de signature du contrat part toujours par SMS.",
+    testLabel: "Numéro de test",
+    test: "M'envoyer un test sur WhatsApp",
+    testSending: "Envoi…",
+    testSent: "Message de test envoyé sur WhatsApp.",
+    saved: (on: boolean) => (on ? "WhatsApp activé." : "WhatsApp éteint : les SMS partent comme avant."),
+    readOnly: "Démo : le réglage ne se modifie pas.",
   },
   sms: {
     title: "SMS aux voyageurs",

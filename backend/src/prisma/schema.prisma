@@ -79,6 +79,7 @@ model Operator {
   shuttleTrips          ShuttleTrip[]
   smsSettings           OperatorSmsSettings?
   smsOutbox             SmsOutbox[]
+  whatsappMessages      WhatsappMessage[]
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
@@ -915,6 +916,7 @@ model Reservation {
   inboundEmails    InboundEmail[]
   shuttleTrips     ShuttleTripPassenger[]
   smsOutbox        SmsOutbox[]
+  whatsappMessages WhatsappMessage[]
   contract         ReservationContract?
   inspections      VehicleInspection[]
   signatureCodes   SignatureCode[]
@@ -1442,6 +1444,10 @@ model OperatorSmsSettings {
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @default(now()) @updatedAt
 
+  // 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli): the traveller messages (confirmation, day before, landing)
+  // go first by WhatsApp from Plazo's WhatsApp Business number; the SMS channel above is the fallback.
+  whatsappEnabled          Boolean   @default(false)
+
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
   @@map("operator_sms_settings")
@@ -1481,6 +1487,37 @@ model SmsOutbox {
   @@index([createdAt])
   @@map("sms_outbox")
 }
+// A traveller message sent by WhatsApp (03/11/2026, « Plazo envoie par WhatsApp », SMS en repli). Meta tells its fate by
+// webhook (sent, delivered, read, failed); a failure, or no delivery within a few minutes, sends the SMS in its place.
+// fallbackText is the SMS to send then, cleared once delivered, read or fallen back (and after 2 hours): the text is
+// never kept longer than it can serve. Rows are purged after 30 days.
+model WhatsappMessage {
+  id            String       @id @default(cuid())
+  operatorId    String
+  reservationId String?
+  kind          String
+  to            String
+  // Meta's message id (wamid...), null when Meta refused the message at once.
+  waMessageId   String?      @unique
+  // sent, delivered, read, failed, fallback (the SMS was sent in its place).
+  status        String       @default("sent")
+  // Meta's error code of a failure (no personal data).
+  errorCode     String?
+  fallbackText  String?
+  // Outcome of the fallback SMS (sent, queued, failed, skipped).
+  smsOutcome    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([operatorId, createdAt])
+  @@index([reservationId])
+  @@map("whatsapp_messages")
+}
+
 
 // The day-before SMS of a parking (« SMS de la veille », S-A + S-B, 06/10/2026). No row: on, 18:00,
 // Plazo's text. The reminder (SMS, email, push) leaves at that local time the evening before the
