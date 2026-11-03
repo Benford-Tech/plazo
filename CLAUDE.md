@@ -1504,7 +1504,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   sélection), filtre « Toutes les régions » à côté des pilules et de l'aéroport (options : régions qui ont des prospects avec leur
   nombre, puis « Sans région ») ; région affichée sous le code de l'aéroport (« · choisie à la main »). Région = celle choisie à la
   main (`Prospect.region`, migration `prospect_region` avec CHECK des 18 clés), sinon celle de l'aéroport
-  (`domain/prospect-regions.ts` : 13 régions métropolitaines + Guadeloupe, Martinique, Guyane, La Réunion, Mayotte ;
+  (`domain/prospect-regions.ts` : 13 régions métropolitaines + Guadeloupe, Martinique, Guyane, La Réunion, Mayotte, et **Suisse** depuis
+  le 03/11/2026 (« rajoute des prospects en Suisse » : GVA, ZRH, BRN, LUG, SIR ; « CH », « Schweiz » lus ; migration
+  `prospect_region_switzerland` ; `{aéroport}` d'un aéroport hors table `airports` = sa ville, « Genève ») ;
   `AIRPORT_REGIONS` ne liste que des aéroports vérifiés : BVA en Hauts-de-France, BSL/MLH en Grand Est, Brive laissé de côté),
   sinon aucune ; formulaire : « Région : Automatique (d'après l'aéroport) | <région> » ; colonne CSV facultative « région »
   (`parseRegion` : nom ou clé, casse, accents, espaces et tirets ignorés, PACA / AURA / IDF ; inconnue → ligne en erreur

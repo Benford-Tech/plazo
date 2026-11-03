@@ -1,3 +1,4 @@
+import { airportCity } from '@/domain/airport-names';
 import { ProspectDemoService } from './prospect-demo.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
@@ -201,7 +202,10 @@ export class ProspectingService {
     const wanted = [...new Set(codes.filter((c): c is string => !!c))];
     if (!wanted.length) return new Map();
     const rows = await prisma.airport.findMany({ where: { code: { in: wanted } }, select: { code: true, name: true } });
-    return new Map(rows.map(r => [r.code, r.name]));
+    const names = new Map(rows.map(r => [r.code, r.name]));
+    // An airport Plazo does not serve (Genève, Zurich… for the Swiss prospects, 03/11/2026): its city, not the bare code.
+    for (const code of wanted) if (!names.has(code)) names.set(code, airportCity(code) ?? code);
+    return names;
   }
 
   private async lastErrors(ids: string[]): Promise<Map<string, string>> {
