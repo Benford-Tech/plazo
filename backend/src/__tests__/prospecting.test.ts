@@ -357,7 +357,10 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const [one, two] = await Promise.all([service.runDue(due), service.runDue(due)]);
     expect(one.sent + two.sent).toBe(1);
     expect(emails()).toHaveLength(3);
-    expect(emails()[2]).toMatchObject({ subject: "Vos clients appellent-ils à l'atterrissage ?", to: [{ email: 'contact1@parking-fictif.example' }] });
+    expect(emails()[2]).toMatchObject({
+      subject: "Vos clients appellent-ils à l'atterrissage ?",
+      to: [{ email: 'contact1@parking-fictif.example' }],
+    });
     const afterTwo = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(afterTwo.step).toBe(2);
     expect(await service.runDue(due)).toMatchObject({ sent: 0 });
