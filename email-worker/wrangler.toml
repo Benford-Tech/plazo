@@ -27,10 +27,6 @@ head_sampling_rate = 1
 [triggers]
 crons = ["*/10 * * * *"]
 
-# 03/11/2026: Google reads https://plazo.fr/.well-known/assetlinks.json only without a redirect, and Vercel redirects
-# the apex to www: this route sends that one URL to fetch() in src/index.ts, which serves the file of www.
-routes = [{ pattern = "plazo.fr/.well-known/assetlinks.json", zone_name = "plazo.fr" }]
-
 [vars]
 PLAZO_INBOUND_URL = "https://www.plazo.fr/api/public/inbound/email"
 PLAZO_RETRY_URL = "https://www.plazo.fr/api/public/inbound/retry"
