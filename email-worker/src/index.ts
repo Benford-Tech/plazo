@@ -79,7 +79,31 @@ export default {
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(retryAllopark(env));
   },
+
+  /**
+   * 03/11/2026 (Play Console: « Publiez le fichier JSON à l'emplacement https://plazo.fr/.well-known/assetlinks.json »):
+   * Vercel redirects the apex plazo.fr to www, and Google reads that file only without a redirect. The route
+   * plazo.fr/.well-known/assetlinks.json (wrangler.toml) brings the request here; the Worker serves the file the site
+   * publishes on www (site/public/.well-known/assetlinks.json, the only copy). Anything else goes to www.
+   */
+  async fetch(request: Request): Promise<Response> {
+    return serveApex(request);
+  },
 } satisfies ExportedHandler<Env>;
+
+export const ASSET_LINKS_PATH = "/.well-known/assetlinks.json";
+export const WWW_ORIGIN = "https://www.plazo.fr";
+
+export async function serveApex(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  if (url.pathname !== ASSET_LINKS_PATH) return Response.redirect(`${WWW_ORIGIN}${url.pathname}${url.search}`, 308);
+  const upstream = await fetch(`${WWW_ORIGIN}${ASSET_LINKS_PATH}`, { redirect: "manual" });
+  if (!upstream.ok) return new Response("Not found", { status: upstream.status === 404 ? 404 : 502 });
+  return new Response(await upstream.text(), {
+    status: 200,
+    headers: { "content-type": "application/json", "cache-control": "public, max-age=3600" },
+  });
+}
 
 /** One call to Plazo's retry route; a failure is logged (Workers Logs), never thrown: the next tick tries again. */
 export async function retryAllopark(env: Env): Promise<void> {
