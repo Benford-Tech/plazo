@@ -1175,6 +1175,17 @@ model StaffNotification {
 }
 
 // 02/11/2026: a browser of the pro space that accepted notifications (Web Push, VAPID).
+/// 03/11/2026: the VAPID key pair of the browser notifications, created by Plazo on first use when Vercel has none
+/// (`VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` win when set). One row, `default`; never changed afterwards.
+model WebPushKey {
+  id         String   @id
+  publicKey  String
+  privateKey String
+  createdAt  DateTime @default(now())
+
+  @@map("web_push_keys")
+}
+
 model StaffWebPushSubscription {
   id         String    @id @default(cuid())
   staffId    String
