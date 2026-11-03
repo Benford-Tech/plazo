@@ -159,7 +159,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     const lyon = await create(1, { airportCode: 'LYS' });
     await create(2, { airportCode: 'GNB' });
     await create(3, { airportCode: 'NCE' });
-    await create(4, { airportCode: 'GVA' }); // Geneva: no French region
+    await create(4, { airportCode: 'BVE' }); // Brive: no region (straddles two)
     await create(5, { airportCode: null });
     const manual = await create(6, { airportCode: 'LYS', region: 'Occitanie' });
     await prisma.prospect.update({ where: { id: lyon.id }, data: { status: 'replied' } });
@@ -172,7 +172,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     expect(byEmail['contact4@parking-fictif.example'].region).toBeNull();
     expect(byEmail['contact6@parking-fictif.example'].region).toEqual({ key: 'occitanie', label: 'Occitanie', manual: true });
     expect(byEmail['contact6@parking-fictif.example'].regionOverride).toBe('occitanie');
-    expect(all.body.regions).toHaveLength(18);
+    expect(all.body.regions).toHaveLength(19);
     expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes' });
     expect(all.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 2, 'provence-alpes-cote-d-azur': 1, occitanie: 1, none: 2, bretagne: 0 });
 

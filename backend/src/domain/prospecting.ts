@@ -1,3 +1,4 @@
+import { airportCity } from './airport-names';
 import { createHash } from 'crypto';
 import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml } from './account-messages';
 import { EmailMessage } from './booking-messages';
@@ -173,7 +174,8 @@ export function templateValues(prospect: ProspectForTemplate, airportName: strin
     prénom: prospect.contactFirstName ?? '',
     nom: prospect.contactLastName ?? '',
     parking: prospect.companyName,
-    aéroport: airportName ?? prospect.airportCode ?? '',
+    // An airport Plazo does not serve (Genève, Zurich… for the Swiss prospects, 03/11/2026): its city, not the bare code.
+    aéroport: airportName ?? airportCity(prospect.airportCode) ?? '',
     ville: prospect.town ?? '',
   };
 }
