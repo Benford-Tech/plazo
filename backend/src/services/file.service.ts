@@ -23,7 +23,7 @@ import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/t
 import { AssignFileDto, FileInputDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
-import { placeHookOf } from './place-hook';
+import { hookIsPlace, placeHookOf } from './place-hook';
 import { AuditService } from './audit.service';
 import { loadPlanCapacity } from './capacity.service';
 import { TravellerMessagesService } from './traveller-messages.service';
@@ -357,7 +357,8 @@ export class FileService {
     }
     // 01/11/2026: keys left and hung on the car's place follow the car to its new file slot (unless typed apart).
     const oldHook = await placeHookOf(reservation);
-    const followsPlace = !!reservation.keysLeftAt && (!reservation.keyHook || reservation.keyHook === oldHook);
+    const followsPlace =
+      (await hookIsPlace(reservation.parkingId)) && !!reservation.keysLeftAt && (!reservation.keyHook || reservation.keyHook === oldHook);
     let keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
     if (data.keyHook === undefined && followsPlace) {
       keyHook = file

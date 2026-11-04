@@ -98,6 +98,31 @@ export class ParkingService {
     return saved.summary;
   }
 
+  /** 04/11/2026 (« Configuration place = crochet »): keys left go on the hook of the car's place, or not (audited). */
+  public async setKeyHook(actor: AuthenticatedStaff, parkingId: string, placeHook: boolean): Promise<ParkingSummary> {
+    if (!can(actor.role, 'parking:manage')) {
+      throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
+    }
+    return prisma.$transaction(async tx => {
+      const before = await tx.parking.findFirst({ where: { id: parkingId, operatorId: actor.operatorId } });
+      if (!before) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
+      const after = await tx.parking.update({ where: { id: parkingId }, data: { keyHookIsPlace: placeHook } });
+      if (before.keyHookIsPlace !== placeHook) {
+        await this.audit.record(
+          actor,
+          {
+            action: 'parking.settings_updated',
+            entityType: 'parking',
+            entityId: parkingId,
+            details: { keyHookIsPlace: { from: before.keyHookIsPlace, to: placeHook } },
+          },
+          tx,
+        );
+      }
+      return summarize(after, tx);
+    });
+  }
+
   /** R-B (07/10/2026): who sees the position of the parking's shuttles (managers, audited). */
   public async setShuttleTracking(actor: AuthenticatedStaff, parkingId: string, tracking: ShuttleTracking): Promise<ParkingSummary> {
     if (!can(actor.role, 'parking:manage')) {

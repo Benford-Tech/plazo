@@ -432,6 +432,10 @@ model Parking {
   // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
   shuttleTracking ShuttleTracking @default(team)
 
+  // 04/11/2026 (« Configuration place = crochet »): keys left without a typed number hang on the hook of the car's place
+  // (« A-12 », « F07-3 ») and follow the car when it moves; off, the team types the hook number itself.
+  keyHookIsPlace Boolean @default(true)
+
   /// 27/10/2026: where the valet meets the traveller at the airport (« Terminal 1 · dépose-minute »); null: the default
   /// of `valetMeetingPointOf`.
   valetMeetingPoint String?

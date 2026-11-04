@@ -10,6 +10,7 @@ import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingLogoCard } from "@/components/parking/ParkingLogoCard";
 import { TravellerSms } from "@/components/account/TravellerSms";
 import { WhatsappCard } from "@/components/parking/WhatsappCard";
+import { KeyHookCard } from "@/components/parking/KeyHookCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
@@ -259,6 +260,7 @@ export default function ParkingPage() {
       <ComparatorCommissionCard />
       <ReturnMeetingPointForm />
       {parking && <ShuttleTrackingCard parking={parking} />}
+      {parking && <KeyHookCard parking={parking} />}
       {parking && <ExtrasSettingsCard parking={parking} />}
       <ContractTemplateCard />
       <ShuttleStops />

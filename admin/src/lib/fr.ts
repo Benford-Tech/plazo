@@ -4429,6 +4429,15 @@ export const remindersFr = {
 };
 
 /** R-B (07/10/2026): who sees the position of the shuttles. */
+export const keyHookFr = {
+  title: "Crochets des clés",
+  toggle: "Le crochet des clés = la place de la voiture",
+  on: "Des clés laissées vont d'office au crochet de la place de la voiture (« A-12 », ou « F07-3 » : la file et la place comptée depuis le fond) et suivent la voiture quand elle change de place.",
+  off: "Des clés laissées n'ont pas de crochet tant que l'équipe n'a pas tapé son numéro.",
+  typed: "Un numéro tapé à la main reste toujours celui de l'équipe.",
+  saved: (on: boolean) => (on ? "Crochet = place de la voiture." : "Crochet tapé par l'équipe."),
+};
+
 export const shuttleTrackingFr = {
   title: "Suivi des navettes",
   intro: "Qui voit la position de vos navettes pendant les trajets ?",

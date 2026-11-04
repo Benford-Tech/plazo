@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
-import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
+import { UpdateParkingDto, UpdateKeyHookDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AssignFileDto, KeepFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
@@ -47,6 +47,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               totalCapacity: { type: integer, minimum: 1, description: "The declared figure, used while the plan has no room" }
  *               safetyMarginPct: { type: integer, minimum: 0, maximum: 50 }
  *               shuttleTravelMinutes: { type: integer, minimum: 1, maximum: 120 }
+ * /internal/parkings/{id}/key-hook:
+ *   put:
+ *     summary: "{ placeHook }: keys left without a typed number go on the hook of the car's place (A-12, F07-3) and follow the car; off, the team types the number (managers, audited)"
+ *     tags: [Parking]
  * /internal/parkings/{id}/shuttle-tracking:
  *   put:
  *     summary: Who sees the position of the parking's shuttles (R-B, managers, audited)
@@ -149,6 +153,13 @@ export class ParkingRoute implements Routes {
       StaffAuthMiddleware('parking:manage'),
       ValidationMiddleware(UpdateShuttleTrackingDto),
       this.parking.setShuttleTracking,
+    );
+    // 04/11/2026 (« Configuration place = crochet »): keys left go on the hook of the car's place, or not.
+    this.router.put(
+      '/internal/parkings/:id/key-hook',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(UpdateKeyHookDto),
+      this.parking.setKeyHook,
     );
 
     // Bloc 2, step "Plan": the operator's parking plan and its spots.

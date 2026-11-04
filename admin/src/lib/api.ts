@@ -539,6 +539,12 @@ export const adminApi = {
         body: json({ reason }),
       },
     ),
+  // 04/11/2026 (« Configuration place = crochet »).
+  setKeyHook: (id: string, placeHook: boolean) =>
+    apiRequest<{ data: Parking }>(`/internal/parkings/${id}/key-hook`, {
+      method: "PUT",
+      body: json({ placeHook }),
+    }),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
       method: "PUT",

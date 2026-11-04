@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { ShuttleTracking } from '@/database';
 import { SHUTTLE_TRACKING_LEVELS } from '@/domain/shuttle-tracking';
 
@@ -53,4 +53,10 @@ export class UpdateParkingDto {
 export class UpdateShuttleTrackingDto {
   @IsIn(SHUTTLE_TRACKING_LEVELS as unknown as string[], { message: 'invalid_tracking' })
   public tracking: ShuttleTracking;
+}
+
+/** PUT /internal/parkings/:id/key-hook (04/11/2026, « Configuration place = crochet »). */
+export class UpdateKeyHookDto {
+  @IsBoolean({ message: 'invalid' })
+  public placeHook: boolean;
 }

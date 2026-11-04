@@ -144,6 +144,8 @@ export interface Parking {
   landingDelayMinutes: number;
   /** R-B (07/10/2026): who sees the position of the shuttles. */
   shuttleTracking: ShuttleTracking;
+  /** 04/11/2026: keys left go on the hook of the car's place (absent from old answers: on). */
+  keyHookIsPlace?: boolean;
   /** 27/10/2026: where the valet meets the travellers at the airport (null: Terminal 1 · dépose-minute). */
   valetMeetingPoint?: string | null;
   /**

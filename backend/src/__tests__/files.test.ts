@@ -71,6 +71,29 @@ describe('files (S-C, 07/10/2026)', () => {
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: first.id } })).keyHook).toBe('9');
   });
 
+  it('04/11/2026 : réglage « crochet = place » éteint : les clés laissées n’ont pas de crochet et rien ne suit la voiture', async () => {
+    const { token, parking } = await setupOperator();
+    const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });
+    const [f01, f02] = put.body.data;
+    const off = await api().put(`/api/internal/parkings/${parking.id}/key-hook`).set(auth(token)).send({ placeHook: false });
+    expect(off.status).toBe(200);
+    expect(off.body.data.keyHookIsPlace).toBe(false);
+    const car = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking('GK-318-PX', today(), { arrivalAt: `${today()}T00:00` }))
+    ).body.data;
+    await api().post(`/api/internal/reservations/${car.id}/file`).set(auth(token)).send({ fileId: f01.id });
+    const left = await api().put(`/api/internal/reservations/${car.id}/keys`).set(auth(token)).send({ left: true });
+    expect(left.status).toBe(200);
+    expect(left.body.data.keyHook).toBeNull();
+    expect(left.body.data.keysLeftAt).not.toBeNull();
+    await api().post(`/api/internal/reservations/${car.id}/file`).set(auth(token)).send({ fileId: f02.id });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: car.id } })).keyHook).toBeNull();
+    expect((await api().put(`/api/internal/parkings/${parking.id}/key-hook`).set(auth(token)).send({ placeHook: 'oui' })).status).toBe(400);
+  });
+
   it('saves the files of the plan, refuses a duplicate code and keeps a file that holds cars', async () => {
     const { token, parking } = await setupOperator();
     const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });

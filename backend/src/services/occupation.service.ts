@@ -10,7 +10,7 @@ import { dayBounds, localDate, nightsBetween } from '@/domain/time';
 import { AssignSpotDto, KeysDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
-import { placeHookOf } from './place-hook';
+import { hookIsPlace, placeHookOf } from './place-hook';
 import { BOARDING_CHECK_IN_SELECT, withBoardingCheckIn } from '@/domain/shuttle';
 import { AuditService } from './audit.service';
 import { TravellerMessagesService } from './traveller-messages.service';
@@ -241,7 +241,8 @@ export class OccupationService {
     }
     // 01/11/2026: keys left and hung on the car's place follow the car to its new spot (unless a hook was typed apart).
     const oldHook = await placeHookOf(reservation);
-    const followsPlace = !!reservation.keysLeftAt && (!reservation.keyHook || reservation.keyHook === oldHook);
+    const followsPlace =
+      (await hookIsPlace(reservation.parkingId)) && !!reservation.keysLeftAt && (!reservation.keyHook || reservation.keyHook === oldHook);
     const keyHook =
       data.keyHook !== undefined ? data.keyHook?.trim() || null : followsPlace ? (spot?.code ?? reservation.keyHook) : reservation.keyHook;
     // The valet's fix where the car stands (06/10/2026); the staff's position always wins.
