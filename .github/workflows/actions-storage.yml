@@ -1,0 +1,47 @@
+# 04/11/2026 (« You have used 100% of the Actions storage included for the Benford-Tech account », 0.53 GB of 0.5 GB):
+# the artifacts (AAB, IPA, APK, captures) are what fills the storage. Every night, delete the artifacts of this repository
+# older than KEEP_DAYS; by hand, any age (0 deletes them all). Logs and caches are not touched.
+name: Actions storage (old artifacts)
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      keep_days:
+        description: "Garder les artifacts des N derniers jours (0 = tout supprimer)"
+        required: false
+        default: '3'
+
+permissions:
+  actions: write
+
+jobs:
+  clean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          KEEP_DAYS: ${{ inputs.keep_days || '3' }}
+        with:
+          script: |
+            const keepDays = Number(process.env.KEEP_DAYS);
+            if (!Number.isFinite(keepDays) || keepDays < 0) throw new Error(`keep_days invalide : ${process.env.KEEP_DAYS}`);
+            const cutoff = Date.now() - keepDays * 86400000;
+            const artifacts = await github.paginate(github.rest.actions.listArtifactsForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+            let deleted = 0;
+            let bytes = 0;
+            for (const artifact of artifacts) {
+              if (artifact.expired || new Date(artifact.created_at).getTime() >= cutoff) continue;
+              await github.rest.actions.deleteArtifact({ owner: context.repo.owner, repo: context.repo.repo, artifact_id: artifact.id });
+              deleted++;
+              bytes += artifact.size_in_bytes;
+              core.info(`Supprimé : ${artifact.name} (${(artifact.size_in_bytes / 1e6).toFixed(1)} Mo, ${artifact.created_at})`);
+            }
+            const kept = artifacts.filter(a => !a.expired).length - deleted;
+            core.summary.addRaw(`${deleted} artifacts supprimés (${(bytes / 1e6).toFixed(1)} Mo), ${kept} gardés (moins de ${keepDays} jours).`).write();

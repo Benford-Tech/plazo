@@ -290,7 +290,7 @@ jobs:
             mobile/build/app/outputs/bundle/*/*.aab
             mobile/build/app/outputs/flutter-apk/*-v*.apk
             mobile/build/app/outputs/mapping/*/mapping.txt
-          retention-days: 30
+          retention-days: 7
       - name: Google Play — envoi des deux AAB
         run: |
           set -uo pipefail
@@ -510,7 +510,7 @@ jobs:
           path: |
             mobile/build/ios/ipa/*.ipa
             mobile/build/ios/dsym/
-          retention-days: 30
+          retention-days: 7
       - name: App Store Connect — envoi des deux IPA (TestFlight puis revue App Store)
         run: |
           set -uo pipefail
