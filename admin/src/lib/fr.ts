@@ -4569,6 +4569,35 @@ export const contractFr = {
 
 // The parking's own contract (26/10/2026, choice A « Mon PDF ») and the register of the signed contracts (R-A).
 /** « Mails liés » of a booking (27/10/2026, direction C). */
+export const travellerMessagesFr = {
+  title: (n: number) => `Messages au voyageur · ${n}`,
+  kind: {
+    booking_confirmed: "Confirmation",
+    booking_reminder: "Veille du dépôt",
+    flight_landed: "Atterrissage",
+    signature_code: "Code de signature",
+  } as Record<string, string>,
+  otherKind: "Message",
+  channel: { whatsapp: "WhatsApp", sms: "SMS" },
+  fallback: "WhatsApp non remis · SMS envoyé à la place",
+  status: {
+    whatsapp: {
+      sent: "Envoyé",
+      delivered: (time: string | null) => (time ? `✓✓ Remis à ${time}` : "✓✓ Remis"),
+      read: (time: string | null) => (time ? `✓✓ Lu à ${time}` : "✓✓ Lu"),
+      failed: "Non remis",
+    },
+    sms: {
+      queued: "En attente du téléphone",
+      sent: (time: string | null) => (time ? `Envoyé à ${time}` : "Envoyé"),
+      delivered: (time: string | null) => (time ? `Remis à ${time}` : "Remis"),
+      failed: "Échec, nouvel essai",
+      abandoned: "Non envoyé",
+    },
+  },
+  retention: "Les 30 derniers jours. Le texte des messages n'est pas gardé.",
+};
+
 export const linkedEmailsFr = {
   title: (n: number) => `Mails liés · ${n}`,
   role: {

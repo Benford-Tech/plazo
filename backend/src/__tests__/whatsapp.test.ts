@@ -223,3 +223,43 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(calls(BREVO_SMS_URL)).toHaveLength(1);
   });
 });
+
+describe('Messages au voyageur sur la fiche (04/11/2026)', () => {
+  it('liste WhatsApp et SMS de la réservation, le repli en une ligne, et refuse un autre loueur', async () => {
+    const op = await operatorWithWhatsapp();
+    const day = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+    const created = await api()
+      .post('/api/internal/reservations')
+      .set(auth(op.token))
+      .send({
+        channel: 'phone',
+        arrivalAt: `${day}T08:00`,
+        returnAt: `${day}T20:00`,
+        passengers: 1,
+        customerFirstName: 'Camille',
+        customerLastName: 'Martin',
+        customerPhone: '06 12 34 56 78',
+        plate: 'AB-123-CD',
+      });
+    expect(created.status).toBe(201);
+    const id = created.body.data.id;
+    // Whatever the booking itself sent (none by phone), two messages of ours: one read, one fallen back to SMS.
+    await prisma.whatsappMessage.deleteMany({ where: { reservationId: id } });
+    await prisma.smsOutbox.deleteMany({ where: { reservationId: id } });
+    await sms.sendTravellerSms(op.operator.id, { ...reminder(), reservationId: id, kind: 'booking_confirmed' });
+    await sms.sendTravellerSms(op.operator.id, { ...reminder(), reservationId: id });
+    const [first, second] = await prisma.whatsappMessage.findMany({ where: { reservationId: id }, orderBy: { createdAt: 'asc' } });
+    await postWebhook(statusDelivery(first.waMessageId!, 'read'));
+    await postWebhook(statusDelivery(second.waMessageId!, 'failed', 131026));
+
+    const res = await api().get(`/api/internal/reservations/${id}/messages`).set(auth(op.token));
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((m: any) => [m.kind, m.channel, m.status, m.whatsappFallback])).toEqual([
+      ['booking_reminder', 'sms', 'sent', true],
+      ['booking_confirmed', 'whatsapp', 'read', false],
+    ]);
+
+    const other = await setupOperator('Autre parking');
+    expect((await api().get(`/api/internal/reservations/${id}/messages`).set(auth(other.token))).status).toBe(404);
+  });
+});

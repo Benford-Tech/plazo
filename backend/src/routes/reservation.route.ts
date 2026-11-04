@@ -143,6 +143,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  */
 /**
  * @swagger
+ * /internal/reservations/{id}/messages:
+ *   get:
+ *     tags: [Reservations]
+ *     summary: "« Messages au voyageur » (04/11/2026): the SMS and WhatsApp messages sent, newest first, 30 days; a WhatsApp fallen back to SMS is one line (whatsappFallback)"
  * /internal/reservations/{id}/history:
  *   get:
  *     summary: "Historique (30/10/2026): who did what on the reservation, newest first. { data: [{ id, at, action, group (status | change | message | other), author { kind (staff | traveller | comparator | system), name, staffId, photoUpdatedAt, viewAs }, changes [{ field, from, to }] (values written for reading), info }] }"
@@ -187,6 +191,7 @@ export class ReservationRoute implements Routes {
     this.router.post('/internal/reservations/:id/restore', StaffAuthMiddleware('parking:manage'), this.reservations.restore);
     // « Historique » (30/10/2026): who did what on the reservation, newest first.
     this.router.get('/internal/reservations/:id/history', StaffAuthMiddleware('reservations:view'), this.reservations.history);
+    this.router.get('/internal/reservations/:id/messages', StaffAuthMiddleware('reservations:view'), this.reservations.messages);
     this.router.get('/internal/reservations/:id', StaffAuthMiddleware('reservations:view'), this.reservations.get);
     this.router.patch(
       '/internal/reservations/:id',

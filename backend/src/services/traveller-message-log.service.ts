@@ -1,0 +1,35 @@
+import httpStatus from 'http-status';
+import { Service } from 'typedi';
+import prisma from '@/database';
+import { TravellerMessage, travellerMessages } from '@/domain/traveller-message-log';
+import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { HttpException } from '@/utils/httpException';
+import { STAFF_VISIBLE } from './reservation.service';
+
+/** GET /internal/reservations/:id/messages (04/11/2026): the SMS and WhatsApp messages sent to the traveller. */
+@Service()
+export class TravellerMessageLogService {
+  public async forReservation(actor: AuthenticatedStaff, id: string): Promise<{ data: TravellerMessage[] }> {
+    const reservation = await prisma.reservation.findFirst({
+      where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
+      select: { id: true },
+    });
+    if (!reservation) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    const where = { operatorId: actor.operatorId, reservationId: id };
+    const [whatsapp, sms] = await Promise.all([
+      prisma.whatsappMessage.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: { id: true, kind: true, status: true, waMessageId: true, errorCode: true, createdAt: true, updatedAt: true },
+      }),
+      prisma.smsOutbox.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: { id: true, kind: true, status: true, createdAt: true, updatedAt: true },
+      }),
+    ]);
+    return { data: travellerMessages(whatsapp, sms) };
+  }
+}

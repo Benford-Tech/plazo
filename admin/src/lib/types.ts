@@ -1223,6 +1223,18 @@ export interface SmsSettingsInput {
   baseUrl?: string | null;
 }
 
+/** GET /internal/reservations/:id/messages (04/11/2026) */
+export interface TravellerMessage {
+  id: string;
+  kind: string;
+  channel: "whatsapp" | "sms";
+  status: string;
+  at: string;
+  statusAt: string | null;
+  whatsappFallback: boolean;
+  errorCode: string | null;
+}
+
 /** GET /internal/whatsapp/settings (03/11/2026) */
 export interface WhatsappSettings {
   available: boolean;

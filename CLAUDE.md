@@ -1144,8 +1144,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `POST /internal/whatsapp/test` (502 avec le code de Meta). Web : carte « WhatsApp aux voyageurs » au-dessus des SMS dans Parking ›
      Réglages (`WhatsappCard`). Variables `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
      (marche à suivre chez Meta dans le README) ; politique de confidentialité (Meta parmi les prestataires et les transferts). Pas
-     encore : la liste des messages sur la fiche réservation, le choix par le voyageur (B), les réponses WhatsApp (non lues).
-     Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
+     encore : le choix par le voyageur (B), les réponses WhatsApp (non lues). Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
+     **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
+     réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
+     `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
+     réservation, du plus récent au plus ancien, 30 jours (leur purge), sans texte (`domain/traveller-message-log.ts`,
+     `travellerMessages` : un WhatsApp tombé en repli, ou refusé par Meta à l'envoi, devient la ligne de son SMS avec
+     `whatsappFallback`) ; web : bloc « Messages au voyageur · N » de la fiche réservation (`TravellerMessages`, avant « Mails liés »,
+     caché sans message : date, Confirmation · Veille du dépôt · Atterrissage · Code de signature, pastille WhatsApp ou SMS, « ✓✓ Lu à
+     14:20 », « Envoyé à 21:44 », « WhatsApp non remis · SMS envoyé à la place »). Pas les mails ni les pushs (non journalisés), ni
+     Plazo Pro. Tests `traveller-message-log.test.ts`, `whatsapp.test.ts`, `TravellerMessages.test.tsx`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

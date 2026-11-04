@@ -48,6 +48,7 @@ import type {
   SmsSettingsInput,
   SmsStatus,
   WhatsappSettings,
+  TravellerMessage,
   PlatformReservations,
   ReminderBoard,
   ReminderSettingsInput,
@@ -888,6 +889,11 @@ export const adminApi = {
   // « Mails liés » (27/10/2026): the mails of a booking, oldest first.
   getReservationHistory: (reservationId: string) =>
     apiRequest<{ data: HistoryEvent[] }>(`/internal/reservations/${reservationId}/history`),
+  // « Messages au voyageur » (04/11/2026): the SMS and WhatsApp messages sent, newest first.
+  getReservationMessages: (reservationId: string) =>
+    apiRequest<{ data: TravellerMessage[] }>(
+      `/internal/reservations/${reservationId}/messages`,
+    ),
   getReservationEmails: (reservationId: string) =>
     apiRequest<{ data: LinkedEmail[] }>(
       `/internal/reservations/${reservationId}/emails`,
