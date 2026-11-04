@@ -82,4 +82,4 @@ jobs:
         with:
           name: plazo-apks
           path: ${{ runner.temp }}/apks/*.apk
-          retention-days: 14
+          retention-days: 3

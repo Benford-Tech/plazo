@@ -11,6 +11,7 @@ import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
+import { TravellerMessages } from "@/components/reservations/TravellerMessages";
 import { ReservationHistory } from "@/components/reservations/ReservationHistory";
 import { BookingReminderCard } from "@/components/reservations/BookingReminderCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -438,6 +439,8 @@ export default function ReservationPage() {
           <BookingContractCard reservationId={r.id} status={r.status} />
           {/* « SMS de la veille » (30/10/2026): sent by hand for this booking, or sent again. */}
           {can(user?.role, "reservations:manage") && <BookingReminderCard reservationId={r.id} />}
+          {/* « Messages au voyageur » (04/11/2026): the SMS and WhatsApp messages sent to the traveller. */}
+          <TravellerMessages reservationId={r.id} />
           {/* « Mails liés » (27/10/2026): the mails this booking came from, for those who reach the inbox. */}
           {can(user?.role, "reservations:manage") && (
             <LinkedEmails reservationId={r.id} />
