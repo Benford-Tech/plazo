@@ -1,3 +1,4 @@
+import { StatusPill } from "@/components/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
@@ -391,9 +392,7 @@ export default function ReservationPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="bg-foreground px-2.5 py-1 text-lg font-bold uppercase text-background">
-          {fr.status[r.status]}
-        </span>
+<StatusPill status={r.status} size="lg" />
         {r.overbooked && (
           <span className="bg-primary px-2.5 py-1 font-bold uppercase text-primary-foreground">
             {t.overbookedBadge}

@@ -1,3 +1,4 @@
+import { StatusPill } from "@/components/StatusPill";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Search, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -165,7 +166,7 @@ export default function ReservationsPage() {
                   )}
                 </span>
               )}
-              <span className="rounded-full border border-border bg-white px-2.5 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>
+              <StatusPill status={r.status} />
             </Link>
             {/* 21/10/2026 (choice A): no price yet, typed here without opening the booking. */}
             {without(r) &&

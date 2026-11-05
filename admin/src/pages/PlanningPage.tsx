@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, BusFront, ChevronDown, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { StatusPill } from "@/components/StatusPill";
 import { MovementPill } from "@/components/MovementPill";
 import { Plate } from "@/components/Plate";
 import { PlanningTabs } from "@/components/planning/PlanningTabs";
@@ -93,7 +94,6 @@ function Row({
 }) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
-  const onSite = r.status !== "upcoming";
   const s = r.arrivalSignal ?? null;
   const live = s?.state === "sharing";
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
@@ -123,7 +123,7 @@ function Row({
           <span className="min-w-0 max-w-full">
             <span className="block truncate text-lg font-semibold">{r.customerName}</span>
             <span className="block truncate text-sm text-muted-foreground">
-              {t.pax(r.passengers)} · {isArrival ? (r.channelDetail ?? fr.channels[r.channel]) : fr.status[r.status]}
+              {t.pax(r.passengers)}{isArrival ? ` · ${r.channelDetail ?? fr.channels[r.channel]}` : ""}
             </span>
             {r.handover === "valet" && <ValetPill label={fr.reservation.handovers.valet} className="mt-0.5" />}
           </span>
@@ -135,19 +135,13 @@ function Row({
           </span>
         ) : s ? (
           <SignalLabel s={s} />
-        ) : isArrival ? (
-          <span
-            className={cn(
-              "whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-bold uppercase sm:text-sm",
-              onSite ? "border border-ok text-ok-text" : "border border-border text-muted-foreground",
-            )}
-          >
-            {fr.status[r.status]}
-          </span>
-        ) : r.returnFlight ? (
-          <span className="tabular whitespace-nowrap rounded-full border border-info bg-white px-2.5 py-1 font-mono text-sm font-bold text-info-text sm:text-[15px]">{r.returnFlight}</span>
+        ) : isArrival || !r.returnFlight ? (
+          <StatusPill status={r.status} />
         ) : (
-          <span />
+          <span className="flex flex-col items-end gap-1">
+            <StatusPill status={r.status} />
+            <span className="tabular whitespace-nowrap rounded-full border border-info bg-white px-2.5 py-1 font-mono text-sm font-bold text-info-text sm:text-[15px]">{r.returnFlight}</span>
+          </span>
         )}
       </button>
       {live && s && (
