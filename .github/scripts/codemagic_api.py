@@ -129,7 +129,15 @@ def variables_of(group_id):
     return {v["name"]: v for v in paginated(f"/api/v3/variable-groups/{group_id}/variables")}
 
 
-def start_build(app_id, workflow_id, branch, instance_type=None):
+def start_build(app_id, workflow_id, branch, instance_type=None, variables=None):
+    if variables:
+        # Variables of this build only (they win over codemagic.yaml's): the v1 API takes them, the v3 one does not.
+        body = {"appId": app_id, "workflowId": workflow_id, "branch": branch, "environment": {"variables": variables}}
+        if instance_type:
+            body["instanceType"] = instance_type
+        status, payload = call("POST", f"{API_V1}/builds", body)
+        build_id = payload["buildId"]
+        return build_id, build_url(app_id, build_id)
     body = {"workflow_id": workflow_id, "branch": branch}
     if instance_type:
         # Overrides the workflow's machine: an Android-only build runs on Linux as well as on a Mac mini.

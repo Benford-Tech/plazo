@@ -40,6 +40,10 @@ on:
         description: "mapping : noms masqués cités par Google Play (ex. « u41.Q go3.e »)"
         type: string
         default: ""
+      variables:
+        description: "start : variables de ce build seulement, ex. « APP_STORE_SUBMIT=false » (APP_STORE_SUBMIT, APP_STORE_RELEASE_TYPE, PLAY_TRACK, BUILD_APK, SUBMIT_APPS)"
+        type: string
+        default: ""
       lines:
         description: "logs : nombre de dernières lignes gardées par étape (60 par défaut, 2000 au plus)"
         type: string
@@ -66,4 +70,5 @@ jobs:
           INSTANCE_TYPE: ${{ inputs.instance_type }}
           NAMES: ${{ inputs.names }}
           LOG_LINES: ${{ inputs.lines }}
+          BUILD_VARIABLES: ${{ inputs.variables }}
         run: python3 .github/scripts/codemagic_build.py

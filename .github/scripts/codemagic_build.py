@@ -32,6 +32,9 @@ BUILD_ID = os.environ.get("BUILD_ID", "").strip()
 GROUP_NAME = os.environ.get("GROUP_NAME", "").strip()
 INSTANCE_TYPE = os.environ.get("INSTANCE_TYPE", "").strip()
 NAMES = os.environ.get("NAMES", "").replace(",", " ").split()
+# start: variables of this build only, « APP_STORE_SUBMIT=false PLAY_TRACK=beta » (only these names, never a secret).
+BUILD_VARIABLES = os.environ.get("BUILD_VARIABLES", "").strip()
+ALLOWED_VARIABLES = {"APP_STORE_SUBMIT", "APP_STORE_RELEASE_TYPE", "PLAY_TRACK", "BUILD_APK", "SUBMIT_APPS"}
 
 ENDED = {"finished", "failed", "canceled", "timeout", "skipped"}
 
@@ -124,10 +127,22 @@ def logs(app):
     summary(lines)
 
 
+def build_variables():
+    variables = {}
+    for item in BUILD_VARIABLES.replace(",", " ").split():
+        name, sep, value = item.partition("=")
+        if not sep or name not in ALLOWED_VARIABLES:
+            fail(f"variable refusée : « {item} » (permises : {', '.join(sorted(ALLOWED_VARIABLES))}, écrites NOM=valeur)")
+        variables[name] = value
+    return variables
+
+
 def start(app):
-    build_id, url = start_build(app["id"], WORKFLOW_ID, BRANCH, INSTANCE_TYPE or None)
+    variables = build_variables()
+    build_id, url = start_build(app["id"], WORKFLOW_ID, BRANCH, INSTANCE_TYPE or None, variables or None)
     machine = f" (machine `{INSTANCE_TYPE}`)" if INSTANCE_TYPE else ""
-    line = f"Build Codemagic lancé : `{WORKFLOW_ID}` sur `{BRANCH}`{machine} → {url} (id `{build_id}`)"
+    extra = f" avec {' '.join(f'{k}={v}' for k, v in variables.items())}" if variables else ""
+    line = f"Build Codemagic lancé : `{WORKFLOW_ID}` sur `{BRANCH}`{machine}{extra} → {url} (id `{build_id}`)"
     print(line)
     summary([line])
 
