@@ -134,6 +134,10 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
       ),
       (response) => emit(state.copyWith(loadState: ViewState.success, response: response, selectedSlug: null)),
     );
+    // Opened on the map (« Voir sur la carte » of the home): its card shows a parking at once, as after the toggle.
+    if (state.view == ResultsView.map && state.selectedSlug == null && state.shown.isNotEmpty) {
+      emit(state.copyWith(selectedSlug: state.shown.first.slug));
+    }
     _resync();
   }
 

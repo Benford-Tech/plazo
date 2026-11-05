@@ -2,37 +2,30 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/enums/view_state.dart';
-import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
-import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/icon_tile.dart';
-import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/live_dot.dart';
-import '../../../../shared/widgets/shuttle_icon.dart';
-import '../../../../shared/widgets/status_badge.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
-import '../../data/models/public_models.dart';
 import '../bloc/search/search_bloc.dart';
+import '../../../../core/helpers/highlights.dart';
 import '../widgets/dates_pill.dart';
+import '../widgets/result_card.dart';
 import '../widgets/stay_sheet.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
-/// "Rechercher" in the mockup's composition (T-A, 05/10/2026): a greeting, the title in Playfair, the
-/// dates and "Rechercher" in a white card, then the map of the chosen stay with its floating pills
-/// (how many parkings, how far) and the best offer as the one orange card; below, the next
-/// departure kept on this phone, the three steps and the trust chips.
+/// "Rechercher", A + C (05/11/2026, « Il y a mieux à faire », maquettes
+/// https://claude.ai/artifact/U2XFGECBeM3epFB8Dz41mM): the next departure kept on this phone first, as the one orange
+/// card (A); then the dates and the parkings of the stay straight away, with their total price and shuttle (C); the
+/// map is one tap away (« Voir sur la carte », the results on their map); then the three steps and the trust chips.
 @RoutePage()
 class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
   const SearchTabPage({super.key});
@@ -58,16 +51,16 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
             context.read<TripsBloc>().add(const TripsLoaded(quiet: true));
             context.read<SearchBloc>().add(const SearchPreviewRequested());
           },
-          child: ListView(padding: EdgeInsets.zero, children: const [_Home(), _MapHero(), _NextDeparture(), _Steps(), _Trust()]),
+          child: ListView(padding: EdgeInsets.zero, children: const [_Header(), _NextTripHero(), _Home(), _Parkings(), _Steps(), _Trust()]),
         ),
       ),
     );
   }
 }
 
-/// The greeting row, the title and the search card.
-class _Home extends StatelessWidget {
-  const _Home();
+/// The logo and the airport (a tap changes it when there are several).
+class _Header extends StatelessWidget {
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
@@ -75,68 +68,94 @@ class _Home extends StatelessWidget {
       builder: (context, state) {
         final airportName = state.airport?.name ?? 'search.kicker'.tr();
         final canPick = state.airports.length > 1;
-        final dateError = state.errors['arrivalAt'] ?? state.errors['returnAt'];
         return SafeArea(
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    const BrandLogo(height: 28),
-                    const Spacer(),
-                    Semantics(
-                      button: canPick,
-                      label: canPick ? 'search.airport_a11y'.tr(args: [airportName]) : airportName,
-                      excludeSemantics: true,
-                      child: Material(
-                        color: Colors.white,
-                        shape: const StadiumBorder(),
-                        child: InkWell(
-                          key: const Key('airport-picker'),
-                          customBorder: const StadiumBorder(),
-                          onTap: canPick ? () => _pickAirport(context, state) : null,
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.accent),
-                                const SizedBox(width: 6),
-                                Text(state.airport?.code ?? 'LYS', style: AppText.strong(size: 12.5)),
-                                if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.muted, size: 18),
-                              ],
-                            ),
-                          ),
+                const BrandLogo(height: 28),
+                const Spacer(),
+                Semantics(
+                  button: canPick,
+                  label: canPick ? 'search.airport_a11y'.tr(args: [airportName]) : airportName,
+                  excludeSemantics: true,
+                  child: Material(
+                    color: Colors.white,
+                    shape: const StadiumBorder(),
+                    child: InkWell(
+                      key: const Key('airport-picker'),
+                      customBorder: const StadiumBorder(),
+                      onTap: canPick ? () => _pickAirport(context, state) : null,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.accent),
+                            const SizedBox(width: 6),
+                            Text(state.airport?.code ?? 'LYS', style: AppText.strong(size: 12.5)),
+                            if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.muted, size: 18),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text('search.greeting_sub'.tr(), style: AppText.label(size: 12)),
-                const SizedBox(height: 2),
-                Semantics(
-                  header: true,
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '${'search.title_find'.tr()} ',
-                          style: AppText.title(size: 24, color: AppColors.muted),
-                        ),
-                        TextSpan(
-                          text: 'search.title_near'.tr(args: [airportName]),
-                          style: AppText.title(size: 24, color: AppColors.brownOrInk).copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                    style: const TextStyle(height: 1.12),
                   ),
                 ),
-                const SizedBox(height: 14),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAirport(BuildContext context, SearchState state) => pickAirport(context, state);
+}
+
+/// The search card: the title (or « Un autre séjour ? » under a coming trip), the dates and the button to all the results.
+class _Home extends StatelessWidget {
+  const _Home();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TripsBloc, TripsState>(
+      builder: (context, trips) => BlocBuilder<SearchBloc, SearchState>(
+        builder: (context, state) {
+          final airportName = state.airport?.name ?? 'search.kicker'.tr();
+          final dateError = state.errors['arrivalAt'] ?? state.errors['returnAt'];
+          final hasTrip = trips.nextDeparture != null;
+          final count = state.bookable.length;
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (hasTrip)
+                  Text('search.another_stay'.tr().toUpperCase(), style: AppText.label(size: 11.5))
+                else ...[
+                  Text('search.greeting_sub'.tr(), style: AppText.label(size: 12)),
+                  const SizedBox(height: 2),
+                  Semantics(
+                    header: true,
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${'search.title_find'.tr()} ',
+                            style: AppText.title(size: 24, color: AppColors.muted),
+                          ),
+                          TextSpan(
+                            text: 'search.title_near'.tr(args: [airportName]),
+                            style: AppText.title(size: 24, color: AppColors.brownOrInk).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      style: const TextStyle(height: 1.12),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: const BoxDecoration(
@@ -161,7 +180,11 @@ class _Home extends StatelessWidget {
                       const SizedBox(height: 10),
                       GradientButton(
                         key: const Key('search-submit'),
-                        label: 'search.submit'.tr(),
+                        label: count > 1
+                            ? 'search.see_all_many'.tr(args: ['$count'])
+                            : count == 1
+                            ? 'search.see_all_one'.tr()
+                            : 'search.submit'.tr(),
                         onPressed: () => context.read<SearchBloc>().add(const SearchSubmitted()),
                       ),
                     ],
@@ -169,419 +192,212 @@ class _Home extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _pickAirport(BuildContext context, SearchState state) async {
-    final bloc = context.read<SearchBloc>();
-    final slug = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('search.airport'.tr(), style: AppText.title(size: 22)),
-            ),
-            for (final a in state.airports)
-              ListTile(
-                minTileHeight: 52,
-                leading: const Icon(Icons.flight_takeoff_rounded, color: AppColors.accent),
-                title: Text(a.name, style: AppText.strong()),
-                subtitle: a.city == null ? null : Text(a.city!, style: AppText.muted()),
-                selected: a.slug == state.airportSlug,
-                onTap: () => Navigator.of(context).pop(a.slug),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (slug != null) bloc.add(SearchAirportChanged(slug));
-  }
-}
-
-/// The map of the stay (T-A, then K-A "carte vivante", 06/10/2026): interactive (drag, pinch),
-/// every parking of the stay as a tappable pin (the chosen one orange, full ones white), the
-/// terminals, the shuttles on the road as moving orange markers (polled every 12 s), the pills
-/// "N parkings disponibles", "N navettes en circulation" and "x km · navette n min", and the card
-/// of the chosen parking (the cheapest until the traveller taps another pin).
-class _MapHero extends StatelessWidget {
-  const _MapHero();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<SearchBloc, SearchState>(
-      builder: (context, state) {
-        final airport = state.preview?.airport ?? state.airport;
-        final terminals = airport?.location == null ? null : LatLng(airport!.location!.lat, airport.location!.lng);
-        final selected = state.selected;
-        final located = state.located;
-        final selectedPoint = selected?.location == null ? null : LatLng(selected!.location!.lat, selected.location!.lng);
-        final points = [?terminals, for (final r in located) LatLng(r.location!.lat, r.location!.lng)];
-        final center = selectedPoint ?? terminals ?? const LatLng(45.7256, 5.0811);
-        final count = state.bookable.length;
-        final countLabel = state.previewState.isProcessing && state.preview == null
-            ? 'search.preview_loading'.tr()
-            : count == 0
-            ? 'results.available_none'.tr()
-            : count == 1
-            ? 'results.available_one'.tr()
-            : 'results.available_many'.tr(args: ['$count']);
-        final live = state.live;
-        final shuttleCount = live?.shuttles.length ?? 0;
-        final shuttlesLabel = shuttleCount == 1 ? 'search.shuttles_one'.tr() : 'search.shuttles_many'.tr(args: ['$shuttleCount']);
-        final titles = {for (final r in located) r.slug: r.title, for (final p in live?.parkings ?? const <LiveParkingModel>[]) p.slug: p.title};
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-          child: ClipRRect(
-            borderRadius: AppRadius.card,
-            child: SizedBox(
-              key: const Key('search-map'),
-              height: 340,
-              child: Stack(
-                children: [
-                  Positioned.fill(child: Container(color: const Color(0xFFE6E6E9))),
-                  FlutterMap(
-                    key: ValueKey('${state.airportSlug}-${points.length}'),
-                    options: MapOptions(
-                      initialCenter: center,
-                      initialZoom: 12.5,
-                      // The pins stay clear of the two rows of pills on top and of the featured card at the bottom;
-                      // the map is only 340 high, so the padding leaves ~110 px for the parkings (120 + 170 left
-                      // 50 px, and the camera zoomed out to the whole region).
-                      initialCameraFit: points.length > 1
-                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(36, 108, 36, 120), maxZoom: 14)
-                          : null,
-                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
-                    ),
-                    children: [
-                      if (IgnMap.tilesEnabled)
-                        TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
-                      if (selectedPoint != null && terminals != null)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: [selectedPoint, terminals],
-                              color: AppColors.brownOrInk,
-                              strokeWidth: 3,
-                              pattern: StrokePattern.dashed(segments: const [9, 7]),
-                            ),
-                          ],
-                        ),
-                      MarkerLayer(
-                        markers: [
-                          for (final r in located)
-                            Marker(
-                              key: Key('search-pin-${r.slug}'),
-                              point: LatLng(r.location!.lat, r.location!.lng),
-                              width: 44,
-                              height: 44,
-                              child: _ParkingPin(
-                                result: r,
-                                selected: r.slug == selected?.slug,
-                                onTap: () => context.read<SearchBloc>().add(SearchParkingSelected(r.slug)),
-                              ),
-                            ),
-                          if (terminals != null)
-                            Marker(
-                              point: terminals,
-                              width: 160,
-                              height: 34,
-                              child: Center(child: _FloatingPill(text: 'search.map_airport'.tr(), dark: true)),
-                            ),
-                          for (final s in state.movingShuttles)
-                            Marker(
-                              key: Key('search-shuttle-${s.id}'),
-                              point: LatLng(s.position!.lat, s.position!.lng),
-                              width: 36,
-                              height: 36,
-                              child: _ShuttleMarker(shuttle: s, parkingTitle: titles[s.parking] ?? s.parking, heading: state.headings[s.id]),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    left: 12,
-                    top: 12,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
-                        // Only while shuttles are running: no "none" pill on a quiet map.
-                        if (shuttleCount > 0) ...[
-                          const SizedBox(height: 8),
-                          _FloatingPill(
-                            key: const Key('search-shuttles'),
-                            text: shuttlesLabel,
-                            leading: const ShuttleIcon(tone: ShuttleTone.terminal, size: 18),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (selected != null && (selected.distanceKm != null || selected.shuttleMinutes != null))
-                    Positioned(
-                      right: 12,
-                      top: 12,
-                      child: _FloatingPill(
-                        key: const Key('search-distance'),
-                        text: selected.distanceKm != null && selected.shuttleMinutes != null
-                            ? 'search.km_shuttle'.tr(args: [_km(selected.distanceKm!), '${selected.shuttleMinutes}'])
-                            : selected.distanceKm != null
-                            ? 'search.km'.tr(args: [_km(selected.distanceKm!)])
-                            : 'parking.shuttle_min'.tr(args: ['${selected.shuttleMinutes}']),
-                      ),
-                    ),
-                  Positioned(
-                    right: 6,
-                    bottom: selected == null ? 6 : 118,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      color: Colors.white.withValues(alpha: 0.8),
-                      child: Text(AppConstants.ignAttribution, style: AppText.body(size: 10, color: AppColors.muted)),
-                    ),
-                  ),
-                  if (selected != null)
-                    Positioned(
-                      left: 12,
-                      right: 12,
-                      bottom: 12,
-                      child: _FeaturedCard(result: selected, state: state),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  static String _km(double km) => km < 10 ? km.toStringAsFixed(1).replaceAll('.', ',') : km.round().toString();
-}
-
-/// A parking's pin (K-A): a tappable dot, orange when chosen, white when not, hollow when full.
-class _ParkingPin extends StatelessWidget {
-  const _ParkingPin({required this.result, required this.selected, required this.onTap});
-  final SearchResultModel result;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final r = result;
-    final state = r.bookable ? formatShortEuros(r.priceCents!) : 'search.pin_full'.tr();
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'search.parking_pin'.tr(args: [r.title, state]),
-      excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: selected ? 22 : 18,
-            height: selected ? 22 : 18,
-            decoration: BoxDecoration(
-              color: selected ? AppColors.accent : Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: selected ? Colors.white : (r.bookable ? AppColors.brownOrInk : AppColors.muted), width: 2.5),
-              boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
-            ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-/// A shuttle on the road (K-A, then I-C): the minibus pictogram turned the way it drives, orange to
-/// the terminal and peach to the airport, with a pulsing halo; its label names the parking, the
-/// direction and the age of the position — never the driver.
-class _ShuttleMarker extends StatelessWidget {
-  const _ShuttleMarker({required this.shuttle, required this.parkingTitle, this.heading});
-  final LiveShuttleModel shuttle;
-  final String parkingTitle;
-  final double? heading;
-
-  @override
-  Widget build(BuildContext context) {
-    final age = shuttle.positionAgeSeconds;
-    final label = [
-      'search.shuttle_marker'.tr(args: [parkingTitle]),
-      shuttle.dropoff ? 'search.shuttle_to_terminal'.tr() : 'search.shuttle_to_airport'.tr(),
-      if (age != null) age < 60 ? 'search.shuttle_age_s'.tr(args: ['$age']) : 'search.shuttle_age_min'.tr(args: ['${(age / 60).round()}']),
-    ].join(' · ');
-    return Semantics(
-      label: label,
-      excludeSemantics: true,
-      child: Tooltip(
-        message: label,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            LiveDot(color: shuttleColour(shuttleToneOf(shuttle.direction, hasPosition: true)), size: 36),
-            ShuttlePin(tone: shuttleToneOf(shuttle.direction, hasPosition: true), heading: heading, size: 32),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FloatingPill extends StatelessWidget {
-  const _FloatingPill({super.key, required this.text, this.count, this.dark = false, this.leading});
-  final String text;
-  final String? count;
-  final bool dark;
-
-  /// I-C: the shuttle pictogram before the text.
-  final Widget? leading;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.fromLTRB(count == null && leading == null ? 12 : 6, 6, 12, 6),
-    decoration: BoxDecoration(
-      color: dark ? AppColors.brownOrInk : Colors.white,
-      borderRadius: AppRadius.pill,
-      boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 16, offset: Offset(0, 6))],
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (count != null) ...[
-          Container(
-            width: 24,
-            height: 24,
-            decoration: const BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
-            child: Center(child: Text(count!, style: AppText.strong(size: 12))),
+/// The airport picker of the header.
+Future<void> pickAirport(BuildContext context, SearchState state) async {
+  final bloc = context.read<SearchBloc>();
+  final slug = await showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text('search.airport'.tr(), style: AppText.title(size: 22)),
           ),
-          const SizedBox(width: 7),
+          for (final a in state.airports)
+            ListTile(
+              minTileHeight: 52,
+              leading: const Icon(Icons.flight_takeoff_rounded, color: AppColors.accent),
+              title: Text(a.name, style: AppText.strong()),
+              subtitle: a.city == null ? null : Text(a.city!, style: AppText.muted()),
+              selected: a.slug == state.airportSlug,
+              onTap: () => Navigator.of(context).pop(a.slug),
+            ),
         ],
-        if (leading != null) ...[SizedBox(width: 24, height: 24, child: Center(child: leading)), const SizedBox(width: 4)],
-        Text(text, style: AppText.strong(size: 12, color: dark ? Colors.white : AppColors.ink)),
-      ],
+      ),
     ),
   );
+  if (slug != null) bloc.add(SearchAirportChanged(slug));
 }
 
-/// The one orange card: the chosen parking of the stay (the cheapest by default), opening its
-/// page; dark, with "Complet à ces dates", when the chosen pin has no place.
-class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.result, required this.state});
-  final SearchResultModel result;
-  final SearchState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final r = result;
-    final valet = r.services.contains('valet') ? 'search.featured_valet'.tr() : 'search.featured_self'.tr();
-    final sub = r.shuttleMinutes == null ? 'search.featured_sub_no_shuttle'.tr(args: [valet]) : 'search.featured_sub'.tr(args: [valet, '${r.shuttleMinutes}']);
-    final tone = r.bookable ? AppColors.accent : AppColors.brownOrInk;
-    return Semantics(
-      button: true,
-      label: 'search.see_parking'.tr(args: [r.title]),
-      excludeSemantics: true,
-      child: Material(
-        color: tone,
-        borderRadius: AppRadius.card,
-        child: InkWell(
-          key: const Key('search-featured'),
-          borderRadius: AppRadius.card,
-          onTap: () => context.router.push(ParkingRoute(airport: state.airportSlug, parking: r.slug, arrivee: state.arrivalAt, retour: state.returnAt)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        r.bookable ? 'search.featured_from'.tr(args: [formatShortEuros(r.priceCents!)]) : 'search.featured_full'.tr(),
-                        style: AppText.strong(size: 12, color: Colors.white.withValues(alpha: 0.85)),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        r.title,
-                        style: AppText.strong(size: 17, color: Colors.white),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        sub,
-                        style: AppText.body(size: 12, weight: 600, color: Colors.white.withValues(alpha: 0.85)),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: Icon(Icons.north_east_rounded, color: tone, size: 20),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NextDeparture extends StatelessWidget {
-  const _NextDeparture();
+/// A, the coming trip first (05/11/2026): the next departure kept on this phone as the one orange card, with how soon
+/// it is, the parking, the dates and « Voir ma réservation ».
+class _NextTripHero extends StatelessWidget {
+  const _NextTripHero();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<TripsBloc, TripsState>(
       builder: (context, trips) {
         final next = trips.nextDeparture;
-        if (next == null) return const SizedBox(height: 16);
+        if (next == null) return const SizedBox.shrink();
+        final today = DateTime.utc(trips.now.toLocal().year, trips.now.toLocal().month, trips.now.toLocal().day);
+        final arrival = DateTime.parse('${next.arrivalAt.substring(0, 10)}T00:00:00Z');
+        final daysLeft = arrival.difference(today).inDays;
+        final when = daysLeft < 0
+            ? 'search.trip_ongoing'.tr()
+            : daysLeft == 0
+            ? 'search.trip_today'.tr()
+            : daysLeft == 1
+            ? 'search.trip_tomorrow'.tr()
+            : 'search.trip_in_days'.tr(args: ['$daysLeft']);
+        final white85 = Colors.white.withValues(alpha: 0.85);
+        Widget chip(String text) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(999)),
+          child: Text(text, style: AppText.strong(size: 12.5, color: Colors.white)),
+        );
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Container(
+            key: const Key('next-departure'),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            decoration: const BoxDecoration(color: AppColors.accent, borderRadius: AppRadius.card),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('search.next_trip'.tr().toUpperCase(), style: AppText.strong(size: 11.5, color: white85).copyWith(letterSpacing: 1)),
+                const SizedBox(height: 4),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    when,
+                    key: const Key('next-departure-when'),
+                    style: AppText.strong(size: 24, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  next.parking.title,
+                  style: AppText.strong(size: 15, color: Colors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    chip('${formatDay(next.arrivalAt.substring(0, 10))} ${next.arrivalAt.substring(11)}'),
+                    chip('→ ${formatDay(next.returnAt.substring(0, 10))} ${next.returnAt.substring(11)}'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    key: const Key('next-departure-open'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.accentDeep,
+                      minimumSize: const Size.fromHeight(46),
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: () => context.router.push(MyBookingRoute(reference: next.reference)),
+                    child: Text('search.see_booking'.tr(), style: AppText.strong(size: 15, color: AppColors.accentDeep)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// C, the parkings straight away (05/11/2026): how many are free for the dates, « Voir sur la carte » (the results on
+/// their map), the shuttles on the road, then the first three cards (the cheapest first, full ones last).
+class _Parkings extends StatelessWidget {
+  const _Parkings();
+
+  static const shown = 3;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SearchBloc, SearchState>(
+      builder: (context, state) {
+        final results = [...?state.preview?.results]
+          ..sort((a, b) {
+            if (a.bookable != b.bookable) return a.bookable ? -1 : 1;
+            return (a.priceCents ?? 1 << 30).compareTo(b.priceCents ?? 1 << 30);
+          });
+        final badges = resultBadges(results);
+        final count = state.bookable.length;
+        final loading = state.previewState.isProcessing && state.preview == null;
+        final countLabel = loading
+            ? 'search.preview_loading'.tr()
+            : count == 0
+            ? 'results.available_none'.tr()
+            : count == 1
+            ? 'search.for_dates_one'.tr()
+            : 'search.for_dates_many'.tr(args: ['$count']);
+        final shuttleCount = state.live?.shuttles.length ?? 0;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Semantics(header: true, child: Text('search.next_trip'.tr(), style: AppText.title(size: 21))),
-              const SizedBox(height: 10),
-              AppCard(
-                key: const Key('next-departure'),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(countLabel.toUpperCase(), key: const Key('search-count'), style: AppText.label(size: 11.5)),
+                  ),
+                  TextButton.icon(
+                    key: const Key('search-map-open'),
+                    onPressed: () =>
+                        context.router.push(ResultsRoute(airport: state.airportSlug, arrivee: state.arrivalAt, retour: state.returnAt, vue: 'carte')),
+                    icon: const Icon(Icons.map_outlined, size: 18, color: AppColors.accentDeep),
+                    label: Text('search.see_map'.tr(), style: AppText.strong(size: 13.5, color: AppColors.accentDeep)),
+                  ),
+                ],
+              ),
+              if (shuttleCount > 0) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    key: const Key('search-shuttles'),
+                    padding: const EdgeInsets.fromLTRB(8, 5, 12, 5),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(999)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(child: Text(next.parking.title, style: AppText.strong(size: 14.5))),
-                        StatusBadge.status(next.status),
+                        const LiveDot(animate: false),
+                        const SizedBox(width: 6),
+                        Text(
+                          shuttleCount == 1 ? 'search.shuttles_one'.tr() : 'search.shuttles_many'.tr(args: ['$shuttleCount']),
+                          style: AppText.strong(size: 12.5),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${formatDay(next.arrivalAt.substring(0, 10))} ${next.arrivalAt.substring(11)} → '
-                      '${formatDay(next.returnAt.substring(0, 10))} ${next.returnAt.substring(11)}',
-                      style: AppText.muted(),
-                    ),
-                    const SizedBox(height: 10),
-                    OutlineAction(
-                      label: 'search.see_booking'.tr(),
-                      onPressed: () => context.router.push(MyBookingRoute(reference: next.reference)),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 10),
+              ] else
+                const SizedBox(height: 4),
+              for (final r in results.take(shown))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ResultCard(
+                    key: Key('search-result-${r.slug}'),
+                    result: r,
+                    highlighted: r.slug == state.featured?.slug,
+                    badges: badges[r.slug] ?? const [],
+                    airportCode: state.airport?.code,
+                    onTap: () => context.router.push(
+                      ParkingRoute(airport: state.airportSlug, parking: r.slug, arrivee: state.arrivalAt, retour: state.returnAt),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -620,7 +436,13 @@ class _Steps extends StatelessWidget {
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            Image.asset('assets/images/step-$key.jpg', height: 84, width: double.infinity, fit: BoxFit.cover, excludeFromSemantics: true),
+                            Image.asset(
+                              'assets/images/step-$key.jpg',
+                              height: 84,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              excludeFromSemantics: true,
+                            ),
                             Positioned(
                               left: 10,
                               bottom: -17,
@@ -665,7 +487,11 @@ class _Trust extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const chips = [(Icons.euro_rounded, 'trust_price'), (Icons.directions_bus_rounded, 'trust_shuttle'), (Icons.verified_user_rounded, 'trust_cancel')];
+    const chips = [
+      (Icons.euro_rounded, 'trust_price'),
+      (Icons.directions_bus_rounded, 'trust_shuttle'),
+      (Icons.verified_user_rounded, 'trust_cancel'),
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Wrap(

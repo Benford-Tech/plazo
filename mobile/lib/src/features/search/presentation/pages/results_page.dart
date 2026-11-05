@@ -25,20 +25,33 @@ import '../widgets/stay_sheet.dart';
 /// one tap, the site's sorts and filters.
 @RoutePage()
 class ResultsPage extends StatelessWidget implements AutoRouteWrapper {
-  const ResultsPage({super.key, @PathParam('airport') required this.airport, @QueryParam('arrivee') this.arrivee, @QueryParam('retour') this.retour});
+  const ResultsPage({
+    super.key,
+    @PathParam('airport') required this.airport,
+    @QueryParam('arrivee') this.arrivee,
+    @QueryParam('retour') this.retour,
+    @QueryParam('vue') this.vue,
+  });
 
   final String airport;
   final String? arrivee;
   final String? retour;
+
+  /// « carte »: open on the map (« Voir sur la carte » of the home, 05/11/2026).
+  final String? vue;
 
   @override
   Widget wrappedRoute(BuildContext context) {
     // A link without dates: the site's default stay.
     final fallback = defaultStay(DateTime.now());
     return BlocProvider(
-      create: (_) => locator<ResultsBloc>(
-        param1: StayParams(airport: airport, arrivalAt: arrivee ?? fallback.arrival, returnAt: retour ?? fallback.returnAt),
-      )..add(const ResultsRequested()),
+      create: (_) {
+        final bloc = locator<ResultsBloc>(
+          param1: StayParams(airport: airport, arrivalAt: arrivee ?? fallback.arrival, returnAt: retour ?? fallback.returnAt),
+        )..add(const ResultsRequested());
+        if (vue == 'carte') bloc.add(const ResultsViewChanged(ResultsView.map));
+        return bloc;
+      },
       child: this,
     );
   }

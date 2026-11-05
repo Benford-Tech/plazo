@@ -749,7 +749,17 @@
     "shuttle_age_min": "position il y a {} min",
     "parking_pin": "Parking {} : {}",
     "pin_full": "complet à ces dates",
-    "featured_full": "Complet à ces dates"
+    "featured_full": "Complet à ces dates",
+    "another_stay": "Un autre séjour ?",
+    "see_all_one": "Voir le parking",
+    "see_all_many": "Voir les {} parkings",
+    "see_map": "Voir sur la carte",
+    "for_dates_one": "1 parking pour vos dates",
+    "for_dates_many": "{} parkings pour vos dates",
+    "trip_today": "Aujourd'hui",
+    "trip_tomorrow": "Demain",
+    "trip_in_days": "Dans {} jours",
+    "trip_ongoing": "Séjour en cours"
   },
   "picker": {
     "title": "Vos dates",
@@ -2435,7 +2445,7 @@
       "s2_title": "Comparer les parkings",
       "s2_body": "Les parkings partenaires libres à vos dates, avec leur prix total et leur navette.",
       "s3_title": "La carte en direct",
-      "s3_body": "Touchez une pastille pour voir un parking. Les navettes en circulation bougent en direct.",
+      "s3_body": "« Voir sur la carte » montre les parkings et les navettes qui roulent, en direct.",
       "s4_title": "Vos réservations",
       "s4_body": "Elles sont gardées sur ce téléphone. Une réservation faite sur le site ? Ajoutez-la avec sa référence et votre e-mail."
     },

@@ -1381,6 +1381,7 @@ class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
     required String airport,
     String? arrivee,
     String? retour,
+    String? vue,
     List<PageRouteInfo>? children,
   }) : super(
          ResultsRoute.name,
@@ -1389,9 +1390,10 @@ class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
            airport: airport,
            arrivee: arrivee,
            retour: retour,
+           vue: vue,
          ),
          rawPathParams: {'airport': airport},
-         rawQueryParams: {'arrivee': arrivee, 'retour': retour},
+         rawQueryParams: {'arrivee': arrivee, 'retour': retour, 'vue': vue},
          initialChildren: children,
        );
 
@@ -1407,6 +1409,7 @@ class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
           airport: pathParams.getString('airport'),
           arrivee: queryParams.optString('arrivee'),
           retour: queryParams.optString('retour'),
+          vue: queryParams.optString('vue'),
         ),
       );
       return WrappedRoute(
@@ -1415,6 +1418,7 @@ class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
           airport: args.airport,
           arrivee: args.arrivee,
           retour: args.retour,
+          vue: args.vue,
         ),
       );
     },
@@ -1427,6 +1431,7 @@ class ResultsRouteArgs {
     required this.airport,
     this.arrivee,
     this.retour,
+    this.vue,
   });
 
   final Key? key;
@@ -1437,9 +1442,11 @@ class ResultsRouteArgs {
 
   final String? retour;
 
+  final String? vue;
+
   @override
   String toString() {
-    return 'ResultsRouteArgs{key: $key, airport: $airport, arrivee: $arrivee, retour: $retour}';
+    return 'ResultsRouteArgs{key: $key, airport: $airport, arrivee: $arrivee, retour: $retour, vue: $vue}';
   }
 
   @override
@@ -1449,12 +1456,17 @@ class ResultsRouteArgs {
     return key == other.key &&
         airport == other.airport &&
         arrivee == other.arrivee &&
-        retour == other.retour;
+        retour == other.retour &&
+        vue == other.vue;
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ airport.hashCode ^ arrivee.hashCode ^ retour.hashCode;
+      key.hashCode ^
+      airport.hashCode ^
+      arrivee.hashCode ^
+      retour.hashCode ^
+      vue.hashCode;
 }
 
 /// generated route for

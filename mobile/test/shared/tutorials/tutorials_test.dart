@@ -25,7 +25,7 @@ class _SearchLike extends StatelessWidget {
           SizedBox(height: 20),
           SizedBox(key: Key('search-submit'), height: 54),
           SizedBox(height: 20),
-          SizedBox(key: Key('search-map'), height: 200),
+          SizedBox(key: Key('search-map-open'), height: 200),
         ],
       ),
     ),

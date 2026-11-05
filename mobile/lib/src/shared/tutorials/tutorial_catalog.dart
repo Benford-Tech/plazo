@@ -54,7 +54,7 @@ abstract final class Tutorials {
     steps: [
       TutorialStep(targets: ['search-dates']),
       TutorialStep(targets: ['search-submit']),
-      TutorialStep(targets: ['search-map']),
+      TutorialStep(targets: ['search-map-open']),
       TutorialStep(targets: ['tab-trips']),
     ],
   );

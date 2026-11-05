@@ -89,7 +89,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expectClearOfSides(tester, find.byKey(const Key('airport-picker')));
-    expectClearOfSides(tester, find.byKey(const Key('search-map')));
+    expectClearOfSides(tester, find.byKey(const Key('search-dates')));
     expectClearOfSystemBars(tester, find.byKey(const Key('tab-more')));
 
     await tester.tap(find.byKey(const Key('tab-trips')));
