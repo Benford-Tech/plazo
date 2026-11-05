@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/movement_kind.dart';
-import '../../../../shared/widgets/status_badge.dart';
+import '../../../../shared/widgets/pro_status_pill.dart';
 import '../../data/models/reservation_models.dart';
 import '../../../../shared/widgets/direct_badge.dart';
 
@@ -20,16 +20,8 @@ String boardingCheckInText(BoardingCheckInModel checkIn) {
   return name == null || name.isEmpty ? 'occupation.boarding_check_in_anonymous'.tr() : 'occupation.boarding_check_in'.tr(args: [name]);
 }
 
-/// A booking's status badge for the staff (tones of the pro space).
-StatusBadge proStatusBadge(String status, {Key? key}) {
-  final tone = switch (status) {
-    'upcoming' => BadgeTone.ok,
-    'arrived' || 'shuttled_out' || 'return_requested' || 'back_at_parking' => BadgeTone.peach,
-    'cancelled' || 'no_show' => BadgeTone.danger,
-    _ => BadgeTone.muted,
-  };
-  return StatusBadge(key: key, text: 'pro.status.$status'.tr(), tone: tone);
-}
+/// A booking's status for the staff: the solid pill of direction A (05/11/2026).
+Widget proStatusBadge(String status, {Key? key, bool large = false}) => ProStatusPill(status, key: key, large: large);
 
 /// A row of the bookings list: plate, name, stay, status; since 28/10/2026 tinted with its next movement
 /// (« ARRIVÉE · sam. 4 oct. 06:30 » while expected, « DÉPART · … » while the car is at the parking).

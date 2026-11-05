@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/helpers/formatters.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
+import '../../../../shared/widgets/pro_status_pill.dart';
 import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/valet_icon.dart';
 import '../../../arrival/data/models/arrival_model.dart';
@@ -189,9 +190,7 @@ class _StatusLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = signal;
     if (s == null || s.state == ArrivalSignalState.ended) {
-      final key = 'pro.status.$status';
-      final text = key.tr();
-      return Text(text == key ? status : text, style: AppText.muted(size: 13));
+      return ProStatusPill(status);
     }
     if (s.state == ArrivalSignalState.announced) {
       return Text('pro.announced'.tr(args: ['${s.announcedMinutes ?? s.etaMinutes ?? 0}']), style: AppText.muted(size: 13));

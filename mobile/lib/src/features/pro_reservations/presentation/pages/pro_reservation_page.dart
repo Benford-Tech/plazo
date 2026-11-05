@@ -181,7 +181,7 @@ class _Sheet extends StatelessWidget {
             FrenchPlate(r.plate, size: 15),
             const SizedBox(width: 10),
             Expanded(child: Text(r.customerName, style: AppText.strong(size: 17))),
-            proStatusBadge(r.status, key: const Key('res-status')),
+            proStatusBadge(r.status, key: const Key('res-status'), large: true),
           ],
         ),
         if (r.overbooked) ...[const SizedBox(height: 6), Text('res.overbooked'.tr(), style: AppText.body(size: 13, color: AppColors.danger))],

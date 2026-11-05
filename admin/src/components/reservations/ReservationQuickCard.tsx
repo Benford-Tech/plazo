@@ -1,3 +1,4 @@
+import { StatusPill } from "@/components/StatusPill";
 import { useQuery } from "@tanstack/react-query";
 import { MovementPill } from "@/components/MovementPill";
 import {
@@ -76,17 +77,6 @@ export function flightState(
   }
 }
 
-const STATUS_TONE: Partial<Record<Reservation["status"], BadgeTone>> = {
-  upcoming: "line",
-  arrived: "ok",
-  shuttled_out: "info",
-  return_requested: "warn",
-  back_at_parking: "accent",
-  returned: "line",
-  cancelled: "bad",
-  no_show: "bad",
-};
-
 /** The short operational sheet: contact, flight, spot and keys, stop, the next gesture, and the link to the full page. */
 export function ReservationQuickCard({
   id,
@@ -148,9 +138,7 @@ export function ReservationQuickCard({
               <span className="min-w-0 flex-1 truncate text-[17px] font-semibold">
                 {r.customerName}
               </span>
-              <Badge tone={STATUS_TONE[r.status] ?? "line"}>
-                {fr.status[r.status]}
-              </Badge>
+<StatusPill status={r.status} />
             </div>
             <div className="flex gap-2">
               <a

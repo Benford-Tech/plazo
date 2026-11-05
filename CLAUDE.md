@@ -973,6 +973,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      état et vol en pilules), liste Réservations (ligne teintée et pastille datée ; une ligne sans prix reste ambre), fiche
      opérationnelle (pastilles Arrivée / Départ devant les deux dates), véhicules du tableau de bord (colonne « Départ », pastille
      indigo pour un départ du jour). Tests `movement_kind_test.dart`, `MovementPill.test.tsx`.
+     **États en pastilles pleines, direction A (05/11/2026, « Sur place et attendu ils ne sont pas assez visibles », maquettes
+     https://claude.ai/artifact/Ma1s3a9KAHrWfjMbFkmwif)** : l'état d'une réservation est une pastille pleine, texte blanc, une
+     couleur par état : Attendu et Retour demandé ambre `#B45309`, Sur place et De retour au parking vert `#15803D`, Parti en
+     navette indigo, Rendu gris, Annulé et Non venu rouge ; web `components/StatusPill.tsx` (planning du jour, aussi sur les
+     départs au-dessus du vol, liste Réservations, fiche, fiche opérationnelle), Plazo Pro `shared/widgets/pro_status_pill.dart`
+     (`ProStatusPill`, `proStatusBadge` : planning, liste, en-tête de la fiche en grand). Tests `StatusPill.test.tsx`,
+     `pro_status_pill_test.dart`.
    - Si voiturier : suivi des clés confiées.
 
 3. **Navette au retour**
