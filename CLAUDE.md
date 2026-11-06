@@ -233,6 +233,25 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      seulement (`user.demo`, texte « Démo : … ») ; **elle est dans Parking › Réglages depuis le 03/11/2026** (« mets le dans les réglages
      parkings », le super admin ne la trouvait plus dans Mon compte) : `TravellerSms` sous « Mails entrants » de `ParkingPage`, ancre
      `/parking/reglages#sms` (liens du planning et de « SMS de la veille »), plus dans Mon compte.
+     **Historique du téléphone d'envoi, direction A avec l'alerte de C (06/11/2026, « ajoute un historique d'état du téléphone de
+     service », après les 8 « Échec » du SMS de la veille du 05/11, maquettes https://claude.ai/artifact/EoG7vfKDXPud3VyAkDtdGg)** :
+     toutes les 15 minutes (passage de `remind-tomorrow`, `phone` dans sa réponse) Plazo lit `GET /devices` du service de l'appli SMS
+     (`SmsGatewayClient.devices`, `lastSeen`) pour chaque loueur au téléphone du parking, actif, ni archivé ni démo
+     (`SmsPhoneService.checkAll`, réservé par `OperatorSmsSettings.phoneCheckedAt`) : `online` vu depuis 15 min au plus, `offline`
+     sinon, `unknown` quand le service ne répond pas ou refuse l'identifiant (jamais d'alerte) ; table `sms_phone_checks` (migration
+     `sms_phone_checks`, 30 jours, purge de nuit `phoneChecksPurged`) ; au premier relevé d'un identifiant, Plazo demande à l'appli
+     un « Ping » toutes les 5 minutes s'il est plus lent (`PATCH /settings`, `phonePingSetAt`, remis à nul quand l'identifiant change).
+     **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
+     `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
+     l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,
+     effacé au retour) ; `OperatorSmsSettings.phoneAlerts` (allumé d'office) par `PUT /internal/sms/phone/alerts` (`RefuseInDemo`).
+     `GET /internal/sms/phone` (gérants) : `now`, `alerts`, `days` (7 jours : `segments` du ruban en fractions du jour, un relevé vaut
+     20 min au plus, gris sans relevé ; `failed` = SMS du téléphone abandonnés ou refusés ; `reminderAt` = heure du SMS de la veille),
+     `events` (changements d'état depuis le dernier signe de vie, durée de l'état d'avant ; SMS non partis groupés par genre et rafale,
+     « 8 SMS de la veille abandonnés »). Web : bloc « Le téléphone d'envoi » de la carte « SMS aux voyageurs » (`SmsPhoneHistory` :
+     pastille d'état, « Vu à 09:12 », ruban, légende, changements, interrupteur de l'alerte) ; page « SMS de la veille » : bandeau rouge
+     « Le téléphone d'envoi ne répond plus depuis 17:40 » (`ReminderBoard.phone`). Plazo Pro n'a pas le ruban. Tests `sms-phone.test.ts`,
+     `SmsPhoneHistory.test.tsx`.
      **Son propre loueur n'est pas une consultation (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »)** :
      « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
      pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,
@@ -1549,6 +1568,27 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `regionCounts` (par clé et `none`, sous le filtre d'aéroport), `?region=<clé>|none` ; les pilules d'état suivent les filtres
   d'aéroport et de région. La liste n'est pas paginée (2 000 prospects au plus, comme avant) : la page reçoit tout ce que
   montrent les filtres et forme les blocs elle-même (`groupByRegion` de `admin/src/lib/prospecting.ts`).
+- **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
+  réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
+  classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,
+  duckduckgo, qwant, ecosia…, appli Google d'Android comprise), `social`, `referral` (domaine), `campaign` (`utm_source` hors
+  `utm_medium=organic`, `gclid` = google-ads), `direct`), la garde dans le cookie de visite `plazo_acq` (session, `source|détail|page`)
+  et la compte une fois (`VisitTracker` du layout racine, `sendBeacon` vers `POST /public/visits`, `visitLimiter` 30 par 15 min ;
+  jamais sur les pages Plazo Pro) : table `site_visit_days` (jour de Paris, page d'entrée nettoyée par `cleanLanding` (jamais `/pro`,
+  `/api`, une référence : `/ma-reservation`), origine, détail, nombre ; 400 jours). `bookAction` passe le cookie en `acquisition`
+  à `POST /public/bookings`, gardé seulement quand la requête vient du serveur du site (`fromSite`, clé du site), sinon `app` :
+  `Reservation.acquisitionSource/Detail/Landing` (migration `seo_measurement`, CHECK des sources). **M2** la Search Console lue
+  chaque nuit par `purge-expired-tokens` (`SeoService.syncSearchConsole` : compte de service `GOOGLE_SEARCH_CONSOLE_CREDENTIALS`,
+  JWT RS256 signé sans bibliothèque (`domain/search-console.ts`), propriété `SEARCH_CONSOLE_PROPERTY` = `sc-domain:plazo.fr` par
+  défaut, dimensions date · requête · page, 5 derniers jours relus et remplacés, 90 jours au premier passage, 400 jours gardés ;
+  `search_console_rows`, `search_console_state` avec la dernière erreur ; jamais une requête dans les journaux). **Plateforme ›
+  Référencement** (`/pro/plateforme/referencement`, `SeoPage`, `GET /internal/platform/seo?days=7|30|90`) : réservations venues
+  d'un moteur, leur chiffre et leur part, visites des moteurs ; réservations par origine (« Non mesuré » avant le 06/11) ; pages
+  d'entrée (visites, dont moteur, réservations, chiffre) ; positions Google (requêtes et pages, clics, affichages, position
+  moyenne pondérée par les affichages, ↑/↓ face à la période d'avant) ou les étapes de mise en place (README). Politique de
+  confidentialité (article 9, cookie de mesure de la visite) et mentions légales mises à jour. Tests `seo.test.ts`,
+  `acquisition.test.ts`, `SeoPage.test.tsx`. **Pages A (ville, gare, cas d'usage) : à venir, faits relevés et montrés à Joanny avant
+  publication.**
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

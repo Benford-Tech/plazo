@@ -54,6 +54,7 @@ const PlatformNotificationsPage = lazy(
 const PlatformProspectingPage = lazy(
   () => import("@/pages/platform/ProspectingPage"),
 );
+const PlatformSeoPage = lazy(() => import("@/pages/platform/SeoPage"));
 const CapacityStudiesPage = lazy(
   () => import("@/pages/capacity/CapacityStudiesPage"),
 );
@@ -325,6 +326,10 @@ const App = () => (
               <Route
                 path="/plateforme/prospection"
                 element={lazyPage(<PlatformProspectingPage />)}
+              />
+              <Route
+                path="/plateforme/referencement"
+                element={lazyPage(<PlatformSeoPage />)}
               />
               <Route
                 path="/plateforme/capacite"

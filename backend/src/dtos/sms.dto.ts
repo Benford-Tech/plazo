@@ -45,3 +45,9 @@ export class UpdateWhatsappSettingsDto {
   @IsBoolean({ message: 'invalid' })
   public enabled: boolean;
 }
+
+/** PUT /internal/sms/phone/alerts (06/11/2026). */
+export class SmsPhoneAlertsDto {
+  @IsBoolean({ message: 'invalid' })
+  public enabled: boolean;
+}

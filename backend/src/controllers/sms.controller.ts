@@ -1,12 +1,14 @@
 import { Response } from 'express';
 import { Container } from 'typedi';
-import { TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
+import { SmsPhoneAlertsDto, TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { SmsPhoneService } from '@/services/sms-phone.service';
 import { SmsService } from '@/services/sms.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class SmsController {
   public sms = Container.get(SmsService);
+  public phone = Container.get(SmsPhoneService);
 
   /** GET /internal/sms/settings */
   public settings = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
@@ -36,5 +38,17 @@ export class SmsController {
   public status = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');
     res.json(await this.sms.status(req.staff));
+  });
+
+  /** GET /internal/sms/phone (06/11/2026) */
+  public phoneHistory = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.phone.history(req.staff));
+  });
+
+  /** PUT /internal/sms/phone/alerts */
+  public phoneAlerts = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: SmsPhoneAlertsDto = req.body;
+    res.json(await this.phone.setAlerts(req.staff, data.enabled));
   });
 }

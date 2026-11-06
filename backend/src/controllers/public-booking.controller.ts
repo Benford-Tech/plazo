@@ -3,6 +3,8 @@ import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { ChildSeatsDto } from '@/dtos/child-seats.dto';
 import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLocationDto } from '@/dtos/public-booking.dto';
+import { cleanAcquisition } from '@/domain/acquisition';
+import { fromSite } from '@/middlewares/rateLimiter';
 import { PublicBookingService } from '@/services/public-booking.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -16,7 +18,9 @@ export class PublicBookingController {
   public create = catchAsync(async (req: Request, res: Response) => {
     const data: CreatePublicBookingDto = req.body;
     res.set('Cache-Control', 'no-store');
-    const { replayed, ...created } = await this.bookingService.create(data);
+    // 06/11/2026 (SEO local M1): the site says where the visit came from; any other client is the Plazo app.
+    const acquisition = fromSite(req) ? cleanAcquisition(data.acquisition) : { source: 'app' as const, detail: '', landing: '' };
+    const { replayed, ...created } = await this.bookingService.create(data, acquisition);
     // A form sent again (same idempotency key) gets the booking already made.
     res.status(replayed ? httpStatus.OK : httpStatus.CREATED).json(created);
   });

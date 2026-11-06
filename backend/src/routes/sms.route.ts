@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { SmsController } from '@/controllers/sms.controller';
-import { TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
+import { SmsPhoneAlertsDto, TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -70,6 +70,29 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       { mode, brevoAvailable, linkedAt, lastSentAt, senderPhone, month: { sent, failed }, pending,
  *       pendingStale, lastError, lastErrorAt }. Reading it also retries the waiting SMS (at most once a minute).
  *     tags: [SMS]
+ * /internal/sms/phone:
+ *   get:
+ *     summary: History of the parking's SMS phone, 7 days (manager)
+ *     description: >
+ *       Checked every 15 minutes (remind-tomorrow) at the SMS app's server. { now: { state: online | offline | unknown,
+ *       lastSeenAt, checkedAt } | null, alerts, pingSet, days: [{ date, segments: [{ start, end, from, to, state }],
+ *       failed, reminderAt }], events: [{ kind: state, at, state, lastSeenAt, afterMinutes } | { kind: sms_failed, at,
+ *       smsKind, status, count }] }, local times of the parking, newest event first.
+ *     tags: [SMS]
+ * /internal/sms/phone/alerts:
+ *   put:
+ *     summary: Turn the managers' « téléphone hors ligne » alert on or off (manager)
+ *     description: 409 "sms_not_configured" without a linked phone. Refused in the prospects' demo.
+ *     tags: [SMS]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [enabled]
+ *             properties:
+ *               enabled: { type: boolean }
  */
 export class SmsRoute implements Routes {
   public router = Router();
@@ -87,5 +110,13 @@ export class SmsRoute implements Routes {
     this.router.post('/internal/sms/test', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), ValidationMiddleware(TestSmsDto), this.sms.test);
     this.router.post('/internal/sms/disable', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.sms.disable);
     this.router.get('/internal/sms/status', StaffAuthMiddleware('parking:manage'), this.sms.status);
+    this.router.get('/internal/sms/phone', StaffAuthMiddleware('parking:manage'), this.sms.phoneHistory);
+    this.router.put(
+      '/internal/sms/phone/alerts',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      ValidationMiddleware(SmsPhoneAlertsDto),
+      this.sms.phoneAlerts,
+    );
   }
 }

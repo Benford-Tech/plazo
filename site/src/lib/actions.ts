@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ACQUISITION_COOKIE, decodeAcquisition } from "./acquisition";
 import { api, ApiError } from "./api";
 import { CHILD_SEAT_FIELDS, childSeatsFromValues, hasChildSeats } from "./child-seats";
 import { encodeQueryValue } from "./dates";
@@ -89,6 +90,8 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
       acceptTerms: values.acceptTerms === "on",
       // Same key for every submission of this page: a retry returns the booking already made.
       idempotencyKey: IDEMPOTENCY_KEY_RE.test(idempotencyKey) ? idempotencyKey : undefined,
+      // 06/11/2026 (SEO local M1): where this visit came from, checked again by the API.
+      acquisition: decodeAcquisition((await cookies()).get(ACQUISITION_COOKIE)?.value) ?? undefined,
     });
   } catch (error) {
     return failure(values, error);

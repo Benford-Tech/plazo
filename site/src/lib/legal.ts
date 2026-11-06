@@ -35,8 +35,8 @@ export interface LegalDoc {
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "30 octobre 2026";
-export const NOTICE_VERSION = "22 octobre 2026";
-export const PRIVACY_VERSION = "3 novembre 2026";
+export const NOTICE_VERSION = "6 novembre 2026";
+export const PRIVACY_VERSION = "6 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -284,7 +284,7 @@ export function legalNoticeDoc(company: Company = COMPANY, email: string = SUPPO
         title: "Données personnelles et cookies",
         blocks: [
           "Les données des voyageurs sont traitées comme décrit dans la [politique de confidentialité](/confidentialite).",
-          "Le site ne dépose aucun cookie publicitaire ni de mesure d’audience. Il n’utilise que des cookies nécessaires à son fonctionnement : l’accès à une réservation depuis le lien reçu par e-mail ou SMS, et la reprise d’un formulaire de réservation en cours.",
+          "Le site ne dépose aucun cookie publicitaire. Il utilise des cookies nécessaires à son fonctionnement (l’accès à une réservation depuis le lien reçu par e-mail ou SMS, la reprise d’un formulaire de réservation en cours) et un cookie de mesure d’audience limité à la visite, décrit dans la [politique de confidentialité](/confidentialite#cookies).",
         ],
       },
       {
@@ -441,11 +441,13 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "cookies",
         title: "9. Cookies",
         blocks: [
-          "Le site ne dépose aucun cookie publicitaire ni de mesure d’audience, et ne demande donc pas de consentement. Il utilise seulement deux cookies nécessaires à son fonctionnement :",
+          "Le site ne dépose aucun cookie publicitaire et ne partage rien avec une régie ou un outil de mesure tiers. Il utilise trois cookies :",
           [
             "l’accès à votre réservation depuis le lien reçu par e-mail ou SMS, limité aux pages de cette réservation ;",
-            "la reprise du formulaire de réservation quand vous revenez le modifier avant de payer.",
+            "la reprise du formulaire de réservation quand vous revenez le modifier avant de payer ;",
+            "la mesure d’audience de Plazo, effacé à la fermeture du navigateur : il retient seulement d’où vient la visite (un moteur de recherche, un autre site, une campagne ou un accès direct) et la première page vue. Plazo compte ainsi les visites par page et par origine, sans rien garder sur le visiteur, et note cette origine sur une réservation faite pendant la visite, pour savoir quelles pages amènent des réservations.",
           ],
+          "Ce cookie de mesure ne sert qu’aux statistiques de Plazo ; le refuser en bloquant les cookies dans votre navigateur n’empêche pas de réserver.",
           "Les pages de paiement de Stripe déposent leurs propres cookies, nécessaires à la sécurité du paiement.",
         ],
       },

@@ -13,6 +13,8 @@ import { JoinRequestService } from '@/services/join-request.service';
 import { purgeLoginAttempts } from '@/services/password-attempts';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
+import { SeoService } from '@/services/seo.service';
+import { SmsPhoneService } from '@/services/sms-phone.service';
 import { SmsService } from '@/services/sms.service';
 import { WhatsappService } from '@/services/whatsapp.service';
 import { PaymentService } from '@/services/payment.service';
@@ -54,8 +56,20 @@ export class CronController {
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
   public whatsapp = Container.get(WhatsappService);
+  public smsPhone = Container.get(SmsPhoneService);
+  public seo = Container.get(SeoService);
 
   /** WhatsApp messages not delivered after 5 minutes go by SMS (03/11/2026). Never throws (rides on remind-tomorrow). */
+  /** 06/11/2026: the parking's SMS phone checked every 15 minutes (never throws: rides on remind-tomorrow). */
+  private async phonePass(): Promise<Awaited<ReturnType<SmsPhoneService['checkAll']>> | { error: true }> {
+    try {
+      return await this.smsPhone.checkAll();
+    } catch (error) {
+      logger.error(`[Cron] SMS phone pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { error: true };
+    }
+  }
+
   private async whatsappPass(): Promise<Awaited<ReturnType<WhatsappService['sweep']>> | { error: true }> {
     try {
       return await this.whatsapp.sweep();
@@ -166,10 +180,11 @@ export class CronController {
     const extras = await this.extrasPass();
     const valet = await this.valetPass();
     const whatsapp = await this.whatsappPass();
+    const phone = await this.phonePass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; SMS phone: ${JSON.stringify(phone)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}`,
     );
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras, valet, whatsapp });
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras, valet, whatsapp, phone });
   });
 
   /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */
@@ -231,6 +246,11 @@ export class CronController {
     const bellPurged = await Container.get(StaffNotificationService).purge();
     // 03/11/2026: the reservations deleted 45 days ago, erased for good with their mails, contract and photos.
     const reservationsPurged = await Container.get(ReservationTrashService).purge();
+    // 06/11/2026: the SMS phone's checks after 30 days.
+    const phoneChecksPurged = await this.smsPhone.purge();
+    // 06/11/2026 (SEO local M2): Search Console's last days, then the old visits and rows (never throws).
+    const searchConsole = await this.seo.syncSearchConsole();
+    const seoPurged = await this.seo.purge();
     // 21/10/2026: the prospects' demo starts every day afresh (never throws).
     const demoReset = await this.demo.reset();
     logger.info(
@@ -264,6 +284,9 @@ export class CronController {
       prospectsDeleted,
       bellPurged,
       reservationsPurged,
+      phoneChecksPurged,
+      searchConsole,
+      seoPurged,
     });
   });
 }

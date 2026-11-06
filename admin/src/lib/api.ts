@@ -47,6 +47,8 @@ import type {
   SmsSettings,
   SmsSettingsInput,
   SmsStatus,
+  PhoneHistory,
+  PlatformSeo,
   WhatsappSettings,
   TravellerMessage,
   PlatformReservations,
@@ -1291,6 +1293,13 @@ export const adminApi = {
   disableSms: () =>
     apiRequest<SmsSettings>("/internal/sms/disable", { method: "POST" }),
   getSmsStatus: () => apiRequest<SmsStatus>("/internal/sms/status"),
+  // 06/11/2026: the history of the parking's SMS phone, and the managers' alert.
+  getSmsPhone: () => apiRequest<PhoneHistory>("/internal/sms/phone"),
+  setSmsPhoneAlerts: (enabled: boolean) =>
+    apiRequest<{ alerts: boolean }>("/internal/sms/phone/alerts", {
+      method: "PUT",
+      body: json({ enabled }),
+    }),
   // 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli).
   getWhatsappSettings: () =>
     apiRequest<WhatsappSettings>("/internal/whatsapp/settings"),
@@ -1308,6 +1317,8 @@ export const adminApi = {
   getPlatformPayments: () =>
     apiRequest<PlatformPayments>("/internal/platform/payments"),
   // E-A: the platform's broadcasts.
+  // 06/11/2026 (SEO local, A + M2).
+  getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
   getPlatformNotifications: () =>
     apiRequest<{ data: PlatformNotification[] }>(
       "/internal/platform/notifications",

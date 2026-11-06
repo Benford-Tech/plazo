@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import { Acquisition } from '@/domain/acquisition';
 import { CAR_LOCATABLE_STATUSES, canLocateCar, canReplaceCarLocation, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import { Container, Service } from 'typedi';
 import { SECRET_KEY } from '@/config';
@@ -69,7 +70,7 @@ export class PublicBookingService {
   }
 
   /** Books a stay: price and availability recomputed under the parking lock, never overbooked. */
-  public async create(data: CreatePublicBookingDto) {
+  public async create(data: CreatePublicBookingDto, acquisition: Acquisition | null = null) {
     const seatsRefusal = childSeatsRefusal({ ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) }, data.passengers);
     if (seatsRefusal) throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid child seats', seatsRefusal);
     const key = data.idempotencyKey || null;
@@ -149,6 +150,9 @@ export class PublicBookingService {
             cancellationPolicy: listing.cancellationPolicy,
             idempotencyKey: key,
             createdById: null,
+            acquisitionSource: acquisition?.source ?? null,
+            acquisitionDetail: acquisition?.detail || null,
+            acquisitionLanding: acquisition?.landing || null,
             ...payment,
           },
           include: WITH_LISTING,

@@ -183,4 +183,13 @@ export const newsletterAddressLimiter = rateLimit({
 });
 
 /** 21/10/2026: entering the prospects' demo (a session each time): 30 per 15 minutes per address. */
+/** 06/11/2026: the site's visit counter, sent once per visit from the browser. */
+export const visitLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });
+
+/** Whether a request comes from the traveller site's server (its key): else an app or another client. */
+export function fromSite(req: Request, siteKey: string = SITE_API_KEY): boolean {
+  const sentKey = req.get('x-plazo-site-key');
+  return !!siteKey && !!sentKey && sameSecret(sentKey, siteKey);
+}
+
 export const demoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });
