@@ -43,6 +43,8 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       loginAttemptsDeleted: 0,
       // Prospection (18/10/2026): 3 years after the last contact.
       prospectsDeleted: 0,
+      // 06/11/2026: the SMS phone's checks after 30 days.
+      phoneChecksPurged: 0,
     });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });
