@@ -36,7 +36,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "30 octobre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "6 novembre 2026";
+export const PRIVACY_VERSION = "7 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -401,6 +401,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Accès à Ma réservation par le lien reçu par e-mail ou SMS : jusqu’à 30 jours après le retour.",
             "Position partagée à l’arrivée : seule la dernière est gardée ; elle est effacée à l’arrivée, à l’arrêt du partage et au plus tard 2 heures après le début.",
             "Position GPS de la voiture : effacée 2 jours après le retour.",
+            "Facture émise par le parking pour une réservation (nom du client, société et adresse s’il les a données, e-mail, référence, dates, plaque et montants) : conservée pour le compte du parking pendant 10 ans, la durée de conservation des pièces comptables qui lui est imposée (article L123-22 du Code de commerce). Elle n’est pas effacée avec l’anonymisation de la réservation.",
             "Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve (le temps de traiter le litige). Le contrat signé (texte, PDF signé et preuve) et l’état des lieux (sans les photos) suivent la réservation et sont supprimés avec son anonymisation ; le parking peut en garder une copie, dans son propre registre.",
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",

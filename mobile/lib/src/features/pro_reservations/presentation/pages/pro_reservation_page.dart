@@ -29,6 +29,7 @@ import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../data/datasources/reservation_trash_data_source.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
+import '../../../pro_invoices/presentation/invoice_card.dart';
 import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
 import '../../../../shared/live_sync/live_sync.dart';
@@ -74,7 +75,9 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
           if (context.router.canPop()) {
             context.router.pop(r);
           } else {
-            context.router.replaceAll([const ProShellRoute(children: [ProReservationsRoute()])]);
+            context.router.replaceAll([
+              const ProShellRoute(children: [ProReservationsRoute()]),
+            ]);
           }
         }
 
@@ -211,7 +214,13 @@ class _Sheet extends StatelessWidget {
             ('res.channel_label'.tr(), [channel, ?r.channelDetail, if (isDirectBooking(r.channel)) 'res.direct.badge'.tr()].join(' · ')),
             if (r.externalReference != null) ('res.external_reference'.tr(), r.externalReference!),
             if (r.priceCents != null)
-              ('res.price'.tr(), ['${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €', if (r.paymentMethod != null) 'res.payment.${r.paymentMethod}'.tr()].join(' · ')),
+              (
+                'res.price'.tr(),
+                [
+                  '${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €',
+                  if (r.paymentMethod != null) 'res.payment.${r.paymentMethod}'.tr(),
+                ].join(' · '),
+              ),
           ],
         ),
         _Section(
@@ -237,14 +246,21 @@ class _Sheet extends StatelessWidget {
         _Section(
           title: 'res.vehicle'.tr(),
           rows: [
-            if (r.vehicleModel != null || r.vehicleColour != null) ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
+            if (r.vehicleModel != null || r.vehicleColour != null)
+              ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
             if (r.file != null)
-              ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
+              (
+                'res.file'.tr(),
+                r.filePosition == null
+                    ? r.file!.code
+                    : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}',
+              )
             else
               ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
             // On the parking the keys are changed below (direction A, 01/11/2026); otherwise only read.
             if (r.keyHook != null && !onSite) ('occupation.key_hook'.tr(), r.keyHook!),
-            if (r.boardingCheckIn != null) ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),
+            if (r.boardingCheckIn != null)
+              ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),
             if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
               (
                 'occupation.car_position'.tr(),
@@ -264,16 +280,24 @@ class _Sheet extends StatelessWidget {
                   reservationId: r.id,
                   keyHook: r.keyHook,
                   keysLeftAt: r.keysLeftAt,
-                  onChanged: (k) => context.read<ProReservationBloc>().add(ProReservationReplaced(r.copyWith(keyHook: k.keyHook, keysLeftAt: k.keysLeftAt))),
+                  onChanged: (k) =>
+                      context.read<ProReservationBloc>().add(ProReservationReplaced(r.copyWith(keyHook: k.keyHook, keysLeftAt: k.keysLeftAt))),
                 )
               : null,
         ),
         // « Contrat signé et état des lieux » (19/10/2026): the contract and both condition reports.
         if (r.status != 'cancelled' && r.status != 'no_show')
-          PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
+          PaperworkCard(
+            key: ValueKey('paperwork-${r.id}-${r.status}'),
+            reservationId: r.id,
+            status: r.status,
+            canAct: can(role, 'reservations:status'),
+          ),
         // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
         StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
         // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
+        // « Facture » (06/11/2026, direction A): the invoice in the parking's name.
+        if (can(role, 'reservations:manage')) InvoiceCard(key: ValueKey('invoice-${r.id}-${r.status}-${r.priceCents}'), reservationId: r.id),
         if (can(role, 'reservations:manage')) LinkedEmailsCard(key: ValueKey('mails-${r.id}-${r.status}'), reservationId: r.id),
         if (r.returnNoticeKind != null && r.returnNoticeAt != null)
           _Section(
@@ -384,12 +408,19 @@ class _NextStep extends StatelessWidget {
               },
               itemBuilder: (_) => [
                 if (board)
-                  PopupMenuItem(key: const Key('status-board'), value: 'board', child: Text('res.action.board'.tr(), style: AppText.body(size: 14))),
+                  PopupMenuItem(
+                    key: const Key('status-board'),
+                    value: 'board',
+                    child: Text('res.action.board'.tr(), style: AppText.body(size: 14)),
+                  ),
                 for (final s in others)
                   PopupMenuItem(
                     key: Key('status-$s'),
                     value: s,
-                    child: Text('res.action.$s'.tr(), style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink)),
+                    child: Text(
+                      'res.action.$s'.tr(),
+                      style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink),
+                    ),
                   ),
                 if (canDelete) ...[
                   if (others.isNotEmpty || board) const PopupMenuDivider(),
@@ -400,7 +431,9 @@ class _NextStep extends StatelessWidget {
                       children: [
                         const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
                         const SizedBox(width: 8),
-                        Flexible(child: Text('res.trash.action'.tr(), style: AppText.body(size: 14, color: AppColors.danger))),
+                        Flexible(
+                          child: Text('res.trash.action'.tr(), style: AppText.body(size: 14, color: AppColors.danger)),
+                        ),
                       ],
                     ),
                   ),
@@ -472,9 +505,7 @@ class _NextStep extends StatelessWidget {
       await trash.delete(id, reason: reason);
     } on DioException catch (e) {
       final code = e.errorCode;
-      messenger.showSnackBar(
-        SnackBar(content: Text(code == 'plazo_booking' || code == 'vehicle_on_site' ? 'res.trash.$code'.tr() : e.errorMessage)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(code == 'plazo_booking' || code == 'vehicle_on_site' ? 'res.trash.$code'.tr() : e.errorMessage)));
       return;
     }
     // Forced (the page's PopScope would hand the deleted booking back to the list); the list syncs itself.
@@ -619,7 +650,10 @@ class _HandoverSheetState extends State<_HandoverSheet> {
             contentPadding: EdgeInsets.zero,
             value: _keys,
             title: Text('res.handover.keys'.tr(), style: AppText.strong()),
-            subtitle: Text(_tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(), style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted()),
+            subtitle: Text(
+              _tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(),
+              style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted(),
+            ),
             activeThumbColor: AppColors.accent,
             onChanged: (v) => setState(() => _keys = v),
           ),
@@ -645,7 +679,6 @@ class _HandoverSheetState extends State<_HandoverSheet> {
       ),
     );
   }
-
 }
 
 class _Section extends StatelessWidget {
@@ -689,7 +722,12 @@ class _Section extends StatelessWidget {
                 ],
               ),
             ),
-          if (child != null) ...[const SizedBox(height: 8), Text('keys.title'.tr().toUpperCase(), style: AppText.label(size: 11)), const SizedBox(height: 6), child!],
+          if (child != null) ...[
+            const SizedBox(height: 8),
+            Text('keys.title'.tr().toUpperCase(), style: AppText.label(size: 11)),
+            const SizedBox(height: 6),
+            child!,
+          ],
         ],
       ),
     );

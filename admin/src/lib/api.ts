@@ -127,6 +127,9 @@ import type {
   NotificationEvent,
   NotificationTestResult,
   DeletedReservation,
+  BillingSettings,
+  BillingSettingsInput,
+  ReservationInvoices,
 } from "./types";
 
 import type {
@@ -1159,6 +1162,29 @@ export const adminApi = {
   },
   navCounts: () =>
     apiRequest<{ inbox: number | null; extras: number }>("/internal/nav/counts"),
+  // 06/11/2026 (direction A): the invoices a parking issues to its customers.
+  billingSettings: () => apiRequest<BillingSettings>("/internal/billing/settings"),
+  updateBillingSettings: (input: BillingSettingsInput) =>
+    apiRequest<BillingSettings>("/internal/billing/settings", { method: "PUT", body: json(input) }),
+  reservationInvoices: (reservationId: string) =>
+    apiRequest<ReservationInvoices>(`/internal/reservations/${reservationId}/invoices`),
+  createInvoice: (reservationId: string, input: { customerCompany?: string; customerAddress?: string }) =>
+    apiRequest<ReservationInvoices>(`/internal/reservations/${reservationId}/invoices`, { method: "POST", body: json(input) }),
+  invoicePreview: (reservationId: string, input: { customerCompany?: string; customerAddress?: string }) => {
+    const params = new URLSearchParams();
+    if (input.customerCompany?.trim()) params.set("customerCompany", input.customerCompany.trim());
+    if (input.customerAddress?.trim()) params.set("customerAddress", input.customerAddress.trim());
+    const q = params.toString();
+    return apiFile(`/internal/reservations/${reservationId}/invoices/preview${q ? `?${q}` : ""}`);
+  },
+  invoicePdf: (invoiceId: string) => apiFile(`/internal/invoices/${invoiceId}/pdf`),
+  sendInvoice: (invoiceId: string, email?: string) =>
+    apiRequest<{ sentAt: string; sentTo: string }>(`/internal/invoices/${invoiceId}/send`, {
+      method: "POST",
+      body: json(email ? { email } : {}),
+    }),
+  creditInvoice: (invoiceId: string) =>
+    apiRequest<ReservationInvoices>(`/internal/invoices/${invoiceId}/credit-note`, { method: "POST", body: json({}) }),
   // 02/11/2026 (direction B): the parking's logo, a 512 px square PNG, for the team.
   setOperatorLogo: (logo: Blob) =>
     apiRequest<{ logoUpdatedAt: string }>("/internal/operator/logo", {

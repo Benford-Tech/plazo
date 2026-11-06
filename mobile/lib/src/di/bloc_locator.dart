@@ -17,7 +17,8 @@ void _initBlocs() {
       (p, _) => ParkingBloc(locator(), airport: p.airport, slug: p.parking!, arrivalAt: p.arrivalAt, returnAt: p.returnAt),
     )
     ..registerFactoryParam<BookingFormBloc, StayParams, void>(
-      (p, _) => BookingFormBloc(locator(), locator(), locator(), airport: p.airport, parking: p.parking!, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
+      (p, _) =>
+          BookingFormBloc(locator(), locator(), locator(), airport: p.airport, parking: p.parking!, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
     )
     ..registerFactoryParam<PaymentBloc, String, void>(
       (reference, _) => PaymentBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), reference: reference),
@@ -65,7 +66,9 @@ void _initBlocs() {
         pushOpened: locator<PushService>().opened,
       ),
     )
-    ..registerFactoryParam<ProJoinBloc, OnboardingModel?, void>((initial, _) => ProJoinBloc(locator(), locator(), locator(), locator(), initial: initial))
+    ..registerFactoryParam<ProJoinBloc, OnboardingModel?, void>(
+      (initial, _) => ProJoinBloc(locator(), locator(), locator(), locator(), initial: initial),
+    )
     ..registerFactory(() => ProSettingsBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProDashboardBloc(locator()))

@@ -74,6 +74,7 @@ import '../features/extras/presentation/bloc/staff_extras_bloc.dart';
 import '../features/extras/presentation/bloc/traveller_extras_bloc.dart';
 import '../features/pro_plan/data/client/plan_client.dart';
 import '../features/pro_reservations/data/client/reservations_client.dart';
+import '../features/pro_invoices/data/invoice_data_source.dart';
 import '../features/pro_reservations/data/datasources/linked_emails_data_source.dart';
 import '../features/pro_reservations/data/datasources/reservation_trash_data_source.dart';
 import '../features/pro_keys/data/keys_data_source.dart';

@@ -11,6 +11,7 @@ import { NextStep } from "@/components/reservations/NextStep";
 import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingContractCard } from "@/components/reservations/BookingContractCard";
+import { BookingInvoiceCard } from "@/components/reservations/BookingInvoiceCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { TravellerMessages } from "@/components/reservations/TravellerMessages";
 import { ReservationHistory } from "@/components/reservations/ReservationHistory";
@@ -436,6 +437,15 @@ export default function ReservationPage() {
             mayAct={can(user?.role, "reservations:status")}
           />
           <BookingContractCard reservationId={r.id} status={r.status} />
+          {/* « Facture » (06/11/2026, direction A): the invoice in the parking's name, for those who manage bookings. */}
+          {can(user?.role, "reservations:manage") && (
+            <BookingInvoiceCard
+              reservationId={r.id}
+              priceCents={r.priceCents}
+              channel={r.channel}
+              paymentMethod={r.paymentMethod ?? null}
+            />
+          )}
           {/* « SMS de la veille » (30/10/2026): sent by hand for this booking, or sent again. */}
           {can(user?.role, "reservations:manage") && <BookingReminderCard reservationId={r.id} />}
           {/* « Messages au voyageur » (04/11/2026): the SMS and WhatsApp messages sent to the traveller. */}

@@ -710,6 +710,33 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      incomplet », vers le filtre), sous-titre de la tuile « À traiter » « · N sans prix », carte « Les compléter · N » avec les trois
      plus proches d'aujourd'hui à saisir sur place (`Dashboard.noPrice { count, next }`, `ReservationService.noPrice`). Plazo Pro :
      libellé de l'alerte seulement.
+   - **Facture du parking, direction A (06/11/2026, « une facture a envoyer en recuperant les infos du parking pour creer une
+     facture au nom du parking avec son logo », maquettes https://claude.ai/artifact/KzUyPcNHeuRVhESLVoWkmS, choix « A »)** :
+     « Informations de facturation » de Parking › Réglages (`BillingSettingsCard`, gérants `parking:manage`, lecture seule en démo) :
+     raison sociale, adresse de la société (vide = celle du parking), SIRET (14 chiffres), n° de TVA intracommunautaire ou « Pas de
+     TVA » (art. 293 B du CGI), taux (20 % par défaut), mention de bas de page, préfixe des numéros (`F`) ; `Operator.billing*`
+     (migration `operator_billing_invoices`, CHECK du taux et du préfixe) ; `GET/PUT /internal/billing/settings` (absent = inchangé ;
+     400 `siret` · `vatNumber` · `vatRatePercent` · `prefix` invalid ; `complete`, `missing`). Bloc « Facture » de la fiche
+     réservation web (`BookingInvoiceCard`) et de Plazo Pro (`features/pro_invoices` : `InvoiceCard`, `InvoicePdfPage`,
+     `InvoiceDataSource` par Dio sans freezed), `reservations:manage` : « Créer la facture » (société et adresse du client
+     facultatives, web), « Aperçu » (PDF non numéroté, non gardé), « Télécharger le PDF » / « Voir le PDF », « Envoyer au client »
+     (e-mail de la réservation, sinon une adresse saisie ; PDF joint, au nom du parking), « Faire un avoir ». Table `invoices`
+     (`Invoice` : `kind` invoice · credit_note, numéro sans trou par loueur, genre et année `F-2026-0042` / avoirs `A-2026-0003`,
+     attribué sous le verrou de la ligne du loueur ; vendeur, client, lignes et totaux figés, PDF gardé tel qu'émis en base
+     (`pdf`, `pdfSha256`), `sentAt` / `sentTo` ; un avoir par facture, CHECK `invoices_credit_note` et `invoices_totals`).
+     `domain/invoice.ts` : `billingMissing`, `readBillingInput`, `splitVat` (le prix de la réservation est TTC, la TVA en est
+     déduite au centime), `invoiceLines` (séjour « Stationnement avec navette / voiturier · <parking> », dates et plaque, puis les
+     services additionnels faits), `buildInvoicePdf` (`pdf-lib`, A4 : logo du parking en PNG ou JPEG, vendeur, « Facturé à »,
+     numéro, date, réservation et plaque, lignes HT, TVA, TTC, « Facture acquittée : payée par … » d'après `paidBy`, mentions) ;
+     `InvoiceService`. Routes : `GET/POST /internal/reservations/:id/invoices` (`canCreate`, `refusal` billing_incomplete ·
+     no_price · reservation_cancelled · invoice_exists · anonymized, 409 avec ce code), `GET …/invoices/preview`,
+     `GET /internal/invoices/:id/pdf`, `POST …/:id/send` `{ email? }` (409 `no_email`, 502 `email_failed`), `POST …/:id/credit-note`
+     (409 `already_credited`, 400 `not_invoice`) ; écritures `RefuseInDemo`, permises en consultation ; tracés `billing.updated`,
+     `invoice.created`, `invoice.sent`, `invoice.credit_note`. Une facture n'est jamais modifiée ni effacée avec l'anonymisation
+     de la réservation (gardée 10 ans pour le parking : politique de confidentialité) ; la réservation supprimée la laisse
+     (`reservationId` mis à nul), le loueur supprimé l'emporte. Les réservations payées sur Plazo restent à valider avec
+     l'expert-comptable (mandat de facturation). Pas encore : envoi automatique, registre et export (direction B). Tests
+     `invoices.test.ts`, `BookingInvoiceCard.test.tsx`, `BillingSettingsCard.test.tsx`, `invoice_card_test.dart`.
    - **Services additionnels (21/10/2026, nommés « Services pour la voiture » jusqu'au renommage du même jour, « pouvoir demander un service lavage intérieur et shampouineuse, 50 € ; recharge
      hybride, 15 € ; recharge électrique, 30 € via Plazo même après avoir déposé son véhicule », direction A des maquettes
      https://claude.ai/artifact/AydgcS9sKMY5LWRHAb5LH1, « oui à tout », app Plazo seulement)** : chaque parking active ses
