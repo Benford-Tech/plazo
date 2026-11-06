@@ -3,6 +3,7 @@ import { DemoRoute } from './demo.route';
 import { MorningEmailRoute } from './morning-email.route';
 import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
+import { SeoRoute } from './seo.route';
 import { ContactRoute } from './contact.route';
 import { CronRoute } from './cron.route';
 import { DashboardRoute } from './dashboard.route';
@@ -63,6 +64,7 @@ const AppRoutes = [
   new PublicBookingRoute(),
   new AppLinkRoute(),
   new ContactRoute(),
+  new SeoRoute(),
   new ArrivalRoute(),
   new ReturnRoute(),
   new PaymentRoute(),

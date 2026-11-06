@@ -9,6 +9,7 @@ import {
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   ValidateNested,
@@ -167,6 +168,14 @@ export class CreatePublicBookingDto {
   @Matches(IDEMPOTENCY_KEY_RE, { message: 'invalid_idempotency_key' })
   @IsString({ message: 'invalid_idempotency_key' })
   public idempotencyKey?: string;
+
+  /**
+   * 06/11/2026 (SEO local M1): where the visit came from, sent by the site's server only ({ source, detail, landing });
+   * checked by the API (cleanAcquisition), an unreadable one is dropped.
+   */
+  @IsOptional()
+  @IsObject({ message: 'invalid' })
+  public acquisition?: Record<string, unknown>;
 }
 
 /**

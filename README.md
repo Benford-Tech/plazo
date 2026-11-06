@@ -616,6 +616,27 @@ Mise en place, une fois pour toute la plateforme :
    s'abonner au champ **messages**.
 6. Poser les cinq variables sur Vercel (production), redéployer ; le loueur allume WhatsApp et s'envoie un test.
 
+### Référencement : Search Console (positions dans Google)
+
+Depuis le 06/11/2026, **Plateforme › Référencement** montre les réservations faites sur le site selon leur origine (moteur de
+recherche, accès direct, autre site, réseau social, campagne, appli), les pages d'entrée avec leurs visites et leurs
+réservations, et les positions de Plazo dans Google. Les visites et l'origine sont mesurées par le site lui-même (cookie de la
+visite, sans outil tiers). Les positions viennent de la **Google Search Console**, lue chaque nuit (passage de
+`purge-expired-tokens`, 01:00 UTC : les 5 derniers jours relus, 90 jours au premier passage, gardés 400 jours).
+
+Mise en place, une fois :
+1. **console.cloud.google.com** : dans un projet de Benford Tech (en créer un « Plazo » au besoin), *API et services* ›
+   *Bibliothèque* › activer **Google Search Console API**.
+2. *IAM et administration* › *Comptes de service* › *Créer* (nom « plazo-search-console », aucun rôle), puis *Clés* ›
+   *Ajouter une clé* › **JSON** : le fichier se télécharge (le garder dans le gestionnaire de mots de passe, ne jamais le
+   coller dans une conversation).
+3. **search.google.com/search-console** › propriété **plazo.fr** (propriété de domaine) › *Paramètres* › *Utilisateurs et
+   autorisations* › *Ajouter un utilisateur* : l'adresse du compte de service (`…@….iam.gserviceaccount.com`), autorisation
+   **Restreinte**. Une autre propriété (`https://www.plazo.fr/`) : la poser dans `SEARCH_CONSOLE_PROPERTY`.
+4. **Vercel** › projet `plazo` › *Settings* › *Environment Variables* : `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` (Production) =
+   tout le contenu du fichier JSON ; redéployer. Le premier relevé a lieu la nuit suivante ; la page dit l'état du dernier
+   relevé (« Le compte de service n'a pas accès à la propriété », etc.).
+
 ### SMS de la veille et planificateur externe
 
 Chaque parking choisit dans **Réservations › SMS de la veille** l'heure du rappel (16:00 à 21:30), son texte, et peut

@@ -216,6 +216,8 @@ export interface BookingInput {
   acceptTerms: boolean;
   /** Random key of the booking form: sending it again returns the booking already made. */
   idempotencyKey?: string;
+  /** 06/11/2026 (SEO local M1): where the visit came from (the session cookie of the site). */
+  acquisition?: { source: string; detail: string; landing: string };
 }
 
 export interface PublicBooking {

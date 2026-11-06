@@ -48,6 +48,7 @@ import type {
   SmsSettingsInput,
   SmsStatus,
   PhoneHistory,
+  PlatformSeo,
   WhatsappSettings,
   TravellerMessage,
   PlatformReservations,
@@ -1316,6 +1317,8 @@ export const adminApi = {
   getPlatformPayments: () =>
     apiRequest<PlatformPayments>("/internal/platform/payments"),
   // E-A: the platform's broadcasts.
+  // 06/11/2026 (SEO local, A + M2).
+  getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
   getPlatformNotifications: () =>
     apiRequest<{ data: PlatformNotification[] }>(
       "/internal/platform/notifications",

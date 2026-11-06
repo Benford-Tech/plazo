@@ -13,6 +13,7 @@ import { JoinRequestService } from '@/services/join-request.service';
 import { purgeLoginAttempts } from '@/services/password-attempts';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
+import { SeoService } from '@/services/seo.service';
 import { SmsPhoneService } from '@/services/sms-phone.service';
 import { SmsService } from '@/services/sms.service';
 import { WhatsappService } from '@/services/whatsapp.service';
@@ -56,6 +57,7 @@ export class CronController {
   public extras = Container.get(ExtraService);
   public whatsapp = Container.get(WhatsappService);
   public smsPhone = Container.get(SmsPhoneService);
+  public seo = Container.get(SeoService);
 
   /** WhatsApp messages not delivered after 5 minutes go by SMS (03/11/2026). Never throws (rides on remind-tomorrow). */
   /** 06/11/2026: the parking's SMS phone checked every 15 minutes (never throws: rides on remind-tomorrow). */
@@ -246,6 +248,9 @@ export class CronController {
     const reservationsPurged = await Container.get(ReservationTrashService).purge();
     // 06/11/2026: the SMS phone's checks after 30 days.
     const phoneChecksPurged = await this.smsPhone.purge();
+    // 06/11/2026 (SEO local M2): Search Console's last days, then the old visits and rows (never throws).
+    const searchConsole = await this.seo.syncSearchConsole();
+    const seoPurged = await this.seo.purge();
     // 21/10/2026: the prospects' demo starts every day afresh (never throws).
     const demoReset = await this.demo.reset();
     logger.info(
@@ -280,6 +285,8 @@ export class CronController {
       bellPurged,
       reservationsPurged,
       phoneChecksPurged,
+      searchConsole,
+      seoPurged,
     });
   });
 }

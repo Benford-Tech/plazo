@@ -3,6 +3,7 @@ import { JetBrains_Mono, Manrope, Playfair_Display } from "next/font/google";
 import { HiddenOn } from "@/components/HiddenOn";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { VisitTracker } from "@/components/VisitTracker";
 import { fr, texts } from "@/lib/fr";
 import { paymentsOnline } from "@/lib/payments";
 import { PRODUCT_NAME } from "@/lib/product";
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <SiteFooter />
           </HiddenOn>
         </div>
+        <VisitTracker />
       </body>
     </html>
   );

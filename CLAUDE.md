@@ -1568,6 +1568,27 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `regionCounts` (par clé et `none`, sous le filtre d'aéroport), `?region=<clé>|none` ; les pilules d'état suivent les filtres
   d'aéroport et de région. La liste n'est pas paginée (2 000 prospects au plus, comme avant) : la page reçoit tout ce que
   montrent les filtres et forme les blocs elle-même (`groupByRegion` de `admin/src/lib/prospecting.ts`).
+- **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
+  réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
+  classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,
+  duckduckgo, qwant, ecosia…, appli Google d'Android comprise), `social`, `referral` (domaine), `campaign` (`utm_source` hors
+  `utm_medium=organic`, `gclid` = google-ads), `direct`), la garde dans le cookie de visite `plazo_acq` (session, `source|détail|page`)
+  et la compte une fois (`VisitTracker` du layout racine, `sendBeacon` vers `POST /public/visits`, `visitLimiter` 30 par 15 min ;
+  jamais sur les pages Plazo Pro) : table `site_visit_days` (jour de Paris, page d'entrée nettoyée par `cleanLanding` (jamais `/pro`,
+  `/api`, une référence : `/ma-reservation`), origine, détail, nombre ; 400 jours). `bookAction` passe le cookie en `acquisition`
+  à `POST /public/bookings`, gardé seulement quand la requête vient du serveur du site (`fromSite`, clé du site), sinon `app` :
+  `Reservation.acquisitionSource/Detail/Landing` (migration `seo_measurement`, CHECK des sources). **M2** la Search Console lue
+  chaque nuit par `purge-expired-tokens` (`SeoService.syncSearchConsole` : compte de service `GOOGLE_SEARCH_CONSOLE_CREDENTIALS`,
+  JWT RS256 signé sans bibliothèque (`domain/search-console.ts`), propriété `SEARCH_CONSOLE_PROPERTY` = `sc-domain:plazo.fr` par
+  défaut, dimensions date · requête · page, 5 derniers jours relus et remplacés, 90 jours au premier passage, 400 jours gardés ;
+  `search_console_rows`, `search_console_state` avec la dernière erreur ; jamais une requête dans les journaux). **Plateforme ›
+  Référencement** (`/pro/plateforme/referencement`, `SeoPage`, `GET /internal/platform/seo?days=7|30|90`) : réservations venues
+  d'un moteur, leur chiffre et leur part, visites des moteurs ; réservations par origine (« Non mesuré » avant le 06/11) ; pages
+  d'entrée (visites, dont moteur, réservations, chiffre) ; positions Google (requêtes et pages, clics, affichages, position
+  moyenne pondérée par les affichages, ↑/↓ face à la période d'avant) ou les étapes de mise en place (README). Politique de
+  confidentialité (article 9, cookie de mesure de la visite) et mentions légales mises à jour. Tests `seo.test.ts`,
+  `acquisition.test.ts`, `SeoPage.test.tsx`. **Pages A (ville, gare, cas d'usage) : à venir, faits relevés et montrés à Joanny avant
+  publication.**
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

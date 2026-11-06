@@ -2421,3 +2421,28 @@ export interface DeletedReservation {
   deleteReason: string | null;
   deletedBy: { firstName: string | null } | null;
 }
+
+/** Plateforme › Référencement (06/11/2026, SEO local A + M2). */
+export interface PlatformSeo {
+  from: string;
+  to: string;
+  days: number;
+  bookings: {
+    total: number;
+    revenueCents: number;
+    search: { count: number; revenueCents: number };
+    bySource: { source: string; detail: string; count: number; revenueCents: number }[];
+  };
+  visits: { total: number; search: number };
+  pages: { landing: string; visits: number; searchVisits: number; bookings: number; revenueCents: number }[];
+  searchConsole: {
+    configured: boolean;
+    lastSyncAt: string | null;
+    lastDate: string | null;
+    lastError: string | null;
+    property: string;
+    totals: { clicks: number; impressions: number; position: number | null } | null;
+    queries: { query: string; page: string; clicks: number; impressions: number; position: number | null; previous: number | null }[];
+    pages: { page: string; clicks: number; impressions: number; position: number | null; previous: number | null }[];
+  };
+}

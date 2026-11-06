@@ -45,6 +45,9 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       prospectsDeleted: 0,
       // 06/11/2026: the SMS phone's checks after 30 days.
       phoneChecksPurged: 0,
+      // 06/11/2026 (SEO local M2): Search Console not linked in the tests.
+      searchConsole: { configured: false, rows: 0 },
+      seoPurged: { visits: 0, searchConsole: 0 },
     });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });

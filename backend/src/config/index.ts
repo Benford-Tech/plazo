@@ -371,3 +371,10 @@ export const whatsappConfig = () => ({
   language: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'fr',
   graphVersion: process.env.WHATSAPP_GRAPH_VERSION?.trim() || 'v21.0',
 });
+
+// 06/11/2026 (SEO local, M2): Google Search Console read every night. GOOGLE_SEARCH_CONSOLE_CREDENTIALS is the JSON key of a
+// service account added as a user of the property SEARCH_CONSOLE_PROPERTY (default the domain property of plazo.fr).
+export const searchConsoleConfig = () => ({
+  credentials: process.env.GOOGLE_SEARCH_CONSOLE_CREDENTIALS || '',
+  property: process.env.SEARCH_CONSOLE_PROPERTY?.trim() || 'sc-domain:plazo.fr',
+});

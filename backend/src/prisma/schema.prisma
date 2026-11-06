@@ -780,6 +780,11 @@ model Reservation {
   // Key sent by the site with a booking form: a retried submission returns the booking already
   // made instead of holding a second place (channel plazo only).
   idempotencyKey           String?             @unique
+  // 06/11/2026 (SEO local, M1): where the traveller came from, for a booking made on the site: search | direct |
+  // referral | social | campaign, or app (the Plazo app); the engine, site or campaign; the page they landed on.
+  acquisitionSource  String?
+  acquisitionDetail  String?
+  acquisitionLanding String?
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
   manageTokenVersion       Int                 @default(0)
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
@@ -2053,4 +2058,45 @@ model AppLinkClaim {
   @@index([fingerprint, createdAt])
   @@index([expiresAt])
   @@map("app_link_claims")
+}
+
+// 06/11/2026 (SEO local, M1): visits of the traveller site counted per day, landing page and origin (no visitor kept).
+model SiteVisitDay {
+  id      String @id @default(cuid())
+  // Local date in Paris, "YYYY-MM-DD".
+  day     String
+  landing String
+  source  String
+  detail  String @default("")
+  visits  Int    @default(0)
+
+  @@unique([day, landing, source, detail])
+  @@index([day])
+  @@map("site_visit_days")
+}
+
+// 06/11/2026 (SEO local, M2): Google Search Console's rows, one per day, query and page, read every night.
+model SearchConsoleRow {
+  id          String @id @default(cuid())
+  date        String
+  query       String
+  page        String
+  clicks      Int
+  impressions Int
+  position    Float
+
+  @@unique([date, query, page])
+  @@index([date])
+  @@map("search_console_rows")
+}
+
+// The last Search Console import (one row, id "default").
+model SearchConsoleState {
+  id         String    @id
+  lastSyncAt DateTime?
+  lastDate   String?
+  lastError  String?
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  @@map("search_console_state")
 }
