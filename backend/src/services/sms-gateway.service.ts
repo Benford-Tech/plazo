@@ -10,7 +10,9 @@ import { logger } from '@/utils/logger';
  *   - POST /messages { textMessage: { text }, phoneNumbers: ["+33…"], ttl } → 202 { id, state, … }
  *     (the README's /message path and `message` field are the deprecated spellings);
  *   - GET /messages/{id} → { id, state } with state Pending | Processed | Sent | Delivered | Failed
- *     (plus Cancelling | Cancelled).
+ *     (plus Cancelling | Cancelled);
+ *   - GET /devices → [{ id, name, lastSeen, deletedAt?, … }] (06/11/2026: the phone's history);
+ *   - GET /settings, PATCH /settings { ping: { interval_seconds } }: the app pings the server, so an idle phone is seen.
  * Nothing logged here ever contains a number, a text or a credential.
  */
 
@@ -58,6 +60,18 @@ function parseState(value: unknown): GatewayState {
     : 'Pending';
 }
 
+export interface GatewayDevice {
+  id: string;
+  lastSeen: Date | null;
+}
+
+function parseDate(value: unknown): Date | null {
+  if (typeof value !== 'string') return null;
+  const date = new Date(value);
+  // The API's zero time ("0001-01-01T00:00:00Z") means never.
+  return Number.isNaN(date.getTime()) || date.getUTCFullYear() < 2000 ? null : date;
+}
+
 @Service()
 export class SmsGatewayClient {
   public timeoutMs = TIMEOUT_MS;
@@ -74,7 +88,25 @@ export class SmsGatewayClient {
     return { id, state: parseState(data?.state) };
   }
 
-  private async request(credentials: GatewayCredentials, method: 'GET' | 'POST', path: string, body?: unknown): Promise<any> {
+  /** The phones registered with this login, with when each was last seen (null: never). */
+  public async devices(credentials: GatewayCredentials): Promise<GatewayDevice[]> {
+    const data = await this.request(credentials, 'GET', '/devices');
+    if (!Array.isArray(data)) return [];
+    return data.filter(d => d && typeof d === 'object' && !d.deletedAt).map(d => ({ id: String(d.id ?? ''), lastSeen: parseDate(d.lastSeen) }));
+  }
+
+  /** The app's ping interval (seconds), null when it does not ping. */
+  public async pingInterval(credentials: GatewayCredentials): Promise<number | null> {
+    const data = await this.request(credentials, 'GET', '/settings');
+    const value = data?.ping?.interval_seconds;
+    return typeof value === 'number' && value > 0 ? value : null;
+  }
+
+  public async setPingInterval(credentials: GatewayCredentials, seconds: number): Promise<void> {
+    await this.request(credentials, 'PATCH', '/settings', { ping: { interval_seconds: seconds } });
+  }
+
+  private async request(credentials: GatewayCredentials, method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<any> {
     const base = (credentials.baseUrl || SMS_GATEWAY_CLOUD_URL).replace(/\/+$/, '');
     const auth = Buffer.from(`${credentials.login}:${credentials.password}`, 'utf8').toString('base64');
     let res: Response;

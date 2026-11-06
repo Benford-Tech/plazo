@@ -35,6 +35,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
+import { PhoneNow, SmsPhoneService } from './sms-phone.service';
 import { SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
 
 /** What happens to one booking's day-before SMS, as the pro space shows it. */
@@ -113,6 +114,8 @@ export interface ReminderBoard {
   /** Values of the preview: the evening's first planned booking, else an example. */
   sample: { customerName: string; values: TemplateValues };
   can: { edit: boolean; manage: boolean };
+  /** 06/11/2026: the gateway phone's last check (the page warns when it is offline), null without one. */
+  phone: PhoneNow | null;
 }
 
 export interface UpdateReminderSettingsInput {
@@ -146,6 +149,7 @@ export class ReminderService {
   public sms = Container.get(SmsService);
   public push = Container.get(PushService);
   public audit = Container.get(AuditService);
+  public phone = Container.get(SmsPhoneService);
 
   // ---- Sending --------------------------------------------------------------------------------
 
@@ -447,6 +451,7 @@ export class ReminderService {
       evening: { ...eveningView(selected), rows: selectedRows },
       sample: { customerName: sampleSource.customerName, values: sampleValues },
       can: { edit: can(actor.role, 'parking:manage'), manage: can(actor.role, 'reservations:manage') },
+      phone: mode === 'gateway' ? await this.phone.now(actor.operatorId, tz, now) : null,
     };
   }
 

@@ -160,5 +160,6 @@ export function notificationTarget(data: Record<string, string> | undefined): st
   if (data.type === 'inbox') return data.emailId ? `/reservations/a-verifier?mail=${data.emailId}` : '/reservations/a-verifier';
   if (data.type === 'team') return '/equipe';
   if (data.type === 'shuttle') return '/navettes';
+  if (data.type === 'sms_phone') return '/parking/reglages#sms';
   return null;
 }

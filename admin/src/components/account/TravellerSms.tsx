@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { SmsPhoneHistory } from "./SmsPhoneHistory";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { timeAgo } from "@/lib/datetime";
@@ -508,6 +509,7 @@ function LinkedBox({
           {errorMessage(status.lastError)}
         </p>
       )}
+      <SmsPhoneHistory readOnly={readOnly} />
       {readOnly ? (
         <ReadOnlyNote />
       ) : testing ? (

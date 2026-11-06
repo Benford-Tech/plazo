@@ -233,6 +233,25 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      seulement (`user.demo`, texte « Démo : … ») ; **elle est dans Parking › Réglages depuis le 03/11/2026** (« mets le dans les réglages
      parkings », le super admin ne la trouvait plus dans Mon compte) : `TravellerSms` sous « Mails entrants » de `ParkingPage`, ancre
      `/parking/reglages#sms` (liens du planning et de « SMS de la veille »), plus dans Mon compte.
+     **Historique du téléphone d'envoi, direction A avec l'alerte de C (06/11/2026, « ajoute un historique d'état du téléphone de
+     service », après les 8 « Échec » du SMS de la veille du 05/11, maquettes https://claude.ai/artifact/EoG7vfKDXPud3VyAkDtdGg)** :
+     toutes les 15 minutes (passage de `remind-tomorrow`, `phone` dans sa réponse) Plazo lit `GET /devices` du service de l'appli SMS
+     (`SmsGatewayClient.devices`, `lastSeen`) pour chaque loueur au téléphone du parking, actif, ni archivé ni démo
+     (`SmsPhoneService.checkAll`, réservé par `OperatorSmsSettings.phoneCheckedAt`) : `online` vu depuis 15 min au plus, `offline`
+     sinon, `unknown` quand le service ne répond pas ou refuse l'identifiant (jamais d'alerte) ; table `sms_phone_checks` (migration
+     `sms_phone_checks`, 30 jours, purge de nuit `phoneChecksPurged`) ; au premier relevé d'un identifiant, Plazo demande à l'appli
+     un « Ping » toutes les 5 minutes s'il est plus lent (`PATCH /settings`, `phonePingSetAt`, remis à nul quand l'identifiant change).
+     **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
+     `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
+     l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,
+     effacé au retour) ; `OperatorSmsSettings.phoneAlerts` (allumé d'office) par `PUT /internal/sms/phone/alerts` (`RefuseInDemo`).
+     `GET /internal/sms/phone` (gérants) : `now`, `alerts`, `days` (7 jours : `segments` du ruban en fractions du jour, un relevé vaut
+     20 min au plus, gris sans relevé ; `failed` = SMS du téléphone abandonnés ou refusés ; `reminderAt` = heure du SMS de la veille),
+     `events` (changements d'état depuis le dernier signe de vie, durée de l'état d'avant ; SMS non partis groupés par genre et rafale,
+     « 8 SMS de la veille abandonnés »). Web : bloc « Le téléphone d'envoi » de la carte « SMS aux voyageurs » (`SmsPhoneHistory` :
+     pastille d'état, « Vu à 09:12 », ruban, légende, changements, interrupteur de l'alerte) ; page « SMS de la veille » : bandeau rouge
+     « Le téléphone d'envoi ne répond plus depuis 17:40 » (`ReminderBoard.phone`). Plazo Pro n'a pas le ruban. Tests `sms-phone.test.ts`,
+     `SmsPhoneHistory.test.tsx`.
      **Son propre loueur n'est pas une consultation (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »)** :
      « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
      pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,

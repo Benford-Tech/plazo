@@ -205,7 +205,7 @@ export class SmsService {
 
   // ---- Gateway sends and retries ------------------------------------------------------------------
 
-  private credentials(settings: OperatorSmsSettings): GatewayCredentials {
+  public credentials(settings: OperatorSmsSettings): GatewayCredentials {
     if (!settings.gatewayLogin || !settings.gatewayPasswordEncrypted)
       throw new HttpException(httpStatus.CONFLICT, 'SMS not configured', 'sms_not_configured');
     try {
@@ -494,6 +494,10 @@ export class SmsService {
         gatewayPasswordEncrypted: encrypted,
         senderPhone,
         linkedAt: existing?.mode === 'gateway' && existing.linkedAt ? existing.linkedAt : new Date(),
+        // 06/11/2026: another login is another app, whose ping Plazo sets again.
+        ...(existing?.gatewayLogin !== login || existing?.gatewayBaseUrl !== (baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl)
+          ? { phonePingSetAt: null, phoneOfflineAlertedAt: null }
+          : {}),
         lastError: null,
         lastErrorAt: null,
       };
@@ -508,6 +512,8 @@ export class SmsService {
         gatewayPasswordEncrypted: null,
         senderPhone: null,
         linkedAt: null,
+        phonePingSetAt: null,
+        phoneOfflineAlertedAt: null,
         lastError: null,
         lastErrorAt: null,
       };

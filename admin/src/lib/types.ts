@@ -1257,6 +1257,32 @@ export interface SmsStatus {
   lastErrorAt: string | null;
 }
 
+/** 06/11/2026: the parking's SMS phone, checked every 15 minutes at the SMS app's server. */
+export type PhoneState = "online" | "offline" | "unknown";
+
+export interface PhoneNow {
+  state: PhoneState;
+  /** Local "YYYY-MM-DDTHH:mm" of the parking. */
+  lastSeenAt: string | null;
+  checkedAt: string;
+}
+
+export interface PhoneHistory {
+  now: PhoneNow | null;
+  alerts: boolean;
+  pingSet: boolean;
+  days: {
+    date: string;
+    segments: { start: number; end: number; from: string; to: string; state: PhoneState | "none" }[];
+    failed: number;
+    reminderAt: string | null;
+  }[];
+  events: (
+    | { kind: "state"; at: string; state: PhoneState; lastSeenAt: string | null; afterMinutes: number | null }
+    | { kind: "sms_failed"; at: string; smsKind: string; status: "failed" | "abandoned"; count: number }
+  )[];
+}
+
 /** Direction of a shuttle trip (T-A): towards the airport for returns, towards the terminal for arrivals. */
 export type ShuttleDirection = "pickup" | "dropoff";
 
@@ -1718,6 +1744,8 @@ export interface ReminderBoard {
   evening: ReminderEvening & { rows: ReminderRow[] };
   sample: { customerName: string; values: TemplateValues };
   can: { edit: boolean; manage: boolean };
+  /** 06/11/2026: the SMS phone's last check (null without the parking's phone, or no recent check). */
+  phone?: PhoneNow | null;
 }
 export interface ReminderSettingsInput {
   enabled?: boolean;

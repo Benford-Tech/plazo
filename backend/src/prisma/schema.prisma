@@ -79,6 +79,7 @@ model Operator {
   shuttleTrips          ShuttleTrip[]
   smsSettings           OperatorSmsSettings?
   smsOutbox             SmsOutbox[]
+  smsPhoneChecks        SmsPhoneCheck[]
   whatsappMessages      WhatsappMessage[]
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
@@ -1448,9 +1449,33 @@ model OperatorSmsSettings {
   // go first by WhatsApp from Plazo's WhatsApp Business number; the SMS channel above is the fallback.
   whatsappEnabled          Boolean   @default(false)
 
+  // 06/11/2026 (« ajoute un historique d'état du téléphone de service »): the gateway phone is checked every 15 minutes
+  // (sms_phone_checks); the managers are told once per outage when it stops answering (phoneAlerts, on by default).
+  phoneAlerts              Boolean   @default(true)
+  phoneCheckedAt           DateTime?
+  phoneOfflineAlertedAt    DateTime?
+  // When Plazo asked the app to ping every 5 minutes (once per linked login), so that an idle phone is still seen.
+  phonePingSetAt           DateTime?
+
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
   @@map("operator_sms_settings")
+}
+
+// 06/11/2026: what the SMS app's server said of the operator's gateway phone, every 15 minutes (kept 30 days).
+model SmsPhoneCheck {
+  id         String    @id @default(cuid())
+  operatorId String
+  checkedAt  DateTime  @default(now())
+  // online: seen in the last 15 minutes; offline: not; unknown: the app's server did not answer, or refused the login.
+  state      String
+  lastSeenAt DateTime?
+  errorCode  String?
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId, checkedAt])
+  @@map("sms_phone_checks")
 }
 
 enum SmsOutboxStatus {

@@ -89,6 +89,7 @@ export default function RemindersPage() {
         </div>
       ) : (
         <>
+          {board.data.phone?.state === "offline" && <PhoneOffline since={board.data.phone.lastSeenAt} />}
           <SettingsTiles board={board.data} onSaved={apply} />
           <Week board={board.data} selected={board.data.evening.date} onSelect={date => setEvening(date === board.data.today ? undefined : date)} />
           <EveningCard board={board.data} onSaved={apply} />
@@ -573,6 +574,21 @@ function MessageSection({
         </div>
         <p className="text-[13px] text-muted-foreground">{t.preview.also}</p>
       </aside>
+    </div>
+  );
+}
+
+/** 06/11/2026: the parking's SMS phone stopped answering; tonight's SMS wait for it. */
+function PhoneOffline({ since }: { since: string | null }) {
+  return (
+    <div role="alert" data-testid="reminders-phone-offline" className="rounded-xl border border-bad/35 bg-bad-soft px-4 py-3 text-sm">
+      <p className="font-semibold text-bad-text">{t.phoneOffline(since ? since.slice(11, 16) : null)}</p>
+      <p>
+        {t.phoneOfflineDetail}{" "}
+        <Link to="/parking/reglages#sms" className="font-semibold underline underline-offset-2">
+          {t.phoneLink}
+        </Link>
+      </p>
     </div>
   );
 }
