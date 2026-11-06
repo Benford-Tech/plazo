@@ -36,6 +36,16 @@ model Operator {
   // served to travellers. logoKey is never sent; logoUpdatedAt names the version the apps cache.
   logoKey                String?
   logoUpdatedAt          DateTime?
+  // 06/11/2026 (« une facture au nom du parking avec son logo », direction A): the company that invoices the parking's
+  // customers. Address empty = the parking's; VAT rate in basis points (2000 = 20 %); exempt = « art. 293 B du CGI ».
+  billingLegalName       String?
+  billingAddress         String?
+  billingSiret           String?
+  billingVatNumber       String?
+  billingVatExempt       Boolean        @default(false)
+  billingVatRateBp       Int            @default(2000)
+  billingMention         String?
+  billingPrefix          String         @default("F")
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
   commissionBps          Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
@@ -87,6 +97,7 @@ model Operator {
   contractTemplates     OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
   reservationImports    ReservationImport[]
+  invoices              Invoice[]
 
   @@map("operators")
 }
@@ -926,6 +937,7 @@ model Reservation {
   contract         ReservationContract?
   inspections      VehicleInspection[]
   signatureCodes   SignatureCode[]
+  invoices         Invoice[]
   extras           ReservationExtra[]
   appLinkClaims    AppLinkClaim[]
 
@@ -2099,4 +2111,51 @@ model SearchConsoleState {
   updatedAt  DateTime  @default(now()) @updatedAt
 
   @@map("search_console_state")
+}
+
+enum InvoiceKind {
+  invoice
+  credit_note
+}
+
+/// 06/11/2026 (direction A): an invoice issued by the parking to its customer for a booking, or the credit note that
+/// cancels one. Numbered without gaps per operator, kind and year; never changed once issued: the PDF is kept as issued
+/// (seller, customer, lines and logo frozen), and a mistake is corrected by a credit note.
+model Invoice {
+  id            String      @id @default(cuid())
+  operatorId    String
+  reservationId String?
+  kind          InvoiceKind @default(invoice)
+  year          Int
+  sequence      Int
+  number        String
+  issuedAt      DateTime    @default(now())
+  // The credit note's invoice (one credit note per invoice).
+  creditOfId    String?     @unique
+  // { legalName, tradeName, address, siret, vatNumber, vatExempt, mention }
+  seller        Json
+  // { name, email, company, address }
+  customer      Json
+  // [{ label, detail, quantity, unitHtCents, totalHtCents, totalTtcCents }]
+  lines         Json
+  vatRateBp     Int
+  totalHtCents  Int
+  vatCents      Int
+  totalTtcCents Int
+  paidBy        String?
+  pdf           Bytes
+  pdfSha256     String
+  sentAt        DateTime?
+  sentTo        String?
+  createdById   String?
+
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  creditOf    Invoice?     @relation("InvoiceCredit", fields: [creditOfId], references: [id], onDelete: Cascade)
+  creditNote  Invoice?     @relation("InvoiceCredit")
+
+  @@unique([operatorId, kind, year, sequence])
+  @@unique([operatorId, number])
+  @@index([reservationId])
+  @@map("invoices")
 }

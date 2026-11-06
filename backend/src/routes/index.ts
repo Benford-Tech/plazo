@@ -18,6 +18,7 @@ import { ContractTemplateRoute } from './contract-template.route';
 import { GettingStartedRoute } from './getting-started.route';
 import { LiveSyncRoute } from './live-sync.route';
 import { StaffNotificationRoute } from './staff-notification.route';
+import { InvoiceRoute } from './invoice.route';
 import { OperatorLogoRoute } from './operator-logo.route';
 import { ValetRoute } from './valet.route';
 import { PartnerContractRoute } from './partner-contract.route';
@@ -52,6 +53,7 @@ const AppRoutes = [
   new LiveSyncRoute(),
   new StaffNotificationRoute(),
   new OperatorLogoRoute(),
+  new InvoiceRoute(),
   new ValetRoute(),
   new DashboardRoute(),
   new RevenueRoute(),

@@ -2446,3 +2446,55 @@ export interface PlatformSeo {
     pages: { page: string; clicks: number; impressions: number; position: number | null; previous: number | null }[];
   };
 }
+
+/** 06/11/2026 (« une facture au nom du parking avec son logo », direction A): the parking's invoicing details. */
+export interface BillingSettings {
+  tradeName: string;
+  legalName: string | null;
+  address: string | null;
+  parkingAddress: string | null;
+  siret: string | null;
+  vatNumber: string | null;
+  vatExempt: boolean;
+  vatRatePercent: number;
+  mention: string | null;
+  prefix: string;
+  hasLogo: boolean;
+  complete: boolean;
+  missing: string[];
+  issuedCount: number;
+}
+
+export type BillingSettingsInput = Partial<{
+  legalName: string | null;
+  address: string | null;
+  siret: string | null;
+  vatNumber: string | null;
+  vatExempt: boolean;
+  vatRatePercent: number;
+  mention: string | null;
+  prefix: string;
+}>;
+
+export interface InvoiceView {
+  id: string;
+  kind: "invoice" | "credit_note";
+  number: string;
+  issuedAt: string;
+  totalTtcCents: number;
+  customer: { name: string; email: string | null; company: string | null; address: string | null };
+  sentAt: string | null;
+  sentTo: string | null;
+  creditOf: string | null;
+  creditedBy: string | null;
+}
+
+export type InvoiceRefusal = "billing_incomplete" | "no_price" | "reservation_cancelled" | "invoice_exists" | "anonymized";
+
+export interface ReservationInvoices {
+  billing: { complete: boolean; missing: string[] };
+  canCreate: boolean;
+  refusal: InvoiceRefusal | null;
+  customerEmail: string | null;
+  invoices: InvoiceView[];
+}

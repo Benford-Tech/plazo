@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { ComparatorCommissionCard } from "@/components/parking/ComparatorCommissionCard";
+import { BillingSettingsCard } from "@/components/parking/BillingSettingsCard";
 import { ContractTemplateCard } from "@/components/parking/ContractTemplateCard";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
@@ -261,6 +262,8 @@ export default function ParkingPage() {
       {parking && <ShuttleTrackingCard parking={parking} />}
       {parking && <ExtrasSettingsCard parking={parking} />}
       <ContractTemplateCard />
+      {/* 06/11/2026 (direction A): the company that invoices the parking's customers. */}
+      <BillingSettingsCard />
       <ShuttleStops />
       <ShuttleVehicles />
       <FlightCheckCard />

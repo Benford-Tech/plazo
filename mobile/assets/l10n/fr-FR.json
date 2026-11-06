@@ -2738,5 +2738,43 @@
     "test_no_phone": "Envoyée dans la cloche. Aucun téléphone enregistré : activez les notifications ci-dessus.",
     "test_not_configured": "Envoyée dans la cloche. Les notifications des téléphones ne sont pas encore reliées.",
     "failed": "Le réglage n'a pas pu être enregistré."
+  },
+  "invoice": {
+    "title": "Facture",
+    "create": "Créer la facture",
+    "created": "Facture {number} créée.",
+    "invoice": "Facture",
+    "credit_note": "Avoir",
+    "issued": "Émise le {date}",
+    "sent_to": "envoyée à {email} le {date}",
+    "not_sent": "pas encore envoyée",
+    "open": "Voir le PDF",
+    "share": "Partager",
+    "file_error": "Le PDF n'a pas pu être chargé. Réessayez.",
+    "send": "Envoyer au client",
+    "resend": "Renvoyer",
+    "send_to": "Adresse e-mail du client",
+    "sent": "Facture envoyée à {email}.",
+    "credit": "Faire un avoir",
+    "credit_confirm": "La facture {number} sera annulée par un avoir du même montant. Une facture émise ne se modifie pas : vous pourrez ensuite en émettre une nouvelle.",
+    "credit_done": "Avoir {number} créé.",
+    "credit_of": "annule la facture {number}",
+    "credited_by": "annulée par l'avoir {number}",
+    "refusal": {
+      "billing_incomplete": "Renseignez d'abord les informations de facturation du parking, sur l'espace pro web (Parking › Réglages).",
+      "no_price": "Ajoutez d'abord le prix payé de la réservation.",
+      "reservation_cancelled": "Une réservation annulée ne se facture pas.",
+      "anonymized": "Réservation anonymisée : elle ne se facture plus."
+    },
+    "errors": {
+      "no_email": "Aucune adresse e-mail : saisissez celle du client.",
+      "email_failed": "L'e-mail n'a pas pu partir. Réessayez dans un instant.",
+      "already_credited": "Cette facture a déjà un avoir.",
+      "invoice_exists": "Cette réservation a déjà une facture.",
+      "billing_incomplete": "Renseignez d'abord les informations de facturation du parking, sur l'espace pro web.",
+      "no_price": "Ajoutez d'abord le prix payé de la réservation.",
+      "reservation_cancelled": "Une réservation annulée ne se facture pas.",
+      "demo_read_only": "Démo : aucune facture n'est émise."
+    }
   }
 }

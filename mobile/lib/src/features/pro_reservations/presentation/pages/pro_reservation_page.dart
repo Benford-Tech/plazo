@@ -29,6 +29,7 @@ import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../data/datasources/reservation_trash_data_source.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
+import '../../../pro_invoices/presentation/invoice_card.dart';
 import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
 import '../../../../shared/live_sync/live_sync.dart';
@@ -274,6 +275,8 @@ class _Sheet extends StatelessWidget {
         // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
         StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
         // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
+        // « Facture » (06/11/2026, direction A): the invoice in the parking's name.
+        if (can(role, 'reservations:manage')) InvoiceCard(key: ValueKey('invoice-${r.id}-${r.status}-${r.priceCents}'), reservationId: r.id),
         if (can(role, 'reservations:manage')) LinkedEmailsCard(key: ValueKey('mails-${r.id}-${r.status}'), reservationId: r.id),
         if (r.returnNoticeKind != null && r.returnNoticeAt != null)
           _Section(
