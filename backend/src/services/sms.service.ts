@@ -496,7 +496,7 @@ export class SmsService {
         linkedAt: existing?.mode === 'gateway' && existing.linkedAt ? existing.linkedAt : new Date(),
         // 06/11/2026: another login is another app, whose ping Plazo sets again.
         ...(existing?.gatewayLogin !== login || existing?.gatewayBaseUrl !== (baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl)
-          ? { phonePingSetAt: null, phoneOfflineAlertedAt: null }
+          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneOfflineAlertedAt: null }
           : {}),
         lastError: null,
         lastErrorAt: null,
@@ -513,6 +513,7 @@ export class SmsService {
         senderPhone: null,
         linkedAt: null,
         phonePingSetAt: null,
+        phoneSpacingSetAt: null,
         phoneOfflineAlertedAt: null,
         lastError: null,
         lastErrorAt: null,

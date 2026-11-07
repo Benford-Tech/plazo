@@ -17,6 +17,13 @@ export const PHONE_CHECK_MIN_GAP_MS = 10 * 60 * 1000;
 export const PHONE_CHECK_SPAN_MS = 20 * 60 * 1000;
 /** The ping Plazo asks the app for, so that an idle phone is still seen. */
 export const PHONE_PING_SECONDS = 300;
+/**
+ * 07/11/2026 (« Faudrait espacer les envois », après 7 à 9 SMS de la veille abandonnés d'un coup): the app waits 30 to 60 s
+ * between two SMS, so a burst (the day-before SMS of a whole evening) leaves the phone one by one. Ten SMS take about 8
+ * minutes, far within the 2 hours an SMS waits at the gateway.
+ */
+export const PHONE_SEND_INTERVAL_MIN_SECONDS = 30;
+export const PHONE_SEND_INTERVAL_MAX_SECONDS = 60;
 export const PHONE_HISTORY_DAYS = 7;
 export const PHONE_CHECKS_KEPT_DAYS = 30;
 /** Failed SMS of one kind less than this apart are one line of the history. */
