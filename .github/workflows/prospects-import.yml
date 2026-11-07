@@ -1,0 +1,45 @@
+name: Import de prospects
+
+# Imports prospects into Plateforme › Prospection from a CSV (07/11/2026, « Ajoute le workflow d'import de prospects »),
+# through the API and its rules (POST /internal/platform/prospects/import): the same columns and checks as « Importer un
+# CSV » of the page (already listed, opted out, invalid). By default a preview only (nothing written); « appliquer » writes.
+# Nothing is ever sent: the mails leave only from the page (« Envoyer à N prospects »).
+# The CSV goes gzip-compressed and base64-encoded in « csv_gz_b64 » (gzip -c prospects.csv | base64 -w0), to stay under
+# GitHub's input size: inputs are visible in the run to whoever can read Actions; the run prints parking names and
+# outcomes, never an address. Secrets (Settings › Secrets and variables › Actions): PLAZO_ADMIN_EMAIL and
+# PLAZO_ADMIN_PASSWORD, a platform admin's account (listed in PLATFORM_ADMIN_EMAILS); the session is closed at the end.
+# By hand only (.github/scripts/import_prospects.py).
+on:
+  workflow_dispatch:
+    inputs:
+      csv_gz_b64:
+        description: "Le CSV compressé (gzip -c prospects.csv | base64 -w0)"
+        type: string
+        required: true
+      appliquer:
+        description: "Importer pour de bon (sinon un aperçu seulement)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prospects-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Import de prospects
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          CSV_GZ_B64: ${{ inputs.csv_gz_b64 }}
+          APPLY: ${{ inputs.appliquer }}
+        run: python3 .github/scripts/import_prospects.py

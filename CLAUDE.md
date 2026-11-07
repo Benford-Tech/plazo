@@ -1595,6 +1595,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `regionCounts` (par clé et `none`, sous le filtre d'aéroport), `?region=<clé>|none` ; les pilules d'état suivent les filtres
   d'aéroport et de région. La liste n'est pas paginée (2 000 prospects au plus, comme avant) : la page reçoit tout ce que
   montrent les filtres et forme les blocs elle-même (`groupByRegion` de `admin/src/lib/prospecting.ts`).
+  **Import par GitHub Actions (07/11/2026, « Ajoute le workflow d'import de prospects »)** : workflow « Import de prospects »
+  (`prospects-import.yml`, à la main ; `.github/scripts/import_prospects.py`) : le CSV de « Importer un CSV » (mêmes colonnes, lu
+  comme `readProspectsCsv`) passe compressé en `csv_gz_b64` (`gzip -c f.csv | base64 -w0`), puis `POST …/prospects/import` :
+  aperçu par défaut (`dryRun`), `appliquer` pour écrire ; résumé par ligne (parking, aéroport, résultat), jamais une adresse ;
+  secrets `PLAZO_ADMIN_EMAIL` / `PLAZO_ADMIN_PASSWORD` (un administrateur de la plateforme), session fermée à la fin ; rien n'est
+  jamais envoyé aux prospects (les mails partent de la page). Liste France du 07/11/2026 (57 parkings, maturité du système
+  d'information « SI n/4 » en tête des notes) relevée sur les sites des exploitants eux-mêmes.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
   réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
   classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,
