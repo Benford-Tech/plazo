@@ -291,6 +291,29 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     expect(parseConfirmationEmail(text)).toMatchObject({ arrivalAt: '2026-10-09T19:45', returnAt: '2026-10-11T19:45', priceCents: 5290 });
   });
 
+  it('Parclick : la version texte du mail, référence en gras entre astérisques (07/11/2026)', () => {
+    const text = [
+      'Voici votre réservation ! <https://parclick.fr> = Voici votre réservation ! =',
+      'Service de navette gratuit Arrivée au parking 06/11/2026 18:00 Sortie du parking 06/11/2026 19:30',
+      'Arrivée au parking 06/11/2026 18:00 Sortie du parking 06/11/2026 19:30 Référence de la réservation: *BQXY5678* Parking Démo -',
+      'Navette - Aéroport Lyon Saint Exupéry. Le numéro de téléphone auquel vous devez appeler est le +33 7 00 00 00 00 <tel:+33700000000>.',
+      "Modification de la plaque d'immatriculation • Si votre entrée n'est PAS avec lecture de plaque d'immatriculation, ne vous inquiétez pas.",
+      "TOTAL 10,00 Téléchargez l'application",
+    ].join('\n');
+    const booking = parseConfirmationEmail(text);
+    expect(booking).toMatchObject({
+      provider: 'Parclick',
+      externalReference: 'BQXY5678',
+      arrivalAt: '2026-11-06T18:00',
+      returnAt: '2026-11-06T19:30',
+      priceCents: 1000,
+    });
+    // Nor the parking's number, nor a word of « plaque d'immatriculation » taken for the traveller's.
+    expect(booking?.customerPhone).toBeUndefined();
+    expect(booking?.plate).toBeUndefined();
+    expect(classifyMail({ subject: '', from: '', text })).toMatchObject({ provider: 'Parclick', kind: 'booking', reference: 'BQXY5678' });
+  });
+
   it('Allopark : la confirmation envoyée au voyageur se lit aussi (séjour, montant, nom)', () => {
     expect(read('allopark-customer.html')).toMatchObject({
       provider: 'Allopark',
