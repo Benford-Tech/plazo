@@ -241,6 +241,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sinon, `unknown` quand le service ne répond pas ou refuse l'identifiant (jamais d'alerte) ; table `sms_phone_checks` (migration
      `sms_phone_checks`, 30 jours, purge de nuit `phoneChecksPurged`) ; au premier relevé d'un identifiant, Plazo demande à l'appli
      un « Ping » toutes les 5 minutes s'il est plus lent (`PATCH /settings`, `phonePingSetAt`, remis à nul quand l'identifiant change).
+     **Envois espacés (07/11/2026, « Faudrait espacer les envois », après 7 à 9 SMS de la veille abandonnés d'un coup)** : au même
+     premier relevé, Plazo demande aussi à l'appli d'attendre 30 à 60 s entre deux SMS si elle attend moins (`PATCH /settings`
+     `messages.send_interval_min/max`, `PHONE_SEND_INTERVAL_*_SECONDS`, `phoneSpacingSetAt`, migration `sms_phone_spacing`, remis à nul
+     avec le ping) : une soirée de SMS de la veille part un par un, dix en 8 minutes environ, bien dans les 2 h d'attente.
      **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
      `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
      l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,

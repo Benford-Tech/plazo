@@ -1478,6 +1478,8 @@ model OperatorSmsSettings {
   phoneOfflineAlertedAt    DateTime?
   // When Plazo asked the app to ping every 5 minutes (once per linked login), so that an idle phone is still seen.
   phonePingSetAt           DateTime?
+  // 07/11/2026 (« Faudrait espacer les envois »): when Plazo asked the app to wait 30 to 60 s between two SMS.
+  phoneSpacingSetAt        DateTime?
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 

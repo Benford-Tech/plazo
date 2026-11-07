@@ -12,7 +12,8 @@ import { logger } from '@/utils/logger';
  *   - GET /messages/{id} → { id, state } with state Pending | Processed | Sent | Delivered | Failed
  *     (plus Cancelling | Cancelled);
  *   - GET /devices → [{ id, name, lastSeen, deletedAt?, … }] (06/11/2026: the phone's history);
- *   - GET /settings, PATCH /settings { ping: { interval_seconds } }: the app pings the server, so an idle phone is seen.
+ *   - GET /settings, PATCH /settings { ping: { interval_seconds } }: the app pings the server, so an idle phone is seen;
+ *     PATCH /settings { messages: { send_interval_min, send_interval_max } }: the app waits between two SMS (07/11/2026).
  * Nothing logged here ever contains a number, a text or a credential.
  */
 
@@ -104,6 +105,18 @@ export class SmsGatewayClient {
 
   public async setPingInterval(credentials: GatewayCredentials, seconds: number): Promise<void> {
     await this.request(credentials, 'PATCH', '/settings', { ping: { interval_seconds: seconds } });
+  }
+
+  /** The app's pause between two SMS (seconds; nulls when not set). */
+  public async sendInterval(credentials: GatewayCredentials): Promise<{ min: number | null; max: number | null }> {
+    const data = await this.request(credentials, 'GET', '/settings');
+    const num = (v: unknown) => (typeof v === 'number' && v > 0 ? v : null);
+    return { min: num(data?.messages?.send_interval_min), max: num(data?.messages?.send_interval_max) };
+  }
+
+  /** 07/11/2026 (« Faudrait espacer les envois »): the app waits min to max seconds between two SMS. */
+  public async setSendInterval(credentials: GatewayCredentials, min: number, max: number): Promise<void> {
+    await this.request(credentials, 'PATCH', '/settings', { messages: { send_interval_min: min, send_interval_max: max } });
   }
 
   private async request(credentials: GatewayCredentials, method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<any> {

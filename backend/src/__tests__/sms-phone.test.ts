@@ -101,17 +101,19 @@ describe('the phone checks', () => {
   let pushMock: jest.SpyInstance;
   let lastSeen: string | null;
   let ping: number | null;
+  let spacing: { send_interval_min: number; send_interval_max: number } | null;
 
   beforeEach(async () => {
     await resetDatabase();
     process.env.SMS_GATEWAY_ENCRYPTION_KEY = KEY;
     lastSeen = new Date().toISOString();
     ping = null;
+    spacing = null;
     fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async (url, init) => {
       const u = String(url);
       if (u === `${SMS_GATEWAY_CLOUD_URL}/devices`) return json([{ id: 'dev-1', name: 'Pixel', lastSeen }]);
       if (u === `${SMS_GATEWAY_CLOUD_URL}/settings` && (init?.method ?? 'GET') === 'GET')
-        return json(ping ? { ping: { interval_seconds: ping } } : {});
+        return json({ ...(ping ? { ping: { interval_seconds: ping } } : {}), ...(spacing ? { messages: spacing } : {}) });
       if (u === `${SMS_GATEWAY_CLOUD_URL}/settings`) return json({});
       return json({ id: 'gw-1', state: 'Pending' }, 202);
     });
@@ -134,7 +136,7 @@ describe('the phone checks', () => {
     return op;
   }
 
-  it('records the phone online, and asks the app to ping every 5 minutes once', async () => {
+  it('records the phone online, and asks the app once to ping every 5 minutes and to space its SMS', async () => {
     const op = await linked();
     const now = new Date();
     expect(await phone.checkAll(now)).toEqual({ checked: 1, offline: 0, alerted: 0 });
@@ -142,17 +144,21 @@ describe('the phone checks', () => {
     expect(checks).toHaveLength(1);
     expect(checks[0].state).toBe('online');
     const patch = fetchMock.mock.calls.filter(([u, init]) => String(u).endsWith('/settings') && init?.method === 'PATCH');
-    expect(patch).toHaveLength(1);
-    expect(JSON.parse(patch[0][1].body)).toEqual({ ping: { interval_seconds: 300 } });
+    expect(patch.map(([, init]) => JSON.parse(init.body))).toEqual([
+      { ping: { interval_seconds: 300 } },
+      // 07/11/2026 (« Faudrait espacer les envois »): 30 to 60 s between two SMS.
+      { messages: { send_interval_min: 30, send_interval_max: 60 } },
+    ]);
 
     // Ten minutes later: no new check (two crons at once); twenty minutes later, a check, and no second PATCH.
     expect((await phone.checkAll(new Date(now.getTime() + minutes(5)))).checked).toBe(0);
     expect((await phone.checkAll(new Date(now.getTime() + minutes(20)))).checked).toBe(1);
-    expect(fetchMock.mock.calls.filter(([u, init]) => String(u).endsWith('/settings') && init?.method === 'PATCH')).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter(([u, init]) => String(u).endsWith('/settings') && init?.method === 'PATCH')).toHaveLength(2);
   });
 
-  it('keeps a ping the app already does often enough', async () => {
+  it('keeps a ping and a spacing the app already has', async () => {
     ping = 120;
+    spacing = { send_interval_min: 45, send_interval_max: 90 };
     await linked();
     await phone.checkAll(new Date());
     expect(fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(0);

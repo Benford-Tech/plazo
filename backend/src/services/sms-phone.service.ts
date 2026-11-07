@@ -11,6 +11,8 @@ import {
   PHONE_CHECKS_KEPT_DAYS,
   PHONE_HISTORY_DAYS,
   PHONE_PING_SECONDS,
+  PHONE_SEND_INTERVAL_MAX_SECONDS,
+  PHONE_SEND_INTERVAL_MIN_SECONDS,
   PhoneCheck,
   PhoneEvent,
   PhoneState,
@@ -114,6 +116,7 @@ export class SmsPhoneService {
       lastSeenAt = seen.length ? new Date(Math.max(...seen.map(d => d.getTime()))) : null;
       state = devices.length ? phoneStateOf(lastSeenAt, now) : 'offline';
       if (!settings.phonePingSetAt) await this.ensurePing(settings, credentials, now);
+      if (!settings.phoneSpacingSetAt) await this.ensureSpacing(settings, credentials, now);
     } catch (error) {
       errorCode = error instanceof GatewayError ? error.code : error instanceof HttpException && error.code ? error.code : 'sms_gateway_error';
     }
@@ -147,6 +150,20 @@ export class SmsPhoneService {
       await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { phonePingSetAt: now } });
     } catch (error) {
       logger.warn(`[SMS phone] ping not set for operator ${settings.operatorId}: ${error instanceof Error ? error.name : 'unknown error'}`);
+    }
+  }
+
+  /** Asks the app to wait 30 to 60 s between two SMS when it waits less (once per linked login). */
+  private async ensureSpacing(settings: OperatorSmsSettings, credentials: ReturnType<SmsService['credentials']>, now: Date) {
+    try {
+      const current = await this.gateway.sendInterval(credentials);
+      if ((current.min ?? 0) < PHONE_SEND_INTERVAL_MIN_SECONDS || (current.max ?? 0) < PHONE_SEND_INTERVAL_MAX_SECONDS) {
+        const min = Math.max(current.min ?? 0, PHONE_SEND_INTERVAL_MIN_SECONDS);
+        await this.gateway.setSendInterval(credentials, min, Math.max(current.max ?? 0, PHONE_SEND_INTERVAL_MAX_SECONDS, min));
+      }
+      await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { phoneSpacingSetAt: now } });
+    } catch (error) {
+      logger.warn(`[SMS phone] spacing not set for operator ${settings.operatorId}: ${error instanceof Error ? error.name : 'unknown error'}`);
     }
   }
 
