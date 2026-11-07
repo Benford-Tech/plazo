@@ -251,7 +251,7 @@ function referenceOf(provider: Comparator, subject: string, text: string): strin
       case 'Onepark':
         return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z0-9-]{4,20})\b/i.exec(flat)?.[1];
       case 'Parclick':
-        return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
+        return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*\*{0,2}([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
       case 'ParkVia':
         return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z]{1,4}\d{5,12})\b/i.exec(flat)?.[1];
       case PARKHIT_PROVIDER:

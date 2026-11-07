@@ -16,7 +16,7 @@ export const parclickImporter: EmailImporter = {
   parse(text) {
     const flat = flatten(text);
     const booking: ParsedBooking = { provider: 'Parclick' };
-    booking.externalReference = /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
+    booking.externalReference = /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*\*{0,2}([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
 
     // « Arrivée au parking » then « Sortie du parking », each a date and a time (labels and values may come in rows).
     const stay = flat.slice(Math.max(0, flat.search(/Arriv[ée]e au parking/i)));
