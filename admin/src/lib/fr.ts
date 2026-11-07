@@ -997,6 +997,7 @@ export const fr = {
         join_request: "Demande pour rejoindre l'équipe",
         price_missing: "Réservations sans prix",
         extras_due: "Services à faire avant le retour",
+        invoice_requested: "Facture demandée par le client",
       } satisfies Record<AlertKind, string>,
       // 21/10/2026: « Camille Martin · Lavage intérieur et shampouineuse · retour 18:40 ».
       extrasDetail: (
@@ -5272,6 +5273,9 @@ export const invoiceFr = {
     company: "Société du client (facultatif)",
     customerAddress: "Adresse du client (facultatif)",
     addCustomer: "+ Société ou adresse du client",
+    // 07/11/2026: the traveller asked for it from Plazo.
+    requested: (date: string) => `Demandée par le client le ${date}.`,
+    requestedHint: "Elle lui est envoyée par e-mail et dans l'app dès sa création.",
     create: "Créer la facture",
     preview: "Aperçu",
     created: (number: string) => `Facture ${number} créée.`,

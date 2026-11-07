@@ -139,6 +139,17 @@ class _InvoiceCardState extends State<InvoiceCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('invoice.title'.tr(), style: AppText.strong(size: 15)),
+            if (data.requestedAt != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  data.requestedCompany == null
+                      ? 'invoice.requested'.tr(namedArgs: {'date': _when(data.requestedAt!)})
+                      : 'invoice.requested_company'.tr(namedArgs: {'date': _when(data.requestedAt!), 'company': data.requestedCompany!}),
+                  key: const Key('invoice-requested'),
+                  style: AppText.body(size: 13, weight: 600, color: AppStatus.warnText),
+                ),
+              ),
             for (final invoice in data.invoices)
               _InvoiceRow(
                 key: Key('invoice-${invoice.number}'),

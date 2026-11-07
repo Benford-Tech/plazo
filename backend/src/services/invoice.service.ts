@@ -29,6 +29,8 @@ import { AuditService } from './audit.service';
 import { toBuffer } from './contract-template.service';
 import { NotificationService } from './notification.service';
 import { PhotoStorageService } from './photo-storage.service';
+import { PublicBookingService } from './public-booking.service';
+import { PushService } from './push.service';
 import { STAFF_VISIBLE } from './reservation.service';
 
 /**
@@ -77,6 +79,10 @@ const BOOKING_SELECT = {
   returnAt: true,
   handover: true,
   anonymizedAt: true,
+  operatorId: true,
+  invoiceRequestedAt: true,
+  invoiceRequestCompany: true,
+  invoiceRequestAddress: true,
   parking: { select: { name: true, address: true, timezone: true } },
   extras: { where: { status: 'done' }, select: { label: true, priceCents: true }, orderBy: { doneAt: 'asc' } },
 } satisfies Prisma.ReservationSelect;
@@ -90,6 +96,8 @@ export interface InvoiceView {
   issuedAt: string;
   totalTtcCents: number;
   customer: InvoiceCustomer;
+  /** The parking's trade name, as on the invoice. */
+  issuer: string;
   sentAt: string | null;
   sentTo: string | null;
   creditOf: string | null;
@@ -98,12 +106,42 @@ export interface InvoiceView {
 
 export type InvoiceRefusal = 'billing_incomplete' | 'no_price' | 'reservation_cancelled' | 'invoice_exists' | 'anonymized';
 
+/** 07/11/2026: what the traveller asked for from « Ma réservation » (null when nothing is asked or it is answered). */
+export interface InvoiceRequestView {
+  at: string;
+  company: string | null;
+  address: string | null;
+}
+
 export interface ReservationInvoices {
   billing: { complete: boolean; missing: string[] };
   canCreate: boolean;
   refusal: InvoiceRefusal | null;
   customerEmail: string | null;
+  /** A request of the traveller still waiting for its invoice. */
+  request: InvoiceRequestView | null;
   invoices: InvoiceView[];
+}
+
+/** 07/11/2026 (« Le client peut retrouver ses factures dans Plazo », A + C): the traveller's side. */
+export type TravellerInvoiceRefusal = 'reservation_cancelled' | 'no_price' | 'invoice_exists' | 'already_requested' | 'anonymized';
+
+export interface TravellerInvoiceView {
+  id: string;
+  kind: 'invoice' | 'credit_note';
+  number: string;
+  issuedAt: string;
+  totalTtcCents: number;
+  issuer: string;
+  creditOf: string | null;
+  creditedBy: string | null;
+}
+
+export interface TravellerInvoices {
+  invoices: TravellerInvoiceView[];
+  request: InvoiceRequestView | null;
+  canRequest: boolean;
+  refusal: TravellerInvoiceRefusal | null;
 }
 
 export interface InvoiceFile {
@@ -124,6 +162,10 @@ export class InvoiceService {
   public audit = Container.get(AuditService);
   public notifications = Container.get(NotificationService);
   public storage = Container.get(PhotoStorageService);
+  public push = Container.get(PushService);
+  private get bookings() {
+    return Container.get(PublicBookingService);
+  }
 
   // ── Settings ───────────────────────────────────────────────────────────────────────────────────
 
@@ -191,6 +233,7 @@ export class InvoiceService {
       canCreate: refusal === null,
       refusal,
       customerEmail: booking.customerEmail,
+      request: this.pendingRequest(booking, invoices),
       invoices,
     };
   }
@@ -211,7 +254,14 @@ export class InvoiceService {
   /** POST /internal/reservations/:id/invoices { customerCompany?, customerAddress? } */
   public async create(actor: AuthenticatedStaff, reservationId: string, body: unknown): Promise<ReservationInvoices> {
     const booking = await this.booking(actor, reservationId);
-    const customer = this.customerOf(booking, (body ?? {}) as Record<string, unknown>);
+    const input = { ...((body ?? {}) as Record<string, unknown>) };
+    // 07/11/2026: what the traveller asked for fills what the team left out (Plazo Pro sends neither).
+    const asked = this.pendingRequest(booking, await this.invoicesOf(actor.operatorId, reservationId));
+    if (asked) {
+      if (input.customerCompany === undefined) input.customerCompany = asked.company;
+      if (input.customerAddress === undefined) input.customerAddress = asked.address;
+    }
+    const customer = this.customerOf(booking, input);
     // The logo is read before the transaction (a network call), the rest under the operator's lock.
     const logoKey = (await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { logoKey: true } })).logoKey;
     const logo = await this.logoOf(logoKey);
@@ -264,7 +314,131 @@ export class InvoiceService {
       entityId: reservationId,
       details: { number: created.number, totalTtcCents: created.totalTtcCents },
     });
+    if (asked) await this.answerRequest(actor, created);
     return this.forReservation(actor, reservationId);
+  }
+
+  /** The traveller asked for it: the invoice goes to them by e-mail (when there is an address) and by push. */
+  private async answerRequest(actor: AuthenticatedStaff, invoice: Invoice) {
+    const seller = invoice.seller as unknown as InvoiceSeller;
+    const customer = invoice.customer as unknown as InvoiceCustomer;
+    if (customer.email) {
+      try {
+        const sent = await this.notifications.emailTraveller(
+          { email: customer.email, name: customer.name },
+          'invoice',
+          `invoice ${invoice.number}`,
+          invoiceEmail(seller.tradeName, customer.name, 'invoice', invoice.number, invoice.totalTtcCents),
+          [{ name: fileNameOf('invoice', invoice.number), content: Buffer.from(invoice.pdf) }],
+        );
+        if (sent) {
+          await prisma.invoice.update({ where: { id: invoice.id }, data: { sentAt: new Date(), sentTo: customer.email } });
+          await this.audit.record(actor, {
+            action: 'invoice.sent',
+            entityType: 'reservation',
+            entityId: invoice.reservationId ?? undefined,
+            details: { number: invoice.number, requested: true },
+          });
+        }
+      } catch (error) {
+        logger.warn(`[Invoices] Requested invoice not e-mailed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      }
+    }
+    if (invoice.reservationId) {
+      await this.push
+        .notifyTravellers([invoice.reservationId], invoiceReadyPush(seller.tradeName, invoice.number, invoice.totalTtcCents), {
+          data: { type: 'booking', event: 'invoice_ready', reservationId: invoice.reservationId },
+          collapseId: `invoice-${invoice.reservationId}`,
+        })
+        .catch(() => 0);
+    }
+  }
+
+  // ── The traveller (x-booking-token) ────────────────────────────────────────────────────────────
+
+  /** GET /public/bookings/:reference/invoices */
+  public async travellerList(reference: string, token: string | undefined): Promise<TravellerInvoices> {
+    const record = await this.bookings.load(reference, token);
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { id: record.id }, select: BOOKING_SELECT });
+    const invoices = await this.invoicesOf(booking.operatorId, booking.id);
+    const refusal = this.travellerRefusal(booking, invoices);
+    return {
+      invoices: invoices.map(i => ({
+        id: i.id,
+        kind: i.kind,
+        number: i.number,
+        issuedAt: i.issuedAt,
+        totalTtcCents: i.totalTtcCents,
+        issuer: i.issuer,
+        creditOf: i.creditOf,
+        creditedBy: i.creditedBy,
+      })),
+      request: this.pendingRequest(booking, invoices),
+      canRequest: refusal === null,
+      refusal,
+    };
+  }
+
+  /** GET /public/bookings/:reference/invoices/:id/pdf: an invoice or credit note of this booking, as issued. */
+  public async travellerFile(reference: string, token: string | undefined, invoiceId: string): Promise<InvoiceFile> {
+    const booking = await this.bookings.load(reference, token);
+    const invoice = await prisma.invoice.findFirst({ where: { id: invoiceId, reservationId: booking.id } });
+    if (!invoice) throw new HttpException(httpStatus.NOT_FOUND, 'Invoice not found', 'not_found');
+    return { bytes: Buffer.from(invoice.pdf), fileName: fileNameOf(invoice.kind, invoice.number) };
+  }
+
+  /** POST /public/bookings/:reference/invoices/request { company?, address? }: the team is told; once per booking. */
+  public async travellerRequest(reference: string, token: string | undefined, body: unknown): Promise<TravellerInvoices> {
+    const record = await this.bookings.load(reference, token);
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { id: record.id }, select: BOOKING_SELECT });
+    const input = (body ?? {}) as Record<string, unknown>;
+    const read = (key: string, max: number) => {
+      const v = input[key];
+      if (v == null || v === '') return null;
+      if (typeof v !== 'string') throw new ValidationException({ [key]: 'invalid' });
+      const t = v.replace(/\r/g, '').trim();
+      if (t.length > max) throw new ValidationException({ [key]: 'too_long' });
+      return t || null;
+    };
+    const company = read('company', MAX_COMPANY);
+    const address = read('address', MAX_ADDRESS);
+    const refusal = this.travellerRefusal(booking, await this.invoicesOf(booking.operatorId, booking.id));
+    if (refusal) throw this.travellerRefused(refusal);
+    // Only the first request counts (two taps, two tabs): the row says whether this one was first.
+    const { count } = await prisma.reservation.updateMany({
+      where: { id: booking.id, invoiceRequestedAt: null },
+      data: { invoiceRequestedAt: new Date(), invoiceRequestCompany: company, invoiceRequestAddress: address },
+    });
+    if (!count) throw this.travellerRefused('already_requested');
+    await this.audit.record(
+      { id: null, operatorId: booking.operatorId },
+      { action: 'invoice.requested', entityType: 'reservation', entityId: booking.id, details: { by: 'traveller' } },
+    );
+    await this.push
+      .notifyStaff(booking.operatorId, 'bookingChanges', invoiceRequestedPush(booking.customerName, booking.reference), {
+        data: { type: 'booking', event: 'invoice_requested', reservationId: booking.id },
+        collapseId: `invoice-request-${booking.id}`,
+        event: 'booking_change',
+      })
+      .catch(() => 0);
+    return this.travellerList(reference, token);
+  }
+
+  /** 07/11/2026: the bookings whose traveller waits for an invoice (the dashboard's « Facture demandée »). */
+  public async pendingRequests(operatorId: string, take = 10) {
+    return prisma.reservation.findMany({
+      where: {
+        operatorId,
+        AND: [STAFF_VISIBLE],
+        invoiceRequestedAt: { not: null },
+        status: { not: 'cancelled' },
+        anonymizedAt: null,
+        invoices: { none: { kind: 'invoice', creditNote: null } },
+      },
+      orderBy: { invoiceRequestedAt: 'asc' },
+      take,
+      select: { id: true, reference: true, customerName: true, plate: true, invoiceRequestedAt: true },
+    });
   }
 
   /** POST /internal/invoices/:id/credit-note: cancels an invoice (its own series « A-… », negative amounts). */
@@ -407,6 +581,37 @@ export class InvoiceService {
     return null;
   }
 
+  /** The traveller's request, while no invoice stands for the booking (a credit note reopens it). */
+  private pendingRequest(booking: BookingForInvoice, invoices: { kind: string; creditedBy: string | null }[]): InvoiceRequestView | null {
+    if (!booking.invoiceRequestedAt || booking.anonymizedAt || booking.status === 'cancelled') return null;
+    if (invoices.some(i => i.kind === 'invoice' && !i.creditedBy)) return null;
+    return {
+      at: booking.invoiceRequestedAt.toISOString(),
+      company: booking.invoiceRequestCompany,
+      address: booking.invoiceRequestAddress,
+    };
+  }
+
+  private travellerRefusal(booking: BookingForInvoice, invoices: { kind: string; creditedBy: string | null }[]): TravellerInvoiceRefusal | null {
+    if (booking.anonymizedAt) return 'anonymized';
+    if (booking.status === 'cancelled') return 'reservation_cancelled';
+    if (invoices.some(i => i.kind === 'invoice' && !i.creditedBy)) return 'invoice_exists';
+    if (booking.priceCents == null || booking.priceCents <= 0) return 'no_price';
+    if (booking.invoiceRequestedAt) return 'already_requested';
+    return null;
+  }
+
+  private travellerRefused(refusal: TravellerInvoiceRefusal): HttpException {
+    const messages: Record<TravellerInvoiceRefusal, string> = {
+      anonymized: 'This booking has been anonymized',
+      reservation_cancelled: 'A cancelled booking is not invoiced',
+      invoice_exists: 'This booking already has an invoice',
+      no_price: 'This booking has no price',
+      already_requested: 'An invoice has already been asked for',
+    };
+    return new HttpException(httpStatus.CONFLICT, messages[refusal], refusal);
+  }
+
   private refused(refusal: InvoiceRefusal, missing: string[]): HttpException {
     const messages: Record<InvoiceRefusal, string> = {
       billing_incomplete: 'The invoicing details are incomplete',
@@ -513,6 +718,7 @@ export class InvoiceService {
       issuedAt: r.issuedAt.toISOString(),
       totalTtcCents: r.totalTtcCents,
       customer: r.customer as unknown as InvoiceCustomer,
+      issuer: (r.seller as unknown as InvoiceSeller).tradeName,
       sentAt: r.sentAt?.toISOString() ?? null,
       sentTo: r.sentTo,
       creditOf: r.creditOfId ? (originals.find(o => o.id === r.creditOfId)?.number ?? null) : null,
@@ -550,4 +756,14 @@ export function invoiceEmail(
 <p style="margin:0;font-size:15px;line-height:1.5">Merci d'avoir choisi ${escapeHtml(tradeName)}.<br>${escapeHtml(tradeName)}</p>
 </div></div></body></html>`;
   return { subject, html, text };
+}
+
+/** To the traveller, once the invoice they asked for is issued. */
+export function invoiceReadyPush(tradeName: string, number: string, totalTtcCents: number) {
+  return { title: 'Votre facture est prête', body: `${tradeName} · ${number} · ${euros(totalTtcCents)}` };
+}
+
+/** To the team, when a traveller asks for an invoice. */
+export function invoiceRequestedPush(customerName: string, reference: string) {
+  return { title: 'Facture demandée', body: `${customerName} · réservation ${reference}` };
 }

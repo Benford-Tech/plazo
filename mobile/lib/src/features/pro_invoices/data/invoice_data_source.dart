@@ -53,19 +53,35 @@ class InvoiceModel {
 /// A booking's invoices and whether one can be issued (refusal: billing_incomplete · no_price · reservation_cancelled ·
 /// invoice_exists · anonymized).
 class ReservationInvoicesModel {
-  const ReservationInvoicesModel({required this.canCreate, this.refusal, this.customerEmail, this.invoices = const []});
+  const ReservationInvoicesModel({
+    required this.canCreate,
+    this.refusal,
+    this.customerEmail,
+    this.invoices = const [],
+    this.requestedAt,
+    this.requestedCompany,
+  });
 
   final bool canCreate;
   final String? refusal;
   final String? customerEmail;
   final List<InvoiceModel> invoices;
 
-  factory ReservationInvoicesModel.fromJson(Map<String, dynamic> json) => ReservationInvoicesModel(
-    canCreate: json['canCreate'] as bool? ?? false,
-    refusal: json['refusal'] as String?,
-    customerEmail: json['customerEmail'] as String?,
-    invoices: [for (final i in (json['invoices'] as List<dynamic>? ?? const [])) InvoiceModel.fromJson(i as Map<String, dynamic>)],
-  );
+  /// 07/11/2026: the traveller asked for the invoice from Plazo (the server fills it with what they gave).
+  final DateTime? requestedAt;
+  final String? requestedCompany;
+
+  factory ReservationInvoicesModel.fromJson(Map<String, dynamic> json) {
+    final request = json['request'] as Map<String, dynamic>?;
+    return ReservationInvoicesModel(
+      canCreate: json['canCreate'] as bool? ?? false,
+      requestedAt: request == null ? null : DateTime.parse(request['at'] as String),
+      requestedCompany: request?['company'] as String?,
+      refusal: json['refusal'] as String?,
+      customerEmail: json['customerEmail'] as String?,
+      invoices: [for (final i in (json['invoices'] as List<dynamic>? ?? const [])) InvoiceModel.fromJson(i as Map<String, dynamic>)],
+    );
+  }
 }
 
 abstract class InvoiceDataSource {

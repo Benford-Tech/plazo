@@ -1,10 +1,11 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { InvoiceFile, InvoiceService } from '@/services/invoice.service';
 import catchAsync from '@/utils/catchAsync';
 
-const param = (req: RequestWithStaffSession, name: string) => String(req.params[name]);
+const param = (req: Request, name: string) => String(req.params[name]);
+const bookingToken = (req: Request) => req.get('x-booking-token') || undefined;
 
 function sendPdf(res: Response, file: InvoiceFile) {
   res.set('Content-Type', 'application/pdf');
@@ -55,5 +56,20 @@ export class InvoiceController {
   /** POST /internal/invoices/:id/credit-note */
   public creditNote = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.status(201).json(await this.invoices.creditNote(req.staff, param(req, 'id')));
+  });
+
+  /** GET /public/bookings/:reference/invoices (x-booking-token) */
+  public travellerList = catchAsync(async (req: Request, res: Response) => {
+    res.json(await this.invoices.travellerList(param(req, 'reference'), bookingToken(req)));
+  });
+
+  /** GET /public/bookings/:reference/invoices/:id/pdf (x-booking-token) */
+  public travellerFile = catchAsync(async (req: Request, res: Response) => {
+    sendPdf(res, await this.invoices.travellerFile(param(req, 'reference'), bookingToken(req), param(req, 'id')));
+  });
+
+  /** POST /public/bookings/:reference/invoices/request (x-booking-token) */
+  public travellerRequest = catchAsync(async (req: Request, res: Response) => {
+    res.status(201).json(await this.invoices.travellerRequest(param(req, 'reference'), bookingToken(req), req.body));
   });
 }

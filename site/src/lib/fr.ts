@@ -926,6 +926,32 @@ const frBase = {
       locked:
         "Les sièges auto ne se modifient plus en ligne : dites-le au parking.",
     },
+    // 07/11/2026 (« Le client peut retrouver ses factures dans Plazo », A + C).
+    invoices: {
+      title: "Facture",
+      invoice: (n: string) => `Facture ${n}`,
+      creditNote: (n: string) => `Avoir ${n}`,
+      issued: (amount: string, date: string, issuer: string) => `${amount} · émise le ${date} par ${issuer}`,
+      creditedBy: (n: string) => `Annulée par l’avoir ${n}`,
+      creditOf: (n: string) => `Annule la facture ${n}`,
+      download: "Télécharger le PDF",
+      downloading: "Téléchargement…",
+      none: "Pas encore de facture pour ce séjour.",
+      company: "Société (facultatif)",
+      address: "Adresse de facturation (facultatif)",
+      request: "Demander la facture",
+      requesting: "Envoi…",
+      requested: (date: string) => `Demandée le ${date}. Le parking vous la fait parvenir ici et par e-mail.`,
+      requestedPill: "Demandée",
+      noPrice: "Le parking n’a pas encore le prix de ce séjour : demandez-lui la facture directement.",
+      errors: {
+        too_long: "Ce texte est trop long.",
+        already_requested: "La facture est déjà demandée.",
+        invoice_exists: "La facture est déjà disponible : rechargez la page.",
+        network: "Pas de connexion. Réessayez.",
+        unknown: "La demande n’a pas pu partir. Réessayez.",
+      } as Record<string, string>,
+    },
     cancelTitle: "Annuler",
     cancelText: (until: string) =>
       `Gratuit jusqu’au ${until}. Rien n’a été payé en ligne : il n’y a rien à rembourser.`,

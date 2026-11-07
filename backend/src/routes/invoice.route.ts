@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { InvoiceController } from '@/controllers/invoice.controller';
 import { Routes } from '@/interfaces/routes.interface';
+import { lookupLimiter } from '@/middlewares/rateLimiter';
 import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
@@ -30,6 +31,15 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  * /internal/invoices/{id}/send:
  *   post:
  *     summary: "Send the PDF by e-mail ({ email? }, the booking's address by default); 409 no_email, 502 email_failed"
+ * /public/bookings/{reference}/invoices:
+ *   get:
+ *     summary: "07/11/2026, x-booking-token: the booking's invoices and credit notes for its traveller, the pending request, canRequest and refusal (reservation_cancelled | no_price | invoice_exists | already_requested | anonymized)"
+ * /public/bookings/{reference}/invoices/{id}/pdf:
+ *   get:
+ *     summary: "x-booking-token: an invoice or credit note of this booking (PDF)"
+ * /public/bookings/{reference}/invoices/request:
+ *   post:
+ *     summary: "x-booking-token: ask the parking for the invoice ({ company?, address? }, which it then takes); the team is told; 409 with the refusal's code"
  * /internal/invoices/{id}/credit-note:
  *   post:
  *     summary: "Issue the credit note that cancels the invoice; 409 already_credited, 400 not_invoice"
@@ -47,5 +57,9 @@ export class InvoiceRoute implements Routes {
     this.router.get('/internal/invoices/:id/pdf', StaffAuthMiddleware('reservations:manage'), this.invoices.file);
     this.router.post('/internal/invoices/:id/send', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.invoices.send);
     this.router.post('/internal/invoices/:id/credit-note', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.invoices.creditNote);
+    // 07/11/2026 (« Le client peut retrouver ses factures dans Plazo »): the traveller, with the booking's token.
+    this.router.get('/public/bookings/:reference/invoices', lookupLimiter, this.invoices.travellerList);
+    this.router.get('/public/bookings/:reference/invoices/:id/pdf', lookupLimiter, this.invoices.travellerFile);
+    this.router.post('/public/bookings/:reference/invoices/request', lookupLimiter, this.invoices.travellerRequest);
   }
 }

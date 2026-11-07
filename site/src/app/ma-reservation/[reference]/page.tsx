@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CancelForm } from "@/components/CancelForm";
 import { ChildSeatsCard } from "@/components/ChildSeatsCard";
+import { InvoicesCard } from "@/components/InvoicesCard";
 import { FlightForm } from "@/components/FlightForm";
 import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
@@ -333,6 +334,9 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
 
           {/* Child seats for the shuttle (24/10/2026): editable while the booking is « Attendu ». */}
           {active && <ChildSeatsCard reference={b.reference} token={token} seats={b.childSeats} passengers={b.passengers} editable={b.status === "upcoming"} />}
+
+          {/* The invoice of the stay, or « Demander la facture » (07/11/2026). Hidden when there is nothing to show. */}
+          <InvoicesCard reference={b.reference} token={token} />
 
           {b.status === "upcoming" && (
             <section aria-labelledby="annuler" className="card flex flex-col gap-2.5 border-danger-line p-4 md:p-6">

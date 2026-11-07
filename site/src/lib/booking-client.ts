@@ -46,6 +46,57 @@ export function updateChildSeats(reference: string, token: string, seats: ChildS
   return bookingRequest<PublicBooking>(reference, "/child-seats", token, seats, "PUT");
 }
 
+/** 07/11/2026: an invoice or credit note of the booking, as the traveller sees it. */
+export interface TravellerInvoice {
+  id: string;
+  kind: "invoice" | "credit_note";
+  number: string;
+  issuedAt: string;
+  totalTtcCents: number;
+  issuer: string;
+  creditOf: string | null;
+  creditedBy: string | null;
+}
+
+export interface TravellerInvoices {
+  invoices: TravellerInvoice[];
+  request: { at: string; company: string | null; address: string | null } | null;
+  canRequest: boolean;
+  refusal: "reservation_cancelled" | "no_price" | "invoice_exists" | "already_requested" | "anonymized" | null;
+}
+
+/** GET /public/bookings/:ref/invoices */
+export function bookingInvoices(reference: string, token: string): Promise<TravellerInvoices> {
+  return bookingRequest<TravellerInvoices>(reference, "/invoices", token);
+}
+
+/** POST /public/bookings/:ref/invoices/request { company?, address? }: the parking is told. */
+export function requestInvoice(reference: string, token: string, body: { company?: string; address?: string }): Promise<TravellerInvoices> {
+  return bookingRequest<TravellerInvoices>(reference, "/invoices/request", token, body);
+}
+
+/** GET /public/bookings/:ref/invoices/:id/pdf, saved by the browser (the token goes in a header, not in a link). */
+export async function downloadInvoice(reference: string, token: string, invoice: TravellerInvoice): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api/public/bookings/${encodeURIComponent(reference)}/invoices/${encodeURIComponent(invoice.id)}/pdf`, {
+      headers: { "x-booking-token": token },
+      cache: "no-store",
+    });
+  } catch {
+    throw new BookingClientError(0, "network");
+  }
+  if (!res.ok) throw new BookingClientError(res.status, "unknown");
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${invoice.kind === "credit_note" ? "Avoir" : "Facture"}-${invoice.number}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
 /** "14:05" in the parking's time (every parking is in France for now). */
 export const hhmm = (iso: string) => new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(iso));
 

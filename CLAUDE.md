@@ -737,6 +737,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`reservationId` mis à nul), le loueur supprimé l'emporte. Les réservations payées sur Plazo restent à valider avec
      l'expert-comptable (mandat de facturation). Pas encore : envoi automatique, registre et export (direction B). Tests
      `invoices.test.ts`, `BookingInvoiceCard.test.tsx`, `BillingSettingsCard.test.tsx`, `invoice_card_test.dart`.
+     **Le voyageur retrouve sa facture, A + C (07/11/2026, « Le client peut retrouver ses factures dans Plazo », maquettes
+     https://claude.ai/artifact/JNH6acpae6bAj3LqXBkptw)** : **A** bloc « Facture » de Ma réservation, site (`InvoicesCard` : PDF
+     téléchargé par `downloadInvoice`, le jeton dans l'en-tête) et app Plazo (`features/traveller_invoices` :
+     `TravellerInvoicesCard`, PDF lu dans l'app et partagé, `TravellerInvoicesDataSource` par Dio sans freezed), caché tant qu'il
+     n'y a rien à montrer ni à demander ; l'avoir sous la facture qu'il annule. **C** « Demander la facture » (société et adresse
+     facultatives) quand aucune facture n'est émise : `Reservation.invoiceRequestedAt/invoiceRequestCompany/invoiceRequestAddress`
+     (migration `invoice_request`, CHECK 120 / 300, effacés à l'anonymisation), une demande par réservation (409
+     `already_requested`) ; push et cloche « Facture demandée » aux gérants (audience `bookingChanges`, événement
+     `booking_change`), tracé `invoice.requested` ; alerte « À faire » `invoice_requested` du tableau de bord ; la fiche (web et
+     Plazo Pro) dit « Demandée par le client le … » et la facture prend sa société et son adresse quand l'équipe n'en donne pas
+     (web prérempli) ; une fois créée, elle part d'elle-même par e-mail et en push « Votre facture est prête ». Routes voyageur
+     (`x-booking-token`, `lookupLimiter`) : `GET /public/bookings/:ref/invoices` (`invoices` sans les données du client,
+     `request`, `canRequest`, `refusal` reservation_cancelled · no_price · invoice_exists · already_requested · anonymized),
+     `GET …/invoices/:id/pdf`, `POST …/invoices/request`. Tests `invoices.test.ts`, `InvoicesCard.test.tsx` (site),
+     `BookingInvoiceCard.test.tsx`, `traveller_invoices_card_test.dart`.
    - **Services additionnels (21/10/2026, nommés « Services pour la voiture » jusqu'au renommage du même jour, « pouvoir demander un service lavage intérieur et shampouineuse, 50 € ; recharge
      hybride, 15 € ; recharge électrique, 30 € via Plazo même après avoir déposé son véhicule », direction A des maquettes
      https://claude.ai/artifact/AydgcS9sKMY5LWRHAb5LH1, « oui à tout », app Plazo seulement)** : chaque parking active ses

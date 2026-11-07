@@ -1469,7 +1469,9 @@ export type AlertKind =
   // 21/10/2026: bookings without a price (managers; `detail` = how many).
   | "price_missing"
   // 21/10/2026: services for the car to do before a return within 36 h (`detail` = their names, `since` = the return).
-  | "extras_due";
+  | "extras_due"
+  // 07/11/2026: a traveller asked for an invoice from Plazo (`since` = the request; opens the booking).
+  | "invoice_requested";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {
@@ -2496,5 +2498,7 @@ export interface ReservationInvoices {
   canCreate: boolean;
   refusal: InvoiceRefusal | null;
   customerEmail: string | null;
+  /** 07/11/2026: the traveller asked for the invoice from Plazo, with what the invoice will take. */
+  request: { at: string; company: string | null; address: string | null } | null;
   invoices: InvoiceView[];
 }

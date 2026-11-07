@@ -839,6 +839,11 @@ model Reservation {
   // 21/10/2026: the services for the car asked with the booking, paid in the same payment on top of chargedCents (their
   // commission and share are on reservation_extras). Null: none.
   extrasChargedCents       Int?
+  // 07/11/2026 (« Le client peut retrouver ses factures dans Plazo », A + C): the traveller asked the parking for an
+  // invoice from « Ma réservation », with an optional company and address the invoice then takes.
+  invoiceRequestedAt       DateTime?
+  invoiceRequestCompany    String?
+  invoiceRequestAddress    String?
   // Transfer of the operator's share (null until the booking is paid).
   payoutStatus             PayoutStatus?
   stripeTransferId         String?

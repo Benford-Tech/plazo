@@ -17,6 +17,7 @@ void _initDataSource() {
     ..registerLazySingleton<ExtrasBoardDataSource>(() => ExtrasBoardDataSourceImpl(locator()))
     ..registerLazySingleton<LinkedEmailsDataSource>(() => LinkedEmailsDataSourceImpl(locator()))
     ..registerLazySingleton<InvoiceDataSource>(() => InvoiceDataSourceImpl(locator()))
+    ..registerLazySingleton<TravellerInvoicesDataSource>(() => TravellerInvoicesDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReservationTrashDataSource>(() => ReservationTrashDataSourceImpl(locator()))
     ..registerLazySingleton<KeysDataSource>(() => KeysDataSourceImpl(locator()))
     ..registerLazySingleton<NotificationsDataSource>(() => NotificationsDataSourceImpl(locator(), locator()))

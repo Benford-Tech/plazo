@@ -33,6 +33,9 @@ export const ANONYMIZED_TRAVELLER = {
   vehicleModel: null,
   vehicleColour: null,
   returnNoticeText: null,
+  // 07/11/2026: the company and address given when asking for an invoice.
+  invoiceRequestCompany: null,
+  invoiceRequestAddress: null,
   ...CLEARED_CAR_LOCATION,
 };
 

@@ -15,6 +15,7 @@ import { ArrivalService } from './arrival.service';
 import { loadPlanCapacity, parkingCapacity, RETURN_OVERDUE_MS } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ExtraService } from './extra.service';
+import { InvoiceService } from './invoice.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
 import { ReservationService } from './reservation.service';
@@ -69,7 +70,10 @@ export type AlertKind =
   | 'price_missing'
   // 21/10/2026: services for the car ordered on Plazo, still to do, on a booking returning within 36 hours (one alert
   // per booking). `detail` = the services' names, comma-separated; `since` = the return; « à surveiller » within 6 h.
-  | 'extras_due';
+  | 'extras_due'
+  // 07/11/2026: a traveller asked for an invoice from « Ma réservation » and none stands yet (reservations:manage). One
+  // alert per booking; `since` = the request.
+  | 'invoice_requested';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -189,6 +193,9 @@ export class DashboardService {
   public sms = Container.get(SmsService);
   public payments = Container.get(PaymentService);
   public extras = Container.get(ExtraService);
+  private get invoices() {
+    return Container.get(InvoiceService);
+  }
   public occupation = Container.get(OccupationService);
   public files = Container.get(FileService);
   public joinRequests = Container.get(JoinRequestService);
@@ -500,6 +507,21 @@ export class DashboardService {
         since: r.returnAt.toISOString(),
         minutes: null,
       });
+    }
+    if (can(actor.role, 'reservations:manage')) {
+      for (const r of await this.invoices.pendingRequests(actor.operatorId)) {
+        alerts.push({
+          kind: 'invoice_requested',
+          severity: 'todo',
+          reservationId: r.id,
+          reference: r.reference,
+          customerName: r.customerName,
+          plate: r.plate,
+          detail: null,
+          since: r.invoiceRequestedAt!.toISOString(),
+          minutes: minutesSince(r.invoiceRequestedAt!),
+        });
+      }
     }
     const noPrice = await this.reservations.noPrice(actor, now);
     if (noPrice && noPrice.count > 0) {

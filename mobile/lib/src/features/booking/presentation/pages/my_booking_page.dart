@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
+import '../../../traveller_invoices/traveller_invoices_card.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/night_fees.dart';
@@ -197,6 +198,9 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                     key: const Key('booking-extras'),
                                     child: TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
                                   ),
+                                // The stay's invoice, or « Demander la facture » (07/11/2026); hidden with nothing to show.
+                                if (b.status != 'pending_payment')
+                                  TravellerInvoicesCard(key: ValueKey('invoices-${b.reference}-${b.status}'), reference: b.reference),
                                 // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
                                 BlocBuilder<ReturnBloc, ReturnState>(
                                   buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
