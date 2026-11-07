@@ -1,9 +1,11 @@
 import { PDFDocument } from 'pdf-lib';
 import { Container } from 'typedi';
 import prisma from '@/database';
+import { manageToken } from '@/domain/booking';
 import { billingMissing, invoiceLines, invoiceNumber, readBillingInput, splitVat } from '@/domain/invoice';
 import { NotificationService } from '@/services/notification.service';
 import { MemoryPhotoBackend, PhotoStorageService } from '@/services/photo-storage.service';
+import { PushService } from '@/services/push.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /** 06/11/2026 (« une facture au nom du parking avec son logo », direction A). */
@@ -196,5 +198,96 @@ describe('factures d’une réservation', () => {
     const id = await bookingOf(op.token);
     await prisma.reservation.update({ where: { id }, data: { status: 'cancelled' } });
     expect((await api().get(`/api/internal/reservations/${id}/invoices`).set(auth(op.token))).body.refusal).toBe('reservation_cancelled');
+  });
+
+  it('le voyageur voit ses factures, demande la sienne, et l’équipe la crée avec ce qu’il a donné', async () => {
+    const op = await setupOperator();
+    await api().put('/api/internal/billing/settings').set(auth(op.token)).send(BILLING);
+    await api()
+      .put('/api/internal/pricing')
+      .set(auth(op.token))
+      .send({
+        tiers: [
+          { days: 1, priceCents: 1500 },
+          { days: 7, priceCents: 5900 },
+        ],
+        extraDayPriceCents: 600,
+      });
+    const listing = await api()
+      .put('/api/internal/listing')
+      .set(auth(op.token))
+      .send({
+        airportCode: 'LYS',
+        slug: 'parking-facture',
+        title: 'Parking Facture',
+        services: ['shuttle'],
+        shuttleMinutes: 8,
+        openingHours: '24h/24',
+        contactPhone: '04 72 00 00 00',
+        cancellationPolicy: 'free_24h',
+        photos: [],
+      });
+    expect(listing.status).toBe(200);
+    const day = (d: number) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 16);
+    const id = await bookingOf(op.token, { arrivalAt: day(2), returnAt: day(9) });
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id } });
+    const ref = row.reference;
+    const tok = { 'x-booking-token': manageToken(id, process.env.SECRET_KEY!, row.manageTokenVersion) };
+
+    const push = Container.get(PushService);
+    const staffPushes: string[] = [];
+    const travellerPushes: string[] = [];
+    const originalStaff = push.notifyStaff.bind(push);
+    const originalTraveller = push.notifyTravellers.bind(push);
+    push.notifyStaff = async (_op, _aud, message) => (staffPushes.push(message.title), 0);
+    push.notifyTravellers = async (_ids, message) => (travellerPushes.push(message.title), 0);
+    try {
+      expect((await api().get(`/api/public/bookings/${ref}/invoices`)).status).toBe(404);
+      let res = await api().get(`/api/public/bookings/${ref}/invoices`).set(tok);
+      expect(res.body).toEqual({ invoices: [], request: null, canRequest: true, refusal: null });
+
+      res = await api()
+        .post(`/api/public/bookings/${ref}/invoices/request`)
+        .set(tok)
+        .send({ company: 'ACME SARL', address: '4 rue Garibaldi, 69006 Lyon' });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ canRequest: false, refusal: 'already_requested', request: { company: 'ACME SARL' } });
+      expect(staffPushes).toEqual(['Facture demandée']);
+      expect((await api().post(`/api/public/bookings/${ref}/invoices/request`).set(tok).send({})).body.code).toBe('already_requested');
+      expect(await prisma.auditLog.count({ where: { action: 'invoice.requested' } })).toBe(1);
+
+      // The team sees the request (sheet and dashboard), and the invoice takes its company and address.
+      res = await api().get(`/api/internal/reservations/${id}/invoices`).set(auth(op.token));
+      expect(res.body.request).toMatchObject({ company: 'ACME SARL', address: '4 rue Garibaldi, 69006 Lyon' });
+      const dash = await api().get('/api/internal/dashboard').set(auth(op.token));
+      expect(dash.body.alerts.filter((a: { kind: string }) => a.kind === 'invoice_requested')).toHaveLength(1);
+
+      res = await api().post(`/api/internal/reservations/${id}/invoices`).set(auth(op.token)).send({});
+      expect(res.status).toBe(201);
+      expect(res.body.request).toBeNull();
+      const [invoice] = res.body.invoices;
+      expect(invoice.customer).toMatchObject({ company: 'ACME SARL', address: '4 rue Garibaldi, 69006 Lyon' });
+      expect(invoice.sentTo).toBe('julie.martin@example.fr');
+      expect(sent).toHaveLength(1);
+      expect(travellerPushes).toEqual(['Votre facture est prête']);
+      const after = await api().get('/api/internal/dashboard').set(auth(op.token));
+      expect(after.body.alerts.some((a: { kind: string }) => a.kind === 'invoice_requested')).toBe(false);
+
+      // The traveller finds it and opens its PDF; never another booking's.
+      res = await api().get(`/api/public/bookings/${ref}/invoices`).set(tok);
+      expect(res.body).toMatchObject({ canRequest: false, refusal: 'invoice_exists', request: null });
+      expect(res.body.invoices[0]).toMatchObject({ number: invoice.number, issuer: op.operator.name, totalTtcCents: 5400 });
+      expect(res.body.invoices[0].customer).toBeUndefined();
+      const pdf = await api().get(`/api/public/bookings/${ref}/invoices/${invoice.id}/pdf`).set(tok).buffer(true);
+      expect(pdf.status).toBe(200);
+      expect(pdf.headers['content-type']).toBe('application/pdf');
+      const other = await bookingOf(op.token, { plate: 'ZZ-999-ZZ', arrivalAt: day(3), returnAt: day(5) });
+      const otherRow = await prisma.reservation.findUniqueOrThrow({ where: { id: other } });
+      const otherTok = { 'x-booking-token': manageToken(other, process.env.SECRET_KEY!, otherRow.manageTokenVersion) };
+      expect((await api().get(`/api/public/bookings/${otherRow.reference}/invoices/${invoice.id}/pdf`).set(otherTok)).status).toBe(404);
+    } finally {
+      push.notifyStaff = originalStaff;
+      push.notifyTravellers = originalTraveller;
+    }
   });
 });

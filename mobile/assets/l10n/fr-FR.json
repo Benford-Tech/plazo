@@ -1426,7 +1426,8 @@
       "blocked_return": "Retour du jour bloqué : sortir d'abord",
       "join_request": "Demande pour rejoindre l'équipe",
       "price_missing": "Réservations sans prix",
-      "extras_due": "Services à faire avant le retour"
+      "extras_due": "Services à faire avant le retour",
+      "invoice_requested": "Facture demandée par le client"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -2775,6 +2776,32 @@
       "no_price": "Ajoutez d'abord le prix payé de la réservation.",
       "reservation_cancelled": "Une réservation annulée ne se facture pas.",
       "demo_read_only": "Démo : aucune facture n'est émise."
+    },
+    "requested": "Demandée par le client le {date}",
+    "requested_company": "Demandée par le client le {date} · {company}"
+  },
+  "traveller_invoices": {
+    "title": "Facture",
+    "invoice": "Facture {number}",
+    "credit_note": "Avoir {number}",
+    "issued": "{amount} · émise le {date} par {issuer}",
+    "credited_by": "annulée par l'avoir {number}",
+    "credit_of": "annule la facture {number}",
+    "open": "Ouvrir la facture",
+    "share": "Partager",
+    "file_error": "La facture n'a pas pu être chargée. Réessayez.",
+    "none": "Pas encore de facture pour ce séjour.",
+    "company": "Société (facultatif)",
+    "address": "Adresse de facturation (facultatif)",
+    "request": "Demander la facture",
+    "requested": "Demandée le {date}. Le parking vous la fait parvenir ici et par e-mail.",
+    "requested_pill": "Demandée",
+    "no_price": "Le parking n'a pas encore le prix de ce séjour : demandez-lui la facture directement.",
+    "errors": {
+      "too_long": "Ce texte est trop long.",
+      "already_requested": "La facture est déjà demandée.",
+      "invoice_exists": "La facture est déjà disponible.",
+      "unknown": "La demande n'a pas pu partir. Réessayez."
     }
   }
 }

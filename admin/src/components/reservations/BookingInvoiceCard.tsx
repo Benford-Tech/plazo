@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-context";
@@ -7,7 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { savePdf } from "@/lib/contract";
 import { dateTime, describeError, fr, invoiceFr } from "@/lib/fr";
-import type { InvoiceView, PaymentMethod, ReservationChannel, ReservationInvoices } from "@/lib/types";
+import type {
+  InvoiceView,
+  PaymentMethod,
+  ReservationChannel,
+  ReservationInvoices,
+} from "@/lib/types";
 
 const t = invoiceFr.booking;
 const ghost =
@@ -16,7 +21,9 @@ const main =
   "min-h-9 whitespace-nowrap rounded-full bg-lime px-4 text-[13px] font-semibold text-lime-ink hover:opacity-90 disabled:opacity-50";
 
 const money = (cents: number) =>
-  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(cents / 100);
+  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
+    cents / 100,
+  );
 
 /**
  * « Facture » on the booking page (06/11/2026, « une facture au nom du parking avec son logo », direction A): issue the
@@ -37,13 +44,32 @@ export function BookingInvoiceCard({
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   const key = ["reservation-invoices", reservationId];
-  const query = useQuery({ queryKey: key, queryFn: () => adminApi.reservationInvoices(reservationId) });
+  const query = useQuery({
+    queryKey: key,
+    queryFn: () => adminApi.reservationInvoices(reservationId),
+  });
   const [showCustomer, setShowCustomer] = useState(false);
   const [company, setCompany] = useState("");
   const [address, setAddress] = useState("");
   const [sendingTo, setSendingTo] = useState<string | null>(null);
-  const customer = { customerCompany: company.trim() || undefined, customerAddress: address.trim() || undefined };
-  const set = (data: ReservationInvoices) => queryClient.setQueryData(key, data);
+  // 07/11/2026: what the traveller gave when asking for the invoice fills the fields, once.
+  const asked = query.data?.request ?? null;
+  const [prefilled, setPrefilled] = useState(false);
+  useEffect(() => {
+    if (!asked || prefilled) return;
+    setPrefilled(true);
+    if (asked.company || asked.address) {
+      setCompany(asked.company ?? "");
+      setAddress(asked.address ?? "");
+      setShowCustomer(true);
+    }
+  }, [asked, prefilled]);
+  const customer = {
+    customerCompany: company.trim() || undefined,
+    customerAddress: address.trim() || undefined,
+  };
+  const set = (data: ReservationInvoices) =>
+    queryClient.setQueryData(key, data);
   const fail = (err: unknown) => toast.error(describeError(err, t.errors));
 
   const create = useMutation({
@@ -58,7 +84,10 @@ export function BookingInvoiceCard({
   });
   const preview = useMutation({
     mutationFn: async () => {
-      const { blob, filename } = await adminApi.invoicePreview(reservationId, customer);
+      const { blob, filename } = await adminApi.invoicePreview(
+        reservationId,
+        customer,
+      );
       savePdf(blob, filename ?? "Facture-apercu.pdf");
     },
     onError: fail,
@@ -71,7 +100,13 @@ export function BookingInvoiceCard({
     onError: fail,
   });
   const send = useMutation({
-    mutationFn: ({ invoice, email }: { invoice: InvoiceView; email?: string }) => adminApi.sendInvoice(invoice.id, email),
+    mutationFn: ({
+      invoice,
+      email,
+    }: {
+      invoice: InvoiceView;
+      email?: string;
+    }) => adminApi.sendInvoice(invoice.id, email),
     onSuccess: (result) => {
       setSendingTo(null);
       toast.success(t.sent(result.sentTo));
@@ -93,7 +128,12 @@ export function BookingInvoiceCard({
   if (!data) return null;
   const readOnly = !!user?.demo;
   const refusalText = data.refusal ? t.refusals[data.refusal] : "";
-  const paidLabel = channel === "plazo" ? fr.paidBy.online : paymentMethod ? fr.paidBy[paymentMethod] : null;
+  const paidLabel =
+    channel === "plazo"
+      ? fr.paidBy.online
+      : paymentMethod
+        ? fr.paidBy[paymentMethod]
+        : null;
 
   const sendInvoice = (invoice: InvoiceView) => {
     const email = invoice.customer.email ?? data.customerEmail;
@@ -102,8 +142,20 @@ export function BookingInvoiceCard({
   };
 
   return (
-    <section data-testid="booking-invoice" className="rounded-xl border border-panel-line bg-white p-4">
+    <section
+      data-testid="booking-invoice"
+      className="rounded-xl border border-panel-line bg-white p-4"
+    >
       <h2 className="text-base font-semibold">{t.title}</h2>
+      {data.request && (
+        <p
+          data-testid="invoice-requested"
+          className="mt-1 text-sm font-medium text-warn-text"
+        >
+          {t.requested(dateTime.format(new Date(data.request.at)))}{" "}
+          {data.canCreate ? t.requestedHint : ""}
+        </p>
+      )}
       {data.invoices.length === 0 && (
         <p className="mt-1 text-sm text-muted-foreground">
           {priceCents != null ? t.paid(money(priceCents), paidLabel) : null}
@@ -113,29 +165,49 @@ export function BookingInvoiceCard({
       {data.invoices.length > 0 && (
         <ul className="mt-2 divide-y divide-panel-line">
           {data.invoices.map((invoice) => (
-            <li key={invoice.id} data-testid={`invoice-${invoice.number}`} className="flex flex-col gap-2 py-3">
+            <li
+              key={invoice.id}
+              data-testid={`invoice-${invoice.number}`}
+              className="flex flex-col gap-2 py-3"
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold">
-                  {invoice.kind === "credit_note" ? t.creditNote : t.invoice} {invoice.number}
+                  {invoice.kind === "credit_note" ? t.creditNote : t.invoice}{" "}
+                  {invoice.number}
                 </span>
-                <span className="tabular font-mono text-sm">{money(invoice.totalTtcCents)}</span>
+                <span className="tabular font-mono text-sm">
+                  {money(invoice.totalTtcCents)}
+                </span>
                 {invoice.creditedBy ? (
                   <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                     {t.cancelledPill}
                   </span>
                 ) : invoice.sentAt ? (
-                  <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-text">{t.sentPill}</span>
+                  <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok-text">
+                    {t.sentPill}
+                  </span>
                 ) : null}
               </div>
               <p className="text-sm text-muted-foreground">
                 {t.issued(dateTime.format(new Date(invoice.issuedAt)))}
                 {" · "}
-                {invoice.sentAt && invoice.sentTo ? t.sentTo(invoice.sentTo, dateTime.format(new Date(invoice.sentAt))) : t.notSent}
+                {invoice.sentAt && invoice.sentTo
+                  ? t.sentTo(
+                      invoice.sentTo,
+                      dateTime.format(new Date(invoice.sentAt)),
+                    )
+                  : t.notSent}
                 {invoice.creditOf ? ` · ${t.creditOf(invoice.creditOf)}` : ""}
-                {invoice.creditedBy ? ` · ${t.creditedBy(invoice.creditedBy)}` : ""}
+                {invoice.creditedBy
+                  ? ` · ${t.creditedBy(invoice.creditedBy)}`
+                  : ""}
               </p>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className={ghost} onClick={() => download.mutate(invoice)}>
+                <button
+                  type="button"
+                  className={ghost}
+                  onClick={() => download.mutate(invoice)}
+                >
                   {t.download}
                 </button>
                 {!readOnly && (
@@ -148,26 +220,36 @@ export function BookingInvoiceCard({
                     {invoice.sentAt ? t.resend : t.send}
                   </button>
                 )}
-                {!readOnly && invoice.kind === "invoice" && !invoice.creditedBy && (
-                  <button
-                    type="button"
-                    className={ghost}
-                    disabled={credit.isPending}
-                    onClick={async () => {
-                      if (await confirm(t.creditConfirm(invoice.number), { title: t.credit, confirmLabel: t.credit, destructive: true }))
-                        credit.mutate(invoice);
-                    }}
-                  >
-                    {t.credit}
-                  </button>
-                )}
+                {!readOnly &&
+                  invoice.kind === "invoice" &&
+                  !invoice.creditedBy && (
+                    <button
+                      type="button"
+                      className={ghost}
+                      disabled={credit.isPending}
+                      onClick={async () => {
+                        if (
+                          await confirm(t.creditConfirm(invoice.number), {
+                            title: t.credit,
+                            confirmLabel: t.credit,
+                            destructive: true,
+                          })
+                        )
+                          credit.mutate(invoice);
+                      }}
+                    >
+                      {t.credit}
+                    </button>
+                  )}
               </div>
               {sendingTo === invoice.id && (
                 <form
                   className="flex flex-wrap items-end gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    const email = String(new FormData(e.currentTarget).get("email") ?? "").trim();
+                    const email = String(
+                      new FormData(e.currentTarget).get("email") ?? "",
+                    ).trim();
                     if (email) send.mutate({ invoice, email });
                   }}
                 >
@@ -181,7 +263,11 @@ export function BookingInvoiceCard({
                       className="h-10 min-w-64 rounded-md border border-input px-3 text-base"
                     />
                   </label>
-                  <button type="submit" className={main} disabled={send.isPending}>
+                  <button
+                    type="submit"
+                    className={main}
+                    disabled={send.isPending}
+                  >
                     {t.send}
                   </button>
                 </form>
@@ -224,20 +310,36 @@ export function BookingInvoiceCard({
             </button>
           )}
           <div className="flex flex-wrap gap-2">
-            <button type="button" className={main} disabled={create.isPending} onClick={() => create.mutate()}>
+            <button
+              type="button"
+              className={main}
+              disabled={create.isPending}
+              onClick={() => create.mutate()}
+            >
               {t.create}
             </button>
-            <button type="button" className={ghost} disabled={preview.isPending} onClick={() => preview.mutate()}>
+            <button
+              type="button"
+              className={ghost}
+              disabled={preview.isPending}
+              onClick={() => preview.mutate()}
+            >
               {t.preview}
             </button>
           </div>
         </div>
       ) : (
         refusalText && (
-          <p data-testid="invoice-refusal" className="mt-2 text-sm text-muted-foreground">
+          <p
+            data-testid="invoice-refusal"
+            className="mt-2 text-sm text-muted-foreground"
+          >
             {refusalText}{" "}
             {data.refusal === "billing_incomplete" && (
-              <Link to="/parking/reglages" className="font-semibold text-lime-deep underline-offset-2 hover:underline">
+              <Link
+                to="/parking/reglages"
+                className="font-semibold text-lime-deep underline-offset-2 hover:underline"
+              >
                 {t.settingsLink}
               </Link>
             )}
