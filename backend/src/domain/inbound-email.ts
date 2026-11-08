@@ -34,6 +34,11 @@ export interface InboundItem {
    * Exchange's inbox-rules header, Resent-*); undefined when the headers are unknown (the former JSON payload).
    */
   AutoForwarded?: boolean;
+  /**
+   * 08/11/2026 (« les pièces devraient être récupérées lors du transfert ») : the text of the attachments the relay sent
+   * with the raw message (PDF, attached email, text), read by parseRawEmail (`attachmentsText`) and added after the body.
+   */
+  AttachmentsText?: string | null;
 }
 
 export interface InboundPayload {
