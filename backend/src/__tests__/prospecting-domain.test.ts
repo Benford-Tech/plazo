@@ -172,6 +172,18 @@ describe('validation', () => {
     });
     expect(validateSequence([steps[0]], 50)).toMatchObject({ ok: false, fields: { steps: 'invalid' } });
     expect(stepsOf({ broken: true }, 'Plazo')).toEqual(defaultSteps('Plazo'));
+    // A saved step without its texts (migration prospecting_default_texts) takes the current ones and keeps its settings.
+    const cleared = stepsOf(
+      [
+        { step: 1, enabled: true, delayDays: 0 },
+        { step: 2, enabled: false, delayDays: 5 },
+        { step: 3, enabled: true, delayDays: 12, subject: 'Mon objet', body: 'Mon texte {lien_demo}' },
+      ],
+      'Plazo',
+    );
+    expect(cleared[0]).toEqual(defaultSteps('Plazo')[0]);
+    expect(cleared[1]).toMatchObject({ enabled: false, delayDays: 5, subject: defaultSteps('Plazo')[1].subject });
+    expect(cleared[2]).toMatchObject({ subject: 'Mon objet', delayDays: 12 });
   });
 
   it('les adresses désinscrites sont gardées en empreinte, sans la casse', () => {

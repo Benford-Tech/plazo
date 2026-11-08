@@ -428,8 +428,20 @@ export function validateSequence(
 
 /** The steps saved in the database, or Plazo's texts when the value is missing or damaged. */
 export function stepsOf(stored: unknown, productName: string): SequenceStep[] {
-  const checked = validateSequence(stored, DEFAULT_DAILY_CAP);
-  return checked.ok ? checked.steps : defaultSteps(productName);
+  // 08/11/2026 (« mets le mail à jour »): a saved step without its subject and body takes Plazo's current texts for that step,
+  // keeping its delay and whether it is on (migration prospecting_default_texts clears the saved texts once).
+  const defaults = defaultSteps(productName);
+  const filled = Array.isArray(stored)
+    ? stored.map(s => {
+        if (!s || typeof s !== 'object') return s;
+        const step = s as Record<string, unknown>;
+        const text = defaults.find(d => d.step === step.step);
+        if (!text || ('subject' in step && 'body' in step)) return step;
+        return { ...step, subject: step.subject ?? text.subject, body: step.body ?? text.body };
+      })
+    : stored;
+  const checked = validateSequence(filled, DEFAULT_DAILY_CAP);
+  return checked.ok ? checked.steps : defaults;
 }
 
 // ---- When to send --------------------------------------------------------------------------------------------------
