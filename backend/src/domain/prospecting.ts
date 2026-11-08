@@ -48,9 +48,10 @@ export type TemplateValues = Record<VariableName, string>;
 
 /** Plazo's own texts, until the platform admin writes theirs (« Modifier les mails »). */
 export function defaultSteps(productName: string): SequenceStep[] {
-  // 03/11/2026 (« dis qu'on a déjà plusieurs clients des applis mobiles pour le parking et le voyageur. Vends bien Plazo ! »,
-  // rewritten with the marketing email-sequence skill): hook, benefits, one call to action per mail (the demo, then a call),
-  // subjects under 50 characters. Every feature named is live today; no figure, testimonial or customer name.
+  // 08/11/2026 (« un mail concis avec les liens store et le lien de démo, une liste des fonctionnalités de Plazo Pro et
+  // l'avantage pour leurs utilisateurs ; dis qu'une dizaine de parkings l'utilisent déjà »): short mails, the features as a
+  // list, what the parking's customers gain, {lien_demo} (the button) in each; the store badges are added by prospectEmail.
+  // Every feature named is live today; the « dizaine de parkings » is Joanny's own claim.
   return [
     {
       step: 1,
@@ -59,18 +60,20 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: '{parking} : vos réservations, sans recopie',
       body:
         'Bonjour {prénom},\n\n' +
-        'Combien de temps votre équipe passe-t-elle chaque jour à recopier les réservations des comparateurs ?\n\n' +
-        `${productName} est le logiciel des parkings d'aéroport avec navette ou voiturier. Plusieurs parkings l'utilisent déjà au ` +
-        `quotidien, avec deux applications mobiles : ${productName} Pro pour votre équipe, ${productName} pour vos clients.\n\n` +
-        'Ce qui change dès la première semaine :\n' +
-        "- Les réservations d'Allopark, Onepark, Parclick, ParkMundo, ParkVia ou Park Hit arrivent seules dans votre planning.\n" +
-        '- Chaque vol retour est suivi : votre chauffeur sait qui récupérer et quand, le client reçoit le point de ' +
-        'rendez-vous par SMS.\n' +
-        '- Vos clients suivent la navette en direct sur leur téléphone.\n' +
-        '- Votre voiturier range chaque voiture sans en bloquer une au départ.\n\n' +
-        'Nous préparons tout pour vous : plan du parking, tarifs, réception des mails. Rien à installer.\n\n' +
+        `${productName} Pro est le logiciel des parkings d'aéroport avec navette ou voiturier. Une dizaine de parkings ` +
+        "l'utilisent déjà au quotidien.\n\n" +
+        'Pour votre équipe :\n' +
+        '- les réservations des comparateurs (Allopark, Onepark, ParkVia…) arrivent seules dans un planning unique ;\n' +
+        '- la navette : qui emmener, qui aller chercher, vols retour suivis ;\n' +
+        '- le plan du parking, la place de chaque voiture et ses clés ;\n' +
+        "- le contrat signé et l'état des lieux en photos sur le téléphone ;\n" +
+        "- le SMS de la veille et le chiffre d'affaires net des commissions.\n\n" +
+        'Pour vos clients :\n' +
+        `- ils suivent la navette en direct dans l'application ${productName} ;\n` +
+        "- à l'atterrissage, ils reçoivent le point de rendez-vous : plus besoin d'appeler ;\n" +
+        '- ils retrouvent leur réservation et leur voiture en un geste.\n\n' +
         'Essayez la démo en deux minutes : {lien_demo}\n\n' +
-        `Ou répondez simplement à ce mail : je vous montre ${productName} sur {parking} en 15 minutes.\n\n` +
+        `${productName} Pro s'installe sur iPhone et Android (liens ci-dessous). Une question ? Répondez simplement à ce mail.\n\n` +
         'Bien à vous,',
     },
     {
@@ -80,18 +83,11 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: "Vos clients appellent-ils à l'atterrissage ?",
       body:
         'Bonjour {prénom},\n\n' +
-        "Au retour de vacances, c'est souvent le même scénario : le client atterrit, appelle le parking, attend. Et votre " +
-        'équipe jongle entre le téléphone et le volant.\n\n' +
-        `Avec ${productName}, le téléphone ne sonne plus :\n` +
-        "- le vol retour est suivi en temps réel, un retard décale tout seul l'heure de passage ;\n" +
-        `- la liste du chauffeur se met à jour dans l'application ${productName} Pro ;\n` +
-        `- le client reçoit le point de rendez-vous par SMS et voit la navette arriver dans l'application ${productName}.\n\n` +
-        "Au comptoir, le contrat se signe et l'état des lieux se fait en photos sur le téléphone : en cas de rayure " +
-        'contestée, vous avez la preuve.\n\n' +
-        "Et vous suivez tout depuis votre tableau de bord : arrivées, retours, voitures sur place, chiffre d'affaires net " +
-        'des commissions des comparateurs.\n\n' +
-        'Voyez-le sur la démo : {lien_demo}\n\n' +
-        'Quel moment vous arrangerait pour 15 minutes au téléphone ?\n\n' +
+        `Avec ${productName} Pro, le téléphone ne sonne plus au retour des vacances :\n` +
+        "- le vol retour est suivi, un retard décale seul l'heure de passage ;\n" +
+        '- votre chauffeur voit sa liste à jour sur son téléphone ;\n' +
+        `- votre client reçoit le point de rendez-vous et voit la navette arriver dans ${productName}.\n\n` +
+        'Une dizaine de parkings travaillent déjà ainsi. Voyez-le sur la démo : {lien_demo}\n\n' +
         'Bien à vous,',
     },
     {
@@ -101,10 +97,8 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: 'Je ne vous dérange plus',
       body:
         'Bonjour {prénom},\n\n' +
-        "C'est mon dernier message, je ne veux pas encombrer votre boîte.\n\n" +
-        "Si un jour la recopie des réservations ou les appels à l'atterrissage vous pèsent, répondez simplement à ce " +
-        'mail : nous préparons une démonstration sur {parking}, avec vos propres places.\n\n' +
-        `Vos places peuvent aussi se vendre en ligne sur ${productName}, payées d'avance : un canal de vente de plus.\n\n` +
+        "C'est mon dernier message. Si la recopie des réservations ou les appels à l'atterrissage vous pèsent un jour, " +
+        'répondez à ce mail : nous préparons tout sur {parking}, plan et tarifs compris.\n\n' +
         'La démo reste ouverte : {lien_demo}\n\n' +
         'Bonne continuation,',
     },
