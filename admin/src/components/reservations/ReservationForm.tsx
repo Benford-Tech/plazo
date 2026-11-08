@@ -506,12 +506,12 @@ export function ReservationForm({
           <Field id="returnFlight" label={t.returnFlightOptional} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
             <input
               id="returnFlight"
-              autoCapitalize="characters"
               value={form.returnFlight}
               onChange={set("returnFlight")}
               aria-invalid={!!fieldErrors.returnFlight}
-              placeholder="TO 3627"
-              className={cn(inputClass, "tabular font-mono uppercase")}
+              placeholder="TO 3627 ou Porto"
+              maxLength={40}
+              className={cn(inputClass, "tabular")}
             />
           </Field>
         </div>

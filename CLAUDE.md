@@ -540,6 +540,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      l'arrivée, une plaque donnée toujours contrôlée, une plaque enregistrée jamais effacée (PATCH 400 `required`), et une réservation
      sans plaque peut passer au téléphone ou au comptoir ; le vol retour l'était déjà ; formulaires web et Plazo Pro : « Plaque
      (facultatif) » et « Vol retour (facultatif) ». La réservation en ligne du voyageur (site et app) demande toujours sa plaque.
+   - **Vol retour libre pour l'équipe (08/11/2026, « Enlever la restriction du format des vols retour : soit je mets la ville soit les
+     numéros pas forcément avec les premières lettres »)** : `staffReturnFlight` (`domain/reservation.ts`) : un numéro de vol est formaté
+     (« TO 3627 ») et suivi ; tout autre texte (« Porto », « 7841 ») est gardé tel quel, espaces rangés, 40 caractères au plus (400
+     `return_flight_too_long`), jamais demandé au fournisseur de suivi (`isTrackableFlight` dans `shouldLookupFlight`) ; un code de
+     compagnie a toujours une lettre (`formatFlight` : « 7841 » n'est plus « 78 41 ») ; `POST/PATCH /internal/reservations` seulement
+     (le site, l'app du voyageur et le vol aller restent au format) ; la confirmation ne promet le SMS d'atterrissage qu'à un vrai vol.
+     Formulaires web et Plazo Pro : « TO 3627 ou Porto », sans capitales forcées.
    - **Supprimer une réservation (03/11/2026, « Pouvoir supprimer une réservation… elle s'archive 45 jours », maquettes
      https://claude.ai/artifact/JD6yJ7YvnSpFkrKp5nCM1D, « go avec tes hypothèses »)** : gérants seulement (`parking:manage`), jamais une
      réservation payée sur Plazo (409 `plazo_booking` : l'annuler) ni une voiture au parking (409 `vehicle_on_site`) ;

@@ -1,5 +1,5 @@
 import { FlightStatus } from '@/database';
-import { AWAY_STATUSES } from './reservation';
+import { AWAY_STATUSES, isTrackableFlight } from './reservation';
 
 /**
  * Return flight tracking rules (see SPEC.md, block 3). Pure functions: the providers' answers are
@@ -68,7 +68,8 @@ export function shouldLookupFlight(
   booking: { returnFlight: string | null; status: string; returnAt: Date } & TrackedFlightFields,
   now = new Date(),
 ): boolean {
-  if (!booking.returnFlight) return false;
+  // A city or a bare number typed by the team is not a flight the provider can look up (08/11/2026).
+  if (!isTrackableFlight(booking.returnFlight)) return false;
   if (!(AWAY_STATUSES as string[]).includes(booking.status)) return false;
   if (booking.flightStatus && FINAL_FLIGHT_STATUSES.includes(booking.flightStatus)) return false;
   const landing = booking.flightEstimatedAt ?? booking.flightScheduledAt ?? booking.returnAt;
