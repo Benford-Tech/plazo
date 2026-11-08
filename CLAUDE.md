@@ -429,6 +429,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      téléphone quand l'e-mail est donné (`missingForImport`, `customerPhone` `''` à saisir), un service autre que « Parking » en
      note (« Service demandé sur le site : Voiturier ») ; « Site du parking » n'est jamais listé avec les comparateurs. Tests
      `website-form.test.ts`, `inbound-rules.test.ts`.
+   - **Pièces jointes lues à la réception (08/11/2026, « pour Parclick le nom du client, il y a une pièce jointe à analyser »,
+     « les pièces devraient être récupérées lors du transfert », « non pas par Claude, Cloudflare doit envoyer le fichier à
+     Plazo »)** : le relais `email-worker/` poste déjà le mail brut entier, pièces jointes comprises (coupé à 4 Mo) ; `parseRawEmail`
+     lit désormais leur texte (`domain/inbound-attachments.ts`, `attachmentsText` : PDF par `unpdf` ligne par ligne, 5 pages, reconnu
+     à ses premiers octets `%PDF` ; mail joint `.eml` (De, Objet, corps) ; texte et HTML ; 4 fichiers, 3 Mo chacun, 8 000 caractères,
+     5 s au plus ; images ignorées ; rien ne fait échouer la réception) dans `InboundItem.AttachmentsText`, ajouté après le corps sous
+     « Pièce jointe : bon.pdf » (`withAttachments`, la place des pièces jointes gardée dans les 20 000 caractères) : les règles des
+     comparateurs (le nom et le téléphone d'un bon Parclick), Claude et la boîte de réception le lisent ; le classement
+     (`classifyMail`) ne lit que le corps (`withoutAttachments` : les conditions d'un bon, « annulation gratuite… », ne font jamais
+     d'une confirmation une annulation), sauf si le corps ne nomme aucun comparateur (mail transféré en pièce jointe). Les tests
+     Jest tournent avec `node --experimental-vm-modules` (`npm test`) : le PDF.js d'`unpdf` est un module ESM. Test
+     `inbound-attachments.test.ts`. Pas encore : un vrai bon Parclick pour vérifier ses étiquettes.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet

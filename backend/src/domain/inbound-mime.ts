@@ -1,5 +1,6 @@
 import PostalMime, { Address, Email } from 'postal-mime';
 import { alloparkLinks } from './importers/allopark-page';
+import { attachmentsText } from './inbound-attachments';
 import { isAutoForwarded } from './inbound-delivery';
 import { InboundAddress, InboundItem } from './inbound-email';
 
@@ -79,5 +80,7 @@ export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promis
     Links: linksOf(email),
     // 14/10/2026 (« C puis A »): a mailbox rule's headers tell a forwarded email from one the comparator sent itself.
     AutoForwarded: isAutoForwarded(email.headers ?? []),
+    // 08/11/2026: the voucher a comparator attaches (Parclick's PDF carries the traveller's name) is read by Plazo itself.
+    AttachmentsText: await attachmentsText(email.attachments).catch(() => null),
   };
 }

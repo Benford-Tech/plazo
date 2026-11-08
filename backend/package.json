@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development nodemon --trace-warnings",
-    "test": "jest --runInBand --forceExit --detectOpenHandles",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit --detectOpenHandles",
     "lint": "eslint --ext .ts src/",
     "lint:fix": "npm run lint -- --fix",
     "typecheck": "tsc --noEmit",
@@ -56,6 +56,7 @@
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "typedi": "^0.10.0",
+    "unpdf": "1.4.0",
     "web-push": "^3.6.7",
     "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"

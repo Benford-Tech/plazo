@@ -28,6 +28,7 @@ import { PARKHIT_PROVIDER } from './importers/parkhit';
 import { isOneparkSummary } from './importers/onepark';
 import type { ReadingMeta } from './email-reading';
 import { FORWARD_MARKER, HEADER_FROM } from './inbound-email';
+import { withoutAttachments } from './inbound-attachments';
 
 export type MailKind = 'booking' | 'change' | 'cancellation' | 'other' | 'unknown';
 export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia' | typeof PARKHIT_PROVIDER;
@@ -381,6 +382,15 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
 
 /** What a forwarded email is, by the rules of its comparator and mail type (see the module's comment). */
 export function classifyMail(mail: MailToClassify): MailType {
+  // 08/11/2026: an attachment's terms (a voucher's « annulation gratuite… ») never decide the kind; its text only counts
+  // when the body names no comparator (an email forwarded as an attachment).
+  const body = withoutAttachments(mail.text);
+  if (body === mail.text) return classifyText(mail);
+  const own = classifyText({ ...mail, text: body });
+  return own.provider ? own : classifyText(mail);
+}
+
+function classifyText(mail: MailToClassify): MailType {
   const message = comparatorMessageOf(mail);
   const links = mail.links ?? [];
   if (message.reply) {

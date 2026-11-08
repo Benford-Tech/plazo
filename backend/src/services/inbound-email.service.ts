@@ -8,6 +8,7 @@ import { parseWebsiteForm } from '@/domain/importers/website-form';
 import { COMPARATOR_PROVIDERS, EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
+import { withAttachments } from '@/domain/inbound-attachments';
 import { parseOneparkSummary } from '@/domain/importers/onepark';
 import { SUBJECT_CANCELLATION } from '@/domain/importers/common';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
@@ -431,7 +432,7 @@ export class InboundEmailService {
     if (!slug) return 'ignored';
     const operator = await prisma.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true, status: true } });
     if (!operator || operator.status !== 'active') return 'ignored';
-    const text = textOf(item).slice(0, TEXT_MAX_CHARS);
+    const text = withAttachments(textOf(item), item.AttachmentsText, TEXT_MAX_CHARS);
     const fromAddress = item.From?.Address?.trim().toLowerCase().slice(0, 200) || null;
     const fromIsComparator = !!fromAddress && isComparatorAddress(fromAddress);
     const delivery = deliveryOf({
