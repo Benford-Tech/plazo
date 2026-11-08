@@ -438,8 +438,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Pièce jointe : bon.pdf » (`withAttachments`, la place des pièces jointes gardée dans les 20 000 caractères) : les règles des
      comparateurs (le nom et le téléphone d'un bon Parclick), Claude et la boîte de réception le lisent ; le classement
      (`classifyMail`) ne lit que le corps (`withoutAttachments` : les conditions d'un bon, « annulation gratuite… », ne font jamais
-     d'une confirmation une annulation), sauf si le corps ne nomme aucun comparateur (mail transféré en pièce jointe). Les tests
-     Jest tournent avec `node --experimental-vm-modules` (`npm test`) : le PDF.js d'`unpdf` est un module ESM. Test
+     d'une confirmation une annulation), sauf si le corps ne nomme aucun comparateur (mail transféré en pièce jointe). La suite
+     `inbound-attachments` tourne à part avec `node --experimental-vm-modules` (`npm run test:pdf`, enchaîné par `npm test`) : le
+     PDF.js d'`unpdf` est un module ESM, et l'option sur toute la suite faisait manquer de mémoire la CI. Test
      `inbound-attachments.test.ts`. Pas encore : un vrai bon Parclick pour vérifier ses étiquettes.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
