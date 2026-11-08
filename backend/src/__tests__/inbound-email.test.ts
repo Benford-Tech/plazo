@@ -2968,7 +2968,7 @@ describe('Allopark : vol illisible, réservation saisie sans référence, page a
     }
   });
 
-  it('une confirmation dont la page a des vols illisibles : créée, les deux vols dans les notes ; un formulaire du personnel les refuse toujours', async () => {
+  it("une confirmation dont la page a des vols illisibles : créée, les deux vols dans les notes ; l'équipe peut garder ce texte tel quel (08/11/2026)", async () => {
     const op = await connected();
     show(pageWith({ outbound: 'EZ4BXYZ', inbound: 'U2AB3C' }));
     expect((await post([confirmation(op.address)])).body.imported).toBe(1);
@@ -2980,8 +2980,8 @@ describe('Allopark : vol illisible, réservation saisie sans référence, page a
       returnFlight: null,
       notes: `Vol aller indiqué par Allopark : EZ4BXYZ (numéro non reconnu)\n${returnLine}`,
     });
-    const refused = await api().patch(`/api/internal/reservations/${booking.id}`).set(auth(op.token)).send({ returnFlight: 'U2AB3C' });
-    expect([refused.status, refused.body.fields]).toEqual([400, { returnFlight: 'invalid_flight' }]);
+    const kept = await api().patch(`/api/internal/reservations/${booking.id}`).set(auth(op.token)).send({ returnFlight: 'U2AB3C' });
+    expect([kept.status, kept.body.data.returnFlight]).toEqual([200, 'U2AB3C']);
   });
 
   it('une modification avec un vol illisible sur la page : jamais un changement de vol ; le texte dans les notes une seule fois', async () => {

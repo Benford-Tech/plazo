@@ -202,6 +202,7 @@ export const fr = {
     invalid_phone: "Numéro de téléphone invalide.",
     invalid_plate: "Plaque invalide.",
     invalid_flight: "Numéro de vol invalide (ex. TO 3627).",
+    return_flight_too_long: "40 caractères au plus.",
     invalid_channel: "Canal invalide.",
     invalid_status: "Statut invalide.",
     invalid_transition: "Ce changement de statut n'est pas possible.",
@@ -1701,7 +1702,7 @@ export const fr = {
     returnFlight: "Vol retour",
     returnFlightOptional: "Vol retour (facultatif)",
     returnFlightHelp:
-      "Pour suivre l'atterrissage et prévoir la navette retour.",
+      "Numéro de vol (TO 3627 : atterrissage suivi), ou simplement la ville ou le numéro sans la compagnie.",
     departureFlight: "Vol aller (facultatif)",
     departureFlightHelp:
       "Pour prévoir la navette vers le terminal avant le décollage.",

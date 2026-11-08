@@ -121,9 +121,31 @@ export function importedPlate(raw: string | null | undefined): string | undefine
 export function formatFlight(flight: string): string | null {
   const compact = flight.toUpperCase().replace(/\s+/g, '');
   const m = /^([A-Z0-9]{2}[A-Z]?)(\d{1,4}[A-Z]?)$/.exec(compact);
-  if (!m) return null;
+  // An airline code always has a letter (U2, 3K): "7841" is a bare number, not "78 41" (08/11/2026).
+  if (!m || !/[A-Z]/.test(m[1])) return null;
   // IATA codes may contain a digit (U2); the optional third letter covers ICAO codes (EZY).
   return `${m[1]} ${m[2]}`;
+}
+
+/** Longest free text the team may keep as a return flight: a city, a number without its airline (08/11/2026). */
+export const RETURN_FLIGHT_TEXT_MAX = 40;
+
+/**
+ * The return flight typed by the team (08/11/2026, « soit je mets la ville soit les numéros pas forcément avec les
+ * premières lettres ») : a flight number is formatted ("to3627" -> "TO 3627") and tracked; anything else (« Porto »,
+ * « 7841 ») is kept as typed, spaces tidied, and never sent to the flight tracker. Empty -> null; undefined when too long.
+ */
+export function staffReturnFlight(raw: string): string | null | undefined {
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (!text) return null;
+  const flight = formatFlight(text);
+  if (flight) return flight;
+  return text.length > RETURN_FLIGHT_TEXT_MAX ? undefined : text;
+}
+
+/** Whether a stored return flight is a flight number the tracker can look up (not a city or a bare number). */
+export function isTrackableFlight(flight: string | null | undefined): flight is string {
+  return !!flight && formatFlight(flight) !== null;
 }
 
 const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

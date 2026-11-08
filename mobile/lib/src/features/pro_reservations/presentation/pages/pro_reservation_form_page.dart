@@ -109,7 +109,13 @@ class _FormState extends State<_Form> {
 
   Future<void> _pick(String current, void Function(String) apply) async {
     final base = DateTime.tryParse(current) ?? DateTime.now();
-    final date = await showDatePicker(context: context, initialDate: base, firstDate: DateTime(2024), lastDate: DateTime(2032), locale: const Locale('fr'));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base,
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2032),
+      locale: const Locale('fr'),
+    );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
       context: context,
@@ -309,19 +315,22 @@ class _FormState extends State<_Form> {
                           child: TextField(
                             key: const Key('f-flight'),
                             controller: _flight,
-                            textCapitalization: TextCapitalization.characters,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLength: 40,
                             decoration: InputDecoration(
                               labelText: 'res.return_flight_optional'.tr(),
-                              hintText: 'TO 3627',
+                              hintText: 'TO 3627 ou Porto',
                               errorText: err('returnFlight'),
                               errorMaxLines: 2,
+                              counterText: '',
                             ),
-                            onChanged: (v) => _set((x) => x.copyWith(returnFlight: v.toUpperCase())),
+                            onChanged: (v) => _set((x) => x.copyWith(returnFlight: v)),
                           ),
                         ),
                       ],
                     ),
                     Text('res.departure_flight_help'.tr(), style: AppText.muted(size: 12)),
+                    Text('res.return_flight_free_help'.tr(), style: AppText.muted(size: 12)),
                     _PassengersStepper(
                       key: const Key('f-passengers'),
                       value: i.passengers,
@@ -501,7 +510,13 @@ class _PassengersStepper extends StatelessWidget {
           width: 36,
           child: Text('$value', textAlign: TextAlign.center, style: AppText.tabular(size: 18)),
         ),
-        round(Icons.add_rounded, 'res.form.passengers_more'.tr(), const Key('f-passengers-more'), value < 9 ? () => onChanged(value + 1) : null, filled: true),
+        round(
+          Icons.add_rounded,
+          'res.form.passengers_more'.tr(),
+          const Key('f-passengers-more'),
+          value < 9 ? () => onChanged(value + 1) : null,
+          filled: true,
+        ),
       ],
     );
   }
@@ -595,7 +610,14 @@ class _Pills extends StatelessWidget {
 
 /// « Message du client » / « Note pour l'équipe »: a line with « + Ajouter » until it is opened or holds a text.
 class _FoldedNote extends StatefulWidget {
-  const _FoldedNote({required this.fieldKey, required this.label, required this.controller, required this.maxLines, required this.onChanged, this.error});
+  const _FoldedNote({
+    required this.fieldKey,
+    required this.label,
+    required this.controller,
+    required this.maxLines,
+    required this.onChanged,
+    this.error,
+  });
   final Key fieldKey;
   final String label;
   final TextEditingController controller;

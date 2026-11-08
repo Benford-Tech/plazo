@@ -10,6 +10,7 @@ import { can } from '@/domain/roles';
 import {
   canTransition,
   formatFlight,
+  staffReturnFlight,
   formatPlate,
   importedPlate,
   isPriceLocked,
@@ -159,6 +160,14 @@ export class ReservationService {
     return formatted;
   }
 
+  /** The team's return flight: a flight number, or free text (a city, a number without its airline). */
+  public normalizeStaffReturnFlight(flight: string | null | undefined): string | null {
+    if (!flight) return null;
+    const value = staffReturnFlight(flight);
+    if (value === undefined) throw fieldError('returnFlight', 'return_flight_too_long');
+    return value;
+  }
+
   /**
    * Refuses a stay that would exceed the bookable capacity on any night, unless the staff member
    * forces it. Must run inside the transaction holding the parking lock.
@@ -189,7 +198,7 @@ export class ReservationService {
     this.require(actor, 'reservations:manage');
     const parking = await this.parkings.getPrimary(actor);
     const stay = this.parseStay(parking, data.arrivalAt, data.returnAt);
-    const returnFlight = this.normalizeFlight(data.returnFlight);
+    const returnFlight = this.normalizeStaffReturnFlight(data.returnFlight);
     const departureFlight = this.normalizeFlight(data.departureFlight, 'departureFlight');
     const stopId = await this.checkStop(parking.id, data.stopId);
     const seatsRefusal = childSeatsRefusal({ ...NO_CHILD_SEATS, ...(data.childSeats ?? {}) }, data.passengers);
@@ -860,7 +869,7 @@ export class ReservationService {
           customerEmail: data.customerEmail === undefined ? undefined : data.customerEmail?.trim().toLowerCase() || null,
           plate,
           plateKey: plate === undefined ? undefined : plateKey(plate),
-          returnFlight: data.returnFlight === undefined ? undefined : this.normalizeFlight(data.returnFlight),
+          returnFlight: data.returnFlight === undefined ? undefined : this.normalizeStaffReturnFlight(data.returnFlight),
           departureFlight: data.departureFlight === undefined ? undefined : this.normalizeFlight(data.departureFlight, 'departureFlight'),
           // A new outbound flight starts its tracking over.
           ...(data.departureFlight === undefined

@@ -1,6 +1,7 @@
 import { childSeatsSummary, hasChildSeats } from './child-seats';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { greetingName } from './customer-name';
+import { isTrackableFlight } from './reservation';
 
 /**
  * French copy of the emails and SMS sent to travellers. Pure functions: the product name and the
@@ -130,9 +131,11 @@ export function departureDaySteps(booking: PublicBooking): [string, string][] {
     ],
     [
       'Au retour, on suit votre vol',
-      booking.returnFlight
+      isTrackableFlight(booking.returnFlight)
         ? `Dès l'atterrissage du ${booking.returnFlight}, vous recevez un SMS avec le point de rendez-vous de la navette.`
-        : "Indiquez votre vol retour dans votre réservation : vous recevrez un SMS à l'atterrissage avec le point de rendez-vous de la navette.",
+        : booking.returnFlight
+          ? `Retour indiqué : ${booking.returnFlight}. Indiquez votre numéro de vol dans votre réservation pour recevoir un SMS à l'atterrissage avec le point de rendez-vous de la navette.`
+          : "Indiquez votre vol retour dans votre réservation : vous recevrez un SMS à l'atterrissage avec le point de rendez-vous de la navette.",
     ],
   ];
 }

@@ -59,8 +59,27 @@ describe('création', () => {
     const flight = await api()
       .post('/api/internal/reservations')
       .set(auth(token))
-      .send(booking({ returnFlight: 'xx' }));
-    expect(flight.body.fields).toEqual({ returnFlight: 'invalid_flight' });
+      .send(booking({ returnFlight: 'x'.repeat(41) }));
+    expect(flight.body.fields).toEqual({ returnFlight: 'return_flight_too_long' });
+  });
+
+  it('garde une ville ou un numéro sans la compagnie comme vol retour, sans le suivre (08/11/2026)', async () => {
+    const { token } = await setupOperator();
+    const city = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ returnFlight: '  Porto ' }));
+    expect(city.status).toBe(201);
+    expect(city.body.data.returnFlight).toBe('Porto');
+    const bare = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ returnFlight: '7841', plate: 'AB-124-CD' }));
+    expect(bare.status).toBe(201);
+    expect(bare.body.data.returnFlight).toBe('7841');
+    const flight = await api().patch(`/api/internal/reservations/${bare.body.data.id}`).set(auth(token)).send({ returnFlight: 'to3627' });
+    expect(flight.status).toBe(200);
+    expect(flight.body.data.returnFlight).toBe('TO 3627');
   });
 
   it('est interdite aux chauffeurs et voituriers', async () => {

@@ -16,6 +16,7 @@ import {
 } from 'class-validator';
 import { ChildSeatsDto } from './child-seats.dto';
 import { Handover, PaymentMethod, ReservationChannel, ReservationStatus } from '@/database';
+import { RETURN_FLIGHT_TEXT_MAX } from '@/domain/reservation';
 
 const HANDOVERS: Handover[] = ['shuttle', 'valet'];
 const PAYMENT_METHODS: PaymentMethod[] = ['card', 'cash', 'cheque', 'transfer', 'holiday_vouchers', 'comparator'];
@@ -105,7 +106,8 @@ export class CreateReservationDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(10, { message: 'invalid_flight' })
+  // A city or a number without its airline is accepted from the team (08/11/2026).
+  @MaxLength(RETURN_FLIGHT_TEXT_MAX, { message: 'return_flight_too_long' })
   public returnFlight?: string;
 
   /** Outbound flight (V-A): sets when the shuttle to the terminal must leave. */
@@ -263,7 +265,8 @@ export class UpdateReservationDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(10, { message: 'invalid_flight' })
+  // A city or a number without its airline is accepted from the team (08/11/2026).
+  @MaxLength(RETURN_FLIGHT_TEXT_MAX, { message: 'return_flight_too_long' })
   public returnFlight?: string | null;
 
   @IsOptional()

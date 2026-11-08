@@ -1,5 +1,15 @@
 import { ANONYMIZED_TRAVELLER, anonymizeReturnedBefore, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
-import { canTransition, formatFlight, formatPlate, importedPlate, newReference, plateKey, statusSideEffects } from '@/domain/reservation';
+import {
+  canTransition,
+  formatFlight,
+  formatPlate,
+  importedPlate,
+  isTrackableFlight,
+  newReference,
+  plateKey,
+  staffReturnFlight,
+  statusSideEffects,
+} from '@/domain/reservation';
 import { addDays, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { occupiedNights } from '@/services/capacity.service';
 
@@ -103,6 +113,21 @@ describe('plaques, vols, statuts', () => {
     expect(formatFlight('U2 4412')).toBe('U2 4412');
     expect(formatFlight('ezy 4412')).toBe('EZY 4412');
     expect(formatFlight('pas un vol')).toBeNull();
+    // An airline code has a letter: a bare number is not a flight (08/11/2026).
+    expect(formatFlight('7841')).toBeNull();
+    expect(formatFlight('3K 512')).toBe('3K 512');
+  });
+
+  it("garde le vol retour de l'équipe : numéro formaté, sinon le texte tel quel (08/11/2026)", () => {
+    expect(staffReturnFlight('to3627')).toBe('TO 3627');
+    expect(staffReturnFlight('  Porto   Campanhã ')).toBe('Porto Campanhã');
+    expect(staffReturnFlight('7841')).toBe('7841');
+    expect(staffReturnFlight('  ')).toBeNull();
+    expect(staffReturnFlight('x'.repeat(41))).toBeUndefined();
+    expect(isTrackableFlight('TO 3627')).toBe(true);
+    expect(isTrackableFlight('Porto')).toBe(false);
+    expect(isTrackableFlight('7841')).toBe(false);
+    expect(isTrackableFlight(null)).toBe(false);
   });
 
   it('suit le parcours du client', () => {

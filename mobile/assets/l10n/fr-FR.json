@@ -191,6 +191,7 @@
     },
     "departure_flight": "Vol aller (facultatif)",
     "departure_flight_help": "Pour prévoir la navette vers le terminal avant le décollage.",
+    "return_flight_free_help": "Vol retour : numéro de vol (atterrissage suivi), ou la ville, ou le numéro sans la compagnie.",
     "departure_status": {
       "scheduled": "à l'heure",
       "delayed": "retardé",
@@ -571,6 +572,7 @@
     "invalid_phone": "Numéro de téléphone invalide.",
     "invalid_plate": "Plaque invalide.",
     "invalid_flight": "Numéro de vol invalide (ex. TO 3627).",
+    "return_flight_too_long": "40 caractères au plus.",
     "terms_required": "Merci d'accepter les conditions pour réserver.",
     "invalid_name": "Lettres, espaces, apostrophes et tirets seulement.",
     "duplicate_booking": "Ce véhicule a déjà une réservation à ces dates. Retrouvez-la dans « Mes réservations ».",
