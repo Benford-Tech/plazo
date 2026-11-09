@@ -220,7 +220,8 @@ export function prospectEmail(input: {
   /** 23/10/2026 (« avec les liens des apps sur le store »): Plazo Pro's badges under the signature; none without the site's address. */
   stores?: { badgesBase: string | null; playStoreUrl: string; appStoreUrl: string | null };
   /** 09/11/2026 (« il faut des images dans le mail pour illustrer », direction B): three Plazo Pro screens under the
-   *  introduction; the first mail only, served by the site next to the badges (none without the site's address). */
+   *  introduction, and the Plazo Pro banner on top (« mets A et B ensemble »); the first mail only, served by the site next
+   *  to the badges (none without the site's address). */
   screens?: boolean;
 }): EmailMessage {
   const subject = renderSubject(input.step.subject, input.values);
@@ -262,7 +263,12 @@ export function prospectEmail(input: {
 <body style="margin:0;padding:0;background:${C.tint};font-family:Helvetica,Arial,sans-serif;color:${C.ink}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.tint}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid ${C.line};border-radius:14px">
-<tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${C.lime};color:${C.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(input.productName)}</span></td></tr>
+${
+  // The banner carries the Plazo plate itself: the small plate is left out under it.
+  screensBase
+    ? bannerHtml(screensBase, demoUrl)
+    : `<tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${C.lime};color:${C.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(input.productName)}</span></td></tr>`
+}
 <tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}${
     stores?.badgesBase
       ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">L'application de l'équipe, ${escapeHtml(input.productName)} Pro :</p>${storeBadgesHtml(proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }))}`
@@ -274,6 +280,19 @@ export function prospectEmail(input: {
 </td></tr></table>
 </body></html>`;
   return { subject, text, html };
+}
+
+/** 09/11/2026 (« mets A et B ensemble »): the Plazo Pro share card on top of the first mail, a link to the demo when there is one. */
+export const MAIL_BANNER = {
+  file: 'plazo-pro-banniere.jpg',
+  alt: "Plazo Pro, le logiciel des parkings d'aéroport : navettes en direct, réservations des comparateurs, chaque voiture à sa place",
+} as const;
+
+function bannerHtml(base: string, demoUrl: string): string {
+  const img =
+    `<img src="${escapeHtml(`${base.replace(/\/+$/, '')}/mail/${MAIL_BANNER.file}`)}" width="600" alt="${escapeHtml(MAIL_BANNER.alt)}" ` +
+    'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px 14px 0 0">';
+  return `<tr><td style="padding:0;line-height:0">${demoUrl ? `<a href="${escapeHtml(demoUrl)}">${img}</a>` : img}</td></tr>`;
 }
 
 /** 09/11/2026: the screens of the first mail (files in site/public/mail, from the stores' screenshots of the demo parking). */

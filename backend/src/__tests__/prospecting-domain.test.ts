@@ -105,9 +105,12 @@ describe('variables des mails', () => {
     });
     for (const file of ['plazo-pro-planning.jpg', 'plazo-pro-navette.jpg', 'plazo-pro-places.jpg'])
       expect(withScreens.html).toContain(`src="https://site.example/mail/${file}"`);
-    expect(withScreens.html.indexOf('Introduction.')).toBeLessThan(withScreens.html.indexOf('/mail/'));
-    expect(withScreens.html.indexOf('/mail/')).toBeLessThan(withScreens.html.indexOf('Pour votre équipe'));
+    expect(withScreens.html.indexOf('Introduction.')).toBeLessThan(withScreens.html.indexOf('plazo-pro-planning.jpg'));
+    expect(withScreens.html.indexOf('plazo-pro-planning.jpg')).toBeLessThan(withScreens.html.indexOf('Pour votre équipe'));
     expect(withScreens.html).toContain('alt="La navette en route vers le terminal, suivie en direct"');
+    // The banner on top of the card, before the greeting.
+    expect(withScreens.html).toContain('src="https://site.example/mail/plazo-pro-banniere.jpg"');
+    expect(withScreens.html.indexOf('plazo-pro-banniere.jpg')).toBeLessThan(withScreens.html.indexOf('Bonjour,'));
     expect(withScreens.text).not.toContain('/mail/');
     // No site address, no images.
     expect(

@@ -1627,6 +1627,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   pour l'étape 1) ; JPEG de 360 px dans `site/public/mail/` (haut des captures des stores, parking de démo), servis par le site
   comme les badges (rien sans l'adresse du site), texte alternatif pour les messageries qui bloquent les images, rien dans la
   version texte ; les relances restent sans image.
+  **Bannière en plus (09/11/2026, « mets A et B ensemble »)** : la carte de partage verte de Plazo Pro en tête du même mail
+  (`MAIL_BANNER`, `bannerHtml`, `site/public/mail/plazo-pro-banniere.jpg`, 1 200 px, environ 50 Ko), liée à la démo du prospect
+  quand il en a une ; la petite plaque « Plazo » n'est plus mise sous elle.
   **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
   « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
   l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le
