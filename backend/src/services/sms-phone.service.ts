@@ -117,6 +117,7 @@ export class SmsPhoneService {
       state = devices.length ? phoneStateOf(lastSeenAt, now) : 'offline';
       if (!settings.phonePingSetAt) await this.ensurePing(settings, credentials, now);
       if (!settings.phoneSpacingSetAt) await this.ensureSpacing(settings, credentials, now);
+      if (!settings.phoneWebhooksSetAt) await this.sms.ensureWebhooks(settings, now);
     } catch (error) {
       errorCode = error instanceof GatewayError ? error.code : error instanceof HttpException && error.code ? error.code : 'sms_gateway_error';
     }

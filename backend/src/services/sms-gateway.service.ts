@@ -13,7 +13,9 @@ import { logger } from '@/utils/logger';
  *     (plus Cancelling | Cancelled);
  *   - GET /devices → [{ id, name, lastSeen, deletedAt?, … }] (06/11/2026: the phone's history);
  *   - GET /settings, PATCH /settings { ping: { interval_seconds } }: the app pings the server, so an idle phone is seen;
- *     PATCH /settings { messages: { send_interval_min, send_interval_max } }: the app waits between two SMS (07/11/2026).
+ *     PATCH /settings { messages: { send_interval_min, send_interval_max } }: the app waits between two SMS (07/11/2026);
+ *   - POST /webhooks { id, url, event }: the phone calls `url` on `event` (sms:sent, sms:delivered, sms:failed…); the
+ *     same id replaces the webhook (09/11/2026).
  * Nothing logged here ever contains a number, a text or a credential.
  */
 
@@ -134,6 +136,11 @@ export class SmsGatewayClient {
   /** 07/11/2026 (« Faudrait espacer les envois »): the app waits min to max seconds between two SMS. */
   public async setSendInterval(credentials: GatewayCredentials, min: number, max: number): Promise<void> {
     await this.request(credentials, 'PATCH', '/settings', { messages: { send_interval_min: min, send_interval_max: max } });
+  }
+
+  /** 09/11/2026: the phone calls `url` on `event`; registering the same id again replaces it. */
+  public async registerWebhook(credentials: GatewayCredentials, id: string, url: string, event: string): Promise<void> {
+    await this.request(credentials, 'POST', '/webhooks', { id, url, event });
   }
 
   private async request(credentials: GatewayCredentials, method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<any> {

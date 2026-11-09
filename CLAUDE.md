@@ -251,6 +251,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      SMS envoyé ou remis devient « Envoyé » et ne compte plus en échec du mois ; l'état est le plus avancé entre `state`, celui de chaque
      destinataire et les clés de `states` (`messageState` de `sms-gateway.service.ts`) ; `refreshAll` passe aussi chez les loueurs qui n'ont
      que des abandons récents. Test `sms.test.ts`.
+     **L'appli SMS prévient Plazo (09/11/2026, « faudrait communiquer avec sms gateway »)** : à la liaison du téléphone et au
+     premier relevé de chaque identifiant, Plazo inscrit chez la passerelle trois webhooks (`POST /webhooks`, ids `plazo-sent`,
+     `plazo-delivered`, `plazo-failed` ; `SmsService.ensureWebhooks`, `phoneWebhooksSetAt`, migration `sms_gateway_webhooks`, remis à
+     nul avec le ping) vers une adresse secrète par loueur `POST /public/sms-gateway/webhook/<operatorId>.<contrôle>` (HMAC de
+     `SECRET_KEY`, `domain/sms-webhook.ts` ; le serveur cloud ne signe pas ses envois) ; à chaque appel, l'état du SMS est relu chez
+     la passerelle (l'état de l'appel seulement si elle ne répond pas) et appliqué une fois (`settle`, mise à jour conditionnelle :
+     webhook et passage ensemble ne comptent qu'une fois) ; adresse inconnue 404, ping et autres événements ignorés. Sans
+     `PUBLIC_SITE_URL`, rien n'est inscrit et les passages de 15 minutes restent seuls. Test `sms.test.ts`.
      **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
      `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
      l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,

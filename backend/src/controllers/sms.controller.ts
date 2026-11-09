@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { SmsPhoneAlertsDto, TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
@@ -9,6 +9,11 @@ import catchAsync from '@/utils/catchAsync';
 export class SmsController {
   public sms = Container.get(SmsService);
   public phone = Container.get(SmsPhoneService);
+
+  /** POST /public/sms-gateway/webhook/:token: the SMS app's callback. */
+  public gatewayWebhook = catchAsync(async (req: Request, res: Response) => {
+    res.json(await this.sms.handleGatewayWebhook(String(req.params.token ?? ''), req.body));
+  });
 
   /** GET /internal/sms/settings */
   public settings = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
