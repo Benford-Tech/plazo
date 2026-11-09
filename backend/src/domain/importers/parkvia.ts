@@ -11,13 +11,17 @@ import { EmailImporter, ParsedBooking } from './types';
 const REFERENCE = /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z]{1,4}\d{5,12})\b/i;
 const MOMENT = (label: string) => new RegExp(`${label}\\s*:?\\s*(\\d{1,2}\\/\\d{1,2}\\/\\d{4})\\s+(\\d{1,2}:\\d{2})(?::\\d{2})?`, 'i');
 
-/** « 612345678 (33) » → « +33 612345678 »; a number already written in full stays as it is. */
+/**
+ * « 612345678 (33) » → « +33 612345678 »; a number already written in full stays as it is. With the brackets left empty
+ * (09/11/2026 sample: « 767021579() »), nine digits are a French number without its 0: « 0767021579 ».
+ */
 export function parkviaPhone(raw: string | undefined): string | undefined {
-  const match = /^\s*(\+?[\d .]{6,18}\d)\s*(?:\((\d{1,3})\))?/.exec(raw ?? '');
+  const match = /^\s*(\+?[\d .]{6,18}\d)\s*(?:\((\d{0,3})\))?/.exec(raw ?? '');
   if (!match) return undefined;
   const number = match[1].replace(/[ .]/g, '');
-  if (!match[2] || number.startsWith('+') || number.startsWith('0')) return number;
-  return `+${match[2]} ${number}`;
+  if (number.startsWith('+') || number.startsWith('0')) return number;
+  if (match[2]) return `+${match[2]} ${number}`;
+  return /^[1-9]\d{8}$/.test(number) ? `0${number}` : number;
 }
 
 export const parkviaImporter: EmailImporter = {
@@ -39,7 +43,7 @@ export const parkviaImporter: EmailImporter = {
     const passengers = Number(/Passagers\s*:?\s*(\d{1,2})\b/i.exec(flat)?.[1]);
     if (Number.isInteger(passengers) && passengers > 0) booking.passengers = passengers;
     booking.customerName = /\bNom\s*:\s*(.+?)\s+(?:T[ée]l|E-?mail|Num[ée]ro d'immatriculation)\b/i.exec(flat)?.[1]?.trim();
-    booking.customerPhone = parkviaPhone(/T[ée]l(?:[ée]phone)?(?: portable)?\s*:?\s*([+\d][\d .]{5,20}(?:\s*\(\d{1,3}\))?)/i.exec(flat)?.[1]);
+    booking.customerPhone = parkviaPhone(/T[ée]l(?:[ée]phone)?(?: portable)?\s*:?\s*([+\d][\d .]{5,20}(?:\s*\(\d{0,3}\))?)/i.exec(flat)?.[1]);
     booking.customerEmail = travellerEmailIn(flat);
     booking.plate = new RegExp(String.raw`Num[ée]ro d'immatriculation\s*:?\s*(${PLATE.source})`, 'i').exec(flat)?.[1];
     return booking;
