@@ -1693,7 +1693,16 @@ export type TemplateVariable =
   | "heure"
   | "plaque"
   | "référence"
-  | "lien";
+  | "lien"
+  | "retour"
+  | "vol"
+  | "parking"
+  | "adresse"
+  | "téléphone"
+  | "rendez-vous"
+  | "consignes"
+  | "navette"
+  | "services";
 export type TemplateValues = Record<TemplateVariable, string>;
 export interface ReminderRow {
   reservationId: string;

@@ -7,6 +7,7 @@ import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
+import { loadParkingValues } from './parking-values';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
@@ -507,7 +508,8 @@ export class SmsService {
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: booking.operatorId }, select: { mode: true } }),
     ]);
     const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
-    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link));
+    const parking = (await loadParkingValues(booking.parkingId)) ?? undefined;
+    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, parking));
   }
 
   private testText(): string {

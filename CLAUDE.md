@@ -684,6 +684,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
+     **Variables du parking (09/11/2026, « variabilise au maximum, c'est pour tous les parkings »)** : en plus de `{prénom} {nom}
+     {date} {heure} {plaque} {référence} {lien}`, `{retour}` (« 15/11/2026 à 09:30 »), `{vol}` (vol retour), `{parking}` (titre de la
+     fiche, sinon le nom), `{adresse}`, `{téléphone}` (`{tel}`, téléphone de la fiche), `{rendez-vous}` (`{rdv}`, point de
+     rendez-vous du retour, sinon l'aéroport), `{consignes}` (ses consignes), `{navette}` (« 8 min ») et `{services}` (services
+     additionnels actifs et leurs prix, « Lavage intérieur : 50 €, Recharge hybride : 15 € ») ; un détail absent reste vide
+     (`TEMPLATE_VARIABLES`, `ParkingValues`, `parkingValuesOf` de `domain/day-before-sms.ts`, `services/parking-values.ts`) ; un
+     même texte sert à tous les parkings. Test `reminders.test.ts`.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
