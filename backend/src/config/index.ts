@@ -370,6 +370,8 @@ export const whatsappConfig = () => ({
   template: process.env.WHATSAPP_TEMPLATE?.trim() || 'plazo_message',
   language: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'fr',
   graphVersion: process.env.WHATSAPP_GRAPH_VERSION?.trim() || 'v21.0',
+  // A parking's own templates (JSON array, see parseTemplateRules); empty: every message uses `template`.
+  templates: process.env.WHATSAPP_TEMPLATES || '',
 });
 
 // 06/11/2026 (SEO local, M2): Google Search Console read every night. GOOGLE_SEARCH_CONSOLE_CREDENTIALS is the JSON key of a

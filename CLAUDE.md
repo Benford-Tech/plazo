@@ -1264,6 +1264,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Réglages (`WhatsappCard`). Variables `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
      (marche à suivre chez Meta dans le README) ; politique de confidentialité (Meta parmi les prestataires et les transferts). Pas
      encore : le choix par le voyageur (B), les réponses WhatsApp (non lues). Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
+     **Modèle propre à un parking (09/11/2026, « voici le message que je veux envoyer, il y aura aussi une photo »)** :
+     `WHATSAPP_TEMPLATES` (JSON, sans secret ; `parseTemplateRules`, `templateRuleFor` de `domain/whatsapp.ts`) donne, pour un loueur
+     (id ou slug de son adresse de réception) et un genre de message, un modèle approuvé, une image d'en-tête (https, servie par le
+     site depuis `site/public/whatsapp/`) et l'ordre des variables (`firstName`, `arrivalDate` « mardi 10 novembre », `arrivalTime`,
+     `parking`, `reference`, `text`) ; `WhatsappService.sendTemplate` ajoute le bloc `header` image ; sans règle ou sans réservation,
+     `plazo_message` comme avant ; le test « M'envoyer un test » prend le modèle du rappel quand il existe. Premier : `apl_rappel_veille`
+     (APL Parking Lyon, photo `apl-parking-lyon-entree.jpg`).
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

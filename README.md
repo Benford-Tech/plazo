@@ -617,6 +617,15 @@ Mise en place, une fois pour toute la plateforme :
    s'abonner au champ **messages**.
 6. Poser les cinq variables sur Vercel (production), redéployer ; le loueur allume WhatsApp et s'envoie un test.
 
+**Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple
+`apl_rappel_veille`, le rappel de la veille d'APL Parking Lyon avec la photo de son entrée en en-tête). Le créer chez Meta
+(catégorie Utilitaire, en-tête **Image**, variables du corps dans l'ordre voulu), mettre la photo dans `site/public/whatsapp/`,
+puis poser `WHATSAPP_TEMPLATES` sur Vercel (production, sans secret), par exemple :
+`[{"operator":"<slug de l'adresse de réception>","kind":"booking_reminder","name":"apl_rappel_veille","image":"https://www.plazo.fr/whatsapp/apl-parking-lyon-entree.jpg","params":["firstName","arrivalDate","arrivalTime"]}]`
+(`operator` : l'id du loueur ou le début de son adresse `<slug>@plazo.fr` ; `kind` : `booking_confirmed`, `booking_reminder`
+ou `flight_landed` ; `params` parmi `firstName`, `arrivalDate` « mardi 10 novembre », `arrivalTime` « 06:30 », `parking`,
+`reference`, `text`). « M'envoyer un test » envoie alors ce modèle-là, rempli pour demain à 06:30.
+
 ### Référencement : Search Console (positions dans Google)
 
 Depuis le 06/11/2026, **Plateforme › Référencement** montre les réservations faites sur le site selon leur origine (moteur de
