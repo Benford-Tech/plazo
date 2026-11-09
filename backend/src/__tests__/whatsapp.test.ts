@@ -1,7 +1,16 @@
 import { createHmac } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { nextWhatsappStatus, statusUpdatesOf, validWhatsappSignature, whatsappParam } from '@/domain/whatsapp';
+import {
+  arrivalDateLabel,
+  arrivalTimeLabel,
+  nextWhatsappStatus,
+  parseTemplateRules,
+  statusUpdatesOf,
+  templateRuleFor,
+  validWhatsappSignature,
+  whatsappParam,
+} from '@/domain/whatsapp';
 import { NotificationService } from '@/services/notification.service';
 import { SmsService } from '@/services/sms.service';
 import { WhatsappService } from '@/services/whatsapp.service';
@@ -29,6 +38,7 @@ const configured = () => ({
   template: 'plazo_message',
   language: 'fr',
   graphVersion: 'v21.0',
+  templates: '',
   reminderTemplate: '',
 });
 
@@ -93,6 +103,85 @@ describe('WhatsApp : règles', () => {
     expect(validWhatsappSignature(body, sign('{"a":1}'), SECRET)).toBe(true);
     expect(validWhatsappSignature(body, sign('{"a":2}'), SECRET)).toBe(false);
     expect(validWhatsappSignature(body, undefined, SECRET)).toBe(false);
+  });
+});
+
+describe('WhatsApp : modèle propre à un parking (09/11/2026)', () => {
+  const RULES = JSON.stringify([
+    {
+      operator: 'apl-parking',
+      kind: 'booking_reminder',
+      name: 'apl_rappel_veille',
+      image: 'https://www.plazo.fr/whatsapp/apl-parking-lyon-entree.jpg',
+      params: ['firstName', 'arrivalDate', 'arrivalTime'],
+    },
+    { operator: 'x', kind: 'booking_reminder', name: 'Bad Name', params: [] },
+    { operator: 'y', kind: 'test', name: 'ok', params: [] },
+    { operator: 'z', kind: 'flight_landed', name: 'ok', params: ['unknown'] },
+  ]);
+
+  it('lit les règles, écarte les mauvaises, et formate la date et l’heure du parking', () => {
+    const rules = parseTemplateRules(RULES);
+    expect(rules).toHaveLength(1);
+    expect(parseTemplateRules('pas du json')).toEqual([]);
+    expect(templateRuleFor(rules, { id: 'op1', inboundSlug: 'apl-parking' }, 'booking_reminder')?.name).toBe('apl_rappel_veille');
+    expect(templateRuleFor(rules, { id: 'op1', inboundSlug: 'apl-parking' }, 'flight_landed')).toBeNull();
+    expect(templateRuleFor(rules, { id: 'op2', inboundSlug: null }, 'booking_reminder')).toBeNull();
+    const at = new Date('2026-11-10T05:30:00Z');
+    expect(arrivalDateLabel(at, 'Europe/Paris')).toBe('mardi 10 novembre');
+    expect(arrivalTimeLabel(at, 'Europe/Paris')).toBe('06:30');
+  });
+
+  it('envoie le rappel avec le modèle du parking et sa photo, les autres messages avec plazo_message', async () => {
+    const op = await operatorWithWhatsapp(false);
+    const slug = (await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).inboundSlug!;
+    whatsapp.config = () => ({ ...configured(), templates: RULES.replace('apl-parking', slug) });
+    const reservation = await prisma.reservation.create({
+      data: {
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        reference: 'R7KQ2M',
+        channel: 'phone',
+        status: 'upcoming',
+        arrivalAt: new Date('2030-03-12T05:30:00Z'),
+        returnAt: new Date('2030-03-19T20:00:00Z'),
+        customerName: 'Camille Martin',
+        customerFirstName: 'Camille',
+        customerLastName: 'Martin',
+        customerPhone: '+33612345678',
+        plate: 'AB-123-CD',
+        plateKey: 'AB123CD',
+        passengers: 1,
+      },
+    });
+    const sms = { ...reminder(), reservationId: reservation.id };
+    expect(await whatsapp.trySend(op.operator.id, sms, '+33612345678', false)).toBe(true);
+    let body = JSON.parse(calls(GRAPH)[0][1].body);
+    expect(body.template).toEqual({
+      name: 'apl_rappel_veille',
+      language: { code: 'fr' },
+      components: [
+        { type: 'header', parameters: [{ type: 'image', image: { link: 'https://www.plazo.fr/whatsapp/apl-parking-lyon-entree.jpg' } }] },
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: 'Camille' },
+            { type: 'text', text: 'mardi 12 mars' },
+            { type: 'text', text: '06:30' },
+          ],
+        },
+      ],
+    });
+    expect(await whatsapp.trySend(op.operator.id, { ...sms, kind: 'flight_landed' }, '+33612345678', false)).toBe(true);
+    body = JSON.parse(calls(GRAPH)[1][1].body);
+    expect(body.template.name).toBe('plazo_message');
+    expect(body.template.components).toHaveLength(1);
+
+    const res = await api().post('/api/internal/whatsapp/test').set(auth(op.token)).send({ to: '+33612345678' });
+    expect(res.status).toBe(200);
+    body = JSON.parse(calls(GRAPH)[2][1].body);
+    expect(body.template.name).toBe('apl_rappel_veille');
+    expect(body.template.components[1].parameters[0].text).toBe('Gérant');
   });
 });
 

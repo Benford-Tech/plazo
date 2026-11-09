@@ -113,3 +113,65 @@ export function whatsappImage(url: string | null | undefined): string | null {
   const value = url?.trim();
   return value && /^https:\/\/\S+$/i.test(value) ? value : null;
 }
+
+/**
+ * A parking's own template (09/11/2026, APL Parking Lyon's day-before message with the photo of its entrance): for one
+ * operator and one message kind, Plazo sends this approved template instead of `plazo_message`, with an image header
+ * when `image` is given and the body variables in `params` order. Read from WHATSAPP_TEMPLATES (JSON array, no secret);
+ * `operator` is the operator's id or the slug of its inbound address (<slug>@plazo.fr).
+ */
+export const TEMPLATE_PARAMS = ['firstName', 'arrivalDate', 'arrivalTime', 'parking', 'reference', 'text'] as const;
+export type TemplateParam = (typeof TEMPLATE_PARAMS)[number];
+
+export interface WhatsappTemplateRule {
+  operator: string;
+  kind: string;
+  name: string;
+  language: string | null;
+  image: string | null;
+  params: TemplateParam[];
+}
+
+/** The rules of WHATSAPP_TEMPLATES; a malformed entry is left out (the message then goes with `plazo_message`). */
+export function parseTemplateRules(raw: string): WhatsappTemplateRule[] {
+  if (!raw.trim()) return [];
+  let list: unknown;
+  try {
+    list = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(list)) return [];
+  const rules: WhatsappTemplateRule[] = [];
+  for (const item of list) {
+    const operator = typeof item?.operator === 'string' ? item.operator.trim() : '';
+    const kind = typeof item?.kind === 'string' ? item.kind.trim() : '';
+    const name = typeof item?.name === 'string' ? item.name.trim() : '';
+    const params = Array.isArray(item?.params) ? item.params : [];
+    const image = typeof item?.image === 'string' && /^https:\/\/\S+$/.test(item.image.trim()) ? item.image.trim() : null;
+    if (!operator || !isWhatsappKind(kind) || !/^[a-z0-9_]{1,512}$/.test(name)) continue;
+    if (!params.every((p: unknown) => (TEMPLATE_PARAMS as readonly unknown[]).includes(p))) continue;
+    const language = typeof item?.language === 'string' && item.language.trim() ? item.language.trim() : null;
+    rules.push({ operator, kind, name, language, image, params });
+  }
+  return rules;
+}
+
+/** The rule of this operator (by id or inbound slug) for this kind, if any. */
+export function templateRuleFor(
+  rules: WhatsappTemplateRule[],
+  operator: { id: string; inboundSlug: string | null },
+  kind: string,
+): WhatsappTemplateRule | null {
+  return rules.find(r => r.kind === kind && (r.operator === operator.id || (!!operator.inboundSlug && r.operator === operator.inboundSlug))) ?? null;
+}
+
+/** « mardi 10 novembre », local to the parking. */
+export function arrivalDateLabel(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(at);
+}
+
+/** « 06:30 », local to the parking. */
+export function arrivalTimeLabel(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('fr-FR', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at);
+}

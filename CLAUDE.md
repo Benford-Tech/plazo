@@ -1259,7 +1259,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      https://claude.ai/artifact/3nwfqZj6WGWwWooC2jbLKf, direction A)** : la confirmation, le rappel de la veille et le rendez-vous à
      l'atterrissage (`WHATSAPP_KINDS`) partent d'abord par WhatsApp, depuis le numéro WhatsApp Business de Plazo (API Cloud de Meta,
      `WhatsappService`, `domain/whatsapp.ts`) quand le parking l'a allumé (`OperatorSmsSettings.whatsappEnabled`, migration
-     `whatsapp_messages`) : un seul modèle « Utilitaire » `plazo_message` (`Message de {{1}} pour votre réservation {{2}} : {{3}}` :
+     `whatsapp_messages`) : un seul modèle « Utilitaire » `plazo_message` (`Message de {{1}} pour votre réservation {{2}} :` / `{{3}}` / `Merci d'avoir choisi votre parking avec Plazo.`, Meta refusant un modèle qui finit par une variable :
      parking, référence, texte du SMS mis sur une ligne par `whatsappParam`) ; `SmsService.sendTravellerSms` essaie WhatsApp puis
      `sendSmsOnly` ; repli SMS une seule fois (ligne réservée) quand Meta refuse à l'envoi, le webhook dit `failed`
      (`POST /public/whatsapp/webhook`, signé `X-Hub-Signature-256` avec `WHATSAPP_APP_SECRET` ; `GET` répond au contrôle de Meta avec
@@ -1271,7 +1271,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Réglages (`WhatsappCard`). Variables `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
      (marche à suivre chez Meta dans le README) ; politique de confidentialité (Meta parmi les prestataires et les transferts). Pas
      encore : le choix par le voyageur (B), les réponses WhatsApp (non lues). Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
-     **Modèle de la veille avec la photo (09/11/2026, « la photo du point de rendez-vous »)** : avec `WHATSAPP_REMINDER_TEMPLATE`
+     **Modèle propre à un parking (09/11/2026, « voici le message que je veux envoyer, il y aura aussi une photo »)** :
+     `WHATSAPP_TEMPLATES` (JSON, sans secret ; `parseTemplateRules`, `templateRuleFor` de `domain/whatsapp.ts`) donne, pour un loueur
+     (id ou slug de son adresse de réception) et un genre de message, un modèle approuvé, une image d'en-tête (https, servie par le
+     site depuis `site/public/whatsapp/`) et l'ordre des variables (`firstName`, `arrivalDate` « mardi 10 novembre », `arrivalTime`,
+     `parking`, `reference`, `text`) ; `WhatsappService.sendTemplate` ajoute le bloc `header` image ; sans règle ou sans réservation,
+     `plazo_message` comme avant ; le test « M'envoyer un test » prend le modèle du rappel quand il existe. Premier : `apl_rappel_veille`
+     (APL Parking Lyon, photo `apl-parking-lyon-entree.jpg`).
+     **Modèle de la veille avec la photo (09/11/2026, « la photo du point de rendez-vous »)** : sans règle propre au parking, avec `WHATSAPP_REMINDER_TEMPLATE`
      (modèle approuvé chez Meta, en-tête Image, 16 variables numérotées, `REMINDER_TEMPLATE_VARIABLES` de `domain/whatsapp.ts`),
      le message de la veille part par ce modèle : photo du point de rendez-vous du retour (`returnMeetingPhotoUrl`, https
      seulement, `whatsappImage`) et les valeurs des variables du SMS de la veille, chacune sur une ligne et jamais vide (« - »,
@@ -1633,6 +1640,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `storeBadgesHtml` partagés avec l'invitation, `ProspectingService.stores()` ; Google Play cliquable, App Store grisé tant que
   `PLAZO_PRO_APP_STORE_URL` manque ; deux lignes dans la version texte), puis sous la carte la raison, l'éditeur et le lien de
   désinscription.
+  **Images dans le premier mail, direction B (09/11/2026, « il faut des images dans le mail pour illustrer », maquettes
+  https://claude.ai/artifact/3tvu7w8QKu47ti3QYW5eLq)** : sous l'introduction (après le deuxième paragraphe) du mail 1 seulement,
+  trois écrans de Plazo Pro côte à côte avec leur légende, « Le planning du jour », « La navette en direct », « Chaque voiture à
+  sa place » (`MAIL_SCREENS`, `screensHtml`, option `screens` de `prospectEmail`, posée par `sendOne` et « M'envoyer un test »
+  pour l'étape 1) ; JPEG de 360 px dans `site/public/mail/` (haut des captures des stores, parking de démo), servis par le site
+  comme les badges (rien sans l'adresse du site), texte alternatif pour les messageries qui bloquent les images, rien dans la
+  version texte ; les relances restent sans image.
+  **Bannière en plus (09/11/2026, « mets A et B ensemble »)** : la carte de partage verte de Plazo Pro en tête du même mail
+  (`MAIL_BANNER`, `bannerHtml`, `site/public/mail/plazo-pro-banniere.jpg`, 1 200 px, environ 50 Ko), liée à la démo du prospect
+  quand il en a une ; la petite plaque « Plazo » n'est plus mise sous elle.
   **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
   « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
   l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le

@@ -374,6 +374,8 @@ export const whatsappConfig = () => ({
   // plazo_veille), with the meeting point's photo as its image header and 16 numbered body variables
   // (domain/whatsapp.ts, REMINDER_TEMPLATE_VARIABLES). Empty: the day-before message uses `template` like the others.
   reminderTemplate: process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || '',
+  // A parking's own templates (JSON array, see parseTemplateRules); empty: every message uses `template`.
+  templates: process.env.WHATSAPP_TEMPLATES || '',
 });
 
 // 06/11/2026 (SEO local, M2): Google Search Console read every night. GOOGLE_SEARCH_CONSOLE_CREDENTIALS is the JSON key of a

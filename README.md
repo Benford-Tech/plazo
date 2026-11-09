@@ -608,7 +608,8 @@ Mise en place, une fois pour toute la plateforme :
    `WHATSAPP_TOKEN`. *App* › *Paramètres* › *Général* : la **clé secrète** → `WHATSAPP_APP_SECRET`.
 4. *WhatsApp Manager* › *Modèles de message* › *Créer* : catégorie **Utilitaire**, nom **`plazo_message`**, langue
    **Français** (`fr`), corps :
-   `Message de {{1}} pour votre réservation {{2}} : {{3}}` (exemples : « Safe Parking Lyon », « R7KQ2M », « nous vous
+   `Message de {{1}} pour votre réservation {{2}} :` / `{{3}}` / `Merci d'avoir choisi votre parking avec Plazo.` (trois lignes ;
+   Meta refuse un modèle qui finit par une variable ; exemples : « Safe Parking Lyon », « R7KQ2M », « nous vous
    attendons demain à 06:30 ») ; l'envoyer à la validation. Un autre nom ou une autre langue : `WHATSAPP_TEMPLATE`,
    `WHATSAPP_TEMPLATE_LANGUAGE`.
 5. *App* › *WhatsApp* › *Configuration* › *Webhook* : URL `https://www.plazo.fr/api/public/whatsapp/webhook`, jeton de
@@ -622,6 +623,15 @@ Mise en place, une fois pour toute la plateforme :
    fois validé, poser `WHATSAPP_REMINDER_TEMPLATE=plazo_veille`. Le message de la veille part alors avec la photo du point de
    rendez-vous (Parking › Réglages, adresse https) ; un parking sans photo garde le modèle `plazo_message`. Une valeur
    absente part en « - » (Meta refuse une variable vide).
+
+**Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple
+`apl_rappel_veille`, le rappel de la veille d'APL Parking Lyon avec la photo de son entrée en en-tête). Le créer chez Meta
+(catégorie Utilitaire, en-tête **Image**, variables du corps dans l'ordre voulu), mettre la photo dans `site/public/whatsapp/`,
+puis poser `WHATSAPP_TEMPLATES` sur Vercel (production, sans secret), par exemple :
+`[{"operator":"<slug de l'adresse de réception>","kind":"booking_reminder","name":"apl_rappel_veille","image":"https://www.plazo.fr/whatsapp/apl-parking-lyon-entree.jpg","params":["firstName","arrivalDate","arrivalTime"]}]`
+(`operator` : l'id du loueur ou le début de son adresse `<slug>@plazo.fr` ; `kind` : `booking_confirmed`, `booking_reminder`
+ou `flight_landed` ; `params` parmi `firstName`, `arrivalDate` « mardi 10 novembre », `arrivalTime` « 06:30 », `parking`,
+`reference`, `text`). « M'envoyer un test » envoie alors ce modèle-là, rempli pour demain à 06:30.
 
 ### Référencement : Search Console (positions dans Google)
 
