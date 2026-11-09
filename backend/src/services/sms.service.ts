@@ -31,6 +31,9 @@ const QUEUE_CHECK_EVERY_MS = 60 * 1000;
 /** Gateway calls per queue refresh (one serverless invocation). */
 const MAX_GATEWAY_CALLS_PER_RUN = 25;
 const MAX_ATTEMPTS = 6;
+/** Abandoned or failed SMS are read again at the gateway for this long (09/11/2026). */
+const RECONCILE_WINDOW_MS = 48 * 60 * 60 * 1000;
+const MAX_RECONCILE_PER_RUN = 15;
 
 export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test'] as const;
 export type SmsKind = (typeof SMS_KINDS)[number];
@@ -271,6 +274,10 @@ export class SmsService {
     if (!options.force && settings?.queueCheckedAt && now.getTime() - settings.queueCheckedAt.getTime() < QUEUE_CHECK_EVERY_MS) return result;
     if (settings) await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { queueCheckedAt: now } });
 
+    // 09/11/2026: before giving up on an SMS, ask the gateway what really happened to it (the phone may have sent
+    // it while no pass was checking): the old ones handed to the gateway first, then the recent abandoned ones.
+    if (settings && settings.mode === 'gateway') await this.reconcile(settings, now, result);
+
     // Too old: abandoned, whatever their state (the gateway's TTL drops them too).
     const tooOld = await prisma.smsOutbox.findMany({
       where: {
@@ -318,6 +325,49 @@ export class SmsService {
       }
     }
     return result;
+  }
+
+  /**
+   * The SMS about to be abandoned (queued more than 2 h ago with a gateway id) and those abandoned or failed in the
+   * last 48 h are read again at the gateway: one the phone did send becomes « sent » (the month counts follow).
+   */
+  private async reconcile(settings: OperatorSmsSettings, now: Date, result: { sent: number }): Promise<void> {
+    const rows = await prisma.smsOutbox.findMany({
+      where: {
+        operatorId: settings.operatorId,
+        provider: 'gateway',
+        providerMessageId: { not: null },
+        OR: [
+          { status: 'queued', createdAt: { lt: new Date(now.getTime() - SMS_RETRY_WINDOW_MS) } },
+          { status: { in: ['abandoned', 'failed'] }, createdAt: { gte: new Date(now.getTime() - RECONCILE_WINDOW_MS) } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_RECONCILE_PER_RUN,
+    });
+    for (const row of rows) {
+      let state: GatewayState;
+      try {
+        state = (await this.gateway.state(this.credentials(settings), row.providerMessageId!)).state;
+      } catch {
+        return; // the gateway does not answer: nothing is changed, the next pass tries again
+      }
+      const status = this.statusOf(state);
+      if (status !== 'sent' && status !== 'delivered') continue;
+      await prisma.smsOutbox.update({ where: { id: row.id }, data: { status, lastError: null } });
+      if (row.status === 'abandoned') await this.unbumpFailed(settings.operatorId);
+      await this.bumpMonth(settings.operatorId, 'monthSent', { lastSentAt: new Date() });
+      result.sent += 1;
+      logger.info(`[SMS] ${row.kind} outbox ${row.id} found ${state} at the gateway (was ${row.status})`);
+    }
+  }
+
+  /** An abandoned SMS turned out sent: it no longer counts as failed this month. */
+  private async unbumpFailed(operatorId: string) {
+    await prisma.operatorSmsSettings.updateMany({
+      where: { operatorId, monthKey: monthKeyOf(new Date()), monthFailed: { gt: 0 } },
+      data: { monthFailed: { decrement: 1 } },
+    });
   }
 
   private async pollGateway(settings: OperatorSmsSettings, row: SmsOutbox): Promise<SendOutcome> {
@@ -389,7 +439,14 @@ export class SmsService {
   /** Every operator's queue, for the crons. */
   public async refreshAll(): Promise<{ operators: number; checked: number; sent: number; abandoned: number }> {
     const operators = await prisma.smsOutbox.findMany({
-      where: { provider: 'gateway', status: { in: ['queued', 'failed'] } },
+      where: {
+        provider: 'gateway',
+        OR: [
+          { status: { in: ['queued', 'failed'] } },
+          // Recently abandoned: read again at the gateway (reconcile), in case the phone did send them.
+          { status: 'abandoned', providerMessageId: { not: null }, createdAt: { gte: new Date(Date.now() - RECONCILE_WINDOW_MS) } },
+        ],
+      },
       distinct: ['operatorId'],
       select: { operatorId: true },
     });

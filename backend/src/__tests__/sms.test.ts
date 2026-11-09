@@ -346,6 +346,24 @@ describe('envoi par le téléphone du parking', () => {
     expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: old.id } })).status).toBe('abandoned');
     settings = await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } });
     expect(settings).toMatchObject({ monthSent: 1, monthFailed: 1 });
+
+    // 09/11/2026: the phone had sent it after all; the gateway says so on a recipient: no longer a failure.
+    fetchMock.mockImplementation(async () => json({ id: 'gw-10', state: 'Processed', recipients: [{ phoneNumber: '+33612345678', state: 'Sent' }] }));
+    expect((await sms.refreshQueue(op.operator.id, { force: true })).sent).toBe(1);
+    expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: old.id } })).status).toBe('sent');
+    settings = await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } });
+    expect(settings).toMatchObject({ monthSent: 2, monthFailed: 0 });
+  });
+
+  it('un SMS envoyé par le téléphone n’est jamais abandonné : l’état réel est relu avant', async () => {
+    const op = await linkedOperator();
+    fetchMock.mockImplementation(async () => json({ id: 'gw-20', state: 'Pending' }, 202));
+    await sms.sendTravellerSms(op.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'z' });
+    const row = await prisma.smsOutbox.findFirstOrThrow({ where: { providerMessageId: 'gw-20' } });
+    await prisma.smsOutbox.update({ where: { id: row.id }, data: { createdAt: hoursAgo(2.5) } });
+    fetchMock.mockImplementation(async () => json({ id: 'gw-20', state: 'Pending', states: { Pending: 'x', Delivered: 'y' } }));
+    expect(await sms.refreshQueue(op.operator.id, { force: true })).toEqual({ checked: 0, sent: 1, abandoned: 0 });
+    expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('delivered');
   });
 
   it('les lectures ne consultent la passerelle qu’une fois par minute', async () => {
