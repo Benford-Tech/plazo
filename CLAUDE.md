@@ -1252,7 +1252,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      https://claude.ai/artifact/3nwfqZj6WGWwWooC2jbLKf, direction A)** : la confirmation, le rappel de la veille et le rendez-vous à
      l'atterrissage (`WHATSAPP_KINDS`) partent d'abord par WhatsApp, depuis le numéro WhatsApp Business de Plazo (API Cloud de Meta,
      `WhatsappService`, `domain/whatsapp.ts`) quand le parking l'a allumé (`OperatorSmsSettings.whatsappEnabled`, migration
-     `whatsapp_messages`) : un seul modèle « Utilitaire » `plazo_message` (`Message de {{1}} pour votre réservation {{2}} : {{3}}` :
+     `whatsapp_messages`) : un seul modèle « Utilitaire » `plazo_message` (`Message de {{1}} pour votre réservation {{2}} :` / `{{3}}` / `Merci d'avoir choisi votre parking avec Plazo.`, Meta refusant un modèle qui finit par une variable :
      parking, référence, texte du SMS mis sur une ligne par `whatsappParam`) ; `SmsService.sendTravellerSms` essaie WhatsApp puis
      `sendSmsOnly` ; repli SMS une seule fois (ligne réservée) quand Meta refuse à l'envoi, le webhook dit `failed`
      (`POST /public/whatsapp/webhook`, signé `X-Hub-Signature-256` avec `WHATSAPP_APP_SECRET` ; `GET` répond au contrôle de Meta avec

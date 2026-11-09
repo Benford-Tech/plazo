@@ -608,7 +608,8 @@ Mise en place, une fois pour toute la plateforme :
    `WHATSAPP_TOKEN`. *App* › *Paramètres* › *Général* : la **clé secrète** → `WHATSAPP_APP_SECRET`.
 4. *WhatsApp Manager* › *Modèles de message* › *Créer* : catégorie **Utilitaire**, nom **`plazo_message`**, langue
    **Français** (`fr`), corps :
-   `Message de {{1}} pour votre réservation {{2}} : {{3}}` (exemples : « Safe Parking Lyon », « R7KQ2M », « nous vous
+   `Message de {{1}} pour votre réservation {{2}} :` / `{{3}}` / `Merci d'avoir choisi votre parking avec Plazo.` (trois lignes ;
+   Meta refuse un modèle qui finit par une variable ; exemples : « Safe Parking Lyon », « R7KQ2M », « nous vous
    attendons demain à 06:30 ») ; l'envoyer à la validation. Un autre nom ou une autre langue : `WHATSAPP_TEMPLATE`,
    `WHATSAPP_TEMPLATE_LANGUAGE`.
 5. *App* › *WhatsApp* › *Configuration* › *Webhook* : URL `https://www.plazo.fr/api/public/whatsapp/webhook`, jeton de
