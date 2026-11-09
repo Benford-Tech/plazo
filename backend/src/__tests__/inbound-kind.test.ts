@@ -295,7 +295,7 @@ describe('Onepark, Parclick et ParkMundo (16/10/2026)', () => {
       ...onepark(),
       text: onepark().text.replace('Une nouvelle réservation Onepark a été enregistrée', 'La réservation Onepark 5900001 a été modifiée'),
     };
-    expect(kindOf(changed)).toMatchObject({ kind: 'change', provider: 'Onepark', rule: 'onepark.change' });
+    expect(kindOf(changed)).toMatchObject({ kind: 'change', provider: 'Onepark', rule: 'onepark.change-wording', sure: false });
 
     expect(kindOf({ ...parkmundo(), text: `Votre réservation PM1500000001 a été annulée.\n${parkmundo().text}` })).toMatchObject({
       kind: 'cancellation',
