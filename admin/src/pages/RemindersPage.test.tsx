@@ -77,7 +77,7 @@ function board(over: Partial<ReminderBoard> = {}): ReminderBoard {
     evening: { ...evening("2026-10-06", { counts: { departures: 3, planned: 1, sent: 0, waiting: 0, failed: 0, withoutSms: 2 } }), rows },
     sample: {
       customerName: "Sophie Martin",
-      values: { prénom: "Sophie", nom: "Martin", date: "07/10/2026", heure: "05:45", plaque: "AB-123-CD", référence: "R7KQ2M", lien: "https://www.plazo.fr/ma-reservation/R7KQ2M?cle=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" },
+      values: { prénom: "Sophie", nom: "Martin", date: "07/10/2026", heure: "05:45", plaque: "AB-123-CD", référence: "R7KQ2M", lien: "https://www.plazo.fr/ma-reservation/R7KQ2M?cle=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", retour: "", vol: "", parking: "", adresse: "", téléphone: "", "rendez-vous": "", consignes: "", navette: "", services: "" },
     },
     can: { edit: true, manage: true },
     ...over,

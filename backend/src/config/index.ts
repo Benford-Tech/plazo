@@ -370,6 +370,10 @@ export const whatsappConfig = () => ({
   template: process.env.WHATSAPP_TEMPLATE?.trim() || 'plazo_message',
   language: process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'fr',
   graphVersion: process.env.WHATSAPP_GRAPH_VERSION?.trim() || 'v21.0',
+  // 09/11/2026 (« et la photo » : « la photo du point de rendez-vous »): the day-before message's own template (e.g.
+  // plazo_veille), with the meeting point's photo as its image header and 16 numbered body variables
+  // (domain/whatsapp.ts, REMINDER_TEMPLATE_VARIABLES). Empty: the day-before message uses `template` like the others.
+  reminderTemplate: process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || '',
   // A parking's own templates (JSON array, see parseTemplateRules); empty: every message uses `template`.
   templates: process.env.WHATSAPP_TEMPLATES || '',
 });

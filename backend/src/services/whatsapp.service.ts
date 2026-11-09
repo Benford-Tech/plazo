@@ -148,6 +148,10 @@ export class WhatsappService {
         rule.params.map(p => value[p]),
         rule,
       );
+    } else if (this.config().reminderTemplate && sms.whatsapp) {
+      // 09/11/2026: the common day-before template (its 16 values and the meeting point's photo), when it is set and no
+      // rule of the parking's own takes the message.
+      result = await this.sendTemplate(recipient, sms.whatsapp.params, { name: this.config().reminderTemplate, image: sms.whatsapp.image });
     } else {
       result = await this.sendTemplate(recipient, [parkingName, booking?.reference ?? '-', whatsappParam(sms.text)]);
     }

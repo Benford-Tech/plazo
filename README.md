@@ -616,6 +616,13 @@ Mise en place, une fois pour toute la plateforme :
    vérification = une longue valeur au hasard, aussi posée dans `WHATSAPP_VERIFY_TOKEN` (avant de cliquer *Vérifier*) ;
    s'abonner au champ **messages**.
 6. Poser les cinq variables sur Vercel (production), redéployer ; le loueur allume WhatsApp et s'envoie un test.
+7. Facultatif (09/11/2026), **le message de la veille avec la photo du point de rendez-vous** : un second modèle
+   **Utilitaire**, par exemple `plazo_veille`, en-tête **Image** (une photo d'exemple), corps à 16 variables dans cet ordre :
+   {{1}} prénom, {{2}} référence, {{3}} date, {{4}} heure, {{5}} plaque, {{6}} lien, {{7}} parking, {{8}} adresse, {{9}} retour,
+   {{10}} vol, {{11}} rendez-vous, {{12}} consignes, {{13}} navette, {{14}} services, {{15}} téléphone, {{16}} parking ; une
+   fois validé, poser `WHATSAPP_REMINDER_TEMPLATE=plazo_veille`. Le message de la veille part alors avec la photo du point de
+   rendez-vous (Parking › Réglages, adresse https) ; un parking sans photo garde le modèle `plazo_message`. Une valeur
+   absente part en « - » (Meta refuse une variable vide).
 
 **Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple
 `apl_rappel_veille`, le rappel de la veille d'APL Parking Lyon avec la photo de son entrée en en-tête). Le créer chez Meta

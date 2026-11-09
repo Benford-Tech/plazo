@@ -80,6 +80,41 @@ export function nextWhatsappStatus(current: WhatsappStatus, incoming: WhatsappSt
 }
 
 /**
+ * 09/11/2026: the variables of the day-before template ({{1}} to {{16}}), in their order: the text approved by Meta reads
+ * « Bonsoir {{1}}, Suite à votre réservation {{2}}, … le {{3}} à {{4}} (véhicule {{5}}) … {{6}} … {{7}}, {{8}} … le {{9}}
+ * (vol {{10}}) … {{11}} {{12}} … ({{13}}) … {{14}} … {{15}} … {{16}} ».
+ */
+export const REMINDER_TEMPLATE_VARIABLES = [
+  'prénom',
+  'référence',
+  'date',
+  'heure',
+  'plaque',
+  'lien',
+  'parking',
+  'adresse',
+  'retour',
+  'vol',
+  'rendez-vous',
+  'consignes',
+  'navette',
+  'services',
+  'téléphone',
+  'parking',
+] as const;
+
+/** The 16 parameters of the day-before template: each on one line, never empty (Meta refuses it: « - »). */
+export function reminderTemplateParams(values: Record<(typeof REMINDER_TEMPLATE_VARIABLES)[number], string>): string[] {
+  return REMINDER_TEMPLATE_VARIABLES.map(key => whatsappParam(values[key] ?? '', key === 'consignes' || key === 'services' ? 400 : 200));
+}
+
+/** A photo Meta can fetch for an image header: an https address (JPEG or PNG, 5 MB at most, checked by Meta). */
+export function whatsappImage(url: string | null | undefined): string | null {
+  const value = url?.trim();
+  return value && /^https:\/\/\S+$/i.test(value) ? value : null;
+}
+
+/**
  * A parking's own template (09/11/2026, APL Parking Lyon's day-before message with the photo of its entrance): for one
  * operator and one message kind, Plazo sends this approved template instead of `plazo_message`, with an image header
  * when `image` is given and the body variables in `params` order. Read from WHATSAPP_TEMPLATES (JSON array, no secret);

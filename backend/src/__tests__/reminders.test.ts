@@ -24,7 +24,24 @@ const TZ = 'Europe/Paris';
 const BREVO_SMS = 'https://api.brevo.com/v3/transactionalSMS/send';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 const at = (local: string) => parseInstant(local, TZ)!;
-const VALUES = { prénom: 'Camille', nom: 'Martin', date: '15/06/2027', heure: '08:30', plaque: 'AB-123-CD', référence: 'R7KQ2M', lien: '' };
+const VALUES = {
+  prénom: 'Camille',
+  nom: 'Martin',
+  date: '15/06/2027',
+  heure: '08:30',
+  plaque: 'AB-123-CD',
+  référence: 'R7KQ2M',
+  lien: '',
+  retour: '',
+  vol: '',
+  parking: '',
+  adresse: '',
+  téléphone: '',
+  'rendez-vous': '',
+  consignes: '',
+  navette: '',
+  services: '',
+};
 
 let fetchMock: jest.SpyInstance;
 const smsSent = () =>
@@ -95,6 +112,11 @@ describe('les règles du SMS de la veille', () => {
         null,
       ),
     ).toMatchObject({ prénom: 'Marie Claire', nom: 'de La Tour' });
+  });
+
+  it('les doubles accolades (09/11/2026) : {{prénom}} vaut {prénom}, {{inconnue}} est refusée', () => {
+    expect(renderTemplate('Bonsoir {{prénom}}, dépôt le {{ date }} à {heure}.', VALUES)).toBe('Bonsoir Camille, dépôt le 15/06/2027 à 08:30.');
+    expect(unknownVariables('Bonjour {{client}}')).toEqual(['{{client}}']);
   });
 
   it('compte les SMS : 160 / 153 caractères en GSM-7, 70 / 67 dès un émoji ou un â', () => {
@@ -248,6 +270,41 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     await prisma.operator.update({ where: { id: op.operator.id }, data: { status: 'active', suspendedAt: null, archivedAt: null } });
     expect((await reminders.dispatchDue(at('2027-06-15T19:05'))).sent).toBe(1);
+  });
+
+  it('les variables du parking (09/11/2026) : un même texte pour tous les parkings, un détail absent reste vide', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: {
+        name: 'Parking Exemple',
+        address: '3 avenue Exemple, 69000 Lyon',
+        shuttleTravelMinutes: 8,
+        returnMeetingLabel: 'Parking pro P0',
+        returnMeetingInstructions: 'Rue Exemple, devant la barrière',
+      },
+    });
+    await prisma.parkingExtra.createMany({
+      data: [
+        { parkingId: op.parking.id, kind: 'interior_wash', label: 'Lavage intérieur', priceCents: 5000, enabled: true, position: 0 },
+        { parkingId: op.parking.id, kind: 'hybrid_charge', label: 'Recharge hybride', priceCents: 1550, enabled: true, position: 1 },
+        { parkingId: op.parking.id, kind: 'ev_charge', label: 'Recharge électrique', priceCents: 3000, enabled: false, position: 2 },
+      ],
+    });
+    const text =
+      '{parking}, {adresse}. Retour le {retour}, vol {vol}. Rendez-vous : {rendez-vous} ({consignes}). Navette {navette}. Services : {services}. Tél. {telephone}.';
+    const put = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ template: text });
+    expect(put.status).toBe(200);
+    expect(put.body.variables).toEqual(
+      expect.arrayContaining(['parking', 'adresse', 'téléphone', 'rendez-vous', 'consignes', 'navette', 'services', 'retour', 'vol']),
+    );
+    expect(put.body.sample.values).toMatchObject({ parking: 'Parking Exemple', services: 'Lavage intérieur : 50 €, Recharge hybride : 15,50 €' });
+    await booking(op, '2027-06-15T08:30');
+    expect((await Container.get(ReminderService).dispatchDue(at('2027-06-14T18:05'))).sent).toBe(1);
+    expect(smsSent()[0].content).toBe(
+      'Parking Exemple, 3 avenue Exemple, 69000 Lyon. Retour le 18/06/2027 à 08:30, vol . Rendez-vous : Parking pro P0 (Rue Exemple, devant la barrière). Navette 8 min. Services : Lavage intérieur : 50 €, Recharge hybride : 15,50 €. Tél. .',
+    );
   });
 
   it('rien la nuit : une réservation prise à 23:00 part à 07:00, et le jour même rien ne part', async () => {

@@ -52,9 +52,36 @@ export function unicodeCharacters(text: string): string[] {
   return [...new Set([...text].filter(c => !GSM7.has(c) && c.trim() !== "" && c !== "️"))];
 }
 
-const ALIASES: Record<string, TemplateVariable> = { prenom: "prénom", reference: "référence" };
-const VARIABLES: TemplateVariable[] = ["prénom", "nom", "date", "heure", "plaque", "référence", "lien"];
-const TOKEN_RE = /\{\s*([^{}\s][^{}]{0,30}?)\s*\}/g;
+const ALIASES: Record<string, TemplateVariable> = {
+  prenom: "prénom",
+  reference: "référence",
+  telephone: "téléphone",
+  tel: "téléphone",
+  "rendez vous": "rendez-vous",
+  rendezvous: "rendez-vous",
+  rdv: "rendez-vous",
+};
+// 09/11/2026 (« variabilise au maximum, c'est pour tous les parkings »): the parking's details too (server's TEMPLATE_VARIABLES).
+const VARIABLES: TemplateVariable[] = [
+  "prénom",
+  "nom",
+  "date",
+  "heure",
+  "plaque",
+  "référence",
+  "lien",
+  "retour",
+  "vol",
+  "parking",
+  "adresse",
+  "téléphone",
+  "rendez-vous",
+  "consignes",
+  "navette",
+  "services",
+];
+// 09/11/2026 (« ce sont des doubles accolades »): {{prénom}} works as {prénom}.
+const TOKEN_RE = /\{\{?\s*([^{}\s][^{}]{0,30}?)\s*\}\}?/g;
 
 function variableOf(name: string): TemplateVariable | null {
   const key = name.toLowerCase();

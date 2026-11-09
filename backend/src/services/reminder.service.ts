@@ -37,6 +37,7 @@ import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { PhoneNow, SmsPhoneService } from './sms-phone.service';
 import { SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
+import { loadParkingValues } from './parking-values';
 
 /** What happens to one booking's day-before SMS, as the pro space shows it. */
 export type ReminderRowStatus =
@@ -219,6 +220,7 @@ export class ReminderService {
           kind: 'booking_reminder',
           to: record.customerPhone,
           text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+          whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
         });
         return outcome === 'failed' ? 'failed' : 'sent';
       }
@@ -228,6 +230,7 @@ export class ReminderService {
         kind: 'booking_reminder',
         to: record.customerPhone,
         text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+        whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
       });
       await this.push.notifyTravellers(
         [record.id],
@@ -428,7 +431,15 @@ export class ReminderService {
       ? `${this.notifications.settings.publicSiteUrl.replace(/\/+$/, '')}/a/${sampleSource.reference}-${'X'.repeat(APP_LINK_CHECK_LENGTH)}`
       : null;
     // The example's 08:30 is written in UTC so that it reads 08:30 whatever the parking's zone.
-    const sampleValues = exampleRecord ? valuesOf(exampleRecord, tz, sampleLink) : valuesOf(sampleSource, 'UTC', sampleLink);
+    const parkingValues = (await loadParkingValues(parkingId)) ?? undefined;
+    const sampleValues = exampleRecord
+      ? valuesOf(exampleRecord, tz, sampleLink, parkingValues)
+      : valuesOf(
+          { ...sampleSource, returnAt: new Date(`${addDays(selected, 8)}T18:00:00Z`), returnFlight: 'TO 3627' },
+          'UTC',
+          sampleLink,
+          parkingValues,
+        );
     const updatedBy = usualRow?.updatedById ? ((await this.firstNames([usualRow.updatedById])).get(usualRow.updatedById) ?? null) : null;
 
     return {

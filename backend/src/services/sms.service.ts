@@ -7,6 +7,8 @@ import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
+import { loadParkingValues } from './parking-values';
+import { reminderTemplateParams, whatsappImage } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
@@ -45,6 +47,11 @@ export interface TravellerSms {
   /** The traveller's number as typed; only French mobiles get an SMS (see domain/phone.ts). */
   to: string;
   text: string;
+  /**
+   * 09/11/2026: the day-before message's own WhatsApp template (16 values and the meeting point's photo), used when
+   * WHATSAPP_REMINDER_TEMPLATE is set; `text` stays the SMS of the fallback.
+   */
+  whatsapp?: { params: string[]; image: string } | null;
 }
 
 export type SendOutcome = 'sent' | 'queued' | 'failed' | 'skipped';
@@ -501,13 +508,27 @@ export class SmsService {
   }
 
   /** The day-before SMS of a booking (S-A + S-B, 06/10/2026): the parking's own text, else Plazo's. */
+  /**
+   * 09/11/2026 (« la photo du point de rendez-vous »): the day-before WhatsApp template's values, or null when the parking
+   * has no meeting point photo at an https address (its image header cannot be left out: the generic template goes).
+   */
+  public async reminderWhatsapp(booking: BookingRecord, link: string | null): Promise<{ params: string[]; image: string } | null> {
+    const [point] = await prisma.$queryRaw<{ photo: string | null }[]>`
+      SELECT "returnMeetingPhotoUrl" AS photo FROM parkings WHERE id = ${booking.parkingId}`;
+    const image = whatsappImage(point?.photo);
+    if (!image) return null;
+    const parking = (await loadParkingValues(booking.parkingId)) ?? undefined;
+    return { params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking)), image };
+  }
+
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: booking.operatorId }, select: { mode: true } }),
     ]);
     const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
-    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link));
+    const parking = (await loadParkingValues(booking.parkingId)) ?? undefined;
+    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, parking));
   }
 
   private testText(): string {

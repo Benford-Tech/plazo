@@ -684,6 +684,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
+     **Variables du parking (09/11/2026, « variabilise au maximum, c'est pour tous les parkings »)** : en plus de `{prénom} {nom}
+     {date} {heure} {plaque} {référence} {lien}`, `{retour}` (« 15/11/2026 à 09:30 »), `{vol}` (vol retour), `{parking}` (titre de la
+     fiche, sinon le nom), `{adresse}`, `{téléphone}` (`{tel}`, téléphone de la fiche), `{rendez-vous}` (`{rdv}`, point de
+     rendez-vous du retour, sinon l'aéroport), `{consignes}` (ses consignes), `{navette}` (« 8 min ») et `{services}` (services
+     additionnels actifs et leurs prix, « Lavage intérieur : 50 €, Recharge hybride : 15 € ») ; un détail absent reste vide
+     (`TEMPLATE_VARIABLES`, `ParkingValues`, `parkingValuesOf` de `domain/day-before-sms.ts`, `services/parking-values.ts`) ; un
+     même texte sert à tous les parkings ; `{{prénom}}` vaut `{prénom}` (doubles accolades acceptées, `TOKEN_RE`). Test `reminders.test.ts`.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
@@ -1271,6 +1278,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `parking`, `reference`, `text`) ; `WhatsappService.sendTemplate` ajoute le bloc `header` image ; sans règle ou sans réservation,
      `plazo_message` comme avant ; le test « M'envoyer un test » prend le modèle du rappel quand il existe. Premier : `apl_rappel_veille`
      (APL Parking Lyon, photo `apl-parking-lyon-entree.jpg`).
+     **Modèle de la veille avec la photo (09/11/2026, « la photo du point de rendez-vous »)** : sans règle propre au parking, avec `WHATSAPP_REMINDER_TEMPLATE`
+     (modèle approuvé chez Meta, en-tête Image, 16 variables numérotées, `REMINDER_TEMPLATE_VARIABLES` de `domain/whatsapp.ts`),
+     le message de la veille part par ce modèle : photo du point de rendez-vous du retour (`returnMeetingPhotoUrl`, https
+     seulement, `whatsappImage`) et les valeurs des variables du SMS de la veille, chacune sur une ligne et jamais vide (« - »,
+     `reminderTemplateParams`) ; sans photo, le modèle commun `plazo_message` ; le SMS de repli reste le texte du parking
+     (`TravellerSms.whatsapp`, `SmsService.reminderWhatsapp`). Marche à suivre dans le README. Test `whatsapp.test.ts`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

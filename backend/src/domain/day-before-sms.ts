@@ -23,13 +23,42 @@ export const SEND_TIMES: readonly string[] = Array.from({ length: 12 }, (_, i) =
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 });
 
-/** The variables of a text, as typed in it (accents optional), and what they stand for. */
-export const TEMPLATE_VARIABLES = ['prénom', 'nom', 'date', 'heure', 'plaque', 'référence', 'lien'] as const;
+/**
+ * The variables of a text, as typed in it (accents optional), and what they stand for. 09/11/2026 (« variabilise au
+ * maximum, c'est pour tous les parkings »): the parking's own details too, so that one text serves every parking.
+ */
+export const TEMPLATE_VARIABLES = [
+  'prénom',
+  'nom',
+  'date',
+  'heure',
+  'plaque',
+  'référence',
+  'lien',
+  'retour',
+  'vol',
+  'parking',
+  'adresse',
+  'téléphone',
+  'rendez-vous',
+  'consignes',
+  'navette',
+  'services',
+] as const;
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
 export type TemplateValues = Record<TemplateVariable, string>;
 
-const ALIASES: Record<string, TemplateVariable> = { prenom: 'prénom', reference: 'référence' };
-const TOKEN_RE = /\{\s*([^{}\s][^{}]{0,30}?)\s*\}/g;
+const ALIASES: Record<string, TemplateVariable> = {
+  prenom: 'prénom',
+  reference: 'référence',
+  telephone: 'téléphone',
+  tel: 'téléphone',
+  'rendez vous': 'rendez-vous',
+  rendezvous: 'rendez-vous',
+  rdv: 'rendez-vous',
+};
+// 09/11/2026 (« ce sont des doubles accolades »): {{prénom}} works as {prénom}.
+const TOKEN_RE = /\{\{?\s*([^{}\s][^{}]{0,30}?)\s*\}\}?/g;
 
 function variableOf(name: string): TemplateVariable | null {
   const key = name.toLowerCase();
@@ -169,26 +198,92 @@ export function templateContextOf(productName: string, parking: ParkingForTempla
   };
 }
 
+/** The parking's details a text may name ({parking}, {adresse}…), the same for all its bookings. */
+export interface ParkingValues {
+  name: string;
+  address: string | null;
+  phone: string | null;
+  meetingPoint: string | null;
+  meetingInstructions: string | null;
+  shuttleMinutes: number | null;
+  /** The services for the car the parking offers (enabled, not archived), in their order. */
+  services: { label: string; priceCents: number }[];
+}
+
+export const NO_PARKING_VALUES: ParkingValues = {
+  name: '',
+  address: null,
+  phone: null,
+  meetingPoint: null,
+  meetingInstructions: null,
+  shuttleMinutes: null,
+  services: [],
+};
+
+interface ParkingForValues {
+  name: string;
+  address: string | null;
+  shuttleTravelMinutes: number;
+  returnMeetingLabel: string | null;
+  returnMeetingInstructions: string | null;
+  listing: { title: string; contactPhone: string | null; shuttleMinutes: number | null; airport?: { name: string } | null } | null;
+}
+
+/** {parking} is the listing's title, {rendez-vous} the meeting point of the return, else the airport. */
+export function parkingValuesOf(parking: ParkingForValues, services: { label: string; priceCents: number }[]): ParkingValues {
+  return {
+    name: parking.listing?.title ?? parking.name,
+    address: parking.address,
+    phone: parking.listing?.contactPhone ?? null,
+    meetingPoint: parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
+    meetingInstructions: parking.returnMeetingInstructions?.trim() || null,
+    shuttleMinutes: parking.listing?.shuttleMinutes ?? parking.shuttleTravelMinutes ?? null,
+    services,
+  };
+}
+
+/** « 50 € », « 15,50 € ». */
+function euros(cents: number): string {
+  return cents % 100 === 0 ? `${cents / 100} €` : `${(cents / 100).toFixed(2).replace('.', ',')} €`;
+}
+
+const localDayAndTime = (instant: Date, timeZone: string) => {
+  const local = localDateTime(instant, timeZone);
+  const [year, month, day] = local.slice(0, 10).split('-');
+  return { date: `${day}/${month}/${year}`, time: local.slice(11) };
+};
+
 /**
  * {prénom} and {nom}: the stored first and last name (09/10/2026), else "Camille Martin" split at its first space; the
- * date as 07/10/2026 and the time as 06:30, local to the parking.
+ * date as 07/10/2026 and the time as 06:30, local to the parking. 09/11/2026: {retour} « 15/11/2026 à 09:30 », {vol},
+ * and the parking's details; a detail the parking has not given is empty.
  */
 export function valuesOf(
-  reservation: CustomerNameFields & { arrivalAt: Date; plate: string; reference: string },
+  reservation: CustomerNameFields & { arrivalAt: Date; plate: string; reference: string; returnAt?: Date | null; returnFlight?: string | null },
   timeZone: string,
   link: string | null,
+  parking: ParkingValues = NO_PARKING_VALUES,
 ): TemplateValues {
   const { firstName: first, lastName: last } = namesOfCustomer(reservation);
-  const local = localDateTime(reservation.arrivalAt, timeZone);
-  const [year, month, day] = local.slice(0, 10).split('-');
+  const arrival = localDayAndTime(reservation.arrivalAt, timeZone);
+  const back = reservation.returnAt ? localDayAndTime(reservation.returnAt, timeZone) : null;
   return {
     prénom: first,
     nom: last,
-    date: `${day}/${month}/${year}`,
-    heure: local.slice(11),
+    date: arrival.date,
+    heure: arrival.time,
     plaque: reservation.plate,
     référence: reservation.reference,
     lien: link ?? '',
+    retour: back ? `${back.date} à ${back.time}` : '',
+    vol: reservation.returnFlight ?? '',
+    parking: parking.name,
+    adresse: parking.address ?? '',
+    téléphone: parking.phone ?? '',
+    'rendez-vous': parking.meetingPoint ?? '',
+    consignes: parking.meetingInstructions ?? '',
+    navette: parking.shuttleMinutes ? `${parking.shuttleMinutes} min` : '',
+    services: parking.services.map(s => `${s.label} : ${euros(s.priceCents)}`).join(', '),
   };
 }
 
