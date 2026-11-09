@@ -278,7 +278,9 @@ export class NotificationService {
       subject: message.subject,
       htmlContent: message.html,
       textContent: message.text,
-      headers: options.headers,
+      // 09/11/2026 (« impossible de tester la prospection avec mon mail »): « M'envoyer un test » has no header, and Brevo
+      // refused its empty `headers` object (400 missing_parameter): sent only when there is one.
+      ...(Object.keys(options.headers).length ? { headers: options.headers } : {}),
       tags: [options.tag],
     });
     const id = (result.data as { messageId?: unknown } | null | undefined)?.messageId;
@@ -321,8 +323,11 @@ export class NotificationService {
       const setup = res.status === 400 && /\b(template|redirection)/i.test(message);
       // 28/10/2026: a 401 is either a wrong key or Brevo's « Authorised IPs » blocking Vercel's address: say which.
       const refusal = res.status === 401 ? (/\bIP\b/i.test(message) ? ' (ip_not_authorised)' : ' (api_key_rejected)') : '';
+      // 09/11/2026: which field Brevo found missing or invalid (« headers is missing »), never a value.
+      const field =
+        res.status === 400 ? /^\s*([A-Za-z][A-Za-z0-9_.[\]]{0,40}) (?:is|are) (?:missing|required|invalid|not valid)/i.exec(message)?.[1] : undefined;
       logger.error(
-        `[Notifications] ${tag} ${kind} failed for ${about}: HTTP ${res.status}${code ? ` ${code}` : ''}${setup ? ' (settings)' : ''}${refusal}`,
+        `[Notifications] ${tag} ${kind} failed for ${about}: HTTP ${res.status}${code ? ` ${code}` : ''}${field ? ` (field: ${field})` : ''}${setup ? ' (settings)' : ''}${refusal}`,
       );
       return { ok: false, status: res.status, setup };
     } catch (error) {
