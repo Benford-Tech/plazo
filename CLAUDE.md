@@ -245,6 +245,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      premier relevé, Plazo demande aussi à l'appli d'attendre 30 à 60 s entre deux SMS si elle attend moins (`PATCH /settings`
      `messages.send_interval_min/max`, `PHONE_SEND_INTERVAL_*_SECONDS`, `phoneSpacingSetAt`, migration `sms_phone_spacing`, remis à nul
      avec le ping) : une soirée de SMS de la veille part un par un, dix en 8 minutes environ, bien dans les 2 h d'attente.
+     **État réel relu avant l'abandon (09/11/2026, « les envois ont fonctionné mais Plazo dit qu'il y a une erreur »)** : un SMS remis à la
+     passerelle n'est plus abandonné à 2 h sans relire son état : `SmsService.reconcile` (au début de `refreshQueue`) relit chez la passerelle
+     les SMS en attente depuis plus de 2 h et ceux abandonnés ou en échec depuis moins de 48 h (`RECONCILE_WINDOW_MS`, 15 par passage) ; un
+     SMS envoyé ou remis devient « Envoyé » et ne compte plus en échec du mois ; l'état est le plus avancé entre `state`, celui de chaque
+     destinataire et les clés de `states` (`messageState` de `sms-gateway.service.ts`) ; `refreshAll` passe aussi chez les loueurs qui n'ont
+     que des abandons récents. Test `sms.test.ts`.
      **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
      `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
      l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,

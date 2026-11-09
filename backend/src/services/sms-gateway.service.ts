@@ -61,6 +61,23 @@ function parseState(value: unknown): GatewayState {
     : 'Pending';
 }
 
+const PROGRESS: GatewayState[] = ['Pending', 'Processed', 'Sent', 'Delivered'];
+
+/**
+ * The real state of a message (09/11/2026, « les envois ont fonctionné mais Plazo dit qu'il y a une erreur »): the
+ * message-level `state` can lag behind what the phone reported, so the furthest state among `state`, each recipient's
+ * `state` and the `states` timestamps wins; Failed counts only when nothing says the SMS left.
+ */
+export function messageState(data: any): GatewayState {
+  const seen: GatewayState[] = [parseState(data?.state)];
+  if (Array.isArray(data?.recipients)) for (const r of data.recipients) seen.push(parseState(r?.state));
+  if (data?.states && typeof data.states === 'object') for (const key of Object.keys(data.states)) seen.push(parseState(key));
+  const best = seen.reduce((a, b) => (PROGRESS.indexOf(b) > PROGRESS.indexOf(a) ? b : a), 'Pending' as GatewayState);
+  if (best === 'Sent' || best === 'Delivered') return best;
+  const stopped = seen.find(s => s === 'Failed' || s === 'Cancelled' || s === 'Cancelling');
+  return stopped ?? best;
+}
+
 export interface GatewayDevice {
   id: string;
   lastSeen: Date | null;
@@ -86,7 +103,7 @@ export class SmsGatewayClient {
 
   public async state(credentials: GatewayCredentials, id: string): Promise<GatewayMessage> {
     const data = await this.request(credentials, 'GET', `/messages/${encodeURIComponent(id)}`);
-    return { id, state: parseState(data?.state) };
+    return { id, state: messageState(data) };
   }
 
   /** The phones registered with this login, with when each was last seen (null: never). */
