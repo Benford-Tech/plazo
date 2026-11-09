@@ -2,13 +2,14 @@ import { createHash } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isProspectDemoOperator } from './demo-guard';
-import { PRODUCT_NAME, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
+import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
+import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -352,14 +353,91 @@ export class SmsService {
       } catch {
         return; // the gateway does not answer: nothing is changed, the next pass tries again
       }
-      const status = this.statusOf(state);
-      if (status !== 'sent' && status !== 'delivered') continue;
-      await prisma.smsOutbox.update({ where: { id: row.id }, data: { status, lastError: null } });
+      if (state !== 'Sent' && state !== 'Delivered') continue;
+      if ((await this.settle(settings, row, state)) === 'sent') result.sent += 1;
+    }
+  }
+
+  /**
+   * Applies the gateway's state to an outbox row (09/11/2026), once: the update is conditional on the status read, so a
+   * webhook and a pass arriving together count the SMS once. Sent or delivered: the row (queued, failed or abandoned) is
+   * sent, the month counts follow; failed: only a queued row (it is retried by the next pass). Returns 'sent' when the
+   * SMS is counted sent now, 'failed', or null when nothing changed.
+   */
+  private async settle(settings: OperatorSmsSettings, row: SmsOutbox, state: GatewayState): Promise<'sent' | 'failed' | null> {
+    const status = this.statusOf(state);
+    if (status === 'sent' || status === 'delivered') {
+      if (row.status === 'delivered' || (row.status === 'sent' && status === 'sent')) return null;
+      const { count } = await prisma.smsOutbox.updateMany({ where: { id: row.id, status: row.status }, data: { status, lastError: null } });
+      if (!count || row.status === 'sent') return null;
       if (row.status === 'abandoned') await this.unbumpFailed(settings.operatorId);
       await this.bumpMonth(settings.operatorId, 'monthSent', { lastSentAt: new Date() });
-      result.sent += 1;
       logger.info(`[SMS] ${row.kind} outbox ${row.id} found ${state} at the gateway (was ${row.status})`);
+      return 'sent';
     }
+    if (status === 'failed' && row.status === 'queued') {
+      const { count } = await prisma.smsOutbox.updateMany({
+        where: { id: row.id, status: 'queued' },
+        data: { status: 'failed', lastError: 'sms_gateway_failed' },
+      });
+      if (!count) return null;
+      await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { lastError: 'sms_gateway_failed', lastErrorAt: new Date() } });
+      return 'failed';
+    }
+    return null;
+  }
+
+  /** The site's public address (the API is under /api); a property so that tests can set it. */
+  public siteUrl = PUBLIC_SITE_URL;
+
+  /** The address the operator's SMS app calls back (null without the site's public address or SECRET_KEY). */
+  public webhookUrl(operatorId: string): string | null {
+    const key = process.env.SECRET_KEY || '';
+    if (!this.siteUrl || !key) return null;
+    return `${this.siteUrl}/api/public/sms-gateway/webhook/${smsWebhookToken(operatorId, key)}`;
+  }
+
+  /**
+   * 09/11/2026 (« faudrait communiquer avec sms gateway »): asks the operator's SMS app to call Plazo back when an SMS
+   * is sent, delivered or failed. Once per linked login (phoneWebhooksSetAt); never fails the caller.
+   */
+  public async ensureWebhooks(settings: OperatorSmsSettings, now = new Date()): Promise<boolean> {
+    if (settings.mode !== 'gateway' || settings.phoneWebhooksSetAt) return false;
+    const url = this.webhookUrl(settings.operatorId);
+    if (!url) return false;
+    try {
+      const credentials = this.credentials(settings);
+      for (const event of SMS_WEBHOOK_EVENTS) await this.gateway.registerWebhook(credentials, smsWebhookId(event), url, event);
+      await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { phoneWebhooksSetAt: now } });
+      logger.info(`[SMS] webhooks registered at the gateway for operator ${settings.operatorId}`);
+      return true;
+    } catch (error) {
+      logger.warn(`[SMS] webhooks not registered for operator ${settings.operatorId}: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return false;
+    }
+  }
+
+  /**
+   * POST /public/sms-gateway/webhook/:token: the phone says an SMS was sent, delivered or failed. The state is read
+   * again at the gateway (the Cloud server does not sign its deliveries); the event's own state is used only when the
+   * gateway does not answer, the address being secret. 404 for an address that is not one of ours.
+   */
+  public async handleGatewayWebhook(token: string, body: unknown): Promise<{ ok: true; applied: boolean }> {
+    const operatorId = operatorOfSmsWebhookToken(token, process.env.SECRET_KEY || '');
+    if (!operatorId) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
+    const delivery = parseSmsWebhook(body);
+    if (!delivery) return { ok: true, applied: false };
+    const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId } });
+    if (!settings || settings.mode !== 'gateway') return { ok: true, applied: false };
+    const row = await prisma.smsOutbox.findFirst({ where: { operatorId, provider: 'gateway', providerMessageId: delivery.messageId } });
+    if (!row) return { ok: true, applied: false };
+    let state: GatewayState;
+    try {
+      state = (await this.gateway.state(this.credentials(settings), delivery.messageId)).state;
+    } catch {
+      state = delivery.event === 'sms:delivered' ? 'Delivered' : delivery.event === 'sms:sent' ? 'Sent' : 'Failed';
+    }
+    return { ok: true, applied: (await this.settle(settings, row, state)) !== null };
   }
 
   /** An abandoned SMS turned out sent: it no longer counts as failed this month. */
@@ -553,7 +631,7 @@ export class SmsService {
         linkedAt: existing?.mode === 'gateway' && existing.linkedAt ? existing.linkedAt : new Date(),
         // 06/11/2026: another login is another app, whose ping Plazo sets again.
         ...(existing?.gatewayLogin !== login || existing?.gatewayBaseUrl !== (baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl)
-          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneOfflineAlertedAt: null }
+          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneWebhooksSetAt: null, phoneOfflineAlertedAt: null }
           : {}),
         lastError: null,
         lastErrorAt: null,
@@ -571,6 +649,7 @@ export class SmsService {
         linkedAt: null,
         phonePingSetAt: null,
         phoneSpacingSetAt: null,
+        phoneWebhooksSetAt: null,
         phoneOfflineAlertedAt: null,
         lastError: null,
         lastErrorAt: null,
@@ -582,6 +661,8 @@ export class SmsService {
       update: data,
     });
     await this.audit.record(actor, { action: 'sms.settings', entityType: 'operator', entityId: actor.operatorId, details: { mode: saved.mode } });
+    // The app calls Plazo back on each SMS from now on (best effort: the 15-minute phone check tries again).
+    if (saved.mode === 'gateway') await this.ensureWebhooks(saved);
     return this.view(saved);
   }
 

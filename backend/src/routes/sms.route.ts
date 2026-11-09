@@ -13,6 +13,24 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  */
 /**
  * @swagger
+ * /public/sms-gateway/webhook/{token}:
+ *   post:
+ *     summary: Callback of the operator's SMS app (sms:sent, sms:delivered, sms:failed)
+ *     description: >
+ *       Registered by Plazo at the gateway (POST /webhooks) with the operator's secret token. The message's state is
+ *       read again at the gateway before it is applied. 200 { ok, applied }; 404 for an unknown token.
+ *     tags: [SMS]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200: { description: Received }
+ *       404: { description: Unknown address }
+ */
+/**
+ * @swagger
  * /internal/sms/settings:
  *   get:
  *     summary: The operator's SMS channel (manager)
@@ -100,6 +118,7 @@ export class SmsRoute implements Routes {
 
   constructor() {
     this.router.get('/internal/sms/settings', StaffAuthMiddleware('parking:manage'), this.sms.settings);
+    this.router.post('/public/sms-gateway/webhook/:token', this.sms.gatewayWebhook);
     this.router.put(
       '/internal/sms/settings',
       StaffAuthMiddleware('parking:manage'),

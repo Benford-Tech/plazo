@@ -366,6 +366,50 @@ describe('envoi par le téléphone du parking', () => {
     expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('delivered');
   });
 
+  it('l’appli SMS prévient Plazo : adresse secrète inscrite à la liaison, état relu chez la passerelle (09/11/2026)', async () => {
+    sms.siteUrl = 'https://www.plazo.test';
+    try {
+      const op = await linkedOperator();
+      const hooks = calls(`${SMS_GATEWAY_CLOUD_URL}/webhooks`).map(([, init]) => JSON.parse(init.body));
+      expect(hooks.map(h => h.event)).toEqual(['sms:sent', 'sms:delivered', 'sms:failed']);
+      expect(hooks.map(h => h.id)).toEqual(['plazo-sent', 'plazo-delivered', 'plazo-failed']);
+      const url: string = hooks[0].url;
+      expect(url.startsWith(`https://www.plazo.test/api/public/sms-gateway/webhook/${op.operator.id}.`)).toBe(true);
+      expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).phoneWebhooksSetAt).not.toBeNull();
+
+      fetchMock.mockImplementation(async () => json({ id: 'gw-30', state: 'Pending' }, 202));
+      await sms.sendTravellerSms(op.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'w' });
+      const row = await prisma.smsOutbox.findFirstOrThrow({ where: { providerMessageId: 'gw-30' } });
+      await prisma.smsOutbox.update({ where: { id: row.id }, data: { status: 'abandoned' } });
+      await prisma.operatorSmsSettings.update({ where: { operatorId: op.operator.id }, data: { monthFailed: 1 } });
+
+      const path = new URL(url).pathname;
+      fetchMock.mockImplementation(async () => json({ id: 'gw-30', state: 'Processed', recipients: [{ state: 'Sent' }] }));
+      const body = {
+        event: 'sms:sent',
+        deviceId: 'd1',
+        id: 'e1',
+        webhookId: 'plazo-sent',
+        payload: { messageId: 'gw-30', phoneNumber: '+33612345678' },
+      };
+      const res = await api().post(path).send(body);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true, applied: true });
+      expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('sent');
+      expect(await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+        monthSent: 1,
+        monthFailed: 0,
+      });
+      // The same event again counts nothing; a forged address is refused.
+      expect((await api().post(path).send(body)).body).toEqual({ ok: true, applied: false });
+      expect((await api().post(`/api/public/sms-gateway/webhook/${op.operator.id}.nottherightcheckxxxxxxxx`).send(body)).status).toBe(404);
+      // A ping or a received SMS is ignored.
+      expect((await api().post(path).send({ event: 'system:ping', payload: {} })).body).toEqual({ ok: true, applied: false });
+    } finally {
+      sms.siteUrl = '';
+    }
+  });
+
   it('les lectures ne consultent la passerelle qu’une fois par minute', async () => {
     const op = await linkedOperator();
     await sms.sendTravellerSms(op.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'x' });
