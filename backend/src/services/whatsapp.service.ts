@@ -3,8 +3,14 @@ import { Container, Service } from 'typedi';
 import { whatsappConfig } from '@/config';
 import prisma from '@/database';
 import { smsRecipient } from '@/domain/phone';
+import { namesOfCustomer } from '@/domain/customer-name';
 import {
+  arrivalDateLabel,
+  arrivalTimeLabel,
   nextWhatsappStatus,
+  parseTemplateRules,
+  templateRuleFor,
+  TemplateParam,
   statusUpdatesOf,
   validWhatsappSignature,
   WHATSAPP_FALLBACK_AFTER_MS,
@@ -54,10 +60,20 @@ export class WhatsappService {
 
   // ---- Sending ------------------------------------------------------------------------------------
 
-  /** One template message to Meta. Never throws. */
-  public async sendTemplate(e164: string, params: string[]): Promise<SendResult> {
+  /**
+   * One template message to Meta: `plazo_message` by default, or a parking's own template (`options.name`), with an image
+   * header when `options.image` is given (Meta fetches it from that https address). Never throws.
+   */
+  public async sendTemplate(
+    e164: string,
+    params: string[],
+    options: { name?: string; language?: string | null; image?: string | null } = {},
+  ): Promise<SendResult> {
     const { token, phoneNumberId, template, language, graphVersion } = this.config();
     if (!token || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
+    const components: unknown[] = [];
+    if (options.image) components.push({ type: 'header', parameters: [{ type: 'image', image: { link: options.image } }] });
+    components.push({ type: 'body', parameters: params.map(text => ({ type: 'text', text })) });
     try {
       const res = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(phoneNumberId)}/messages`, {
         method: 'POST',
@@ -67,9 +83,9 @@ export class WhatsappService {
           to: whatsappRecipient(e164),
           type: 'template',
           template: {
-            name: template,
-            language: { code: language },
-            components: [{ type: 'body', parameters: params.map(text => ({ type: 'text', text })) }],
+            name: options.name ?? template,
+            language: { code: options.language ?? language },
+            components,
           },
         }),
         signal: AbortSignal.timeout(this.timeoutMs),
@@ -98,11 +114,43 @@ export class WhatsappService {
   public async trySend(operatorId: string, sms: TravellerSms, recipient: string, smsFallback: boolean): Promise<boolean> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     const [operator, booking] = await Promise.all([
-      prisma.operator.findUnique({ where: { id: operatorId }, select: { name: true } }),
-      sms.reservationId ? prisma.reservation.findUnique({ where: { id: sms.reservationId }, select: { reference: true } }) : null,
+      prisma.operator.findUnique({ where: { id: operatorId }, select: { id: true, name: true, inboundSlug: true } }),
+      sms.reservationId
+        ? prisma.reservation.findUnique({
+            where: { id: sms.reservationId },
+            select: {
+              reference: true,
+              arrivalAt: true,
+              customerName: true,
+              customerFirstName: true,
+              customerLastName: true,
+              parking: { select: { timezone: true } },
+            },
+          })
+        : null,
     ]);
-    const params = [whatsappParam(operator?.name ?? 'Votre parking', 80), booking?.reference ?? '-', whatsappParam(sms.text)];
-    const result = await this.sendTemplate(recipient, params);
+    const parkingName = whatsappParam(operator?.name ?? 'Votre parking', 80);
+    const rule = operator ? templateRuleFor(parseTemplateRules(this.config().templates), operator, sms.kind) : null;
+    let result: SendResult;
+    if (rule && booking) {
+      const timeZone = booking.parking?.timezone ?? 'Europe/Paris';
+      const firstName = namesOfCustomer(booking).firstName || booking.customerName || 'Madame, Monsieur';
+      const value: Record<TemplateParam, string> = {
+        firstName: whatsappParam(firstName, 60),
+        arrivalDate: arrivalDateLabel(booking.arrivalAt, timeZone),
+        arrivalTime: arrivalTimeLabel(booking.arrivalAt, timeZone),
+        parking: parkingName,
+        reference: booking.reference,
+        text: whatsappParam(sms.text),
+      };
+      result = await this.sendTemplate(
+        recipient,
+        rule.params.map(p => value[p]),
+        rule,
+      );
+    } else {
+      result = await this.sendTemplate(recipient, [parkingName, booking?.reference ?? '-', whatsappParam(sms.text)]);
+    }
     await prisma.whatsappMessage.create({
       data: {
         operatorId,
@@ -255,12 +303,31 @@ export class WhatsappService {
     if (!this.available()) throw new HttpException(httpStatus.CONFLICT, 'WhatsApp is not configured', 'whatsapp_unavailable');
     const recipient = smsRecipient(to);
     if (!recipient) throw new ValidationException({ to: 'invalid_phone' });
-    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { name: true } });
-    const result = await this.sendTemplate(recipient, [
-      whatsappParam(operator?.name ?? 'Votre parking', 80),
-      'TEST',
-      'Ceci est un message de test : vos voyageurs recevront ici leur confirmation, le rappel de la veille et le rendez-vous de la navette.',
-    ]);
+    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { id: true, name: true, inboundSlug: true } });
+    const parkingName = whatsappParam(operator?.name ?? 'Votre parking', 80);
+    const testText =
+      'Ceci est un message de test : vos voyageurs recevront ici leur confirmation, le rappel de la veille et le rendez-vous de la navette.';
+    // A parking with its own day-before template gets that one, as a traveller would (tomorrow 06:30, the tester's name).
+    const rule = operator ? templateRuleFor(parseTemplateRules(this.config().templates), operator, 'booking_reminder') : null;
+    let result: SendResult;
+    if (rule) {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const value: Record<TemplateParam, string> = {
+        firstName: whatsappParam(actor.firstName || 'Madame, Monsieur', 60),
+        arrivalDate: arrivalDateLabel(tomorrow, 'Europe/Paris'),
+        arrivalTime: '06:30',
+        parking: parkingName,
+        reference: 'TEST',
+        text: testText,
+      };
+      result = await this.sendTemplate(
+        recipient,
+        rule.params.map(p => value[p]),
+        rule,
+      );
+    } else {
+      result = await this.sendTemplate(recipient, [parkingName, 'TEST', testText]);
+    }
     if (!result.ok) {
       logger.warn(`[WhatsApp] Test refused for operator ${actor.operatorId}: ${result.code}`);
       throw new HttpException(httpStatus.BAD_GATEWAY, 'Test WhatsApp failed', result.code);
