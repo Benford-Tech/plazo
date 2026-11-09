@@ -250,7 +250,13 @@ function referenceOf(provider: Comparator, subject: string, text: string): strin
       case 'ParkMundo':
         return /\bPM\d{6,}\b/i.exec(subject)?.[0] ?? /\bPM\d{6,}\b/i.exec(text)?.[0];
       case 'Onepark':
-        return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z0-9-]{4,20})\b/i.exec(flat)?.[1];
+        // 09/11/2026: Onepark's cancellation and change notices may give the number only in their subject or heading
+        // (« Annulation de la réservation #5900011 », « Le client … a modifié la réservation #5900011 »).
+        return (
+          /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z0-9-]{4,20})\b/i.exec(flat)?.[1] ??
+          ONEPARK_NUMBERED.exec(subject)?.[1] ??
+          ONEPARK_NUMBERED.exec(flat.replace(/[*_]/g, ''))?.[1]
+        );
       case 'Parclick':
         return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*\*{0,2}([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
       case 'ParkVia':
@@ -334,6 +340,20 @@ export function isParkViaCancellation(subject: string, text: string): boolean {
   return (title.test(subject) || title.test(text)) && /cette r[ée]servation a [ée]t[ée] annul[ée]e/i.test(flatten(text));
 }
 
+/** Onepark's numbered headings: « Annulation de la réservation #5900011 », « Modification de la réservation #… », « a modifié la réservation #… ». */
+const ONEPARK_NUMBERED = /(?:annulation de la|modification de la|a modifi[ée] la) r[ée]servation\s*(?:n\s*[°ºo]|#)\s*(\d{4,12})\b/i;
+
+/**
+ * Onepark's change notice to the parking (09/11/2026, « Modification de la réservation #5916717 … non reconnu »):
+ * « Le client … a modifié la réservation #N sur votre parking » in its own text, with the whole booking table after it
+ * (Numéro de réservation, Début, Fin…).
+ */
+export function isOneparkChange(subject: string, text: string): boolean {
+  const plain = flatten(text).replace(/[*_]/g, '');
+  const said = /a modifi[ée] la r[ée]servation\s*(?:n\s*[°ºo]|#)?\s*\d{4,}\s+sur votre parking/i.test(plain);
+  return said && /onepark/i.test(`${subject}\n${plain}`) && /\bd[ée]but\b/i.test(plain) && /\bfin\b/i.test(plain);
+}
+
 /**
  * Onepark's cancellation notice to the parking (25/10/2026, « mail pas compris »): « Annulation de la réservation #5900003 »
  * as subject or heading, and « Une réservation Onepark a été annulée sur votre parking » in its own text (a text/plain copy
@@ -369,6 +389,12 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
   if (NOTE_CANCELLATION.test(notes)) return type(provider, 'other', reference, `${name}.note`, true);
   // isChange's words side by side as well: they always kept these emails from being imported (parseConfirmationEmail).
   if (SUBJECT_CHANGE.test(subject) || isChange(both) || changeIn(text) || changeIn(notes)) {
+    // 09/11/2026: Onepark's own change notice (the whole booking in it) is applied like Allopark's change; the same words
+    // anywhere else stay a change to read.
+    if (provider === 'Onepark') {
+      const sure = !!reference && !changeIn(notes) && isOneparkChange(subject, text);
+      return type(provider, 'change', reference, sure ? 'onepark.change' : 'onepark.change-wording', sure);
+    }
     return type(provider, 'change', reference, `${name}.change`, true);
   }
   if (NOTE_CHANGE.test(notes)) return type(provider, 'other', reference, `${name}.note`, true);

@@ -205,6 +205,8 @@ describe('le fil de messages du voyageur (B)', () => {
       valet: { announced: 0 },
       whatsapp: { fallbacks: 0, forgotten: 0 },
       phone: { checked: 0, offline: 0, alerted: 0 },
+      // 09/11/2026: the inbound emails' watch (its morning report depends on the hour of the run).
+      inbound: expect.objectContaining({ alerted: 0, operators: 0 }),
     });
   });
 

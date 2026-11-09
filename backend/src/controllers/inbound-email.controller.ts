@@ -54,7 +54,8 @@ export class InboundEmailController {
    * when some were due). 16/10/2026 (« analyser sans passer par Claude »): then the emails stored before the rules per
    * mail type that those rules now know (`rules`), and the emails that wait because Claude could not read them, once it
    * answers again (`reading`); each given when some were due. 16/10/2026 (« relie les mail deja traité »): last, the
-   * emails received and dealt with before the rules, read once more with them (`reread`).
+   * emails received and dealt with before the rules, read once more with them (`reread`). 09/11/2026: then those the
+   * rules taught since read otherwise (`newRules`).
    */
   public retry = catchAsync(async (req: Request, res: Response) => {
     checkInboundSecret(req);
@@ -65,12 +66,15 @@ export class InboundEmailController {
     const rules = blocked(report, plateOnly) ? null : await this.inbound.analyseWaitingForRules(new Date(), startedAt);
     const reading = blocked(report, plateOnly, rules) ? null : await this.inbound.retryReading(new Date(), startedAt);
     const reread = blocked(report, plateOnly, rules, reading) ? null : await this.inbound.rereadWithRules(new Date(), startedAt);
+    // 09/11/2026 (« un job qui parcourt les mails en continu »): the emails the rules now read otherwise.
+    const newRules = blocked(report, plateOnly, rules, reading, reread) ? null : await this.inbound.rereadWithNewRules(new Date(), startedAt);
     res.json({
       ...report,
       ...(plateOnly?.due ? { plateOnly } : {}),
       ...(rules?.due ? { rules } : {}),
       ...(reading?.due ? { reading } : {}),
       ...(reread?.due ? { reread } : {}),
+      ...(newRules?.due ? { newRules } : {}),
     });
   });
 

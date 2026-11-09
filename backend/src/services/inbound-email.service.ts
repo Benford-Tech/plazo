@@ -8,8 +8,8 @@ import { parseWebsiteForm } from '@/domain/importers/website-form';
 import { COMPARATOR_PROVIDERS, EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
-import { withAttachments } from '@/domain/inbound-attachments';
-import { parseOneparkSummary } from '@/domain/importers/onepark';
+import { withAttachments, withoutAttachments } from '@/domain/inbound-attachments';
+import { oneparkImporter, parseOneparkSummary } from '@/domain/importers/onepark';
 import { SUBJECT_CANCELLATION } from '@/domain/importers/common';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
 import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
@@ -542,6 +542,8 @@ export class InboundEmailService {
     if (type.rule === 'parkvia.cancellation' && type.reference) return this.comparatorCancellation(input, 'ParkVia', type.reference, rules);
     // 25/10/2026 (« mail pas compris »): Onepark's notice to the parking (« Une réservation Onepark a été annulée ») too.
     if (type.rule === 'onepark.cancellation' && type.reference) return this.comparatorCancellation(input, 'Onepark', type.reference, rules);
+    // 09/11/2026: Onepark's change notice (the whole booking in it) is applied like Allopark's.
+    if (type.rule === 'onepark.change' && type.reference) return this.oneparkChange(input, type.reference, rules);
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
@@ -864,6 +866,64 @@ export class InboundEmailService {
     const withLookup = { ...base, pageLookup: tried.lookup };
     const booking: ParsedBooking = { ...tried.page, provider: 'Allopark', externalReference: ref };
     const withPage = { ...withLookup, parsed: booking, reading };
+    return this.applyEmailChange(input, ref, booking, withPage, guarded, label);
+  }
+
+  /**
+   * 09/11/2026 (« Modification de la réservation #5916717 … non reconnu »): Onepark's change notice gives the whole booking
+   * as it now is (no page to open): it is applied like Allopark's change, to the booking of this number, or to the one
+   * typed by hand without it, or creates the booking Plazo does not have.
+   */
+  private async oneparkChange(input: AnalysisInput, reference: string, reading: ReadingMeta | null): Promise<Analysis> {
+    const ref = reference.trim().toUpperCase();
+    const label = `[Onepark] ${ref}`;
+    const read = input.text ? oneparkImporter.parse(withoutAttachments(input.text)) : null;
+    if (!read?.arrivalAt || !read.returnAt) {
+      logger.info(`${label}: change announced, its dates not read: nothing changed`);
+      return { provider: null, status: 'unrecognised', parsed: null, missing: [], reading, reservationId: null, pageLookup: null, change: null };
+    }
+    const booking: ParsedBooking = { ...read, provider: 'Onepark', externalReference: ref };
+    const withPage = { provider: 'Onepark', pageLookup: null, change: null, parsed: booking, reading };
+    // A change read after the traveller cancelled (its cancellation received before Plazo had the booking): never a
+    // booking of a cancelled stay.
+    const known = await prisma.reservation.findUnique({
+      where: { operatorId_externalReference: { operatorId: input.operatorId, externalReference: ref } },
+      select: { id: true },
+    });
+    if (!known && (await this.cancelledElsewhere(input, ref))) {
+      logger.info(`${label}: change of a booking Plazo does not have, cancelled by another email: left to the staff`);
+      return { ...withPage, status: 'unrecognised', missing: [], reservationId: null };
+    }
+    return this.applyEmailChange(input, ref, booking, withPage, false, label);
+  }
+
+  /** Whether another email of the operator, these 90 days, is a cancellation naming this comparator number. */
+  private async cancelledElsewhere(input: AnalysisInput, ref: string): Promise<boolean> {
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        operatorId: input.operatorId,
+        ...(input.emailId ? { id: { not: input.emailId } } : {}),
+        receivedAt: { gte: new Date(Date.now() - 90 * 86_400_000) },
+        reading: { path: ['kind'], equals: 'cancellation' },
+        OR: [{ subject: { contains: ref } }, { textBody: { contains: ref } }],
+      },
+      select: { id: true },
+      take: 1,
+    });
+    return rows.length > 0;
+  }
+
+  /** A comparator's change, `booking` being the booking as it now is: applied, created, or left to the staff (see alloparkChange). */
+  private async applyEmailChange(
+    input: AnalysisInput,
+    ref: string,
+    booking: ParsedBooking,
+    withPage: Omit<Analysis, 'status' | 'missing' | 'reservationId'>,
+    guarded: boolean,
+    label: string,
+  ): Promise<Analysis> {
+    const { operatorId } = input;
+    const source = `${(booking.provider ?? 'import').toLowerCase()}_change`;
     const byReference = () =>
       prisma.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference: ref } }, select: { id: true } });
     let reservationId = (await byReference())?.id ?? null;
@@ -885,7 +945,7 @@ export class InboundEmailService {
         return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
       }
       if (typed.length === 1) {
-        const origin = { source: 'allopark_change', provider: 'Allopark', inboundEmailId: input.emailId };
+        const origin = { source, provider: booking.provider ?? '', inboundEmailId: input.emailId };
         if (await this.reservations.linkExternalReference(operatorId, typed[0], ref, origin)) {
           logger.info(`${label}: change of a booking typed without its reference: the reference is set on it`);
           reservationId = typed[0];
@@ -931,7 +991,7 @@ export class InboundEmailService {
     let result: ImportChangeResult;
     try {
       result = await this.reservations.applyImportChange(operatorId, reservationId, booking, {
-        source: 'allopark_change',
+        source,
         inboundEmailId: input.emailId,
       });
     } catch (error) {
@@ -1696,6 +1756,42 @@ export class InboundEmailService {
     known.splice(0, known.length, ...notCancelled);
     const still: Prisma.InboundEmailWhereInput = { status: { in: REREAD_STATUSES } };
     return this.autoPass('reading of the mails already received', known, startedAt, still, { count: false, linkOnlyIfOver: true });
+  }
+
+  /**
+   * 09/11/2026 (« un job qui parcourt les mails en continu pour voir si tout est ok »): an email the rules read at its
+   * reception and left « À traiter » is read again by itself once the rules read it otherwise (a rule taught since, like
+   * Onepark's short cancellation notice): no « Relancer l'analyse » needed after a fix. Candidates: « À traiter », without
+   * booking, text kept, received these 7 days, read by the rules, of an active operator, whose kind or rule
+   * (`classifyMail`) is not the stored one, the new one being known. It ends by itself: the analysis stores the new
+   * rule (and five tries at most, `autoRetries`). Three per pass, after the other passes of the relay (the same claim, traced `auto: true`).
+   */
+  public async rereadWithNewRules(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) return { due: 0, tried: 0, outcomes: {} };
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        status: { in: TO_CHECK },
+        reservationId: null,
+        textBody: { not: null },
+        reading: { path: ['source'], equals: 'rules' },
+        receivedAt: { gte: new Date(now.getTime() - RULES_CATCH_UP_DAYS * 86_400_000) },
+        // Counted: a rule that would read an email differently from what its analysis stores never loops.
+        autoRetries: { lt: AUTO_RETRY_MAX },
+        operator: { status: 'active', suspendedAt: null, archivedAt: null },
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 200,
+    });
+    const changed = rows.filter(row => {
+      const stored = readingOf(row.reading);
+      const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+      const type = classifyMail({ subject: row.subject, text: row.textBody ?? '', from: sender, links: row.links });
+      // Only a rule named by the stored reading is compared (a reading without its rule is left as it is).
+      if (type.kind === 'unknown' || !stored?.rule) return false;
+      return stored.rule !== type.rule;
+    });
+    return this.autoPass('reading with the new rules', changed, startedAt, { status: { in: TO_CHECK } }, { count: true });
   }
 
   /**

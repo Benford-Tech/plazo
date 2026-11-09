@@ -435,6 +435,8 @@ describe('Plateforme › Prospection : envoi et relances', () => {
       .send({ step: 2, prospectId: a.id, subject: 'Essai pour {parking}', body: 'Bonjour {prénom}' });
     expect(res.body).toEqual({ sentTo: admin.manager.email });
     expect(emails()[0]).toMatchObject({ subject: '[Test] Essai pour Parking Fictif 1', to: [{ email: admin.manager.email }] });
+    // 09/11/2026: no empty `headers` object (Brevo answered 400 missing_parameter).
+    expect(emails()[0]).not.toHaveProperty('headers');
     expect(await prisma.prospectMessage.count()).toBe(0);
     expect((await api().post(`${P}/test`).set(auth(admin.token)).send({ step: 4 })).body.fields).toEqual({ step: 'invalid' });
   });

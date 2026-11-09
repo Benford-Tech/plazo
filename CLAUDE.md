@@ -154,7 +154,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réservation #5908369 », « Une réservation Onepark a été annulée sur votre parking », `isOneparkCancellation`, règle
      `onepark.cancellation`, numéro « Numéro de réservation : … ») suit le même chemin que celui de ParkVia (`comparatorCancellation`
      → `applyImportCancellation`, source `onepark_cancellation`, note « Annulée par Onepark (mail d'annulation). ») ; les mêmes mots
-     ailleurs ou écrits par celui qui transfère : `onepark.cancellation-wording`, rien d'appliqué ; fixture `onepark-cancellation.txt` ;
+     ailleurs ou écrits par celui qui transfère : `onepark.cancellation-wording`, rien d'appliqué ; fixture `onepark-cancellation.txt` ; **avis court et modifications (09/11/2026, « annulation non reconnu », « Modification de la réservation #5916717 non reconnu »)** : le numéro est aussi lu dans l'objet ou le titre (« Annulation de la réservation #N », « a modifié la réservation #N », `ONEPARK_NUMBERED`), pour l'avis court sans « Numéro de réservation » (« Code : » vide) ; l'avis de modification de Onepark (« Le client … a modifié la réservation #N sur votre parking » et le tableau entier, `isOneparkChange`, règle `onepark.change` ; ses seuls mots : `onepark.change-wording`, rien d'appliqué) est appliqué comme une modification Allopark, sans page (`oneparkChange` → `applyEmailChange` partagé : réservation du numéro, sinon celle saisie sans lui, sinon créée ; source `onepark_change`), jamais créée quand un autre mail du loueur a annulé ce numéro (`cancelledElsewhere`) ; fixtures `onepark-cancellation-short.html`, `onepark-change.html` ;
      **retrouvée par le voyageur (25/10/2026, l'avis #5908369 « À faire à la main », `unknown_booking` en production : la
      réservation avait été saisie sans le numéro)** : quand aucune réservation ne porte le numéro, `applyImportCancellation` (ParkVia
      et Onepark) cherche la réservation du voyageur que l'avis nomme (champs lus par l'importateur du comparateur : plaque si les
@@ -433,6 +433,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      mots de condition avant, « gratuite » / « possible » après, question) : « Pour toute annulation de votre réservation… »,
      « Toute réservation annulée… », « Si vous avez annulé », « Free cancellation… » (mots de condition dans les six mots avant, un deux-points ouvrant la nouvelle : « Aucune action n'est requise : votre réservation a été annulée » reste une annulation) ne font plus d'une confirmation une
      annulation ou une modification ; tests `inbound-reread.test.ts`, `inbound-kind.test.ts` (`confirmation-conditions.txt`).
+   - **Surveillance des mails entrants (09/11/2026, « faut un job qui parcourt les mails en continu pour voir si tout est ok »,
+     choix « Relire avec les règles du jour · Alerte aux gérants · Rapport pour la plateforme »)** : **relecture** : à chaque passage
+     du relais (`POST /public/inbound/retry`, réponse `newRules`), un mail « À traiter » des 7 derniers jours lu par les règles dont
+     la règle d'aujourd'hui n'est plus celle enregistrée (`reading.rule` ≠ `classifyMail(…).rule`, la nouvelle connue) est relu
+     seul (`InboundEmailService.rereadWithNewRules`, compté dans `autoRetries`, 5 au plus) : plus besoin de « Relancer l'analyse »
+     après une correction ; **alerte** : toutes les 15 minutes (passage de `remind-tomorrow`, `inbound` dans sa réponse,
+     `InboundWatchService`), un mail d'un comparateur encore « À traiter » 2 h après sa réception (48 h au plus) donne un push
+     « Mail à vérifier depuis plus de 2 h » (« 3 mails… · et 2 autres », audience `inbox`, `event: 'stale'`) par loueur, une fois par
+     mail (`InboundEmail.staleAlertedAt`), jamais de 22:00 à 07:00 (ceux de la nuit à 07:00) ; **rapport** : chaque matin dès 07:00
+     (jusqu'à midi, heure de Paris), un mail aux administrateurs de `PLATFORM_ADMIN_EMAILS` (`inboundReportEmail` de
+     `domain/inbound-watch.ts`) : par loueur réel les mails reçus en 24 h, importés et à vérifier, puis la liste des mails à vérifier
+     (heure, loueur, objet, expéditeur, état, lecture et règle), « tout est en ordre » sinon ; une fois par jour (table
+     `inbound_watch_reports`, réservée avant l'envoi, libérée si l'envoi échoue) ; migration `inbound_watch`. Test `inbound-watch.test.ts`.
    - **Formulaire du site du parking (01/11/2026, « apprends ça aussi »)** : le mail que le site du loueur envoie pour une
      réservation faite chez lui (« Envoyé depuis Safe Parking Lyon Aéroport » ; une étiquette par ligne et sa valeur dessous, ou
      « Étiquette : valeur » : Nom, E-mail, Date et heure d'arrivée « 10/11 à 18h30 », Date et heure de départ, Plaque
