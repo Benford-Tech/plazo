@@ -55,8 +55,9 @@ export class WhatsappService {
   // ---- Sending ------------------------------------------------------------------------------------
 
   /** One template message to Meta. Never throws. */
-  public async sendTemplate(e164: string, params: string[]): Promise<SendResult> {
-    const { token, phoneNumberId, template, language, graphVersion } = this.config();
+  public async sendTemplate(e164: string, params: string[], own?: { template: string; image: string }): Promise<SendResult> {
+    const { token, phoneNumberId, language, graphVersion } = this.config();
+    const template = own?.template ?? this.config().template;
     if (!token || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
     try {
       const res = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(phoneNumberId)}/messages`, {
@@ -69,7 +70,10 @@ export class WhatsappService {
           template: {
             name: template,
             language: { code: language },
-            components: [{ type: 'body', parameters: params.map(text => ({ type: 'text', text })) }],
+            components: [
+              ...(own ? [{ type: 'header', parameters: [{ type: 'image', image: { link: own.image } }] }] : []),
+              { type: 'body', parameters: params.map(text => ({ type: 'text', text })) },
+            ],
           },
         }),
         signal: AbortSignal.timeout(this.timeoutMs),
@@ -101,8 +105,13 @@ export class WhatsappService {
       prisma.operator.findUnique({ where: { id: operatorId }, select: { name: true } }),
       sms.reservationId ? prisma.reservation.findUnique({ where: { id: sms.reservationId }, select: { reference: true } }) : null,
     ]);
-    const params = [whatsappParam(operator?.name ?? 'Votre parking', 80), booking?.reference ?? '-', whatsappParam(sms.text)];
-    const result = await this.sendTemplate(recipient, params);
+    // 09/11/2026: the day-before message's own template (its 16 values and the meeting point's photo) when it is set.
+    const reminderTemplate = this.config().reminderTemplate;
+    const own = reminderTemplate && sms.whatsapp ? { template: reminderTemplate, image: sms.whatsapp.image } : undefined;
+    const params = own
+      ? sms.whatsapp!.params
+      : [whatsappParam(operator?.name ?? 'Votre parking', 80), booking?.reference ?? '-', whatsappParam(sms.text)];
+    const result = await this.sendTemplate(recipient, params, own);
     await prisma.whatsappMessage.create({
       data: {
         operatorId,

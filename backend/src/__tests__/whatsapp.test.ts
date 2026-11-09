@@ -29,6 +29,7 @@ const configured = () => ({
   template: 'plazo_message',
   language: 'fr',
   graphVersion: 'v21.0',
+  reminderTemplate: '',
 });
 
 let fetchMock: jest.SpyInstance;
@@ -139,6 +140,60 @@ describe('WhatsApp : envoi et repli SMS', () => {
     await sms.sendTravellerSms(op.operator.id, { ...reminder(), kind: 'test' });
     expect(calls(BREVO_SMS_URL)).toHaveLength(1);
     expect(calls(GRAPH)).toHaveLength(1);
+  });
+
+  it('le modèle de la veille (09/11/2026) : 16 valeurs et la photo du point de rendez-vous ; sans photo, le modèle commun', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: { address: '3 avenue Exemple, 69000 Lyon', returnMeetingLabel: 'Parking pro P0', shuttleTravelMinutes: 8 },
+    });
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    const arrivalAt = new Date(Date.now() + 30 * 3600000);
+    const booking = (ref: string) =>
+      prisma.reservation.create({
+        data: {
+          reference: ref,
+          operatorId: op.operator.id,
+          parkingId: op.parking.id,
+          channel: 'phone',
+          status: 'upcoming',
+          arrivalAt,
+          returnAt: new Date(arrivalAt.getTime() + 3 * 86400000),
+          passengers: 1,
+          customerName: 'Camille Martin',
+          customerFirstName: 'Camille',
+          customerLastName: 'Martin',
+          customerPhone: '06 12 34 56 78',
+          plate: 'AB-123-CD',
+          plateKey: 'AB123CD',
+          createdAt: new Date(Date.now() - 3 * 86400000),
+        },
+      });
+    const first = await booking('RWA001');
+    expect((await api().post(`/api/internal/reservations/${first.id}/reminder/send`).set(auth(op.token))).status).toBe(200);
+    const body = JSON.parse(calls(GRAPH)[0][1].body);
+    expect(body.template.name).toBe('plazo_veille');
+    expect(body.template.components[0]).toEqual({
+      type: 'header',
+      parameters: [{ type: 'image', image: { link: 'https://photos.example/p0.jpg' } }],
+    });
+    const params = body.template.components[1].parameters.map((p: any) => p.text);
+    expect(params).toHaveLength(16);
+    expect(params.slice(0, 2)).toEqual(['Camille', 'RWA001']);
+    expect(params[4]).toBe('AB-123-CD');
+    expect(params[7]).toBe('3 avenue Exemple, 69000 Lyon');
+    expect(params[9]).toBe('-'); // no return flight: never empty for Meta
+    expect(params[10]).toBe('Parking pro P0');
+    expect(params[12]).toBe('8 min');
+    expect(params[6]).toBe(params[15]);
+
+    // No photo: the image header cannot be left out, the common template goes.
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = NULL WHERE id = ${op.parking.id}`;
+    const second = await booking('RWA002');
+    expect((await api().post(`/api/internal/reservations/${second.id}/reminder/send`).set(auth(op.token))).status).toBe(200);
+    expect(JSON.parse(calls(GRAPH)[1][1].body).template.name).toBe('plazo_message');
   });
 
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {

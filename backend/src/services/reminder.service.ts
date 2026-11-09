@@ -220,6 +220,7 @@ export class ReminderService {
           kind: 'booking_reminder',
           to: record.customerPhone,
           text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+          whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
         });
         return outcome === 'failed' ? 'failed' : 'sent';
       }
@@ -229,6 +230,7 @@ export class ReminderService {
         kind: 'booking_reminder',
         to: record.customerPhone,
         text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+        whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
       });
       await this.push.notifyTravellers(
         [record.id],

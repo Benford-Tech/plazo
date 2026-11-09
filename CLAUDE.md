@@ -1271,6 +1271,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Réglages (`WhatsappCard`). Variables `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN`
      (marche à suivre chez Meta dans le README) ; politique de confidentialité (Meta parmi les prestataires et les transferts). Pas
      encore : le choix par le voyageur (B), les réponses WhatsApp (non lues). Tests `whatsapp.test.ts`, `WhatsappCard.test.tsx`.
+     **Modèle de la veille avec la photo (09/11/2026, « la photo du point de rendez-vous »)** : avec `WHATSAPP_REMINDER_TEMPLATE`
+     (modèle approuvé chez Meta, en-tête Image, 16 variables numérotées, `REMINDER_TEMPLATE_VARIABLES` de `domain/whatsapp.ts`),
+     le message de la veille part par ce modèle : photo du point de rendez-vous du retour (`returnMeetingPhotoUrl`, https
+     seulement, `whatsappImage`) et les valeurs des variables du SMS de la veille, chacune sur une ligne et jamais vide (« - »,
+     `reminderTemplateParams`) ; sans photo, le modèle commun `plazo_message` ; le SMS de repli reste le texte du parking
+     (`TravellerSms.whatsapp`, `SmsService.reminderWhatsapp`). Marche à suivre dans le README. Test `whatsapp.test.ts`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
