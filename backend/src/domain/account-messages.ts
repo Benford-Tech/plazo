@@ -7,9 +7,9 @@ import { EmailMessage } from './booking-messages';
 
 // The pro space's colours (direction C-B « Opérations », 05/10/2026; until 23/10/2026 the template wore the black and
 // amber of direction B): light ground, white card, lime for the button with dark green text, dark green for the accents.
-const COLORS = { ink: '#1A1D1A', soft: '#6B7280', line: '#E4E6E2', tint: '#EEF0EE', lime: '#A3E635', limeInk: '#0F2A14', deep: '#1E5E2E' };
+export const COLORS = { ink: '#1A1D1A', soft: '#6B7280', line: '#E4E6E2', tint: '#EEF0EE', lime: '#A3E635', limeInk: '#0F2A14', deep: '#1E5E2E' };
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 const paragraph = (text: string) => `<p style="margin:12px 0 0;font-size:15px;line-height:1.5">${escapeHtml(text)}</p>`;
@@ -19,7 +19,8 @@ function button(label: string, url: string): string {
 <p style="margin:0;font-size:12px;color:${COLORS.soft};word-break:break-all">${escapeHtml(url)}</p>`;
 }
 
-function layout(productName: string, title: string, body: string): string {
+/** The pro space's email frame (also the platform's inbound report, 09/11/2026). */
+export function layout(productName: string, title: string, body: string): string {
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:${COLORS.tint};font-family:Helvetica,Arial,sans-serif;color:${COLORS.ink}">
