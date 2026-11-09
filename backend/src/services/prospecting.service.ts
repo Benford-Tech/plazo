@@ -617,6 +617,7 @@ export class ProspectingService {
       values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
       unsubscribeUrl: this.unsubscribeUrl(id),
       stores: this.stores(),
+      screens: step.step === 1,
     });
     const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
     const result = await this.notifications.emailProspect({ email: prospect.email, ...(name ? { name } : {}) }, message, {
@@ -709,6 +710,7 @@ export class ProspectingService {
       values,
       unsubscribeUrl: this.notifications.siteUrl('/api/public/prospecting/unsubscribe/test') ?? '',
       stores: this.stores(),
+      screens: n === 1,
     });
     const result = await this.notifications.emailProspect(
       { email: actor.email },

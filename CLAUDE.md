@@ -1620,6 +1620,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `storeBadgesHtml` partagés avec l'invitation, `ProspectingService.stores()` ; Google Play cliquable, App Store grisé tant que
   `PLAZO_PRO_APP_STORE_URL` manque ; deux lignes dans la version texte), puis sous la carte la raison, l'éditeur et le lien de
   désinscription.
+  **Images dans le premier mail, direction B (09/11/2026, « il faut des images dans le mail pour illustrer », maquettes
+  https://claude.ai/artifact/3tvu7w8QKu47ti3QYW5eLq)** : sous l'introduction (après le deuxième paragraphe) du mail 1 seulement,
+  trois écrans de Plazo Pro côte à côte avec leur légende, « Le planning du jour », « La navette en direct », « Chaque voiture à
+  sa place » (`MAIL_SCREENS`, `screensHtml`, option `screens` de `prospectEmail`, posée par `sendOne` et « M'envoyer un test »
+  pour l'étape 1) ; JPEG de 360 px dans `site/public/mail/` (haut des captures des stores, parking de démo), servis par le site
+  comme les badges (rien sans l'adresse du site), texte alternatif pour les messageries qui bloquent les images, rien dans la
+  version texte ; les relances restent sans image.
   **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
   « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
   l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le
