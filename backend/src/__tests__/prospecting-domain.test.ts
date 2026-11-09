@@ -91,6 +91,29 @@ describe('variables des mails', () => {
     expect(withStores.text).toContain('Plazo Pro sur Google Play (Android) : https://play.google.com/store/apps/details?id=x');
     expect(withStores.text).toContain("Plazo Pro sur l'App Store (iPhone) : Validation par Apple en cours");
     expect(mail.html).not.toContain('badges/');
+    expect(withStores.html).not.toContain('/mail/');
+    // 09/11/2026: the first mail shows three Plazo Pro screens under the introduction, never in the text version.
+    const withScreens = prospectEmail({
+      productName: 'Plazo',
+      company,
+      senderName: 'Équipe Plazo',
+      step: { subject: 'S', body: 'Bonjour,\n\nIntroduction.\n\nPour votre équipe :\n- un point' },
+      values,
+      unsubscribeUrl: 'https://site.example/u/x',
+      stores: { badgesBase: 'https://site.example/', playStoreUrl: 'https://play.google.com/store/apps/details?id=x', appStoreUrl: null },
+      screens: true,
+    });
+    for (const file of ['plazo-pro-planning.jpg', 'plazo-pro-navette.jpg', 'plazo-pro-places.jpg'])
+      expect(withScreens.html).toContain(`src="https://site.example/mail/${file}"`);
+    expect(withScreens.html.indexOf('Introduction.')).toBeLessThan(withScreens.html.indexOf('/mail/'));
+    expect(withScreens.html.indexOf('/mail/')).toBeLessThan(withScreens.html.indexOf('Pour votre équipe'));
+    expect(withScreens.html).toContain('alt="La navette en route vers le terminal, suivie en direct"');
+    expect(withScreens.text).not.toContain('/mail/');
+    // No site address, no images.
+    expect(
+      prospectEmail({ productName: 'Plazo', company, senderName: 'É', step: { subject: 'S', body: 'a' }, values, unsubscribeUrl: 'u', screens: true })
+        .html,
+    ).not.toContain('/mail/');
     // An address in the text is a link too, its trailing punctuation left out.
     const typed = prospectEmail({
       ...withDemo,
