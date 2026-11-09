@@ -273,6 +273,129 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: other.id } })).status).toBe('upcoming');
   });
 
+  it("l'avis court d'annulation Onepark (09/11/2026) : le numéro dans l'objet seulement, la réservation est annulée", async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const typed = (reference: string, externalReference: string | null, phone: string) =>
+      prisma.reservation.create({
+        data: {
+          operatorId: op.operator.id,
+          parkingId: op.parking.id,
+          reference,
+          channel: 'aggregator',
+          channelDetail: 'Onepark',
+          externalReference,
+          customerName: 'Camille Exemple',
+          customerFirstName: 'Camille',
+          customerLastName: 'Exemple',
+          customerPhone: phone,
+          plate: '',
+          plateKey: '',
+          arrivalAt: new Date('2026-11-11T08:30:00Z'),
+          returnAt: new Date('2026-11-15T08:30:00Z'),
+          passengers: 1,
+          status: 'upcoming',
+        },
+      });
+    const byNumber = await typed('PZONE01', '5900011', '06 12 34 56 78');
+    const notice = (number: string) =>
+      item(op.address, '', {
+        From: { Name: 'Onepark', Address: 'partner.service@onepark.co' },
+        Subject: `Annulation de la réservation #${number}`,
+        RawHtmlBody: fixture('onepark-cancellation-short.html'),
+      });
+    await post([notice('5900011')]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: byNumber.id } })).status).toBe('cancelled');
+    expect(await latest(op.operator.id)).toMatchObject({
+      status: 'imported',
+      reservationId: byNumber.id,
+      reading: { kind: 'cancellation', provider: 'Onepark', rule: 'onepark.cancellation' },
+      change: { kind: 'cancellation', applied: true },
+    });
+
+    // Typed by hand without the number: found by the traveller (phone and name) and the arrival day, and given the number.
+    const byHand = await typed('PZONE02', null, '+33612345678');
+    await post([notice('5900012')]);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: byHand.id } })).toMatchObject({
+      status: 'cancelled',
+      externalReference: '5900012',
+    });
+  });
+
+  it("l'avis de modification Onepark (09/11/2026) est appliqué à la réservation de ce numéro", async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const booking = await prisma.reservation.create({
+      data: {
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        reference: 'PZONE03',
+        channel: 'aggregator',
+        channelDetail: 'Onepark',
+        externalReference: '5900011',
+        customerName: 'Camille Exemple',
+        customerFirstName: 'Camille',
+        customerLastName: 'Exemple',
+        customerPhone: '+33 6 12 34 56 78',
+        plate: '',
+        plateKey: '',
+        arrivalAt: new Date('2026-11-11T08:30:00Z'),
+        returnAt: new Date('2026-11-15T08:30:00Z'),
+        passengers: 1,
+        status: 'upcoming',
+      },
+    });
+    const change = item(op.address, '', {
+      From: { Name: 'Onepark', Address: 'partner.service@onepark.co' },
+      Subject: 'Modification de la réservation #5900011',
+      RawHtmlBody: fixture('onepark-change.html'),
+    });
+    await post([change]);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } });
+    // 23:00 Paris on the 14 November.
+    expect(after).toMatchObject({ returnAt: new Date('2026-11-14T22:00:00Z'), passengers: 4, plate: 'AB-123-CD', priceCents: 2000 });
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({
+      status: 'imported',
+      reservationId: booking.id,
+      reading: { kind: 'modification', provider: 'Onepark', rule: 'onepark.change' },
+      change: { applied: true },
+    });
+    const history = await prisma.auditLog.findFirstOrThrow({ where: { entityId: booking.id, action: 'reservation.updated' } });
+    expect(history.details).toMatchObject({ source: 'onepark_change', provider: 'Onepark' });
+
+    // The same notice again: nothing more to change, a duplicate linked to the booking.
+    await post([{ ...change, Uuid: ['u2'] }]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
+
+    // A booking Plazo does not have is created from the notice…
+    const other = (number: string, uuid: string) => ({
+      ...change,
+      Uuid: [uuid],
+      Subject: `Modification de la réservation #${number}`,
+      RawHtmlBody: fixture('onepark-change.html')
+        .replace(/5900011/g, number)
+        .replace('+33 6 12 34 56 78', '+33 6 11 22 33 44'),
+    });
+    await post([other('5900021', 'u3')]);
+    expect(await prisma.reservation.findFirst({ where: { operatorId: op.operator.id, externalReference: '5900021' } })).toMatchObject({
+      channelDetail: 'Onepark',
+      status: 'upcoming',
+    });
+    // …but never one another email cancelled first.
+    await post([
+      item(op.address, '', {
+        Uuid: ['u4'],
+        From: { Name: 'Onepark', Address: 'partner.service@onepark.co' },
+        Subject: 'Annulation de la réservation #5900022',
+        RawHtmlBody: fixture('onepark-cancellation-short.html').replace('+33 6 12 34 56 78', '+33 6 99 88 77 66'),
+      }),
+    ]);
+    await post([other('5900022', 'u5')]);
+    expect(await prisma.reservation.findFirst({ where: { operatorId: op.operator.id, externalReference: '5900022' } })).toBeNull();
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', reservationId: null });
+  });
+
   it('l’avis Park Hit (25/10/2026) : importé sans Claude, canal comparateur « Park Hit », vols sans compagnie dans les notes', async () => {
     const op = await connected();
     claudeIs('absent');
