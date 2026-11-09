@@ -80,7 +80,8 @@ const VARIABLES: TemplateVariable[] = [
   "navette",
   "services",
 ];
-const TOKEN_RE = /\{\s*([^{}\s][^{}]{0,30}?)\s*\}/g;
+// 09/11/2026 (« ce sont des doubles accolades »): {{prénom}} works as {prénom}.
+const TOKEN_RE = /\{\{?\s*([^{}\s][^{}]{0,30}?)\s*\}\}?/g;
 
 function variableOf(name: string): TemplateVariable | null {
   const key = name.toLowerCase();

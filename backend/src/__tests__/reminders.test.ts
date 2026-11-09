@@ -114,6 +114,11 @@ describe('les règles du SMS de la veille', () => {
     ).toMatchObject({ prénom: 'Marie Claire', nom: 'de La Tour' });
   });
 
+  it('les doubles accolades (09/11/2026) : {{prénom}} vaut {prénom}, {{inconnue}} est refusée', () => {
+    expect(renderTemplate('Bonsoir {{prénom}}, dépôt le {{ date }} à {heure}.', VALUES)).toBe('Bonsoir Camille, dépôt le 15/06/2027 à 08:30.');
+    expect(unknownVariables('Bonjour {{client}}')).toEqual(['{{client}}']);
+  });
+
   it('compte les SMS : 160 / 153 caractères en GSM-7, 70 / 67 dès un émoji ou un â', () => {
     expect(smsLength('a'.repeat(160))).toEqual({ encoding: 'gsm7', characters: 160, segments: 1 });
     expect(smsLength('a'.repeat(161))).toEqual({ encoding: 'gsm7', characters: 161, segments: 2 });

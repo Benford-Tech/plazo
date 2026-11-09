@@ -690,7 +690,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      rendez-vous du retour, sinon l'aéroport), `{consignes}` (ses consignes), `{navette}` (« 8 min ») et `{services}` (services
      additionnels actifs et leurs prix, « Lavage intérieur : 50 €, Recharge hybride : 15 € ») ; un détail absent reste vide
      (`TEMPLATE_VARIABLES`, `ParkingValues`, `parkingValuesOf` de `domain/day-before-sms.ts`, `services/parking-values.ts`) ; un
-     même texte sert à tous les parkings. Test `reminders.test.ts`.
+     même texte sert à tous les parkings ; `{{prénom}}` vaut `{prénom}` (doubles accolades acceptées, `TOKEN_RE`). Test `reminders.test.ts`.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
