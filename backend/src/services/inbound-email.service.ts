@@ -1759,6 +1759,42 @@ export class InboundEmailService {
   }
 
   /**
+   * 09/11/2026 (« un job qui parcourt les mails en continu pour voir si tout est ok »): an email the rules read at its
+   * reception and left « À traiter » is read again by itself once the rules read it otherwise (a rule taught since, like
+   * Onepark's short cancellation notice): no « Relancer l'analyse » needed after a fix. Candidates: « À traiter », without
+   * booking, text kept, received these 7 days, read by the rules, of an active operator, whose kind or rule
+   * (`classifyMail`) is not the stored one, the new one being known. It ends by itself: the analysis stores the new
+   * rule (and five tries at most, `autoRetries`). Three per pass, after the other passes of the relay (the same claim, traced `auto: true`).
+   */
+  public async rereadWithNewRules(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) return { due: 0, tried: 0, outcomes: {} };
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        status: { in: TO_CHECK },
+        reservationId: null,
+        textBody: { not: null },
+        reading: { path: ['source'], equals: 'rules' },
+        receivedAt: { gte: new Date(now.getTime() - RULES_CATCH_UP_DAYS * 86_400_000) },
+        // Counted: a rule that would read an email differently from what its analysis stores never loops.
+        autoRetries: { lt: AUTO_RETRY_MAX },
+        operator: { status: 'active', suspendedAt: null, archivedAt: null },
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 200,
+    });
+    const changed = rows.filter(row => {
+      const stored = readingOf(row.reading);
+      const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+      const type = classifyMail({ subject: row.subject, text: row.textBody ?? '', from: sender, links: row.links });
+      // Only a rule named by the stored reading is compared (a reading without its rule is left as it is).
+      if (type.kind === 'unknown' || !stored?.rule) return false;
+      return stored.rule !== type.rule;
+    });
+    return this.autoPass('reading with the new rules', changed, startedAt, { status: { in: TO_CHECK } }, { count: true });
+  }
+
+  /**
    * Review (16/10/2026): the comparators' references (AL-…, PM…) that an email of these operators, these 90 days, cancels
    * or refunds: read by Claude or by the rules as a cancellation, or with a cancellation subject once its text is gone.
    */

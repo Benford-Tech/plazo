@@ -628,48 +628,60 @@ enum InboundDelivery {
 }
 
 model InboundEmail {
-  id            String             @id @default(cuid())
-  operatorId    String
-  status        InboundEmailStatus
-  fromAddress   String?
-  fromName      String?
-  subject       String?
+  id             String             @id @default(cuid())
+  operatorId     String
+  status         InboundEmailStatus
+  fromAddress    String?
+  fromName       String?
+  subject        String?
   // The email's text, kept 30 days for "À vérifier" (RGPD), then cleared by the nightly purge.
-  textBody      String?
-  provider      String?
-  parsed        Json?
-  missing       Json?
+  textBody       String?
+  provider       String?
+  parsed         Json?
+  missing        Json?
   // L-A (08/10/2026): what Claude made of an email no importer knew: { kind, provider, confidence, summary, model }.
-  reading       Json?
+  reading        Json?
   // 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): what a re-analysis needs that the text lost: the email's own
   // recipients (never the Plazo address, 5 at most) and its allopark.com links (10 at most); cleared with the text.
-  recipients    String[]           @default([])
-  links         String[]           @default([])
+  recipients     String[]           @default([])
+  links          String[]           @default([])
   // 10/10/2026 (« Prévent captcha »): the Allopark booking page at the last analysis: { outcome: read | protected |
   // unavailable | not_found, url (the page to open by hand, failures only), at }; cleared with the text and by attach.
-  pageLookup    Json?
+  pageLookup     Json?
   // 10/10/2026 (« C'est une modification »): what Plazo did of an Allopark change of a booking: { applied, reason?,
   // reservationId?, reference?, changes: [{ field, from, to }], at }; the values are personal data like the text:
   // cleared with it after 30 days, and by attach.
-  change        Json?
+  change         Json?
   // The last re-analysis, asked by the staff or made by Plazo (a second one within 30 s is refused).
-  analysedAt    DateTime?
+  analysedAt     DateTime?
   // 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the re-analyses Plazo made by itself of an email
   // whose Allopark booking page it could not read (domain/inbound-retry.ts: five at most).
-  autoRetries   Int                @default(0)
+  autoRetries    Int                @default(0)
   // C (14/10/2026): how the email arrived (null: received before Plazo told them apart).
-  delivery      InboundDelivery?
+  delivery       InboundDelivery?
   // 29/10/2026: the first name of who pasted it (delivery `pasted`), shown « Collé par Joanny ».
-  pastedBy      String?
-  reservationId String?
-  receivedAt    DateTime           @default(now())
-  createdAt     DateTime           @default(now())
+  pastedBy       String?
+  // 09/11/2026 (« un job qui parcourt les mails en continu »): when the managers were told this comparator's email still
+  // waited « À traiter » two hours after it came (InboundWatchService), once per email.
+  staleAlertedAt DateTime?
+  reservationId  String?
+  receivedAt     DateTime           @default(now())
+  createdAt      DateTime           @default(now())
 
   operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
 
   @@index([operatorId, status, receivedAt])
   @@map("inbound_emails")
+}
+
+/// 09/11/2026 (« un job qui parcourt les mails en continu »): the platform's morning report of the inbound emails, one
+/// row per Paris day it was sent (the row is taken before the email leaves: never twice the same day).
+model InboundWatchReport {
+  day    String   @id
+  sentAt DateTime @default(now())
+
+  @@map("inbound_watch_reports")
 }
 
 model AuditLog {
@@ -793,9 +805,9 @@ model Reservation {
   idempotencyKey           String?             @unique
   // 06/11/2026 (SEO local, M1): where the traveller came from, for a booking made on the site: search | direct |
   // referral | social | campaign, or app (the Plazo app); the engine, site or campaign; the page they landed on.
-  acquisitionSource  String?
-  acquisitionDetail  String?
-  acquisitionLanding String?
+  acquisitionSource        String?
+  acquisitionDetail        String?
+  acquisitionLanding       String?
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
   manageTokenVersion       Int                 @default(0)
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
@@ -957,8 +969,8 @@ model Reservation {
   @@index([status, holdExpiresAt])
   @@index([payoutStatus, arrivalAt])
   @@index([importId])
-  @@map("reservations")
   @@index([operatorId, deletedAt])
+  @@map("reservations")
 }
 
 /// 28/10/2026 (« importer des anciennes réservations dans plazo et avoir un aperçu avant de valider », direction A): one
@@ -1469,20 +1481,20 @@ model OperatorSmsSettings {
 
   // 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli): the traveller messages (confirmation, day before, landing)
   // go first by WhatsApp from Plazo's WhatsApp Business number; the SMS channel above is the fallback.
-  whatsappEnabled          Boolean   @default(false)
+  whatsappEnabled Boolean @default(false)
 
   // 06/11/2026 (« ajoute un historique d'état du téléphone de service »): the gateway phone is checked every 15 minutes
   // (sms_phone_checks); the managers are told once per outage when it stops answering (phoneAlerts, on by default).
-  phoneAlerts              Boolean   @default(true)
-  phoneCheckedAt           DateTime?
-  phoneOfflineAlertedAt    DateTime?
+  phoneAlerts           Boolean   @default(true)
+  phoneCheckedAt        DateTime?
+  phoneOfflineAlertedAt DateTime?
   // When Plazo asked the app to ping every 5 minutes (once per linked login), so that an idle phone is still seen.
-  phonePingSetAt           DateTime?
+  phonePingSetAt        DateTime?
   // 07/11/2026 (« Faudrait espacer les envois »): when Plazo asked the app to wait 30 to 60 s between two SMS.
-  phoneSpacingSetAt        DateTime?
+  phoneSpacingSetAt     DateTime?
   // 09/11/2026 (« faudrait communiquer avec sms gateway »): when Plazo asked the app to call it back on sms:sent,
   // sms:delivered and sms:failed (/public/sms-gateway/webhook/<token>); null again when the login changes.
-  phoneWebhooksSetAt       DateTime?
+  phoneWebhooksSetAt    DateTime?
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
@@ -1539,27 +1551,28 @@ model SmsOutbox {
   @@index([createdAt])
   @@map("sms_outbox")
 }
+
 // A traveller message sent by WhatsApp (03/11/2026, « Plazo envoie par WhatsApp », SMS en repli). Meta tells its fate by
 // webhook (sent, delivered, read, failed); a failure, or no delivery within a few minutes, sends the SMS in its place.
 // fallbackText is the SMS to send then, cleared once delivered, read or fallen back (and after 2 hours): the text is
 // never kept longer than it can serve. Rows are purged after 30 days.
 model WhatsappMessage {
-  id            String       @id @default(cuid())
+  id            String   @id @default(cuid())
   operatorId    String
   reservationId String?
   kind          String
   to            String
   // Meta's message id (wamid...), null when Meta refused the message at once.
-  waMessageId   String?      @unique
+  waMessageId   String?  @unique
   // sent, delivered, read, failed, fallback (the SMS was sent in its place).
-  status        String       @default("sent")
+  status        String   @default("sent")
   // Meta's error code of a failure (no personal data).
   errorCode     String?
   fallbackText  String?
   // Outcome of the fallback SMS (sent, queued, failed, skipped).
   smsOutcome    String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @default(now()) @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
@@ -1569,7 +1582,6 @@ model WhatsappMessage {
   @@index([reservationId])
   @@map("whatsapp_messages")
 }
-
 
 // The day-before SMS of a parking (« SMS de la veille », S-A + S-B, 06/10/2026). No row: on, 18:00,
 // Plazo's text. The reminder (SMS, email, push) leaves at that local time the evening before the
