@@ -186,6 +186,16 @@ describe('WhatsApp : modèle propre à un parking (09/11/2026)', () => {
 });
 
 describe('WhatsApp : réglages', () => {
+  it('10/11/2026 : allumé pour tous les parkings tant qu’un gérant ne l’éteint pas', async () => {
+    const op = await setupOperator();
+    whatsapp.config = configured;
+    let res = await api().get('/api/internal/whatsapp/settings').set(auth(op.token));
+    expect(res.body).toMatchObject({ available: true, enabled: true });
+    await api().put('/api/internal/whatsapp/settings').set(auth(op.token)).send({ enabled: false });
+    res = await api().get('/api/internal/whatsapp/settings').set(auth(op.token));
+    expect(res.body.enabled).toBe(false);
+  });
+
   it('refuse de l’allumer sans le numéro de Plazo, et montre le repli SMS', async () => {
     const op = await setupOperator();
     whatsapp.config = defaultConfig;

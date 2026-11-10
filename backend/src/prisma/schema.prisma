@@ -1481,7 +1481,7 @@ model OperatorSmsSettings {
 
   // 03/11/2026 (« Plazo envoie par WhatsApp », SMS en repli): the traveller messages (confirmation, day before, landing)
   // go first by WhatsApp from Plazo's WhatsApp Business number; the SMS channel above is the fallback.
-  whatsappEnabled Boolean @default(false)
+  whatsappEnabled Boolean @default(true)
 
   // 06/11/2026 (« ajoute un historique d'état du téléphone de service »): the gateway phone is checked every 15 minutes
   // (sms_phone_checks); the managers are told once per outage when it stops answering (phoneAlerts, on by default).
