@@ -1859,8 +1859,9 @@ export const fr = {
     unavailable: `Bientôt : le numéro WhatsApp de ${PRODUCT.name} attend sa validation par Meta.`,
     noFallback:
       "Pas de SMS en repli : réglez l'envoi des SMS ci-dessous, sinon un voyageur sans WhatsApp ne reçoit rien.",
-    month: (whatsapp: number, read: number, fallbacks: number) =>
-      `Ce mois-ci : ${whatsapp} par WhatsApp (${read} lus), ${fallbacks} par SMS en repli.`,
+    month: (whatsapp: number, read: number, fallbacks: number, failed = 0) =>
+      `Ce mois-ci : ${whatsapp} par WhatsApp (${read} lus), ${fallbacks} par SMS en repli` +
+      (failed > 0 ? `, ${failed} non remis par WhatsApp.` : "."),
     signatureNote: "Le code de signature du contrat part toujours par SMS.",
     testLabel: "Numéro de test",
     test: "M'envoyer un test sur WhatsApp",
@@ -5261,6 +5262,15 @@ export const bookingReminderFr = {
     done: "Message de la veille envoyé.",
     doneAgain: "Message de la veille renvoyé.",
     failed: "Le message n'est pas parti : vérifiez WhatsApp et le canal SMS dans Parking › Réglages.",
+  },
+  // 10/11/2026 (« distingue WhatsApp et SMS »).
+  delivery: {
+    whatsapp: "WhatsApp",
+    sms: "SMS",
+    read: (time: string | null) => (time ? `lu à ${time}` : "lu"),
+    delivered: "remis",
+    notDelivered: "non remis",
+    fallback: "WhatsApp non remis",
   },
   refusal: {
     reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",

@@ -63,9 +63,38 @@ describe("BookingReminderCard", () => {
     renderCard();
     expect(await screen.findByRole("heading", { name: "Message de la veille" })).toBeInTheDocument();
     expect(screen.getByTestId("booking-reminder-fallback")).toHaveTextContent("SMS si WhatsApp ne passe pas");
+    expect(screen.queryByTestId("delivery-pill")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Renvoyer par WhatsApp" }));
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Message de la veille renvoyé."));
     confirm.mockRestore();
+  });
+
+  it("dit si le message est parti par WhatsApp ou par SMS (10/11/2026)", async () => {
+    api.getBookingReminder.mockResolvedValue({
+      ...base,
+      status: "sent",
+      sentAt: "2099-06-14T18:00",
+      resend: true,
+      whatsapp: true,
+      delivery: { by: "whatsapp", status: "read", statusAt: "2099-06-14T18:05", whatsappFallback: false },
+    });
+    renderCard();
+    const pill = await screen.findByTestId("delivery-pill");
+    expect(pill).toHaveAttribute("data-by", "whatsapp");
+    expect(pill).toHaveTextContent("WhatsApp· lu à 18:05");
+  });
+
+  it("dit « SMS · WhatsApp non remis » quand le SMS est parti à sa place", async () => {
+    api.getBookingReminder.mockResolvedValue({
+      ...base,
+      status: "sent",
+      sentAt: "2099-06-14T18:00",
+      resend: true,
+      whatsapp: true,
+      delivery: { by: "sms", status: "sent", statusAt: null, whatsappFallback: true },
+    });
+    renderCard();
+    expect(await screen.findByTestId("delivery-pill")).toHaveTextContent("SMS· WhatsApp non remis");
   });
 
   it("ne montre rien une fois la voiture déposée sans SMS", async () => {

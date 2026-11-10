@@ -100,7 +100,7 @@ export function WhatsappCard() {
               </p>
             )}
             <p className="text-muted-foreground" data-testid="whatsapp-month">
-              {t.month(s.month.whatsapp, s.month.read, s.month.fallbacks)}
+              {t.month(s.month.whatsapp, s.month.read, s.month.fallbacks, s.month.failed)}
             </p>
             <p className="text-muted-foreground">{t.signatureNote}</p>
           </div>

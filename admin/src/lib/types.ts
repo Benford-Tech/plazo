@@ -1720,6 +1720,7 @@ export interface ReminderRow {
   /** Local "YYYY-MM-DDTHH:mm": when it leaves (planned) or left. */
   at: string | null;
   excludedBy: string | null;
+  delivery?: ReminderDelivery | null;
 }
 export interface ReminderEvening {
   date: string;
@@ -2361,7 +2362,18 @@ export interface BookingReminder {
     | null;
   /** 10/11/2026: it leaves by WhatsApp first, the SMS only if WhatsApp does not get through (absent from older APIs). */
   whatsapp?: boolean;
+  /** 10/11/2026: how the last one reached the traveller. */
+  delivery?: ReminderDelivery | null;
   timezone: string;
+}
+
+/** 10/11/2026 (« distingue WhatsApp et SMS »): WhatsApp, or the SMS (in WhatsApp's place when `whatsappFallback`). */
+export interface ReminderDelivery {
+  by: "whatsapp" | "sms";
+  status: string;
+  /** Local "YYYY-MM-DDTHH:mm" when delivered or read. */
+  statusAt: string | null;
+  whatsappFallback: boolean;
 }
 
 /** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */

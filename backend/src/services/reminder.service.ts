@@ -1,3 +1,4 @@
+import { travellerMessages } from '@/domain/traveller-message-log';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY } from '@/config';
@@ -61,7 +62,20 @@ export interface BookingReminder {
   refusal: ManualReminderRefusal | null;
   /** 10/11/2026: it leaves by WhatsApp first (the parking has it on), the SMS only if WhatsApp does not get through. */
   whatsapp: boolean;
+  /** 10/11/2026 (« distingue WhatsApp et SMS »): how the last one reached the traveller, null before any. */
+  delivery: ReminderDelivery | null;
   timezone: string;
+}
+
+/**
+ * How the last day-before message of a booking went out (10/11/2026): by WhatsApp (sent, delivered, read; `statusAt` local
+ * "YYYY-MM-DDTHH:mm" when delivered or read) or by SMS, `whatsappFallback` when WhatsApp did not get through.
+ */
+export interface ReminderDelivery {
+  by: 'whatsapp' | 'sms';
+  status: string;
+  statusAt: string | null;
+  whatsappFallback: boolean;
 }
 
 export interface ReminderRow {
@@ -78,6 +92,8 @@ export interface ReminderRow {
   at: string | null;
   /** First name of the staff member who left it out. */
   excludedBy: string | null;
+  /** 10/11/2026: by WhatsApp or by SMS, once it left. */
+  delivery: ReminderDelivery | null;
 }
 
 export interface EveningView {
@@ -277,11 +293,12 @@ export class ReminderService {
   public async forReservation(actor: AuthenticatedStaff, reservationId: string, now = new Date()): Promise<BookingReminder> {
     const r = await this.reservationOf(actor, reservationId);
     const tz = r.parking.timezone;
-    const [usualRow, sms, outbox, whatsapp] = await Promise.all([
+    const [usualRow, sms, outbox, whatsapp, deliveries] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: r.parkingId } }),
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } }),
       this.latestOutbox([r.id]),
       this.sms.whatsapp.enabledFor(actor.operatorId),
+      this.deliveries([r.id], tz),
     ]);
     const usual = usualRow ?? USUAL;
     const evening = eveningOf(r.arrivalAt, tz);
@@ -297,6 +314,7 @@ export class ReminderService {
       canSend: !refusal,
       refusal,
       whatsapp,
+      delivery: deliveries.get(r.id) ?? null,
       timezone: tz,
     };
   }
@@ -371,6 +389,10 @@ export class ReminderService {
       orderBy: { arrivalAt: 'asc' },
     });
     const outbox = await this.latestOutbox(reservations.map(r => r.id));
+    const deliveries = await this.deliveries(
+      reservations.map(r => r.id),
+      tz,
+    );
     const excluders = await this.firstNames(reservations.map(r => r.reminderExcludedById).filter((id): id is string => !!id));
 
     const rowsByEvening = new Map<string, ReminderRow[]>();
@@ -388,6 +410,7 @@ export class ReminderService {
         status,
         at: at ? localDateTime(at, tz) : null,
         excludedBy: r.reminderExcludedById ? (excluders.get(r.reminderExcludedById) ?? null) : null,
+        delivery: deliveries.get(r.id) ?? null,
       };
       rowsByEvening.set(date, [...(rowsByEvening.get(date) ?? []), row]);
     }
@@ -586,6 +609,37 @@ export class ReminderService {
     if (r.status !== 'upcoming' || r.arrivalAt <= ctx.now || missedEvening(due.at, r.arrivalAt, ctx.now, ctx.tz))
       return { status: 'not_sent', at: null };
     return { status: 'planned', at: due.at };
+  }
+
+  /** The channel of each booking's last day-before message (WhatsApp, or the SMS in its place), from the 30-day logs. */
+  private async deliveries(reservationIds: string[], tz: string): Promise<Map<string, ReminderDelivery>> {
+    if (!reservationIds.length) return new Map();
+    const where = { reservationId: { in: reservationIds }, kind: 'booking_reminder' };
+    const [whatsapp, sms] = await Promise.all([
+      prisma.whatsappMessage.findMany({
+        where,
+        select: { id: true, reservationId: true, kind: true, status: true, waMessageId: true, errorCode: true, createdAt: true, updatedAt: true },
+      }),
+      prisma.smsOutbox.findMany({
+        where,
+        select: { id: true, reservationId: true, kind: true, status: true, createdAt: true, updatedAt: true },
+      }),
+    ]);
+    const out = new Map<string, ReminderDelivery>();
+    for (const id of reservationIds) {
+      const [last] = travellerMessages(
+        whatsapp.filter(w => w.reservationId === id),
+        sms.filter(m => m.reservationId === id),
+      );
+      if (!last) continue;
+      out.set(id, {
+        by: last.channel,
+        status: last.status,
+        statusAt: last.statusAt ? localDateTime(new Date(last.statusAt), tz) : null,
+        whatsappFallback: last.whatsappFallback,
+      });
+    }
+    return out;
   }
 
   private async latestOutbox(reservationIds: string[]): Promise<Map<string, SmsOutbox>> {

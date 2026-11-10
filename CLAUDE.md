@@ -703,7 +703,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      **Le bouton dit le canal, choix A (10/11/2026, « comme "Renvoyer le SMS", un bouton envoyer WhatsApp »)** : `GET …/reminder`
      rend `whatsapp` (WhatsApp allumé pour le loueur, `WhatsappService.enabledFor`) ; le bloc devient « Message de la veille »,
      « Envoyer par WhatsApp » / « Renvoyer par WhatsApp » avec « SMS si WhatsApp ne passe pas » dessous (l'envoi passait déjà par
-     WhatsApp d'abord) ; sans WhatsApp, « SMS de la veille » et « Renvoyer le SMS » comme avant.
+     WhatsApp d'abord) ; sans WhatsApp, « SMS de la veille » et « Renvoyer le SMS » comme avant. **WhatsApp ou SMS (10/11/2026,
+     « distingue WhatsApp et SMS »)** : `delivery { by, status, statusAt, whatsappFallback }` du dernier message de la veille
+     (`ReminderService.deliveries`, `travellerMessages` sur les journaux de 30 jours) sur `GET …/reminder` et chaque départ de la
+     page « SMS de la veille » ; pastille `DeliveryPill` (« WhatsApp · lu à 18:05 » en vert, « SMS · WhatsApp non remis » en gris)
+     sur la fiche et la page ; carte « WhatsApp aux voyageurs » : « …, N non remis par WhatsApp. » quand il y en a.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail

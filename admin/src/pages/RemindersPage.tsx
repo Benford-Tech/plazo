@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
+import { DeliveryPill } from "@/components/reservations/DeliveryPill";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, adminApi } from "@/lib/api";
@@ -389,7 +390,10 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
                     <td className="px-2.5 py-2.5 font-mono text-muted-foreground">{row.customerPhone}</td>
                     <td className="px-2.5 py-2.5 text-muted-foreground">{row.channelDetail || fr.channels[row.channel]}</td>
                     <td className="px-2.5 py-2.5">
-                      <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
+                      <span className="inline-flex flex-wrap items-center gap-1.5">
+                        <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
+                        {row.delivery && <DeliveryPill delivery={row.delivery} />}
+                      </span>
                     </td>
                     <td className="px-2.5 py-2.5 text-right">
                       {row.status === "no_mobile" || row.status === "foreign" ? (

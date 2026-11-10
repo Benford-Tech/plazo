@@ -352,6 +352,10 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const params = body.template.components[1].parameters.map((p: any) => p.text);
     expect(params[10]).toBe('Gare Saint-Exupéry TGV');
     expect(params[11]).toBe('Sortie principale, côté taxis');
+
+    // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
+    const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
+    expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
   });
 
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {
