@@ -100,11 +100,14 @@ export class WhatsappService {
     }
   }
 
-  /** WhatsApp is on for this operator (its setting) and Plazo's number is configured. */
+  /**
+   * WhatsApp is on for this operator and Plazo's number is configured. On for every parking unless a manager turned it
+   * off (10/11/2026, « pour tous les parkings »): an operator without a settings row is on.
+   */
   public async enabledFor(operatorId: string): Promise<boolean> {
     if (!this.available()) return false;
     const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { whatsappEnabled: true } });
-    return !!settings?.whatsappEnabled;
+    return settings?.whatsappEnabled ?? true;
   }
 
   /**
@@ -280,7 +283,7 @@ export class WhatsappService {
     const count = (status: string) => rows.find(row => row.status === status)?._count._all ?? 0;
     return {
       available: this.available(),
-      enabled: !!settings?.whatsappEnabled,
+      enabled: settings?.whatsappEnabled ?? true,
       smsFallback: !!settings && settings.mode !== 'none',
       month: {
         whatsapp: count('sent') + count('delivered') + count('read'),
