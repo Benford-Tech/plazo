@@ -85,6 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const startViewAs = async (operatorId: string) => {
     const { access, operator } = await adminApi.startViewAs(operatorId);
+    // Going straight from one parking to another (10/11/2026): the previous consultation is closed first.
+    await endViewAsSession();
     setViewAs({ token: access.token, expires: access.expires, operator });
     await fetchMe();
   };

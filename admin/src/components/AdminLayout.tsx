@@ -31,7 +31,7 @@ import { DemoBanner } from "./DemoBanner";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { RevenueMaskToggle } from "./platform/RevenueMaskToggle";
 import { NotificationBell } from "./notifications/NotificationBell";
-import { ViewSwitch } from "./platform/ViewSwitch";
+import { ParkingSwitcher } from "./platform/ParkingSwitcher";
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -200,6 +200,7 @@ export function AdminLayout() {
                 <ParkingLogo version={user.operatorLogoUpdatedAt} name={user.operatorName} size={28} />
               </>
             )}
+            {user?.isPlatformAdmin && <ParkingSwitcher current="operator" compact className="lg:hidden" />}
             <div className="ml-auto flex items-center gap-2 lg:hidden">
               <NotificationBell />
               <AccountMenu platformAdmin={platformAdmin} onLogout={handleLogout} compact />
@@ -299,18 +300,22 @@ export function AdminLayout() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="hidden h-12 items-center gap-4 border-b border-panel-line bg-panel-shell px-6 lg:flex">
             <ParkingLogo version={user?.operatorLogoUpdatedAt} name={user?.operatorName} size={22} className="-mr-2" />
-            <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">
-              {user?.operatorName}
-            </span>
-            {platformAdmin && <ViewSwitch current="own" className="ml-auto" />}
-            <span className={cn(platformAdmin ? "" : "ml-auto")}>
+            {/* 10/11/2026 (direction A): for the super admin, the parking's name opens the parking switcher. */}
+            {user?.isPlatformAdmin ? (
+              <ParkingSwitcher current="operator" />
+            ) : (
+              <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">
+                {user?.operatorName}
+              </span>
+            )}
+            <span className="ml-auto">
               <RevenueMaskToggle />
             </span>
             <NotificationBell />
           </header>
           <EmailVerificationBanner />
           <ContractBanner />
-          <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
+          <main key={user?.operatorId} className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
             <Outlet />
           </main>
         </div>

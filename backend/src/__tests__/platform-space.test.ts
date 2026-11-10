@@ -572,7 +572,13 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
 
     const token = await open(admin.operator.id);
     const me = await api().get('/api/internal/staff/me').set(auth(token));
-    expect(me.body.viewAs).toEqual({ operatorId: admin.operator.id, operatorName: admin.operator.name, platformAccount: true });
+    expect(me.body.viewAs).toEqual({
+      operatorId: admin.operator.id,
+      operatorName: admin.operator.name,
+      platformAccount: true,
+      realOperatorId: other.operator.id,
+      realOperatorName: other.operator.name,
+    });
 
     const email = 'chauffeur-test@example.com';
     const created = await api()

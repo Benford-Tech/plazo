@@ -57,7 +57,7 @@ describe("espace Plateforme dans le menu", () => {
     // Direction A (30/10/2026): in the account menu at the bottom of the rail.
     fireEvent.click(screen.getAllByTestId("account-menu").at(-1)!);
     expect(screen.getByRole("menuitem", { name: "Plateforme" })).toHaveAttribute("href", "/plateforme");
-    expect(screen.getByRole("button", { name: "Changer de vue" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("parking-switcher").length).toBeGreaterThan(0);
   });
 
   it("liste les études avec leur fourchette", async () => {

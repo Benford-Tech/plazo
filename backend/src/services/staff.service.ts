@@ -76,7 +76,16 @@ export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfT
     allowedPosts: allowedPosts(staff.role),
     isPlatformAdmin: isPlatformAdmin(staff.email),
     emailVerified: !!staff.emailVerifiedAt,
-    viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName, platformAccount: actingAs.platformAccount } : null,
+    viewAs: actingAs
+      ? {
+          operatorId: staff.operatorId,
+          operatorName: staff.operatorName,
+          platformAccount: actingAs.platformAccount,
+          // 10/11/2026 (« naviguer entre les parkings en tant que super admin »): the admin's own space, for the switcher.
+          realOperatorId: actingAs.realOperatorId,
+          realOperatorName: actingAs.realOperatorName,
+        }
+      : null,
     // 21/10/2026: a session of the prospects' demo, and when it is wiped (the 01:00 UTC cron).
     demo: staff.demo ? { resetsAt: nextDemoReset(new Date()).toISOString() } : null,
   };
