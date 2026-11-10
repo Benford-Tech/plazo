@@ -47,7 +47,7 @@ describe("espace Plateforme dans le menu", () => {
   it("n'apparaît pas dans le menu d'un loueur", () => {
     auth.user = { ...manager, isPlatformAdmin: false };
     renderAt("/", <div />);
-    expect(screen.getByRole("link", { name: "Planning" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Planning" }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("link", { name: "Plateforme" })).not.toBeInTheDocument();
   });
 

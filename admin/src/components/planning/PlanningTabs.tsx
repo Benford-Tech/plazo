@@ -11,7 +11,8 @@ export function PlanningTabs() {
       isActive ? "bg-lime text-lime-ink" : "text-muted-foreground hover:bg-accent hover:text-foreground",
     );
   return (
-    <nav aria-label={t.tabsLabel} className="flex w-fit gap-1 rounded-full border border-panel-line bg-panel p-1">
+    // On a phone the tab bar's pills already offer Planning · Prévisionnel (10/11/2026).
+    <nav aria-label={t.tabsLabel} className="hidden w-fit gap-1 rounded-full border border-panel-line bg-panel p-1 lg:flex">
       <NavLink to="/planning" end className={tab}>
         {t.tabs.day}
       </NavLink>

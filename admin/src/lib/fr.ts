@@ -595,6 +595,11 @@ export const fr = {
     collapse: (label: string) => `Masquer les pages de ${label}`,
     toDo: (n: number) => `${n} à traiter`,
     accountMenu: "Mon compte et déconnexion",
+    // 10/11/2026 (direction A): the phone's tab bar.
+    tabBar: "Onglets",
+    more: "Plus",
+    notifications: "Notifications",
+    accountSection: "Compte",
     changePhoto: "Changer ma photo",
   },
   // 30/10/2026 (« pouvoir mettre sa photo »): the card of Mon compte and the cropping.
