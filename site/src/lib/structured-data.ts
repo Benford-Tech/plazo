@@ -102,6 +102,28 @@ export function breadcrumbLd(base: string, items: { name: string; path: string }
   };
 }
 
+/**
+ * A French address typed in one line (« 3 avenue Maréchal Juin 69720 Saint-Laurent-de-Mure ») as a schema.org PostalAddress,
+ * which Google reads for local results; anything it cannot split stays the plain text.
+ */
+export function postalAddress(text: string): JsonLdObject | string {
+  const line = text.replace(/\s+/g, " ").trim();
+  const match = /^(.*?)[,\s]+(\d{5})\s+(.+?)(?:,?\s*france)?$/i.exec(line);
+  if (!match || !match[1].trim()) return line;
+  const locality = match[3]
+    .trim()
+    .toLowerCase()
+    .replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, letter: string) => sep + letter.toUpperCase())
+    .replace(/-(De|Du|Des|La|Le|Les|Sur|Sous|En|Lès|Lés)-/g, m => m.toLowerCase());
+  return {
+    "@type": "PostalAddress",
+    streetAddress: match[1].replace(/,\s*$/, "").trim(),
+    postalCode: match[2],
+    addressLocality: locality,
+    addressCountry: "FR",
+  };
+}
+
 /** A parking's page: the place, its services and its lowest price ("dès …"). Null for a demo parking.
  * No link to the airport as a place: these parkings are outside it, at a shuttle's ride. */
 export function parkingLd(base: string, { airport, parking }: Pick<ParkingResponse, "airport" | "parking">, description: string): JsonLdObject | null {
@@ -116,7 +138,7 @@ export function parkingLd(base: string, { airport, parking }: Pick<ParkingRespon
     url,
     description,
     ...(parking.photos.length > 0 ? { image: parking.photos.map(photo => absolute(base, photo)) } : {}),
-    ...(parking.address ? { address: parking.address } : {}),
+    ...(parking.address ? { address: postalAddress(parking.address) } : {}),
     ...(parking.location ? { geo: { "@type": "GeoCoordinates", latitude: parking.location.lat, longitude: parking.location.lng } } : {}),
     ...(parking.phone ? { telephone: parking.phone } : {}),
     ...(parking.services.includes("open_24h") ? { openingHours: "Mo-Su 00:00-23:59" } : {}),
