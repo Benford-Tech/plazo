@@ -307,6 +307,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      reste affiché, pas de « Compléter »). `alloparkPageUrls` donne le lien du mail puis les pages des adresses du parking
      (3 au plus) : un lien qui mène ailleurs (« gérer ma réservation ») n'arrête plus la recherche. « Compléter » préremplit
      aussi le modèle et la couleur du véhicule.
+     **Nouvelle réservation depuis une modification d'une réservation close, choix A (10/11/2026, « ici propose des champs à
+     modifier et valider pour créer la résa »)** : sous le bloc « Modification à faire à la main » de raison `reservation_closed`
+     (mail sans réservation, À traiter ou Traité), `NewBookingFromChange` (`components/inbound/`, `lib/inbound-new-booking.ts`
+     `canCreateFromChange`, `prefillOf` : la réservation lue, les nouvelles valeurs de la modification par-dessus) : arrivée,
+     retour, prénom, nom, téléphone, plaque, vol retour, véhicule, passagers, prix, modifiables, puis « Créer la réservation »
+     (canal comparateur, numéro du mail, mail rattaché ; « créer quand même » si complet) ; la réservation close reste telle quelle
+     et cède son numéro (`takeReferenceFromClosed` de `POST /internal/reservations` : le numéro tenu par une réservation rendue,
+     annulée ou non venue passe à la nouvelle, tracé `reservation.updated` `source: 'new_booking_from_change'` ; sinon 409
+     `already_imported` comme avant). Tests `NewBookingFromChange.test.tsx`, `reservations.test.ts`.
      **Import sans plaque (15/10/2026, « ne pas planter à l'import quand la plaque est manquante »)** : la plaque n'est plus
      requise pour créer une réservation depuis un mail (`REQUIRED_FOR_IMPORT` sans `plate`) ; Plazo la cherche encore
      (`SOUGHT_FOR_IMPORT` : page Allopark, Claude) sans faire attendre le mail ; une plaque dont Claude doute est écartée (lue à

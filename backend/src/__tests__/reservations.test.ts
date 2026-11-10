@@ -43,6 +43,32 @@ describe('création', () => {
     expect(await prisma.auditLog.count({ where: { action: 'reservation.created' } })).toBe(1);
   });
 
+  it('le numéro du comparateur passe d’une réservation close à la nouvelle, sur demande seulement (10/11/2026)', async () => {
+    const { token } = await setupOperator();
+    const aggregator = { channel: 'aggregator', channelDetail: 'Onepark', externalReference: '5904227' };
+    const first = await api().post('/api/internal/reservations').set(auth(token)).send(booking(aggregator));
+    expect(first.status).toBe(201);
+    // Still open: the number stays its own, even when asked.
+    const open = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ ...aggregator, plate: 'DT670RJ', takeReferenceFromClosed: true }));
+    expect(open.status).toBe(409);
+    expect(open.body.code).toBe('already_imported');
+
+    await prisma.reservation.update({ where: { id: first.body.data.id }, data: { status: 'cancelled' } });
+    const plain = await api().post('/api/internal/reservations').set(auth(token)).send(booking({ ...aggregator, plate: 'DT670RJ' }));
+    expect(plain.status).toBe(409);
+    const moved = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ ...aggregator, plate: 'DT670RJ', takeReferenceFromClosed: true }));
+    expect(moved.status).toBe(201);
+    expect(moved.body.data.externalReference).toBe('5904227');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: first.body.data.id } })).externalReference).toBeNull();
+    expect(await prisma.auditLog.count({ where: { entityId: first.body.data.id, action: 'reservation.updated' } })).toBe(1);
+  });
+
   it('valide les champs et l’ordre des dates', async () => {
     const { token } = await setupOperator();
     const bad = await api()

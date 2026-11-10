@@ -7,6 +7,8 @@ import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, timeOf, todayLocal } from "@/lib/datetime";
+import { NewBookingFromChange } from "@/components/inbound/NewBookingFromChange";
+import { canCreateFromChange } from "@/lib/inbound-new-booking";
 import { describeError, fr, inboundFr as t } from "@/lib/fr";
 import type {
   InboundChange,
@@ -658,6 +660,8 @@ function Reading({
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>
       {email.change && <ChangeBlock change={email.change} />}
+      {/* 10/11/2026 (choice A): a change of a closed booking becomes a new booking, typed here. */}
+      {canCreateFromChange(email) && <NewBookingFromChange key={email.id} email={email} />}
       {/* 10/10/2026 (relecture): a change that names no booking (`ambiguous`) shows what the page gave (dates, price). */}
       {(!email.change || !email.change.reservationId) && understood && <Understood email={email} />}
     </article>

@@ -212,7 +212,7 @@ export class ReservationService {
     return prisma
       .$transaction(async tx => {
         await this.capacity.lock(tx, parking.id);
-        if (externalReference) await this.refuseDuplicate(tx, actor, externalReference);
+        if (externalReference) await this.refuseDuplicate(tx, actor, externalReference, data.takeReferenceFromClosed === true);
         const full = await this.checkCapacity(tx, actor, parking, stay, data.force);
         const reference = await this.newUniqueReference(tx);
 
@@ -772,11 +772,26 @@ export class ReservationService {
   }
 
   /** A booking already imported from its channel is never created twice. */
-  private async refuseDuplicate(client: Client, actor: AuthenticatedStaff, externalReference: string) {
+  private async refuseDuplicate(client: Client, actor: AuthenticatedStaff, externalReference: string, takeFromClosed = false) {
     const existing = await client.reservation.findUnique({
       where: { operatorId_externalReference: { operatorId: actor.operatorId, externalReference } },
-      select: { id: true, reference: true },
+      select: { id: true, reference: true, status: true },
     });
+    // 10/11/2026: a closed booking gives its comparator number up to the new booking typed from a change mail.
+    if (existing && takeFromClosed && ['returned', 'cancelled', 'no_show'].includes(existing.status)) {
+      await client.reservation.update({ where: { id: existing.id }, data: { externalReference: null } });
+      await this.audit.record(
+        actor,
+        {
+          action: 'reservation.updated',
+          entityType: 'reservation',
+          entityId: existing.id,
+          details: { externalReference: { from: externalReference, to: null }, source: 'new_booking_from_change' },
+        },
+        client,
+      );
+      return;
+    }
     if (existing) {
       throw new HttpException(httpStatus.CONFLICT, 'This booking was already imported', 'already_imported', { reservation: existing });
     }

@@ -5281,6 +5281,32 @@ export const bookingReminderFr = {
   } as Record<string, string>,
 };
 
+/** 10/11/2026 (« ici propose des champs à modifier et valider pour créer la résa », choice A). */
+export const inboundNewBookingFr = {
+  title: "Créer une nouvelle réservation",
+  intro: (provider: string, reference: string | null) =>
+    `D'après ce mail ${provider}${reference ? ` (n° ${reference})` : ""} : vérifiez les champs, puis créez la réservation.`,
+  comparator: "du comparateur",
+  arrival: "Arrivée",
+  return: "Retour",
+  firstName: "Prénom",
+  lastName: "Nom",
+  phone: "Téléphone",
+  plate: "Plaque (facultatif)",
+  returnFlight: "Vol retour (facultatif)",
+  vehicle: "Véhicule",
+  passengers: "Passagers",
+  price: "Prix payé (€)",
+  priceInvalid: "Montant invalide (ex. 45,50).",
+  invalid: "Valeur invalide.",
+  force: "Le parking est complet sur une nuit : créer quand même.",
+  create: "Créer la réservation",
+  creating: "Création…",
+  closedStays: "La réservation close reste telle quelle.",
+  created: (reference: string) => `Réservation ${reference} créée, le mail lui est rattaché.`,
+  done: "Réservation créée :",
+};
+
 /** 06/11/2026 (« une facture au nom du parking avec son logo », direction A). */
 export const invoiceFr = {
   settings: {
