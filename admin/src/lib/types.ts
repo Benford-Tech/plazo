@@ -55,6 +55,9 @@ export interface Staff {
     operatorId: string;
     operatorName: string;
     platformAccount?: boolean;
+    /** 10/11/2026: the admin's own operator, for the parking switcher (missing from an older API). */
+    realOperatorId?: string;
+    realOperatorName?: string;
   } | null;
   /** Team list (13/10/2026): how the member signs in to Plazo Pro (missing from an older API). */
   signIn?: SignInMethod[];

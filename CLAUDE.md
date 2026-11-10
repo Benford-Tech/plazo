@@ -1567,7 +1567,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`. Notifications de la plateforme
   (choix E-A + C-A du 05/10/2026) : `/pro/plateforme/notifications`, table `platform_notifications`, routes
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
-  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Archivage des loueurs (09/10/2026,
+  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
+  https://claude.ai/artifact/YNc1gxT1wvRA9L1hw8MbPK)** : pour le super admin, le nom du parking dans la barre haute (et sur téléphone
+  en haut du rail) ouvre `ParkingSwitcher` (`components/platform/ParkingSwitcher.tsx`, `lib/parking-switcher.ts`), qui remplace le menu
+  « Changer de vue » (aussi dans la barre de la Plateforme) : recherche sans accents (les archivés en plus quand on cherche), « Récents »
+  (3, gardés dans le navigateur `plazo:recent-parkings`), « Tous les loueurs · N » avec la pastille d'état (Invitation, Suspendu, Archivé,
+  Démo, Tests), puis « Toute la plateforme » et « Mon espace (…) » ; Ctrl K (⌘K) l'ouvre, flèches et Entrée au clavier. Choisir un parking
+  ferme la consultation en cours et en ouvre une autre (`startViewAs`), « Mon espace » la ferme ; on reste sur la même page
+  (`samePageIn` : une réservation donne la liste, un contrat les Réglages, la Plateforme le tableau de bord), toutes les requêtes sont
+  relues (`resetQueries`, `<main key={operatorId}>`). `/staff/me` › `viewAs.realOperatorId/realOperatorName` donne son propre espace.
+  Les règles de la consultation ne changent pas. Tests `ParkingSwitcher.test.tsx`, `platform-space.test.ts`.
+  **Archivage des loueurs (09/10/2026,
   « archive les parkings suspendus »)** : `Operator.archivedAt` (CHECK : archivé ⇒ suspendu ; migration `operator_archived`, qui
   archive tout loueur suspendu à son déploiement), `POST /internal/platform/operators/:id/archive` (409 `not_suspended`) et
   `…/unarchive`, `GET …/operators?view=archived` (+ `counts`), « Réactiver » désarchive ; Loueurs : pilules « Loueurs · Archivés »
