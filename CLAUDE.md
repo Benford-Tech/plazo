@@ -2025,6 +2025,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   des pages ; `WelcomeCarousel`, `CoachMarks`), textes `tutorials.*` de `fr-FR.json` ; `--dart-define=TUTORIALS=false` pour les
   captures des stores et les essais sur émulateur, coupés aussi dans les tests (`setUpLocalizedTests`) sauf
   `test/shared/tutorials/tutorials_test.dart`.
+  **Tab bar sur téléphone, direction A (10/11/2026, « Change le menu de la version web mobile en tab bar », maquettes
+  https://claude.ai/artifact/P1ty7rKLR8p6LtptjyWgmH)** : sous 1 024 px, la rangée défilante du menu est remplacée par une barre
+  d'onglets fixée en bas, les quatre de Plazo Pro : Aujourd'hui · Réservations · Parking · Plus (`MobileTabBar`, `data-testid="tab-bar"`,
+  chaque onglet selon les droits du rôle, compteur ambre des mails et services sur Réservations, marge de la barre de geste par
+  `env(safe-area-inset-bottom)` et `viewport-fit=cover`) ; les pages de l'onglet ouvert en pilules sous la barre haute
+  (`MobilePagePills`, `nav-subrow` : Tableau de bord · Planning · Prévisionnel · Navettes, Toutes · Boîte de réception…) ; « Plus » est une
+  page `/plus` (`MorePage` : le compte, Gérant avec chiffre d'affaires, « Sur Plazo · Fiche / Tarifs », équipe, contrats, puis Mon compte,
+  Notifications, Plateforme et « Se déconnecter »), onglet actif aussi sur les pages du gérant, Mon compte et Notifications. Le menu
+  est décrit une seule fois dans `components/nav-items.ts` (`NAV`, `isInItem`, `flatPages`), lu par le rail, la barre et « Plus ». Les
+  pilules « Jour · Prévisionnel » du Planning sont cachées sur téléphone. L'ordinateur garde le rail. Tests `AdminLayout.test.tsx`,
+  `MorePage.test.tsx`.
   **Menu du web, direction A, et photo de profil (30/10/2026, « Réorganise le menu sur le web. Pouvoir mettre sa photo »,
   maquettes https://claude.ai/artifact/8XWAMJ28UwJFmvFBxuv66i)** : le rail de l'espace pro (`AdminLayout.tsx`, 236 px) a quatre
   groupes par usage, Aujourd'hui (Tableau de bord, Planning › Jour · Prévisionnel, Navettes), Réservations (Toutes, Boîte de

@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
 import NotificationsPage from "@/pages/NotificationsPage";
+import MorePage from "@/pages/MorePage";
 import ContractPage from "@/pages/ContractPage";
 import ContractsPage from "@/pages/ContractsPage";
 import DemoEntryPage from "@/pages/DemoEntryPage";
@@ -273,6 +274,7 @@ const App = () => (
               />
               <Route path="/mon-compte" element={<AccountPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/plus" element={<MorePage />} />
               <Route
                 path="/contrats"
                 element={

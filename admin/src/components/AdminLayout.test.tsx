@@ -251,3 +251,53 @@ describe("AdminLayout · Masquer le CA", () => {
     expect(localStorage.getItem("plazo:revenue-hidden")).toBeNull();
   });
 });
+
+// Direction A (10/11/2026, « Change le menu de la version web mobile en tab bar »).
+describe("AdminLayout tab bar (phone)", () => {
+  const renderOn = (path: string) =>
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route element={<AdminLayout />}>
+              <Route path="*" element={<p>page</p>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  beforeEach(() => {
+    api.getGettingStarted.mockResolvedValue(STEPS);
+    localStorage.setItem("plazo:getting-started-welcome", "s1");
+  });
+
+  it("shows Aujourd'hui · Réservations · Parking · Plus, the pills of the tab shown and the waiting count", async () => {
+    auth.role = "manager";
+    renderOn("/planning");
+    const bar = screen.getByTestId("tab-bar");
+    expect(within(bar).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
+      "/",
+      "/reservations",
+      "/parking/occupation",
+      "/plus",
+    ]);
+    expect(screen.getByTestId("tab-today")).toHaveAttribute("aria-current", "page");
+    const pills = within(screen.getByTestId("nav-subrow")).getAllByRole("link");
+    expect(pills.map((a) => a.textContent)).toEqual(["Tableau de bord", "Planning", "Prévisionnel", "Navettes"]);
+    expect(await within(screen.getByTestId("tab-reservations")).findByLabelText("5 à traiter")).toBeInTheDocument();
+  });
+
+  it("puts the manager's pages and the account under Plus, without pills", () => {
+    auth.role = "manager";
+    renderOn("/chiffre-affaires");
+    expect(screen.getByTestId("tab-more")).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByTestId("nav-subrow")).toBeNull();
+  });
+
+  it("gives a driver no Parking pages it may not open, and still Plus", () => {
+    auth.role = "driver";
+    renderOn("/reservations/a-verifier");
+    expect(screen.getByTestId("tab-reservations")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("tab-more")).toBeInTheDocument();
+  });
+});
