@@ -56,6 +56,18 @@ describe("BookingReminderCard", () => {
     confirm.mockRestore();
   });
 
+  it("avec WhatsApp, le bouton dit le canal et le SMS en repli (10/11/2026, choix A)", async () => {
+    api.getBookingReminder.mockResolvedValue({ ...base, status: "sent", sentAt: "2099-06-14T10:00", resend: true, whatsapp: true });
+    api.sendBookingReminder.mockResolvedValue({ ...base, status: "sent", sentAt: "2099-06-14T10:30", resend: true, whatsapp: true });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderCard();
+    expect(await screen.findByRole("heading", { name: "Message de la veille" })).toBeInTheDocument();
+    expect(screen.getByTestId("booking-reminder-fallback")).toHaveTextContent("SMS si WhatsApp ne passe pas");
+    fireEvent.click(screen.getByRole("button", { name: "Renvoyer par WhatsApp" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Message de la veille renvoyé."));
+    confirm.mockRestore();
+  });
+
   it("ne montre rien une fois la voiture déposée sans SMS", async () => {
     api.getBookingReminder.mockResolvedValue({ ...base, status: "not_sent", at: null, canSend: false, refusal: "reminder_not_upcoming" });
     const { container } = renderCard();

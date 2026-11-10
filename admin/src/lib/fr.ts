@@ -5249,6 +5249,19 @@ export const bookingReminderFr = {
   today: "aujourd'hui",
   tomorrow: "demain",
   at: (day: string, time: string) => `${day} à ${time}`,
+  // 10/11/2026 (« comme "Renvoyer le SMS", un bouton envoyer WhatsApp », choice A): the button says the channel.
+  whatsapp: {
+    title: "Message de la veille",
+    send: "Envoyer par WhatsApp",
+    resend: "Renvoyer par WhatsApp",
+    fallback: "SMS si WhatsApp ne passe pas",
+    confirmTitle: "Renvoyer le message de la veille ?",
+    confirmText: (when: string) =>
+      `Le client l'a déjà reçu ${when}. Le message part de nouveau par WhatsApp, et par SMS si WhatsApp ne passe pas.`,
+    done: "Message de la veille envoyé.",
+    doneAgain: "Message de la veille renvoyé.",
+    failed: "Le message n'est pas parti : vérifiez WhatsApp et le canal SMS dans Parking › Réglages.",
+  },
   refusal: {
     reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
     reminder_no_mobile: "Pas de numéro de mobile français pour ce client.",

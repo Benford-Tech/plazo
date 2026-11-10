@@ -2359,6 +2359,8 @@ export interface BookingReminder {
     | "reminder_quiet_hours"
     | "reminder_too_soon"
     | null;
+  /** 10/11/2026: it leaves by WhatsApp first, the SMS only if WhatsApp does not get through (absent from older APIs). */
+  whatsapp?: boolean;
   timezone: string;
 }
 

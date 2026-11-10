@@ -59,6 +59,8 @@ export interface BookingReminder {
   resend: boolean;
   canSend: boolean;
   refusal: ManualReminderRefusal | null;
+  /** 10/11/2026: it leaves by WhatsApp first (the parking has it on), the SMS only if WhatsApp does not get through. */
+  whatsapp: boolean;
   timezone: string;
 }
 
@@ -275,10 +277,11 @@ export class ReminderService {
   public async forReservation(actor: AuthenticatedStaff, reservationId: string, now = new Date()): Promise<BookingReminder> {
     const r = await this.reservationOf(actor, reservationId);
     const tz = r.parking.timezone;
-    const [usualRow, sms, outbox] = await Promise.all([
+    const [usualRow, sms, outbox, whatsapp] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: r.parkingId } }),
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } }),
       this.latestOutbox([r.id]),
+      this.sms.whatsapp.enabledFor(actor.operatorId),
     ]);
     const usual = usualRow ?? USUAL;
     const evening = eveningOf(r.arrivalAt, tz);
@@ -293,6 +296,7 @@ export class ReminderService {
       resend: !!r.reminderSentAt,
       canSend: !refusal,
       refusal,
+      whatsapp,
       timezone: tz,
     };
   }

@@ -700,6 +700,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      le dernier (`RESEND_AFTER_MS`, réservation par `reminderSentAt`) ; 409 `reminder_not_upcoming` (pas « Attendu » ou dépôt passé),
      `reminder_no_mobile`, `reminder_no_channel`, `reminder_too_soon` (`reminder_quiet_hours` n'est plus renvoyé depuis le 31/10/2026, « enlève les plages d'envoi des SMS pour que je puisse en envoyer quand je veux » : un envoi à la main part à toute heure, seuls les envois automatiques gardent la pause de 22:00 à 07:00) ; tracé `sms.reminder_sent`
      (« a envoyé le SMS de la veille » dans l'Historique). Tests `reminders.test.ts`, `BookingReminderCard.test.tsx`.
+     **Le bouton dit le canal, choix A (10/11/2026, « comme "Renvoyer le SMS", un bouton envoyer WhatsApp »)** : `GET …/reminder`
+     rend `whatsapp` (WhatsApp allumé pour le loueur, `WhatsappService.enabledFor`) ; le bloc devient « Message de la veille »,
+     « Envoyer par WhatsApp » / « Renvoyer par WhatsApp » avec « SMS si WhatsApp ne passe pas » dessous (l'envoi passait déjà par
+     WhatsApp d'abord) ; sans WhatsApp, « SMS de la veille » et « Renvoyer le SMS » comme avant.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail

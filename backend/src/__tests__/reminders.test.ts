@@ -435,7 +435,15 @@ describe('le SMS de la veille d’une réservation donnée (30/10/2026)', () => 
     expect((await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'))).refusal).toBe('reminder_no_channel');
     await useBrevoSms(op.operator.id);
     const before = await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'));
-    expect(before).toMatchObject({ status: 'planned', at: '2027-06-15T18:00', sentAt: null, resend: false, canSend: true, refusal: null });
+    expect(before).toMatchObject({
+      status: 'planned',
+      at: '2027-06-15T18:00',
+      sentAt: null,
+      resend: false,
+      canSend: true,
+      refusal: null,
+      whatsapp: false,
+    });
 
     // At night too (31/10/2026): only the automatic sends keep the quiet hours.
     expect((await reminders.forReservation(staff, r.id, at('2027-06-14T23:00'))).refusal).toBeNull();

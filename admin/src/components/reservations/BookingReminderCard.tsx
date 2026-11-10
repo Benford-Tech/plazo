@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageSquareText } from "lucide-react";
+import { MessageCircle, MessageSquareText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-context";
@@ -63,8 +63,10 @@ export function BookingReminderCard({ reservationId }: { reservationId: string }
     onSuccess: (data, again) => {
       queryClient.setQueryData(key, data);
       queryClient.invalidateQueries({ queryKey: ["reservation-history", reservationId] });
-      if (data.status === "failed") toast.error(t.failed);
-      else toast.success(again ? t.doneAgain : t.done);
+      queryClient.invalidateQueries({ queryKey: ["reservation-messages", reservationId] });
+      const words = data.whatsapp ? t.whatsapp : t;
+      if (data.status === "failed") toast.error(words.failed);
+      else toast.success(again ? words.doneAgain : words.done);
     },
     onError: (err: Error) => toast.error(describeError(err, t.refusal)),
   });
@@ -72,10 +74,15 @@ export function BookingReminderCard({ reservationId }: { reservationId: string }
   // Nothing to say once the stay started without a reminder, nor for a booking made on the day.
   if (!r || (r.refusal === "reminder_not_upcoming" && !r.sentAt)) return null;
 
+  // 10/11/2026 (choice A): with WhatsApp on, the card and its button say the channel the message takes first.
+  const wa = !!r.whatsapp;
+  const words = wa ? { ...t, ...t.whatsapp } : t;
+  const Icon = wa ? MessageCircle : MessageSquareText;
+
   const onSend = async () => {
     if (r.resend) {
-      const ok = await confirm(t.confirmText(whenOf(r.sentAt!, r.timezone)), {
-        title: t.confirmTitle,
+      const ok = await confirm(words.confirmText(whenOf(r.sentAt!, r.timezone)), {
+        title: words.confirmTitle,
         confirmLabel: t.confirm,
       });
       if (!ok) return;
@@ -89,10 +96,10 @@ export function BookingReminderCard({ reservationId }: { reservationId: string }
       aria-labelledby="booking-reminder-title"
       className="flex flex-wrap items-center gap-3 rounded-xl border border-panel-line bg-white p-4"
     >
-      <MessageSquareText className="h-5 w-5 shrink-0 text-lime-deep" aria-hidden="true" />
+      <Icon className="h-5 w-5 shrink-0 text-lime-deep" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <h2 id="booking-reminder-title" className="text-sm font-semibold">
-          {t.title}
+          {words.title}
         </h2>
         <p className="text-sm text-muted-foreground" data-testid="booking-reminder-status">
           {statusLine(r)}
@@ -104,15 +111,23 @@ export function BookingReminderCard({ reservationId }: { reservationId: string }
         )}
       </div>
       {r.refusal !== "reminder_not_upcoming" && (
-        <Button
-          type="button"
-          variant={r.resend ? "outline" : "default"}
-          disabled={!r.canSend || send.isPending}
-          onClick={onSend}
-          data-testid="booking-reminder-send"
-        >
-          {send.isPending ? t.sending : r.resend ? t.resend : t.send}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            type="button"
+            variant={r.resend ? "outline" : "default"}
+            disabled={!r.canSend || send.isPending}
+            onClick={onSend}
+            data-testid="booking-reminder-send"
+          >
+            {wa && <MessageCircle className="mr-1.5 h-4 w-4" aria-hidden="true" />}
+            {send.isPending ? t.sending : r.resend ? words.resend : words.send}
+          </Button>
+          {wa && (
+            <p className="text-xs text-muted-foreground" data-testid="booking-reminder-fallback">
+              {t.whatsapp.fallback}
+            </p>
+          )}
+        </div>
       )}
     </section>
   );
