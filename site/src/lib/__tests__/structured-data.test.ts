@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatEuros } from "../money";
 import { parkingMetaDescription } from "../seo";
-import { articleLd, breadcrumbLd, faqLd, jsonLdScript, organizationLd, parkingListLd, parkingLd, websiteLd } from "../structured-data";
+import { articleLd, breadcrumbLd, faqLd, jsonLdScript, organizationLd, parkingListLd, parkingLd, postalAddress, websiteLd } from "../structured-data";
 import { COMPANY } from "../product";
 import type { AirportResponse, ParkingResponse } from "../types";
 
@@ -85,7 +85,13 @@ describe("structured data (schema.org)", () => {
       url: `${BASE}/lyon-saint-exupery/parkair`,
       description: "Texte",
       image: [`${BASE}/photos/a.jpg`, "https://cdn.example.com/b.jpg"],
-      address: "12 route de Lyon, 69124 Colombier-Saugnieu",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "12 route de Lyon",
+        postalCode: "69124",
+        addressLocality: "Colombier-Saugnieu",
+        addressCountry: "FR",
+      },
       geo: { "@type": "GeoCoordinates", latitude: 45.72, longitude: 5.08 },
       telephone: "+33 4 00 00 00 00",
       openingHours: "Mo-Su 00:00-23:59",
@@ -98,6 +104,22 @@ describe("structured data (schema.org)", () => {
     const bare = parkingLd(BASE, parking({ photos: [], address: null, phone: null, location: null, services: [], pricing: { tiers: [], extraDayPriceCents: null } }), "Texte");
     expect(Object.keys(bare ?? {})).toEqual(["@context", "@type", "@id", "name", "url", "description"]);
     expect(parkingLd(BASE, parking({ isDemo: true }), "Texte")).toBeNull();
+  });
+
+  it("splits a one-line French address, and keeps the text it cannot split", () => {
+    expect(postalAddress("3 avenue Maréchal Juin 69720 Saint-Laurent-de-mure")).toEqual({
+      "@type": "PostalAddress",
+      streetAddress: "3 avenue Maréchal Juin",
+      postalCode: "69720",
+      addressLocality: "Saint-Laurent-de-Mure",
+      addressCountry: "FR",
+    });
+    expect(postalAddress("Rue de Finlande, 69124  COLOMBIER-SAUGNIEU, France")).toMatchObject({
+      streetAddress: "Rue de Finlande",
+      addressLocality: "Colombier-Saugnieu",
+    });
+    expect(postalAddress("Près du Terminal 1")).toBe("Près du Terminal 1");
+    expect(postalAddress("69720 Saint-Laurent-de-Mure")).toBe("69720 Saint-Laurent-de-Mure");
   });
 
   it("gives the breadcrumb absolute addresses", () => {
