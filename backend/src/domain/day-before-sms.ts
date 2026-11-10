@@ -229,14 +229,22 @@ interface ParkingForValues {
   listing: { title: string; contactPhone: string | null; shuttleMinutes: number | null; airport?: { name: string } | null } | null;
 }
 
-/** {parking} is the listing's title, {rendez-vous} the meeting point of the return, else the airport. */
-export function parkingValuesOf(parking: ParkingForValues, services: { label: string; priceCents: number }[]): ParkingValues {
+/**
+ * {parking} is the listing's title, {rendez-vous} the meeting point of the return, else the airport. 10/11/2026 (« il y a
+ * le point de rendez-vous pour déposer la voiture et le point de rdv à l'aéroport/gare »): a booking served at one of the
+ * parking's stops (gare TGV, hôtel…) is met there on the way back, so {rendez-vous} and {consignes} are that stop's.
+ */
+export function parkingValuesOf(
+  parking: ParkingForValues,
+  services: { label: string; priceCents: number }[],
+  stop: { name: string; instructions: string | null } | null = null,
+): ParkingValues {
   return {
     name: parking.listing?.title ?? parking.name,
     address: parking.address,
     phone: parking.listing?.contactPhone ?? null,
-    meetingPoint: parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
-    meetingInstructions: parking.returnMeetingInstructions?.trim() || null,
+    meetingPoint: stop ? stop.name.trim() || null : parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
+    meetingInstructions: stop ? stop.instructions?.trim() || null : parking.returnMeetingInstructions?.trim() || null,
     shuttleMinutes: parking.listing?.shuttleMinutes ?? parking.shuttleTravelMinutes ?? null,
     services,
   };

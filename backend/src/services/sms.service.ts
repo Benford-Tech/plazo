@@ -8,7 +8,7 @@ import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { loadParkingValues } from './parking-values';
-import { reminderTemplateParams, whatsappImage } from '@/domain/whatsapp';
+import { reminderImage, reminderTemplateParams } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
@@ -510,14 +510,13 @@ export class SmsService {
   /** The day-before SMS of a booking (S-A + S-B, 06/10/2026): the parking's own text, else Plazo's. */
   /**
    * 09/11/2026 (« la photo du point de rendez-vous »): the day-before WhatsApp template's values, or null when the parking
-   * has no meeting point photo at an https address (its image header cannot be left out: the generic template goes).
+   * has no photo at an https address (its image header cannot be left out: the generic template goes). 10/11/2026: the
+   * photo of the parking, where the car is left tomorrow, before the one of the return meeting point (`reminderImage`).
    */
   public async reminderWhatsapp(booking: BookingRecord, link: string | null): Promise<{ params: string[]; image: string } | null> {
-    const [point] = await prisma.$queryRaw<{ photo: string | null }[]>`
-      SELECT "returnMeetingPhotoUrl" AS photo FROM parkings WHERE id = ${booking.parkingId}`;
-    const image = whatsappImage(point?.photo);
+    const image = reminderImage(booking.parking.listing?.photos, booking.parking.returnMeetingPhotoUrl);
     if (!image) return null;
-    const parking = (await loadParkingValues(booking.parkingId)) ?? undefined;
+    const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
     return { params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking)), image };
   }
 
@@ -527,7 +526,7 @@ export class SmsService {
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: booking.operatorId }, select: { mode: true } }),
     ]);
     const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
-    const parking = (await loadParkingValues(booking.parkingId)) ?? undefined;
+    const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
     return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, parking));
   }
 

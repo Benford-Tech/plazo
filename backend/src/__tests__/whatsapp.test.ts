@@ -295,6 +295,65 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(JSON.parse(calls(GRAPH)[1][1].body).template.name).toBe('plazo_message');
   });
 
+  it('la photo du parking (dépôt) passe avant celle du rendez-vous ; une réservation à la gare y a son rendez-vous (10/11/2026)', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: { returnMeetingLabel: 'Parking pro P0', returnMeetingInstructions: 'Devant la barrière' },
+    });
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    const listing = await api()
+      .put('/api/internal/listing')
+      .set(auth(op.token))
+      .send({
+        airportCode: 'LYS',
+        slug: `parking-${op.parking.id}`,
+        title: 'Parking LYS',
+        services: ['shuttle'],
+        cancellationPolicy: 'free_24h',
+        photos: ['https://photos.example/entree.jpg', 'https://photos.example/cour.jpg'],
+      });
+    expect(listing.status).toBe(200);
+    const gare = await prisma.shuttleStop.create({
+      data: {
+        parkingId: op.parking.id,
+        kind: 'other',
+        name: 'Gare Saint-Exupéry TGV',
+        lat: 45.72,
+        lng: 5.08,
+        instructions: 'Sortie principale, côté taxis',
+      },
+    });
+    const arrivalAt = new Date(Date.now() + 30 * 3600000);
+    const booking = await prisma.reservation.create({
+      data: {
+        reference: 'RWA010',
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        stopId: gare.id,
+        channel: 'phone',
+        status: 'upcoming',
+        arrivalAt,
+        returnAt: new Date(arrivalAt.getTime() + 3 * 86400000),
+        passengers: 1,
+        customerName: 'Camille Martin',
+        customerFirstName: 'Camille',
+        customerLastName: 'Martin',
+        customerPhone: '06 12 34 56 78',
+        plate: 'AB-123-CD',
+        plateKey: 'AB123CD',
+        createdAt: new Date(Date.now() - 3 * 86400000),
+      },
+    });
+    expect((await api().post(`/api/internal/reservations/${booking.id}/reminder/send`).set(auth(op.token))).status).toBe(200);
+    const body = JSON.parse(calls(GRAPH)[0][1].body);
+    expect(body.template.components[0].parameters[0].image.link).toBe('https://photos.example/entree.jpg');
+    const params = body.template.components[1].parameters.map((p: any) => p.text);
+    expect(params[10]).toBe('Gare Saint-Exupéry TGV');
+    expect(params[11]).toBe('Sortie principale, côté taxis');
+  });
+
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {
     const op = await operatorWithWhatsapp();
     metaAnswer = () => json({ error: { code: 131047 } }, 400);

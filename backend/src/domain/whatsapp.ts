@@ -108,6 +108,15 @@ export function reminderTemplateParams(values: Record<(typeof REMINDER_TEMPLATE_
   return REMINDER_TEMPLATE_VARIABLES.map(key => whatsappParam(values[key] ?? '', key === 'consignes' || key === 'services' ? 400 : 200));
 }
 
+/**
+ * The header photo of the day-before message (10/11/2026): the message is about tomorrow's drop-off, so the parking's own
+ * photo (the first of its listing: its entrance) comes first; the photo of the return meeting point only when the listing
+ * has none. Null when neither is at an https address.
+ */
+export function reminderImage(listingPhotos: string[] | null | undefined, returnMeetingPhotoUrl: string | null | undefined): string | null {
+  return whatsappImage(listingPhotos?.[0]) ?? whatsappImage(returnMeetingPhotoUrl);
+}
+
 /** A photo Meta can fetch for an image header: an https address (JPEG or PNG, 5 MB at most, checked by Meta). */
 export function whatsappImage(url: string | null | undefined): string | null {
   const value = url?.trim();

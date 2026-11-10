@@ -621,8 +621,11 @@ Mise en place, une fois pour toute la plateforme :
    **Utilitaire**, par exemple `plazo_veille`, en-tête **Image** (une photo d'exemple), corps à 16 variables dans cet ordre :
    {{1}} prénom, {{2}} référence, {{3}} date, {{4}} heure, {{5}} plaque, {{6}} lien, {{7}} parking, {{8}} adresse, {{9}} retour,
    {{10}} vol, {{11}} rendez-vous, {{12}} consignes, {{13}} navette, {{14}} services, {{15}} téléphone, {{16}} parking ; une
-   fois validé, poser `WHATSAPP_REMINDER_TEMPLATE=plazo_veille`. Le message de la veille part alors avec la photo du point de
-   rendez-vous (Parking › Réglages, adresse https) ; un parking sans photo garde le modèle `plazo_message`. Une valeur
+   fois validé, poser `WHATSAPP_REMINDER_TEMPLATE=plazo_veille`. Le message de la veille part alors avec la photo du parking,
+   là où la voiture est déposée (première photo de « Ma fiche »), sinon celle du point de rendez-vous du retour (Parking ›
+   Réglages), adresse https ; un parking sans aucune photo garde le modèle `plazo_message`. Le rendez-vous du retour est celui
+   de la desserte de la réservation (gare, hôtel) quand elle en a une. En production depuis le 10/11/2026 :
+   `WHATSAPP_REMINDER_TEMPLATE=apl_rappel_veille`. Une valeur
    absente part en « - » (Meta refuse une variable vide).
 
 **Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple

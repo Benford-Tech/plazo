@@ -1285,6 +1285,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      seulement, `whatsappImage`) et les valeurs des variables du SMS de la veille, chacune sur une ligne et jamais vide (« - »,
      `reminderTemplateParams`) ; sans photo, le modèle commun `plazo_message` ; le SMS de repli reste le texte du parking
      (`TravellerSms.whatsapp`, `SmsService.reminderWhatsapp`). Marche à suivre dans le README. Test `whatsapp.test.ts`.
+     **Dépôt et rendez-vous (10/11/2026, « il y a le point de rendez-vous pour déposer la voiture et le point de rdv à
+     l'aéroport/gare »)** : l'en-tête est la photo du parking où la voiture est déposée demain (première photo de la fiche),
+     celle du point de rendez-vous du retour seulement sans photo de fiche (`reminderImage`) ; une réservation servie à une
+     desserte (gare TGV, hôtel) a {rendez-vous} et {consignes} de cette desserte, SMS compris (`loadParkingValues(parkingId,
+     stopId)`, `parkingValuesOf(…, stop)`). En production : `WHATSAPP_REMINDER_TEMPLATE=apl_rappel_veille` (modèle à 16
+     variables validé le 10/11/2026), `WHATSAPP_TEMPLATES=[]`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
