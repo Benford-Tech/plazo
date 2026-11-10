@@ -57,7 +57,10 @@ describe('création', () => {
     expect(open.body.code).toBe('already_imported');
 
     await prisma.reservation.update({ where: { id: first.body.data.id }, data: { status: 'cancelled' } });
-    const plain = await api().post('/api/internal/reservations').set(auth(token)).send(booking({ ...aggregator, plate: 'DT670RJ' }));
+    const plain = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ ...aggregator, plate: 'DT670RJ' }));
     expect(plain.status).toBe(409);
     const moved = await api()
       .post('/api/internal/reservations')
