@@ -125,10 +125,61 @@ export function inboundSlugOf(recipients: string[], domain: string): string | nu
 /** A readable text from the email: the plain part, else an extracted markdown (Brevo's), else the HTML stripped. */
 export function textOf(item: InboundItem): string {
   const plain = item.RawTextBody?.trim();
-  if (plain) return plain;
+  if (plain) return readableText(plain);
   const markdown = item.ExtractedMarkdownMessage?.trim();
   if (markdown) return markdown;
   return stripHtml(item.RawHtmlBody ?? '');
+}
+
+/** The named entities a French email writes (« r&eacute;servation », « &agrave; 23:45 »); the others stay as written. */
+const NAMED_ENTITIES: Record<string, string> = {
+  eacute: 'é',
+  Eacute: 'É',
+  egrave: 'è',
+  Egrave: 'È',
+  ecirc: 'ê',
+  euml: 'ë',
+  agrave: 'à',
+  Agrave: 'À',
+  acirc: 'â',
+  ccedil: 'ç',
+  Ccedil: 'Ç',
+  icirc: 'î',
+  iuml: 'ï',
+  ocirc: 'ô',
+  ucirc: 'û',
+  ugrave: 'ù',
+  uuml: 'ü',
+  oelig: 'œ',
+  euro: '€',
+  deg: '°',
+  rsquo: '’',
+  lsquo: '‘',
+  laquo: '«',
+  raquo: '»',
+  hellip: '…',
+  ndash: '–',
+  mdash: '—',
+  middot: '·',
+};
+
+/** A numeric entity's character; the entity as written when it names no code point. */
+function charOf(entity: string, code: number): string {
+  return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+}
+
+/**
+ * 10/11/2026 (Onepark's « Modification de la réservation #5904227 » « Non reconnu »): a plain part that is in fact the
+ * HTML source of the email (« <!DOCTYPE html… », « <html… »), which no rule can read.
+ */
+export function isHtmlSource(text: string): boolean {
+  const head = text.trimStart().slice(0, 200).toLowerCase();
+  return head.startsWith('<!doctype html') || head.startsWith('<html') || (/<(table|body|div)\b/.test(head) && /<\/(td|p|div)>/i.test(text));
+}
+
+/** The text as the rules read it: an HTML source stripped (an attachment's text after it is kept as it is). */
+export function readableText(text: string): string {
+  return isHtmlSource(text) ? stripHtml(text) : text;
 }
 
 export function stripHtml(html: string): string {
@@ -142,6 +193,9 @@ export function stripHtml(html: string): string {
       .replace(/<\/(p|div|tr|li|h[1-6]|table)>/gi, '\n')
       .replace(/<[^>]+>/g, ' ')
       .replace(/&nbsp;/gi, ' ')
+      .replace(/&#(\d{1,7});/g, (entity, code: string) => charOf(entity, Number(code)))
+      .replace(/&#x([\da-f]{1,6});/gi, (entity, code: string) => charOf(entity, parseInt(code, 16)))
+      .replace(/&([a-z]{2,8});/gi, (entity, name: string) => NAMED_ENTITIES[name] ?? entity)
       .replace(/&amp;/gi, '&')
       .replace(/&lt;/gi, '<')
       .replace(/&gt;/gi, '>')

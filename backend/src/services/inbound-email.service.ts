@@ -20,9 +20,11 @@ import {
   InboundItem,
   InboundPayload,
   inboundSlugOf,
+  isHtmlSource,
   ownRecipientsOf,
   recipientsOf,
   REQUIRED_FOR_IMPORT,
+  readableText,
   SOUGHT_FOR_IMPORT,
   stripHtml,
   textOf,
@@ -522,7 +524,8 @@ export class InboundEmailService {
    */
   private async analyse(input: AnalysisInput): Promise<Analysis> {
     const claude: ClaudeCalls = { outage: null };
-    const analysis = await this.analyseWith(input, claude);
+    // 10/11/2026: a plain part that is the email's HTML source is read stripped, by the rules as by Claude.
+    const analysis = await this.analyseWith({ ...input, text: readableText(input.text) }, claude);
     // Marked only when the email waits: one Claude did not read but that was handled anyway needs nothing more of it.
     const waits = TO_CHECK.includes(storedStatus(analysis.status));
     return { ...analysis, outage: waits ? claude.outage : null };
@@ -1946,6 +1949,12 @@ export class InboundEmailService {
   ): Promise<Rerun> {
     const id = row.id;
     const { typedSince, ...rest } = options;
+    // 10/11/2026: an email kept with its HTML source as text is kept readable from now on (the inbox shows its text).
+    if (row.textBody && isHtmlSource(row.textBody)) {
+      const readable = readableText(row.textBody);
+      await prisma.inboundEmail.update({ where: { id }, data: { textBody: readable } });
+      row = { ...row, textBody: readable };
+    }
     const analysis = await this.analyse({
       ...rest,
       operatorId,

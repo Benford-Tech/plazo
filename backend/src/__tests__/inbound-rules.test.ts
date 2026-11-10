@@ -396,6 +396,78 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', reservationId: null });
   });
 
+  it("10/11/2026 : l'avis de modification Onepark dont le texte est le HTML du mail (pièce jointe CSV comprise) est appliqué", async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const typed = (reference: string, number: string) =>
+      prisma.reservation.create({
+        data: {
+          operatorId: op.operator.id,
+          parkingId: op.parking.id,
+          reference,
+          channel: 'aggregator',
+          channelDetail: 'Onepark',
+          externalReference: number,
+          customerName: 'Camille Exemple',
+          customerFirstName: 'Camille',
+          customerLastName: 'Exemple',
+          customerPhone: '+33 6 12 34 56 78',
+          plate: '',
+          plateKey: '',
+          arrivalAt: new Date('2026-11-11T08:30:00Z'),
+          returnAt: new Date('2026-11-15T08:30:00Z'),
+          passengers: 1,
+          status: 'upcoming',
+        },
+      });
+    const source = (number: string) =>
+      `${fixture('onepark-change.html').replace(/5900011/g, number)}\n\nPièce jointe : booking_${number}.csv\n` +
+      `id,user.full_name,begin_at,end_at,real_time_arrival\n${number},Camille EXEMPLE,11/11/2026 09:30,15/11/2026 09:30,14/11/2026 23:00`;
+
+    // Received with its HTML source as its plain part.
+    const received = await typed('PZONE05', '5900031');
+    await post([
+      item(op.address, '', {
+        From: { Name: 'Onepark', Address: 'partner.service@onepark.co' },
+        Subject: 'Modification de la réservation #5900031',
+        RawTextBody: source('5900031'),
+      }),
+    ]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: received.id } })).returnAt).toEqual(new Date('2026-11-14T22:00:00Z'));
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', reservationId: received.id, reading: { rule: 'onepark.change' } });
+    expect(row?.textBody).not.toMatch(/<td|<!DOCTYPE/i);
+    expect(row?.textBody).toContain('Pièce jointe : booking_5900031.csv');
+
+    // Kept before as HTML and read by the wording only: read again by itself, applied, and its text made readable.
+    const kept = await typed('PZONE06', '5900032');
+    const email = await prisma.inboundEmail.create({
+      data: {
+        operatorId: op.operator.id,
+        status: 'unrecognised',
+        fromName: 'Onepark',
+        fromAddress: 'partner.service@onepark.co',
+        subject: 'Modification de la réservation #5900032',
+        textBody: source('5900032'),
+        receivedAt: new Date(Date.now() - 3_600_000),
+        reading: {
+          kind: 'modification',
+          provider: 'Onepark',
+          confidence: 1,
+          summary: '',
+          model: '',
+          source: 'rules',
+          rule: 'onepark.change-wording',
+        },
+      },
+    });
+    await retry().expect(200);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: kept.id } })).returnAt).toEqual(new Date('2026-11-14T22:00:00Z'));
+    const after = await prisma.inboundEmail.findUniqueOrThrow({ where: { id: email.id } });
+    expect(after).toMatchObject({ reservationId: kept.id, reading: { rule: 'onepark.change' } });
+    expect(after.textBody).not.toMatch(/<td|<!DOCTYPE/i);
+  });
+
   it('l’avis Park Hit (25/10/2026) : importé sans Claude, canal comparateur « Park Hit », vols sans compagnie dans les notes', async () => {
     const op = await connected();
     claudeIs('absent');
