@@ -342,6 +342,15 @@ describe('le SMS de la veille dans l’espace pro', () => {
     });
   });
 
+  it("sans téléphone sur la fiche, {téléphone} est le téléphone d'envoi des SMS du parking (11/11/2026)", async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    await prisma.operatorSmsSettings.update({ where: { operatorId: op.operator.id }, data: { senderPhone: '+33744443579' } });
+    const put = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ template: 'Parking : {téléphone}' });
+    expect(put.status).toBe(200);
+    expect(put.body.sample.values.téléphone).toBe('07 44 44 35 79');
+  });
+
   it('rien la nuit : une réservation prise à 23:00 part à 07:00, et le jour même rien ne part', async () => {
     const op = await setupOperator();
     await useBrevoSms(op.operator.id);

@@ -3,6 +3,8 @@ import { createHash } from 'crypto';
 import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml } from './account-messages';
 import { EmailMessage } from './booking-messages';
 import { parseRegion, RegionKey } from './prospect-regions';
+export { displayPhone } from '@/domain/phone';
+import { displayPhone } from '@/domain/phone';
 import { addDays, localDate, localDateTime, parseInstant } from './time';
 
 /**
@@ -194,15 +196,6 @@ export function publisherLine(company: Publisher): string {
  * The email itself: the step's text with its variables, then the footer every message carries (who writes, why the
  * reader gets it, how to never hear from Plazo again). The body is plain text; the HTML is that text, escaped.
  */
-/** « 07 21 17 75 90 » for a French number typed as +33…, 0033… or 0…; any other number as typed. */
-export function displayPhone(phone: string): string {
-  const raw = phone.trim();
-  let digits = raw.replace(/\(0\)/g, '').replace(/[\s.()-]/g, '');
-  if (digits.startsWith('0033')) digits = `+33${digits.slice(4)}`;
-  if (digits.startsWith('+33')) digits = `0${digits.slice(3).replace(/^0/, '')}`;
-  return /^0[1-9]\d{8}$/.test(digits) ? digits.replace(/(\d{2})(?=\d)/g, '$1 ') : raw;
-}
-
 /** An address typed in the text becomes a link (the text is already escaped: `&amp;` stays part of the address). */
 function linkify(escaped: string): string {
   return escaped.replace(/https?:\/\/[^\s<]+?(?=[.,;:!?)]*(?:\s|$))/g, url => `<a href="${url}" style="color:#1E5E2E">${url}</a>`);

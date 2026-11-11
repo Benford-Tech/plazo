@@ -695,7 +695,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
      **Variables du parking (09/11/2026, « variabilise au maximum, c'est pour tous les parkings »)** : en plus de `{prénom} {nom}
      {date} {heure} {plaque} {référence} {lien}`, `{retour}` (« 15/11/2026 à 09:30 »), `{vol}` (vol retour), `{parking}` (titre de la
-     fiche, sinon le nom), `{adresse}`, `{téléphone}` (`{tel}`, téléphone de la fiche), `{rendez-vous}` (`{rdv}`, point de
+     fiche, sinon le nom), `{adresse}`, `{téléphone}` (`{tel}`, téléphone de la fiche, sinon celui du téléphone d'envoi des SMS du parking `OperatorSmsSettings.senderPhone` écrit « 07 44 44 35 79 » : 11/11/2026, « il manque le numéro du parking »), `{rendez-vous}` (`{rdv}`, point de
      rendez-vous du retour, sinon l'aéroport), `{consignes}` (ses consignes), `{navette}` (« 8 min ») et `{services}` (services
      additionnels actifs et leurs prix, « Lavage intérieur : 50 €, Recharge hybride : 15 € ») ; un détail absent reste vide
      (`TEMPLATE_VARIABLES`, `ParkingValues`, `parkingValuesOf` de `domain/day-before-sms.ts`, `services/parking-values.ts`) ; un

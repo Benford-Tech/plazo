@@ -19,3 +19,12 @@ export function smsRecipient(phone: string): string | null {
   if (FICTION_RANGE.test(national)) return null;
   return `+33${national}`;
 }
+
+/** « 07 21 17 75 90 » for a French number typed as +33…, 0033… or 0…; any other number as typed. */
+export function displayPhone(phone: string): string {
+  const raw = phone.trim();
+  let digits = raw.replace(/\(0\)/g, '').replace(/[\s.()-]/g, '');
+  if (digits.startsWith('0033')) digits = `+33${digits.slice(4)}`;
+  if (digits.startsWith('+33')) digits = `0${digits.slice(3).replace(/^0/, '')}`;
+  return /^0[1-9]\d{8}$/.test(digits) ? digits.replace(/(\d{2})(?=\d)/g, '$1 ') : raw;
+}
