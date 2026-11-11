@@ -35,6 +35,8 @@ type Form = {
   terminalLeadMinutes: string;
   landingDelayMinutes: string;
   valetMeetingPoint: string;
+  driverPhone: string;
+  travellerConditions: string;
 };
 
 const toForm = (p: Parking): Form => ({
@@ -46,6 +48,8 @@ const toForm = (p: Parking): Form => ({
   terminalLeadMinutes: String(p.terminalLeadMinutes ?? 120),
   landingDelayMinutes: String(p.landingDelayMinutes ?? 30),
   valetMeetingPoint: p.valetMeetingPoint ?? "",
+  driverPhone: p.driverPhone ?? "",
+  travellerConditions: p.travellerConditions ?? "",
 });
 
 export default function ParkingPage() {
@@ -73,6 +77,8 @@ export default function ParkingPage() {
         terminalLeadMinutes: Number(f.terminalLeadMinutes),
         landingDelayMinutes: Number(f.landingDelayMinutes),
         valetMeetingPoint: f.valetMeetingPoint.trim() || null,
+        driverPhone: f.driverPhone.trim() || null,
+        travellerConditions: f.travellerConditions.trim() || null,
       }),
     onSuccess: ({ data }) => {
       setFieldErrors({});
@@ -233,6 +239,28 @@ export default function ParkingPage() {
               maxLength={80}
               help={t.valetMeetingPointHelp}
               error={fieldErrors.valetMeetingPoint}
+            />
+            {/* 11/11/2026 (« variabilise au max »): two details of the day-before message, {chauffeur} and {conditions}. */}
+            <FormField
+              id="driverPhone"
+              label={t.driverPhone}
+              type="tel"
+              value={form.driverPhone}
+              onChange={set("driverPhone")}
+              placeholder="07 44 44 35 79"
+              maxLength={30}
+              help={t.driverPhoneHelp}
+              error={fieldErrors.driverPhone}
+            />
+            <FormField
+              id="travellerConditions"
+              label={t.travellerConditions}
+              value={form.travellerConditions}
+              onChange={set("travellerConditions")}
+              placeholder={t.travellerConditionsPlaceholder}
+              maxLength={400}
+              help={t.travellerConditionsHelp}
+              error={fieldErrors.travellerConditions}
             />
             {preview !== null && (
               <Alert className="border-lime-deep/30 bg-accent">

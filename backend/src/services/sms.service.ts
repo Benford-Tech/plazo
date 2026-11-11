@@ -517,7 +517,10 @@ export class SmsService {
     const image = reminderImage(booking.parking.listing?.photos, booking.parking.returnMeetingPhotoUrl);
     if (!image) return null;
     const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-    return { params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking)), image };
+    return {
+      params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking), this.whatsapp.config().reminderTemplate),
+      image,
+    };
   }
 
   /**
@@ -532,7 +535,7 @@ export class SmsService {
   public async metaReminder(): Promise<{ name: string; text: string; source: 'meta' | 'copy' }> {
     const name = this.whatsapp.config().reminderTemplate;
     const body = await this.whatsapp.templateBody(name);
-    return { name, text: reminderTemplateText(body ?? undefined), source: body ? 'meta' : 'copy' };
+    return { name, text: reminderTemplateText(body, name), source: body ? 'meta' : 'copy' };
   }
 
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {

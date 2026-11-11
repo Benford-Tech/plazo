@@ -2,6 +2,9 @@ import { createHmac } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
 import {
+  GENERIC_REMINDER_TEMPLATE,
+  reminderTemplateParams,
+  reminderTemplateText,
   arrivalDateLabel,
   arrivalTimeLabel,
   nextWhatsappStatus,
@@ -399,6 +402,43 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const copy = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
     expect(copy.body.meta.source).toBe('copy');
     expect(copy.body.meta.text.startsWith('Bonsoir {prénom},')).toBe(true);
+  });
+
+  it('le modèle générique (11/11/2026) : 17 valeurs dans son ordre, ses variables nommées dans Plazo', () => {
+    const text = reminderTemplateText(null, GENERIC_REMINDER_TEMPLATE);
+    expect(text).toContain('🚗 Accès : {horaires}');
+    expect(text).toContain('Coordonnées GPS : {gps}');
+    expect(text).toContain('Chauffeur, le jour de votre rendez-vous : {chauffeur}');
+    expect(text).not.toMatch(/\{\{\d+\}\}/);
+    const values = Object.fromEntries(
+      [
+        'prénom',
+        'référence',
+        'date',
+        'heure',
+        'plaque',
+        'parking',
+        'adresse',
+        'horaires',
+        'rendez-vous',
+        'consignes',
+        'gps',
+        'navette',
+        'conditions',
+        'services',
+        'téléphone',
+        'chauffeur',
+        'lien',
+        'retour',
+        'vol',
+        'nom',
+      ].map(k => [k, k === 'gps' ? '' : k.toUpperCase()]),
+    ) as any;
+    const params = reminderTemplateParams(values, GENERIC_REMINDER_TEMPLATE);
+    expect(params).toHaveLength(17);
+    expect(params[10]).toBe('-');
+    expect(params[15]).toBe('CHAUFFEUR');
+    expect(reminderTemplateParams(values, 'apl_rappel_veille')).toHaveLength(16);
   });
 
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {

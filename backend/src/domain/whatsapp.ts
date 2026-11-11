@@ -136,19 +136,95 @@ export const REMINDER_TEMPLATE_BODY = [
 ].join('\n');
 
 /**
- * The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it:
- * the body read at Meta (11/11/2026), else the copy above.
+ * 11/11/2026 (« variabilise au max… c'est un message générique »): Plazo's generic day-before template, from APL Parking
+ * Lyon's own message, every detail of the parking a variable (17 values, the parking's name twice).
  */
-export function reminderTemplateText(body: string = REMINDER_TEMPLATE_BODY): string {
-  return body.replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
-    const name = REMINDER_TEMPLATE_VARIABLES[Number(n) - 1];
-    return name ? `{${name}}` : whole;
+export const GENERIC_REMINDER_TEMPLATE = 'plazo_message_veille';
+export const GENERIC_REMINDER_VARIABLES = [
+  'prénom',
+  'référence',
+  'date',
+  'heure',
+  'plaque',
+  'parking',
+  'adresse',
+  'horaires',
+  'rendez-vous',
+  'consignes',
+  'gps',
+  'navette',
+  'conditions',
+  'services',
+  'téléphone',
+  'chauffeur',
+  'parking',
+] as const;
+export const GENERIC_REMINDER_BODY = [
+  'Bonsoir {{1}},',
+  '',
+  'Suite à votre réservation {{2}}, nous vous confirmons votre prise en charge le {{3}} à {{4}} (véhicule {{5}}).',
+  '',
+  '📍 Adresse du parking :',
+  '{{6}}',
+  '{{7}}',
+  '',
+  "🔑 Remise des clés à l'arrivée",
+  '',
+  '🚗 Accès : {{8}}',
+  '',
+  '🔑 Pour votre retour (navette) :',
+  'Merci de nous envoyer 2 messages :',
+  "• À l'atterrissage",
+  "• Une fois sorti(e) de l'aéroport",
+  '',
+  '📍 Point de rendez-vous pour le retour : {{9}}',
+  '{{10}}',
+  'Coordonnées GPS : {{11}}',
+  '',
+  'Nous vous récupérons ensuite rapidement (navette {{12}}).',
+  '',
+  "📸 La photo de l'entrée du parking est en haut de ce message.",
+  '',
+  '⏱️ Conditions : {{13}}',
+  '',
+  '✨ Services sur demande : {{14}}',
+  '',
+  '📞 Service client (réservations et informations) : {{15}}',
+  '🚐 Chauffeur, le jour de votre rendez-vous : {{16}}',
+  '',
+  'Cordialement,',
+  '{{17}}',
+  "Merci d'avoir choisi votre parking avec Plazo.",
+].join('\n');
+
+type ReminderVariable = (typeof REMINDER_TEMPLATE_VARIABLES)[number] | (typeof GENERIC_REMINDER_VARIABLES)[number];
+
+/** The order of a day-before template's numbered variables: the generic one's, else the 16 of the first templates. */
+export function reminderLayout(name: string | null | undefined): readonly ReminderVariable[] {
+  return name === GENERIC_REMINDER_TEMPLATE ? GENERIC_REMINDER_VARIABLES : REMINDER_TEMPLATE_VARIABLES;
+}
+
+/** Plazo's copy of a day-before template's body, when Meta's cannot be read. */
+export function reminderBodyCopy(name: string | null | undefined): string {
+  return name === GENERIC_REMINDER_TEMPLATE ? GENERIC_REMINDER_BODY : REMINDER_TEMPLATE_BODY;
+}
+
+/**
+ * The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it:
+ * the body read at Meta (11/11/2026), else Plazo's copy; the numbers follow the template's own order.
+ */
+export function reminderTemplateText(body?: string | null, name?: string | null): string {
+  const layout = reminderLayout(name);
+  return (body ?? reminderBodyCopy(name)).replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
+    const variable = layout[Number(n) - 1];
+    return variable ? `{${variable}}` : whole;
   });
 }
 
-/** The 16 parameters of the day-before template: each on one line, never empty (Meta refuses it: « - »). */
-export function reminderTemplateParams(values: Record<(typeof REMINDER_TEMPLATE_VARIABLES)[number], string>): string[] {
-  return REMINDER_TEMPLATE_VARIABLES.map(key => whatsappParam(values[key] ?? '', key === 'consignes' || key === 'services' ? 400 : 200));
+/** The parameters of a day-before template, in its order: each on one line, never empty (Meta refuses it: « - »). */
+export function reminderTemplateParams(values: Record<ReminderVariable, string>, name?: string | null): string[] {
+  const long = new Set(['consignes', 'services', 'conditions']);
+  return reminderLayout(name).map(key => whatsappParam(values[key] ?? '', long.has(key) ? 400 : 200));
 }
 
 /**

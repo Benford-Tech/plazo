@@ -149,6 +149,9 @@ export interface Parking {
   shuttleTracking: ShuttleTracking;
   /** 27/10/2026: where the valet meets the travellers at the airport (null: Terminal 1 · dépose-minute). */
   valetMeetingPoint?: string | null;
+  /** 11/11/2026: the day-before message's {chauffeur} and {conditions}. */
+  driverPhone?: string | null;
+  travellerConditions?: string | null;
   /**
    * 09/10/2026: `totalCapacity` and `declaredCapacity` are the figure typed by the operator;
    * `effectiveCapacity` is the one used everywhere (the plan's files, else its active spots, else
@@ -178,6 +181,8 @@ export interface ParkingSettings {
   terminalLeadMinutes?: number;
   landingDelayMinutes?: number;
   valetMeetingPoint?: string | null;
+  driverPhone?: string | null;
+  travellerConditions?: string | null;
 }
 
 export interface NewStaff {

@@ -1,5 +1,6 @@
 import prisma from '@/database';
 import { ParkingValues, parkingValuesOf } from '@/domain/day-before-sms';
+import { nightRule } from '@/domain/night-fees';
 
 /**
  * 09/11/2026 (« variabilise au maximum, c'est pour tous les parkings »): the parking's details for the variables of the
@@ -15,7 +16,14 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
       shuttleTravelMinutes: true,
       returnMeetingLabel: true,
       returnMeetingInstructions: true,
-      listing: { select: { title: true, contactPhone: true, shuttleMinutes: true, airport: { select: { name: true } } } },
+      driverPhone: true,
+      travellerConditions: true,
+      nightFeeEnabled: true,
+      nightStart: true,
+      nightEnd: true,
+      nightArrivalFeeCents: true,
+      nightReturnFeeCents: true,
+      listing: { select: { title: true, contactPhone: true, shuttleMinutes: true, openingHours: true, airport: { select: { name: true } } } },
     },
   });
   if (!parking) return null;
@@ -25,6 +33,21 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
     orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
   });
   // The booking's stop (null = the airport): only one of this parking's.
-  const stop = stopId ? await prisma.shuttleStop.findFirst({ where: { id: stopId, parkingId }, select: { name: true, instructions: true } }) : null;
-  return parkingValuesOf(parking, services, stop);
+  const stop = stopId
+    ? await prisma.shuttleStop.findFirst({ where: { id: stopId, parkingId }, select: { name: true, instructions: true, lat: true, lng: true } })
+    : null;
+  // The meeting point's position, in PostGIS (Unsupported for Prisma).
+  const [point] = await prisma.$queryRaw<{ lat: number | null; lng: number | null }[]>`
+    SELECT ST_Y("returnMeetingPoint") AS lat, ST_X("returnMeetingPoint") AS lng FROM parkings WHERE id = ${parkingId}`;
+  const night = nightRule({
+    enabled: parking.nightFeeEnabled,
+    start: parking.nightStart,
+    end: parking.nightEnd,
+    arrivalFeeCents: parking.nightArrivalFeeCents,
+    returnFeeCents: parking.nightReturnFeeCents,
+  });
+  return parkingValuesOf(parking, services, stop, {
+    meetingPoint: point && point.lat !== null && point.lng !== null ? { lat: point.lat, lng: point.lng } : null,
+    night,
+  });
 }

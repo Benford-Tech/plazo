@@ -1324,7 +1324,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      depuis : WhatsApp · SMS en repli : … ») ; les soirées en pastilles défilantes ; avec WhatsApp, les départs de la soirée à
      gauche (client, canal et mobile dans une cellule, message avec sa pastille WhatsApp / SMS) et à droite « Le message » :
      bulle WhatsApp (place de la photo, texte rempli), d'où vient le texte, SMS du repli, « Voir le modèle » repliable et
-     « M'envoyer un test » ; sans WhatsApp, l'éditeur du texte du parking comme avant.
+     « M'envoyer un test » ; sans WhatsApp, l'éditeur du texte du parking comme avant. **Modèle générique (11/11/2026,
+     « variabilise au max… c'est un message générique », d'après le message d'APL)** : `plazo_message_veille`
+     (`GENERIC_REMINDER_TEMPLATE`, `GENERIC_REMINDER_BODY`, 17 valeurs `GENERIC_REMINDER_VARIABLES` ; `reminderLayout(name)` donne
+     l'ordre des numéros de chaque modèle, les 16 d'avant pour `apl_rappel_veille` / `plazo_rappel_veille`) ; dans Plazo, une
+     seule accolade et des noms (`{prénom}`), les numéros `{{1}}` chez Meta seulement. Nouvelles variables : `{horaires}`
+     (horaires de la fiche), `{gps}` (« 45.71984 N, 5.07674 E », point de rendez-vous ou desserte, `gpsLabel`), `{conditions}`
+     (frais de nuit puis `Parking.travellerConditions`, `conditionsLabel`), `{chauffeur}` (`Parking.driverPhone`) ; champs
+     « Téléphone du chauffeur » et « Conditions pour vos clients » de Parking › Réglages (`PATCH /internal/parkings/:id`,
+     migration `parking_message_fields`, CHECK 30 / 400, conditions ramenées sur une ligne).
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

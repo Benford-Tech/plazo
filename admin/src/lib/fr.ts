@@ -1169,6 +1169,12 @@ export const fr = {
       "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
     bookablePreview: (n: number) =>
       `Places réservables avec ces réglages : ${n}`,
+    driverPhone: "Téléphone du chauffeur (le jour du dépôt)",
+    driverPhoneHelp: "Dans le message de la veille, pour l'accueil et le transfert : {chauffeur}.",
+    travellerConditions: "Conditions pour vos clients",
+    travellerConditionsPlaceholder: "Retard de plus de 30 minutes : supplément de 10 € ; dépannage (batterie) : 5 €",
+    travellerConditionsHelp:
+      "Dans le message de la veille ({conditions}), après vos frais de nuit, que Plazo ajoute lui-même. Sur une ligne : séparez par « ; ».",
     valetMeetingPoint: "Rendez-vous du voiturier à l'aéroport",
     valetMeetingPointPlaceholder: "Terminal 1 · dépose-minute",
     valetMeetingPointHelp:
@@ -4544,6 +4550,10 @@ export const remindersFr = {
       consignes: "Consignes du rendez-vous au retour",
       navette: "Durée de la navette, 8 min",
       services: "Services proposés et leurs prix",
+      horaires: "Horaires d'accès (ceux de la fiche)",
+      gps: "Coordonnées GPS du point de rendez-vous",
+      conditions: "Conditions : frais de nuit, puis celles des réglages",
+      chauffeur: "Téléphone du chauffeur (réglages du parking)",
     },
     count: (segments: number) => `${segments} SMS`,
     perClient: (characters: number) =>

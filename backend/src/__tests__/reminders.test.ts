@@ -41,6 +41,10 @@ const VALUES = {
   consignes: '',
   navette: '',
   services: '',
+  horaires: '',
+  gps: '',
+  conditions: '',
+  chauffeur: '',
 };
 
 let fetchMock: jest.SpyInstance;
@@ -305,6 +309,37 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(smsSent()[0].content).toBe(
       'Parking Exemple, 3 avenue Exemple, 69000 Lyon. Retour le 18/06/2027 à 08:30, vol . Rendez-vous : Parking pro P0 (Rue Exemple, devant la barrière). Navette 8 min. Services : Lavage intérieur : 50 €, Recharge hybride : 15,50 €. Tél. .',
     );
+  });
+
+  it('horaires, GPS, conditions (frais de nuit compris) et téléphone du chauffeur (11/11/2026)', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const settings = await api().patch(`/api/internal/parkings/${op.parking.id}`).set(auth(op.token)).send({
+      name: op.parking.name,
+      totalCapacity: 50,
+      safetyMarginPct: 0,
+      shuttleTravelMinutes: 8,
+      terminalLeadMinutes: 120,
+      landingDelayMinutes: 30,
+      driverPhone: ' 07 44 44 35 79 ',
+      travellerConditions: 'Retard de plus de 30 minutes : 10 €.\nDépannage (batterie) : 5 €.',
+    });
+    expect(settings.status).toBe(200);
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: { nightFeeEnabled: true, nightStart: '22:00', nightEnd: '06:00', nightArrivalFeeCents: 1000, nightReturnFeeCents: 1000 },
+    });
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPoint" = ST_SetSRID(ST_MakePoint(5.07674, 45.71984), 4326) WHERE id = ${op.parking.id}`;
+    const text = 'GPS {gps}. Conditions : {conditions}. Chauffeur {chauffeur}. Accès {horaires}.';
+    const put = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ template: text });
+    expect(put.status).toBe(200);
+    expect(put.body.sample.values).toMatchObject({
+      gps: '45.71984 N, 5.07674 E',
+      conditions:
+        'Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ; Retard de plus de 30 minutes : 10 €. Dépannage (batterie) : 5 €.',
+      chauffeur: '07 44 44 35 79',
+      horaires: '',
+    });
   });
 
   it('rien la nuit : une réservation prise à 23:00 part à 07:00, et le jour même rien ne part', async () => {

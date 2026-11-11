@@ -27,6 +27,8 @@ const SETTINGS = [
   'shuttleTravelMinutes',
   'terminalLeadMinutes',
   'landingDelayMinutes',
+  'driverPhone',
+  'travellerConditions',
 ] as const;
 
 async function summarize(parking: Parking, client: Prisma.TransactionClient | typeof prisma = prisma): Promise<ParkingSummary> {
@@ -81,6 +83,9 @@ export class ParkingService {
           terminalLeadMinutes: data.terminalLeadMinutes,
           landingDelayMinutes: data.landingDelayMinutes,
           valetMeetingPoint: data.valetMeetingPoint === undefined ? undefined : data.valetMeetingPoint?.trim() || null,
+          driverPhone: data.driverPhone === undefined ? undefined : data.driverPhone?.trim() || null,
+          // One line: Meta refuses a line break in a template's variable.
+          travellerConditions: data.travellerConditions === undefined ? undefined : data.travellerConditions?.replace(/\s+/g, ' ').trim() || null,
         },
       });
 
