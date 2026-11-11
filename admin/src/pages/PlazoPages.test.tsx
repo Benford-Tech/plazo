@@ -257,6 +257,7 @@ describe("Ma fiche", () => {
       shuttleWaitMinutes: null,
       distanceKm: 3.5,
       openingHours: null,
+      contactPhone: null,
       cancellationPolicy: "free_24h",
       photos: [],
     });
@@ -364,6 +365,20 @@ describe("Ma fiche", () => {
     await userEvent.click(button);
     await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude a échoué (max_tokens)", { duration: 12000 }));
     expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
+  });
+
+  it("enregistre le téléphone du parking donné aux clients (11/11/2026)", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, contactPhone: null }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockImplementation(async (input: { contactPhone: string | null }) => ({ data: { ...savedListing, contactPhone: input.contactPhone } }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Téléphone du parking");
+    expect(field).toHaveValue("");
+    fireEvent.change(field, { target: { value: "+33 6 77 61 60 62" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(1));
+    expect(api.updateListing.mock.calls[0][0]).toMatchObject({ contactPhone: "+33 6 77 61 60 62" });
   });
 
   it("déclare l'attente moyenne de la navette, la vide et refuse un nombre hors limites (14/10/2026)", async () => {

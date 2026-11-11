@@ -898,6 +898,8 @@ export interface Listing {
   shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
+  /** The number travellers call ({téléphone} of the day-before message). */
+  contactPhone?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
   airport: { code: string; name: string; slug: string };
@@ -913,6 +915,8 @@ export interface ListingInput {
   shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
+  /** 11/11/2026: the number travellers call (null clears it). */
+  contactPhone?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
 }
