@@ -1,5 +1,6 @@
 import { isGsm7 } from '@/domain/booking-messages';
 import { CustomerNameFields, namesOfCustomer } from '@/domain/customer-name';
+import { displayPhone } from '@/domain/phone';
 import { addDays, dayBounds, localDate, localDateTime, parseInstant } from '@/domain/time';
 
 /**
@@ -304,12 +305,14 @@ export function parkingValuesOf(
   extra: {
     meetingPoint?: { lat: number; lng: number } | null;
     night?: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null;
+    /** 11/11/2026 (« il manque le numéro du parking »): the parking's SMS phone, when the listing gives no phone. */
+    senderPhone?: string | null;
   } = {},
 ): ParkingValues {
   return {
     name: parking.listing?.title ?? parking.name,
     address: parking.address,
-    phone: parking.listing?.contactPhone ?? null,
+    phone: parking.listing?.contactPhone?.trim() || (extra.senderPhone?.trim() ? displayPhone(extra.senderPhone) : null),
     meetingPoint: stop ? stop.name.trim() || null : parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
     meetingInstructions: stop ? stop.instructions?.trim() || null : parking.returnMeetingInstructions?.trim() || null,
     shuttleMinutes: parking.listing?.shuttleMinutes ?? parking.shuttleTravelMinutes ?? null,

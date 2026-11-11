@@ -12,6 +12,7 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
     where: { id: parkingId },
     select: {
       name: true,
+      operatorId: true,
       address: true,
       shuttleTravelMinutes: true,
       returnMeetingLabel: true,
@@ -39,6 +40,10 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
   // The meeting point's position, in PostGIS (Unsupported for Prisma).
   const [point] = await prisma.$queryRaw<{ lat: number | null; lng: number | null }[]>`
     SELECT ST_Y("returnMeetingPoint") AS lat, ST_X("returnMeetingPoint") AS lng FROM parkings WHERE id = ${parkingId}`;
+  // 11/11/2026: without a listing phone, {téléphone} is the parking's SMS phone (the traveller can call or answer it).
+  const sms = parking.listing?.contactPhone?.trim()
+    ? null
+    : await prisma.operatorSmsSettings.findUnique({ where: { operatorId: parking.operatorId }, select: { senderPhone: true } });
   const night = nightRule({
     enabled: parking.nightFeeEnabled,
     start: parking.nightStart,
@@ -49,5 +54,6 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
   return parkingValuesOf(parking, services, stop, {
     meetingPoint: point && point.lat !== null && point.lng !== null ? { lat: point.lat, lng: point.lng } : null,
     night,
+    senderPhone: sms?.senderPhone ?? null,
   });
 }
