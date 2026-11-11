@@ -353,6 +353,16 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(params[10]).toBe('Gare Saint-Exupéry TGV');
     expect(params[11]).toBe('Sortie principale, côté taxis');
 
+    // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
+    const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
+    expect(fallback.startsWith('Bonsoir Camille,')).toBe(true);
+    expect(fallback).toContain('Point de rendez-vous : Gare Saint-Exupéry TGV');
+    expect(fallback).toContain('(vol -)');
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.status).toBe(200);
+    expect(board.body.meta.name).toBe('plazo_veille');
+    expect(board.body.meta.text.startsWith('Bonsoir {prénom},')).toBe(true);
+
     // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
     const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
     expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });

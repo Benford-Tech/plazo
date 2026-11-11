@@ -6,9 +6,9 @@ import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
+import { defaultTemplate, renderTemplate, TemplateValues, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { loadParkingValues } from './parking-values';
-import { reminderImage, reminderTemplateParams } from '@/domain/whatsapp';
+import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
@@ -520,7 +520,19 @@ export class SmsService {
     return { params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking)), image };
   }
 
+  /**
+   * 11/11/2026 (choice B): the day-before message follows the template approved by Meta when WhatsApp carries it (the
+   * template is set and the parking has WhatsApp on); the parking's own text otherwise.
+   */
+  public async usesMetaReminder(operatorId: string): Promise<boolean> {
+    return !!this.whatsapp.config().reminderTemplate && (await this.whatsapp.enabledFor(operatorId));
+  }
+
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
+    if (await this.usesMetaReminder(booking.operatorId)) {
+      const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
+      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking));
+    }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: booking.operatorId }, select: { mode: true } }),
@@ -728,4 +740,10 @@ export class SmsService {
       lastErrorAt: settings?.lastErrorAt?.toISOString() ?? null,
     };
   }
+}
+
+/** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */
+export function renderMetaReminder(values: TemplateValues): string {
+  const filled = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v ?? '').trim() ? v : '-'])) as TemplateValues;
+  return renderTemplate(reminderTemplateText(), filled);
 }

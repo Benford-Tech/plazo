@@ -434,6 +434,79 @@ function MessageSection({
   setDraft: (text: string | null) => void;
   onSaved: (b: ReminderBoard) => void;
 }) {
+  if (board.meta) return <MetaMessageSection board={board} meta={board.meta} />;
+  return <OwnMessageSection board={board} draft={typed} setDraft={setTyped} onSaved={onSaved} />;
+}
+
+/** « - » for an empty value, as the server fills the Meta template (WhatsApp refuses an empty variable). */
+const dashed = (values: ReminderBoard["sample"]["values"]) =>
+  Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v ?? "").trim() ? v : "-"])) as ReminderBoard["sample"]["values"];
+
+/**
+ * 11/11/2026 (« le message de la veille doit se baser sur le modèle défini chez Meta », choice B): with WhatsApp on, one
+ * text, the template approved by Meta, read only; the fallback SMS takes it too. Its preview with the sample's values.
+ */
+function MetaMessageSection({ board, meta }: { board: ReminderBoard; meta: NonNullable<ReminderBoard["meta"]> }) {
+  const m = t.message;
+  const values = dashed(board.sample.values);
+  const preview = useMemo(() => renderTemplate(meta.text, values), [meta.text, values]);
+  const length = smsLength(preview);
+  const [day, month, year] = board.sample.values.date.split("/");
+  const sendDay = capitalise(shortDay(addDays(`${year}-${month}-${day}`, -1)));
+  return (
+    <div className="flex flex-wrap gap-4">
+      <section aria-labelledby="reminder-message" data-testid="reminder-meta" className={cn(CARD, "flex min-w-0 flex-[999_1_560px] flex-col gap-3")}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="reminder-message" className="text-lg font-semibold">
+            {m.title}
+          </h2>
+          <span className="rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-xs font-semibold text-[#166534]">{m.meta.badge}</span>
+        </div>
+        <p className="text-sm text-muted-foreground">{m.meta.intro(meta.name)}</p>
+        <pre
+          data-testid="reminder-meta-text"
+          className="max-h-[420px] overflow-auto whitespace-pre-wrap break-words rounded-lg border border-panel-line bg-panel-2 p-3 font-sans text-sm leading-relaxed"
+        >
+          {meta.text}
+        </pre>
+        <div className="space-y-1 rounded-xl border border-panel-line bg-panel-2 px-3.5 py-3">
+          <p className="flex flex-wrap items-baseline gap-2.5">
+            <span data-testid="reminder-segments" className="font-mono text-lg font-semibold text-lime-deep">
+              {m.count(length.segments)}
+            </span>
+            <span className="text-sm text-muted-foreground">{m.meta.fallback(length.characters)}</span>
+          </p>
+        </div>
+        <p className="text-[13px] text-muted-foreground">{m.meta.change}</p>
+      </section>
+      <aside aria-labelledby="reminder-preview" className={cn(CARD, "flex min-w-0 flex-[1_1_320px] flex-col gap-3")}>
+        <h2 id="reminder-preview" className="text-lg font-semibold">
+          {t.preview.title}
+        </h2>
+        <p className="text-[13px] text-muted-foreground">{t.preview.for(board.sample.customerName, board.sample.values.date, board.sample.values.heure)}</p>
+        <div className="flex flex-col gap-2 rounded-2xl bg-panel-2 p-4">
+          <span className="self-center text-xs text-muted-foreground">{t.preview.sentAt(sendDay, board.evening.sendTime)}</span>
+          <div data-testid="reminder-preview" className="max-h-[480px] overflow-auto whitespace-pre-line break-words rounded-2xl rounded-bl-md border border-panel-line bg-panel px-3.5 py-3 text-sm leading-snug">
+            {preview}
+          </div>
+        </div>
+        <p className="text-[13px] text-muted-foreground">{m.meta.photo}</p>
+      </aside>
+    </div>
+  );
+}
+
+function OwnMessageSection({
+  board,
+  draft: typed,
+  setDraft: setTyped,
+  onSaved,
+}: {
+  board: ReminderBoard;
+  draft: string | null;
+  setDraft: (text: string | null) => void;
+  onSaved: (b: ReminderBoard) => void;
+}) {
   const m = t.message;
   const saved = board.settings.template;
   // Untouched, the text follows the saved one (another manager, a reset); typed, it stays.

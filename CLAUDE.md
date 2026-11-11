@@ -1307,7 +1307,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      celle du point de rendez-vous du retour seulement sans photo de fiche (`reminderImage`) ; une réservation servie à une
      desserte (gare TGV, hôtel) a {rendez-vous} et {consignes} de cette desserte, SMS compris (`loadParkingValues(parkingId,
      stopId)`, `parkingValuesOf(…, stop)`). En production : `WHATSAPP_REMINDER_TEMPLATE=apl_rappel_veille` (modèle à 16
-     variables validé le 10/11/2026), `WHATSAPP_TEMPLATES=[]`.
+     variables validé le 10/11/2026), `WHATSAPP_TEMPLATES=[]`. **Un seul texte, celui du modèle, choix B (11/11/2026, « le message
+     de la veille doit se baser sur le modèle défini chez Meta »)** : `REMINDER_TEMPLATE_BODY` de `domain/whatsapp.ts` (le corps
+     approuvé mot pour mot ; à changer seulement après une nouvelle validation chez Meta), `reminderTemplateText` (les variables
+     nommées) ; quand `WHATSAPP_REMINDER_TEMPLATE` est posé et WhatsApp allumé (`SmsService.usesMetaReminder`), le SMS de repli et
+     « M'envoyer un test » prennent ce texte rempli (`renderMetaReminder`, « - » pour une valeur vide) au lieu du texte du
+     parking ; `board.meta { name, text }` ; page « SMS de la veille » : carte « Le message » en lecture seule
+     (`MetaMessageSection`, « Modèle validé chez Meta », compte de SMS du repli), aperçu avec les vraies valeurs.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

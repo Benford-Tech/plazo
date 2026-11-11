@@ -103,6 +103,46 @@ export const REMINDER_TEMPLATE_VARIABLES = [
   'parking',
 ] as const;
 
+/**
+ * 11/11/2026 (« le message de la veille doit se baser sur le modèle défini chez Meta », choice B): the body of the
+ * day-before template as approved by Meta (plazo_rappel_veille, apl_rappel_veille), word for word; with WhatsApp on, the
+ * fallback SMS is this text too, so the traveller reads the same message whichever channel carries it. To change it, the
+ * template is approved again at Meta first, then this text follows.
+ */
+export const REMINDER_TEMPLATE_BODY = [
+  'Bonsoir {{1}},',
+  '',
+  'Suite à votre réservation {{2}}, nous vous confirmons votre prise en charge le {{3}} à {{4}} (véhicule {{5}}).',
+  '',
+  "📲 Votre réservation dans l'app Plazo : {{6}}",
+  'Navette en direct, rendez-vous au retour et vos documents.',
+  '',
+  '📍 Adresse du parking : {{7}}, {{8}}',
+  "🔑 Remise des clés à l'arrivée",
+  '',
+  '🛬 Votre retour le {{9}} (vol {{10}}) :',
+  "Envoyez-nous un message à l'atterrissage, puis une fois sorti(e) de l'aéroport.",
+  '📍 Point de rendez-vous : {{11}}',
+  '{{12}}',
+  'Nous venons vous chercher en navette ({{13}}).',
+  '',
+  '✨ Services sur demande : {{14}}',
+  '',
+  '📞 Parking : {{15}}',
+  '',
+  'À demain,',
+  '{{16}}',
+  "Merci d'avoir choisi votre parking avec Plazo.",
+].join('\n');
+
+/** The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it. */
+export function reminderTemplateText(): string {
+  return REMINDER_TEMPLATE_BODY.replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
+    const name = REMINDER_TEMPLATE_VARIABLES[Number(n) - 1];
+    return name ? `{${name}}` : whole;
+  });
+}
+
 /** The 16 parameters of the day-before template: each on one line, never empty (Meta refuses it: « - »). */
 export function reminderTemplateParams(values: Record<(typeof REMINDER_TEMPLATE_VARIABLES)[number], string>): string[] {
   return REMINDER_TEMPLATE_VARIABLES.map(key => whatsappParam(values[key] ?? '', key === 'consignes' || key === 'services' ? 400 : 200));

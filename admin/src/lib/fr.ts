@@ -4505,6 +4505,15 @@ export const remindersFr = {
   },
   message: {
     title: "Le message",
+    // 11/11/2026 (choice B): with WhatsApp on, the template approved by Meta.
+    meta: {
+      badge: "Modèle validé chez Meta",
+      intro: (name: string) =>
+        `Le message part par WhatsApp avec le modèle « ${name} », validé chez Meta. Si WhatsApp ne passe pas, le SMS de repli reprend ce même texte, rempli avec les mêmes informations.`,
+      fallback: (characters: number) => `pour le SMS de repli · ${characters.toLocaleString("fr-FR")} caractères`,
+      change: `Ce texte ne se modifie pas ici : un nouveau texte doit d'abord être validé par Meta. Demandez-le à ${PRODUCT.name}.`,
+      photo: "Sur WhatsApp, la photo du parking s'affiche en tête du message.",
+    },
     label: "Texte du SMS",
     updated: (by: string | null, when: string) =>
       `Modifié${by ? ` par ${by}` : ""}, le ${when}`,

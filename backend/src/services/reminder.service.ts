@@ -1,4 +1,5 @@
 import { travellerMessages } from '@/domain/traveller-message-log';
+import { reminderTemplateText } from '@/domain/whatsapp';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY } from '@/config';
@@ -37,7 +38,7 @@ import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { PhoneNow, SmsPhoneService } from './sms-phone.service';
-import { SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
+import { renderMetaReminder, SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
 import { loadParkingValues } from './parking-values';
 
 /** What happens to one booking's day-before SMS, as the pro space shows it. */
@@ -135,6 +136,11 @@ export interface ReminderBoard {
   can: { edit: boolean; manage: boolean };
   /** 06/11/2026: the gateway phone's last check (the page warns when it is offline), null without one. */
   phone: PhoneNow | null;
+  /**
+   * 11/11/2026 (choice B): the template approved by Meta the message follows (WhatsApp, and the fallback SMS), its body
+   * with the variables' names; null while the parking's own text is used.
+   */
+  meta: { name: string; text: string } | null;
 }
 
 export interface UpdateReminderSettingsInput {
@@ -490,6 +496,9 @@ export class ReminderService {
       sample: { customerName: sampleSource.customerName, values: sampleValues },
       can: { edit: can(actor.role, 'parking:manage'), manage: can(actor.role, 'reservations:manage') },
       phone: mode === 'gateway' ? await this.phone.now(actor.operatorId, tz, now) : null,
+      meta: (await this.sms.usesMetaReminder(actor.operatorId))
+        ? { name: this.sms.whatsapp.config().reminderTemplate, text: reminderTemplateText() }
+        : null,
     };
   }
 
@@ -551,7 +560,7 @@ export class ReminderService {
   ): Promise<{ outcome: SendOutcome; to: string }> {
     const board = await this.board(actor, parkingId);
     const template = input.template?.trim() || board.settings.template;
-    if (unknownVariables(template).length) throw new ValidationException({ template: 'unknown_variable' });
+    if (!board.meta && unknownVariables(template).length) throw new ValidationException({ template: 'unknown_variable' });
     const to = smsRecipient(input.to ?? actor.phone ?? '');
     if (!to) throw new ValidationException({ to: input.to ? 'invalid_phone' : 'required' });
     if (board.channel.mode === 'none') throw new HttpException(httpStatus.CONFLICT, 'SMS not configured', 'sms_not_configured');
@@ -559,7 +568,7 @@ export class ReminderService {
       reservationId: null,
       kind: 'reminder_test',
       to,
-      text: renderTemplate(template, board.sample.values),
+      text: board.meta ? renderMetaReminder(board.sample.values) : renderTemplate(template, board.sample.values),
     });
     if (outcome === 'failed') throw new HttpException(httpStatus.BAD_GATEWAY, 'Test SMS failed', 'sms_gateway_error');
     return { outcome, to };
