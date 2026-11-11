@@ -34,6 +34,8 @@ export interface TravellerMessage {
   statusAt: string | null;
   /** The SMS sent because WhatsApp did not deliver the message. */
   whatsappFallback: boolean;
+  /** 11/11/2026: the SMS went because Meta never answered (WhatsApp may well have arrived), not because it refused. */
+  whatsappSilent: boolean;
   errorCode: string | null;
 }
 
@@ -58,7 +60,7 @@ export function travellerMessages(whatsapp: WhatsappLogRow[], sms: SmsLogRow[]):
       );
       if (fallback) {
         used.add(fallback.id);
-        lines.push(smsLine(fallback, true));
+        lines.push(smsLine(fallback, true, row.status === 'fallback' && !row.errorCode));
         continue;
       }
     }
@@ -70,14 +72,15 @@ export function travellerMessages(whatsapp: WhatsappLogRow[], sms: SmsLogRow[]):
       at: row.createdAt.toISOString(),
       statusAt: row.status === 'delivered' || row.status === 'read' ? row.updatedAt.toISOString() : null,
       whatsappFallback: false,
+      whatsappSilent: false,
       errorCode: row.errorCode,
     });
   }
-  for (const row of smsSorted) if (!used.has(row.id)) lines.push(smsLine(row, false));
+  for (const row of smsSorted) if (!used.has(row.id)) lines.push(smsLine(row, false, false));
   return lines.sort((a, b) => b.at.localeCompare(a.at));
 }
 
-function smsLine(row: SmsLogRow, whatsappFallback: boolean): TravellerMessage {
+function smsLine(row: SmsLogRow, whatsappFallback: boolean, whatsappSilent: boolean): TravellerMessage {
   return {
     id: row.id,
     kind: row.kind,
@@ -86,6 +89,7 @@ function smsLine(row: SmsLogRow, whatsappFallback: boolean): TravellerMessage {
     at: row.createdAt.toISOString(),
     statusAt: row.status === 'sent' || row.status === 'delivered' ? row.updatedAt.toISOString() : null,
     whatsappFallback,
+    whatsappSilent,
     errorCode: null,
   };
 }

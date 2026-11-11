@@ -4,12 +4,12 @@ import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
-import { DeliveryPill } from "@/components/reservations/DeliveryPill";
+import { DeliveryPill, DeliveryProof } from "@/components/reservations/DeliveryPill";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, adminApi } from "@/lib/api";
 import { addDays, localParts, longDate, shortDay } from "@/lib/datetime";
-import { describeError, errorMessage, fr, remindersFr as t } from "@/lib/fr";
+import { describeError, errorMessage, fr, remindersFr as t, bookingReminderFr } from "@/lib/fr";
 import { renderTemplate, smsLength, toE164, toGsm7, unicodeCharacters, unknownVariables } from "@/lib/sms";
 import type { ReminderBoard, ReminderEvening, ReminderRow, ReminderRowStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -91,6 +91,7 @@ export default function RemindersPage() {
       ) : (
         <>
           {board.data.phone?.state === "offline" && <PhoneOffline since={board.data.phone.lastSeenAt} />}
+          {board.data.metaSilent && <MetaSilent />}
           <SettingsTiles board={board.data} onSaved={apply} />
           <Week board={board.data} selected={board.data.evening.date} onSelect={date => setEvening(date === board.data.today ? undefined : date)} />
           {board.data.meta ? (
@@ -342,7 +343,14 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
           </h2>
           <div className="flex flex-wrap gap-2">
             {e.counts.planned > 0 && <Badge tone="info">{ev.planned(e.counts.planned, e.sendTime)}</Badge>}
-            {e.counts.sent > 0 && <Badge tone="ok">{ev.sent(e.counts.sent)}</Badge>}
+            {e.counts.confirmed === undefined
+              ? e.counts.sent > 0 && <Badge tone="ok">{ev.sent(e.counts.sent)}</Badge>
+              : (
+                  <>
+                    {e.counts.confirmed > 0 && <Badge tone="ok">{ev.confirmed(e.counts.confirmed)}</Badge>}
+                    {(e.counts.unconfirmed ?? 0) > 0 && <Badge tone="warn">{ev.unconfirmed(e.counts.unconfirmed ?? 0)}</Badge>}
+                  </>
+                )}
             {e.counts.waiting > 0 && <Badge tone="warn">{ev.waiting(e.counts.waiting)}</Badge>}
             {e.counts.failed > 0 && <Badge tone="bad">{ev.failed(e.counts.failed)}</Badge>}
             {e.counts.withoutSms > 0 && <Badge tone="line">{ev.withoutSms(e.counts.withoutSms)}</Badge>}
@@ -413,8 +421,14 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
                     </td>
                     <td className="px-2.5 py-2.5">
                       <span className="inline-flex flex-wrap items-center gap-1.5">
-                        <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
-                        {row.delivery && <DeliveryPill delivery={row.delivery} />}
+                        {row.delivery?.proof && ["sent", "waiting", "failed"].includes(row.status) ? (
+                          <DeliveryProof proof={row.delivery.proof} />
+                        ) : (
+                          <>
+                            <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
+                            {row.delivery && <DeliveryPill delivery={row.delivery} />}
+                          </>
+                        )}
                       </span>
                     </td>
                     <td className="px-2.5 py-2.5 text-right">
@@ -675,6 +689,17 @@ function OwnMessageSection({
         </div>
         <p className="text-[13px] text-muted-foreground">{t.preview.also}</p>
       </aside>
+    </div>
+  );
+}
+
+/** 11/11/2026 (direction A): Meta sends no delivery report; the WhatsApp messages stay « pas de confirmation ». */
+function MetaSilent() {
+  const m = bookingReminderFr.delivery.metaSilent;
+  return (
+    <div role="status" data-testid="reminders-meta-silent" className="rounded-xl border border-warn/35 bg-warn-soft px-4 py-3 text-sm">
+      <p className="font-semibold text-warn-text">{m.title}</p>
+      <p>{m.text}</p>
     </div>
   );
 }

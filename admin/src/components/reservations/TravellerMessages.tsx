@@ -15,9 +15,9 @@ function statusOf(message: TravellerMessage): { text: string; tone: "ok" | "warn
   if (message.channel === "whatsapp") {
     const s = t.status.whatsapp;
     if (message.status === "read") return { text: s.read(at), tone: "ok" };
-    if (message.status === "delivered") return { text: s.delivered(at), tone: "muted" };
+    if (message.status === "delivered") return { text: s.delivered(at), tone: "ok" };
     if (message.status === "failed") return { text: s.failed, tone: "bad" };
-    return { text: s.sent, tone: "muted" };
+    return { text: s.sent, tone: "warn" };
   }
   const s = t.status.sms;
   if (message.status === "delivered") return { text: s.delivered(at), tone: "ok" };
@@ -64,7 +64,7 @@ export function TravellerMessages({ reservationId }: { reservationId: string }) 
               <span className="tabular w-32 shrink-0 font-mono text-xs text-muted-foreground">{dateTimeShort(message.at)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold">{t.kind[message.kind] ?? t.otherKind}</span>
-                {message.whatsappFallback && <span className="block text-xs text-muted-foreground">{t.fallback}</span>}
+                {message.whatsappFallback && <span className="block text-xs text-muted-foreground">{message.whatsappSilent ? t.fallbackSilent : t.fallback}</span>}
               </span>
               <Badge tone={CHANNEL_TONE[message.channel]} className="shrink-0">
                 {t.channel[message.channel]}

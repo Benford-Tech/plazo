@@ -27,9 +27,9 @@ describe("TravellerMessages (04/11/2026)", () => {
     expect(await screen.findByText("Messages au voyageur · 2")).toBeInTheDocument();
     const [landing, confirmation] = screen.getAllByTestId("traveller-message");
     expect(within(landing).getByText("Atterrissage")).toBeInTheDocument();
-    expect(within(landing).getByText("WhatsApp non remis · SMS envoyé à la place")).toBeInTheDocument();
+    expect(within(landing).getByText("WhatsApp refusé · SMS envoyé à la place")).toBeInTheDocument();
     expect(within(landing).getByText("SMS")).toBeInTheDocument();
-    expect(within(landing).getByText("Envoyé à 21:44")).toBeInTheDocument();
+    expect(within(landing).getByText("Parti à 21:44 · pas de confirmation")).toBeInTheDocument();
     expect(within(confirmation).getByText("WhatsApp")).toBeInTheDocument();
     expect(within(confirmation).getByText("✓✓ Lu à 14:20")).toBeInTheDocument();
   });

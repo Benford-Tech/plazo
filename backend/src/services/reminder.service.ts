@@ -1,3 +1,4 @@
+import { MessageProof, metaSilent, ProofLevel, proofOf } from '@/domain/delivery-proof';
 import { travellerMessages } from '@/domain/traveller-message-log';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
@@ -75,6 +76,14 @@ export interface ReminderDelivery {
   status: string;
   statusAt: string | null;
   whatsappFallback: boolean;
+  /** 11/11/2026 (direction A): what is really known, local "YYYY-MM-DDTHH:mm" times. */
+  proof: ReminderProof | null;
+}
+
+export interface ReminderProof {
+  level: ProofLevel;
+  whatsapp: { state: 'accepted' | 'delivered' | 'read' | 'refused'; at: string; statusAt: string | null } | null;
+  sms: { state: 'queued' | 'sent' | 'delivered' | 'failed'; at: string; statusAt: string | null } | null;
 }
 
 export interface ReminderRow {
@@ -106,7 +115,17 @@ export interface EveningView {
   paused: boolean;
   /** "Envoyer maintenant": tonight, or yesterday's evening for today's remaining drop-offs. */
   canSendNow: boolean;
-  counts: { departures: number; planned: number; sent: number; waiting: number; failed: number; withoutSms: number };
+  counts: {
+    departures: number;
+    planned: number;
+    sent: number;
+    waiting: number;
+    failed: number;
+    withoutSms: number;
+    /** 11/11/2026: of the sent ones, delivered as confirmed by Meta or the network, and those nobody confirmed. */
+    confirmed: number;
+    unconfirmed: number;
+  };
 }
 
 export interface ReminderBoard {
@@ -139,6 +158,11 @@ export interface ReminderBoard {
    * with the variables' names; null while the parking's own text is used.
    */
   meta: { name: string; text: string; source: 'meta' | 'copy' } | null;
+  /**
+   * 11/11/2026 (direction A): Meta has confirmed none of the parking's WhatsApp messages of the last 24 hours (the status
+   * webhook does not reach Plazo): the page says so, and why the messages stay « sans confirmation ».
+   */
+  metaSilent: boolean;
 }
 
 export interface UpdateReminderSettingsInput {
@@ -456,6 +480,8 @@ export class ReminderService {
           waiting: count('waiting'),
           failed: count('failed'),
           withoutSms: rows.length - count('planned', 'sent', 'waiting', 'failed'),
+          confirmed: rows.filter(row => row.status === 'sent' && row.delivery?.proof?.level === 'confirmed').length,
+          unconfirmed: rows.filter(row => row.status === 'sent' && row.delivery?.proof?.level !== 'confirmed').length,
         },
       };
     };
@@ -513,6 +539,13 @@ export class ReminderService {
       sample: { customerName: sampleSource.customerName, values: sampleValues },
       can: { edit: can(actor.role, 'parking:manage'), manage: can(actor.role, 'reservations:manage') },
       phone: mode === 'gateway' ? await this.phone.now(actor.operatorId, tz, now) : null,
+      metaSilent: metaSilent(
+        await prisma.whatsappMessage.findMany({
+          where: { operatorId: actor.operatorId, createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
+          select: { status: true, waMessageId: true, errorCode: true, createdAt: true },
+        }),
+        now,
+      ),
       meta: (await this.sms.usesMetaReminder(actor.operatorId)) ? await this.sms.metaReminder() : null,
     };
   }
@@ -623,6 +656,13 @@ export class ReminderService {
     };
     if (r.reminderSentAt) {
       const row = ctx.outbox;
+      // 11/11/2026 (direction A): what is really known decides; « failed » only when every channel failed.
+      const proof = ctx.delivery?.proof;
+      if (proof) {
+        if (proof.level === 'failed') return { status: 'failed', at: r.reminderSentAt };
+        if (proof.level === 'pending') return { status: 'waiting', at: r.reminderSentAt };
+        return { status: 'sent', at: r.reminderSentAt };
+      }
       // 11/11/2026 (« Non envoyé » next to « WhatsApp »): a day-before message that left by WhatsApp has no SMS row; it is
       // sent once Meta took it, waiting while its SMS fallback may still leave.
       if (!row && ctx.delivery?.by === 'whatsapp') {
@@ -675,6 +715,13 @@ export class ReminderService {
         status: last.status,
         statusAt: last.statusAt ? localDateTime(new Date(last.statusAt), tz) : null,
         whatsappFallback: last.whatsappFallback,
+        proof: proofView(
+          proofOf(
+            whatsapp.filter(w => w.reservationId === id),
+            sms.filter(m => m.reservationId === id),
+          ),
+          tz,
+        ),
       });
     }
     return out;
@@ -711,4 +758,15 @@ export class ReminderService {
     if (!parking) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
     return parking;
   }
+}
+
+/** The proof with local times, for the page and the booking. */
+function proofView(proof: MessageProof | null, tz: string): ReminderProof | null {
+  if (!proof) return null;
+  const local = (d: Date | null) => (d ? localDateTime(d, tz) : null);
+  return {
+    level: proof.level,
+    whatsapp: proof.whatsapp ? { state: proof.whatsapp.state, at: local(proof.whatsapp.at)!, statusAt: local(proof.whatsapp.statusAt) } : null,
+    sms: proof.sms ? { state: proof.sms.state, at: local(proof.sms.at)!, statusAt: local(proof.sms.statusAt) } : null,
+  };
 }
