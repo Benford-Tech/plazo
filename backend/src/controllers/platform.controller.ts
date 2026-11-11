@@ -64,6 +64,16 @@ export class PlatformController {
     res.json(await this.platform.operators(req.query.view));
   });
 
+  /** GET /internal/platform/overview */
+  public overview = catchAsync(async (_req: Request, res: Response) => {
+    res.json(await this.platform.overview());
+  });
+
+  /** GET /internal/platform/operators/:id */
+  public operator = catchAsync(async (req: Request, res: Response) => {
+    res.json(await this.platform.operator(req.params.id as string));
+  });
+
   /** PATCH /internal/platform/operators/:id/commission */
   public setCommission = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: UpdateCommissionDto = req.body;

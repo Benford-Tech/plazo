@@ -40,6 +40,8 @@ import { lazy, Suspense } from "react";
 
 // The platform space is only loaded by the platform owner; the capacity estimator (maps, geometry) on demand.
 const OperatorsPage = lazy(() => import("@/pages/platform/OperatorsPage"));
+const PlatformOverviewPage = lazy(() => import("@/pages/platform/PlatformOverviewPage"));
+const PlatformOperatorPage = lazy(() => import("@/pages/platform/PlatformOperatorPage"));
 const PlatformListingsPage = lazy(
   () => import("@/pages/platform/ListingsPage"),
 );
@@ -303,11 +305,15 @@ const App = () => (
             >
               <Route
                 path="/plateforme"
-                element={<Navigate to="/plateforme/loueurs" replace />}
+                element={lazyPage(<PlatformOverviewPage />)}
               />
               <Route
                 path="/plateforme/loueurs"
                 element={lazyPage(<OperatorsPage />)}
+              />
+              <Route
+                path="/plateforme/loueurs/:id"
+                element={lazyPage(<PlatformOperatorPage />)}
               />
               <Route
                 path="/plateforme/annonces"

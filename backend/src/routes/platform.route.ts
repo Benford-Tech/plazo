@@ -343,6 +343,7 @@ export class PlatformRoute implements Routes {
       this.platform.sendNotification,
     );
     this.router.get(`${base}/operators`, PlatformAdminMiddleware(), this.platform.operators);
+    this.router.get(`${base}/overview`, PlatformAdminMiddleware(), this.platform.overview);
     this.router.patch(
       `${base}/operators/:id/commission`,
       PlatformAdminMiddleware(),
@@ -354,6 +355,7 @@ export class PlatformRoute implements Routes {
     this.router.post(`${base}/operators/:id/archive`, PlatformAdminMiddleware(), this.platform.archive);
     this.router.post(`${base}/operators/:id/unarchive`, PlatformAdminMiddleware(), this.platform.unarchive);
     this.router.get(`${base}/operators/:id/deletion`, PlatformAdminMiddleware(), this.platform.deletionPreview);
+    this.router.get(`${base}/operators/:id`, PlatformAdminMiddleware(), this.platform.operator);
     this.router.delete(`${base}/operators/:id`, PlatformAdminMiddleware(), this.platform.deleteOperator);
     this.router.post(`${base}/operators/:id/view-as`, PlatformAdminMiddleware(), this.platform.viewAs);
     this.router.post(`${base}/operators/:id/invitation`, PlatformAdminMiddleware(), this.platform.resendInvitation);
