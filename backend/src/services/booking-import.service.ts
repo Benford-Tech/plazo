@@ -352,10 +352,9 @@ export class BookingImportService {
       arrivedAt: onSiteOrDone ? b.arrivalAt : null,
       returnedAt: b.status === 'returned' ? b.returnAt : null,
       cancelledAt: b.status === 'cancelled' ? startedBefore : null,
-      // Nothing goes to the traveller for an imported booking: the day-before SMS is left out (« Ne pas envoyer »,
-      // restorable), and the messages of a stay already begun or over count as sent.
-      reminderExcludedAt: b.status === 'upcoming' ? stamp : null,
-      reminderExcludedById: b.status === 'upcoming' ? actor.id : null,
+      // No confirmation goes to the traveller for an imported booking, and the messages of a stay already begun or over
+      // count as sent. 11/11/2026 (« les envois sont marqués exclus par Joanny »): an upcoming stay gets its day-before
+      // message like any other booking (it was left out, « Ne pas envoyer », in the importer's name).
       confirmationSentAt: stamp,
       parkedNotifiedAt: onSiteOrDone ? stamp : null,
       closingSentAt: b.status === 'returned' ? stamp : null,

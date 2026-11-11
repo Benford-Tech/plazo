@@ -200,7 +200,7 @@ describe('POST /internal/reservations/import', () => {
     expect(created[1]).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
     expect(created[0].createdAt.toISOString()).toBe(created[0].arrivalAt.toISOString());
     expect(created[0].closingSentAt).not.toBeNull();
-    expect(created[1].reminderExcludedAt).not.toBeNull();
+    expect(created[1]).toMatchObject({ reminderExcludedAt: null, reminderExcludedById: null });
     expect(created.every(r => r.importId === done.body.import.id)).toBe(true);
 
     // The same file again: everything is already in Plazo.
