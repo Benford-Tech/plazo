@@ -2,6 +2,9 @@ import { createHmac } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
 import {
+  GENERIC_REMINDER_TEMPLATE,
+  reminderTemplateParams,
+  reminderTemplateText,
   arrivalDateLabel,
   arrivalTimeLabel,
   nextWhatsappStatus,
@@ -40,6 +43,7 @@ const configured = () => ({
   graphVersion: 'v21.0',
   templates: '',
   reminderTemplate: '',
+  businessAccountId: '',
 });
 
 let fetchMock: jest.SpyInstance;
@@ -293,6 +297,148 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const second = await booking('RWA002');
     expect((await api().post(`/api/internal/reservations/${second.id}/reminder/send`).set(auth(op.token))).status).toBe(200);
     expect(JSON.parse(calls(GRAPH)[1][1].body).template.name).toBe('plazo_message');
+  });
+
+  it('la photo du parking (dépôt) passe avant celle du rendez-vous ; une réservation à la gare y a son rendez-vous (10/11/2026)', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: { returnMeetingLabel: 'Parking pro P0', returnMeetingInstructions: 'Devant la barrière' },
+    });
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    const listing = await api()
+      .put('/api/internal/listing')
+      .set(auth(op.token))
+      .send({
+        airportCode: 'LYS',
+        slug: `parking-${op.parking.id}`,
+        title: 'Parking LYS',
+        services: ['shuttle'],
+        cancellationPolicy: 'free_24h',
+        photos: ['https://photos.example/entree.jpg', 'https://photos.example/cour.jpg'],
+      });
+    expect(listing.status).toBe(200);
+    const gare = await prisma.shuttleStop.create({
+      data: {
+        parkingId: op.parking.id,
+        kind: 'other',
+        name: 'Gare Saint-Exupéry TGV',
+        lat: 45.72,
+        lng: 5.08,
+        instructions: 'Sortie principale, côté taxis',
+      },
+    });
+    const arrivalAt = new Date(Date.now() + 30 * 3600000);
+    const booking = await prisma.reservation.create({
+      data: {
+        reference: 'RWA010',
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        stopId: gare.id,
+        channel: 'phone',
+        status: 'upcoming',
+        arrivalAt,
+        returnAt: new Date(arrivalAt.getTime() + 3 * 86400000),
+        passengers: 1,
+        customerName: 'Camille Martin',
+        customerFirstName: 'Camille',
+        customerLastName: 'Martin',
+        customerPhone: '06 12 34 56 78',
+        plate: 'AB-123-CD',
+        plateKey: 'AB123CD',
+        createdAt: new Date(Date.now() - 3 * 86400000),
+      },
+    });
+    expect((await api().post(`/api/internal/reservations/${booking.id}/reminder/send`).set(auth(op.token))).status).toBe(200);
+    const body = JSON.parse(calls(GRAPH)[0][1].body);
+    expect(body.template.components[0].parameters[0].image.link).toBe('https://photos.example/entree.jpg');
+    const params = body.template.components[1].parameters.map((p: any) => p.text);
+    expect(params[10]).toBe('Gare Saint-Exupéry TGV');
+    expect(params[11]).toBe('Sortie principale, côté taxis');
+
+    // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
+    const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
+    expect(fallback.startsWith('Bonsoir Camille,')).toBe(true);
+    expect(fallback).toContain('Point de rendez-vous : Gare Saint-Exupéry TGV');
+    expect(fallback).toContain('(vol -)');
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.status).toBe(200);
+    expect(board.body.meta.name).toBe('plazo_veille');
+    expect(board.body.meta.text.startsWith('Bonsoir {prénom},')).toBe(true);
+
+    // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
+    const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
+    expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
+  });
+
+  it('lit le texte du modèle de la veille chez Meta, la copie de Plazo sinon (11/11/2026)', async () => {
+    const TEMPLATES = /\/v21\.0\/WABA-1\/message_templates\?name=plazo_veille/;
+    let templates = () =>
+      json({
+        data: [
+          {
+            name: 'plazo_veille',
+            status: 'APPROVED',
+            language: 'fr',
+            components: [{ type: 'BODY', text: 'Bonsoir {{1}}, à demain ({{3}} {{4}}).' }],
+          },
+        ],
+      });
+    fetchMock.mockImplementation(async (url: any) =>
+      TEMPLATES.test(String(url)) ? templates() : GRAPH.test(String(url)) ? metaAnswer() : json({ messageId: 1 }, 201),
+    );
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille', businessAccountId: 'WABA-1' });
+    const op = await operatorWithWhatsapp();
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.body.meta).toEqual({ name: 'plazo_veille', text: 'Bonsoir {prénom}, à demain ({date} {heure}).', source: 'meta' });
+    // Read once per 10 minutes.
+    await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(calls(TEMPLATES)).toHaveLength(1);
+
+    // Meta does not answer and nothing was read yet: Plazo's copy.
+    whatsapp['bodies'].clear();
+    templates = () => json({ error: { code: 190 } }, 401);
+    const copy = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(copy.body.meta.source).toBe('copy');
+    expect(copy.body.meta.text.startsWith('Bonsoir {prénom},')).toBe(true);
+  });
+
+  it('le modèle générique (11/11/2026) : 17 valeurs dans son ordre, ses variables nommées dans Plazo', () => {
+    const text = reminderTemplateText(null, GENERIC_REMINDER_TEMPLATE);
+    expect(text).toContain('🚗 Accès : {horaires}');
+    expect(text).toContain('Coordonnées GPS : {gps}');
+    expect(text).toContain('Chauffeur, le jour de votre rendez-vous : {chauffeur}');
+    expect(text).not.toMatch(/\{\{\d+\}\}/);
+    const values = Object.fromEntries(
+      [
+        'prénom',
+        'référence',
+        'date',
+        'heure',
+        'plaque',
+        'parking',
+        'adresse',
+        'horaires',
+        'rendez-vous',
+        'consignes',
+        'gps',
+        'navette',
+        'conditions',
+        'services',
+        'téléphone',
+        'chauffeur',
+        'lien',
+        'retour',
+        'vol',
+        'nom',
+      ].map(k => [k, k === 'gps' ? '' : k.toUpperCase()]),
+    ) as any;
+    const params = reminderTemplateParams(values, GENERIC_REMINDER_TEMPLATE);
+    expect(params).toHaveLength(17);
+    expect(params[10]).toBe('-');
+    expect(params[15]).toBe('CHAUFFEUR');
+    expect(reminderTemplateParams(values, 'apl_rappel_veille')).toHaveLength(16);
   });
 
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {

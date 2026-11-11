@@ -779,7 +779,7 @@ describe('notifications', () => {
     const sms = calls.find(c => c.url === 'https://api.brevo.com/v3/transactionalSMS/send')!;
     // 27/10/2026 (direction B): the short link https://…/a/<REF>-<code>, which the site resolves to the manage page.
     const manageUrl = `https://site.example/a/${res.body.reference}-`;
-    const code = new RegExp(`https://site\\.example/a/${res.body.reference}-[A-Za-z0-9_-]{8}\\b`);
+    const code = new RegExp(`https://site\\.example/a/${res.body.reference}-[A-Za-z0-9_-]{8}(?![A-Za-z0-9_-])`);
 
     expect(email.init).toMatchObject({ method: 'POST', headers: { 'api-key': 'test-brevo-key', 'content-type': 'application/json' } });
     expect(email.init.signal).toBeInstanceOf(AbortSignal);

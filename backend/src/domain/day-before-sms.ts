@@ -44,6 +44,12 @@ export const TEMPLATE_VARIABLES = [
   'consignes',
   'navette',
   'services',
+  // 11/11/2026 (« variabilise au max »): the parking's opening hours, the meeting point's GPS, its conditions (night fees
+  // included) and the driver's phone.
+  'horaires',
+  'gps',
+  'conditions',
+  'chauffeur',
 ] as const;
 export type TemplateVariable = (typeof TEMPLATE_VARIABLES)[number];
 export type TemplateValues = Record<TemplateVariable, string>;
@@ -56,6 +62,10 @@ const ALIASES: Record<string, TemplateVariable> = {
   'rendez vous': 'rendez-vous',
   rendezvous: 'rendez-vous',
   rdv: 'rendez-vous',
+  'téléphone chauffeur': 'chauffeur',
+  'telephone chauffeur': 'chauffeur',
+  accès: 'horaires',
+  acces: 'horaires',
 };
 // 09/11/2026 (« ce sont des doubles accolades »): {{prénom}} works as {prénom}.
 const TOKEN_RE = /\{\{?\s*([^{}\s][^{}]{0,30}?)\s*\}\}?/g;
@@ -208,6 +218,11 @@ export interface ParkingValues {
   shuttleMinutes: number | null;
   /** The services for the car the parking offers (enabled, not archived), in their order. */
   services: { label: string; priceCents: number }[];
+  /** 11/11/2026: the listing's opening hours, « 45.71984 N, 5.07674 E », the conditions on one line, the driver's phone. */
+  hours: string | null;
+  gps: string | null;
+  conditions: string | null;
+  driverPhone: string | null;
 }
 
 export const NO_PARKING_VALUES: ParkingValues = {
@@ -218,7 +233,47 @@ export const NO_PARKING_VALUES: ParkingValues = {
   meetingInstructions: null,
   shuttleMinutes: null,
   services: [],
+  hours: null,
+  gps: null,
+  conditions: null,
+  driverPhone: null,
 };
+
+/** « 45.71984 N, 5.07674 E » (5 decimals, about a metre). */
+export function gpsLabel(point: { lat: number; lng: number } | null): string | null {
+  if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return null;
+  const lat = `${Math.abs(point.lat).toFixed(5)} ${point.lat >= 0 ? 'N' : 'S'}`;
+  const lng = `${Math.abs(point.lng).toFixed(5)} ${point.lng >= 0 ? 'E' : 'O'}`;
+  return `${lat}, ${lng}`;
+}
+
+/** « 10 € », « 12,50 € ». */
+const eurosShort = (cents: number) => (cents % 100 === 0 ? `${cents / 100} €` : `${(cents / 100).toFixed(2).replace('.', ',')} €`);
+const hourLabel = (hhmm: string) => (hhmm.endsWith(':00') ? `${Number(hhmm.slice(0, 2))}h` : hhmm.replace(':', 'h'));
+
+/**
+ * {conditions}: the night fees Plazo knows (« Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ») then
+ * the parking's own text, one line.
+ */
+export function conditionsLabel(
+  night: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null,
+  own: string | null,
+): string | null {
+  const parts: string[] = [];
+  if (night) {
+    const window = `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`;
+    const a = night.arrivalFeeCents;
+    const r = night.returnFeeCents;
+    if (a && r && a === r) parts.push(`Prise en charge ou restitution ${window} : supplément de ${eurosShort(a)}`);
+    else {
+      if (a) parts.push(`Prise en charge ${window} : supplément de ${eurosShort(a)}`);
+      if (r) parts.push(`Restitution ${window} : supplément de ${eurosShort(r)}`);
+    }
+  }
+  const text = own?.replace(/\s+/g, ' ').trim();
+  if (text) parts.push(text);
+  return parts.length ? parts.join(' ; ') : null;
+}
 
 interface ParkingForValues {
   name: string;
@@ -226,19 +281,43 @@ interface ParkingForValues {
   shuttleTravelMinutes: number;
   returnMeetingLabel: string | null;
   returnMeetingInstructions: string | null;
-  listing: { title: string; contactPhone: string | null; shuttleMinutes: number | null; airport?: { name: string } | null } | null;
+  driverPhone?: string | null;
+  travellerConditions?: string | null;
+  listing: {
+    title: string;
+    contactPhone: string | null;
+    shuttleMinutes: number | null;
+    openingHours?: string | null;
+    airport?: { name: string } | null;
+  } | null;
 }
 
-/** {parking} is the listing's title, {rendez-vous} the meeting point of the return, else the airport. */
-export function parkingValuesOf(parking: ParkingForValues, services: { label: string; priceCents: number }[]): ParkingValues {
+/**
+ * {parking} is the listing's title, {rendez-vous} the meeting point of the return, else the airport. 10/11/2026 (« il y a
+ * le point de rendez-vous pour déposer la voiture et le point de rdv à l'aéroport/gare »): a booking served at one of the
+ * parking's stops (gare TGV, hôtel…) is met there on the way back, so {rendez-vous} and {consignes} are that stop's.
+ */
+export function parkingValuesOf(
+  parking: ParkingForValues,
+  services: { label: string; priceCents: number }[],
+  stop: { name: string; instructions: string | null; lat?: number; lng?: number } | null = null,
+  extra: {
+    meetingPoint?: { lat: number; lng: number } | null;
+    night?: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null;
+  } = {},
+): ParkingValues {
   return {
     name: parking.listing?.title ?? parking.name,
     address: parking.address,
     phone: parking.listing?.contactPhone ?? null,
-    meetingPoint: parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
-    meetingInstructions: parking.returnMeetingInstructions?.trim() || null,
+    meetingPoint: stop ? stop.name.trim() || null : parking.returnMeetingLabel?.trim() || parking.listing?.airport?.name || null,
+    meetingInstructions: stop ? stop.instructions?.trim() || null : parking.returnMeetingInstructions?.trim() || null,
     shuttleMinutes: parking.listing?.shuttleMinutes ?? parking.shuttleTravelMinutes ?? null,
     services,
+    hours: parking.listing?.openingHours?.trim() || null,
+    gps: stop && stop.lat !== undefined && stop.lng !== undefined ? gpsLabel({ lat: stop.lat, lng: stop.lng }) : gpsLabel(extra.meetingPoint ?? null),
+    conditions: conditionsLabel(extra.night ?? null, parking.travellerConditions ?? null),
+    driverPhone: parking.driverPhone?.trim() || null,
   };
 }
 
@@ -284,6 +363,10 @@ export function valuesOf(
     consignes: parking.meetingInstructions ?? '',
     navette: parking.shuttleMinutes ? `${parking.shuttleMinutes} min` : '',
     services: parking.services.map(s => `${s.label} : ${euros(s.priceCents)}`).join(', '),
+    horaires: parking.hours ?? '',
+    gps: parking.gps ?? '',
+    conditions: parking.conditions ?? '',
+    chauffeur: parking.driverPhone ?? '',
   };
 }
 

@@ -47,6 +47,18 @@ export class UpdateParkingDto {
   @IsString()
   @MaxLength(80, { message: 'too_long' })
   public valetMeetingPoint?: string | null;
+
+  /** 11/11/2026: the driver's phone for the day of the drop-off; absent: unchanged, blank: none. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(30, { message: 'too_long' })
+  public driverPhone?: string | null;
+
+  /** 11/11/2026: the parking's conditions for the traveller, on one line in the day-before message; absent: unchanged. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(400, { message: 'too_long' })
+  public travellerConditions?: string | null;
 }
 
 /** PUT /internal/parkings/:id/shuttle-tracking (R-B, 07/10/2026). */

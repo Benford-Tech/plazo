@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, MessageSquareText } from "lucide-react";
+import { ChevronLeft, ImageIcon, MessageCircle, MessageSquareText } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
+import { DeliveryPill } from "@/components/reservations/DeliveryPill";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, adminApi } from "@/lib/api";
@@ -92,8 +93,18 @@ export default function RemindersPage() {
           {board.data.phone?.state === "offline" && <PhoneOffline since={board.data.phone.lastSeenAt} />}
           <SettingsTiles board={board.data} onSaved={apply} />
           <Week board={board.data} selected={board.data.evening.date} onSelect={date => setEvening(date === board.data.today ? undefined : date)} />
-          <EveningCard board={board.data} onSaved={apply} />
-          <MessageSection board={board.data} draft={draft} setDraft={setDraft} onSaved={apply} />
+          {board.data.meta ? (
+            // 11/11/2026 (choice A): the evening's departures and, beside them, the message they get.
+            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+              <EveningCard board={board.data} onSaved={apply} />
+              <MetaMessageSection board={board.data} meta={board.data.meta} />
+            </div>
+          ) : (
+            <>
+              <EveningCard board={board.data} onSaved={apply} />
+              <MessageSection board={board.data} draft={draft} setDraft={setDraft} onSaved={apply} />
+            </>
+          )}
         </>
       )}
     </div>
@@ -111,13 +122,13 @@ function Header({ board, draft }: { board: ReminderBoard | undefined; draft: str
           </Link>
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold">
-              <MessageSquareText className="h-6 w-6 text-lime-deep" aria-hidden="true" />
+              {board?.meta ? <MessageCircle className="h-6 w-6 text-lime-deep" aria-hidden="true" /> : <MessageSquareText className="h-6 w-6 text-lime-deep" aria-hidden="true" />}
               {t.title}
             </h1>
             <p className="text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
         </div>
-        {board?.can.edit && (
+        {board?.can.edit && !board.meta && (
           <button type="button" aria-expanded={testing} onClick={() => setTesting(v => !v)} className={BUTTON}>
             {t.test.open}
           </button>
@@ -128,7 +139,7 @@ function Header({ board, draft }: { board: ReminderBoard | undefined; draft: str
   );
 }
 
-function TestForm({ board, draft, onDone }: { board: ReminderBoard; draft: string | null; onDone: () => void }) {
+function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBoard; draft: string | null; onDone: () => void; compact?: boolean }) {
   const [phone, setPhone] = useState("");
   const test = useMutation({
     mutationFn: () =>
@@ -145,13 +156,13 @@ function TestForm({ board, draft, onDone }: { board: ReminderBoard; draft: strin
   });
   return (
     <form
-      className={cn(CARD, "flex flex-wrap items-end gap-3")}
+      className={compact ? "flex flex-wrap items-end gap-2 border-t border-panel-line pt-3" : cn(CARD, "flex flex-wrap items-end gap-3")}
       onSubmit={e => {
         e.preventDefault();
         test.mutate();
       }}
     >
-      <div className="flex min-w-[240px] flex-1 flex-col gap-1">
+      <div className={cn("flex flex-1 flex-col gap-1", compact ? "min-w-[180px]" : "min-w-[240px]")}>
         <label htmlFor="reminder-test-phone" className="text-sm text-muted-foreground">
           {t.test.label}
         </label>
@@ -166,7 +177,7 @@ function TestForm({ board, draft, onDone }: { board: ReminderBoard; draft: strin
         />
       </div>
       <button type="submit" disabled={test.isPending} className={ACTION}>
-        {t.test.send}
+        {compact ? t.test.open : t.test.send}
       </button>
     </form>
   );
@@ -184,13 +195,10 @@ function SettingsTiles({ board, onSaved }: { board: ReminderBoard; onSaved: (b: 
   });
   const { enabled, sendTime } = board.settings;
   const mode = board.channel.mode;
+  // 11/11/2026 (choice A): the usual rule in one line: on or off, the usual time, the channel.
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
-      <div className={cn(CARD, "flex items-center justify-between gap-3")}>
-        <div>
-          <p className="text-sm text-muted-foreground">{s.enabled}</p>
-          <p className="text-base font-semibold">{enabled ? s.on : s.off}</p>
-        </div>
+    <div className={cn(CARD, "flex flex-wrap items-center gap-x-8 gap-y-3")}>
+      <div className="flex items-center gap-3">
         <button
           type="button"
           role="switch"
@@ -205,9 +213,13 @@ function SettingsTiles({ board, onSaved }: { board: ReminderBoard; onSaved: (b: 
         >
           <span className={cn("h-6 w-6 rounded-full", enabled ? "bg-lime-ink" : "bg-panel")} />
         </button>
+        <div>
+          <p className="text-xs text-muted-foreground">{s.enabled}</p>
+          <p className="text-sm font-semibold">{enabled ? s.on : s.off}</p>
+        </div>
       </div>
-      <div className={cn(CARD, "flex flex-col gap-1.5")}>
-        <label htmlFor="reminder-usual-time" className="text-sm text-muted-foreground">
+      <div className="flex items-center gap-2">
+        <label htmlFor="reminder-usual-time" className="text-xs text-muted-foreground">
           {s.usualTime}
         </label>
         <select
@@ -224,13 +236,23 @@ function SettingsTiles({ board, onSaved }: { board: ReminderBoard; onSaved: (b: 
           ))}
         </select>
       </div>
-      <div className={cn(CARD, "flex flex-col gap-1")}>
-        <p className="text-sm text-muted-foreground">{s.from}</p>
-        <p className="flex flex-wrap items-center gap-2 text-base font-semibold">
-          {s.channel[mode]}
-          {mode !== "none" ? <Badge tone="ok">{s.ok}</Badge> : <Badge tone="warn">Off</Badge>}
-        </p>
-        <p className="text-sm text-muted-foreground">{s.channelNote[mode]}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-muted-foreground">{s.from}</p>
+        {board.meta ? (
+          <p data-testid="reminder-channel" className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-[#166534]">
+              <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              {s.whatsapp}
+            </span>
+            <span className="font-normal text-muted-foreground">{s.fallback(mode === "none" ? s.channel.none : s.channel[mode])}</span>
+          </p>
+        ) : (
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            {s.channel[mode]}
+            {mode !== "none" ? <Badge tone="ok">{s.ok}</Badge> : <Badge tone="warn">Off</Badge>}
+            <span className="font-normal text-muted-foreground">{s.channelNote[mode]}</span>
+          </p>
+        )}
         {mode === "none" && board.can.edit && (
           <Link to="/parking/reglages#sms" className="text-sm font-semibold text-lime-deep hover:underline">
             {s.chooseChannel}
@@ -246,10 +268,10 @@ function Week({ board, selected, onSelect }: { board: ReminderBoard; selected: s
   const now = localNow();
   return (
     <section aria-labelledby="reminder-week" className="space-y-2.5">
-      <h2 id="reminder-week" className="text-lg font-semibold">
+      <h2 id="reminder-week" className="sr-only">
         {w.title}
       </h2>
-      <div role="group" aria-label={w.title} className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-7">
+      <div role="group" aria-label={w.title} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {board.evenings.map(e => {
           const isSelected = e.date === selected;
           const day = capitalise(shortDay(e.date));
@@ -262,14 +284,14 @@ function Week({ board, selected, onSelect }: { board: ReminderBoard; selected: s
               data-testid="reminder-evening"
               onClick={() => onSelect(e.date)}
               className={cn(
-                "flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left",
-                isSelected ? "border-2 border-primary bg-[#F3FBE6] p-[11px]" : e.paused ? "border-dashed border-panel-line bg-panel-2 text-muted-foreground" : "border-panel-line bg-panel hover:bg-panel-2",
+                "flex min-w-[112px] shrink-0 flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left",
+                isSelected ? "border-2 border-primary bg-[#F3FBE6] px-[11px] py-[9px]" : e.paused ? "border-dashed border-panel-line bg-panel-2 text-muted-foreground" : "border-panel-line bg-panel hover:bg-panel-2",
               )}
             >
               <span className={cn("text-[13px]", isSelected ? "font-semibold text-lime-deep" : "text-muted-foreground")}>
                 {e.when === "tonight" ? w.tonight(shortDay(e.date)) : day}
               </span>
-              <span className="font-mono text-lg font-semibold">{e.paused ? "--:--" : e.sendTime}</span>
+              <span className="font-mono text-base font-semibold">{e.paused ? "--:--" : e.sendTime}</span>
               <span className="text-[13px]">
                 {e.paused ? w.paused : e.when === "past" ? w.sent(e.counts.sent) : w.planned(e.counts.planned + e.counts.sent + e.counts.waiting)}
               </span>
@@ -363,13 +385,11 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
         <p className="py-4 text-muted-foreground">{ev.empty}</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[520px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th scope="col" className="px-2.5 py-2 font-semibold">{ev.columns.arrival}</th>
                 <th scope="col" className="px-2.5 py-2 font-semibold">{ev.columns.customer}</th>
-                <th scope="col" className="px-2.5 py-2 font-semibold">{ev.columns.phone}</th>
-                <th scope="col" className="px-2.5 py-2 font-semibold">{ev.columns.channel}</th>
                 <th scope="col" className="px-2.5 py-2 font-semibold">{ev.columns.sms}</th>
                 <th scope="col" className="px-2.5 py-2 font-semibold"><span className="sr-only">{ev.columns.action}</span></th>
               </tr>
@@ -381,15 +401,21 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
                 return (
                   <tr key={row.reservationId} data-testid="reminder-row" data-status={row.status} className={cn("border-t border-panel-line", muted && "bg-panel-2 text-muted-foreground")}>
                     <td className="px-2.5 py-2.5 font-mono font-semibold">{row.arrivalAt.slice(11)}</td>
+                    {/* 11/11/2026 (choice A): the customer, the booking's channel and the mobile on one cell. */}
                     <td className="px-2.5 py-2.5">
                       <button type="button" onClick={() => quickCard.open(row.reservationId)} className="text-left font-semibold hover:underline">
                         {row.customerName}
                       </button>
+                      <p className="text-[13px] text-muted-foreground">
+                        <span>{row.channelDetail || fr.channels[row.channel]}</span>
+                        {row.customerPhone && <span className="whitespace-nowrap font-mono"> · {row.customerPhone}</span>}
+                      </p>
                     </td>
-                    <td className="px-2.5 py-2.5 font-mono text-muted-foreground">{row.customerPhone}</td>
-                    <td className="px-2.5 py-2.5 text-muted-foreground">{row.channelDetail || fr.channels[row.channel]}</td>
                     <td className="px-2.5 py-2.5">
-                      <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
+                      <span className="inline-flex flex-wrap items-center gap-1.5">
+                        <Badge tone={TONE[row.status]}>{statusText(row)}</Badge>
+                        {row.delivery && <DeliveryPill delivery={row.delivery} />}
+                      </span>
                     </td>
                     <td className="px-2.5 py-2.5 text-right">
                       {row.status === "no_mobile" || row.status === "foreign" ? (
@@ -401,7 +427,7 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
                           type="button"
                           disabled={exclude.isPending}
                           onClick={() => exclude.mutate({ id: row.reservationId, excluded: row.status !== "excluded" })}
-                          className={cn(BUTTON, "ml-auto h-9")}
+                          className={cn(BUTTON, "ml-auto h-9 whitespace-nowrap")}
                         >
                           {row.status === "excluded" ? ev.include : ev.exclude}
                         </button>
@@ -420,6 +446,81 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
 }
 
 function MessageSection({
+  board,
+  draft: typed,
+  setDraft: setTyped,
+  onSaved,
+}: {
+  board: ReminderBoard;
+  draft: string | null;
+  setDraft: (text: string | null) => void;
+  onSaved: (b: ReminderBoard) => void;
+}) {
+  if (board.meta) return <MetaMessageSection board={board} meta={board.meta} />;
+  return <OwnMessageSection board={board} draft={typed} setDraft={setTyped} onSaved={onSaved} />;
+}
+
+/** « - » for an empty value, as the server fills the Meta template (WhatsApp refuses an empty variable). */
+const dashed = (values: ReminderBoard["sample"]["values"]) =>
+  Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v ?? "").trim() ? v : "-"])) as ReminderBoard["sample"]["values"];
+
+/**
+ * 11/11/2026 (« le message de la veille doit se baser sur le modèle défini chez Meta », choice B): with WhatsApp on, one
+ * text, the template approved by Meta, read only; the fallback SMS takes it too. Its preview with the sample's values.
+ */
+function MetaMessageSection({ board, meta }: { board: ReminderBoard; meta: NonNullable<ReminderBoard["meta"]> }) {
+  const m = t.message;
+  const values = dashed(board.sample.values);
+  const preview = useMemo(() => renderTemplate(meta.text, values), [meta.text, values]);
+  const length = smsLength(preview);
+  const [day, month, year] = board.sample.values.date.split("/");
+  const sendDay = capitalise(shortDay(addDays(`${year}-${month}-${day}`, -1)));
+  return (
+    <aside aria-labelledby="reminder-message" data-testid="reminder-meta" className={cn(CARD, "flex min-w-0 flex-col gap-3 lg:sticky lg:top-4")}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="reminder-message" className="text-lg font-semibold">
+          {m.title}
+        </h2>
+        <span className="rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-xs font-semibold text-[#166534]">{m.meta.badge}</span>
+      </div>
+      <p className="text-[13px] text-muted-foreground">{t.preview.for(board.sample.customerName, board.sample.values.date, board.sample.values.heure)}</p>
+      {/* A WhatsApp bubble: the parking's photo on top, then the text with the sample's values. */}
+      <div className="flex flex-col gap-2 rounded-2xl bg-[#EFEAE2] p-3">
+        <span className="self-center rounded-full bg-white/80 px-2 py-0.5 text-[11px] text-muted-foreground">{t.preview.sentAt(sendDay, board.evening.sendTime)}</span>
+        <div className="max-w-[92%] overflow-hidden rounded-xl rounded-tl-sm bg-white shadow-sm">
+          <div className="flex h-24 items-center justify-center gap-1.5 bg-panel-2 text-xs text-muted-foreground">
+            <ImageIcon className="h-4 w-4" aria-hidden="true" />
+            {m.meta.photoSlot}
+          </div>
+          <div data-testid="reminder-preview" className="max-h-[420px] overflow-auto whitespace-pre-line break-words px-3 py-2.5 text-sm leading-snug">
+            {preview}
+          </div>
+        </div>
+      </div>
+      {meta.source && (
+        <p data-testid="reminder-meta-source" className={cn("text-[13px]", meta.source === "meta" ? "text-lime-deep" : "text-warn-text")}>
+          {meta.source === "meta" ? m.meta.fromMeta : m.meta.fromCopy}
+        </p>
+      )}
+      <p className="text-[13px] text-muted-foreground">
+        <span data-testid="reminder-segments" className="font-mono font-semibold text-foreground">
+          {m.count(length.segments)}
+        </span>{" "}
+        {m.meta.fallback(length.characters)}
+      </p>
+      <details className="rounded-lg border border-panel-line bg-panel-2 px-3 py-2 text-sm">
+        <summary className="cursor-pointer font-semibold">{m.meta.showTemplate(meta.name)}</summary>
+        <pre data-testid="reminder-meta-text" className="mt-2 whitespace-pre-wrap break-words font-sans text-[13px] leading-relaxed">
+          {meta.text}
+        </pre>
+        <p className="mt-2 text-[12px] text-muted-foreground">{m.meta.change}</p>
+      </details>
+      {board.can.edit && <TestForm board={board} draft={null} onDone={() => undefined} compact />}
+    </aside>
+  );
+}
+
+function OwnMessageSection({
   board,
   draft: typed,
   setDraft: setTyped,

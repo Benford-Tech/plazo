@@ -580,7 +580,7 @@ export const fr = {
       allReservations: "Toutes",
       inbox: "Boîte de réception",
       extras: "Services à faire",
-      reminders: "SMS de la veille",
+      reminders: "Message de la veille",
       importFile: "Importer un fichier",
       occupation: "Occupation",
       plan: "Plan",
@@ -852,8 +852,8 @@ export const fr = {
         body: "Votre propre PDF, ou le modèle Plazo.",
       },
       sms: {
-        title: "Le SMS de la veille",
-        body: "L'heure et le texte envoyés à vos clients avant leur dépôt.",
+        title: "Le message de la veille",
+        body: "L'heure et le message WhatsApp (SMS en repli) envoyés à vos clients avant leur dépôt.",
       },
       post: {
         title: "Votre poste du jour",
@@ -1169,6 +1169,12 @@ export const fr = {
       "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
     bookablePreview: (n: number) =>
       `Places réservables avec ces réglages : ${n}`,
+    driverPhone: "Téléphone du chauffeur (le jour du dépôt)",
+    driverPhoneHelp: "Dans le message de la veille, pour l'accueil et le transfert : {chauffeur}.",
+    travellerConditions: "Conditions pour vos clients",
+    travellerConditionsPlaceholder: "Retard de plus de 30 minutes : supplément de 10 € ; dépannage (batterie) : 5 €",
+    travellerConditionsHelp:
+      "Dans le message de la veille ({conditions}), après vos frais de nuit, que Plazo ajoute lui-même. Sur une ligne : séparez par « ; ».",
     valetMeetingPoint: "Rendez-vous du voiturier à l'aéroport",
     valetMeetingPointPlaceholder: "Terminal 1 · dépose-minute",
     valetMeetingPointHelp:
@@ -1859,8 +1865,9 @@ export const fr = {
     unavailable: `Bientôt : le numéro WhatsApp de ${PRODUCT.name} attend sa validation par Meta.`,
     noFallback:
       "Pas de SMS en repli : réglez l'envoi des SMS ci-dessous, sinon un voyageur sans WhatsApp ne reçoit rien.",
-    month: (whatsapp: number, read: number, fallbacks: number) =>
-      `Ce mois-ci : ${whatsapp} par WhatsApp (${read} lus), ${fallbacks} par SMS en repli.`,
+    month: (whatsapp: number, read: number, fallbacks: number, failed = 0) =>
+      `Ce mois-ci : ${whatsapp} par WhatsApp (${read} lus), ${fallbacks} par SMS en repli` +
+      (failed > 0 ? `, ${failed} non remis par WhatsApp.` : "."),
     signatureNote: "Le code de signature du contrat part toujours par SMS.",
     testLabel: "Numéro de test",
     test: "M'envoyer un test sur WhatsApp",
@@ -4399,18 +4406,18 @@ export const inboundWizardFr = {
   },
 };
 
-/** « SMS de la veille » (S-A + S-B, 06/10/2026). */
+/** « Message de la veille » (S-A + S-B, 06/10/2026; renamed 11/11/2026: WhatsApp first, SMS as the fallback). */
 export const remindersFr = {
-  title: "SMS de la veille",
+  title: "Message de la veille",
   phoneOffline: (since: string | null) =>
     since ? `Le téléphone d'envoi ne répond plus depuis ${since}.` : "Le téléphone d'envoi ne répond plus.",
-  phoneOfflineDetail: "Les SMS de ce soir attendront qu'il revienne (2 h au plus) : ouvrez l'appli SMS sur le téléphone.",
+  phoneOfflineDetail: "Les SMS de repli de ce soir attendront qu'il revienne (2 h au plus) : ouvrez l'appli SMS sur le téléphone.",
   phoneLink: "Voir le téléphone",
   subtitle:
-    "Chaque soir, un SMS part à chaque client qui dépose sa voiture le lendemain.",
+    "Chaque soir, un message part à chaque client qui dépose sa voiture le lendemain : par WhatsApp, et par SMS si WhatsApp ne passe pas.",
   back: "Retour aux réservations",
-  loadError: "Impossible de charger les SMS de la veille.",
-  link: "SMS de la veille",
+  loadError: "Impossible de charger les messages de la veille.",
+  link: "Message de la veille",
   test: {
     open: "M’envoyer un test",
     label: "Numéro qui reçoit le test",
@@ -4437,6 +4444,9 @@ export const remindersFr = {
       none: "Seuls le mail et la notification de l’app partent.",
     },
     chooseChannel: "Choisir un canal",
+    // 11/11/2026: with WhatsApp on.
+    whatsapp: "WhatsApp",
+    fallback: (channel: string) => `SMS en repli : ${channel}`,
     ok: "OK",
     saved: "Réglage enregistré.",
   },
@@ -4444,7 +4454,7 @@ export const remindersFr = {
     title: "Les envois de la semaine",
     tonight: (day: string) => `Ce soir · ${day}`,
     sent: (n: number) => `${n} envoyé${n > 1 ? "s" : ""}`,
-    planned: (n: number) => `${n} SMS prévu${n > 1 ? "s" : ""}`,
+    planned: (n: number) => `${n} prévu${n > 1 ? "s" : ""}`,
     failed: (n: number) => `${n} échec${n > 1 ? "s" : ""}`,
     in: (minutes: number) =>
       minutes < 60
@@ -4462,25 +4472,25 @@ export const remindersFr = {
     ) =>
       `${when === "tonight" ? `Ce soir, ${day}` : day} · pour ${count === 0 ? "aucun départ" : `${count === 1 ? "le départ" : `les ${count} départs`}`} de ${departuresDay}`,
     planned: (n: number, time: string) =>
-      `${n} SMS prévu${n > 1 ? "s" : ""} à ${time}`,
+      `${n} message${n > 1 ? "s" : ""} prévu${n > 1 ? "s" : ""} à ${time}`,
     sent: (n: number) => `${n} envoyé${n > 1 ? "s" : ""}`,
     waiting: (n: number) => `${n} en attente du téléphone`,
     failed: (n: number) => `${n} échec${n > 1 ? "s" : ""}`,
-    withoutSms: (n: number) => `${n} sans SMS`,
+    withoutSms: (n: number) => `${n} sans message`,
     time: "Heure de cet envoi",
     pause: "Mettre en pause",
     resume: "Reprendre",
     sendNow: "Envoyer maintenant",
     sentNow: (n: number) =>
-      n === 0 ? "Aucun SMS à envoyer." : `${n} SMS envoyé${n > 1 ? "s" : ""}.`,
+      n === 0 ? "Aucun message à envoyer." : `${n} message${n > 1 ? "s" : ""} envoyé${n > 1 ? "s" : ""}.`,
     empty: "Aucun départ ce jour-là.",
-    late: "Une réservation pour le lendemain enregistrée après l’heure d’envoi reçoit son SMS tout de suite, sauf entre 22:00 et 7:00 : il part alors à 7:00.",
+    late: "Une réservation pour le lendemain enregistrée après l’heure d’envoi reçoit son message tout de suite, sauf entre 22:00 et 7:00 : il part alors à 7:00.",
     columns: {
       arrival: "Dépôt",
       customer: "Client",
       phone: "Mobile",
       channel: "Canal",
-      sms: "SMS",
+      sms: "Message",
       action: "Action",
     },
     exclude: "Ne pas envoyer",
@@ -4504,6 +4514,20 @@ export const remindersFr = {
   },
   message: {
     title: "Le message",
+    // 11/11/2026 (choice B): with WhatsApp on, the template approved by Meta.
+    meta: {
+      badge: "Modèle validé chez Meta",
+      intro: (name: string) =>
+        `Le message part par WhatsApp avec le modèle « ${name} », validé chez Meta. Si WhatsApp ne passe pas, le SMS de repli reprend ce même texte, rempli avec les mêmes informations.`,
+      fallback: (characters: number) => `pour le SMS de repli · ${characters.toLocaleString("fr-FR")} caractères`,
+      change: `Ce texte ne se modifie pas ici : un nouveau texte doit d'abord être validé par Meta. Demandez-le à ${PRODUCT.name}.`,
+      photo: "Sur WhatsApp, la photo du parking s'affiche en tête du message.",
+      photoSlot: "Photo du parking",
+      showTemplate: (name: string) => `Voir le modèle « ${name} »`,
+      // 11/11/2026 (« importe le modèle dans Plazo »): where the text comes from.
+      fromMeta: "Texte lu chez Meta : il suit le modèle validé, même modifié.",
+      fromCopy: `Meta ne répond pas : ${PRODUCT.name} utilise sa copie du modèle.`,
+    },
     label: "Texte du SMS",
     updated: (by: string | null, when: string) =>
       `Modifié${by ? ` par ${by}` : ""}, le ${when}`,
@@ -4526,6 +4550,10 @@ export const remindersFr = {
       consignes: "Consignes du rendez-vous au retour",
       navette: "Durée de la navette, 8 min",
       services: "Services proposés et leurs prix",
+      horaires: "Horaires d'accès (ceux de la fiche)",
+      gps: "Coordonnées GPS du point de rendez-vous",
+      conditions: "Conditions : frais de nuit, puis celles des réglages",
+      chauffeur: "Téléphone du chauffeur (réglages du parking)",
     },
     count: (segments: number) => `${segments} SMS`,
     perClient: (characters: number) =>
@@ -5220,7 +5248,7 @@ export const historyFr = {
     "arrival.ended": "a arrêté de partager sa position",
     "return.landed": "a signalé son atterrissage",
     "return.notice": "a prévenu le parking",
-    "sms.reminder_sent": "a envoyé le SMS de la veille",
+    "sms.reminder_sent": "a envoyé le message de la veille",
   } as Record<string, string>,
   other: "a fait une action",
   inspectionKind: { dropoff: "au dépôt", return: "au retour" } as Record<string, string>,
@@ -5249,6 +5277,28 @@ export const bookingReminderFr = {
   today: "aujourd'hui",
   tomorrow: "demain",
   at: (day: string, time: string) => `${day} à ${time}`,
+  // 10/11/2026 (« comme "Renvoyer le SMS", un bouton envoyer WhatsApp », choice A): the button says the channel.
+  whatsapp: {
+    title: "Message de la veille",
+    send: "Envoyer par WhatsApp",
+    resend: "Renvoyer par WhatsApp",
+    fallback: "SMS si WhatsApp ne passe pas",
+    confirmTitle: "Renvoyer le message de la veille ?",
+    confirmText: (when: string) =>
+      `Le client l'a déjà reçu ${when}. Le message part de nouveau par WhatsApp, et par SMS si WhatsApp ne passe pas.`,
+    done: "Message de la veille envoyé.",
+    doneAgain: "Message de la veille renvoyé.",
+    failed: "Le message n'est pas parti : vérifiez WhatsApp et le canal SMS dans Parking › Réglages.",
+  },
+  // 10/11/2026 (« distingue WhatsApp et SMS »).
+  delivery: {
+    whatsapp: "WhatsApp",
+    sms: "SMS",
+    read: (time: string | null) => (time ? `lu à ${time}` : "lu"),
+    delivered: "remis",
+    notDelivered: "non remis",
+    fallback: "WhatsApp non remis",
+  },
   refusal: {
     reminder_not_upcoming: "Le client a déjà déposé sa voiture : plus de SMS de la veille.",
     reminder_no_mobile: "Pas de numéro de mobile français pour ce client.",
@@ -5256,6 +5306,32 @@ export const bookingReminderFr = {
     reminder_quiet_hours: "Aucun SMS ne part de 22:00 à 07:00.",
     reminder_too_soon: "Envoyé il y a moins de 10 minutes : patientez avant de le renvoyer.",
   } as Record<string, string>,
+};
+
+/** 10/11/2026 (« ici propose des champs à modifier et valider pour créer la résa », choice A). */
+export const inboundNewBookingFr = {
+  title: "Créer une nouvelle réservation",
+  intro: (provider: string, reference: string | null) =>
+    `D'après ce mail ${provider}${reference ? ` (n° ${reference})` : ""} : vérifiez les champs, puis créez la réservation.`,
+  comparator: "du comparateur",
+  arrival: "Arrivée",
+  return: "Retour",
+  firstName: "Prénom",
+  lastName: "Nom",
+  phone: "Téléphone",
+  plate: "Plaque (facultatif)",
+  returnFlight: "Vol retour (facultatif)",
+  vehicle: "Véhicule",
+  passengers: "Passagers",
+  price: "Prix payé (€)",
+  priceInvalid: "Montant invalide (ex. 45,50).",
+  invalid: "Valeur invalide.",
+  force: "Le parking est complet sur une nuit : créer quand même.",
+  create: "Créer la réservation",
+  creating: "Création…",
+  closedStays: "La réservation close reste telle quelle.",
+  created: (reference: string) => `Réservation ${reference} créée, le mail lui est rattaché.`,
+  done: "Réservation créée :",
 };
 
 /** 06/11/2026 (« une facture au nom du parking avec son logo », direction A). */

@@ -160,6 +160,14 @@ export class CreateReservationDto {
   @MaxLength(60, { message: 'too_long' })
   public externalReference?: string;
 
+  /**
+   * 10/11/2026 (« créer la résa » from a change of a closed booking): when the number is held by a closed booking (returned,
+   * cancelled, no-show), it moves to this new one instead of refusing it as already imported.
+   */
+  @IsOptional()
+  @IsBoolean()
+  public takeReferenceFromClosed?: boolean;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'integer' })

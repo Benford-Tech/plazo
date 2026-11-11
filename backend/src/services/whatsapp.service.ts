@@ -58,6 +58,42 @@ export class WhatsappService {
     return !!(token && phoneNumberId);
   }
 
+  // ---- Templates (11/11/2026, « importe le modèle dans Plazo ») -------------------------------------
+
+  /** Bodies read at Meta, kept 10 minutes per instance; the last one read stays when Meta does not answer. */
+  private bodies = new Map<string, { body: string; at: number }>();
+  public bodyTtlMs = 10 * 60 * 1000;
+
+  /**
+   * The body of an approved template, as Meta holds it (« Bonsoir {{1}}, … »), in the configured language; null when
+   * Plazo cannot read it (no account id, Meta refuses or does not answer, not approved). Never throws.
+   */
+  public async templateBody(name: string, now = Date.now()): Promise<string | null> {
+    const cached = this.bodies.get(name);
+    if (cached && now - cached.at < this.bodyTtlMs) return cached.body;
+    const { token, businessAccountId, language, graphVersion } = this.config();
+    if (!token || !businessAccountId || !name) return cached?.body ?? null;
+    try {
+      const url =
+        `https://graph.facebook.com/${graphVersion}/${encodeURIComponent(businessAccountId)}/message_templates` +
+        `?name=${encodeURIComponent(name)}&fields=name,status,language,components&limit=20`;
+      const res = await fetch(url, { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(this.timeoutMs) });
+      const data: any = await res.json().catch(() => null);
+      const template = Array.isArray(data?.data)
+        ? data.data.find((t: any) => t?.name === name && t?.status === 'APPROVED' && t?.language === language)
+        : null;
+      const body = Array.isArray(template?.components) ? template.components.find((c: any) => c?.type === 'BODY')?.text : null;
+      if (typeof body === 'string' && body.trim()) {
+        this.bodies.set(name, { body, at: now });
+        return body;
+      }
+      logger.warn(`[WhatsApp] Template ${name} not read at Meta (${res.ok ? 'not approved or no body' : `http_${res.status}`})`);
+    } catch (error) {
+      logger.warn(`[WhatsApp] Template ${name} not read at Meta (${error instanceof Error ? error.name : 'error'})`);
+    }
+    return cached?.body ?? null;
+  }
+
   // ---- Sending ------------------------------------------------------------------------------------
 
   /**

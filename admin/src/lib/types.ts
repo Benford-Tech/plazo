@@ -149,6 +149,9 @@ export interface Parking {
   shuttleTracking: ShuttleTracking;
   /** 27/10/2026: where the valet meets the travellers at the airport (null: Terminal 1 · dépose-minute). */
   valetMeetingPoint?: string | null;
+  /** 11/11/2026: the day-before message's {chauffeur} and {conditions}. */
+  driverPhone?: string | null;
+  travellerConditions?: string | null;
   /**
    * 09/10/2026: `totalCapacity` and `declaredCapacity` are the figure typed by the operator;
    * `effectiveCapacity` is the one used everywhere (the plan's files, else its active spots, else
@@ -178,6 +181,8 @@ export interface ParkingSettings {
   terminalLeadMinutes?: number;
   landingDelayMinutes?: number;
   valetMeetingPoint?: string | null;
+  driverPhone?: string | null;
+  travellerConditions?: string | null;
 }
 
 export interface NewStaff {
@@ -513,6 +518,8 @@ export interface ReservationInput {
   vehicleModel?: string | null;
   vehicleColour?: string | null;
   externalReference?: string;
+  /** 10/11/2026: on creation, the number moves from a closed booking that holds it (a change mail of a closed booking). */
+  takeReferenceFromClosed?: boolean;
   /** 10/10/2026: null clears it on an edit (never a Plazo booking's). */
   priceCents?: number | null;
   /** The amount read in the comparator's email (« Compléter »), on creation only. */
@@ -1720,6 +1727,7 @@ export interface ReminderRow {
   /** Local "YYYY-MM-DDTHH:mm": when it leaves (planned) or left. */
   at: string | null;
   excludedBy: string | null;
+  delivery?: ReminderDelivery | null;
 }
 export interface ReminderEvening {
   date: string;
@@ -1760,6 +1768,8 @@ export interface ReminderBoard {
   can: { edit: boolean; manage: boolean };
   /** 06/11/2026: the SMS phone's last check (null without the parking's phone, or no recent check). */
   phone?: PhoneNow | null;
+  /** 11/11/2026 (choice B): the Meta template the message follows (WhatsApp and the fallback SMS), null for the parking's text. */
+  meta?: { name: string; text: string; source?: "meta" | "copy" } | null;
 }
 export interface ReminderSettingsInput {
   enabled?: boolean;
@@ -2359,7 +2369,20 @@ export interface BookingReminder {
     | "reminder_quiet_hours"
     | "reminder_too_soon"
     | null;
+  /** 10/11/2026: it leaves by WhatsApp first, the SMS only if WhatsApp does not get through (absent from older APIs). */
+  whatsapp?: boolean;
+  /** 10/11/2026: how the last one reached the traveller. */
+  delivery?: ReminderDelivery | null;
   timezone: string;
+}
+
+/** 10/11/2026 (« distingue WhatsApp et SMS »): WhatsApp, or the SMS (in WhatsApp's place when `whatsappFallback`). */
+export interface ReminderDelivery {
+  by: "whatsapp" | "sms";
+  status: string;
+  /** Local "YYYY-MM-DDTHH:mm" when delivered or read. */
+  statusAt: string | null;
+  whatsappFallback: boolean;
 }
 
 /** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */

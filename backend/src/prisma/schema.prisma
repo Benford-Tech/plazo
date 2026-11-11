@@ -446,7 +446,11 @@ model Parking {
 
   /// 27/10/2026: where the valet meets the traveller at the airport (« Terminal 1 · dépose-minute »); null: the default
   /// of `valetMeetingPointOf`.
-  valetMeetingPoint String?
+  valetMeetingPoint   String?
+  /// 11/11/2026 (« variabilise au max »): the driver's phone the day of the drop-off, and the parking's conditions for the
+  /// traveller (late fee, breakdown service…), for the day-before message ({chauffeur}, {conditions}).
+  driverPhone         String?
+  travellerConditions String?
 
   // Services for the car (21/10/2026, « lavage intérieur, recharge hybride, recharge électrique via Plazo, même après le
   // dépôt »): a traveller orders them until this many hours before the booked return (CHECK 0 to 168).

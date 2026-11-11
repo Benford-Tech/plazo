@@ -41,6 +41,10 @@ const VALUES = {
   consignes: '',
   navette: '',
   services: '',
+  horaires: '',
+  gps: '',
+  conditions: '',
+  chauffeur: '',
 };
 
 let fetchMock: jest.SpyInstance;
@@ -307,6 +311,37 @@ describe('le SMS de la veille dans l’espace pro', () => {
     );
   });
 
+  it('horaires, GPS, conditions (frais de nuit compris) et téléphone du chauffeur (11/11/2026)', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const settings = await api().patch(`/api/internal/parkings/${op.parking.id}`).set(auth(op.token)).send({
+      name: op.parking.name,
+      totalCapacity: 50,
+      safetyMarginPct: 0,
+      shuttleTravelMinutes: 8,
+      terminalLeadMinutes: 120,
+      landingDelayMinutes: 30,
+      driverPhone: ' 07 44 44 35 79 ',
+      travellerConditions: 'Retard de plus de 30 minutes : 10 €.\nDépannage (batterie) : 5 €.',
+    });
+    expect(settings.status).toBe(200);
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: { nightFeeEnabled: true, nightStart: '22:00', nightEnd: '06:00', nightArrivalFeeCents: 1000, nightReturnFeeCents: 1000 },
+    });
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPoint" = ST_SetSRID(ST_MakePoint(5.07674, 45.71984), 4326) WHERE id = ${op.parking.id}`;
+    const text = 'GPS {gps}. Conditions : {conditions}. Chauffeur {chauffeur}. Accès {horaires}.';
+    const put = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ template: text });
+    expect(put.status).toBe(200);
+    expect(put.body.sample.values).toMatchObject({
+      gps: '45.71984 N, 5.07674 E',
+      conditions:
+        'Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ; Retard de plus de 30 minutes : 10 €. Dépannage (batterie) : 5 €.',
+      chauffeur: '07 44 44 35 79',
+      horaires: '',
+    });
+  });
+
   it('rien la nuit : une réservation prise à 23:00 part à 07:00, et le jour même rien ne part', async () => {
     const op = await setupOperator();
     await useBrevoSms(op.operator.id);
@@ -435,7 +470,15 @@ describe('le SMS de la veille d’une réservation donnée (30/10/2026)', () => 
     expect((await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'))).refusal).toBe('reminder_no_channel');
     await useBrevoSms(op.operator.id);
     const before = await reminders.forReservation(staff, r.id, at('2027-06-14T10:00'));
-    expect(before).toMatchObject({ status: 'planned', at: '2027-06-15T18:00', sentAt: null, resend: false, canSend: true, refusal: null });
+    expect(before).toMatchObject({
+      status: 'planned',
+      at: '2027-06-15T18:00',
+      sentAt: null,
+      resend: false,
+      canSend: true,
+      refusal: null,
+      whatsapp: false,
+    });
 
     // At night too (31/10/2026): only the automatic sends keep the quiet hours.
     expect((await reminders.forReservation(staff, r.id, at('2027-06-14T23:00'))).refusal).toBeNull();

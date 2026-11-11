@@ -193,6 +193,18 @@ describe("RemindersPage (S-A + S-B)", () => {
     await waitFor(() => expect(api.getReminders).toHaveBeenLastCalledWith("p1", "2026-10-08"));
   });
 
+  it("avec WhatsApp, le message suit le modèle validé chez Meta, en lecture seule (11/11/2026, choix B)", async () => {
+    api.getReminders.mockResolvedValue(
+      board({ meta: { name: "plazo_rappel_veille", text: "Bonsoir {prénom},\n\nVotre retour le {retour} (vol {vol}).", source: "meta" } }),
+    );
+    renderPage();
+    expect(await screen.findByTestId("reminder-meta")).toHaveTextContent("Modèle validé chez Meta");
+    expect(screen.getByTestId("reminder-meta-text")).toHaveTextContent("Bonsoir {prénom},");
+    expect(screen.getByTestId("reminder-meta-source")).toHaveTextContent("Texte lu chez Meta");
+    expect(screen.queryByLabelText("Texte du SMS")).not.toBeInTheDocument();
+    expect(screen.getByTestId("reminder-preview")).toHaveTextContent("Bonsoir Sophie,");
+  });
+
   it("un chauffeur voit tout sans pouvoir rien changer", async () => {
     api.getReminders.mockResolvedValue(board({ can: { edit: false, manage: false } }));
     renderPage();

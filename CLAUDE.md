@@ -307,6 +307,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      reste affiché, pas de « Compléter »). `alloparkPageUrls` donne le lien du mail puis les pages des adresses du parking
      (3 au plus) : un lien qui mène ailleurs (« gérer ma réservation ») n'arrête plus la recherche. « Compléter » préremplit
      aussi le modèle et la couleur du véhicule.
+     **Nouvelle réservation depuis une modification d'une réservation close, choix A (10/11/2026, « ici propose des champs à
+     modifier et valider pour créer la résa »)** : sous le bloc « Modification à faire à la main » de raison `reservation_closed`
+     (mail sans réservation, À traiter ou Traité), `NewBookingFromChange` (`components/inbound/`, `lib/inbound-new-booking.ts`
+     `canCreateFromChange`, `prefillOf` : la réservation lue, les nouvelles valeurs de la modification par-dessus) : arrivée,
+     retour, prénom, nom, téléphone, plaque, vol retour, véhicule, passagers, prix, modifiables, puis « Créer la réservation »
+     (canal comparateur, numéro du mail, mail rattaché ; « créer quand même » si complet) ; la réservation close reste telle quelle
+     et cède son numéro (`takeReferenceFromClosed` de `POST /internal/reservations` : le numéro tenu par une réservation rendue,
+     annulée ou non venue passe à la nouvelle, tracé `reservation.updated` `source: 'new_booking_from_change'` ; sinon 409
+     `already_imported` comme avant). Tests `NewBookingFromChange.test.tsx`, `reservations.test.ts`.
      **Import sans plaque (15/10/2026, « ne pas planter à l'import quand la plaque est manquante »)** : la plaque n'est plus
      requise pour créer une réservation depuis un mail (`REQUIRED_FOR_IMPORT` sans `plate`) ; Plazo la cherche encore
      (`SOUGHT_FOR_IMPORT` : page Allopark, Claude) sans faire attendre le mail ; une plaque dont Claude doute est écartée (lue à
@@ -700,6 +709,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      le dernier (`RESEND_AFTER_MS`, réservation par `reminderSentAt`) ; 409 `reminder_not_upcoming` (pas « Attendu » ou dépôt passé),
      `reminder_no_mobile`, `reminder_no_channel`, `reminder_too_soon` (`reminder_quiet_hours` n'est plus renvoyé depuis le 31/10/2026, « enlève les plages d'envoi des SMS pour que je puisse en envoyer quand je veux » : un envoi à la main part à toute heure, seuls les envois automatiques gardent la pause de 22:00 à 07:00) ; tracé `sms.reminder_sent`
      (« a envoyé le SMS de la veille » dans l'Historique). Tests `reminders.test.ts`, `BookingReminderCard.test.tsx`.
+     **Le bouton dit le canal, choix A (10/11/2026, « comme "Renvoyer le SMS", un bouton envoyer WhatsApp »)** : `GET …/reminder`
+     rend `whatsapp` (WhatsApp allumé pour le loueur, `WhatsappService.enabledFor`) ; le bloc devient « Message de la veille »,
+     « Envoyer par WhatsApp » / « Renvoyer par WhatsApp » avec « SMS si WhatsApp ne passe pas » dessous (l'envoi passait déjà par
+     WhatsApp d'abord) ; sans WhatsApp, « SMS de la veille » et « Renvoyer le SMS » comme avant. **WhatsApp ou SMS (10/11/2026,
+     « distingue WhatsApp et SMS »)** : `delivery { by, status, statusAt, whatsappFallback }` du dernier message de la veille
+     (`ReminderService.deliveries`, `travellerMessages` sur les journaux de 30 jours) sur `GET …/reminder` et chaque départ de la
+     page « SMS de la veille » ; pastille `DeliveryPill` (« WhatsApp · lu à 18:05 » en vert, « SMS · WhatsApp non remis » en gris)
+     sur la fiche et la page ; carte « WhatsApp aux voyageurs » : « …, N non remis par WhatsApp. » quand il y en a.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail
@@ -1285,6 +1302,37 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      seulement, `whatsappImage`) et les valeurs des variables du SMS de la veille, chacune sur une ligne et jamais vide (« - »,
      `reminderTemplateParams`) ; sans photo, le modèle commun `plazo_message` ; le SMS de repli reste le texte du parking
      (`TravellerSms.whatsapp`, `SmsService.reminderWhatsapp`). Marche à suivre dans le README. Test `whatsapp.test.ts`.
+     **Dépôt et rendez-vous (10/11/2026, « il y a le point de rendez-vous pour déposer la voiture et le point de rdv à
+     l'aéroport/gare »)** : l'en-tête est la photo du parking où la voiture est déposée demain (première photo de la fiche),
+     celle du point de rendez-vous du retour seulement sans photo de fiche (`reminderImage`) ; une réservation servie à une
+     desserte (gare TGV, hôtel) a {rendez-vous} et {consignes} de cette desserte, SMS compris (`loadParkingValues(parkingId,
+     stopId)`, `parkingValuesOf(…, stop)`). En production : `WHATSAPP_REMINDER_TEMPLATE=apl_rappel_veille` (modèle à 16
+     variables validé le 10/11/2026), `WHATSAPP_TEMPLATES=[]`. **Un seul texte, celui du modèle, choix B (11/11/2026, « le message
+     de la veille doit se baser sur le modèle défini chez Meta »)** : `REMINDER_TEMPLATE_BODY` de `domain/whatsapp.ts` (le corps
+     approuvé mot pour mot ; à changer seulement après une nouvelle validation chez Meta), `reminderTemplateText` (les variables
+     nommées) ; quand `WHATSAPP_REMINDER_TEMPLATE` est posé et WhatsApp allumé (`SmsService.usesMetaReminder`), le SMS de repli et
+     « M'envoyer un test » prennent ce texte rempli (`renderMetaReminder`, « - » pour une valeur vide) au lieu du texte du
+     parking ; `board.meta { name, text }` ; page « SMS de la veille » : carte « Le message » en lecture seule
+     (`MetaMessageSection`, « Modèle validé chez Meta », compte de SMS du repli), aperçu avec les vraies valeurs. **Lu chez Meta
+     (11/11/2026, « importe le modèle dans Plazo »)** : `WhatsappService.templateBody(name)` lit le corps du modèle approuvé
+     (`GET /{WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates?name=…`, langue de `WHATSAPP_TEMPLATE_LANGUAGE`, gardé 10 minutes
+     par instance, le dernier lu gardé si Meta ne répond pas), `SmsService.metaReminder()` → `{ name, text, source: meta | copy }`
+     (la copie `REMINDER_TEMPLATE_BODY` sans compte ni réponse) ; la page dit « Texte lu chez Meta » ou « Meta ne répond pas ».
+     En production : `WHATSAPP_BUSINESS_ACCOUNT_ID=29263917689887521` (compte « Benford »). **« Message de la veille », choix A
+     (11/11/2026, « tu parles toujours de SMS alors qu'il y a aussi WhatsApp, réorganise en plus fluide »)** : menu, titre et
+     textes de la page disent « message » (WhatsApp, SMS en repli) ; réglages sur une ligne (envoi automatique, heure, « Envoyé
+     depuis : WhatsApp · SMS en repli : … ») ; les soirées en pastilles défilantes ; avec WhatsApp, les départs de la soirée à
+     gauche (client, canal et mobile dans une cellule, message avec sa pastille WhatsApp / SMS) et à droite « Le message » :
+     bulle WhatsApp (place de la photo, texte rempli), d'où vient le texte, SMS du repli, « Voir le modèle » repliable et
+     « M'envoyer un test » ; sans WhatsApp, l'éditeur du texte du parking comme avant. **Modèle générique (11/11/2026,
+     « variabilise au max… c'est un message générique », d'après le message d'APL)** : `plazo_message_veille`
+     (`GENERIC_REMINDER_TEMPLATE`, `GENERIC_REMINDER_BODY`, 17 valeurs `GENERIC_REMINDER_VARIABLES` ; `reminderLayout(name)` donne
+     l'ordre des numéros de chaque modèle, les 16 d'avant pour `apl_rappel_veille` / `plazo_rappel_veille`) ; dans Plazo, une
+     seule accolade et des noms (`{prénom}`), les numéros `{{1}}` chez Meta seulement. Nouvelles variables : `{horaires}`
+     (horaires de la fiche), `{gps}` (« 45.71984 N, 5.07674 E », point de rendez-vous ou desserte, `gpsLabel`), `{conditions}`
+     (frais de nuit puis `Parking.travellerConditions`, `conditionsLabel`), `{chauffeur}` (`Parking.driverPhone`) ; champs
+     « Téléphone du chauffeur » et « Conditions pour vos clients » de Parking › Réglages (`PATCH /internal/parkings/:id`,
+     migration `parking_message_fields`, CHECK 30 / 400, conditions ramenées sur une ligne).
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

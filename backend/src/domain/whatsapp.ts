@@ -103,9 +103,137 @@ export const REMINDER_TEMPLATE_VARIABLES = [
   'parking',
 ] as const;
 
-/** The 16 parameters of the day-before template: each on one line, never empty (Meta refuses it: « - »). */
-export function reminderTemplateParams(values: Record<(typeof REMINDER_TEMPLATE_VARIABLES)[number], string>): string[] {
-  return REMINDER_TEMPLATE_VARIABLES.map(key => whatsappParam(values[key] ?? '', key === 'consignes' || key === 'services' ? 400 : 200));
+/**
+ * 11/11/2026 (« le message de la veille doit se baser sur le modèle défini chez Meta », choice B): the body of the
+ * day-before template as approved by Meta (plazo_rappel_veille, apl_rappel_veille), word for word; with WhatsApp on, the
+ * fallback SMS is this text too, so the traveller reads the same message whichever channel carries it. To change it, the
+ * template is approved again at Meta first, then this text follows.
+ */
+export const REMINDER_TEMPLATE_BODY = [
+  'Bonsoir {{1}},',
+  '',
+  'Suite à votre réservation {{2}}, nous vous confirmons votre prise en charge le {{3}} à {{4}} (véhicule {{5}}).',
+  '',
+  "📲 Votre réservation dans l'app Plazo : {{6}}",
+  'Navette en direct, rendez-vous au retour et vos documents.',
+  '',
+  '📍 Adresse du parking : {{7}}, {{8}}',
+  "🔑 Remise des clés à l'arrivée",
+  '',
+  '🛬 Votre retour le {{9}} (vol {{10}}) :',
+  "Envoyez-nous un message à l'atterrissage, puis une fois sorti(e) de l'aéroport.",
+  '📍 Point de rendez-vous : {{11}}',
+  '{{12}}',
+  'Nous venons vous chercher en navette ({{13}}).',
+  '',
+  '✨ Services sur demande : {{14}}',
+  '',
+  '📞 Parking : {{15}}',
+  '',
+  'À demain,',
+  '{{16}}',
+  "Merci d'avoir choisi votre parking avec Plazo.",
+].join('\n');
+
+/**
+ * 11/11/2026 (« variabilise au max… c'est un message générique »): Plazo's generic day-before template, from APL Parking
+ * Lyon's own message, every detail of the parking a variable (17 values, the parking's name twice).
+ */
+export const GENERIC_REMINDER_TEMPLATE = 'plazo_message_veille';
+export const GENERIC_REMINDER_VARIABLES = [
+  'prénom',
+  'référence',
+  'date',
+  'heure',
+  'plaque',
+  'parking',
+  'adresse',
+  'horaires',
+  'rendez-vous',
+  'consignes',
+  'gps',
+  'navette',
+  'conditions',
+  'services',
+  'téléphone',
+  'chauffeur',
+  'parking',
+] as const;
+export const GENERIC_REMINDER_BODY = [
+  'Bonsoir {{1}},',
+  '',
+  'Suite à votre réservation {{2}}, nous vous confirmons votre prise en charge le {{3}} à {{4}} (véhicule {{5}}).',
+  '',
+  '📍 Adresse du parking :',
+  '{{6}}',
+  '{{7}}',
+  '',
+  "🔑 Remise des clés à l'arrivée",
+  '',
+  '🚗 Accès : {{8}}',
+  '',
+  '🔑 Pour votre retour (navette) :',
+  'Merci de nous envoyer 2 messages :',
+  "• À l'atterrissage",
+  "• Une fois sorti(e) de l'aéroport",
+  '',
+  '📍 Point de rendez-vous pour le retour : {{9}}',
+  '{{10}}',
+  'Coordonnées GPS : {{11}}',
+  '',
+  'Nous vous récupérons ensuite rapidement (navette {{12}}).',
+  '',
+  "📸 La photo de l'entrée du parking est en haut de ce message.",
+  '',
+  '⏱️ Conditions : {{13}}',
+  '',
+  '✨ Services sur demande : {{14}}',
+  '',
+  '📞 Service client (réservations et informations) : {{15}}',
+  '🚐 Chauffeur, le jour de votre rendez-vous : {{16}}',
+  '',
+  'Cordialement,',
+  '{{17}}',
+  "Merci d'avoir choisi votre parking avec Plazo.",
+].join('\n');
+
+type ReminderVariable = (typeof REMINDER_TEMPLATE_VARIABLES)[number] | (typeof GENERIC_REMINDER_VARIABLES)[number];
+
+/** The order of a day-before template's numbered variables: the generic one's, else the 16 of the first templates. */
+export function reminderLayout(name: string | null | undefined): readonly ReminderVariable[] {
+  return name === GENERIC_REMINDER_TEMPLATE ? GENERIC_REMINDER_VARIABLES : REMINDER_TEMPLATE_VARIABLES;
+}
+
+/** Plazo's copy of a day-before template's body, when Meta's cannot be read. */
+export function reminderBodyCopy(name: string | null | undefined): string {
+  return name === GENERIC_REMINDER_TEMPLATE ? GENERIC_REMINDER_BODY : REMINDER_TEMPLATE_BODY;
+}
+
+/**
+ * The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it:
+ * the body read at Meta (11/11/2026), else Plazo's copy; the numbers follow the template's own order.
+ */
+export function reminderTemplateText(body?: string | null, name?: string | null): string {
+  const layout = reminderLayout(name);
+  return (body ?? reminderBodyCopy(name)).replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
+    const variable = layout[Number(n) - 1];
+    return variable ? `{${variable}}` : whole;
+  });
+}
+
+/** The parameters of a day-before template, in its order: each on one line, never empty (Meta refuses it: « - »). */
+export function reminderTemplateParams(values: Record<ReminderVariable, string>, name?: string | null): string[] {
+  const long = new Set(['consignes', 'services', 'conditions']);
+  return reminderLayout(name).map(key => whatsappParam(values[key] ?? '', long.has(key) ? 400 : 200));
+}
+
+/**
+ * The header photo of the day-before message (10/11/2026): the message is about tomorrow's drop-off, so the parking's own
+ * photo (the first of its listing: its entrance) comes first; the photo of the return meeting point only when the listing
+ * has none. Null when neither is at an https address.
+ */
+export function reminderImage(listingPhotos: string[] | null | undefined, returnMeetingPhotoUrl: string | null | undefined): string | null {
+  return whatsappImage(listingPhotos?.[0]) ?? whatsappImage(returnMeetingPhotoUrl);
 }
 
 /** A photo Meta can fetch for an image header: an https address (JPEG or PNG, 5 MB at most, checked by Meta). */
