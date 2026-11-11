@@ -1318,7 +1318,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`GET /{WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates?name=…`, langue de `WHATSAPP_TEMPLATE_LANGUAGE`, gardé 10 minutes
      par instance, le dernier lu gardé si Meta ne répond pas), `SmsService.metaReminder()` → `{ name, text, source: meta | copy }`
      (la copie `REMINDER_TEMPLATE_BODY` sans compte ni réponse) ; la page dit « Texte lu chez Meta » ou « Meta ne répond pas ».
-     En production : `WHATSAPP_BUSINESS_ACCOUNT_ID=29263917689887521` (compte « Benford »).
+     En production : `WHATSAPP_BUSINESS_ACCOUNT_ID=29263917689887521` (compte « Benford »). **« Message de la veille », choix A
+     (11/11/2026, « tu parles toujours de SMS alors qu'il y a aussi WhatsApp, réorganise en plus fluide »)** : menu, titre et
+     textes de la page disent « message » (WhatsApp, SMS en repli) ; réglages sur une ligne (envoi automatique, heure, « Envoyé
+     depuis : WhatsApp · SMS en repli : … ») ; les soirées en pastilles défilantes ; avec WhatsApp, les départs de la soirée à
+     gauche (client, canal et mobile dans une cellule, message avec sa pastille WhatsApp / SMS) et à droite « Le message » :
+     bulle WhatsApp (place de la photo, texte rempli), d'où vient le texte, SMS du repli, « Voir le modèle » repliable et
+     « M'envoyer un test » ; sans WhatsApp, l'éditeur du texte du parking comme avant.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
