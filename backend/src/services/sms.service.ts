@@ -109,7 +109,9 @@ export class SmsService {
    * when the parking turned it on; the SMS below is then the fallback (WhatsappService).
    */
   public async sendTravellerSms(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
-    if (isWhatsappKind(sms.kind)) {
+    // 11/11/2026 (« je ne reçois pas le message WhatsApp ») : the test of the day-before message goes by WhatsApp too, with
+    // the template's values, like the real one.
+    if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);
         if (recipient && !(await isProspectDemoOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
@@ -521,6 +523,17 @@ export class SmsService {
       params: reminderTemplateParams(valuesOf(booking, booking.parking.timezone, link, parking), this.whatsapp.config().reminderTemplate),
       image,
     };
+  }
+
+  /** The day-before template's values for a test of the parking's message (« M'envoyer un test »), or null without a photo. */
+  public async reminderTestWhatsapp(parkingId: string, values: TemplateValues): Promise<{ params: string[]; image: string } | null> {
+    const parking = await prisma.parking.findUnique({
+      where: { id: parkingId },
+      select: { returnMeetingPhotoUrl: true, listing: { select: { photos: true } } },
+    });
+    const image = reminderImage(parking?.listing?.photos, parking?.returnMeetingPhotoUrl ?? null);
+    if (!image) return null;
+    return { params: reminderTemplateParams(values, this.whatsapp.config().reminderTemplate), image };
   }
 
   /**

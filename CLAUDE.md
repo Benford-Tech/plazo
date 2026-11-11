@@ -1332,7 +1332,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (horaires de la fiche), `{gps}` (« 45.71984 N, 5.07674 E », point de rendez-vous ou desserte, `gpsLabel`), `{conditions}`
      (frais de nuit puis `Parking.travellerConditions`, `conditionsLabel`), `{chauffeur}` (`Parking.driverPhone`) ; champs
      « Téléphone du chauffeur » et « Conditions pour vos clients » de Parking › Réglages (`PATCH /internal/parkings/:id`,
-     migration `parking_message_fields`, CHECK 30 / 400, conditions ramenées sur une ligne).
+     migration `parking_message_fields`, CHECK 30 / 400, conditions ramenées sur une ligne). **Test par WhatsApp (11/11/2026, « je ne reçois pas le message WhatsApp », « le lien n'est pas bon dans le test »)** : « M'envoyer un test » de la page part par le modèle de la veille et sa photo (`reminderTestWhatsapp`, `reminder_test` essayé par WhatsApp quand il porte ses valeurs), SMS en repli ; le lien de l'exemple est le vrai lien du départ de la soirée, sinon la page « Ma réservation » (plus de faux code `R7KQ2M-XXXXXXXX`).
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

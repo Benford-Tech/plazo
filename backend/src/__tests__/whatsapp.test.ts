@@ -301,6 +301,7 @@ describe('WhatsApp : envoi et repli SMS', () => {
 
   it('la photo du parking (dépôt) passe avant celle du rendez-vous ; une réservation à la gare y a son rendez-vous (10/11/2026)', async () => {
     whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    notifications.settings.publicSiteUrl = 'https://site.example';
     const op = await operatorWithWhatsapp();
     await prisma.parking.update({
       where: { id: op.parking.id },
@@ -356,6 +357,20 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const params = body.template.components[1].parameters.map((p: any) => p.text);
     expect(params[10]).toBe('Gare Saint-Exupéry TGV');
     expect(params[11]).toBe('Sortie principale, côté taxis');
+    // « Vérifie le lien dans le vrai message » (11/11/2026): it opens this very booking.
+    const link = params[5];
+    expect(link).toMatch(/\/a\/RWA010-[A-Za-z0-9_-]+$/);
+    const opened = await api().get(`/api/public/app-link/${link.split('/a/')[1]}`);
+    expect(opened.status).toBe(200);
+    expect(opened.body.reference).toBe('RWA010');
+
+    // « Le lien n'est pas bon dans le test »: with no departure left to send, the test's link is the « Ma réservation » page,
+    // never a made-up code.
+    expect((await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ to: '+33612345678' })).status).toBe(
+      200,
+    );
+    const testParams = JSON.parse(calls(GRAPH).at(-1)![1].body).template.components[1].parameters.map((p: any) => p.text);
+    expect(testParams[5]).toBe('https://site.example/ma-reservation');
 
     // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
     const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
@@ -370,6 +385,19 @@ describe('WhatsApp : envoi et repli SMS', () => {
     // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
     const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
     expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
+  });
+
+  it("« M'envoyer un test » du message de la veille part par WhatsApp, avec le modèle et la photo (11/11/2026)", async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    const res = await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ to: '+33612345678' });
+    expect(res.status).toBe(200);
+    const body = JSON.parse(calls(GRAPH)[0][1].body);
+    expect(body.template.name).toBe('plazo_veille');
+    expect(body.template.components[0].parameters[0].image.link).toBe('https://photos.example/p0.jpg');
+    const row = await prisma.whatsappMessage.findFirstOrThrow({ where: { operatorId: op.operator.id, kind: 'reminder_test' } });
+    expect(row.status).toBe('sent');
   });
 
   it('lit le texte du modèle de la veille chez Meta, la copie de Plazo sinon (11/11/2026)', async () => {
