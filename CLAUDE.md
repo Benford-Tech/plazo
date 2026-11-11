@@ -1313,7 +1313,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      nommées) ; quand `WHATSAPP_REMINDER_TEMPLATE` est posé et WhatsApp allumé (`SmsService.usesMetaReminder`), le SMS de repli et
      « M'envoyer un test » prennent ce texte rempli (`renderMetaReminder`, « - » pour une valeur vide) au lieu du texte du
      parking ; `board.meta { name, text }` ; page « SMS de la veille » : carte « Le message » en lecture seule
-     (`MetaMessageSection`, « Modèle validé chez Meta », compte de SMS du repli), aperçu avec les vraies valeurs.
+     (`MetaMessageSection`, « Modèle validé chez Meta », compte de SMS du repli), aperçu avec les vraies valeurs. **Lu chez Meta
+     (11/11/2026, « importe le modèle dans Plazo »)** : `WhatsappService.templateBody(name)` lit le corps du modèle approuvé
+     (`GET /{WHATSAPP_BUSINESS_ACCOUNT_ID}/message_templates?name=…`, langue de `WHATSAPP_TEMPLATE_LANGUAGE`, gardé 10 minutes
+     par instance, le dernier lu gardé si Meta ne répond pas), `SmsService.metaReminder()` → `{ name, text, source: meta | copy }`
+     (la copie `REMINDER_TEMPLATE_BODY` sans compte ni réponse) ; la page dit « Texte lu chez Meta » ou « Meta ne répond pas ».
+     En production : `WHATSAPP_BUSINESS_ACCOUNT_ID=29263917689887521` (compte « Benford »).
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

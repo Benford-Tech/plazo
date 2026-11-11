@@ -477,6 +477,11 @@ function MetaMessageSection({ board, meta }: { board: ReminderBoard; meta: NonNu
             <span className="text-sm text-muted-foreground">{m.meta.fallback(length.characters)}</span>
           </p>
         </div>
+        {meta.source && (
+          <p data-testid="reminder-meta-source" className={cn("text-[13px]", meta.source === "meta" ? "text-lime-deep" : "text-warn-text")}>
+            {meta.source === "meta" ? m.meta.fromMeta : m.meta.fromCopy}
+          </p>
+        )}
         <p className="text-[13px] text-muted-foreground">{m.meta.change}</p>
       </section>
       <aside aria-labelledby="reminder-preview" className={cn(CARD, "flex min-w-0 flex-[1_1_320px] flex-col gap-3")}>

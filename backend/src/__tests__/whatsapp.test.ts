@@ -40,6 +40,7 @@ const configured = () => ({
   graphVersion: 'v21.0',
   templates: '',
   reminderTemplate: '',
+  businessAccountId: '',
 });
 
 let fetchMock: jest.SpyInstance;
@@ -366,6 +367,38 @@ describe('WhatsApp : envoi et repli SMS', () => {
     // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
     const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
     expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
+  });
+
+  it('lit le texte du modèle de la veille chez Meta, la copie de Plazo sinon (11/11/2026)', async () => {
+    const TEMPLATES = /\/v21\.0\/WABA-1\/message_templates\?name=plazo_veille/;
+    let templates = () =>
+      json({
+        data: [
+          {
+            name: 'plazo_veille',
+            status: 'APPROVED',
+            language: 'fr',
+            components: [{ type: 'BODY', text: 'Bonsoir {{1}}, à demain ({{3}} {{4}}).' }],
+          },
+        ],
+      });
+    fetchMock.mockImplementation(async (url: any) =>
+      TEMPLATES.test(String(url)) ? templates() : GRAPH.test(String(url)) ? metaAnswer() : json({ messageId: 1 }, 201),
+    );
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille', businessAccountId: 'WABA-1' });
+    const op = await operatorWithWhatsapp();
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.body.meta).toEqual({ name: 'plazo_veille', text: 'Bonsoir {prénom}, à demain ({date} {heure}).', source: 'meta' });
+    // Read once per 10 minutes.
+    await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(calls(TEMPLATES)).toHaveLength(1);
+
+    // Meta does not answer and nothing was read yet: Plazo's copy.
+    whatsapp['bodies'].clear();
+    templates = () => json({ error: { code: 190 } }, 401);
+    const copy = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(copy.body.meta.source).toBe('copy');
+    expect(copy.body.meta.text.startsWith('Bonsoir {prénom},')).toBe(true);
   });
 
   it('envoie le SMS tout de suite quand Meta refuse le message', async () => {

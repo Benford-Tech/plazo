@@ -4513,6 +4513,9 @@ export const remindersFr = {
       fallback: (characters: number) => `pour le SMS de repli · ${characters.toLocaleString("fr-FR")} caractères`,
       change: `Ce texte ne se modifie pas ici : un nouveau texte doit d'abord être validé par Meta. Demandez-le à ${PRODUCT.name}.`,
       photo: "Sur WhatsApp, la photo du parking s'affiche en tête du message.",
+      // 11/11/2026 (« importe le modèle dans Plazo »): where the text comes from.
+      fromMeta: "Texte lu chez Meta : il suit le modèle validé, même modifié.",
+      fromCopy: `Meta ne répond pas : ${PRODUCT.name} utilise sa copie du modèle.`,
     },
     label: "Texte du SMS",
     updated: (by: string | null, when: string) =>

@@ -376,6 +376,9 @@ export const whatsappConfig = () => ({
   reminderTemplate: process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || '',
   // A parking's own templates (JSON array, see parseTemplateRules); empty: every message uses `template`.
   templates: process.env.WHATSAPP_TEMPLATES || '',
+  // 11/11/2026 (« importe le modèle dans Plazo »): the WhatsApp Business Account whose approved templates Plazo reads (the
+  // day-before template's text); empty: the copy in domain/whatsapp.ts (REMINDER_TEMPLATE_BODY).
+  businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim() || '',
 });
 
 // 06/11/2026 (SEO local, M2): Google Search Console read every night. GOOGLE_SEARCH_CONSOLE_CREDENTIALS is the JSON key of a

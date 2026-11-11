@@ -135,9 +135,12 @@ export const REMINDER_TEMPLATE_BODY = [
   "Merci d'avoir choisi votre parking avec Plazo.",
 ].join('\n');
 
-/** The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it. */
-export function reminderTemplateText(): string {
-  return REMINDER_TEMPLATE_BODY.replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
+/**
+ * The template's body with the day-before variables' names (« Bonsoir {prénom}, … »), as the page and the SMS read it:
+ * the body read at Meta (11/11/2026), else the copy above.
+ */
+export function reminderTemplateText(body: string = REMINDER_TEMPLATE_BODY): string {
+  return body.replace(/\{\{(\d+)\}\}/g, (whole, n: string) => {
     const name = REMINDER_TEMPLATE_VARIABLES[Number(n) - 1];
     return name ? `{${name}}` : whole;
   });

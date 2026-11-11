@@ -1,5 +1,4 @@
 import { travellerMessages } from '@/domain/traveller-message-log';
-import { reminderTemplateText } from '@/domain/whatsapp';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY } from '@/config';
@@ -140,7 +139,7 @@ export interface ReminderBoard {
    * 11/11/2026 (choice B): the template approved by Meta the message follows (WhatsApp, and the fallback SMS), its body
    * with the variables' names; null while the parking's own text is used.
    */
-  meta: { name: string; text: string } | null;
+  meta: { name: string; text: string; source: 'meta' | 'copy' } | null;
 }
 
 export interface UpdateReminderSettingsInput {
@@ -496,9 +495,7 @@ export class ReminderService {
       sample: { customerName: sampleSource.customerName, values: sampleValues },
       can: { edit: can(actor.role, 'parking:manage'), manage: can(actor.role, 'reservations:manage') },
       phone: mode === 'gateway' ? await this.phone.now(actor.operatorId, tz, now) : null,
-      meta: (await this.sms.usesMetaReminder(actor.operatorId))
-        ? { name: this.sms.whatsapp.config().reminderTemplate, text: reminderTemplateText() }
-        : null,
+      meta: (await this.sms.usesMetaReminder(actor.operatorId)) ? await this.sms.metaReminder() : null,
     };
   }
 
@@ -568,7 +565,7 @@ export class ReminderService {
       reservationId: null,
       kind: 'reminder_test',
       to,
-      text: board.meta ? renderMetaReminder(board.sample.values) : renderTemplate(template, board.sample.values),
+      text: board.meta ? renderMetaReminder(board.sample.values, board.meta.text) : renderTemplate(template, board.sample.values),
     });
     if (outcome === 'failed') throw new HttpException(httpStatus.BAD_GATEWAY, 'Test SMS failed', 'sms_gateway_error');
     return { outcome, to };

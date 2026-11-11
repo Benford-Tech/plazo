@@ -528,10 +528,17 @@ export class SmsService {
     return !!this.whatsapp.config().reminderTemplate && (await this.whatsapp.enabledFor(operatorId));
   }
 
+  /** 11/11/2026 (« importe le modèle dans Plazo »): the day-before template's text read at Meta, else Plazo's copy. */
+  public async metaReminder(): Promise<{ name: string; text: string; source: 'meta' | 'copy' }> {
+    const name = this.whatsapp.config().reminderTemplate;
+    const body = await this.whatsapp.templateBody(name);
+    return { name, text: reminderTemplateText(body ?? undefined), source: body ? 'meta' : 'copy' };
+  }
+
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking));
+      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -743,7 +750,7 @@ export class SmsService {
 }
 
 /** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */
-export function renderMetaReminder(values: TemplateValues): string {
+export function renderMetaReminder(values: TemplateValues, text: string = reminderTemplateText()): string {
   const filled = Object.fromEntries(Object.entries(values).map(([k, v]) => [k, String(v ?? '').trim() ? v : '-'])) as TemplateValues;
-  return renderTemplate(reminderTemplateText(), filled);
+  return renderTemplate(text, filled);
 }

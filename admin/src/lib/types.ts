@@ -1764,7 +1764,7 @@ export interface ReminderBoard {
   /** 06/11/2026: the SMS phone's last check (null without the parking's phone, or no recent check). */
   phone?: PhoneNow | null;
   /** 11/11/2026 (choice B): the Meta template the message follows (WhatsApp and the fallback SMS), null for the parking's text. */
-  meta?: { name: string; text: string } | null;
+  meta?: { name: string; text: string; source?: "meta" | "copy" } | null;
 }
 export interface ReminderSettingsInput {
   enabled?: boolean;
