@@ -3,7 +3,6 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY } from '@/config';
 import prisma, { ReminderSettings, ReservationChannel, SmsMode, SmsOutbox } from '@/database';
-import { APP_LINK_CHECK_LENGTH } from '@/domain/app-link';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import {
   BOARD_EVENINGS_AFTER,
@@ -459,9 +458,12 @@ export class ReminderService {
       plate: 'AB-123-CD',
       reference: 'R7KQ2M',
     };
-    const sampleLink = linkAvailable
-      ? `${this.notifications.settings.publicSiteUrl.replace(/\/+$/, '')}/a/${sampleSource.reference}-${'X'.repeat(APP_LINK_CHECK_LENGTH)}`
-      : null;
+    // 11/11/2026 (« le lien n'est pas bon dans le test ») : the example's link is the real link of the evening's departure
+    // (it opens its booking), else the site's « Ma réservation » page; never a made-up code that leads nowhere.
+    const sampleLink = !linkAvailable
+      ? null
+      : ((exampleRecord ? this.notifications.appLinkUrl(exampleRecord) : null) ??
+        `${this.notifications.settings.publicSiteUrl.replace(/\/+$/, '')}/ma-reservation`);
     // The example's 08:30 is written in UTC so that it reads 08:30 whatever the parking's zone.
     const parkingValues = (await loadParkingValues(parkingId)) ?? undefined;
     const sampleValues = exampleRecord
@@ -566,6 +568,7 @@ export class ReminderService {
       kind: 'reminder_test',
       to,
       text: board.meta ? renderMetaReminder(board.sample.values, board.meta.text) : renderTemplate(template, board.sample.values),
+      whatsapp: board.meta ? await this.sms.reminderTestWhatsapp(parkingId, board.sample.values) : null,
     });
     if (outcome === 'failed') throw new HttpException(httpStatus.BAD_GATEWAY, 'Test SMS failed', 'sms_gateway_error');
     return { outcome, to };
