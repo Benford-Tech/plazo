@@ -72,9 +72,11 @@ export class CronController {
     }
   }
 
-  private async whatsappPass(): Promise<Awaited<ReturnType<WhatsappService['sweep']>> | { error: true }> {
+  private async whatsappPass(): Promise<(Awaited<ReturnType<WhatsappService['sweep']>> & { webhook: string }) | { error: true }> {
     try {
-      return await this.whatsapp.sweep();
+      // 11/11/2026: Meta's status webhook kept in place (subscribed once, then checked every 6 hours).
+      const webhook = await this.whatsapp.ensureWebhook();
+      return { ...(await this.whatsapp.sweep()), webhook };
     } catch (error) {
       logger.error(`[Cron] WhatsApp pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
       return { error: true };
