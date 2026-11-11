@@ -7,6 +7,7 @@ import { effectiveCapacity } from '@/domain/capacity';
 import { nightRule, nightSettingsOf } from '@/domain/night-fees';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
 import { chronologicalPage } from '@/domain/chronological-pages';
+import { operatorKind, platformTodos } from '@/domain/platform-overview';
 import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -252,6 +253,13 @@ export class PlatformService {
           isPlatform: o.staff.some(s => isPlatformAdmin(s.email)),
           // Fictional operator of the demo seed (scripts/seed-demo.ts).
           isDemo: o.isDemo,
+          // 11/11/2026: real, test (« … (tests) »), demo (seed or the prospects' demo) or the platform's own account.
+          kind: operatorKind({
+            name: o.name,
+            isDemo: o.isDemo,
+            prospectDemo: o.prospectDemo,
+            isPlatform: o.staff.some(s => isPlatformAdmin(s.email)),
+          }),
           parkings: o.parkings.length,
           places: o.parkings.reduce((sum, p) => sum + capacityOf(p), 0),
           manager: manager ? { name: manager.name, email: manager.email, emailVerified: !!manager.emailVerifiedAt } : null,
@@ -264,6 +272,98 @@ export class PlatformService {
           invitation: invitation ? { sentAt: invitation.createdAt, expiresAt: invitation.expiresAt, expired: invitation.expiresAt <= now } : null,
         };
       }),
+    };
+  }
+
+  /**
+   * 11/11/2026 (« A avec la page loueur de C »): the cockpit of the platform. Its figures count the real operators only
+   * (never the platform's own account, a test operator or a demo), and « À traiter » lists what waits on the platform.
+   */
+  public async overview() {
+    const since = monthStart();
+    const [{ operators, counts, defaultCommissionBps }, failed, commission] = await Promise.all([
+      this.operators(),
+      prisma.reservation.groupBy({ by: ['operatorId'], where: { payoutStatus: 'failed' }, _count: { _all: true } }),
+      prisma.reservation.groupBy({
+        by: ['operatorId'],
+        where: { createdAt: { gte: since }, channel: 'plazo', paymentStatus: 'paid' },
+        _sum: { commissionCents: true },
+        _count: { _all: true },
+      }),
+    ]);
+    const real = operators.filter(o => o.kind === 'real');
+    const realIds = new Set(real.map(o => o.id));
+    const sum = (list: typeof operators) => list.reduce((total, o) => total + o.bookingsThisMonth, 0);
+    const paid = commission.filter(c => realIds.has(c.operatorId));
+    return {
+      today: localDate(new Date(), PLATFORM_TZ),
+      defaultCommissionBps,
+      operators: {
+        real: real.length,
+        realActive: real.filter(o => o.status === 'active' && !o.invitation).length,
+        invitations: real.filter(o => o.invitation).length,
+        other: operators.length - real.length,
+        archived: counts.archived,
+      },
+      bookingsThisMonth: { real: sum(real), other: sum(operators.filter(o => o.kind !== 'real')) },
+      plazoThisMonth: {
+        bookings: paid.reduce((total, c) => total + c._count._all, 0),
+        commissionCents: paid.reduce((total, c) => total + (c._sum.commissionCents ?? 0), 0),
+      },
+      todos: platformTodos(operators, new Map(failed.map(f => [f.operatorId, f._count._all]))),
+      operatorsList: operators,
+    };
+  }
+
+  /** 11/11/2026: one operator's page (direction C): its line of the list, its activity, its team and the platform's actions on it. */
+  public async operator(operatorId: string) {
+    const found =
+      (await this.operators()).operators.find(o => o.id === operatorId) ??
+      (await this.operators('archived')).operators.find(o => o.id === operatorId);
+    if (!found) throw notFound('Operator');
+    const since = monthStart();
+    const [plazoBookings, inboxToCheck, staff, logs, failedPayouts, listing] = await Promise.all([
+      prisma.reservation.count({ where: { operatorId, createdAt: { gte: since }, channel: 'plazo', ...COUNTED_BOOKING } }),
+      prisma.inboundEmail.count({ where: { operatorId, status: { in: ['incomplete', 'unrecognised'] }, reservationId: null } }),
+      prisma.staff.findMany({
+        where: { operatorId, deletedAt: null },
+        orderBy: [{ isActive: 'desc' }, { createdAt: 'asc' }],
+        select: { id: true, name: true, email: true, role: true, isActive: true, leftAt: true, createdAt: true },
+      }),
+      prisma.auditLog.findMany({
+        where: { operatorId },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: { id: true, action: true, createdAt: true, details: true, staff: { select: { name: true, email: true } } },
+      }),
+      prisma.reservation.count({ where: { operatorId, payoutStatus: 'failed' } }),
+      found.listing
+        ? prisma.listing.findUnique({
+            where: { id: found.listing.id },
+            select: {
+              title: true,
+              slug: true,
+              submittedAt: true,
+              reviewedAt: true,
+              reviewMessage: true,
+              airport: { select: { slug: true, name: true } },
+            },
+          })
+        : null,
+    ]);
+    // The platform's own actions on the operator: those of an administrator (from its space or « Ouvrir son espace »).
+    const journal = logs
+      .filter(l => l.staff && isPlatformAdmin(l.staff.email))
+      .slice(0, 30)
+      .map(l => ({ id: l.id, action: l.action, at: l.createdAt, by: l.staff!.name.split(' ')[0] ?? l.staff!.name }));
+    return {
+      ...found,
+      listingDetail: listing,
+      activity: { bookingsThisMonth: found.bookingsThisMonth, plazoBookingsThisMonth: plazoBookings, inboxToCheck, failedPayouts },
+      team: staff
+        .filter(s => !s.leftAt)
+        .map(s => ({ id: s.id, name: s.name, email: s.email, role: s.role, isActive: s.isActive, createdAt: s.createdAt })),
+      journal,
     };
   }
 

@@ -40,6 +40,8 @@ import type {
   InviteInput,
   PlatformListings,
   PlatformOperators,
+  PlatformOverview,
+  PlatformOperatorDetail,
   OperatorDeletion,
   PaymentStatus,
   PayoutSchedule,
@@ -1026,6 +1028,10 @@ export const adminApi = {
     apiRequest<PlatformOperators>(
       `/internal/platform/operators${view ? `?view=${view}` : ""}`,
     ),
+  // 11/11/2026 (« A avec la page loueur de C »): the cockpit and one operator's page.
+  getPlatformOverview: () => apiRequest<PlatformOverview>("/internal/platform/overview"),
+  getPlatformOperator: (id: string) =>
+    apiRequest<PlatformOperatorDetail>(`/internal/platform/operators/${id}`),
   setCommission: (id: string, commissionBps: number | null) =>
     apiRequest<{ data: { id: string; commissionBps: number | null } }>(
       `/internal/platform/operators/${id}/commission`,

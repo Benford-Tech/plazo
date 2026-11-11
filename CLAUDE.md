@@ -1626,6 +1626,22 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (`samePageIn` : une réservation donne la liste, un contrat les Réglages, la Plateforme le tableau de bord), toutes les requêtes sont
   relues (`resetQueries`, `<main key={operatorId}>`). `/staff/me` › `viewAs.realOperatorId/realOperatorName` donne son propre espace.
   Les règles de la consultation ne changent pas. Tests `ParkingSwitcher.test.tsx`, `platform-space.test.ts`.
+  **Espace super admin, A + la page loueur de C (11/11/2026, « redesign la partie super admin », maquettes
+  https://claude.ai/artifact/J9vfWx7FuFYrdHgGKaJT7L, « A avec la page loueur de C »)** : `PlatformLayout` devient un rail à gauche
+  comme l'espace du loueur (sur téléphone une rangée en haut), en trois groupes Pilotage (Vue d'ensemble, Loueurs, Annonces avec le
+  nombre à valider, Réservations, Paiements) · Croissance (Prospection, Référencement, Notifications) · Outils (Outil capacité), le
+  sélecteur de parking en tête et le compte avec la déconnexion au pied. **Vue d'ensemble** `/pro/plateforme` (`PlatformOverviewPage`,
+  `GET /internal/platform/overview`) : chiffres des seuls vrais loueurs (`operatorKind` de `domain/platform-overview.ts` : `real` ·
+  `test` « … (tests) » · `demo` (seed ou démo des prospects) · `platform` ; `kind` servi aussi par la liste des loueurs) : loueurs réels
+  actifs et invitations, réservations du mois (les autres en « + N »), commission Plazo du mois (réservations Plazo payées) ; « À
+  traiter » (`platformTodos` : annonce à valider, reversements refusés, Stripe à relier, invitation expirée, pas de contrat Plazo ou
+  contrat à signer ; chaque ligne mène où ça se règle) ; loueurs filtrés Réels · Tests et démo · Archivés. **Page d'un loueur**
+  `/pro/plateforme/loueurs/:id` (`PlatformOperatorPage`, `GET /internal/platform/operators/:id`, 404 `not_found`) : bandeau vert
+  (état, genre, aéroport et places, gérant, « Ouvrir son espace »), onglets `?onglet=` Vue d'ensemble · Annonce · Paiements · Contrat
+  (`OperatorContractPanel`) · Équipe · Journal, tuiles Annonce · Paiements · Contrat · Commission (modifiable), activité du mois
+  (réservations, dont Plazo, mails à vérifier, reversements refusés), journal des actions des administrateurs de la plateforme sur ce
+  loueur (30 dernières), zone sensible (`RowActions` sans « Ouvrir son espace ») ; le nom d'un loueur dans la page Loueurs y mène.
+  Tests `platform-overview.test.ts`, `PlatformOverviewPage.test.tsx`.
   **Archivage des loueurs (09/10/2026,
   « archive les parkings suspendus »)** : `Operator.archivedAt` (CHECK : archivé ⇒ suspendu ; migration `operator_archived`, qui
   archive tout loueur suspendu à son déploiement), `POST /internal/platform/operators/:id/archive` (409 `not_suspended`) et

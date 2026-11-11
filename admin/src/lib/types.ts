@@ -1020,6 +1020,8 @@ export interface PlatformOperator {
   isPlatform: boolean;
   /** Fictional operator of the demo seed (backend `npm run seed:demo`). */
   isDemo?: boolean;
+  /** 11/11/2026: real, test (« … (tests) »), demo, or the platform's own account (missing from an older API). */
+  kind?: OperatorKind;
   parkings: number;
   /** Sum of the parkings' capacity used everywhere (the plan's, else the declared figure; 09/10/2026). */
   places: number;
@@ -1052,6 +1054,48 @@ export interface OperatorDeletion {
     staff: number;
     paidReservations: number;
   };
+}
+
+export type OperatorKind = "real" | "test" | "demo" | "platform";
+
+/** 11/11/2026 (« A avec la page loueur de C »): one line of the cockpit's « À traiter ». */
+export interface PlatformTodo {
+  kind:
+    | "listing_review"
+    | "stripe_missing"
+    | "contract_missing"
+    | "contract_pending"
+    | "invitation_expired"
+    | "payout_failed";
+  operatorId: string;
+  operatorName: string;
+  listingId?: string;
+  count?: number;
+}
+
+export interface PlatformOverview {
+  today: string;
+  defaultCommissionBps: number | null;
+  operators: { real: number; realActive: number; invitations: number; other: number; archived: number };
+  bookingsThisMonth: { real: number; other: number };
+  plazoThisMonth: { bookings: number; commissionCents: number };
+  todos: PlatformTodo[];
+  operatorsList: PlatformOperator[];
+}
+
+/** 11/11/2026: one operator's page (direction C). */
+export interface PlatformOperatorDetail extends PlatformOperator {
+  listingDetail: {
+    title: string;
+    slug: string;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    reviewMessage: string | null;
+    airport: { slug: string; name: string };
+  } | null;
+  activity: { bookingsThisMonth: number; plazoBookingsThisMonth: number; inboxToCheck: number; failedPayouts: number };
+  team: { id: string; name: string; email: string; role: StaffRole; isActive: boolean; createdAt: string }[];
+  journal: { id: string; action: string; at: string; by: string }[];
 }
 
 export interface PlatformOperators {

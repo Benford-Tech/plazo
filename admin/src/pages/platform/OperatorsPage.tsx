@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-context";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -24,7 +24,7 @@ const inputClass =
 const ghostButton =
   "min-h-10 whitespace-nowrap border border-border px-3 text-base hover:bg-accent disabled:opacity-50";
 
-function ListingCell({ operator }: { operator: PlatformOperator }) {
+export function ListingCell({ operator }: { operator: PlatformOperator }) {
   // A listing prepared by the platform during the invitation shows its status like any other.
   if (!operator.listing)
     return (
@@ -40,7 +40,7 @@ function ListingCell({ operator }: { operator: PlatformOperator }) {
   );
 }
 
-function PaymentsCell({ operator }: { operator: PlatformOperator }) {
+export function PaymentsCell({ operator }: { operator: PlatformOperator }) {
   if (operator.invitation)
     return <span className="text-muted-foreground">—</span>;
   const { connected, payoutsEnabled } = operator.payments;
@@ -51,7 +51,7 @@ function PaymentsCell({ operator }: { operator: PlatformOperator }) {
   return <span className="text-muted-foreground">{t.paymentsNone}</span>;
 }
 
-function CommissionCell({
+export function CommissionCell({
   operator,
   defaultBps,
 }: {
@@ -345,14 +345,17 @@ function InviteForm({
   );
 }
 
-function RowActions({
+export function RowActions({
   operator,
   onLink,
   onDeleted,
+  withOpen = true,
 }: {
   operator: PlatformOperator;
   onLink: (result: InvitationResult) => void;
   onDeleted?: (id: string) => void;
+  /** 11/11/2026: the operator's page shows « Ouvrir son espace » in its band, not again among these actions. */
+  withOpen?: boolean;
 }) {
   const confirm = useConfirm();
   const { startViewAs } = useAuth();
@@ -464,14 +467,16 @@ function RowActions({
   if (operator.archivedAt) {
     return (
       <div className="flex justify-end gap-1.5">
-        <button
-          type="button"
-          className={ghostButton}
-          disabled={open.isPending}
-          onClick={() => open.mutate()}
-        >
-          {t.open}
-        </button>
+        {withOpen && (
+          <button
+            type="button"
+            className={ghostButton}
+            disabled={open.isPending}
+            onClick={() => open.mutate()}
+          >
+            {t.open}
+          </button>
+        )}
         <button
           type="button"
           className={cn(ghostButton, "border-lime-deep text-lime-deep")}
@@ -488,14 +493,16 @@ function RowActions({
   if (operator.invitation) {
     return (
       <div className="flex justify-end gap-1.5">
-        <button
-          type="button"
-          className={ghostButton}
-          disabled={open.isPending}
-          onClick={() => open.mutate()}
-        >
-          {t.open}
-        </button>
+        {withOpen && (
+          <button
+            type="button"
+            className={ghostButton}
+            disabled={open.isPending}
+            onClick={() => open.mutate()}
+          >
+            {t.open}
+          </button>
+        )}
         <button
           type="button"
           className={ghostButton}
@@ -510,14 +517,16 @@ function RowActions({
   }
   return (
     <div className="flex justify-end gap-1.5">
-      <button
-        type="button"
-        className={ghostButton}
-        disabled={open.isPending}
-        onClick={() => open.mutate()}
-      >
-        {t.open}
-      </button>
+      {withOpen && (
+        <button
+          type="button"
+          className={ghostButton}
+          disabled={open.isPending}
+          onClick={() => open.mutate()}
+        >
+          {t.open}
+        </button>
+      )}
       {!operator.isPlatform && (
         <button
           type="button"
@@ -703,7 +712,12 @@ export default function OperatorsPage() {
                     )}
                   >
                     <td className="px-2 py-3">
-                      <span className="font-bold">{o.name}</span>
+                      <Link
+                        to={`/plateforme/loueurs/${o.id}`}
+                        className="font-bold hover:underline"
+                      >
+                        {o.name}
+                      </Link>
                       {o.isDemo && (
                         <span
                           title={t.demoHint}
