@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { whatsappConfig } from '@/config';
+import { PUBLIC_SITE_URL, whatsappConfig } from '@/config';
 import prisma from '@/database';
 import { smsRecipient } from '@/domain/phone';
 import { namesOfCustomer } from '@/domain/customer-name';
@@ -56,6 +56,85 @@ export class WhatsappService {
   public available(): boolean {
     const { token, phoneNumberId } = this.config();
     return !!(token && phoneNumberId);
+  }
+
+  // ---- Webhook subscription (11/11/2026, « Le webhook est branché ? » → « Fais le ») -----------------
+
+  /** When this instance last found the webhook in place (or gave up for now); checked again after `webhookCheckMs`. */
+  private webhookCheckedAt = 0;
+  public webhookCheckMs = 6 * 60 * 60 * 1000;
+  public siteUrl = PUBLIC_SITE_URL;
+
+  /**
+   * Makes Meta send the message statuses (sent, delivered, read, failed) to Plazo: the app's webhook subscribed to the
+   * WhatsApp Business Account object with the « messages » field and Plazo's callback, and the app subscribed to the
+   * business account. Done with the keys already set (token, app secret, verify token, account id); the app id is read
+   * from the token. Checked at most every 6 hours per instance, idempotent, never throws, logs no secret.
+   */
+  public async ensureWebhook(now = Date.now()): Promise<'ok' | 'subscribed' | 'skipped' | 'failed'> {
+    if (now - this.webhookCheckedAt < this.webhookCheckMs) return 'skipped';
+    const { token, appSecret, verifyToken, businessAccountId, graphVersion } = this.config();
+    const site = this.siteUrl.replace(/\/$/, '');
+    if (!token || !appSecret || !verifyToken || !businessAccountId || !site) return 'skipped';
+    this.webhookCheckedAt = now;
+    const callback = `${site}/api/public/whatsapp/webhook`;
+    const graph = `https://graph.facebook.com/${graphVersion}`;
+    const call = async (url: string, init: RequestInit = {}) => {
+      const res = await fetch(url, { ...init, signal: AbortSignal.timeout(this.timeoutMs) });
+      return { ok: res.ok, status: res.status, data: (await res.json().catch(() => null)) as any };
+    };
+    try {
+      const app = await call(`${graph}/app`, { headers: { authorization: `Bearer ${token}` } });
+      const appId = typeof app.data?.id === 'string' ? app.data.id : null;
+      if (!appId) {
+        logger.warn(`[WhatsApp] Webhook not checked: app id not read (http_${app.status})`);
+        return 'failed';
+      }
+      const appToken = `${appId}|${appSecret}`;
+      const current = await call(`${graph}/${appId}/subscriptions?access_token=${encodeURIComponent(appToken)}`);
+      const entry = Array.isArray(current.data?.data) ? current.data.data.find((s: any) => s?.object === 'whatsapp_business_account') : null;
+      const fields: string[] = Array.isArray(entry?.fields) ? entry.fields.map((f: any) => (typeof f === 'string' ? f : f?.name)) : [];
+      let changed = false;
+      if (!entry || entry.callback_url !== callback || !entry.active || !fields.includes('messages')) {
+        const body = new URLSearchParams({
+          object: 'whatsapp_business_account',
+          callback_url: callback,
+          verify_token: verifyToken,
+          fields: [...new Set([...fields.filter(Boolean), 'messages'])].join(','),
+          include_values: 'true',
+          access_token: appToken,
+        });
+        const done = await call(`${graph}/${appId}/subscriptions`, { method: 'POST', body });
+        if (!done.ok || done.data?.success !== true) {
+          logger.warn(`[WhatsApp] Webhook not subscribed (http_${done.status}, ${done.data?.error?.code ?? 'no code'})`);
+          this.webhookCheckedAt = now - this.webhookCheckMs + 30 * 60 * 1000;
+          return 'failed';
+        }
+        changed = true;
+      }
+      const apps = await call(`${graph}/${encodeURIComponent(businessAccountId)}/subscribed_apps`, {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      const linked = Array.isArray(apps.data?.data) && apps.data.data.some((a: any) => (a?.whatsapp_business_api_data?.id ?? a?.id) === appId);
+      if (!linked) {
+        const done = await call(`${graph}/${encodeURIComponent(businessAccountId)}/subscribed_apps`, {
+          method: 'POST',
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (!done.ok || done.data?.success !== true) {
+          logger.warn(`[WhatsApp] App not subscribed to the business account (http_${done.status}, ${done.data?.error?.code ?? 'no code'})`);
+          this.webhookCheckedAt = now - this.webhookCheckMs + 30 * 60 * 1000;
+          return 'failed';
+        }
+        changed = true;
+      }
+      logger.info(`[WhatsApp] Webhook ${changed ? 'subscribed' : 'already in place'} (messages → ${callback})`);
+      return changed ? 'subscribed' : 'ok';
+    } catch (error) {
+      logger.warn(`[WhatsApp] Webhook not checked (${error instanceof Error ? error.name : 'error'})`);
+      this.webhookCheckedAt = now - this.webhookCheckMs + 30 * 60 * 1000;
+      return 'failed';
+    }
   }
 
   // ---- Templates (11/11/2026, « importe le modèle dans Plazo ») -------------------------------------

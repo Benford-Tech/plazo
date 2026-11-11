@@ -7,7 +7,7 @@ import { adminApi } from "@/lib/api";
 import { addDays, shortDay, todayLocal } from "@/lib/datetime";
 import { bookingReminderFr as t, describeError, remindersFr } from "@/lib/fr";
 import type { BookingReminder } from "@/lib/types";
-import { DeliveryPill } from "./DeliveryPill";
+import { DeliveryPill, DeliveryProof } from "./DeliveryPill";
 
 /** "ce soir à 18:00", "demain à 18:00", "sam. 4 à 18:00", from a local "YYYY-MM-DDTHH:mm". */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -104,7 +104,7 @@ export function BookingReminderCard({ reservationId }: { reservationId: string }
         </h2>
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground" data-testid="booking-reminder-status">
           {statusLine(r)}
-          {r.sentAt && r.delivery && <DeliveryPill delivery={r.delivery} />}
+          {r.sentAt && r.delivery && (r.delivery.proof ? <DeliveryProof proof={r.delivery.proof} /> : <DeliveryPill delivery={r.delivery} />)}
         </p>
         {r.refusal && r.refusal !== "reminder_not_upcoming" && (
           <p className="mt-0.5 text-xs text-muted-foreground" data-testid="booking-reminder-refusal">

@@ -36,6 +36,7 @@ type Form = {
   shuttleWaitMinutes: string;
   distanceKm: string;
   openingHours: string;
+  contactPhone: string;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
 };
@@ -51,6 +52,7 @@ function initialForm(data: ListingResponse): Form {
     shuttleWaitMinutes: l?.shuttleWaitMinutes != null ? String(l.shuttleWaitMinutes) : "",
     distanceKm: l?.distanceKm !== null && l?.distanceKm !== undefined ? String(l.distanceKm).replace(".", ",") : "",
     openingHours: l?.openingHours ?? "",
+    contactPhone: l?.contactPhone ?? "",
     cancellationPolicy: l?.cancellationPolicy ?? "free_24h",
     photos: l?.photos ?? [],
   };
@@ -76,6 +78,7 @@ function toInput(form: Form, airportCode: string): ListingInput {
     shuttleWaitMinutes: waitMinutes(form.shuttleWaitMinutes) ?? null,
     distanceKm: km,
     openingHours: form.openingHours.trim() || null,
+    contactPhone: form.contactPhone.trim() || null,
     cancellationPolicy: form.cancellationPolicy,
     photos: form.photos,
   };
@@ -406,6 +409,28 @@ export default function ListingPage() {
               </label>
               <input id="l-hours" value={form.openingHours} onChange={set("openingHours")} placeholder={t.openingHoursPlaceholder} className={inputClass} />
               {err("openingHours")}
+            </div>
+            {/* 11/11/2026 (« Je ne vois pas le téléphone »): the number travellers call, {téléphone} of the day-before message. */}
+            <div>
+              <label htmlFor="l-phone" className={labelClass}>
+                {t.contactPhone}
+              </label>
+              <input
+                id="l-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={form.contactPhone}
+                onChange={set("contactPhone")}
+                placeholder={t.contactPhonePlaceholder}
+                aria-invalid={!!fieldErrors.contactPhone}
+                aria-describedby="l-phone-help"
+                className={cn(inputClass, "tabular font-mono")}
+              />
+              {err("contactPhone")}
+              <p id="l-phone-help" className="mt-1 text-sm text-muted-foreground">
+                {t.contactPhoneHelp}
+              </p>
             </div>
           </div>
           <fieldset>

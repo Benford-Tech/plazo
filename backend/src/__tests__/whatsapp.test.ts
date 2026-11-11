@@ -384,7 +384,9 @@ describe('WhatsApp : envoi et repli SMS', () => {
 
     // « Distingue WhatsApp et SMS »: the booking's page says it left by WhatsApp.
     const view = await api().get(`/api/internal/reservations/${booking.id}/reminder`).set(auth(op.token));
-    expect(view.body).toMatchObject({ whatsapp: true, delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
+    expect(view.body).toMatchObject({ whatsapp: true, status: 'sent', delivery: { by: 'whatsapp', status: 'sent', whatsappFallback: false } });
+    // 11/11/2026 (« un status des envois réaliste »): accepted by Meta, never « remis » without its confirmation.
+    expect(view.body.delivery.proof).toMatchObject({ level: 'unconfirmed', whatsapp: { state: 'accepted', statusAt: null }, sms: null });
   });
 
   it("« M'envoyer un test » du message de la veille part par WhatsApp, avec le modèle et la photo (11/11/2026)", async () => {

@@ -898,6 +898,8 @@ export interface Listing {
   shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
+  /** The number travellers call ({téléphone} of the day-before message). */
+  contactPhone?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
   airport: { code: string; name: string; slug: string };
@@ -913,6 +915,8 @@ export interface ListingInput {
   shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
+  /** 11/11/2026: the number travellers call (null clears it). */
+  contactPhone?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
 }
@@ -1286,6 +1290,8 @@ export interface TravellerMessage {
   at: string;
   statusAt: string | null;
   whatsappFallback: boolean;
+  /** 11/11/2026: the SMS went because Meta never answered, not because it refused (absent from older APIs). */
+  whatsappSilent?: boolean;
   errorCode: string | null;
 }
 
@@ -1788,6 +1794,9 @@ export interface ReminderEvening {
     waiting: number;
     failed: number;
     withoutSms: number;
+    /** 11/11/2026: of the sent ones, confirmed delivered and those nobody confirmed (absent from older APIs). */
+    confirmed?: number;
+    unconfirmed?: number;
   };
 }
 export interface ReminderBoard {
@@ -1814,6 +1823,8 @@ export interface ReminderBoard {
   phone?: PhoneNow | null;
   /** 11/11/2026 (choice B): the Meta template the message follows (WhatsApp and the fallback SMS), null for the parking's text. */
   meta?: { name: string; text: string; source?: "meta" | "copy" } | null;
+  /** 11/11/2026 (direction A): Meta confirmed none of the parking's WhatsApp messages of the last 24 hours. */
+  metaSilent?: boolean;
 }
 export interface ReminderSettingsInput {
   enabled?: boolean;
@@ -2427,6 +2438,15 @@ export interface ReminderDelivery {
   /** Local "YYYY-MM-DDTHH:mm" when delivered or read. */
   statusAt: string | null;
   whatsappFallback: boolean;
+  /** 11/11/2026 (direction A): what is really known (absent from older APIs). */
+  proof?: ReminderProof | null;
+}
+
+/** confirmed: Meta or the network confirmed it · unconfirmed: it left, nobody confirmed · failed · pending. */
+export interface ReminderProof {
+  level: "confirmed" | "unconfirmed" | "failed" | "pending";
+  whatsapp: { state: "accepted" | "delivered" | "read" | "refused"; at: string; statusAt: string | null } | null;
+  sms: { state: "queued" | "sent" | "delivered" | "failed"; at: string; statusAt: string | null } | null;
 }
 
 /** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */

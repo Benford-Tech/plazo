@@ -181,7 +181,16 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(board.body.settings.template).toContain('Dépôt le {date} à {heure}');
     expect(board.body.evenings).toHaveLength(7);
     expect(board.body.evening).toMatchObject({ date: E, departuresDate: D, when: 'future', sendTime: '18:00', paused: false });
-    expect(board.body.evening.counts).toEqual({ departures: 3, planned: 1, sent: 0, waiting: 0, failed: 0, withoutSms: 2 });
+    expect(board.body.evening.counts).toEqual({
+      departures: 3,
+      planned: 1,
+      sent: 0,
+      waiting: 0,
+      failed: 0,
+      withoutSms: 2,
+      confirmed: 0,
+      unconfirmed: 0,
+    });
     expect(board.body.evening.rows.map((r: { customerName: string; status: string; at: string | null }) => [r.customerName, r.status, r.at])).toEqual(
       [
         ['Camille Martin', 'planned', `${E}T18:00`],
