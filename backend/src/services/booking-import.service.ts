@@ -21,7 +21,6 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
 import { CapacityService, occupiedNights } from './capacity.service';
-import { isTestOperatorName } from '@/domain/test-feed';
 import { ParkingService } from './parking.service';
 
 type Client = Prisma.TransactionClient | typeof prisma;
@@ -250,10 +249,9 @@ export class BookingImportService {
           data: { operatorId: actor.operatorId, staffId: actor.id, fileName, createdCount: toCreate.length, createdAt: stamp },
         });
         const references = await this.newReferences(tx, toCreate.length);
-        const quiet = await this.isTestOperator(tx, actor.operatorId);
         const created = toCreate.length
           ? await tx.reservation.createManyAndReturn({
-              data: toCreate.map((r, i) => this.columns(r, references[i], parking, actor, record.id, stamp, quiet)),
+              data: toCreate.map((r, i) => this.columns(r, references[i], parking, actor, record.id, stamp)),
               select: { id: true },
             })
           : [];
@@ -304,12 +302,6 @@ export class BookingImportService {
     return [...references];
   }
 
-  /** A test or demo operator (« … (tests) », the seeded demos, the prospects' demo): its imports never message anyone. */
-  private async isTestOperator(tx: Prisma.TransactionClient, operatorId: string): Promise<boolean> {
-    const operator = await tx.operator.findUnique({ where: { id: operatorId }, select: { name: true, isDemo: true, prospectDemo: true } });
-    return !operator || operator.isDemo || operator.prospectDemo || isTestOperatorName(operator.name);
-  }
-
   private columns(
     row: Classified,
     reference: string,
@@ -317,7 +309,6 @@ export class BookingImportService {
     actor: AuthenticatedStaff,
     importId: string,
     stamp: Date,
-    quiet: boolean,
   ): Prisma.ReservationCreateManyInput {
     const b = row.booking!;
     const startedBefore = b.arrivalAt < stamp ? b.arrivalAt : stamp;
@@ -361,12 +352,10 @@ export class BookingImportService {
       arrivedAt: onSiteOrDone ? b.arrivalAt : null,
       returnedAt: b.status === 'returned' ? b.returnAt : null,
       cancelledAt: b.status === 'cancelled' ? startedBefore : null,
-      // No confirmation goes to the traveller for an imported booking, and the messages of a stay already begun or over
-      // count as sent. 11/11/2026 (« les envois sont marqués exclus par Joanny »): an upcoming stay gets its day-before
-      // message like any other booking (it was left out, « Ne pas envoyer », in the importer's name).
-      // « Sauf sur les parkings de test »: on a test or demo operator, it stays « Ne pas envoyer ».
-      reminderExcludedAt: quiet && b.status === 'upcoming' ? stamp : null,
-      reminderExcludedById: quiet && b.status === 'upcoming' ? actor.id : null,
+      // Nothing goes to the traveller for an imported booking: the day-before SMS is left out (« Ne pas envoyer »,
+      // restorable), and the messages of a stay already begun or over count as sent.
+      reminderExcludedAt: b.status === 'upcoming' ? stamp : null,
+      reminderExcludedById: b.status === 'upcoming' ? actor.id : null,
       confirmationSentAt: stamp,
       parkedNotifiedAt: onSiteOrDone ? stamp : null,
       closingSentAt: b.status === 'returned' ? stamp : null,

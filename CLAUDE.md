@@ -551,8 +551,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      statut « Annulée » / « Non venu » du fichier, sinon Rendu, Sur place ou Attendu d'après les dates) ; `BookingImportService` :
      doublon = même référence, sinon même voyageur (`sameTraveller`) le même jour d'arrivée, dans Plazo ou plus haut dans le fichier ;
      une nuit à venir déjà complète importe la ligne en « À vérifier » (`overbooked`) ; l'import refait tout sous le verrou des places
-     et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (messages d'un séjour
-     commencé comptés envoyés ; **depuis le 11/11/2026, « les envois sont marqués exclus par Joanny », un séjour à venir importé reçoit son message de la veille** comme les autres, plus de « Ne pas envoyer » au nom de l'importateur ; migration `imported_reminders` : les réservations à venir encore exclues par leur import sont rétablies ; « sauf sur les parkings de test » : un loueur « … (tests) », de démo ou la démo des prospects garde « Ne pas envoyer », `isTestOperator`), récapitulatif horaire sans les imports), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
+     et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (SMS de la veille en « Ne pas envoyer », messages d'un séjour
+     commencé comptés envoyés, récapitulatif horaire sans les imports ; 11/11/2026 : le retrait de « Ne pas envoyer » est remis à plus tard, le temps de vérifier les heures importées), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
      d'un séjour commencé, sinon l'import. Table `reservation_imports` et `Reservation.importId` (migration `reservation_imports`) ;
      `GET /internal/reservations/imports` (10 derniers) et « Retirer cet import » `POST …/imports/:id/undo` pendant 24 h : supprime
      les réservations de l'import que personne n'a touchées (aucune trace après l'import, ni trajet, mail, contrat, état des lieux,
