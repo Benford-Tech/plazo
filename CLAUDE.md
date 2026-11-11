@@ -552,7 +552,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      doublon = même référence, sinon même voyageur (`sameTraveller`) le même jour d'arrivée, dans Plazo ou plus haut dans le fichier ;
      une nuit à venir déjà complète importe la ligne en « À vérifier » (`overbooked`) ; l'import refait tout sous le verrou des places
      et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (messages d'un séjour
-     commencé comptés envoyés ; **depuis le 11/11/2026, « les envois sont marqués exclus par Joanny », un séjour à venir importé reçoit son message de la veille** comme les autres, plus de « Ne pas envoyer » au nom de l'importateur ; migration `imported_reminders` : les réservations à venir encore exclues par leur import sont rétablies), récapitulatif horaire sans les imports), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
+     commencé comptés envoyés ; **depuis le 11/11/2026, « les envois sont marqués exclus par Joanny », un séjour à venir importé reçoit son message de la veille** comme les autres, plus de « Ne pas envoyer » au nom de l'importateur ; migration `imported_reminders` : les réservations à venir encore exclues par leur import sont rétablies ; « sauf sur les parkings de test » : un loueur « … (tests) », de démo ou la démo des prospects garde « Ne pas envoyer », `isTestOperator`), récapitulatif horaire sans les imports), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
      d'un séjour commencé, sinon l'import. Table `reservation_imports` et `Reservation.importId` (migration `reservation_imports`) ;
      `GET /internal/reservations/imports` (10 derniers) et « Retirer cet import » `POST …/imports/:id/undo` pendant 24 h : supprime
      les réservations de l'import que personne n'a touchées (aucune trace après l'import, ni trajet, mail, contrat, état des lieux,
@@ -716,7 +716,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « distingue WhatsApp et SMS »)** : `delivery { by, status, statusAt, whatsappFallback }` du dernier message de la veille
      (`ReminderService.deliveries`, `travellerMessages` sur les journaux de 30 jours) sur `GET …/reminder` et chaque départ de la
      page « SMS de la veille » ; pastille `DeliveryPill` (« WhatsApp · lu à 18:05 » en vert, « SMS · WhatsApp non remis » en gris)
-     sur la fiche et la page ; carte « WhatsApp aux voyageurs » : « …, N non remis par WhatsApp. » quand il y en a.
+     sur la fiche et la page (11/11/2026 : un message parti par WhatsApp compte « Envoyé », plus « Non envoyé » faute de ligne SMS, `statusOf`) ; carte « WhatsApp aux voyageurs » : « …, N non remis par WhatsApp. » quand il y en a.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
      client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail

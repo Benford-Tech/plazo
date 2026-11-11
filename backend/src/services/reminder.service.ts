@@ -308,7 +308,15 @@ export class ReminderService {
     const evening = eveningOf(r.arrivalAt, tz);
     const rules = await this.rules(r.parkingId, usual, [evening]);
     const mode = sms?.mode ?? 'none';
-    const { status, at } = this.statusOf(r, { usual, rule: rules.get(evening)!, mode, outbox: outbox.get(r.id) ?? null, now, tz });
+    const { status, at } = this.statusOf(r, {
+      usual,
+      rule: rules.get(evening)!,
+      mode,
+      outbox: outbox.get(r.id) ?? null,
+      delivery: deliveries.get(r.id) ?? null,
+      now,
+      tz,
+    });
     const refusal = this.sendRefusal(r, mode, now);
     return {
       status,
@@ -402,7 +410,15 @@ export class ReminderService {
     const rowsByEvening = new Map<string, ReminderRow[]>();
     for (const r of reservations) {
       const date = eveningOf(r.arrivalAt, tz);
-      const { status, at } = this.statusOf(r, { usual, rule: rules.get(date)!, mode, outbox: outbox.get(r.id) ?? null, now, tz });
+      const { status, at } = this.statusOf(r, {
+        usual,
+        rule: rules.get(date)!,
+        mode,
+        outbox: outbox.get(r.id) ?? null,
+        delivery: deliveries.get(r.id) ?? null,
+        now,
+        tz,
+      });
       const row: ReminderRow = {
         reservationId: r.id,
         reference: r.reference,
@@ -590,7 +606,15 @@ export class ReminderService {
 
   private statusOf(
     r: { status: string; customerPhone: string; arrivalAt: Date; createdAt: Date; reminderSentAt: Date | null; reminderExcludedAt: Date | null },
-    ctx: { usual: Usual; rule: EveningRule; mode: SmsMode; outbox: SmsOutbox | null; now: Date; tz: string },
+    ctx: {
+      usual: Usual;
+      rule: EveningRule;
+      mode: SmsMode;
+      outbox: SmsOutbox | null;
+      delivery?: ReminderDelivery | null;
+      now: Date;
+      tz: string;
+    },
   ): { status: ReminderRowStatus; at: Date | null } {
     const phoneIssue = (): ReminderRowStatus | null => {
       if (smsRecipient(r.customerPhone)) return null;
@@ -599,6 +623,11 @@ export class ReminderService {
     };
     if (r.reminderSentAt) {
       const row = ctx.outbox;
+      // 11/11/2026 (« Non envoyé » next to « WhatsApp »): a day-before message that left by WhatsApp has no SMS row; it is
+      // sent once Meta took it, waiting while its SMS fallback may still leave.
+      if (!row && ctx.delivery?.by === 'whatsapp') {
+        return { status: ctx.delivery.status === 'failed' ? 'waiting' : 'sent', at: r.reminderSentAt };
+      }
       if (row) {
         if (row.status === 'sent' || row.status === 'delivered') return { status: 'sent', at: r.reminderSentAt };
         if (row.status === 'abandoned') return { status: 'failed', at: r.reminderSentAt };
