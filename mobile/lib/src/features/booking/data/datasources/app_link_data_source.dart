@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 class AppLinkTarget {
   const AppLinkTarget({
     required this.reference,
-    required this.manageToken,
+    this.manageToken,
     required this.firstName,
     required this.parkingTitle,
     required this.arrivalAt,
@@ -15,7 +15,9 @@ class AppLinkTarget {
   });
 
   final String reference;
-  final String manageToken;
+  /// Null when the phone was only recognised by its address (12/11/2026): the traveller then gives the booking's e-mail
+  /// or phone, and the app opens it through the lookup.
+  final String? manageToken;
   final String firstName;
   final String parkingTitle;
 
@@ -28,7 +30,7 @@ class AppLinkTarget {
 
   factory AppLinkTarget.fromJson(Map<String, dynamic> json) => AppLinkTarget(
     reference: json['reference'] as String,
-    manageToken: json['manageToken'] as String,
+    manageToken: json['manageToken'] as String?,
     firstName: json['firstName'] as String? ?? '',
     parkingTitle: (json['parking'] as Map<String, dynamic>?)?['title'] as String? ?? '',
     arrivalAt: json['arrivalAt'] as String? ?? '',

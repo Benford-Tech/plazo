@@ -90,7 +90,11 @@ export class AppLinkService {
     ip: string,
     platform: AppPlatform,
     code?: string | null,
-  ): Promise<{ found: false } | ({ found: true; match: 'code' | 'device' } & AppLinkTarget)> {
+  ): Promise<
+    | { found: false }
+    | ({ found: true; match: 'code' } & AppLinkTarget)
+    | ({ found: true; match: 'device'; needsContact: true } & Omit<AppLinkTarget, 'manageToken' | 'firstName'>)
+  > {
     if (code) {
       const target = await this.resolve(code).catch(() => null);
       if (target) {
@@ -107,7 +111,11 @@ export class AppLinkService {
     await prisma.appLinkClaim.deleteMany({ where: { fingerprint: claim.fingerprint } });
     const booking = claim.reservation;
     if (!booking.parking.listing || manageLinkExpired(booking.returnAt)) return { found: false };
-    return { found: true, match: 'device', ...this.target(booking) };
+    // 12/11/2026 (security): many phones share one address (carrier NAT, airport or hotel Wi-Fi), so a match by address
+    // alone never hands out the booking's key nor the traveller's name: the app asks for the booking's e-mail or phone
+    // and opens it through POST /public/bookings/lookup (rate-limited per reference).
+    const { reference, parking, arrivalAt, returnAt } = this.target(booking);
+    return { found: true, match: 'device', needsContact: true, reference, parking, arrivalAt, returnAt };
   }
 
   /** Nightly: claims past their 24 h. */

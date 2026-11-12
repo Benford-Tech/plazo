@@ -1,4 +1,5 @@
 import { Service } from 'typedi';
+import { isPublicHttpsUrl } from '@/domain/public-url';
 import { logger } from '@/utils/logger';
 
 /**
@@ -145,6 +146,7 @@ export class SmsGatewayClient {
 
   private async request(credentials: GatewayCredentials, method: 'GET' | 'POST' | 'PATCH', path: string, body?: unknown): Promise<any> {
     const base = (credentials.baseUrl || SMS_GATEWAY_CLOUD_URL).replace(/\/+$/, '');
+    if (!isPublicHttpsUrl(base)) throw new GatewayError('sms_gateway_unreachable');
     const auth = Buffer.from(`${credentials.login}:${credentials.password}`, 'utf8').toString('base64');
     let res: Response;
     try {
@@ -152,6 +154,8 @@ export class SmsGatewayClient {
         method,
         headers: { accept: 'application/json', 'content-type': 'application/json', authorization: `Basic ${auth}` },
         body: body === undefined ? undefined : JSON.stringify(body),
+        // Never followed: a redirect could lead to an internal address.
+        redirect: 'error',
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch (error) {

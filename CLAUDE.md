@@ -2330,6 +2330,21 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `ProAuthLogoChanged`) ; section « Logo du parking » en tête de Plus › Réglages du parking (`ParkingLogoSection` : galerie, réduite à
   512 px, retirer, aperçu). Tests `operator-logo.test.ts`, `ParkingLogoCard.test.tsx`, `parking_logo_test.dart`.
 
+## Sécurité (12/11/2026, « blinde la sécurité de l'app pour éviter les intrusions »)
+
+Audit en trois volets (connexion et cloisonnement des loueurs, routes publiques et webhooks, navigateur et déploiement) ; corrigé :
+pièces jointes WhatsApp servies avec leur type seulement pour photo, son, vidéo ou PDF (`safeMediaType`, sinon téléchargement
+`application/octet-stream`, `nosniff`, CSP `sandbox`) et jamais ouvertes en `blob:` dans l'espace pro sinon (`isViewableMedia`) ;
+un membre dont l'e-mail est dans `PLATFORM_ADMIN_EMAILS` n'est changé (droits, désactivation, mot de passe) que par lui-même ou un
+administrateur vérifié (403 `platform_admin_protected`, `StaffService.protectPlatformAdmin`) ; un jeton de rafraîchissement est
+réservé avant la nouvelle paire (deux appels simultanés : un seul passe) ; le lien court reconnu par l'adresse seulement
+(`match: 'device'`) ne rend plus ni la clé ni le prénom (`needsContact`), l'app Plazo demande l'e-mail ou le téléphone de la
+réservation et passe par `POST /public/bookings/lookup` ; la passerelle SMS privée n'appelle qu'un nom de domaine public en https
+(`domain/public-url.ts`, `isPublicHttpsUrl`, à l'enregistrement et à chaque appel, `redirect: 'error'`) ; `Permissions-Policy` du site
+`geolocation=(self)` (« Prévenir de mon arrivée » était bloqué). **Reste à décider** : les annulations et modifications appliquées
+d'après le seul texte d'un mail (ParkVia, Onepark, Allopark) peuvent être imitées par qui connaît l'adresse de réception du parking ;
+piste : exiger une signature DKIM du comparateur avant d'appliquer, sinon « À traiter ».
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,

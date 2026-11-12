@@ -80,6 +80,12 @@ function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
   return items.sort((a, b) => a.at.localeCompare(b.at));
 }
 
+/** A picture (not SVG), a sound, a video or a PDF: what the inbox lets the browser open. */
+function isViewableMedia(type: string): boolean {
+  const t = type.split(";")[0].trim().toLowerCase();
+  return /^image\/(jpeg|png|webp|gif|heic|heif)$/.test(t) || t.startsWith("audio/") || /^video\/(mp4|3gpp|quicktime|webm)$/.test(t) || t === "application/pdf";
+}
+
 /** A photo or voice note: fetched through Plazo on demand (never a public link). */
 function MediaButton({ message }: { message: WhatsappInboxMessage }) {
   const [state, setState] = useState<"idle" | "loading" | "gone">("idle");
@@ -102,10 +108,21 @@ function MediaButton({ message }: { message: WhatsappInboxMessage }) {
   const open = async () => {
     setState("loading");
     try {
-      const blob = await adminApi.whatsappMedia(message.id);
+      const raw = await adminApi.whatsappMedia(message.id);
+      // 12/11/2026 (security): a blob: URL runs with this page's origin, so only a picture, sound, video or PDF is
+      // opened; anything else (HTML, SVG…) is rebuilt as plain bytes and saved instead.
+      const viewable = isViewableMedia(raw.type);
+      const blob = viewable ? raw : new Blob([raw], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
-      if (message.type === "audio") setAudioUrl(url);
-      else window.open(url, "_blank", "noopener");
+      if (message.type === "audio" && viewable) setAudioUrl(url);
+      else if (viewable) window.open(url, "_blank", "noopener");
+      else {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "piece-jointe";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      }
       setState("idle");
     } catch {
       setState("gone");

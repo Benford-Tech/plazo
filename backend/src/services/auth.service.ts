@@ -56,7 +56,12 @@ export class AuthService {
       throw new HttpException(httpStatus.UNAUTHORIZED, 'Please log in to continue', 'unauthorized');
     }
     if (staff.operator.status !== 'active') throw suspended();
-    await this.tokenService.revokeSessionOf(stored.uid);
+    // 12/11/2026 (security): the refresh token is claimed before a new pair is issued, so two calls racing with the same
+    // token never both get a session (a stolen token is then caught by the rotation).
+    const claimed = await prisma.staffToken.deleteMany({ where: { uid: stored.uid } });
+    if (claimed.count !== 1) throw new HttpException(httpStatus.UNAUTHORIZED, 'Please log in to continue', 'unauthorized');
+    const session = (stored.metadata as { session?: string } | null)?.session;
+    if (session) await prisma.staffToken.deleteMany({ where: { staffId: stored.staffId, metadata: { path: ['session'], equals: session } } });
     const metadata = (stored.metadata as { userAgent?: string | null }) ?? {};
     return { tokenData: await this.tokenService.generateAuthTokens(staff.id, { userAgent: metadata.userAgent ?? null }) };
   }
