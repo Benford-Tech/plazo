@@ -1,6 +1,8 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import {
+  conditionsLabel,
+  oneLineConditions,
   defaultTemplate,
   outOfQuietHours,
   reminderDueAt,
@@ -162,6 +164,26 @@ describe('les règles du SMS de la veille', () => {
     expect(due(at('2027-06-01T12:00'), { sendTime: '18:00', paused: true })).toEqual({ reason: 'paused' });
     expect(outOfQuietHours(at('2027-06-14T21:59'), TZ)).toEqual(at('2027-06-14T21:59'));
     expect(outOfQuietHours(at('2027-06-15T06:59'), TZ)).toEqual(at('2027-06-15T07:00'));
+  });
+});
+
+describe('les conditions du parking dans le message (12/11/2026)', () => {
+  const list =
+    '* Retard de plus de 30 minutes : supplément de 10 € (service sur rendez-vous)\n* Prise en charge ou restitution effectuée entre 22h et 6h : supplément de 10 €\n* Service de dépannage (batterie, etc.) : 5 €';
+  const expected =
+    'Retard de plus de 30 minutes : supplément de 10 € (service sur rendez-vous) ; Prise en charge ou restitution effectuée entre 22h et 6h : supplément de 10 € ; Service de dépannage (batterie, etc.) : 5 €';
+
+  it('une liste à puces devient une ligne, sans astérisque', () => {
+    expect(oneLineConditions(list)).toBe(expected);
+    // Pasted into a one-line field: the line breaks are gone, the « * » stay.
+    expect(oneLineConditions(list.replace(/\n/g, ''))).toBe(expected);
+    expect(oneLineConditions('  \n * ')).toBeNull();
+  });
+
+  it('les frais de nuit que le parking écrit lui-même ne sont pas répétés', () => {
+    const night = { start: '22:00', end: '06:00', arrivalFeeCents: 1000, returnFeeCents: 1000 };
+    expect(conditionsLabel(night, expected)).toBe(expected);
+    expect(conditionsLabel(night, 'Dépannage : 5 €')).toBe('Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ; Dépannage : 5 €');
   });
 });
 
@@ -345,7 +367,7 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(put.body.sample.values).toMatchObject({
       gps: '45.71984 N, 5.07674 E',
       conditions:
-        'Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ; Retard de plus de 30 minutes : 10 €. Dépannage (batterie) : 5 €.',
+        'Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ; Retard de plus de 30 minutes : 10 € ; Dépannage (batterie) : 5 €',
       chauffeur: '07 44 44 35 79',
       horaires: '',
     });
