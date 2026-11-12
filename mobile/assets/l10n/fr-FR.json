@@ -2851,5 +2851,79 @@
       "invoice_exists": "La facture est déjà disponible.",
       "unknown": "La demande n'a pas pu partir. Réessayez."
     }
+  },
+  "whatsapp_inbox": {
+    "title": "Messages WhatsApp",
+    "menu": "Messages WhatsApp",
+    "intro": "Ce que vos clients répondent au numéro WhatsApp de Plazo, rangé par réservation.",
+    "views": {
+      "unread": "Non lus · {}",
+      "all": "À traiter · {}",
+      "handled": "Traités · {}",
+      "sent": "Envoyés · {}"
+    },
+    "empty": {
+      "unread": "Aucun message non lu.",
+      "all": "Aucune conversation à traiter.",
+      "handled": "Aucune conversation traitée ces 30 derniers jours.",
+      "sent": "Aucun message WhatsApp envoyé ces 30 derniers jours."
+    },
+    "failed": "Les messages n'ont pas pu être lus.",
+    "unknown_number": "Numéro inconnu",
+    "no_booking": "Sans réservation",
+    "open_booking": "Ouvrir la réservation",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "you": "Vous",
+    "sent_by_plazo": "{} envoyé par Plazo",
+    "sent_kind": {
+      "booking_confirmed": "Confirmation",
+      "booking_reminder": "Veille du dépôt",
+      "flight_landed": "Atterrissage",
+      "signature_code": "Code de signature",
+      "other": "Message"
+    },
+    "sent_status": {
+      "sent": "accepté",
+      "delivered": "remis ✓✓",
+      "read": "lu ✓✓",
+      "failed": "non remis",
+      "fallback": "SMS envoyé à la place"
+    },
+    "reply_status": {
+      "sent": "envoyé",
+      "delivered": "remis ✓✓",
+      "read": "lu ✓✓",
+      "failed": "non remis"
+    },
+    "media": {
+      "image": "Voir la photo",
+      "audio": "Message vocal",
+      "video": "Vidéo",
+      "document": "Document",
+      "sticker": "Voir l'autocollant",
+      "other": "Pièce jointe"
+    },
+    "media_web": "À ouvrir sur l'espace pro web.",
+    "media_gone": "Plus disponible chez WhatsApp.",
+    "location": "Position partagée",
+    "reply_until": "Réponse libre possible jusqu'à {} (24 h après son dernier message, règle de Meta).",
+    "window_closed": "Plus de réponse libre : Meta n'autorise qu'un modèle validé 24 h après le dernier message du client. Appelez-le plutôt.",
+    "placeholder": "Écrire au client…",
+    "send": "Envoyer",
+    "handle": "Marquer comme traité",
+    "unhandle": "Remettre à traiter",
+    "handled": "Conversation marquée comme traitée.",
+    "call": "Appeler le {}",
+    "errors": {
+      "window_closed": "Plus de réponse libre possible : le dernier message du client date de plus de 24 h.",
+      "whatsapp_unavailable": "WhatsApp n'est pas configuré pour Plazo.",
+      "not_found": "Cette conversation n'existe plus.",
+      "demo_read_only": "Démo : la réponse n'est pas envoyée.",
+      "generic": "Le message n'est pas parti. Réessayez."
+    },
+    "sent_no_text": "Texte non gardé (envoyé avant le 12/11/2026).",
+    "sent_sms_fallback": "SMS envoyé aussi",
+    "open_conversation": "Voir la conversation ›"
   }
 }

@@ -41,7 +41,7 @@ void main() {
     for (final title in ['MON POSTE DU JOUR', 'GÉRANT', 'CHAUFFEUR', 'ACCUEIL', 'VOITURIER', 'COMPTE']) {
       expect(find.text(title), findsOneWidget, reason: title);
     }
-    for (final key in ['pmore-post', 'pmore-start', 'pmore-revenue', 'pmore-team', 'pmore-plan', 'pmore-vehicles', 'pmore-settings', 'pmore-shuttle', 'pmore-reservations', 'pmore-services', 'pmore-planning', 'pmore-tutorials', 'pmore-account', 'pmore-logout']) {
+    for (final key in ['pmore-post', 'pmore-start', 'pmore-revenue', 'pmore-team', 'pmore-plan', 'pmore-vehicles', 'pmore-settings', 'pmore-shuttle', 'pmore-reservations', 'pmore-services', 'pmore-whatsapp', 'pmore-planning', 'pmore-tutorials', 'pmore-account', 'pmore-logout']) {
       expect(find.byKey(Key(key)), findsOneWidget, reason: key);
     }
     expect(find.byKey(const Key('pmore-vehicle')), findsNothing);
@@ -63,6 +63,7 @@ void main() {
     expect(find.byKey(const Key('pmore-start')), findsOneWidget);
     expect(find.byKey(const Key('pmore-revenue')), findsNothing);
     expect(find.byKey(const Key('pmore-planning')), findsNothing);
+    expect(find.byKey(const Key('pmore-whatsapp')), findsNothing);
   });
 
   testWidgets('sans allowedPosts (ancienne API), l\'accueil couvre aussi la navette et les places', (tester) async {

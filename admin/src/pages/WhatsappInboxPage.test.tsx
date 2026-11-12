@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { WhatsappConversation, WhatsappConversationDetail } from "@/lib/types";
 import WhatsappInboxPage from "./WhatsappInboxPage";
 
-const api = vi.hoisted(() => ({ whatsappInbox: vi.fn(), whatsappConversation: vi.fn(), replyWhatsapp: vi.fn(), handleWhatsapp: vi.fn(), whatsappMedia: vi.fn() }));
+const api = vi.hoisted(() => ({ whatsappSent: vi.fn(), whatsappInbox: vi.fn(), whatsappConversation: vi.fn(), replyWhatsapp: vi.fn(), handleWhatsapp: vi.fn(), whatsappMedia: vi.fn() }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { role: "manager" } }) }));
@@ -85,6 +85,32 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     await waitFor(() => expect(api.replyWhatsapp).toHaveBeenCalledWith("c1", "Oui, à demain 8h."));
     await userEvent.click(screen.getByRole("button", { name: "Marquer comme traité" }));
     await waitFor(() => expect(api.handleWhatsapp).toHaveBeenCalledWith("c1", true));
+  });
+
+  it("montre les messages envoyés par Plazo, avec leur texte, et ouvre la conversation", async () => {
+    api.whatsappSent.mockResolvedValue({
+      data: [
+        {
+          id: "w1",
+          kind: "booking_reminder",
+          status: "read",
+          text: "Bonjour Sébastien, rendez-vous demain à 8h.",
+          phone: "06 12 34 56 78",
+          at: new Date(now - 3600000).toISOString(),
+          smsFallback: false,
+          reservation: { id: "r1", reference: "R7KQ2M", externalReference: null, customerName: "Sébastien Morel" },
+          conversationId: "c1",
+        },
+        { id: "w2", kind: "booking_confirmed", status: "sent", text: null, phone: "06 99 88 77 66", at: new Date(now).toISOString(), smsFallback: false, reservation: null, conversationId: null },
+      ],
+    });
+    renderAt("/reservations/whatsapp?vue=sent");
+    expect(await screen.findByText("Bonjour Sébastien, rendez-vous demain à 8h.")).toBeInTheDocument();
+    expect(screen.getByTestId("wa-sent-w1")).toHaveTextContent("Veille du dépôt");
+    expect(screen.getByTestId("wa-sent-w1")).toHaveTextContent("lu ✓✓");
+    expect(screen.getByTestId("wa-sent-w2")).toHaveTextContent("Texte non gardé");
+    await userEvent.click(screen.getByRole("button", { name: "Voir la conversation ›" }));
+    expect(await screen.findByTestId("wa-thread")).toBeInTheDocument();
   });
 
   it("propose d'appeler quand les 24 h de Meta sont passées", async () => {

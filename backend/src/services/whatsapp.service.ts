@@ -330,6 +330,7 @@ export class WhatsappService {
         status: result.ok ? 'sent' : 'failed',
         errorCode: result.ok ? null : result.code,
         fallbackText: result.ok && smsFallback ? sms.text : null,
+        body: sms.text.slice(0, 4096) || null,
         smsOutcome: null,
       },
     });

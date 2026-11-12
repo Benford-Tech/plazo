@@ -31,12 +31,12 @@ export interface LegalDoc {
  * - Terms: 19/10/2026, the signed contract and the condition reports (articles 9 and 11); 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
  *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 03/11/2026, the messages by WhatsApp (Meta) with the SMS as fallback; 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ * - Privacy: 12/11/2026, the WhatsApp messages travellers write and the text of those Plazo sends, kept 30 days; 03/11/2026, the messages by WhatsApp (Meta) with the SMS as fallback; 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "30 octobre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "7 novembre 2026";
+export const PRIVACY_VERSION = "12 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -332,7 +332,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "la place de votre véhicule et le crochet de ses clés, notés par le parking ;",
             "la position GPS de votre voiture, si le voiturier ou vous-même l’enregistrez, avec une note facultative ;",
             "votre position, seulement si vous choisissez de la partager pour prévenir le parking de votre arrivée (dernière position uniquement), ou le délai que vous annoncez à la place ;",
-            "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…) ;",
+            "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…), un message WhatsApp (texte, photo, message vocal, position) envoyé au numéro de Plazo, que l’équipe du parking lit et auquel elle peut répondre ;",
             "le statut de la réservation et l’historique de ses modifications par l’équipe du parking ;",
             "le contrat de stationnement que vous signez (son texte ou le PDF du parking, le PDF signé et sa page de preuve, la date, le moyen de signature : code reçu par SMS, dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés, ou signature manuscrite sur le téléphone du parking, dont le tracé est gardé) ;",
             "l’état des lieux de votre véhicule au dépôt et au retour : les photos prises par le parking, s’il en prend (les quatre côtés du véhicule, gros plans des dégâts), les dégâts notés, le kilométrage, le carburant, et votre réponse (accord ou réserve, avec vos mots) ; et, si vous en prenez, vos propres photos du véhicule et le mot qui les accompagne, envoyés au parking depuis l’application.",
@@ -406,7 +406,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
-            "Suivi des messages WhatsApp (numéro du destinataire et état de remise) : 30 jours ; le texte n’est gardé que le temps de l’envoyer par SMS s’il n’est pas remis, 2 heures au plus.",
+            "Messages WhatsApp (numéro, texte des messages envoyés par Plazo, messages que vous écrivez et réponses de l’équipe, état de remise) : 30 jours ; les photos et messages vocaux restent chez WhatsApp et ne sont que relus à la demande de l’équipe.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,
             `Lettre ${p} : votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre ; une inscription que vous ne confirmez pas n’est ajoutée à aucune liste. Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire ; vous pouvez en demander l’effacement (article 8). Pour limiter les e-mails de confirmation envoyés à une même adresse, son empreinte reste en mémoire 48 heures au plus.`,

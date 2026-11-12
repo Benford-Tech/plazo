@@ -31,6 +31,11 @@ class _AppState extends State<App> {
     _pushOpened = locator<PushService>().opened.listen((data) {
       if (data['type'] == 'arrival') unawaited(_router.navigate(const ProShellRoute(children: [ProTodayRoute()])));
       if (data['type'] == 'join_request') unawaited(_router.navigate(const ProTeamRoute()));
+      // « Message WhatsApp » (12/11/2026): the conversation it is about.
+      if (data['type'] == 'whatsapp') {
+        final id = data['conversationId'];
+        unawaited(_router.push(id is String && id.isNotEmpty ? ProWhatsappConversationRoute(id: id) : const ProWhatsappInboxRoute()));
+      }
     });
   }
 

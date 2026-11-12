@@ -7,14 +7,30 @@ import { StatusPill } from "@/components/StatusPill";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError, adminApi } from "@/lib/api";
 import { PARKING_TZ, dateTimeShort, timeOf, todayLocal } from "@/lib/datetime";
-import { describeError, travellerMessagesFr, whatsappInboxFr as t } from "@/lib/fr";
-import type { WhatsappConversation, WhatsappConversationDetail, WhatsappInboxMessage, WhatsappInboxView } from "@/lib/types";
+import {
+  describeError,
+  travellerMessagesFr,
+  whatsappInboxFr as t,
+} from "@/lib/fr";
+import type {
+  WhatsappConversation,
+  WhatsappConversationDetail,
+  WhatsappInboxMessage,
+  WhatsappInboxView,
+  WhatsappSentMessage,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const VIEWS: WhatsappInboxView[] = ["unread", "all", "handled", "unknown"];
-const viewOf = (raw: string | null): WhatsappInboxView => (VIEWS.includes(raw as WhatsappInboxView) ? (raw as WhatsappInboxView) : "unread");
+/** « Envoyés » (12/11/2026, « Affiche aussi les messages envoyés »): what Plazo sent, beside the conversations. */
+type PageView = WhatsappInboxView | "sent";
+const VIEWS: PageView[] = ["unread", "all", "handled", "sent", "unknown"];
+const viewOf = (raw: string | null): PageView =>
+  VIEWS.includes(raw as PageView) ? (raw as PageView) : "unread";
 
-const dayOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: PARKING_TZ }).format(new Date(iso));
+const dayOf = (iso: string) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: PARKING_TZ }).format(
+    new Date(iso),
+  );
 const dayLabel = (iso: string) => {
   const day = dayOf(iso);
   const today = todayLocal();
@@ -22,23 +38,43 @@ const dayLabel = (iso: string) => {
   const yesterday = new Date(`${today}T12:00:00Z`);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   if (day === yesterday.toISOString().slice(0, 10)) return t.yesterday;
-  return new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short", timeZone: PARKING_TZ }).format(new Date(iso));
+  return new Intl.DateTimeFormat("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: PARKING_TZ,
+  }).format(new Date(iso));
 };
-const listTime = (iso: string) => (dayOf(iso) === todayLocal() ? timeOf(iso) : dayLabel(iso));
+const listTime = (iso: string) =>
+  dayOf(iso) === todayLocal() ? timeOf(iso) : dayLabel(iso);
 
 type ChatItem =
   | { kind: "message"; at: string; message: WhatsappInboxMessage }
-  | { kind: "sent"; at: string; id: string; label: string; status: string };
+  | {
+      kind: "sent";
+      at: string;
+      id: string;
+      label: string;
+      status: string;
+      text: string | null;
+    };
 
 function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
   const items: ChatItem[] = [
-    ...detail.messages.map((message) => ({ kind: "message" as const, at: message.at, message })),
+    ...detail.messages.map((message) => ({
+      kind: "message" as const,
+      at: message.at,
+      message,
+    })),
     ...detail.sent.map((s) => ({
       kind: "sent" as const,
       at: s.at,
       id: s.id,
-      label: t.sentByPlazo(travellerMessagesFr.kind[s.kind] ?? travellerMessagesFr.otherKind),
+      label: t.sentByPlazo(
+        travellerMessagesFr.kind[s.kind] ?? travellerMessagesFr.otherKind,
+      ),
       status: t.sentStatus[s.status] ?? s.status,
+      text: s.text ?? null,
     })),
   ];
   return items.sort((a, b) => a.at.localeCompare(b.at));
@@ -48,10 +84,21 @@ function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
 function MediaButton({ message }: { message: WhatsappInboxMessage }) {
   const [state, setState] = useState<"idle" | "loading" | "gone">("idle");
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  useEffect(() => () => {
-    if (audioUrl) URL.revokeObjectURL(audioUrl);
-  }, [audioUrl]);
-  if (audioUrl) return <audio controls src={audioUrl} className="mt-1 max-w-full" data-testid="wa-audio" />;
+  useEffect(
+    () => () => {
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    },
+    [audioUrl],
+  );
+  if (audioUrl)
+    return (
+      <audio
+        controls
+        src={audioUrl}
+        className="mt-1 max-w-full"
+        data-testid="wa-audio"
+      />
+    );
   const open = async () => {
     setState("loading");
     try {
@@ -65,11 +112,22 @@ function MediaButton({ message }: { message: WhatsappInboxMessage }) {
     }
   };
   const Icon = message.type === "audio" ? Mic : Paperclip;
-  if (state === "gone") return <span className="mt-1 block text-xs text-muted-foreground">{t.mediaGone}</span>;
+  if (state === "gone")
+    return (
+      <span className="mt-1 block text-xs text-muted-foreground">
+        {t.mediaGone}
+      </span>
+    );
   return (
-    <button type="button" onClick={open} className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-lime-deep underline">
+    <button
+      type="button"
+      onClick={open}
+      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-lime-deep underline"
+    >
       <Icon className="h-3.5 w-3.5" />
-      {state === "loading" ? t.mediaLoading : (t.media[message.type] ?? t.media.document)}
+      {state === "loading"
+        ? t.mediaLoading
+        : (t.media[message.type] ?? t.media.document)}
     </button>
   );
 }
@@ -77,8 +135,16 @@ function MediaButton({ message }: { message: WhatsappInboxMessage }) {
 function Bubble({ item }: { item: ChatItem }) {
   if (item.kind === "sent")
     return (
-      <div data-testid="wa-sent" className="max-w-[78%] self-end rounded-xl bg-[#DCF8C6] px-3 py-1.5 text-xs text-[#0B3B19] opacity-90">
+      <div
+        data-testid="wa-sent"
+        className="max-w-[78%] self-end rounded-xl bg-[#DCF8C6] px-3 py-1.5 text-xs text-[#0B3B19] opacity-90"
+      >
         <span className="font-semibold">{item.label}</span>
+        {item.text && (
+          <span className="mt-1 block whitespace-pre-wrap break-words text-sm">
+            {item.text}
+          </span>
+        )}
         <span className="tabular mt-0.5 block text-right font-mono text-[11px] text-[#3F6B4A]">
           {timeOf(item.at)} · {item.status}
         </span>
@@ -89,9 +155,18 @@ function Bubble({ item }: { item: ChatItem }) {
   return (
     <div
       data-testid={out ? "wa-out" : "wa-in"}
-      className={cn("max-w-[78%] whitespace-pre-wrap break-words rounded-xl px-3 py-1.5 text-sm", out ? "self-end bg-[#DCF8C6] text-[#0B3B19]" : "self-start bg-white text-foreground")}
+      className={cn(
+        "max-w-[78%] whitespace-pre-wrap break-words rounded-xl px-3 py-1.5 text-sm",
+        out
+          ? "self-end bg-[#DCF8C6] text-[#0B3B19]"
+          : "self-start bg-white text-foreground",
+      )}
     >
-      {out && m.by && <span className="block text-[11px] font-semibold text-lime-deep">{m.by.firstName}</span>}
+      {out && m.by && (
+        <span className="block text-[11px] font-semibold text-lime-deep">
+          {m.by.firstName}
+        </span>
+      )}
       {m.type === "location" && (
         <span className="flex items-center gap-1 text-xs font-semibold">
           <MapPin className="h-3.5 w-3.5" />
@@ -99,14 +174,24 @@ function Bubble({ item }: { item: ChatItem }) {
         </span>
       )}
       {m.type === "location" && m.text ? (
-        <a className="underline" href={`https://www.google.com/maps?q=${encodeURIComponent(m.text)}`} target="_blank" rel="noreferrer">
+        <a
+          className="underline"
+          href={`https://www.google.com/maps?q=${encodeURIComponent(m.text)}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           {m.text}
         </a>
       ) : (
         m.text
       )}
       {m.hasMedia && <MediaButton message={m} />}
-      <span className={cn("tabular mt-0.5 block text-right font-mono text-[11px]", out ? "text-[#3F6B4A]" : "text-muted-foreground")}>
+      <span
+        className={cn(
+          "tabular mt-0.5 block text-right font-mono text-[11px]",
+          out ? "text-[#3F6B4A]" : "text-muted-foreground",
+        )}
+      >
         {timeOf(m.at)}
         {out && m.status ? ` · ${t.replyStatus[m.status] ?? m.status}` : ""}
       </span>
@@ -125,7 +210,9 @@ function AttachForm({ id, onDone }: { id: string; onDone: () => void }) {
     },
     onError: (err) => {
       const field = err instanceof ApiError ? err.fields?.reference : undefined;
-      setError(field ? (t.fieldErrors[field] ?? field) : describeError(err, t.errors));
+      setError(
+        field ? (t.fieldErrors[field] ?? field) : describeError(err, t.errors),
+      );
     },
   });
   return (
@@ -149,7 +236,11 @@ function AttachForm({ id, onDone }: { id: string; onDone: () => void }) {
           className="min-w-0 flex-1 rounded-lg border border-panel-line bg-white px-3 py-2 font-mono text-sm"
           placeholder="R7KQ2M"
         />
-        <button type="submit" disabled={attach.isPending} className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
+        <button
+          type="submit"
+          disabled={attach.isPending}
+          className="rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+        >
           {t.attach}
         </button>
       </div>
@@ -158,7 +249,15 @@ function AttachForm({ id, onDone }: { id: string; onDone: () => void }) {
   );
 }
 
-function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onChanged: () => void }) {
+function Thread({
+  id,
+  onBack,
+  onChanged,
+}: {
+  id: string;
+  onBack: () => void;
+  onChanged: () => void;
+}) {
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ["whatsapp-conversation", id],
@@ -180,7 +279,9 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
     mutationFn: () => adminApi.replyWhatsapp(id, text),
     onSuccess: () => {
       setText("");
-      queryClient.invalidateQueries({ queryKey: ["whatsapp-conversation", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation", id],
+      });
       onChanged();
     },
     onError: (err) => toast.error(describeError(err, t.errors)),
@@ -189,14 +290,24 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
     mutationFn: (handled: boolean) => adminApi.handleWhatsapp(id, handled),
     onSuccess: (conv) => {
       if (conv.handledAt) toast.success(t.handled);
-      queryClient.invalidateQueries({ queryKey: ["whatsapp-conversation", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["whatsapp-conversation", id],
+      });
       onChanged();
     },
     onError: (err) => toast.error(describeError(err, t.errors)),
   });
 
-  if (query.isError) return <p className="p-4 text-sm text-destructive">{describeError(query.error, t.errors)}</p>;
-  if (!detail) return <p className="p-4 text-sm text-muted-foreground">{t.mediaLoading}</p>;
+  if (query.isError)
+    return (
+      <p className="p-4 text-sm text-destructive">
+        {describeError(query.error, t.errors)}
+      </p>
+    );
+  if (!detail)
+    return (
+      <p className="p-4 text-sm text-muted-foreground">{t.mediaLoading}</p>
+    );
   const c = detail.conversation;
   const r = c.reservation;
   const submit = (e: FormEvent) => {
@@ -207,18 +318,33 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
   return (
     <div className="flex min-w-0 flex-col" data-testid="wa-thread">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-panel-line px-4 py-3">
-        <button type="button" onClick={onBack} aria-label={t.back} className="-ml-1 rounded-md p-1 hover:bg-accent md:hidden">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={t.back}
+          className="-ml-1 rounded-md p-1 hover:bg-accent md:hidden"
+        >
           <ArrowLeft className="h-5 w-5" />
         </button>
         <b className="text-base">{c.name ?? c.phone}</b>
-        {r && <span className="rounded-full border border-panel-line px-2 py-0.5 font-mono text-xs">{r.externalReference ?? r.reference}</span>}
+        {r && (
+          <span className="rounded-full border border-panel-line px-2 py-0.5 font-mono text-xs">
+            {r.externalReference ?? r.reference}
+          </span>
+        )}
         {r && <StatusPill status={r.status} />}
-        <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
+        <a
+          href={`tel:${c.phone.replace(/\s/g, "")}`}
+          className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"
+        >
           <Phone className="h-3.5 w-3.5" />
           {c.phone}
         </a>
         {r && (
-          <Link to={`/reservations/${r.id}`} className="ml-auto text-sm font-semibold text-lime-deep">
+          <Link
+            to={`/reservations/${r.id}`}
+            className="ml-auto text-sm font-semibold text-lime-deep"
+          >
             {t.openBooking}
           </Link>
         )}
@@ -229,8 +355,15 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
           const separator = day !== lastDay;
           lastDay = day;
           return (
-            <div key={item.kind === "sent" ? `s-${item.id}` : item.message.id} className="flex flex-col gap-2">
-              {separator && <span className="self-center rounded-full bg-white px-2.5 py-0.5 text-[11px] text-muted-foreground">{dayLabel(item.at)}</span>}
+            <div
+              key={item.kind === "sent" ? `s-${item.id}` : item.message.id}
+              className="flex flex-col gap-2"
+            >
+              {separator && (
+                <span className="self-center rounded-full bg-white px-2.5 py-0.5 text-[11px] text-muted-foreground">
+                  {dayLabel(item.at)}
+                </span>
+              )}
               <Bubble item={item} />
             </div>
           );
@@ -238,13 +371,22 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
         <div ref={end} />
       </div>
       {c.unknown && <UnknownAttach id={id} onDone={onChanged} />}
-      <form onSubmit={submit} className="flex flex-col gap-2 border-t border-panel-line px-4 py-3">
+      <form
+        onSubmit={submit}
+        className="flex flex-col gap-2 border-t border-panel-line px-4 py-3"
+      >
         {c.replyUntil ? (
-          <span className="text-xs font-semibold text-lime-deep" data-testid="wa-window">
+          <span
+            className="text-xs font-semibold text-lime-deep"
+            data-testid="wa-window"
+          >
             {t.replyUntil(dateTimeShort(c.replyUntil))}
           </span>
         ) : (
-          <span className="text-xs font-semibold text-warn-text" data-testid="wa-window-closed">
+          <span
+            className="text-xs font-semibold text-warn-text"
+            data-testid="wa-window-closed"
+          >
             {t.windowClosed}
           </span>
         )}
@@ -274,7 +416,10 @@ function Thread({ id, onBack, onChanged }: { id: string; onBack: () => void; onC
               {reply.isPending ? t.sending : t.send}
             </button>
           ) : (
-            <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="self-end rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground">
+            <a
+              href={`tel:${c.phone.replace(/\s/g, "")}`}
+              className="self-end rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+            >
               {t.call(c.phone)}
             </a>
           )}
@@ -301,7 +446,15 @@ function UnknownAttach({ id, onDone }: { id: string; onDone: () => void }) {
   return <AttachForm id={id} onDone={onDone} />;
 }
 
-function ConversationRow({ c, selected, onSelect }: { c: WhatsappConversation; selected: boolean; onSelect: () => void }) {
+function ConversationRow({
+  c,
+  selected,
+  onSelect,
+}: {
+  c: WhatsappConversation;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
     <button
       type="button"
@@ -313,13 +466,23 @@ function ConversationRow({ c, selected, onSelect }: { c: WhatsappConversation; s
         selected && "bg-panel-2 shadow-[inset_3px_0_0_#1E5E2E]",
       )}
     >
-      <b className={cn("truncate", c.unread > 0 ? "font-bold" : "font-semibold")}>{c.name ?? c.phone}</b>
+      <b
+        className={cn("truncate", c.unread > 0 ? "font-bold" : "font-semibold")}
+      >
+        {c.name ?? c.phone}
+      </b>
       <span className="tabular flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
         {listTime(c.lastMessageAt)}
-        {c.unread > 0 && <span className="min-w-[18px] rounded-full bg-lime-deep px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white">{c.unread}</span>}
+        {c.unread > 0 && (
+          <span className="min-w-[18px] rounded-full bg-lime-deep px-1.5 text-center text-[11px] font-semibold leading-[18px] text-white">
+            {c.unread}
+          </span>
+        )}
       </span>
       <span className="col-span-2 truncate text-xs text-muted-foreground">
-        {c.reservation ? (c.reservation.externalReference ?? c.reservation.reference) : t.unknownNumber}
+        {c.reservation
+          ? (c.reservation.externalReference ?? c.reservation.reference)
+          : t.unknownNumber}
         {c.reservation && ` · ${dateTimeShort(c.reservation.arrivalAt)}`}
       </span>
       {c.preview && (
@@ -329,6 +492,85 @@ function ConversationRow({ c, selected, onSelect }: { c: WhatsappConversation; s
         </span>
       )}
     </button>
+  );
+}
+
+function SentCard({
+  m,
+  onConversation,
+}: {
+  m: WhatsappSentMessage;
+  onConversation: (id: string) => void;
+}) {
+  const r = m.reservation;
+  return (
+    <div
+      data-testid={`wa-sent-${m.id}`}
+      className="space-y-1.5 border-b border-panel-line px-4 py-3"
+    >
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <b className="text-sm">
+          {travellerMessagesFr.kind[m.kind] ?? travellerMessagesFr.otherKind}
+        </b>
+        <span className="text-sm">{r ? r.customerName : m.phone}</span>
+        <span className="text-xs text-muted-foreground">
+          {r
+            ? `${r.externalReference ?? r.reference} · ${m.phone}`
+            : t.unknownNumber}
+        </span>
+        <span className="tabular ml-auto font-mono text-xs text-muted-foreground">
+          {listTime(m.at)}
+          {dayOf(m.at) === todayLocal() ? "" : ` ${timeOf(m.at)}`}
+        </span>
+      </div>
+      <div className="max-w-2xl whitespace-pre-wrap break-words rounded-xl bg-[#DCF8C6] px-3 py-2 text-sm text-[#0B3B19]">
+        {m.text ?? <span className="italic opacity-80">{t.sentNoText}</span>}
+        <span className="tabular mt-0.5 block text-right font-mono text-[11px] text-[#3F6B4A]">
+          {t.sentStatus[m.status] ?? m.status}
+          {m.smsFallback && m.status !== "fallback"
+            ? ` · ${t.sentSmsFallback}`
+            : ""}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-4 text-sm font-semibold text-lime-deep">
+        {m.conversationId && (
+          <button
+            type="button"
+            onClick={() => onConversation(m.conversationId!)}
+          >
+            {t.openConversation}
+          </button>
+        )}
+        {r && <Link to={`/reservations/${r.id}`}>{t.openBooking}</Link>}
+      </div>
+    </div>
+  );
+}
+
+function SentList({
+  onConversation,
+}: {
+  onConversation: (id: string) => void;
+}) {
+  const query = useQuery({
+    queryKey: ["whatsapp-sent"],
+    queryFn: () => adminApi.whatsappSent(),
+    refetchInterval: 30_000,
+  });
+  const rows = query.data?.data ?? [];
+  return (
+    <div data-testid="wa-sent-list">
+      <p className="px-4 pt-3 text-sm text-muted-foreground">{t.sentIntro}</p>
+      {query.isError && (
+        <p className="p-4 text-sm text-destructive">{t.failed}</p>
+      )}
+      {query.data && rows.length === 0 && (
+        <p className="p-4 text-sm text-muted-foreground">{t.empty.sent}</p>
+      )}
+      {rows.map((m) => (
+        <SentCard key={m.id} m={m} onConversation={onConversation} />
+      ))}
+    </div>
   );
 }
 
@@ -342,9 +584,10 @@ export default function WhatsappInboxPage() {
   const view = viewOf(params.get("vue"));
   const selectedId = params.get("c");
   const queryClient = useQueryClient();
+  const listView: WhatsappInboxView = view === "sent" ? "all" : view;
   const list = useQuery({
-    queryKey: ["whatsapp-inbox", view],
-    queryFn: () => adminApi.whatsappInbox(view),
+    queryKey: ["whatsapp-inbox", listView],
+    queryFn: () => adminApi.whatsappInbox(listView),
     refetchInterval: 15_000,
   });
   const counts = list.data?.counts;
@@ -355,7 +598,7 @@ export default function WhatsappInboxPage() {
     else next.delete("c");
     setParams(next, { replace: !id });
   };
-  const changeView = (v: WhatsappInboxView) => {
+  const changeView = (v: PageView) => {
     const next = new URLSearchParams();
     if (v !== "unread") next.set("vue", v);
     setParams(next);
@@ -364,8 +607,12 @@ export default function WhatsappInboxPage() {
     queryClient.invalidateQueries({ queryKey: ["whatsapp-inbox"] });
     queryClient.invalidateQueries({ queryKey: ["nav-counts"] });
   };
-  const views = VIEWS.filter((v) => v !== "unknown" || (counts?.unknown ?? null) !== null);
-  const countOf = (v: WhatsappInboxView) => (counts ? counts[v] : null);
+  const views = VIEWS.filter(
+    (v) => v !== "unknown" || (counts?.unknown ?? null) !== null,
+  );
+  const countOf = (v: PageView) => (counts ? counts[v] : null);
+  const openConversation = (id: string) =>
+    setParams(new URLSearchParams({ vue: "all", c: id }));
 
   return (
     <div className="space-y-4">
@@ -374,7 +621,10 @@ export default function WhatsappInboxPage() {
         <p className="text-sm text-muted-foreground">{t.intro}</p>
       </div>
       <div className="overflow-hidden rounded-xl border border-panel-line bg-white">
-        <div className="flex flex-wrap gap-1.5 border-b border-panel-line px-4 py-3" role="tablist">
+        <div
+          className="flex flex-wrap gap-1.5 border-b border-panel-line px-4 py-3"
+          role="tablist"
+        >
           {views.map((v) => (
             <button
               key={v}
@@ -385,30 +635,61 @@ export default function WhatsappInboxPage() {
               onClick={() => changeView(v)}
               className={cn(
                 "rounded-full border px-3 py-1 text-xs font-semibold",
-                v === view ? "border-primary bg-primary text-primary-foreground" : "border-panel-line text-muted-foreground hover:bg-panel-2",
+                v === view
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-panel-line text-muted-foreground hover:bg-panel-2",
               )}
             >
               {t.views[v]}
-              {countOf(v) !== null && countOf(v) !== undefined ? ` · ${countOf(v)}` : ""}
+              {countOf(v) !== null && countOf(v) !== undefined
+                ? ` · ${countOf(v)}`
+                : ""}
             </button>
           ))}
         </div>
-        {list.isError && <p className="p-4 text-sm text-destructive">{t.failed}</p>}
-        <div className="grid md:grid-cols-[340px_minmax(0,1fr)]">
-          <div className={cn("min-w-0 md:border-r md:border-panel-line", selectedId && "hidden md:block")}>
-            {list.data && rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">{t.empty[view]}</p>}
-            {rows.map((c) => (
-              <ConversationRow key={c.id} c={c} selected={c.id === selectedId} onSelect={() => select(c.id)} />
-            ))}
-          </div>
-          <div className={cn("min-w-0", !selectedId && "hidden md:block")}>
-            {selectedId ? (
-              <Thread key={selectedId} id={selectedId} onBack={() => select(null)} onChanged={refresh} />
-            ) : (
-              <p className="p-6 text-sm text-muted-foreground">{t.pick}</p>
+        {view === "sent" ? (
+          <SentList onConversation={openConversation} />
+        ) : (
+          <>
+            {list.isError && (
+              <p className="p-4 text-sm text-destructive">{t.failed}</p>
             )}
-          </div>
-        </div>
+            <div className="grid md:grid-cols-[340px_minmax(0,1fr)]">
+              <div
+                className={cn(
+                  "min-w-0 md:border-r md:border-panel-line",
+                  selectedId && "hidden md:block",
+                )}
+              >
+                {list.data && rows.length === 0 && (
+                  <p className="p-4 text-sm text-muted-foreground">
+                    {t.empty[view]}
+                  </p>
+                )}
+                {rows.map((c) => (
+                  <ConversationRow
+                    key={c.id}
+                    c={c}
+                    selected={c.id === selectedId}
+                    onSelect={() => select(c.id)}
+                  />
+                ))}
+              </div>
+              <div className={cn("min-w-0", !selectedId && "hidden md:block")}>
+                {selectedId ? (
+                  <Thread
+                    key={selectedId}
+                    id={selectedId}
+                    onBack={() => select(null)}
+                    onChanged={refresh}
+                  />
+                ) : (
+                  <p className="p-6 text-sm text-muted-foreground">{t.pick}</p>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

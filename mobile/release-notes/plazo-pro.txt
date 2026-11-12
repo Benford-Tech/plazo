@@ -1,9 +1,9 @@
 Plazo Pro, pour les équipes des parkings d'aéroport.
+• Messages WhatsApp : lire et répondre aux clients, voir les envois.
 • Planning : états en couleur, prochains départs, retards ; prévisionnel 3 mois.
-• Réservations de tous canaux, « En direct », vol retour libre.
+• Réservations de tous canaux.
 • Plan du parking, files, clés en un toucher.
 • Navette : Aller et Retour, sièges auto.
-• Voiturier : courses au terminal, services avant les retours.
-• Contrat, état des lieux, factures et demandes des clients.
-• Cloche des notifications et réglages par événement.
-• Menu par rôle, photo, logo.
+• Voiturier : courses au terminal, services.
+• Contrat, état des lieux, factures.
+• Cloche des notifications, menu par rôle, photo, logo.
