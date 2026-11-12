@@ -1387,7 +1387,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de Meta, tracé `whatsapp.reply`), `POST …/:id/handle|unhandle`, `GET …/inbox/messages/:messageId/media` (photo ou vocal relus
      chez Meta avec le jeton, 4 Mo, 413 `media_too_large`, 404 `media_gone`) ; `nav/counts` › `whatsapp`. Web : Réservations ›
      « Messages WhatsApp » (`WhatsappInboxPage`, compteur ambre) : pilules Non lus · À traiter · Traités · Numéro inconnu, liste à
-     gauche, conversation à droite façon WhatsApp avec les messages de Plazo (« Veille du dépôt envoyé par Plazo · lu ✓✓ »), réponse
+     gauche, conversation à droite façon WhatsApp avec les messages de Plazo (« Veille du dépôt envoyé par Plazo · lu ✓✓ » et, depuis le 12/11/2026, « affiche les messages de la veille dans la conversation », leur texte : `WhatsappMessage.text`, migration `whatsapp_message_text`, gardé 30 jours avec la ligne, `genericMessageText` pour `plazo_message`, le texte du SMS pour le modèle de la veille), réponse
      avec « Réponse libre possible jusqu'à … », sinon « Appeler le … », « Marquer comme traité » ; sur téléphone la liste puis la
      conversation ; bloc « Conversation WhatsApp » dans « Messages au voyageur » de la fiche (`conversation` de
      `GET …/reservations/:id/messages`). Plazo Pro : la cloche seulement. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`.

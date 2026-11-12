@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("7 novembre 2026"); // the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("12 novembre 2026"); // the WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -137,7 +137,7 @@ describe("privacy policy", () => {
   });
 
   it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, then on 22/10/2026 with the support address contact@plazo.fr, the terms and the privacy policy again on 26/10/2026 with the parking's own contract", () => {
-    expect(privacyDoc().version).toBe("7 novembre 2026");
+    expect(privacyDoc().version).toBe("12 novembre 2026");
     expect(termsDoc().version).toBe("30 octobre 2026");
     expect(legalNoticeDoc().version).toBe("6 novembre 2026");
   });

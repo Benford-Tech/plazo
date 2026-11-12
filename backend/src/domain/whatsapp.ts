@@ -31,6 +31,14 @@ export function whatsappParam(text: string, max = 900): string {
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line || '-';
 }
 
+/**
+ * The common template `plazo_message` as the traveller reads it (12/11/2026, shown in the WhatsApp inbox): « Message de
+ * {{1}} pour votre réservation {{2}} : », the text on one line, then Plazo's thanks.
+ */
+export function genericMessageText(parking: string, reference: string, text: string): string {
+  return `Message de ${parking} pour votre réservation ${reference} :\n${whatsappParam(text)}\nMerci d'avoir choisi votre parking avec Plazo.`;
+}
+
 /** Meta wants the number in international form without « + »: +33612345678 → 33612345678. */
 export const whatsappRecipient = (e164: string) => e164.replace(/^\+/, '');
 

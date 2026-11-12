@@ -283,7 +283,7 @@ export class WhatsappInboxService {
             where: { reservationId: row.reservationId, operatorId: row.operatorId },
             orderBy: { createdAt: 'asc' },
             take: 50,
-            select: { id: true, kind: true, status: true, createdAt: true },
+            select: { id: true, kind: true, status: true, text: true, createdAt: true },
           })
         : Promise.resolve([]),
     ]);
@@ -301,7 +301,7 @@ export class WhatsappInboxService {
         at: m.createdAt,
         by: m.staff ? { firstName: m.staff.firstName } : null,
       })),
-      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, at: s.createdAt })),
+      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, text: s.text, at: s.createdAt })),
     };
   }
 
