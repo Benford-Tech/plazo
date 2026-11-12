@@ -24,8 +24,6 @@ const COLS =
 type Filter =
   | "all"
   | "returnsToday"
-  | "noSpot"
-  | "toPark"
   | "noKeys"
   | "flightLate";
 
@@ -45,9 +43,6 @@ function isFlightLate(v: DashboardVehicle): boolean {
 const MATCH: Record<Filter, (v: DashboardVehicle) => boolean> = {
   all: () => true,
   returnsToday: (v) => v.returnsToday,
-  // 12/11/2026: a car whose traveller has left in the shuttle is « À garer », no longer « Sans place ».
-  noSpot: (v) => !v.spotCode && !v.toPark,
-  toPark: (v) => !v.spotCode && !!v.toPark,
   noKeys: (v) => !v.keyHook && !v.keysLeftAt,
   flightLate: isFlightLate,
 };
@@ -55,14 +50,11 @@ const MATCH: Record<Filter, (v: DashboardVehicle) => boolean> = {
 const FILTERS: Filter[] = [
   "all",
   "returnsToday",
-  "noSpot",
-  "toPark",
   "noKeys",
   "flightLate",
 ];
 
 const FILTER_TONE: Partial<Record<Filter, string>> = {
-  noSpot: "border-bad text-bad-text",
   noKeys: "border-warn text-warn-text",
 };
 
@@ -98,7 +90,7 @@ function vehicleBadges(
     out.push({ tone: "info", text: fr.status.back_at_parking });
   else if (v.status === "shuttled_out")
     out.push({ tone: "line", text: b.shuttled });
-  if (v.spotCode && out.length === 0) out.push({ tone: "ok", text: b.onSite });
+  if (out.length === 0) out.push({ tone: "ok", text: b.onSite });
   return out;
 }
 
@@ -222,12 +214,11 @@ export function VehiclesTable({ vehicles }: { vehicles: DashboardVehicle[] }) {
 function VehicleLine({ v }: { v: DashboardVehicle }) {
   const card = useQuickCard();
   const open = () => card.open(v.id);
-  const toPark = !v.spotCode && v.toPark ? v.toPark : null;
   const place = v.spotCode
     ? [v.spotCode, v.stayClass ? t.stay[v.stayClass] : null]
         .filter(Boolean)
         .join(" · ")
-    : t.noSpot;
+    : t.placeUnnoted;
   const ret = v.returnFlight
     ? t.flight(v.returnFlight, timeOf(v.flightEstimatedAt ?? v.returnAt))
     : v.returnsToday
@@ -257,20 +248,16 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
           </span>
         </button>
       </span>
-      {toPark ? (
-        <span data-testid="vehicle-to-park">
-          <Badge tone="line">{t.toPark(timeOf(toPark.since))}</Badge>
-        </span>
-      ) : (
-        <span
-          className={cn(
-            "font-mono text-[13px] font-bold",
-            v.spotCode ? "text-lime-deep" : "text-bad-text",
-          )}
-        >
-          {place}
-        </span>
-      )}
+      {/* 12/11/2026 (« si la voiture est sur place alors elle a une place »): never « Sans place ». */}
+      <span
+        data-testid="vehicle-place"
+        className={cn(
+          "font-mono text-[13px] font-bold",
+          v.spotCode ? "text-lime-deep" : "text-muted-foreground",
+        )}
+      >
+        {place}
+      </span>
       <KeysControl v={v} />
       {/* 28/10/2026: every car here has its departure next; today's in the indigo pill of the planning. */}
       <span>

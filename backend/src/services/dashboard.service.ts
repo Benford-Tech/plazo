@@ -291,19 +291,9 @@ export class DashboardService {
       plate: r.plate,
     });
 
-    // Arrived (or boarded), no spot or file (only when the parking has a plan).
+    // 12/11/2026 (« si la voiture est sur place alors elle a une place »): a car on the parking is never « Sans place » any
+    // more (no no_spot / no_free_spot alert); where it is stays a tool of the Occupation (« Arrivées à placer »).
     if (hasPlan) {
-      for (const r of onSite.filter(r => toPutAway(r) && !toParkOf(r))) {
-        const since = r.arrivedAt ?? r.arrivalAt;
-        alerts.push({
-          kind: freeSpots === 0 ? 'no_free_spot' : 'no_spot',
-          severity: 'urgent',
-          ...row(r),
-          detail: null,
-          since: since.toISOString(),
-          minutes: minutesSince(since),
-        });
-      }
       // Placed, keys not hung.
       for (const r of onSite.filter(r => placed(r) && !r.keyHook && !r.keysLeftAt && r.arrivedAt && minutesSince(r.arrivedAt) >= KEYS_MINUTES)) {
         alerts.push({

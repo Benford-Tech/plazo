@@ -417,7 +417,7 @@ describe('embarquer en un geste (14/10/2026)', () => {
     expect((after.body.vehicles as { id: string; toPark: unknown }[]).find(v => v.id === late.id)!.toPark).toBeNull();
   });
 
-  it('12/11/2026 : avant l’embarquement, la voiture sans place reste « Sans place » avec l’alerte', async () => {
+  it('12/11/2026 : une voiture sur place sans place notée n’est jamais « Sans place » (« si la voiture est sur place alors elle a une place »)', async () => {
     runTodayAt('10:00');
     const { op } = await setup();
     await api()
@@ -428,7 +428,7 @@ describe('embarquer en un geste (14/10/2026)', () => {
     const dashboard = await api().get('/api/internal/dashboard').set(auth(op.token));
     expect(
       dashboard.body.alerts.filter((a: { kind: string }) => a.kind === 'no_spot').map((a: { reservationId: string }) => a.reservationId),
-    ).toEqual([here.id]);
+    ).toEqual([]);
     expect((dashboard.body.vehicles as { id: string; toPark: unknown }[]).find(v => v.id === here.id)!.toPark).toBeNull();
     expect((await api().get(`/api/internal/reservations/${here.id}`).set(auth(op.token))).body.toPark).toBeNull();
   });

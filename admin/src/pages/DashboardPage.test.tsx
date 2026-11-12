@@ -349,19 +349,19 @@ describe("DashboardPage", () => {
     const louis = within(vehicles)
       .getByRole("button", { name: /Louis Leroy/ })
       .closest<HTMLElement>("[data-testid=vehicle-row]")!;
-    expect(louis).toHaveTextContent("Sans place");
+    // 12/11/2026 (« si la voiture est sur place alors elle a une place »).
+    expect(louis).not.toHaveTextContent("Sans place");
+    expect(louis).toHaveTextContent("Sur place");
     expect(
       within(louis).getByRole("button", { name: "Clés ?" }),
     ).toHaveAttribute("aria-pressed", "true");
     expect(louis).toHaveTextContent("ven. 9");
-    // Filters with their counts; « Sans place » keeps Louis only.
+    // Filters with their counts; « Clés ? » keeps Louis only.
     const filters = within(vehicles).getByTestId("vehicle-filters");
     expect(filters).toHaveTextContent("Tous2");
-    expect(filters).toHaveTextContent("Sans place1");
+    expect(filters).not.toHaveTextContent("Sans place");
     expect(filters).toHaveTextContent("Clés ?1");
-    fireEvent.click(
-      within(filters).getByRole("button", { name: /Sans place/ }),
-    );
+    fireEvent.click(within(filters).getByRole("button", { name: /Clés \?/ }));
     expect(within(vehicles).getAllByTestId("vehicle-row")).toHaveLength(1);
     fireEvent.click(within(filters).getByRole("button", { name: /^Tous/ }));
     fireEvent.change(within(vehicles).getByRole("searchbox"), {
@@ -482,13 +482,12 @@ describe("DashboardPage", () => {
     const louis = within(vehicles)
       .getByRole("button", { name: /Louis Leroy/ })
       .closest<HTMLElement>("[data-testid=vehicle-row]")!;
-    expect(within(louis).getByTestId("vehicle-to-park")).toHaveTextContent(
-      "À garer · client en navette 11:22",
-    );
+    // 12/11/2026 (« si la voiture est sur place alors elle a une place »): « Sur place », never « Sans place ».
+    expect(within(louis).getByTestId("vehicle-place")).toHaveTextContent("Sur place");
     expect(louis).not.toHaveTextContent("Sans place");
     const filters = within(vehicles).getByTestId("vehicle-filters");
     expect(filters).not.toHaveTextContent("Sans place");
-    expect(filters).toHaveTextContent("À garer1");
+    expect(filters).not.toHaveTextContent("À garer");
   });
 
   it("26/10/2026 : les clés changent d'état d'un clic : laissées, crochet n°, puis « Clés ? »", async () => {

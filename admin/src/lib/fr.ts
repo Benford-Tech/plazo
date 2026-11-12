@@ -1039,6 +1039,8 @@ export const fr = {
       count: (n: number) => `${n} véhicule${n > 1 ? "s" : ""}`,
       empty: "Aucun véhicule sur le parking.",
       noSpot: "Sans place",
+      // 12/11/2026 (« si la voiture est sur place alors elle a une place »): no place noted, never a red « Sans place ».
+      placeUnnoted: "Sur place",
       // 12/11/2026: no place yet, the traveller gone in the shuttle; not an alert.
       toPark: (time: string) => `À garer · client en navette ${time}`,
       keys: (hook: string) => `Clés ${hook}`,
