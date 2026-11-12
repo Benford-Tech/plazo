@@ -26,7 +26,7 @@ export type Icon = ComponentType<SVGProps<SVGSVGElement>>;
  */
 export type NavSection = "today" | "reservations" | "parking" | "manager";
 export const SECTIONS: NavSection[] = ["today", "reservations", "parking", "manager"];
-export type Counter = "inbox" | "extras";
+export type Counter = "inbox" | "extras" | "whatsapp";
 export type NavChild = {
   label: string;
   to: string;
@@ -71,6 +71,7 @@ export const NAV: NavItem[] = [
     children: [
       { label: sub.allReservations, to: "/reservations", end: true },
       { label: sub.inbox, to: "/reservations/a-verifier", permission: "reservations:manage", counter: "inbox" },
+      { label: sub.whatsapp, to: "/reservations/whatsapp", permission: "reservations:manage", counter: "whatsapp" },
       { label: sub.extras, to: "/reservations/services", permission: "reservations:manage", counter: "extras" },
       { label: sub.reminders, to: "/reservations/sms-veille", permission: "reservations:manage" },
       { label: sub.importFile, to: "/reservations/importer", permission: "parking:manage" },

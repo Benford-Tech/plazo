@@ -91,6 +91,7 @@ model Operator {
   smsOutbox             SmsOutbox[]
   smsPhoneChecks        SmsPhoneCheck[]
   whatsappMessages      WhatsappMessage[]
+  whatsappConversations WhatsappConversation[]
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
@@ -144,24 +145,25 @@ enum BookingNotify {
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
 model Staff {
-  id                 String        @id @default(cuid())
+  whatsappReplies    WhatsappInboxMessage[]
+  id                 String                 @id @default(cuid())
   operatorId         String
-  email              String        @unique // always lower-cased
+  email              String                 @unique // always lower-cased
   // First and last name (06/10/2026); `name` stays the display form "Prénom Nom", kept in sync by the server.
-  firstName          String        @default("")
-  lastName           String        @default("")
+  firstName          String                 @default("")
+  lastName           String                 @default("")
   name               String
   phone              String?
   role               StaffRole
   password           String
-  isActive           Boolean       @default(true)
+  isActive           Boolean                @default(true)
   lastLoginAt        DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
   emailVerifiedAt    DateTime?
   // Push notifications of travellers' arrivals (see ArrivalSignal): drop-offs, returns, or both.
-  notifyArrivals     Boolean       @default(true)
-  notifyReturns      Boolean       @default(true)
+  notifyArrivals     Boolean                @default(true)
+  notifyReturns      Boolean                @default(true)
   // The post held today (R-C, 04/10/2026): the app puts that post's pages first. Only a post the role
   // covers (see domain/roles.ts allowedPosts); the role, not the post, decides the permissions.
   post               StaffRole?
@@ -171,19 +173,19 @@ model Staff {
   vehicleId          String?
   vehicleSetAt       DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
-  notifyShuttles     Boolean       @default(true)
+  notifyShuttles     Boolean                @default(true)
   /**
    * New bookings (N-A, 08/10/2026): a push per booking made on the site or imported (`immediate`, 06/10/2026), the
    * hourly digest of every channel (`hourly`, managers by default), or nothing (`never`).
    */
-  bookingNotify      BookingNotify @default(immediate)
+  bookingNotify      BookingNotify          @default(immediate)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
-  notifyPlatform     Boolean       @default(true)
+  notifyPlatform     Boolean                @default(true)
   // « Mail du matin » (21/10/2026, choice A): the day's planning, revenue and integrations by email. Null: the role's
   // default (on for managers, off for the others); the local hour of the parking it leaves at (5 to 10); the local
   // date it was last sent (once a day).
   morningEmail       Boolean?
-  morningEmailHour   Int           @default(7)
+  morningEmailHour   Int                    @default(7)
   morningEmailSentOn String?
   // 13/10/2026 (sign in with Apple / Google): when the person last chose their password. Null: the stored hash is a
   // random one nobody knows (an invited manager before the invitation, a member who joined with the daily code).
@@ -196,8 +198,8 @@ model Staff {
   // it was last changed (the apps' cache key). Shown to the team only.
   photoKey           String?
   photoUpdatedAt     DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @default(now()) @updatedAt
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @default(now()) @updatedAt
 
   operator             Operator                   @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens               StaffToken[]
@@ -946,29 +948,30 @@ model Reservation {
   createdAt                DateTime            @default(now())
   updatedAt                DateTime            @default(now()) @updatedAt
 
-  operator         Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  import           ReservationImport?     @relation(fields: [importId], references: [id], onDelete: SetNull)
-  parking          Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
-  createdBy        Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  spot             ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
-  file             ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
-  stop             ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
-  valetArrivalBy   Staff?                 @relation("ValetArrivalRuns", fields: [valetArrivalById], references: [id], onDelete: SetNull)
-  valetDepartureBy Staff?                 @relation("ValetDepartureRuns", fields: [valetDepartureById], references: [id], onDelete: SetNull)
-  boardingTrip     ShuttleTrip?           @relation("BoardingCheckIn", fields: [boardingTripId], references: [id], onDelete: SetNull)
-  devices          TravellerDevice[]
-  arrivalSignals   ArrivalSignal[]
-  inboundEmails    InboundEmail[]
-  shuttleTrips     ShuttleTripPassenger[]
-  smsOutbox        SmsOutbox[]
-  whatsappMessages WhatsappMessage[]
-  contract         ReservationContract?
-  inspections      VehicleInspection[]
-  signatureCodes   SignatureCode[]
-  invoices         Invoice[]
-  extras           ReservationExtra[]
-  surcharges       ReservationSurcharge[]
-  appLinkClaims    AppLinkClaim[]
+  operator              Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  import                ReservationImport?     @relation(fields: [importId], references: [id], onDelete: SetNull)
+  parking               Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  createdBy             Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  spot                  ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
+  file                  ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  stop                  ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  valetArrivalBy        Staff?                 @relation("ValetArrivalRuns", fields: [valetArrivalById], references: [id], onDelete: SetNull)
+  valetDepartureBy      Staff?                 @relation("ValetDepartureRuns", fields: [valetDepartureById], references: [id], onDelete: SetNull)
+  boardingTrip          ShuttleTrip?           @relation("BoardingCheckIn", fields: [boardingTripId], references: [id], onDelete: SetNull)
+  devices               TravellerDevice[]
+  arrivalSignals        ArrivalSignal[]
+  inboundEmails         InboundEmail[]
+  shuttleTrips          ShuttleTripPassenger[]
+  smsOutbox             SmsOutbox[]
+  whatsappMessages      WhatsappMessage[]
+  whatsappConversations WhatsappConversation[]
+  contract              ReservationContract?
+  inspections           VehicleInspection[]
+  signatureCodes        SignatureCode[]
+  invoices              Invoice[]
+  extras                ReservationExtra[]
+  surcharges            ReservationSurcharge[]
+  appLinkClaims         AppLinkClaim[]
 
   @@unique([operatorId, externalReference])
   @@index([spotId])
@@ -2041,7 +2044,7 @@ model ParkingExtra {
 // one payment for the stay and its services) or later in its own PaymentIntent. One active order per kind (partial
 // unique index), one charge at most (service). Its money follows the booking's payout schedule once it is done.
 model ReservationExtra {
-  id                    String        @id @default(cuid())
+  id                    String         @id @default(cuid())
   reservationId         String
   operatorId            String
   kind                  String // the parking service's key
@@ -2050,10 +2053,10 @@ model ReservationExtra {
   priceCents            Int
   commissionCents       Int
   operatorShareCents    Int
-  status                ExtraStatus   @default(pending_payment)
-  withBooking           Boolean       @default(false)
+  status                ExtraStatus    @default(pending_payment)
+  withBooking           Boolean        @default(false)
   // Its own payment (null when paid with the booking: the booking's intent).
-  stripePaymentIntentId String?       @unique
+  stripePaymentIntentId String?        @unique
   stripeLive            Boolean?
   stripeChargeId        String?
   stripeRefundId        String?
@@ -2072,11 +2075,11 @@ model ReservationExtra {
   transferredAt         DateTime?
   // 12/11/2026 (« Payé au parking »): a service the team adds at the counter or on the phone, paid at the parking:
   // no Stripe, no Plazo commission, no payout. `paymentMethod` null with `paidAt` null: « À payer au retour ».
-  source                ExtraSource   @default(traveller)
+  source                ExtraSource    @default(traveller)
   paymentMethod         PaymentMethod?
   addedById             String?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @default(now()) @updatedAt
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @default(now()) @updatedAt
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   addedBy     Staff?      @relation("ExtraAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
@@ -2229,4 +2232,59 @@ model Invoice {
   @@unique([operatorId, number])
   @@index([reservationId])
   @@map("invoices")
+}
+
+/// 12/11/2026 (« une boîte de réception des messages envoyés par WhatsApp », direction A of
+/// https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko): what travellers write to Plazo's WhatsApp number, one
+/// conversation per parking and number. A number Plazo cannot place has no operator (the platform's « Numéro inconnu »).
+model WhatsappConversation {
+  id            String    @id @default(cuid())
+  operatorId    String?
+  reservationId String?
+  /// E.164, « +33612345678 ».
+  phone         String
+  /// The name WhatsApp shows for the sender (their profile), when Meta gives it.
+  profileName   String?
+  lastMessageAt DateTime
+  /// The traveller's last message: Meta allows a free reply for 24 hours after it.
+  lastInboundAt DateTime?
+  unread        Int       @default(0)
+  handledAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  operator    Operator?              @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation?           @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  messages    WhatsappInboxMessage[]
+
+  @@index([operatorId, lastMessageAt])
+  @@index([phone])
+  @@index([reservationId])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsappInboxMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  /// in: from the traveller; out: a reply by the team.
+  direction      String
+  /// text, image, audio, video, document, sticker, location, other.
+  type           String   @default("text")
+  text           String?
+  /// Meta's media id of a photo or voice note (fetched through Plazo, never a public link).
+  mediaId        String?
+  mediaMime      String?
+  waMessageId    String?  @unique
+  /// A reply's delivery: sent, delivered, read, failed.
+  status         String?
+  errorCode      String?
+  staffId        String?
+  createdAt      DateTime @default(now())
+
+  conversation WhatsappConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  staff        Staff?               @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([createdAt])
+  @@map("whatsapp_inbox_messages")
 }

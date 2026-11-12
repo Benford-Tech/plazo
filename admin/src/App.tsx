@@ -18,6 +18,7 @@ import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import ImportReservationsPage from "@/pages/ImportReservationsPage";
 import InboundEmailsPage from "@/pages/InboundEmailsPage";
+import WhatsappInboxPage from "@/pages/WhatsappInboxPage";
 import RemindersPage from "@/pages/RemindersPage";
 import ExtrasTodoPage from "@/pages/ExtrasTodoPage";
 import DeletedReservationsPage from "@/pages/DeletedReservationsPage";
@@ -172,6 +173,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="reservations:manage">
                     <InboundEmailsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/reservations/whatsapp"
+                element={
+                  <RequirePermission permission="reservations:manage">
+                    <WhatsappInboxPage />
                   </RequirePermission>
                 }
               />

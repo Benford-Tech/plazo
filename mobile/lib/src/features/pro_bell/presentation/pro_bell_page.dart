@@ -14,6 +14,7 @@ const _icons = <String, (IconData, Color, Color)>{
   'booking_new': (Icons.event_available_rounded, AppStatus.ok, AppStatus.okSoft),
   'booking_change': (Icons.sync_rounded, AppStatus.warn, AppStatus.warnSoft),
   'inbox': (Icons.alternate_email_rounded, AppStatus.warn, AppStatus.warnSoft),
+  'whatsapp': (Icons.chat_rounded, AppStatus.ok, AppStatus.okSoft),
   'extra': (Icons.auto_awesome_rounded, AppColors.accent, AppColors.tint),
   'arrival': (Icons.person_add_alt_1_rounded, AppStatus.ok, AppStatus.okSoft),
   'return': (Icons.flight_land_rounded, AppStatus.info, AppStatus.infoSoft),

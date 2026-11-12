@@ -2566,6 +2566,7 @@ export type NotificationEvent =
   | "booking_new"
   | "booking_change"
   | "inbox"
+  | "whatsapp"
   | "extra"
   | "arrival"
   | "return"
@@ -2740,4 +2741,59 @@ export interface BookingSurcharges {
   suggestion: { kind: "late"; lateMinutes: number; amountCents: number; scheduledAt: string; arrivedAt: string } | null;
   totalCents: number;
   canEdit: boolean;
+/** 12/11/2026 (« Messages WhatsApp », direction A): what travellers write to Plazo's WhatsApp number. */
+export type WhatsappInboxView = "unread" | "all" | "handled" | "unknown";
+
+export interface WhatsappConversation {
+  id: string;
+  phone: string;
+  name: string | null;
+  profileName: string | null;
+  reservation: {
+    id: string;
+    reference: string;
+    externalReference: string | null;
+    channelDetail: string | null;
+    customerName: string;
+    status: ReservationStatus;
+    arrivalAt: string;
+    returnAt: string;
+  } | null;
+  lastMessageAt: string;
+  lastInboundAt: string | null;
+  unread: number;
+  handledAt: string | null;
+  preview: { direction: "in" | "out"; text: string } | null;
+  replyUntil: string | null;
+  unknown: boolean;
+}
+
+export interface WhatsappInboxList {
+  data: WhatsappConversation[];
+  counts: { unread: number; all: number; handled: number; unknown: number | null };
+}
+
+export interface WhatsappInboxMessage {
+  id: string;
+  direction: "in" | "out";
+  type: string;
+  text: string | null;
+  hasMedia: boolean;
+  mediaMime: string | null;
+  status: string | null;
+  at: string;
+  by: { firstName: string } | null;
+}
+
+export interface WhatsappConversationDetail {
+  conversation: WhatsappConversation;
+  messages: WhatsappInboxMessage[];
+  /** What Plazo sent this booking by WhatsApp (confirmation, day before…), shown between the messages. */
+  sent: { id: string; kind: string; status: string; at: string }[];
+}
+
+export interface ReservationConversation {
+  id: string;
+  unread: number;
+  messages: { id: string; direction: "in" | "out"; text: string; status: string | null; at: string; by: { firstName: string } | null }[];
 }

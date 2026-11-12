@@ -31,7 +31,9 @@ export type PushAudience =
   // 27/10/2026: the valets (role or today's post) and the managers, for « Course à prendre ».
   | 'valets'
   // 02/11/2026: a mail waiting in the inbox (« Mail à vérifier »), whoever asked for it.
-  | 'inbox';
+  | 'inbox'
+  // 12/11/2026: a traveller wrote to Plazo's WhatsApp number.
+  | 'whatsapp';
 
 /** 02/11/2026: the event of « Mes notifications » each audience belongs to (the bell and the browsers follow it). */
 const AUDIENCE_EVENT: Record<PushAudience, NotificationEvent> = {
@@ -45,6 +47,7 @@ const AUDIENCE_EVENT: Record<PushAudience, NotificationEvent> = {
   team: 'team',
   valets: 'valet',
   inbox: 'inbox',
+  whatsapp: 'whatsapp',
 };
 
 /** The older audience rule of the phones, on a member already read (`wantsAudience` in SQL). */
@@ -69,6 +72,7 @@ function inAudience(s: NotifiedRow, audience: PushAudience): boolean {
     case 'valets':
       return s.role === 'valet' || s.role === 'manager' || s.post === 'valet';
     case 'inbox':
+    case 'whatsapp':
       return true;
   }
 }
@@ -113,7 +117,7 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
                 ? { role: 'manager' }
                 : audience === 'valets'
                   ? { OR: [{ role: { in: ['valet', 'manager'] } }, { post: 'valet' }] }
-                  : audience === 'inbox'
+                  : audience === 'inbox' || audience === 'whatsapp'
                     ? { id: '__none__' }
                     : { notifyPlatform: true };
 
