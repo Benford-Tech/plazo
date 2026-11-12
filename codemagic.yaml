@@ -360,7 +360,10 @@ workflows:
         # App Store (21/10/2026): every IPA is also submitted for App Review as version $VERSION_NAME, with the notes
         # of release-notes/<app>.txt as « What's new » (fr-FR), and released by itself once approved.
         # APP_STORE_SUBMIT "false" = TestFlight only; APP_STORE_RELEASE_TYPE MANUAL = release by hand after approval.
-        APP_STORE_SUBMIT: "true"
+        # 12/11/2026 (« publie sur l'App Store sans soumettre, sinon ça va retarder la validation ») : builds go to
+        # TestFlight only, so a new build never cancels a submission Apple is reviewing; submit with the
+        # mobile-submit-app-store workflow when ready.
+        APP_STORE_SUBMIT: "false"
         APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
     # No cache (21/10/2026): on build 6ace256e (13/10/2026) saving it took 8 of the 42 minutes (« Cleaning up ») and the
     # restore found nothing; the Gradle and pub downloads it would spare cost less than that.
