@@ -5834,6 +5834,8 @@ export const bookingSurchargesFr = {
     not_offered: "Ce supplément n'est plus proposé : rechargez la page.",
     reservation_closed: "Réservation annulée ou non venue : pas de supplément.",
   } as Record<string, string>,
+};
+
 /** 12/11/2026 (« Messages WhatsApp », direction A of https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko). */
 export const whatsappInboxFr = {
   title: "Messages WhatsApp",

@@ -2741,6 +2741,8 @@ export interface BookingSurcharges {
   suggestion: { kind: "late"; lateMinutes: number; amountCents: number; scheduledAt: string; arrivedAt: string } | null;
   totalCents: number;
   canEdit: boolean;
+}
+
 /** 12/11/2026 (« Messages WhatsApp », direction A): what travellers write to Plazo's WhatsApp number. */
 export type WhatsappInboxView = "unread" | "all" | "handled" | "unknown";
 
