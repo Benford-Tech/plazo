@@ -22,6 +22,7 @@ function registerQuery(req: Request) {
     to: text(req.query.to),
     search: text(req.query.q),
     reserved: req.query.reserved === '1' || req.query.reserved === 'true',
+    archived: req.query.archived === '1' || req.query.archived === 'true',
     page: req.query.page ? Number(req.query.page) || 1 : 1,
   };
 }
@@ -62,6 +63,21 @@ export class ContractTemplateController {
   /** GET /internal/contracts */
   public register = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.templates.register(req.staff.operatorId, registerQuery(req)));
+  });
+
+  /** POST /internal/contracts/:contractId/archive */
+  public archive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.templates.archive(req.staff, param(req, 'contractId')));
+  });
+
+  /** POST /internal/contracts/:contractId/unarchive */
+  public unarchive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.templates.unarchive(req.staff, param(req, 'contractId')));
+  });
+
+  /** POST /internal/contracts/archive-before { before: 'YYYY-MM-DD' } */
+  public archiveBefore = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.templates.archiveBefore(req.staff, req.body?.before));
   });
 
   /** GET /internal/contracts/export */

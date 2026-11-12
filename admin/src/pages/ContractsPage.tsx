@@ -1,8 +1,10 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Plate } from "@/components/Plate";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { adminApi } from "@/lib/api";
 import { contractDateTime, pdfName, savePdf } from "@/lib/contract";
 import { contractTemplateFr, describeError } from "@/lib/fr";
@@ -15,22 +17,156 @@ const stay = (local: string) =>
   `${local.slice(8, 10)}/${local.slice(5, 7)} ${local.slice(11, 16)}`;
 const pill =
   "inline-flex min-h-8 items-center gap-1.5 rounded-full border bg-white px-2.5 text-[13px] font-medium hover:bg-panel-2";
+const active =
+  "border-lime-deep bg-primary text-primary-foreground hover:bg-primary";
 const ghost =
   "min-h-8 whitespace-nowrap rounded-full border border-lime-deep px-2.5 text-[12px] font-semibold text-lime-deep hover:bg-accent disabled:opacity-50";
 
-/** « Contrats » (26/10/2026, R-A): every signed contract with its PDF and its proof, searchable, exportable. */
+/** "2026-11-05" → "05/11/2026". */
+const frenchDay = (day: string) =>
+  `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
+
+type View = "signed" | "reserved" | "archived";
+
+/** The row's actions: buttons on a wide screen, behind « ⋯ » on a phone (12/11/2026, section 3 des maquettes). */
+function RowActions({
+  row,
+  archived,
+  onFile,
+  onArchive,
+  busy,
+}: {
+  row: SignedContractRow;
+  archived: boolean;
+  onFile: (kind: SignedContractFileKind) => void;
+  onArchive: () => void;
+  busy: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (event: MouseEvent) => {
+      if (!box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  const buttons = (inMenu: boolean) => {
+    const cls = inMenu
+      ? "block w-full rounded-md px-3 py-2 text-left text-[13px] hover:bg-panel-2 disabled:opacity-50"
+      : ghost;
+    const act = (fn: () => void) => () => {
+      setOpen(false);
+      fn();
+    };
+    return (
+      <>
+        {row.files.signed ? (
+          <button
+            type="button"
+            role={inMenu ? "menuitem" : undefined}
+            className={cls}
+            onClick={act(() => onFile("signed"))}
+          >
+            {t.signedPdf}
+          </button>
+        ) : (
+          !inMenu && (
+            <span className="text-[12px] text-muted-foreground">
+              {t.noFiles}
+            </span>
+          )
+        )}
+        {row.files.proof && (
+          <button
+            type="button"
+            role={inMenu ? "menuitem" : undefined}
+            className={cls}
+            onClick={act(() => onFile("proof"))}
+          >
+            {t.proof}
+          </button>
+        )}
+        {row.files.template && (
+          <button
+            type="button"
+            role={inMenu ? "menuitem" : undefined}
+            className={inMenu ? cls : "text-[12px] text-lime-deep underline"}
+            onClick={act(() => onFile("template"))}
+          >
+            {t.templatePdf}
+          </button>
+        )}
+        <button
+          type="button"
+          role={inMenu ? "menuitem" : undefined}
+          className={cls}
+          onClick={act(onArchive)}
+          disabled={busy}
+        >
+          {archived ? t.unarchive : t.archive}
+        </button>
+      </>
+    );
+  };
+  return (
+    <>
+      <div
+        className="hidden flex-wrap items-center gap-1.5 sm:flex"
+        data-testid="row-actions"
+      >
+        {buttons(false)}
+      </div>
+      <div ref={box} className="relative sm:hidden">
+        <button
+          type="button"
+          aria-label={t.more}
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-panel-line hover:bg-panel-2"
+        >
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+        </button>
+        {open && (
+          <div
+            role="menu"
+            className="absolute right-0 z-20 mt-1 w-48 rounded-lg border border-panel-line bg-white p-1 shadow-lg"
+          >
+            {buttons(true)}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+/** « Contrats » (26/10/2026, R-A): every signed contract with its PDF and its proof, searchable, exportable, archivable. */
 export default function ContractsPage() {
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [applied, setApplied] = useState({ from: "", to: "" });
-  const [reserved, setReserved] = useState(false);
+  const [view, setView] = useState<View>("signed");
   const [page, setPage] = useState(1);
+  const [before, setBefore] = useState<string | null>(null);
+  const confirm = useConfirm();
+  const queryClient = useQueryClient();
+  const reserved = view === "reserved";
+  const archived = view === "archived";
   const query = {
     q,
     from: applied.from || undefined,
     to: applied.to || undefined,
     reserved,
+    archived,
     page,
   };
   const list = useQuery({
@@ -56,6 +192,38 @@ export default function ContractsPage() {
     },
     onError: (err: Error) => toast.error(describeError(err)),
   });
+  const toggleArchive = useMutation({
+    mutationFn: (row: SignedContractRow) =>
+      row.archivedAt
+        ? adminApi.unarchiveContract(row.id)
+        : adminApi.archiveContract(row.id),
+    onSuccess: (res) => {
+      toast.success(res.archivedAt ? t.archivedToast : t.unarchivedToast);
+      void queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  const archiveBefore = useMutation({
+    mutationFn: (day: string) => adminApi.archiveContractsBefore(day),
+    onSuccess: (res) => {
+      toast.success(t.archiveBeforeDone(res.archived));
+      setBefore(null);
+      void queryClient.invalidateQueries({ queryKey: ["contracts"] });
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  const submitBefore = async () => {
+    if (!before) return;
+    const ok = await confirm(t.archiveBeforeConfirm(frenchDay(before)), {
+      title: t.archiveBeforeTitle,
+      confirmLabel: t.archiveBeforeSubmit,
+    });
+    if (ok) archiveBefore.mutate(before);
+  };
+  const choose = (next: View) => {
+    setView(next);
+    setPage(1);
+  };
   const exportCsv = useMutation({
     mutationFn: async () => {
       const { blob, filename } = await adminApi.exportSignedContracts({
@@ -79,36 +247,36 @@ export default function ContractsPage() {
         <div className="flex flex-wrap gap-1.5" data-testid="contract-filters">
           <button
             type="button"
-            aria-pressed={!reserved}
-            onClick={() => {
-              setReserved(false);
-              setPage(1);
-            }}
+            aria-pressed={view === "signed"}
+            onClick={() => choose("signed")}
             className={cn(
               pill,
-              !reserved
-                ? "border-lime-deep bg-primary text-primary-foreground hover:bg-primary"
-                : "border-panel-line",
+              view === "signed" ? active : "border-panel-line",
             )}
           >
-            {t.signed(data?.total ?? 0)}
+            {t.signed(data?.signedCount ?? 0)}
           </button>
-          {(data?.reservedCount ?? 0) > 0 && (
+          {((data?.reservedCount ?? 0) > 0 || reserved) && (
             <button
               type="button"
               aria-pressed={reserved}
-              onClick={() => {
-                setReserved(true);
-                setPage(1);
-              }}
+              onClick={() => choose("reserved")}
               className={cn(
                 pill,
-                reserved
-                  ? "border-lime-deep bg-primary text-primary-foreground hover:bg-primary"
-                  : "border-warn text-warn-text",
+                reserved ? active : "border-warn text-warn-text",
               )}
             >
               {t.reserved(data?.reservedCount ?? 0)}
+            </button>
+          )}
+          {((data?.archivedCount ?? 0) > 0 || archived) && (
+            <button
+              type="button"
+              aria-pressed={archived}
+              onClick={() => choose("archived")}
+              className={cn(pill, archived ? active : "border-panel-line")}
+            >
+              {t.archived(data?.archivedCount ?? 0)}
             </button>
           )}
         </div>
@@ -161,12 +329,56 @@ export default function ContractsPage() {
         >
           {t.export}
         </button>
+        {before === null ? (
+          <button type="button" className={ghost} onClick={() => setBefore("")}>
+            {t.archiveBefore}
+          </button>
+        ) : (
+          <form
+            className="flex flex-wrap items-center gap-2 text-sm"
+            data-testid="archive-before"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitBefore();
+            }}
+          >
+            <label className="flex items-center gap-1">
+              {t.archiveBeforeLabel}
+              <input
+                type="date"
+                required
+                value={before}
+                onChange={(e) => setBefore(e.target.value)}
+                className="h-8 rounded-full border border-panel-line bg-white px-2 text-[13px]"
+              />
+            </label>
+            <button
+              type="submit"
+              className={ghost}
+              disabled={!before || archiveBefore.isPending}
+            >
+              {t.archiveBeforeSubmit}
+            </button>
+            <button
+              type="button"
+              className="text-[13px] text-muted-foreground underline"
+              onClick={() => setBefore(null)}
+            >
+              {t.archiveBeforeCancel}
+            </button>
+          </form>
+        )}
       </div>
+      {archived && (
+        <p className="text-[13px] text-muted-foreground">{t.archivedHint}</p>
+      )}
       {list.isError && (
         <p className="text-sm text-destructive">{describeError(list.error)}</p>
       )}
       {data && data.data.length === 0 && (
-        <p className="text-[13px] text-muted-foreground">{t.empty}</p>
+        <p className="text-[13px] text-muted-foreground">
+          {archived ? t.archivedEmpty : t.empty}
+        </p>
       )}
       {data && data.data.length > 0 && (
         <div className="overflow-hidden rounded-xl border border-panel-line bg-white">
@@ -187,7 +399,7 @@ export default function ContractsPage() {
               <tbody>
                 {data.data.map((row) => (
                   <tr
-                    key={row.reservationId}
+                    key={row.id}
                     data-testid="contract-row"
                     className="border-t border-panel-line align-middle hover:bg-panel-2/60"
                   >
@@ -229,45 +441,13 @@ export default function ContractsPage() {
                       {row.proofSha256.slice(0, 8)}…{row.proofSha256.slice(-4)}
                     </td>
                     <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-1.5">
-                        {row.files.signed ? (
-                          <button
-                            type="button"
-                            className={ghost}
-                            onClick={() =>
-                              download.mutate({ row, kind: "signed" })
-                            }
-                          >
-                            {t.signedPdf}
-                          </button>
-                        ) : (
-                          <span className="text-[12px] text-muted-foreground">
-                            {t.noFiles}
-                          </span>
-                        )}
-                        {row.files.proof && (
-                          <button
-                            type="button"
-                            className={ghost}
-                            onClick={() =>
-                              download.mutate({ row, kind: "proof" })
-                            }
-                          >
-                            {t.proof}
-                          </button>
-                        )}
-                        {row.files.template && (
-                          <button
-                            type="button"
-                            className="text-[12px] text-lime-deep underline"
-                            onClick={() =>
-                              download.mutate({ row, kind: "template" })
-                            }
-                          >
-                            {t.templatePdf}
-                          </button>
-                        )}
-                      </div>
+                      <RowActions
+                        row={row}
+                        archived={!!row.archivedAt}
+                        busy={toggleArchive.isPending}
+                        onFile={(kind) => download.mutate({ row, kind })}
+                        onArchive={() => toggleArchive.mutate(row)}
+                      />
                     </td>
                   </tr>
                 ))}

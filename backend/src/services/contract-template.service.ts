@@ -7,7 +7,7 @@ import { bookingFieldFacts, ContractField, fieldsOf, prefilledPdf, SAMPLE_FACTS,
 import { DEFAULT_TEMPLATE_TITLE, signedFileNames } from '@/domain/contract-template';
 import { checkPdf, cleanFileName, sha256Hex } from '@/domain/partner-contract';
 import { plateKey } from '@/domain/reservation';
-import { localDateTime } from '@/domain/time';
+import { dayBounds, localDateTime } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -46,6 +46,8 @@ export interface ContractFile extends StoredPhoto {
 
 /** A line of the register « Contrats » (26/10/2026, R-A). */
 export interface SignedContractRow {
+  /** The contract's own id (archive, unarchive). */
+  id: string;
   reservationId: string;
   reference: string;
   customerName: string;
@@ -64,6 +66,17 @@ export interface SignedContractRow {
   files: { template: boolean; signed: boolean; proof: boolean };
   /** The traveller made a reserve on the return report. */
   reserved: boolean;
+  /** Put away from the register (12/11/2026); nothing is erased. */
+  archivedAt: string | null;
+}
+
+export interface RegisterQuery {
+  from?: string;
+  to?: string;
+  search?: string;
+  reserved?: boolean;
+  /** The archived contracts only (12/11/2026); by default the register leaves them out. */
+  archived?: boolean;
 }
 
 export const REGISTER_PAGE = 50;
@@ -314,10 +327,7 @@ export class ContractTemplateService {
     return this.fileOf({ id: booking.id }, kind);
   }
 
-  private registerWhere(
-    operatorId: string,
-    q: { from?: string; to?: string; search?: string; reserved?: boolean },
-  ): Prisma.ReservationContractWhereInput {
+  private registerWhere(operatorId: string, q: RegisterQuery): Prisma.ReservationContractWhereInput {
     const search = q.search?.trim();
     const signedAt: Prisma.DateTimeFilter = {};
     if (q.from && /^\d{4}-\d{2}-\d{2}$/.test(q.from)) signedAt.gte = new Date(`${q.from}T00:00:00Z`);
@@ -337,6 +347,7 @@ export class ContractTemplateService {
         ...(q.reserved ? { inspections: { some: { decision: 'reserved' } } } : {}),
       },
       ...(Object.keys(signedAt).length ? { signedAt } : {}),
+      archivedAt: q.archived ? { not: null } : null,
     };
   }
 
@@ -368,6 +379,7 @@ export class ContractTemplateService {
     return rows.map(c => {
       const tz = c.reservation.parking.timezone;
       return {
+        id: c.id,
         reservationId: c.reservation.id,
         reference: c.reservation.reference,
         customerName: c.reservation.customerName,
@@ -384,24 +396,127 @@ export class ContractTemplateService {
         signedSha256: c.signedSha256,
         files: { template: !!c.templateId, signed: !!c.signedBlobKey, proof: !!c.proofBlobKey },
         reserved: c.reservation.inspections.length > 0,
+        archivedAt: c.archivedAt?.toISOString() ?? null,
       };
     });
   }
 
-  /** GET /internal/contracts?from=&to=&q=&reserved=1&page= : the register, the latest signature first. */
-  public async register(operatorId: string, q: { from?: string; to?: string; search?: string; reserved?: boolean; page?: number }) {
+  /**
+   * GET /internal/contracts?from=&to=&q=&reserved=1&archived=1&page= : the register, the latest signature first. The
+   * counts of the pills (« Signés · Avec réserve · Archivés ») follow the dates and the search, not the pill chosen.
+   */
+  public async register(operatorId: string, q: RegisterQuery & { page?: number }) {
     const where = this.registerWhere(operatorId, q);
     const page = Math.max(1, Math.floor(q.page ?? 1));
-    const [total, reservedCount, rows] = await Promise.all([
+    const base = { from: q.from, to: q.to, search: q.search };
+    const [total, signedCount, reservedCount, archivedCount, rows] = await Promise.all([
       prisma.reservationContract.count({ where }),
-      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...q, reserved: true }) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, base) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, reserved: true }) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, archived: true }) }),
       this.rowsOf(where, (page - 1) * REGISTER_PAGE, REGISTER_PAGE),
     ]);
-    return { data: rows, total, reservedCount, page, totalPages: Math.max(1, Math.ceil(total / REGISTER_PAGE)) };
+    return {
+      data: rows,
+      total,
+      signedCount,
+      reservedCount,
+      archivedCount,
+      page,
+      totalPages: Math.max(1, Math.ceil(total / REGISTER_PAGE)),
+    };
+  }
+
+  // ---- Archiving (12/11/2026, « Archiver un contrat signé ») ---------------------------------------------------------
+
+  private async archivable(operatorId: string, contractId: string) {
+    const contract = await prisma.reservationContract.findFirst({
+      where: { id: contractId, reservation: { operatorId } },
+      select: { id: true, reservationId: true, archivedAt: true, proofSha256: true },
+    });
+    if (!contract) throw notFound();
+    // The row is written at the signature; one without its proof was never signed.
+    if (!contract.proofSha256) throw new HttpException(httpStatus.CONFLICT, 'This contract is not signed', 'not_signed');
+    return contract;
+  }
+
+  private async setArchived(actor: AuthenticatedStaff, contractId: string, archived: boolean) {
+    const contract = await this.archivable(actor.operatorId, contractId);
+    if (!!contract.archivedAt !== archived) {
+      await prisma.$transaction(async tx => {
+        const done = await tx.reservationContract.updateMany({
+          where: { id: contract.id, archivedAt: archived ? null : { not: null } },
+          data: archived ? { archivedAt: new Date(), archivedById: actor.id } : { archivedAt: null, archivedById: null },
+        });
+        if (!done.count) return;
+        await this.audit.record(
+          actor,
+          {
+            action: archived ? 'contract.archived' : 'contract.unarchived',
+            entityType: 'reservation',
+            entityId: contract.reservationId,
+            details: { contractId: contract.id },
+          },
+          tx,
+        );
+      });
+    }
+    const row = await prisma.reservationContract.findUniqueOrThrow({
+      where: { id: contract.id },
+      select: { id: true, reservationId: true, archivedAt: true },
+    });
+    return { id: row.id, reservationId: row.reservationId, archivedAt: row.archivedAt?.toISOString() ?? null };
+  }
+
+  /** POST /internal/contracts/:contractId/archive: idempotent; the files and their retention stay as they were. */
+  public async archive(actor: AuthenticatedStaff, contractId: string) {
+    return this.setArchived(actor, contractId, true);
+  }
+
+  /** POST /internal/contracts/:contractId/unarchive: back in the register; idempotent. */
+  public async unarchive(actor: AuthenticatedStaff, contractId: string) {
+    return this.setArchived(actor, contractId, false);
+  }
+
+  /**
+   * POST /internal/contracts/archive-before { before: 'YYYY-MM-DD' }: every signed contract not archived yet whose stay
+   * ended before that day (the return, in the local time of its parking).
+   */
+  public async archiveBefore(actor: AuthenticatedStaff, raw: unknown): Promise<{ archived: number }> {
+    const before = typeof raw === 'string' ? raw.trim() : '';
+    if (!before) throw new ValidationException({ before: 'required' });
+    const day = new Date(`${before}T00:00:00Z`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(before) || Number.isNaN(day.getTime()) || day.toISOString().slice(0, 10) !== before)
+      throw new ValidationException({ before: 'invalid' });
+    const parkings = await prisma.parking.findMany({ where: { operatorId: actor.operatorId }, select: { id: true, timezone: true } });
+    return prisma.$transaction(async tx => {
+      const now = new Date();
+      let archived = 0;
+      for (const parking of parkings) {
+        const { start } = dayBounds(before, parking.timezone);
+        const rows = await tx.reservationContract.findMany({
+          where: { archivedAt: null, reservation: { operatorId: actor.operatorId, parkingId: parking.id, returnAt: { lt: start } } },
+          select: { id: true, reservationId: true },
+        });
+        if (!rows.length) continue;
+        const done = await tx.reservationContract.updateMany({
+          where: { id: { in: rows.map(r => r.id) }, archivedAt: null },
+          data: { archivedAt: now, archivedById: actor.id },
+        });
+        archived += done.count;
+        for (const row of rows)
+          await this.audit.record(
+            actor,
+            { action: 'contract.archived', entityType: 'reservation', entityId: row.reservationId, details: { contractId: row.id, before } },
+            tx,
+          );
+      }
+      return { archived };
+    });
   }
 
   /** GET /internal/contracts/export: CSV (« ; », UTF-8 with BOM), 5 000 lines at most. */
-  public async exportCsv(operatorId: string, q: { from?: string; to?: string; search?: string; reserved?: boolean }): Promise<string> {
+  public async exportCsv(operatorId: string, q: RegisterQuery): Promise<string> {
     const rows = await this.rowsOf(this.registerWhere(operatorId, q), 0, EXPORT_MAX);
     const cell = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const header = [

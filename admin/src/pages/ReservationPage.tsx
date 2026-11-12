@@ -10,7 +10,7 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
-import { BookingContractCard } from "@/components/reservations/BookingContractCard";
+import { BookingPaperworkCard } from "@/components/reservations/BookingPaperworkCard";
 import { BookingInvoiceCard } from "@/components/reservations/BookingInvoiceCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { TravellerMessages } from "@/components/reservations/TravellerMessages";
@@ -436,7 +436,7 @@ export default function ReservationPage() {
             reservationId={r.id}
             mayAct={can(user?.role, "reservations:status")}
           />
-          <BookingContractCard reservationId={r.id} status={r.status} />
+          <BookingPaperworkCard reservationId={r.id} status={r.status} />
           {/* « Facture » (06/11/2026, direction A): the invoice in the parking's name, for those who manage bookings. */}
           {can(user?.role, "reservations:manage") && (
             <BookingInvoiceCard

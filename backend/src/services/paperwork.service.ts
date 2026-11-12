@@ -202,7 +202,7 @@ export class PaperworkService {
   }
 
   /** The contract is signed at the counter, on the parking's phone (20/10/2026): the traveller app only shows it. */
-  private contractView(r: PaperworkRecord, viewer: Viewer, current: OperatorContractTemplate | null) {
+  private contractView(r: PaperworkRecord, viewer: Viewer, current: OperatorContractTemplate | null, staffNames: Map<string, string>) {
     const c = r.contract;
     const signable = !c && CONTRACT_SIGNABLE.includes(r.status);
     // The PDF the traveller reads: the one signed, or the one in force until the signature.
@@ -226,6 +226,8 @@ export class PaperworkService {
             method: c.method,
             device: c.device,
             phoneMasked: c.phoneMasked,
+            // The staff member whose phone was used (12/11/2026, the web's « Contrat et état des lieux »); staff only.
+            witnessName: viewer === 'staff' && c.witnessedById ? (staffNames.get(c.witnessedById) ?? null) : null,
             proofSha256: c.proofSha256,
             signedSha256: c.signedSha256,
           }
@@ -278,7 +280,7 @@ export class PaperworkService {
   }
 
   private async view(r: PaperworkRecord, viewer: Viewer) {
-    const ids = r.inspections.map(i => i.performedById).filter((x): x is string => !!x);
+    const ids = [...r.inspections.map(i => i.performedById), r.contract?.witnessedById].filter((x): x is string => !!x);
     const staff = ids.length ? await prisma.staff.findMany({ where: { id: { in: ids } }, select: { id: true, firstName: true } }) : [];
     const performers = new Map(staff.map(s => [s.id, s.firstName]));
     const dropoff = reportOf(r, 'dropoff');
@@ -300,7 +302,7 @@ export class PaperworkService {
       reservationId: traveller ? undefined : r.id,
       status: r.status,
       photosAvailable: this.storage.available(),
-      contract: this.contractView(r, viewer, current),
+      contract: this.contractView(r, viewer, current, performers),
       dropoff: this.inspectionView(r, traveller && !dropoff?.completedAt ? undefined : dropoff, performers),
       return: this.inspectionView(r, traveller && !ret?.completedAt ? undefined : ret, performers),
       comparison,

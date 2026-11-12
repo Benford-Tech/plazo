@@ -5054,6 +5054,28 @@ export const contractTemplateFr = {
       "Chaque contrat tel que signé, avec sa preuve. Les contrats sont gardés avec la réservation, puis effacés à son anonymisation.",
     signed: (n: number) => `Signés · ${n}`,
     reserved: (n: number) => `Avec réserve · ${n}`,
+    archived: (n: number) => `Archivés · ${n}`,
+    archive: "Archiver",
+    unarchive: "Désarchiver",
+    archivedToast: "Contrat archivé : il reste gardé, dans « Archivés ».",
+    unarchivedToast: "Contrat remis avec les contrats signés.",
+    archivedEmpty: "Aucun contrat archivé.",
+    archivedHint:
+      "Les contrats archivés sont gardés tels quels, avec leur PDF signé et leur preuve, aussi longtemps qu'avant.",
+    archiveBefore: "Archiver les contrats d'avant le…",
+    archiveBeforeLabel: "Séjours terminés avant le",
+    archiveBeforeSubmit: "Archiver",
+    archiveBeforeCancel: "Annuler",
+    archiveBeforeTitle: "Archiver les contrats",
+    archiveBeforeConfirm: (date: string) =>
+      `Archiver tous les contrats signés des séjours terminés avant le ${date} ? Rien n'est effacé : vous les retrouvez dans « Archivés ».`,
+    archiveBeforeDone: (n: number) =>
+      n === 0
+        ? "Aucun contrat à archiver avant cette date."
+        : n === 1
+          ? "1 contrat archivé."
+          : `${n} contrats archivés.`,
+    more: "Plus d'actions",
     searchAria: "Trouver un contrat",
     searchPlaceholder: "Plaque, nom, référence…",
     from: "Du",
@@ -5122,6 +5144,73 @@ export const contractTemplateFr = {
         : `Le client signera le modèle ${PRODUCT.name}.`,
     proof: (sha: string) => `Empreinte ${sha.slice(0, 16)}…`,
   },
+};
+
+/** « Contrat et état des lieux » of the booking page (12/11/2026, section 2 des maquettes): read-only on the web. */
+export const paperworkFr = {
+  title: "Contrat et état des lieux",
+  contractSigned: (date: string) => `Contrat signé · ${date}`,
+  contractUnsigned: "Contrat pas encore signé",
+  signedBy: "Signé par",
+  how: {
+    sms_code: (phone: string | null) =>
+      phone ? `code par SMS au ${phone}` : "code par SMS",
+    handwritten: () => "signature à la main",
+    booking_link: () => "lien de réservation",
+  } as Record<string, (phone: string | null) => string>,
+  witness: (name: string) => `témoin ${name}`,
+  version: (v: string, template: { version: number } | null) =>
+    template ? `Contrat du parking v${template.version}` : `Modèle ${PRODUCT.name} ${v}`,
+  signedPdf: "PDF signé",
+  proof: "Preuve de signature",
+  tabsAria: "États des lieux",
+  tabDropoff: (date: string | null) => (date ? `Dépôt · ${date}` : "Dépôt"),
+  tabReturn: (date: string | null) => (date ? `Retour · ${date}` : "Retour"),
+  tabTraveller: (n: number) => `Photos du client · ${n}`,
+  notDone: "Pas encore fait.",
+  inProgress: "En cours dans Plazo Pro",
+  by: (name: string) => `par ${name}`,
+  slots: {
+    front: "Avant",
+    right: "Droite",
+    back: "Arrière",
+    left: "Gauche",
+    dashboard: "Compteur",
+    interior: "Intérieur",
+    damage: "Gros plan",
+  } as Record<string, string>,
+  noPhoto: "Pas de photo",
+  photosUnavailable: "Photos indisponibles",
+  photosErased: "Photos effacées (durée de conservation écoulée).",
+  photoError: "Photo illisible",
+  damages: "Dégâts",
+  noDamage: "Aucun dégât noté",
+  closeUp: "gros plan",
+  outline: "Silhouette de la voiture avec les dégâts numérotés",
+  mileage: "Kilométrage",
+  km: (n: number) => `${n.toLocaleString("fr-FR")} km`,
+  fuel: "Carburant",
+  fuelValue: (q: number) => (q === 0 ? "Vide" : q === 4 ? "Plein" : `${q}/4`),
+  notes: "Remarques",
+  client: "Client",
+  decision: {
+    pending: "En attente de sa réponse",
+    accepted: "Conforme",
+    accepted_by_default: "Accepté par défaut (parti en navette sans répondre)",
+    reserved: "Réserve",
+  } as Record<string, string>,
+  decisionHow: {
+    sms_code: "code par SMS",
+    handwritten: "signé à la main",
+    booking_link: "dans l'application",
+  } as Record<string, string>,
+  travellerAt: { dropoff: "Au dépôt", return: "Au retour" } as Record<string, string>,
+  travellerSent: (date: string) => `envoyées le ${date}`,
+  lightbox: "Photo en grand",
+  close: "Fermer",
+  open: (slot: string) => `Agrandir la photo ${slot}`,
+  compareDropoff: "Au dépôt",
+  compareReturn: "Au retour",
 };
 
 // Services for the car (21/10/2026): the parking's offer (Parking › Réglages) and the orders on a booking.
@@ -5384,6 +5473,8 @@ export const historyFr = {
     "extra.paid": "a payé un service",
     "contract.code_sent": "a envoyé le code de signature",
     "contract.signed": "a signé le contrat",
+    "contract.archived": "a archivé le contrat",
+    "contract.unarchived": "a désarchivé le contrat",
     "inspection.started": "a commencé l'état des lieux",
     "inspection.completed": "a terminé l'état des lieux",
     "inspection.answered": "a répondu à l'état des lieux",
