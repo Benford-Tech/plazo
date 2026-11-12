@@ -21,26 +21,32 @@ import { MOVEMENT_CARD, MOVEMENT_DOT, MOVEMENT_TEXT } from "@/lib/movement";
 import { ValetPill } from "@/lib/valet-icon";
 import { lateOf, nextOf, splitAtNow, travelOf, untilLabel } from "@/lib/planning-now";
 
-function NightCell({ night }: { night: NightLoad }) {
+function NightCell({ night, selected, onPick }: { night: NightLoad; selected: boolean; onPick: (date: string) => void }) {
   const t = fr.planning;
   const almostFull = !night.overbooked && night.free <= Math.ceil(night.bookable * 0.05);
+  const state = night.overbooked ? t.overbookedBy(night.count - night.bookable) : almostFull ? t.almostFull : t.free(night.free);
+  // 12/11/2026: compact and clickable (« prend trop de place », « rend les dates cliquables ») : a click opens that day.
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onPick(night.date)}
+      aria-pressed={selected}
+      aria-label={`${t.openDay(shortDay(night.date))} · ${night.count} / ${night.bookable} · ${state}`}
+      title={state}
+      data-testid={`night-${night.date}`}
       className={cn(
-        "flex min-w-[124px] shrink-0 flex-col gap-0.5 whitespace-nowrap px-3.5 py-3",
-        night.overbooked ? "bg-primary text-primary-foreground" : "bg-card",
-        almostFull && "shadow-[inset_0_-4px_0_hsl(var(--primary))]",
+        "flex shrink-0 flex-col items-start whitespace-nowrap rounded-lg border px-2.5 py-1 text-left leading-tight hover:border-lime-deep",
+        night.overbooked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card",
+        almostFull && "shadow-[inset_0_-3px_0_hsl(var(--primary))]",
+        selected && "ring-2 ring-lime-deep",
       )}
     >
-      <span className="text-[15px] font-semibold uppercase">{shortDay(night.date)}</span>
-      <span className="tabular font-mono text-2xl font-bold">
+      <span className="text-[11px] font-semibold uppercase">{shortDay(night.date)}</span>
+      <span className="tabular font-mono text-sm font-bold">
         {night.count}
-        <span className="text-[15px] font-medium"> / {night.bookable}</span>
+        <span className="text-[11px] font-medium"> / {night.bookable}</span>
       </span>
-      <span className="text-sm font-semibold">
-        {night.overbooked ? t.overbookedBy(night.count - night.bookable).toUpperCase() : almostFull ? t.almostFull : t.free(night.free)}
-      </span>
-    </div>
+    </button>
   );
 }
 
@@ -550,15 +556,32 @@ export default function PlanningPage() {
       {data?.smsWarning && <SmsWarning pending={data.smsWarning.pending} manager={can(user?.role, "parking:manage")} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <button aria-label={t.previousDay} onClick={() => go(addDays(date, -1))} className="flex h-11 w-11 items-center justify-center border border-border hover:bg-accent">
+          <button aria-label={t.previousDay} onClick={() => go(addDays(date, -1))} className="flex h-9 w-9 items-center justify-center rounded-md border border-border hover:bg-accent">
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-3xl font-bold uppercase tracking-wide">{longDate(date)}</h1>
-          <button aria-label={t.nextDay} onClick={() => go(addDays(date, 1))} className="flex h-11 w-11 items-center justify-center border border-border hover:bg-accent">
+          <label className="relative cursor-pointer">
+            <h1 className="rounded-md px-1 text-xl font-bold uppercase tracking-wide hover:bg-accent">{longDate(date)}</h1>
+            <input
+              type="date"
+              aria-label={t.pickDay}
+              data-testid="planning-date-input"
+              value={date}
+              onChange={e => e.target.value && go(e.target.value)}
+              onClick={e => {
+                try {
+                  (e.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+                } catch {
+                  /* the native field stays usable */
+                }
+              }}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
+          <button aria-label={t.nextDay} onClick={() => go(addDays(date, 1))} className="flex h-9 w-9 items-center justify-center rounded-md border border-border hover:bg-accent">
             <ChevronRight className="h-5 w-5" />
           </button>
           {date !== todayLocal() && (
-            <button onClick={() => go(todayLocal())} className="h-11 border border-border px-3 font-semibold uppercase hover:bg-accent">
+            <button onClick={() => go(todayLocal())} className="h-9 rounded-md border border-border px-3 text-sm font-semibold uppercase hover:bg-accent">
               {t.today}
             </button>
           )}
@@ -567,7 +590,7 @@ export default function PlanningPage() {
           <div className="flex gap-2">
             <Link
               to={`/reservations/nouvelle${date !== todayLocal() ? `?date=${date}` : ""}`}
-              className="flex h-11 items-center bg-primary px-5 text-base font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110"
+              className="flex h-9 items-center rounded-md bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110"
             >
               {t.newReservation}
             </Link>
@@ -581,9 +604,9 @@ export default function PlanningPage() {
       {data && (
         <div className={cn(selectedRow && "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]")}>
           <div className="min-w-0 space-y-6">
-          <section aria-label={t.nightsTitle} className="flex gap-1 overflow-x-auto">
+          <section aria-label={t.nightsTitle} className="flex gap-1.5 overflow-x-auto">
             {data.nights.map(n => (
-              <NightCell key={n.date} night={n} />
+              <NightCell key={n.date} night={n} selected={n.date === date} onPick={go} />
             ))}
           </section>
           {isToday && <NextCards arrivals={arrivals} returns={returns} now={now} onOpen={onOpen} />}

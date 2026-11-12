@@ -340,3 +340,39 @@ describe("Planning : la réservation en direct à droite (12/11/2026)", () => {
     expect(window.localStorage.getItem("plazo:planning-next-collapsed")).toBeNull();
   });
 });
+
+describe("Planning : dates cliquables (12/11/2026)", () => {
+  it("ouvre le jour d'une nuit et le jour choisi dans le calendrier", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    api.getLiveArrivals.mockResolvedValue({ serverTime: "2026-10-03T05:40:00.000Z", signals: [] });
+    api.getPlanning.mockImplementation(async (date: string) => ({
+      date,
+      timezone: "Europe/Paris",
+      parking: { id: "p1", name: "Parking Démo LYS", bookableCapacity: 100 },
+      arrivals: [],
+      returns: [],
+      nights: [
+        { date: "2026-10-03", count: 42, bookable: 99, free: 57, overbooked: false },
+        { date: "2026-10-04", count: 38, bookable: 99, free: 61, overbooked: false },
+      ],
+      stats: { arrivals: 0, arrived: 0, returns: 0, returnsWithFlight: 0 },
+    }));
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={["/planning?date=2026-10-03"]}>
+          <PlanningPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await userEvent.click(await screen.findByTestId("night-2026-10-04"));
+    await waitFor(() => expect(api.getPlanning).toHaveBeenLastCalledWith("2026-10-04"));
+    const input = screen.getByTestId("planning-date-input") as HTMLInputElement;
+    expect(input.value).toBe("2026-10-04");
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+      setter.call(input, "2026-10-20");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await waitFor(() => expect(api.getPlanning).toHaveBeenLastCalledWith("2026-10-20"));
+  });
+});
