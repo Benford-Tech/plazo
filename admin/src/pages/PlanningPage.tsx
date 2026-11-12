@@ -1,16 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BusFront, ChevronDown, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Bell, BusFront, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MessageSquareWarning, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { StatusPill } from "@/components/StatusPill";
 import { MovementPill } from "@/components/MovementPill";
 import { Plate } from "@/components/Plate";
+import { LiveReservationPanel } from "@/components/planning/LiveReservationPanel";
 import { PlanningTabs } from "@/components/planning/PlanningTabs";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
-import { bannerText, eventKey, liveFirst, miniMapPoints, positionAge, withLiveSignals, withShuttleTrips } from "@/lib/arrivals";
+import { bannerText, eventKey, shortName, liveFirst, miniMapPoints, positionAge, withLiveSignals, withShuttleTrips } from "@/lib/arrivals";
 import { addDays, longDate, shortDay, timeOf, todayLocal } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import { can } from "@/lib/roles";
@@ -86,28 +87,40 @@ function Row({
   kind,
   clock,
   dimmed = false,
+  selected = false,
+  onOpen,
 }: {
   r: PlanningRow;
   kind: "arrival" | "return";
   clock: { fetchedAt: number; now: number };
   dimmed?: boolean;
+  /** 12/11/2026: the row shown in the live panel stays outlined. */
+  selected?: boolean;
+  onOpen: (r: PlanningRow, kind: "arrival" | "return") => void;
 }) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
   const s = r.arrivalSignal ?? null;
   const live = s?.state === "sharing";
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
-  const card = useQuickCard();
   return (
     <li
       id={`row-${r.id}`}
-      className={cn("overflow-hidden rounded-lg", MOVEMENT_CARD[isArrival ? "arrival" : "departure"], live && "ring-2 ring-lime-deep", dimmed && "opacity-50")}
+      data-selected={selected || undefined}
+      className={cn(
+        "overflow-hidden rounded-lg",
+        MOVEMENT_CARD[isArrival ? "arrival" : "departure"],
+        live && "ring-2 ring-lime-deep",
+        selected && "outline outline-[3px] outline-offset-2 outline-lime-deep",
+        dimmed && !selected && "opacity-50",
+      )}
     >
       {/* C-A (06/10/2026): a row opens the operational card; the full page is one link further. */}
       <button
         type="button"
         data-testid={`planning-row-${r.id}`}
-        onClick={() => card.open(r.id)}
+        aria-pressed={selected}
+        onClick={() => onOpen(r, kind)}
         className={cn(
           // 28/10/2026: the card of its kind (green arrival, indigo departure), as in Plazo Pro's list of the day.
           "grid min-h-16 w-full grid-cols-[64px_1fr_auto] items-center gap-3 px-2.5 py-2 text-left hover:brightness-[.97] sm:grid-cols-[72px_1fr_auto] sm:gap-3.5",
@@ -166,6 +179,8 @@ function Column({
   empty,
   clock,
   today = false,
+  selectedId,
+  onOpen,
 }: {
   title: string;
   count: string;
@@ -175,6 +190,8 @@ function Column({
   clock: { fetchedAt: number; now: number };
   /** Direction A (30/10/2026): today, what is done is folded under « Déjà passés ». */
   today?: boolean;
+  selectedId: string | null;
+  onOpen: (r: PlanningRow, kind: "arrival" | "return") => void;
 }) {
   const t = fr.planning;
   const movement = kind === "arrival" ? "arrival" : "departure";
@@ -205,7 +222,15 @@ function Column({
           </li>
         )}
         {(live ? [...(showPast ? live.past : []), ...live.coming] : items).map(r => (
-          <Row key={r.id} r={r} kind={kind} clock={clock} dimmed={!!live && live.past.includes(r)} />
+          <Row
+            key={r.id}
+            r={r}
+            kind={kind}
+            clock={clock}
+            dimmed={!!live && live.past.includes(r)}
+            selected={r.id === selectedId}
+            onOpen={onOpen}
+          />
         ))}
       </ul>
       {items.length === 0 && <p className="px-1 py-6 text-muted-foreground">{empty}</p>}
@@ -214,10 +239,19 @@ function Column({
 }
 
 /** « Prochaine arrivée » / « Prochain départ » over its column (direction A of 30/10/2026); moves on once done. */
-function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" | "return"; now: number }) {
+function NextCard({
+  items,
+  kind,
+  now,
+  onOpen,
+}: {
+  items: PlanningRow[];
+  kind: "arrival" | "return";
+  now: number;
+  onOpen: (r: PlanningRow, kind: "arrival" | "return") => void;
+}) {
   const t = fr.planning;
   const isArrival = kind === "arrival";
-  const card = useQuickCard();
   const row = nextOf(items, kind, now);
   const late = lateOf(items, kind, now);
   const atOf = (r: PlanningRow) => (isArrival ? r.arrivalAt : r.returnAt);
@@ -231,7 +265,7 @@ function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" 
         <button
           type="button"
           data-testid={`next-${kind}-row`}
-          onClick={() => card.open(row.id)}
+          onClick={() => onOpen(row, kind)}
           className="grid grid-cols-[auto_1fr_auto] items-center gap-x-4 rounded-md text-left hover:bg-accent/40"
         >
           <span className="tabular font-mono text-3xl font-bold">{timeOf(atOf(row))}</span>
@@ -258,7 +292,7 @@ function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" 
             <button
               key={r.id}
               type="button"
-              onClick={() => card.open(r.id)}
+              onClick={() => onOpen(r, kind)}
               className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 text-left text-sm hover:underline"
             >
               <span className="tabular font-mono font-bold">{timeOf(atOf(r))}</span>
@@ -278,6 +312,145 @@ function NextCard({ items, kind, now }: { items: PlanningRow[]; kind: "arrival" 
       )}
     </div>
   );
+}
+
+/** 12/11/2026: the choice to fold the two next cards, kept on this browser. */
+const NEXT_COLLAPSED_KEY = "plazo:planning-next-collapsed";
+
+function readCollapsed(): boolean {
+  try {
+    return window.localStorage.getItem(NEXT_COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeCollapsed(value: boolean) {
+  try {
+    if (value) window.localStorage.setItem(NEXT_COLLAPSED_KEY, "1");
+    else window.localStorage.removeItem(NEXT_COLLAPSED_KEY);
+  } catch {
+    // Private window or blocked storage: the choice lasts for this page only.
+  }
+}
+
+/** « ↑ 11:15 S. Morel dans 25 min » in the folded line. */
+function FoldedNext({
+  items,
+  kind,
+  now,
+  withUntil,
+  onOpen,
+}: {
+  items: PlanningRow[];
+  kind: "arrival" | "return";
+  now: number;
+  withUntil: boolean;
+  onOpen: (r: PlanningRow, kind: "arrival" | "return") => void;
+}) {
+  const isArrival = kind === "arrival";
+  const row = nextOf(items, kind, now);
+  if (!row) return null;
+  const at = isArrival ? row.arrivalAt : row.returnAt;
+  return (
+    <button
+      type="button"
+      data-testid={`folded-${kind}`}
+      onClick={() => onOpen(row, kind)}
+      className="flex min-w-0 items-center gap-2 rounded-md text-left hover:underline"
+    >
+      <span
+        aria-label={`${fr.movement[isArrival ? "arrival" : "departure"]} ${timeOf(at)}`}
+        className={cn("tabular shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[13px] font-bold text-white", isArrival ? "bg-ok" : "bg-info")}
+      >
+        {isArrival ? "↑" : "↓"} {timeOf(at)}
+      </span>
+      <span className="truncate font-semibold">{shortName(row.customerName, { firstName: row.customerFirstName, lastName: row.customerLastName })}</span>
+      {withUntil && <span className="tabular whitespace-nowrap font-mono text-sm text-muted-foreground">{untilLabel(at, now).text}</span>}
+    </button>
+  );
+}
+
+/** The next arrival and departure (direction A of 30/10/2026), foldable into one line (12/11/2026). */
+function NextCards({
+  arrivals,
+  returns,
+  now,
+  onOpen,
+}: {
+  arrivals: PlanningRow[];
+  returns: PlanningRow[];
+  now: number;
+  onOpen: (r: PlanningRow, kind: "arrival" | "return") => void;
+}) {
+  const t = fr.planning;
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  const toggle = () => {
+    writeCollapsed(!collapsed);
+    setCollapsed(!collapsed);
+  };
+  const chevron = (
+    <button
+      type="button"
+      data-testid="planning-next-toggle"
+      aria-label={collapsed ? t.unfold : t.fold}
+      aria-expanded={!collapsed}
+      onClick={toggle}
+      className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
+    >
+      {collapsed ? <ChevronDown className="h-5 w-5" aria-hidden="true" /> : <ChevronUp className="h-5 w-5" aria-hidden="true" />}
+    </button>
+  );
+  if (collapsed) {
+    const late = lateOf(arrivals, "arrival", now).length + lateOf(returns, "return", now).length;
+    return (
+      <div
+        data-testid="planning-next"
+        data-collapsed="true"
+        className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-panel-line bg-card px-4 py-2"
+      >
+        <FoldedNext items={arrivals} kind="arrival" now={now} withUntil onOpen={onOpen} />
+        <FoldedNext items={returns} kind="return" now={now} withUntil={false} onOpen={onOpen} />
+        {late > 0 && (
+          <span
+            data-testid="folded-late"
+            className="whitespace-nowrap rounded-full bg-warn-soft px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider text-warn-text"
+          >
+            {t.lateCount(late)}
+          </span>
+        )}
+        {chevron}
+      </div>
+    );
+  }
+  return (
+    <div data-testid="planning-next" className="flex flex-col gap-1">
+      <div className="flex items-center px-1">
+        <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">{t.now}</span>
+        {chevron}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:gap-8">
+        <NextCard items={arrivals} kind="arrival" now={now} onOpen={onOpen} />
+        <NextCard items={returns} kind="return" now={now} onOpen={onOpen} />
+      </div>
+    </div>
+  );
+}
+
+/** Wide screens (lg and up) open a booking next to the planning; smaller ones keep the drawer. */
+const WIDE_QUERY = "(min-width: 1024px)";
+
+function useWide(): boolean {
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.(WIDE_QUERY).matches);
+  useEffect(() => {
+    const media = window.matchMedia?.(WIDE_QUERY);
+    if (!media) return;
+    const onChange = () => setWide(media.matches);
+    onChange();
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
+  }, []);
+  return wide;
 }
 
 /** Yellow bar on top of the planning when a traveller signals their arrival. */
@@ -355,6 +528,21 @@ export default function PlanningPage() {
   const arrivals = data ? liveFirst(withLiveSignals(data.arrivals, "outbound", signals)) : [];
   const returns = data ? liveFirst(withShuttleTrips(withLiveSignals(data.returns, "return", signals), isToday ? live.data?.shuttleTrips : undefined)) : [];
 
+  // 12/11/2026: on a wide screen a row opens the booking next to the planning; on a phone, the drawer as before.
+  const wide = useWide();
+  const card = useQuickCard();
+  const [selected, setSelected] = useState<{ id: string; kind: "arrival" | "return" } | null>(null);
+  const onOpen = useCallback(
+    (r: PlanningRow, kind: "arrival" | "return") => {
+      if (wide) setSelected(current => (current?.id === r.id && current.kind === kind ? null : { id: r.id, kind }));
+      else card.open(r.id);
+    },
+    [wide, card],
+  );
+  const closePanel = useCallback(() => setSelected(null), []);
+  useEffect(() => setSelected(null), [date]);
+  const selectedRow = wide && selected ? ((selected.kind === "arrival" ? arrivals : returns).find(r => r.id === selected.id) ?? null) : null;
+
   return (
     <>
       {banner && <ArrivalBanner signal={banner} onClose={() => setBanner(null)} />}
@@ -391,19 +579,15 @@ export default function PlanningPage() {
       {isLoading && <Skeleton className="h-96 w-full" />}
 
       {data && (
-        <>
+        <div className={cn(selectedRow && "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]")}>
+          <div className="min-w-0 space-y-6">
           <section aria-label={t.nightsTitle} className="flex gap-1 overflow-x-auto">
             {data.nights.map(n => (
               <NightCell key={n.date} night={n} />
             ))}
           </section>
-          {isToday && (
-            <div data-testid="planning-next" className="grid gap-3 sm:grid-cols-2 lg:gap-8">
-              <NextCard items={arrivals} kind="arrival" now={now} />
-              <NextCard items={returns} kind="return" now={now} />
-            </div>
-          )}
-          <div className="grid gap-8 lg:grid-cols-2">
+          {isToday && <NextCards arrivals={arrivals} returns={returns} now={now} onOpen={onOpen} />}
+          <div className={cn("grid gap-8", selectedRow ? "2xl:grid-cols-2" : "lg:grid-cols-2")}>
             <Column
               title={t.arrivals}
               count={t.arrivalsCount(data.stats.arrivals, data.stats.arrived)}
@@ -412,10 +596,24 @@ export default function PlanningPage() {
               empty={t.noArrival}
               clock={clock}
               today={isToday}
+              selectedId={selected?.kind === "arrival" ? selected.id : null}
+              onOpen={onOpen}
             />
-            <Column title={t.returns} count={String(data.stats.returns)} items={returns} kind="return" empty={t.noReturn} clock={clock} today={isToday} />
+            <Column
+              title={t.returns}
+              count={String(data.stats.returns)}
+              items={returns}
+              kind="return"
+              empty={t.noReturn}
+              clock={clock}
+              today={isToday}
+              selectedId={selected?.kind === "return" ? selected.id : null}
+              onOpen={onOpen}
+            />
           </div>
-        </>
+          </div>
+          {selectedRow && selected && <LiveReservationPanel key={selectedRow.id} row={selectedRow} kind={selected.kind} onClose={closePanel} />}
+        </div>
       )}
     </>
   );

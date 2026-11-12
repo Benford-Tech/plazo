@@ -1681,6 +1681,18 @@ export const fr = {
     smsWarning: (n: number) => `${n} SMS en attente · téléphone injoignable`,
     smsWarningHint:
       "Allumez le téléphone du parking et ouvrez l'appli SMS Gateway. Les SMS en attente plus de 2 h sont abandonnés.",
+    // 12/11/2026: the booking opened next to the planning, refreshed every 5 s.
+    live: {
+      title: "Réservation en direct",
+      pill: (ago: string) => `En direct · ${ago}`,
+      waiting: "En direct",
+      close: "Fermer la réservation",
+      timeline: "Ce que le client a fait",
+    },
+    // 12/11/2026: the two next cards folded into one line.
+    fold: "Replier",
+    unfold: "Déplier",
+    now: "Maintenant",
   },
   reservation: {
     pricePaid: "Prix payé",
