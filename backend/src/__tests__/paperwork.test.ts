@@ -195,10 +195,10 @@ describe('état des lieux', () => {
     const b = await setup();
     const base = `/api/internal/reservations/${b.id}/inspections/dropoff`;
     await api().post(base).set(auth(b.op.token));
-    // Incomplete: the mileage and the fuel are asked for; the photos are optional (30/10/2026).
+    // Incomplete: only the fuel is asked for; the photos (30/10/2026) and the mileage (12/11/2026) are optional.
     const early = await api().post(`${base}/complete`).set(auth(b.op.token));
     expect(early.status).toBe(400);
-    expect(Object.keys(early.body.fields)).toEqual(['mileageKm', 'fuelQuarters']);
+    expect(Object.keys(early.body.fields)).toEqual(['fuelQuarters']);
     // The traveller sees nothing of a draft.
     expect((await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token))).body.dropoff).toBeNull();
     const notImage = await api()

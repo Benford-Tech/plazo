@@ -72,9 +72,10 @@ describe('état des lieux', () => {
     expect(cleanDamages(Array.from({ length: 21 }, () => ({ x: 0, y: 0, label: 'a' })))).toEqual({ ok: false, code: 'too_many' });
   });
 
-  it('un état des lieux est complet avec le kilométrage et le carburant ; les photos sont facultatives (30/10/2026)', () => {
+  it('un état des lieux est complet avec le carburant ; les photos (30/10/2026) et le kilométrage (12/11/2026) sont facultatifs', () => {
     expect(missingForCompletion({ slots: ['front', 'back'], mileageKm: 10, fuelQuarters: null })).toEqual(['fuelQuarters']);
     expect(missingForCompletion({ slots: [], mileageKm: 0, fuelQuarters: 0 })).toEqual([]);
+    expect(missingForCompletion({ slots: [], mileageKm: null, fuelQuarters: 2 })).toEqual([]);
     expect(missingSlots(['front', 'back'])).toEqual(['right', 'left']);
   });
 

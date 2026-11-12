@@ -69,10 +69,12 @@ export function missingSlots(slots: string[]): string[] {
   return GUIDED_SLOTS.filter(s => !slots.includes(s));
 }
 
-/** What a report still needs to be completed: the mileage and the fuel; the photos are optional (30/10/2026). */
+/**
+ * What a report still needs to be completed: the fuel only. The photos are optional (30/10/2026), and the mileage too
+ * (12/11/2026, « les photos, le kilométrage ne sont pas obligatoires »).
+ */
 export function missingForCompletion(report: { slots: string[]; mileageKm: number | null; fuelQuarters: number | null }): string[] {
   const missing: string[] = [];
-  if (report.mileageKm == null) missing.push('mileageKm');
   if (report.fuelQuarters == null) missing.push('fuelQuarters');
   return missing;
 }
