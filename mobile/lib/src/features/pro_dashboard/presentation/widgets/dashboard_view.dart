@@ -622,17 +622,8 @@ List<(_Tone, String)> _vehicleBadges(DashboardVehicleModel v) {
   } else if (v.status == 'back_at_parking') {
     out.add((_Tone.accent, 'pro.status.back_at_parking'.tr()));
   }
-  if (v.spotCode == null) {
-    // 12/11/2026: the traveller has left in the shuttle: still to put away, but not an alert (grey « À garer »).
-    final since = v.toParkSince == null ? null : DateTime.tryParse(v.toParkSince!);
-    out.add(
-      since != null
-          ? (_Tone.line, 'dashboard.badge_to_park'.tr(args: [hhmm(since)]))
-          : (_Tone.bad, 'dashboard.badge_no_spot'.tr()),
-    );
-  } else if (out.isEmpty) {
-    out.add((_Tone.ok, 'dashboard.badge_on_site'.tr()));
-  }
+  // 12/11/2026 (« si la voiture est sur place alors elle a une place »): never a « Sans place » badge.
+  if (out.isEmpty) out.add((_Tone.ok, 'dashboard.badge_on_site'.tr()));
   return out;
 }
 
@@ -646,9 +637,8 @@ class _VehicleTile extends StatelessWidget {
     final returnAt = DateTime.tryParse(v.returnAt);
     final estimated = v.flightEstimatedAt == null ? null : DateTime.tryParse(v.flightEstimatedAt!);
     final stay = v.stayClass == null ? null : 'dashboard.stay_${v.stayClass}'.tr();
-    final toPark = v.spotCode == null && v.toParkSince != null;
     final place = v.spotCode == null
-        ? (toPark ? 'dashboard.to_park'.tr() : 'dashboard.no_spot'.tr())
+        ? 'dashboard.place_unnoted'.tr()
         : [v.spotCode!, if (stay != null && !stay.startsWith('dashboard.')) stay].join(' · ');
     final meta = [
       if (v.returnFlight != null) ('dashboard.flight_at'.tr(args: [v.returnFlight!, hhmm(estimated ?? returnAt ?? DateTime.now())]), false),
@@ -683,7 +673,7 @@ class _VehicleTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(place, style: AppText.tabular(size: 11, weight: 500, color: v.spotCode == null && !toPark ? AppStatus.badText : AppColors.muted)),
+                        Text(place, style: AppText.tabular(size: 11, weight: 500, color: AppColors.muted)),
                         Text(
                           '${v.customerName} · ${'dashboard.pax'.tr(args: ['${v.passengers}'])}',
                           style: AppText.tabular(size: 14, weight: 500),

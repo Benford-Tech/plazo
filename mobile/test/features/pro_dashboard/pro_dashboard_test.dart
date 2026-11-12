@@ -143,11 +143,13 @@ void main() {
     expect(find.text('Retour du jour'), findsOneWidget);
     expect(find.text('Retardé +40 min'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Crochet n°'), 200, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Sans place'), findsNWidgets(2));
+    // 12/11/2026 (« si la voiture est sur place alors elle a une place »): never « Sans place ».
+    expect(find.text('Sans place'), findsNothing);
+    expect(find.text('Sur place'), findsWidgets);
     expect(find.text('Crochet n°'), findsOneWidget);
   });
 
-  testWidgets('12/11/2026 · client parti en navette : sa voiture sans place est « À garer » en gris, plus « Sans place »', (tester) async {
+  testWidgets('12/11/2026 · une voiture sans place notée : « Sur place » en gris, ni « Sans place » ni « À garer »', (tester) async {
     final since = DateTime(2026, 10, 3, 11, 22);
     final vehicle = DashboardVehicleModel.fromJson({
       'id': 'r3',
@@ -163,8 +165,8 @@ void main() {
     await show(tester, dashboard.copyWith(alerts: const [], vehicles: [dashboard.vehicles.first, vehicle]));
     await tester.scrollUntilVisible(find.text('Crochet n°'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Sans place'), findsNothing);
-    expect(find.text('À garer'), findsOneWidget);
-    expect(find.text('À garer · client en navette 11:22'), findsOneWidget);
+    expect(find.text('À garer'), findsNothing);
+    expect(find.text('Sur place'), findsWidgets);
   });
 
   testWidgets('16/10/2026 · « Import » À voir quand Claude n’a pas pu lire un mail dans l’heure, avec la cause', (tester) async {

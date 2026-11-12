@@ -1471,7 +1471,8 @@
     "kpi_wave_vehicles": "{} navettes",
     "join_request_more": "{} et {} autre(s)",
     "since_hours": "depuis {} h",
-    "since_days": "depuis {} j"
+    "since_days": "depuis {} j",
+    "place_unnoted": "Sur place"
   },
   "live_shuttles": {
     "title": "Navettes en cours",

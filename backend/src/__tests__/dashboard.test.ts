@@ -83,17 +83,16 @@ describe('GET /internal/dashboard', () => {
     const res = await api().get('/api/internal/dashboard').set(auth(op.token));
     expect(res.status).toBe(200);
     expect(res.body.parking).toMatchObject({ id: op.parking.id, plannedSpots: 3 });
-    expect(res.body.counts).toMatchObject({ onSite: 3, arrivalsToday: 3, arrivedToday: 3, returnsToday: 3, freeSpots: 1, toTreat: 2 });
+    expect(res.body.counts).toMatchObject({ onSite: 3, arrivalsToday: 3, arrivedToday: 3, returnsToday: 3, freeSpots: 1 });
+    // 12/11/2026 (« si la voiture est sur place alors elle a une place »): Louis's car has no spot noted, never « Sans place ».
     expect(res.body.alerts.map((x: { kind: string; severity: string }) => [x.kind, x.severity])).toEqual([
-      ['no_spot', 'urgent'],
       ['flight_delayed', 'watch'],
       ['keys_missing', 'todo'],
       // 21/10/2026: the seeded bookings have no price.
       ['price_missing', 'todo'],
     ]);
-    expect(res.body.alerts[0]).toMatchObject({ reservationId: c.id, customerName: 'Louis Leroy', minutes: 10 });
-    expect(res.body.alerts[1]).toMatchObject({ reservationId: a.id, detail: 'TO 3627', minutes: 60 });
-    expect(res.body.alerts[2]).toMatchObject({ reservationId: b.id, detail: 'A-01-02' });
+    expect(res.body.alerts[0]).toMatchObject({ reservationId: a.id, detail: 'TO 3627', minutes: 60 });
+    expect(res.body.alerts[1]).toMatchObject({ reservationId: b.id, detail: 'A-01-02' });
     const vehicles = res.body.vehicles as { id: string }[];
     expect(vehicles).toHaveLength(3);
     expect(vehicles.find(v => v.id === a.id)).toMatchObject({
@@ -103,7 +102,7 @@ describe('GET /internal/dashboard', () => {
       returnFlight: 'TO 3627',
       flightStatus: 'delayed',
     });
-    expect(res.body.breakdown).toMatchObject({ toTreat: 2, freeSpots: 1, returnsThisWeek: 3 });
+    expect(res.body.breakdown).toMatchObject({ freeSpots: 1, returnsThisWeek: 3 });
 
     // 01/11/2026 (« Les voitures avec crochets ont une place »): Louis's keys on hook 7, his car counts as placed.
     await api().put(`/api/internal/reservations/${c.id}/keys`).set(auth(op.token)).send({ left: true, keyHook: '7' });

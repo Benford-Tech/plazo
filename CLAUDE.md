@@ -556,7 +556,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      place ») n'a plus d'alerte `no_spot` / `no_free_spot` : `toPark { since }` (`domain/to-park.ts`) sur les véhicules du tableau de
      bord et la fiche, pastille grise « À garer · client en navette 11:22 » (web `vehicle-to-park`, filtre « À garer » ; Plazo Pro
      tableau de bord et fiche) ; elle reste dans `toPlaceToday` et « Arrivées à placer ». Avant l'embarquement, « Sans place » et
-     l'alerte comme avant. Test `boarding-check-in.test.ts`.
+     l'alerte comme avant. Test `boarding-check-in.test.ts`. **Plus jamais « Sans place » (12/11/2026, « les voitures « Sur place » sont toujours marquées Sans
+     place » → « si la voiture est sur place alors elle a une place »)** : le tableau de bord (web et Plazo Pro) n'a plus l'alerte `no_spot`
+     / `no_free_spot`, ni le badge, ni les filtres « Sans place » et « À garer » ; une voiture sans place notée montre « Sur place » en gris
+     (`placeUnnoted`, `dashboard.place_unnoted`) ; l'Occupation garde « Arrivées à placer » pour qui veut ranger les voitures.
    - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
      avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
      les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`
