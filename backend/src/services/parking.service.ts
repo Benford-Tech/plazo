@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Parking, Prisma, ShuttleTracking } from '@/database';
 import { can } from '@/domain/roles';
+import { oneLineConditions } from '@/domain/day-before-sms';
 import { sharesPosition } from '@/domain/shuttle-tracking';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -85,7 +86,7 @@ export class ParkingService {
           valetMeetingPoint: data.valetMeetingPoint === undefined ? undefined : data.valetMeetingPoint?.trim() || null,
           driverPhone: data.driverPhone === undefined ? undefined : data.driverPhone?.trim() || null,
           // One line: Meta refuses a line break in a template's variable.
-          travellerConditions: data.travellerConditions === undefined ? undefined : data.travellerConditions?.replace(/\s+/g, ' ').trim() || null,
+          travellerConditions: data.travellerConditions === undefined ? undefined : oneLineConditions(data.travellerConditions),
         },
       });
 

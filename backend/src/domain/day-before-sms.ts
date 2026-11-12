@@ -253,15 +253,43 @@ const eurosShort = (cents: number) => (cents % 100 === 0 ? `${cents / 100} €` 
 const hourLabel = (hhmm: string) => (hhmm.endsWith(':00') ? `${Number(hhmm.slice(0, 2))}h` : hhmm.replace(':', 'h'));
 
 /**
+ * The parking's conditions on one line (Meta refuses a line break in a template's variable): one condition per line or per
+ * bullet (« * », « • », « - » at a line start; an asterisk would also turn bold in WhatsApp), joined by « ; ». A list pasted
+ * into a one-line field loses its line breaks but keeps its « * » markers, so those split too (12/11/2026).
+ */
+export function oneLineConditions(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const parts = text
+    .split(/\r?\n|[*•]+\s*/)
+    .map(part =>
+      part
+        .replace(/^\s*[-·]\s+/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\s*[;,.]$/, ''),
+    )
+    .filter(Boolean);
+  return parts.length ? parts.join(' ; ') : null;
+}
+
+const sameWindow = (text: string, window: string) =>
+  text
+    .toLowerCase()
+    .replace(/(\d)\s+h/g, '$1h')
+    .replace(/\s+/g, ' ')
+    .includes(window);
+
+/**
  * {conditions}: the night fees Plazo knows (« Prise en charge ou restitution entre 22h et 6h : supplément de 10 € ») then
- * the parking's own text, one line.
+ * the parking's own text, one line. When the parking already writes the same night window itself, only its words are kept.
  */
 export function conditionsLabel(
   night: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null,
   own: string | null,
 ): string | null {
   const parts: string[] = [];
-  if (night) {
+  const text = oneLineConditions(own);
+  if (night && !(text && sameWindow(text, `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`))) {
     const window = `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`;
     const a = night.arrivalFeeCents;
     const r = night.returnFeeCents;
@@ -271,7 +299,6 @@ export function conditionsLabel(
       if (r) parts.push(`Restitution ${window} : supplément de ${eurosShort(r)}`);
     }
   }
-  const text = own?.replace(/\s+/g, ' ').trim();
   if (text) parts.push(text);
   return parts.length ? parts.join(' ; ') : null;
 }
