@@ -78,10 +78,11 @@ describe('Staff photo', () => {
     });
     const res = await api().get('/api/internal/nav/counts').set(auth(op.token));
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ inbox: 1, extras: 0 });
+    expect(res.body).toEqual({ inbox: 1, extras: 0, whatsapp: 0 });
 
     const driver = await addStaff(op.token, 'driver');
     const forDriver = await api().get('/api/internal/nav/counts').set(auth(driver.token));
     expect(forDriver.body.inbox).toBeNull();
+    expect(forDriver.body.whatsapp).toBeNull();
   });
 });
