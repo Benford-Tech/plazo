@@ -54,6 +54,8 @@ export function PlatformLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const study = /^\/plateforme\/capacite\/[^/]+/.test(pathname);
+  // 12/11/2026 (« ça doit prendre tout l'écran ») : the prospects table and its sending panel use the whole width.
+  const wide = pathname.startsWith("/plateforme/prospection");
   // The cockpit's « À traiter » counts the listings waiting for review; the rail shows that number on Annonces.
   const overview = useQuery({
     queryKey: ["platform", "operators", "overview"],
@@ -146,7 +148,7 @@ export function PlatformLayout() {
           </div>
         ) : (
           <main className="min-w-0 flex-1">
-            <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-8">
+            <div className={cn("mx-auto w-full space-y-6 px-4 py-6 sm:px-8", !wide && "max-w-7xl")}>
               <Outlet />
             </div>
           </main>
