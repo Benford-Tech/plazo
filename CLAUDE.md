@@ -537,6 +537,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `flightOrigin`, codes IATA, migration `flight_airports`, effacés quand le vol change) ; `GET /internal/planning` rend aussi
      `stopName`, `departureCity`, `returnCity` (`airportCity` de `domain/airport-names.ts` : ~150 villes en français, sinon le code) ;
      `travelOf` (web `lib/planning-now.ts`, app `pro_today_page.dart`). Tests `planning_list_test.dart`, `PlanningPage.test.tsx`.
+     **Repliables et réservation en direct (12/11/2026, « prochaine arrivée collapsible », « voir la réservation en direct sur planning »,
+     maquettes https://claude.ai/artifact/W1yu68kvvpLHJcvARy5Nfn, sections 1 et 4)** : une flèche (« Replier » / « Déplier ») replie les deux cartes en une ligne « ↑ 11:15
+     S. Morel dans 25 min · ↓ 11:40 I. Garcia » avec « En retard · N » toujours visible (web `plazo:planning-next-collapsed`, Plazo Pro
+     `planning.next_collapsed`, clés `planning-next-toggle`, `planning-next-late`). Web, dès `lg` : un clic sur une ligne du planning (ou
+     une carte, un retard) ouvre la réservation dans un panneau à droite du planning (`LiveReservationPanel`, `QuickCardBody` partagé avec
+     la fiche rapide), relue toutes les 5 s avec « En direct · il y a N s », la ligne cerclée de vert foncé, et le fil de ce qu'a fait le
+     voyageur (`lib/live-steps.ts` : En route, Au point de rendez-vous, Embarqué, Voiture garée ; au retour Atterri, Navette en route, De
+     retour au parking, Voiture rendue ; d'après `GET /internal/arrivals/live` et la réservation) ; plus étroit, la fiche rapide comme
+     avant. Test `live-steps.test.ts`.
+     **« À garer » (12/11/2026, « "Sans place" enlever après que la personne ait pris la navette », section 5)** : une voiture sans place,
+     file ni crochet dont le voyageur est parti (pointé à l'embarquement, sur une dépose en cours, ou tout statut sur place après « Sur
+     place ») n'a plus d'alerte `no_spot` / `no_free_spot` : `toPark { since }` (`domain/to-park.ts`) sur les véhicules du tableau de
+     bord et la fiche, pastille grise « À garer · client en navette 11:22 » (web `vehicle-to-park`, filtre « À garer » ; Plazo Pro
+     tableau de bord et fiche) ; elle reste dans `toPlaceToday` et « Arrivées à placer ». Avant l'embarquement, « Sans place » et
+     l'alerte comme avant. Test `boarding-check-in.test.ts`.
    - **Import d'anciennes réservations (28/10/2026, « je veux importer des anciennes réservations dans plazo et avoir un aperçu
      avant de valider », direction A « Tout sur une page » des maquettes https://claude.ai/artifact/Fzieue7HmuASJQUqWrq1ao, « avec
      les réservations à venir aussi »)** : Réservations › « Importer » (gérants, `parking:manage`) → `/pro/reservations/importer`
@@ -864,6 +879,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `ProExtrasPage`, `/pro/services`, cartes rouges en retard, ambre aujourd'hui ; Places passe dans Plus › Voiturier), Plus ›
      Accueil › « Services à faire », « Accepter » dans `StaffExtrasCard`. Tests `extras.test.ts`, `ExtrasTodoPage.test.tsx`,
      `extras_board_test.dart`, `extras_test.dart`.
+     **Ajoutés par l'équipe, payés au parking (12/11/2026, « ajouter un service additionnel depuis plazo », choix « Payé au parking »,
+     maquettes https://claude.ai/artifact/W1yu68kvvpLHJcvARy5Nfn, section 6)** : `POST /internal/reservations/:id/extras` `{ kind, priceCents?, paymentMethod }`
+     (`reservations:manage`, `RefuseInDemo`, permis en consultation) : un service actif du parking, prix du parking par défaut (1 € à
+     1 000 €), `paymentMethod` card · cash · cheque · transfer · holiday_vouchers ou `on_return` (« À payer au retour ») ; tout canal,
+     statuts à venir, sur place, parti en navette, sans le délai des voyageurs (`orderRefusal(…, { byStaff })`,
+     `STAFF_ADDABLE_BOOKING_STATUSES`) ; créé directement `ordered` (« Services à faire »), aucun Stripe, commission 0, aucun push, tracé
+     `extra.added` ; 400 par champ, 409 `not_offered` · `closed` · `already_ordered` · `one_charge` · `one_of_group`. `ReservationExtra.source`
+     (`ExtraSource` traveller · staff), `paymentMethod`, `addedById` (migration `staff_extras`, CHECK `reservation_extras_staff_no_stripe`
+     et `reservation_extras_parking_payment`) ; `PATCH …/extras/:extraId/payment` « Noter le paiement » (409 `not_parking_payment`,
+     tracé `extra.payment`) ; « Pas possible » n'appelle jamais Stripe, `settle` et `runPayouts` les ignorent. `GET …/extras` rend
+     `{ extras, services, canAdd }` (services du parking avec `available` et `reason`). Chiffre d'affaires : comptés dans `totalCents`,
+     `netCents`, `byDay`, `byPaymentMethod` (« Au retour » = non précisé), pas dans `count` ni `byChannel`, détaillés dans
+     `parkingExtras { count, totalCents, toCollectCount, toCollectCents }` (ligne « Services payés au parking ») ; pas dans le CSV. Web :
+     bloc « Services additionnels » toujours affiché sur la fiche quand le parking propose un service (`ReservationExtras` : pastilles
+     « Payé en ligne » / « Payé au parking · CB » / « À payer au retour », « + Ajouter un service » en ligne, lien vers Parking › Réglages
+     pour un gérant sans service) ; Plazo Pro : `StaffExtrasCard` + feuille `AddExtraSheet` et « Noter le paiement ».
    - **Mail du matin (21/10/2026, « un mail quotidien avec l'état des intégrations, le CA et le planning ; ce mail peut être
      désactivé », choix A « Tableau du jour » des maquettes https://claude.ai/artifact/Ge2zVYZ95ZfJ11tMKtQJtz)** : chaque matin, à
      l'heure choisie (07:00 par défaut, de 05:00 à 10:00, heure du premier parking), un mail aux couleurs de l'espace pro : planning
@@ -1187,7 +1218,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `Reservation.boardingTripId` (migration `boarding_check_in`, remis à nul au retour à « Attendu ») donne
      `boardingCheckIn { driverFirstName, at }` à la fiche, aux arrivées et voitures de l'Occupation et des files et aux véhicules du
      tableau de bord : « Pointé à l'embarquement par Karim » dans « Arrivées à placer » (web et app) ; la voiture d'un client pointé
-     à l'embarquement reste « à placer » (alerte `no_spot`, `toPlaceToday`) après la dépose ; passagers du trajet
+     à l'embarquement reste « à placer » (`toPlaceToday`, « Arrivées à placer » de l'Occupation) après la dépose, **sans alerte `no_spot`
+     depuis le 12/11/2026** (voir « À garer » plus bas) ; passagers du trajet
      `checkedInAtBoarding` / `arrivedAt` (« Sur place · 09:47 », note « 1 voiture pointée à l'embarquement : le voiturier la
      retrouve dans « Arrivées à placer », avec ses clés. ») ; les attendus des départs remontent à 6 h (un retardataire reste
      embarquable) ; `changeStatus` verrouille la réservation et la relit (un client pointé à l'embarquement n'est pas annulé
@@ -1438,7 +1470,20 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    `/pro/reservations/:id/etat-des-lieux/:kind` ; Plazo : blocs « Contrat de stationnement » (à lire), « Vos photos » et « État des
    lieux » de Ma réservation, `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/mes-photos/:kind`,
    `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et politique de confidentialité mises à jour
-   (19/10/2026, puis 20/10/2026 : signature au comptoir, photos du voyageur). Le web n'a pas ces écrans.
+   (19/10/2026, puis 20/10/2026 : signature au comptoir, photos du voyageur). Le web n'a pas ces écrans de prise de photos ; **depuis le 12/11/2026 il les montre en lecture** (« voir les
+   photos sur la réservation, le contrat signé, la preuve », maquettes https://claude.ai/artifact/W1yu68kvvpLHJcvARy5Nfn, section 2) : bloc « Contrat et état des lieux » de la
+   fiche réservation (`BookingPaperworkCard`, remplace `BookingContractCard`) : signataire, moyen (code SMS au numéro masqué ou à la
+   main), témoin (`contract.signed.witnessName`, équipe seulement), version, « PDF signé » et « Preuve de signature », onglets Dépôt ·
+   Retour · Photos du client, photos guidées (4 colonnes, 2 sur téléphone) lues en blobs avec le jeton (`adminApi.inspectionPhoto`,
+   jamais relues par la synchro), dégâts numérotés sur la silhouette et leurs gros plans, kilométrage, carburant, remarques, réponse du
+   client ; un clic ouvre la photo en grand à côté du même côté de l'autre état des lieux ; « Photos indisponibles » (503
+   `photos_unavailable`) ou « Photos effacées ». **Archiver un contrat signé (12/11/2026, section 3)** : `ReservationContract.archivedAt`
+   / `archivedById` (migration `contract_archived`) ; `POST /internal/contracts/:contractId/archive|unarchive` (gérants, `RefuseInDemo`,
+   idempotent, 409 `not_signed`), `POST /internal/contracts/archive-before { before }` (retour avant ce jour, heure du parking →
+   `{ archived }`) ; tracés `contract.archived` / `contract.unarchived` dans l'Historique ; `GET /internal/contracts` cache les archivés
+   (`?archived=1` les seuls, `signedCount`, `reservedCount`, `archivedCount`, export idem) ; rien n'est effacé, durées inchangées ; page
+   Contrats : pilules Signés · Avec réserve · Archivés, « Archiver » / « Désarchiver » par ligne, « Archiver les contrats d'avant le… »
+   (`useConfirm`).
    **Le contrat du parking et le registre des contrats signés (26/10/2026, « chaque parking peut héberger le contrat de
    stationnement à ses clients. chaque contrat est stocké ainsi que la preuve de signature », choix « A » (Mon PDF) des maquettes
    https://claude.ai/artifact/WFFKgJUsqFDWQvebjayV6J, registre R-A pris par défaut)** : table `operator_contract_templates`
