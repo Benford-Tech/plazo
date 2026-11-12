@@ -47,7 +47,7 @@ on:
       app_store_submit:
         description: "App Store : soumettre à la revue d'Apple (sinon TestFlight seulement)"
         type: boolean
-        default: true
+        default: false
       app_store_release:
         description: "App Store : sortie après l'accord d'Apple"
         type: choice
@@ -83,11 +83,12 @@ env:
   # OneSignal apps (public, the same as ONESIGNAL_TRAVELLER_APP_ID / ONESIGNAL_APP_ID on Vercel).
   ONESIGNAL_APP_ID_PLAZO: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
   ONESIGNAL_APP_ID_PLAZO_PRO: 89a1124f-3ba0-481e-b9f1-545d254e435d
-  # What a tag does (both stores, production, submitted); Run workflow can change each.
+  # What a tag does (both stores, production, App Store on TestFlight only since 12/11/2026: a new build must
+  # never cancel a submission under review); Run workflow can change each.
   STORES: ${{ inputs.stores || 'both' }}
   PLAY_TRACK: ${{ inputs.play_track || 'production' }}
   PLAY_DRAFT: ${{ inputs.play_draft && 'true' || 'false' }}
-  APP_STORE_SUBMIT: ${{ (github.event_name == 'push' || inputs.app_store_submit) && 'true' || 'false' }}
+  APP_STORE_SUBMIT: ${{ inputs.app_store_submit && 'true' || 'false' }}
   APP_STORE_RELEASE_TYPE: ${{ inputs.app_store_release || 'AFTER_APPROVAL' }}
   BUILD_APK: ${{ inputs.build_apk && 'true' || 'false' }}
   IOS_CREATE_SIGNING: ${{ inputs.ios_create_signing && 'true' || 'false' }}
