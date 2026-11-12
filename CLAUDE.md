@@ -1438,7 +1438,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    **États des lieux** (`VehicleInspection`
    `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : quatre photos guidées facultatives (avant, droite, arrière, gauche depuis le 30/10/2026,
    « ne demande que 4 photos et ne les rend pas obligatoire » : `GUIDED_SLOTS`, « Terminer » ne demande plus que le kilométrage et le
-   carburant ; compteur et intérieur, `LEGACY_SLOTS`, restent acceptés pour les anciens rapports ; jusque-là six photos obligatoires
+   carburant, et depuis le 12/11/2026 le carburant seul, le kilométrage devenant facultatif (« les photos, le kilométrage ne sont pas obligatoires ») ; compteur et intérieur, `LEGACY_SLOTS`, restent acceptés pour les anciens rapports ; jusque-là six photos obligatoires
    (avant, droite, arrière, gauche, compteur, intérieur ; une photo reprise remplace la précédente) et jusqu'à 12 gros plans de dégâts,
    dégâts touchés sur la silhouette (x, y de 0 à 1, numérotés), kilométrage, carburant (0 à 4 quarts), remarques ; « Terminer »
    verrouille (400 avec les champs manquants) ; dépôt possible en `upcoming`/`arrived`, retour dès `arrived` jusqu'à `returned`. Le
