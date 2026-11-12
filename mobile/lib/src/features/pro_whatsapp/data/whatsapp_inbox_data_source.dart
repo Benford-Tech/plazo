@@ -35,6 +35,7 @@ class WaConversation {
     required this.previewOut,
     required this.replyUntil,
     required this.unknown,
+    this.replyBy,
   });
 
   factory WaConversation.fromJson(Map<String, dynamic> json) {
@@ -52,6 +53,7 @@ class WaConversation {
       previewOut: preview?['direction'] == 'out',
       replyUntil: _date(json['replyUntil']),
       unknown: json['unknown'] == true,
+      replyBy: json.containsKey('replyBy') ? json['replyBy'] as String? : (_date(json['replyUntil']) != null ? 'whatsapp' : null),
     );
   }
 
@@ -71,6 +73,9 @@ class WaConversation {
   final DateTime? replyUntil;
   final bool unknown;
 
+  /// 12/11/2026: where a reply goes, `app` (the traveller wrote from the Plazo app) or `whatsapp`; null: only a call.
+  final String? replyBy;
+
   WaConversation read() => WaConversation(
     id: id,
     phone: phone,
@@ -83,6 +88,7 @@ class WaConversation {
     previewOut: previewOut,
     replyUntil: replyUntil,
     unknown: unknown,
+    replyBy: replyBy,
   );
 }
 
@@ -104,6 +110,7 @@ class WaMessage {
     required this.status,
     required this.at,
     required this.by,
+    this.app = false,
   });
 
   factory WaMessage.fromJson(Map<String, dynamic> json) => WaMessage(
@@ -115,6 +122,7 @@ class WaMessage {
     status: json['status'] as String?,
     at: _date(json['at']) ?? DateTime.now(),
     by: json['by'] is Map ? (json['by'] as Map)['firstName'] as String? : null,
+    app: json['channel'] == 'app',
   );
 
   final String id;
@@ -127,6 +135,9 @@ class WaMessage {
 
   /// The first name of the member who replied.
   final String? by;
+
+  /// Written or answered in the Plazo app (« Écrire au parking », 12/11/2026).
+  final bool app;
 }
 
 /// What Plazo itself sent the booking by WhatsApp (confirmation, day before…), shown between the messages.

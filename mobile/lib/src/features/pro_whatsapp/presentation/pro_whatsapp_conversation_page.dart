@@ -206,15 +206,16 @@ class _Header extends StatelessWidget {
                   style: AppText.body(size: 13.5, weight: 600),
                 ),
               ),
-              IconButton(
-                key: const Key('wa-call'),
-                tooltip: 'whatsapp_inbox.call'.tr(args: [c.phone]),
-                onPressed: onCall,
-                icon: const Icon(Icons.call_rounded, color: AppColors.accent),
-              ),
+              if (c.phone.isNotEmpty)
+                IconButton(
+                  key: const Key('wa-call'),
+                  tooltip: 'whatsapp_inbox.call'.tr(args: [c.phone]),
+                  onPressed: onCall,
+                  icon: const Icon(Icons.call_rounded, color: AppColors.accent),
+                ),
             ],
           ),
-          Text(c.phone, style: AppText.muted(size: 12.5)),
+          if (c.phone.isNotEmpty) Text(c.phone, style: AppText.muted(size: 12.5)),
           const SizedBox(height: 6),
           Wrap(
             spacing: 8,
@@ -279,6 +280,14 @@ class _Bubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (m.app)
+              Container(
+                key: const Key('wa-app'),
+                margin: const EdgeInsets.only(bottom: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: const BoxDecoration(color: AppColors.tint, borderRadius: AppRadius.pill),
+                child: Text('whatsapp_inbox.app_badge'.tr(), style: AppText.strong(size: 10.5, color: AppColors.accent)),
+              ),
             if (m.hasMedia) _Media(message: m, source: source),
             if (m.type == 'location') Text('whatsapp_inbox.location'.tr(), style: AppText.label(size: 11)),
             if (m.text != null) SelectableText(m.text!, style: AppText.body(size: 14.5)),
@@ -396,13 +405,16 @@ class _ReplyBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final until = conversation.replyUntil;
+    final by = conversation.replyBy;
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (until != null)
+          if (by == 'app')
+            Text('whatsapp_inbox.reply_in_app'.tr(), key: const Key('wa-window-app'), style: AppText.muted(size: 12))
+          else if (until != null)
             Text(
               'whatsapp_inbox.reply_until'.tr(args: ['${waWhen(until)}${waWhen(until).contains(':') ? '' : ' ${DateFormat('HH:mm').format(until)}'}']),
               key: const Key('wa-window'),
@@ -415,14 +427,15 @@ class _ReplyBar extends StatelessWidget {
               style: AppText.body(size: 12.5, color: AppStatus.warnText),
             ),
             const SizedBox(height: 6),
-            OutlinedButton.icon(
-              key: const Key('wa-call-bar'),
-              onPressed: onCall,
-              icon: const Icon(Icons.call_rounded),
-              label: Text('whatsapp_inbox.call'.tr(args: [conversation.phone])),
-            ),
+            if (conversation.phone.isNotEmpty)
+              OutlinedButton.icon(
+                key: const Key('wa-call-bar'),
+                onPressed: onCall,
+                icon: const Icon(Icons.call_rounded),
+                label: Text('whatsapp_inbox.call'.tr(args: [conversation.phone])),
+              ),
           ],
-          if (until != null) ...[
+          if (by != null) ...[
             const SizedBox(height: 6),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,

@@ -2924,6 +2924,22 @@
     },
     "sent_no_text": "Texte non gardé (envoyé avant le 12/11/2026).",
     "sent_sms_fallback": "SMS envoyé aussi",
-    "open_conversation": "Voir la conversation ›"
+    "open_conversation": "Voir la conversation ›",
+    "reply_in_app": "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
+    "app_badge": "App Plazo"
+  },
+  "parking_messages": {
+    "title": "Écrire au parking",
+    "the_parking": "le parking",
+    "intro": "Une question, un changement d'heure ? Écrivez à {} : l'équipe vous répond ici, avec une notification.",
+    "hint": "L'équipe du parking vous répond ici, avec une notification.",
+    "placeholder": "Votre message…",
+    "send": "Envoyer",
+    "errors": {
+      "anonymized": "Cette réservation n'est plus disponible.",
+      "too_many_requests": "Trop de messages d'un coup : réessayez dans quelques minutes.",
+      "not_found": "Réservation introuvable sur ce téléphone.",
+      "unknown": "Le message n'est pas parti. Réessayez."
+    }
   }
 }

@@ -1,7 +1,8 @@
 import { createHmac } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { inboundMessagesOf, previewOf, replyUntil } from '@/domain/whatsapp-inbox';
+import { manageToken } from '@/domain/booking';
+import { appConversationPhone, inboundMessagesOf, previewOf, replyChannelOf, replyUntil } from '@/domain/whatsapp-inbox';
 import { WhatsappService } from '@/services/whatsapp.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -245,5 +246,88 @@ describe('Boîte WhatsApp : réception, réponse, traité', () => {
     const mine = await api().get('/api/internal/whatsapp/inbox').set(auth(op.token));
     expect(mine.body.data[0].reservation.id).toBe(res.id);
     expect(mine.body.counts.unknown).toBe(0);
+  });
+});
+
+// The traveller's link reads only bookings of a parking with a listing.
+async function withListing(token: string) {
+  const listing = await api()
+    .put('/api/internal/listing')
+    .set(auth(token))
+    .send({
+      airportCode: 'LYS',
+      slug: `parking-messages-${Math.floor(Math.random() * 1e6)}`,
+      title: 'Parking Messages',
+      services: ['shuttle'],
+      shuttleMinutes: 8,
+      openingHours: '24h/24',
+      contactPhone: '04 72 00 00 00',
+      cancellationPolicy: 'free_24h',
+      photos: [],
+    });
+  expect(listing.status).toBe(200);
+}
+
+describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
+  it('choisit où part la réponse et la clé de la conversation', () => {
+    const now = new Date('2026-11-12T10:00:00Z');
+    const hourAgo = new Date(now.getTime() - 3600000);
+    expect(replyChannelOf({ phone: '+33612345678', lastInboundAt: hourAgo, lastAppAt: null }, now)).toBe('whatsapp');
+    expect(replyChannelOf({ phone: '+33612345678', lastInboundAt: hourAgo, lastAppAt: now }, now)).toBe('app');
+    expect(replyChannelOf({ phone: '+33612345678', lastInboundAt: now, lastAppAt: hourAgo }, now)).toBe('whatsapp');
+    expect(replyChannelOf({ phone: '+33612345678', lastInboundAt: new Date(now.getTime() - 30 * 3600000), lastAppAt: hourAgo }, now)).toBe('app');
+    expect(replyChannelOf({ phone: '+33612345678', lastInboundAt: new Date(now.getTime() - 30 * 3600000), lastAppAt: null }, now)).toBeNull();
+    expect(appConversationPhone('06 12 34 56 78', 'r1')).toBe('+33612345678');
+    expect(appConversationPhone('+41 79 123 45 67', 'r1')).toBe('+41791234567');
+    expect(appConversationPhone('', 'r1')).toBe('app:r1');
+  });
+
+  it('le message du voyageur arrive dans la conversation WhatsApp, la réponse repart dans l’app', async () => {
+    const op = await setupOperator();
+    await withListing(op.token);
+    const res = await booking(op.operator.id, op.parking.id);
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id: res.id } });
+    const tok = { 'x-booking-token': manageToken(res.id, process.env.SECRET_KEY!, row.manageTokenVersion) };
+    // He first wrote on WhatsApp: the app message joins the same conversation.
+    await postWebhook(incoming('wamid.in.20', '33612345678', 'Bonjour'));
+
+    expect((await api().post(`/api/public/bookings/${res.reference}/messages`).send({ text: 'x' })).status).toBe(404);
+    const write = await api().post(`/api/public/bookings/${res.reference}/messages`).set(tok).send({ text: ' On arrive à 8h, c’est bon ? ' });
+    expect(write.status).toBe(201);
+    expect(write.body).toMatchObject({ from: 'me', text: 'On arrive à 8h, c’est bon ?' });
+    expect((await api().post(`/api/public/bookings/${res.reference}/messages`).set(tok).send({ text: '  ' })).status).toBe(400);
+
+    const list = await api().get('/api/internal/whatsapp/inbox?view=unread').set(auth(op.token));
+    expect(list.body.data).toHaveLength(1);
+    expect(list.body.data[0]).toMatchObject({ unread: 2, replyBy: 'app' });
+    const conv = list.body.data[0].id;
+    const open = await api().get(`/api/internal/whatsapp/inbox/${conv}`).set(auth(op.token));
+    expect(open.body.messages.map((m: any) => m.channel)).toEqual(['whatsapp', 'app']);
+
+    const calls = fetchMock.mock.calls.length;
+    const reply = await api().post(`/api/internal/whatsapp/inbox/${conv}/reply`).set(auth(op.token)).send({ text: 'Oui, à demain.' });
+    expect(reply.status).toBe(201);
+    expect(reply.body.channel).toBe('app');
+    // Nothing went to Meta.
+    expect(fetchMock.mock.calls.slice(calls).some(([u]) => GRAPH.test(String(u)))).toBe(false);
+
+    const thread = await api().get(`/api/public/bookings/${res.reference}/messages`).set(tok);
+    expect(thread.body.canWrite).toBe(true);
+    // Only the app messages of this booking (not his WhatsApp « Bonjour »).
+    expect(thread.body.messages.map((m: any) => [m.from, m.text, m.by])).toEqual([
+      ['me', 'On arrive à 8h, c’est bon ?', null],
+      ['parking', 'Oui, à demain.', 'Gérant'],
+    ]);
+  });
+
+  it('sans numéro utilisable, une conversation par réservation', async () => {
+    const op = await setupOperator();
+    await withListing(op.token);
+    const res = await booking(op.operator.id, op.parking.id, '');
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id: res.id } });
+    const tok = { 'x-booking-token': manageToken(res.id, process.env.SECRET_KEY!, row.manageTokenVersion) };
+    expect((await api().post(`/api/public/bookings/${res.reference}/messages`).set(tok).send({ text: 'Bonjour' })).status).toBe(201);
+    const list = await api().get('/api/internal/whatsapp/inbox').set(auth(op.token));
+    expect(list.body.data[0]).toMatchObject({ phone: '', replyBy: 'app', replyUntil: null, name: 'Camille Martin' });
   });
 });

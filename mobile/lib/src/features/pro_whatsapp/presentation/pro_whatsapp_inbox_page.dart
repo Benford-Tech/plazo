@@ -136,7 +136,7 @@ class _ConversationRow extends StatelessWidget {
     final booking = c.reservation;
     final sub = [
       if (booking != null) booking.externalReference ?? booking.reference else 'whatsapp_inbox.no_booking'.tr(),
-      if (c.name != null) c.phone,
+      if (c.name != null && c.phone.isNotEmpty) c.phone,
     ].join(' · ');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

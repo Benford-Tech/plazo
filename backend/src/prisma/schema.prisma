@@ -960,6 +960,7 @@ model Reservation {
   smsOutbox             SmsOutbox[]
   whatsappMessages      WhatsappMessage[]
   whatsappConversations WhatsappConversation[]
+  whatsappAppMessages   WhatsappInboxMessage[] @relation("WhatsappInboxMessageReservation")
   contract              ReservationContract?
   inspections           VehicleInspection[]
   signatureCodes        SignatureCode[]
@@ -2223,6 +2224,8 @@ model WhatsappConversation {
   lastMessageAt DateTime
   /// The traveller's last message: Meta allows a free reply for 24 hours after it.
   lastInboundAt DateTime?
+  /// 12/11/2026: the traveller's last message written in the Plazo app (« Écrire au parking »); a reply then goes there.
+  lastAppAt     DateTime?
   unread        Int       @default(0)
   handledAt     DateTime?
   createdAt     DateTime  @default(now())
@@ -2254,12 +2257,18 @@ model WhatsappInboxMessage {
   status         String?
   errorCode      String?
   staffId        String?
+  /// 12/11/2026 (« Écrire au parking » de l'app Plazo): whatsapp, or app (written or answered in the Plazo app).
+  channel        String   @default("whatsapp")
+  /// The booking an app message is about: the traveller sees only those of their booking.
+  reservationId  String?
   createdAt      DateTime @default(now())
 
   conversation WhatsappConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   staff        Staff?               @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  reservation  Reservation?         @relation("WhatsappInboxMessageReservation", fields: [reservationId], references: [id], onDelete: SetNull)
 
   @@index([conversationId, createdAt])
+  @@index([reservationId, createdAt])
   @@index([createdAt])
   @@map("whatsapp_inbox_messages")
 }

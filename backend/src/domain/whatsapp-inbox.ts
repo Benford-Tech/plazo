@@ -122,3 +122,29 @@ export function previewOf(message: { type: string; text: string | null }): strin
       return 'Message';
   }
 }
+
+/**
+ * 12/11/2026 (« Écrire au parking » from the Plazo app): where a reply of the team goes. The app when the traveller's
+ * last message came from it, or when Meta's 24 hours are over and they once wrote from the app; else WhatsApp within
+ * the 24 hours; null: only a call.
+ */
+export function replyChannelOf(
+  row: { phone: string; lastInboundAt: Date | null; lastAppAt: Date | null },
+  now = new Date(),
+): 'app' | 'whatsapp' | null {
+  const whatsappOpen = !row.phone.startsWith('app:') && replyUntil(row.lastInboundAt, now) !== null;
+  if (row.lastAppAt && (!whatsappOpen || !row.lastInboundAt || row.lastAppAt >= row.lastInboundAt)) return 'app';
+  return whatsappOpen ? 'whatsapp' : null;
+}
+
+/** The conversation key of a traveller writing from the app: their phone in E.164, else one key per booking. */
+export function appConversationPhone(customerPhone: string | null | undefined, reservationId: string): string {
+  let digits = (customerPhone ?? '').replace(/\(0\)/g, '').replace(/[\s.()-]/g, '');
+  if (digits.startsWith('00')) digits = `+${digits.slice(2)}`;
+  if (/^0[1-9]\d{8}$/.test(digits)) return `+33${digits.slice(1)}`;
+  if (/^\+\d{8,15}$/.test(digits)) return digits.replace(/^\+330/, '+33');
+  return `app:${reservationId}`;
+}
+
+/** A traveller's message from the app, as WhatsApp allows a text. */
+export const APP_MESSAGE_MAX_LENGTH = 2000;
