@@ -251,7 +251,15 @@ describe('GET /internal/revenue', () => {
     expect(res.body.months).toHaveLength(12);
     expect(res.body.withoutAmount).toBe(1);
     const byName = Object.fromEntries(res.body.channels.map((c: any) => [c.detail ?? c.channel, c]));
-    expect(byName.Allopark).toMatchObject({ count: 2, totalCents: 10000, commissionCents: 2000, netCents: 8000, netPerBookingCents: 4000, rateBp: 2000, missingRate: false });
+    expect(byName.Allopark).toMatchObject({
+      count: 2,
+      totalCents: 10000,
+      commissionCents: 2000,
+      netCents: 8000,
+      netPerBookingCents: 4000,
+      rateBp: 2000,
+      missingRate: false,
+    });
     expect(byName.Allopark.monthlyNetCents.slice(-2)).toEqual([4000, 4000]);
     expect(byName.phone).toMatchObject({ count: 1, netCents: 6000, netPerBookingCents: 6000, comparatorKey: null });
     expect(byName.Parclick).toMatchObject({ commissionCents: 0, missingRate: true });
