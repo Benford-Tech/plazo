@@ -148,6 +148,11 @@ class _ParkingMessagesCardState extends State<ParkingMessagesCard> {
   }
 }
 
+String _kindLabel(String kind) {
+  final key = 'parking_messages.sent_kind.$kind';
+  return key.tr() == key ? 'parking_messages.sent_kind.other'.tr() : key.tr();
+}
+
 class _Bubble extends StatelessWidget {
   const _Bubble({required this.message});
   final ParkingMessage message;
@@ -161,7 +166,7 @@ class _Bubble extends StatelessWidget {
     return Align(
       alignment: m.mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        key: Key(m.mine ? 'parking-message-mine' : 'parking-message-parking'),
+        key: Key(m.mine ? 'parking-message-mine' : (m.kind != null ? 'parking-message-plazo' : 'parking-message-parking')),
         margin: const EdgeInsets.symmetric(vertical: 3),
         constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.72),
         padding: const EdgeInsets.fromLTRB(11, 8, 11, 6),
@@ -169,9 +174,14 @@ class _Bubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SelectableText(m.text, style: AppText.body(size: 14.5)),
+            if (m.kind != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(_kindLabel(m.kind!), style: AppText.strong(size: 12, color: AppColors.muted)),
+              ),
+            if (m.text.isNotEmpty) SelectableText(m.text, style: AppText.body(size: 14.5)),
             const SizedBox(height: 2),
-            Text(m.by == null || m.mine ? when : '${m.by} · $when', style: AppText.muted(size: 11)),
+            Text([if (!m.mine && m.by != null) m.by!, when, if (m.whatsapp) 'parking_messages.whatsapp'.tr()].join(' · '), style: AppText.muted(size: 11)),
           ],
         ),
       ),

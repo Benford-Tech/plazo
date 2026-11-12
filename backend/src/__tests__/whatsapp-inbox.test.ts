@@ -229,6 +229,30 @@ describe('Boîte WhatsApp : réception, réponse, traité', () => {
     expect((await api().get('/api/internal/whatsapp/inbox').set(auth(driver.token))).status).toBe(403);
   });
 
+  it('un client de deux parkings : aucun parking ne voit le message, sauf celui dont il cite la réservation', async () => {
+    const a = await setupOperator();
+    const b = await setupOperator('Autre');
+    const resA = await booking(a.operator.id, a.parking.id);
+    const resB = await booking(b.operator.id, b.parking.id);
+    await prisma.whatsappMessage.create({
+      data: { operatorId: b.operator.id, reservationId: resB.id, kind: 'booking_reminder', to: '+33612345678' },
+    });
+
+    await postWebhook(incoming('wamid.in.30', '33612345678', 'Bonjour, je serai en retard'));
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(a.token))).body.data).toHaveLength(0);
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(b.token))).body.data).toHaveLength(0);
+    expect(await prisma.whatsappConversation.count({ where: { operatorId: null } })).toBe(1);
+
+    await postWebhook(incoming('wamid.in.31', '33612345678', `C'est pour la réservation ${resA.reference.toLowerCase()}`));
+    const mine = await api().get('/api/internal/whatsapp/inbox').set(auth(a.token));
+    expect(mine.body.data).toHaveLength(1);
+    expect(mine.body.data[0].reservation.id).toBe(resA.id);
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(b.token))).body.data).toHaveLength(0);
+    const open = await api().get(`/api/internal/whatsapp/inbox/${mine.body.data[0].id}`).set(auth(a.token));
+    expect(open.body.messages.map((m: any) => m.text)).toEqual([`C'est pour la réservation ${resA.reference.toLowerCase()}`]);
+    expect((await api().get(`/api/internal/whatsapp/inbox/${mine.body.data[0].id}`).set(auth(b.token))).status).toBe(404);
+  });
+
   it('garde un numéro inconnu pour la plateforme, qui le rattache par la référence', async () => {
     const op = await setupOperator();
     const res = await booking(op.operator.id, op.parking.id, '06 99 88 77 66');
@@ -313,11 +337,19 @@ describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
 
     const thread = await api().get(`/api/public/bookings/${res.reference}/messages`).set(tok);
     expect(thread.body.canWrite).toBe(true);
-    // Only the app messages of this booking (not his WhatsApp « Bonjour »).
-    expect(thread.body.messages.map((m: any) => [m.from, m.text, m.by])).toEqual([
-      ['me', 'On arrive à 8h, c’est bon ?', null],
-      ['parking', 'Oui, à demain.', 'Gérant'],
+    // The whole conversation: his WhatsApp « Bonjour », the app message, the reply, and what Plazo sent the booking.
+    await prisma.whatsappMessage.create({
+      data: { operatorId: op.operator.id, reservationId: res.id, kind: 'booking_reminder', to: '+33612345678', status: 'read', body: 'À demain 8h.' },
+    });
+    const all = await api().get(`/api/public/bookings/${res.reference}/messages`).set(tok);
+    expect(all.body.messages.map((m: any) => [m.from, m.channel, m.text])).toEqual([
+      ['me', 'whatsapp', 'Bonjour'],
+      ['me', 'app', 'On arrive à 8h, c’est bon ?'],
+      ['parking', 'app', 'Oui, à demain.'],
+      ['plazo', 'whatsapp', 'À demain 8h.'],
     ]);
+    expect(all.body.messages[2].by).toBe('Gérant');
+    expect(all.body.messages[3].kind).toBe('booking_reminder');
   });
 
   it('sans numéro utilisable, une conversation par réservation', async () => {

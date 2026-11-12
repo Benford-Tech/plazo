@@ -17,6 +17,7 @@ class FakeMessages implements ParkingMessagesDataSource {
     canWrite: true,
     messages: [
       ParkingMessage(id: 'm1', mine: true, text: 'On arrive à 8h, c’est bon ?', at: now, by: null),
+      ParkingMessage(id: 'm0', mine: false, text: 'Rendez-vous demain à 8h.', at: now, by: null, whatsapp: true, kind: 'booking_reminder'),
       ParkingMessage(id: 'm2', mine: false, text: 'Oui, à demain.', at: now, by: 'Joanny'),
     ],
   );
@@ -48,6 +49,9 @@ void main() {
     expect(find.byKey(const Key('parking-message-mine')), findsOneWidget);
     expect(find.byKey(const Key('parking-message-parking')), findsOneWidget);
     expect(find.textContaining('Joanny ·'), findsOneWidget);
+    expect(find.byKey(const Key('parking-message-plazo')), findsOneWidget);
+    expect(find.text('Message de la veille'), findsOneWidget);
+    expect(find.textContaining('· WhatsApp'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('parking-messages-input')), 'Merci !');
     await tester.tap(find.byKey(const Key('parking-messages-send')));
     await tester.pumpAndSettle();
