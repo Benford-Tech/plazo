@@ -23,6 +23,7 @@ import RemindersPage from "@/pages/RemindersPage";
 import ExtrasTodoPage from "@/pages/ExtrasTodoPage";
 import DeletedReservationsPage from "@/pages/DeletedReservationsPage";
 import RevenuePage from "@/pages/RevenuePage";
+import StatsPage from "@/pages/StatsPage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
@@ -252,6 +253,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="revenue:view">
                     <RevenuePage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/statistiques"
+                element={
+                  <RequirePermission permission="revenue:view">
+                    <StatsPage />
                   </RequirePermission>
                 }
               />

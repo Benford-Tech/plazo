@@ -796,6 +796,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      chiffre) = Vous gardez », puis une pastille par canal qui a retenu (« Allopark 18 % · −612,00 € », « Plazo · −240,00 € ») et
      « Parclick : taux à régler » en ambre pour un comparateur sans taux ; `GET /internal/revenue/summary` rend `month.commissionCents`
      et `commissions[] { label, comparatorKey, rateBp, amountCents, count, missingRate }` (`RevenueService.commissionLines`).
+   - **Statistiques, choix B « Quelles plateformes vous rapportent » (12/11/2026, d'après une capture d'un concurrent, maquettes
+     https://claude.ai/artifact/6kXrPDgyh5r71S8KwcRAHi)** : page `/pro/statistiques` (Gérant › Statistiques, `revenue:view`, `StatsPage`) :
+     sur les 12 derniers mois, un tableau par canal (réservations, chiffre, commission, net, net par réservation, mini-courbe du net mois
+     par mois ; un comparateur sans taux en ambre avec « Régler la commission »), les barres « Chiffre et net, mois par mois » (la partie
+     foncée = ce que le parking garde) et « Ce qu'il faut retenir » (le canal au meilleur net par réservation, parmi ceux d'au moins 3
+     réservations, face au comparateur le moins rentable ; les comparateurs sans taux ; les réservations sans prix avec « Les compléter ») ;
+     « Net » = chiffre moins les commissions connues, les autres charges n'y sont pas ; masquée comme le chiffre d'affaires par le super
+     admin. Serveur : `GET /internal/revenue/channels?to=YYYY-MM&basis=` (`RevenueService.channels`, `channelProfits` de
+     `domain/revenue.ts` : réservations seulement, services et suppléments payés au parking hors canal) → `{ today, basis, months,
+     channels: [{ channel, detail, comparatorKey, rateBp, missingRate, count, totalCents, commissionCents, netCents, netPerBookingCents,
+     monthlyNetCents }], withoutAmount }`. Tests `revenue.test.ts`, `StatsPage.test.tsx`. Pas encore : C (occupation et pics), Plazo Pro.
    - **Réservations sans prix (21/10/2026, « Mets en évidence les réservations sans prix », choix A + C des maquettes
      https://claude.ai/artifact/52eBik9pMeUsVmUfg9KD2o)** : sans prix = pas annulée et `priceCents` nul, quelle que soit la date
      (`ReservationService.noPriceWhere`), gérants seulement (`revenue:view`). **A** : liste Réservations, ligne teintée ambre avec

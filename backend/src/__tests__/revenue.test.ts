@@ -235,6 +235,33 @@ describe('GET /internal/revenue', () => {
     expect((await api().get('/api/internal/revenue/months').set(auth(agent.token))).status).toBe(403);
   });
 
+  it('GET /internal/revenue/channels : chaque canal sur 12 mois, commission, net par réservation et mois par mois (12/11/2026)', async () => {
+    const op = await setupOperator();
+    await api()
+      .put('/api/internal/comparators/commissions')
+      .set(auth(op.token))
+      .send({ label: 'Allopark', rateBp: 2000, fixedCents: 0, effectiveFrom: '2025-01-01' });
+    await create(op, '2026-10-03T08:00', 'aggregator', 'Allopark', 5000);
+    await create(op, '2026-11-04T08:00', 'aggregator', 'Allopark', 5000);
+    await create(op, '2026-11-05T08:00', 'phone', null, 6000);
+    await create(op, '2026-11-06T08:00', 'aggregator', 'Parclick', 4000);
+    await create(op, '2026-11-07T08:00', 'counter', null, null);
+    const res = await api().get('/api/internal/revenue/channels?to=2026-11').set(auth(op.token));
+    expect(res.status).toBe(200);
+    expect(res.body.months).toHaveLength(12);
+    expect(res.body.withoutAmount).toBe(1);
+    const byName = Object.fromEntries(res.body.channels.map((c: any) => [c.detail ?? c.channel, c]));
+    expect(byName.Allopark).toMatchObject({ count: 2, totalCents: 10000, commissionCents: 2000, netCents: 8000, netPerBookingCents: 4000, rateBp: 2000, missingRate: false });
+    expect(byName.Allopark.monthlyNetCents.slice(-2)).toEqual([4000, 4000]);
+    expect(byName.phone).toMatchObject({ count: 1, netCents: 6000, netPerBookingCents: 6000, comparatorKey: null });
+    expect(byName.Parclick).toMatchObject({ commissionCents: 0, missingRate: true });
+    // The largest net first.
+    expect(res.body.channels[0].detail).toBe('Allopark');
+    expect((await api().get('/api/internal/revenue/channels?to=2026-00').set(auth(op.token))).body.fields).toEqual({ to: 'invalid_month' });
+    const agent = await addStaff(op.token, 'agent');
+    expect((await api().get('/api/internal/revenue/channels').set(auth(agent.token))).status).toBe(403);
+  });
+
   it('PUT /internal/reservations/:id/price : complète ou corrige un montant, jamais celui d’une réservation Plazo', async () => {
     const op = await setupOperator();
     const phone = await create(op, '2026-10-06T08:00', 'phone', null, null, 'returned');

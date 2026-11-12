@@ -125,6 +125,7 @@ import type {
   ReservationCommission,
   RevenueBasis,
   RevenueMonths,
+  RevenueChannels,
   RevenueReport,
   RevenueSummary,
   GettingStarted,
@@ -815,6 +816,11 @@ export const adminApi = {
   getRevenueMonths: (to: string, basis: RevenueBasis) =>
     apiRequest<RevenueMonths>(
       `/internal/revenue/months?${new URLSearchParams({ to, basis })}`,
+    ),
+  // 12/11/2026 (statistics B): each channel's profit over the 12 months ending with `to`.
+  getRevenueChannels: (to: string) =>
+    apiRequest<RevenueChannels>(
+      `/internal/revenue/channels?${new URLSearchParams({ to })}`,
     ),
   getRevenueSummary: () =>
     apiRequest<RevenueSummary>("/internal/revenue/summary"),

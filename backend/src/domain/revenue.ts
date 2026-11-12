@@ -328,3 +328,63 @@ export function revenueByMonth(
     };
   });
 }
+
+/**
+ * « Quelles plateformes vous rapportent » (12/11/2026, statistics B, maquettes https://claude.ai/artifact/6kXrPDgyh5r71S8KwcRAHi):
+ * over the months shown, each channel's bookings with an amount, revenue, commission, net, net per booking and its net
+ * month by month (the oldest first), the largest net first. Bookings only: the services and supplements paid at the
+ * parking belong to no channel.
+ */
+export interface ChannelProfit {
+  channel: ReservationChannel;
+  /** A comparator's name (« Allopark »), null for the other channels. */
+  detail: string | null;
+  count: number;
+  totalCents: number;
+  commissionCents: number;
+  netCents: number;
+  netPerBookingCents: number | null;
+  /** One net per month of `months`. */
+  monthlyNetCents: number[];
+}
+
+export function channelProfits(
+  bookings: RevenueBooking[],
+  months: { month: string; from: string; to: string }[],
+  basis: RevenueBasis,
+  timeZone: string,
+): ChannelProfit[] {
+  const lines = new Map<string, ChannelProfit>();
+  const first = months[0]?.from ?? '';
+  const last = months[months.length - 1]?.to ?? '';
+  for (const b of bookings) {
+    if (b.priceCents === null) continue;
+    const day = revenueDay(b, basis, timeZone);
+    if (day < first || day > last) continue;
+    const index = months.findIndex(m => day >= m.from && day <= m.to);
+    if (index < 0) continue;
+    const group = channelGroup(b);
+    const line =
+      lines.get(group.key) ??
+      ({
+        channel: group.channel,
+        detail: group.detail,
+        count: 0,
+        totalCents: 0,
+        commissionCents: 0,
+        netCents: 0,
+        netPerBookingCents: null,
+        monthlyNetCents: months.map(() => 0),
+      } as ChannelProfit);
+    const fee = b.commissionCents ?? 0;
+    line.count += 1;
+    line.totalCents += b.priceCents;
+    line.commissionCents += fee;
+    line.netCents += b.priceCents - fee;
+    line.monthlyNetCents[index] += b.priceCents - fee;
+    lines.set(group.key, line);
+  }
+  return [...lines.values()]
+    .map(line => ({ ...line, netPerBookingCents: line.count ? Math.round(line.netCents / line.count) : null }))
+    .sort((a, b) => b.netCents - a.netCents || b.count - a.count);
+}

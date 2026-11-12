@@ -93,6 +93,7 @@ describe("AdminLayout rail sections", () => {
     expect(hrefs("nav-section-parking")).toEqual(["/parking/occupation"]);
     expect(hrefs("nav-section-manager")).toEqual([
       "/chiffre-affaires",
+      "/statistiques",
       "/plazo/fiche",
       "/equipe",
       "/contrats",

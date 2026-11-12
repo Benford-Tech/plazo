@@ -17,6 +17,8 @@ import {
   monthsEndingWith,
   revenueReport,
   RevenueReport,
+  channelProfits,
+  ChannelProfit,
 } from '@/domain/revenue';
 import { addDays, DATE_RE, dayBounds, localDate } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -74,6 +76,16 @@ export interface RevenueMonths {
 
 /** How many months « Mois par mois » shows. */
 const MONTHS_SHOWN = 12;
+
+/** GET /internal/revenue/channels (12/11/2026, statistics B). */
+export interface RevenueChannels {
+  today: string;
+  basis: RevenueBasis;
+  months: RevenueMonth[];
+  channels: (ChannelProfit & { comparatorKey: string | null; rateBp: number | null; missingRate: boolean })[];
+  /** Bookings of the 12 months without a price: not counted. */
+  withoutAmount: number;
+}
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export interface RevenueSummary {
@@ -294,6 +306,43 @@ export class RevenueService {
       months: lines,
       totalCents: lines.reduce((sum, m) => sum + m.totalCents, 0),
       netCents: lines.reduce((sum, m) => sum + m.netCents, 0),
+    };
+  }
+
+  /**
+   * « Quelles plateformes vous rapportent » (12/11/2026, statistics B): the 12 months ending with `to`, each channel's
+   * profit over them, the months' revenue and net (« Chiffre et net, mois par mois ») and the bookings without a price.
+   */
+  public async channels(actor: AuthenticatedStaff, query: { to?: unknown; basis?: unknown }, now: Date = new Date()): Promise<RevenueChannels> {
+    this.require(actor, 'revenue:view');
+    const parking = await this.parkings.getPrimary(actor);
+    const timeZone = parking.timezone;
+    const today = localDate(now, timeZone);
+    const to = query.to === undefined || query.to === '' ? today.slice(0, 7) : query.to;
+    if (typeof to !== 'string' || !MONTH_RE.test(to)) throw fieldError('to', 'invalid_month');
+    const basis = query.basis === undefined || query.basis === '' ? 'arrival' : query.basis;
+    if (!REVENUE_BASES.includes(basis as RevenueBasis)) throw fieldError('basis', 'invalid_basis');
+    const months = monthsEndingWith(to, MONTHS_SHOWN);
+    const span = { from: months[0].from, to: months[months.length - 1].to, basis: basis as RevenueBasis };
+    const bookings = (await this.bookings(actor, span, timeZone)) as RevenueBooking[];
+    const extras = [...(await this.parkingExtras(actor, span, timeZone)), ...(await this.surchargeItems(actor, span, timeZone))];
+    const rates = await this.commissions.rates(actor.operatorId);
+    const channels = channelProfits(bookings, months, basis as RevenueBasis, timeZone).map(line => {
+      const key = line.channel === 'aggregator' || line.channel === 'import' ? comparatorKey(line.detail) : null;
+      const rate = key ? rateOn(rates, key, today) : null;
+      return {
+        ...line,
+        comparatorKey: key,
+        rateBp: rate?.rateBp ?? null,
+        missingRate: !!key && !rate && line.commissionCents === 0,
+      };
+    });
+    return {
+      today,
+      basis: basis as RevenueBasis,
+      months: revenueByMonth(bookings, months, basis as RevenueBasis, timeZone, extras),
+      channels,
+      withoutAmount: bookings.filter(b => b.priceCents === null).length,
     };
   }
 
