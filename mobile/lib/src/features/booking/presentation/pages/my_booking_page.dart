@@ -35,6 +35,7 @@ import '../bloc/car_location_bloc.dart';
 import '../widgets/booking_card.dart';
 import '../widgets/car_location_card.dart';
 import '../widgets/child_seats_card.dart';
+import '../../../parking_messages/parking_messages_card.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
@@ -198,6 +199,9 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                     key: const Key('booking-extras'),
                                     child: TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
                                   ),
+                                // « Écrire au parking » (12/11/2026): lands in the parking's WhatsApp inbox, the reply comes back here.
+                                if (ParkingMessagesCard.relevant(b.status))
+                                  ParkingMessagesCard(key: ValueKey('messages-${b.reference}'), reference: b.reference, parkingName: b.parking.title),
                                 // The stay's invoice, or « Demander la facture » (07/11/2026); hidden with nothing to show.
                                 if (b.status != 'pending_payment')
                                   TravellerInvoicesCard(key: ValueKey('invoices-${b.reference}-${b.status}'), reference: b.reference),

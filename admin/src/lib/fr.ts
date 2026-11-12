@@ -5795,6 +5795,8 @@ export const whatsappInboxFr = {
   mediaGone: "Plus disponible chez WhatsApp.",
   location: "Position partagée",
   replyUntil: (when: string) => `Réponse libre possible jusqu'à ${when} (24 h après son dernier message, règle de Meta).`,
+  replyInApp: "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
+  appBadge: "App Plazo",
   windowClosed: "Plus de réponse libre : Meta n'autorise qu'un modèle validé 24 h après le dernier message du client. Appelez-le plutôt.",
   placeholder: "Écrire au client…",
   send: "Envoyer",

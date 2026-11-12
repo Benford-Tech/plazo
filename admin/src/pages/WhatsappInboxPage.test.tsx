@@ -113,6 +113,18 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     expect(await screen.findByTestId("wa-thread")).toBeInTheDocument();
   });
 
+  it("un message écrit depuis l'app Plazo : pastille, et la réponse part dans l'app même après 24 h", async () => {
+    const d = detail({ replyUntil: null, replyBy: "app" });
+    d.messages[0] = { ...d.messages[0], channel: "app" };
+    api.whatsappConversation.mockResolvedValue(d);
+    renderAt("/reservations/whatsapp?c=c1");
+    expect(await screen.findByTestId("wa-window-app")).toBeInTheDocument();
+    expect(screen.getByTestId("wa-app")).toHaveTextContent("App Plazo");
+    await userEvent.type(screen.getByLabelText("Écrire au client…"), "Oui.");
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer" }));
+    await waitFor(() => expect(api.replyWhatsapp).toHaveBeenCalledWith("c1", "Oui."));
+  });
+
   it("propose d'appeler quand les 24 h de Meta sont passées", async () => {
     api.whatsappConversation.mockResolvedValue(detail({ replyUntil: null }));
     renderAt("/reservations/whatsapp?c=c1");

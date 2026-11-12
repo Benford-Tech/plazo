@@ -2737,6 +2737,8 @@ export interface WhatsappConversation {
   handledAt: string | null;
   preview: { direction: "in" | "out"; text: string } | null;
   replyUntil: string | null;
+  /** 12/11/2026: where a reply goes (the Plazo app, WhatsApp within Meta's 24 hours), null: only a call. */
+  replyBy?: "app" | "whatsapp" | null;
   unknown: boolean;
 }
 
@@ -2767,6 +2769,8 @@ export interface WhatsappInboxMessage {
   hasMedia: boolean;
   mediaMime: string | null;
   status: string | null;
+  /** whatsapp, or app (« Écrire au parking » of the Plazo app). */
+  channel?: "whatsapp" | "app";
   at: string;
   by: { firstName: string } | null;
 }
