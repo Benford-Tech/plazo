@@ -1390,7 +1390,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      gauche, conversation à droite façon WhatsApp avec les messages de Plazo (« Veille du dépôt envoyé par Plazo · lu ✓✓ »), réponse
      avec « Réponse libre possible jusqu'à … », sinon « Appeler le … », « Marquer comme traité » ; sur téléphone la liste puis la
      conversation ; bloc « Conversation WhatsApp » dans « Messages au voyageur » de la fiche (`conversation` de
-     `GET …/reservations/:id/messages`). Plazo Pro : la cloche seulement. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`.
+     `GET …/reservations/:id/messages`). Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`. **Envoyés (12/11/2026, « Affiche aussi
+     les messages envoyés »)** : `WhatsappMessage.body` (texte lu par le voyageur, gardé avec la ligne 30 jours ; migration
+     `whatsapp_sent_body`, CHECK 4 096) ; `GET /internal/whatsapp/sent` (`reservations:manage`, 300 au plus : genre, état, texte, numéro,
+     réservation, `conversationId` du numéro, `smsFallback`), `counts.sent` de la boîte, `sent[].text` de la conversation ; pilule « Envoyés · N »
+     (web `wa-sent-list`, `?vue=sent` ; « Texte non gardé » avant ce jour, « Voir la conversation › ») et texte dans les bulles « … envoyé par
+     Plazo » ; politique de confidentialité (messages écrits au numéro de Plazo, 30 jours). **Plazo Pro (12/11/2026, « ajoute la boîte WhatsApp
+     dans Plazo Pro »)** : `features/pro_whatsapp` (`WhatsappInboxDataSource` par Dio sans freezed), `/pro/whatsapp` (`ProWhatsappInboxPage` :
+     Non lus · À traiter · Traités · Envoyés) et `/pro/whatsapp/:id` (`ProWhatsappConversationPage` : bulles, messages de Plazo, photo ouverte
+     dans l'app, vocal et document sur le web, réponse dans les 24 h sinon « Appeler », « Marquer comme traité », « Ouvrir la réservation ») ;
+     Plus › Accueil › « Messages WhatsApp » avec le nombre de non lus (`WhatsappUnreadBadge`, `nav/counts`) ; la cloche et le push
+     (`type: 'whatsapp'`, `conversationId`) ouvrent la conversation. Test `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

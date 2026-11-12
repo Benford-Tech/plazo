@@ -1584,6 +1584,8 @@ model WhatsappMessage {
   // Meta's error code of a failure (no personal data).
   errorCode     String?
   fallbackText  String?
+  // 12/11/2026 (« Affiche aussi les messages envoyés »): the text the traveller read, kept the 30 days of the row.
+  body          String?
   // Outcome of the fallback SMS (sent, queued, failed, skipped).
   smsOutcome    String?
   createdAt     DateTime @default(now())

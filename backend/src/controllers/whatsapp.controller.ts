@@ -44,6 +44,12 @@ export class WhatsappController {
     res.json(await this.inboxService.list(req.staff, view));
   });
 
+  /** GET /internal/whatsapp/sent */
+  public sent = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.inboxService.sent(req.staff));
+  });
+
   /** GET /internal/whatsapp/inbox/:id */
   public conversation = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');

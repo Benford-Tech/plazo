@@ -135,7 +135,7 @@ describe('Boîte WhatsApp : réception, réponse, traité', () => {
 
     const list = await api().get('/api/internal/whatsapp/inbox?view=unread').set(auth(op.token));
     expect(list.status).toBe(200);
-    expect(list.body.counts).toMatchObject({ unread: 1, all: 1, handled: 0, unknown: null });
+    expect(list.body.counts).toMatchObject({ unread: 1, all: 1, handled: 0, unknown: null, sent: 0 });
     const conv = list.body.data[0];
     expect(conv).toMatchObject({ name: 'Camille Martin', unread: 1, phone: '06 12 34 56 78' });
     expect(conv.reservation.id).toBe(res.id);
@@ -170,6 +170,47 @@ describe('Boîte WhatsApp : réception, réponse, traité', () => {
     // A new message brings it back.
     await postWebhook(incoming('wamid.in.2', '33612345678', 'Merci !'));
     expect((await api().get('/api/internal/whatsapp/inbox').set(auth(op.token))).body.counts).toMatchObject({ all: 1, unread: 1, handled: 0 });
+  });
+
+  it('liste les messages envoyés par Plazo, avec leur texte et la conversation du numéro', async () => {
+    const op = await setupOperator();
+    const res = await booking(op.operator.id, op.parking.id);
+    await prisma.whatsappMessage.create({
+      data: {
+        operatorId: op.operator.id,
+        reservationId: res.id,
+        kind: 'booking_reminder',
+        to: '+33612345678',
+        status: 'read',
+        body: 'Bonjour Camille, à demain 8h.',
+      },
+    });
+    await prisma.whatsappMessage.create({
+      data: {
+        operatorId: op.operator.id,
+        kind: 'booking_confirmed',
+        to: '+33699999999',
+        status: 'sent',
+        createdAt: new Date(Date.now() - 40 * 86400000),
+      },
+    });
+    await postWebhook(incoming('wamid.in.9', '33612345678', 'Merci'));
+    const list = await api().get('/api/internal/whatsapp/sent').set(auth(op.token));
+    expect(list.status).toBe(200);
+    expect(list.body.data).toHaveLength(1);
+    expect(list.body.data[0]).toMatchObject({
+      kind: 'booking_reminder',
+      status: 'read',
+      text: 'Bonjour Camille, à demain 8h.',
+      phone: '06 12 34 56 78',
+    });
+    expect(list.body.data[0].reservation.id).toBe(res.id);
+    expect(list.body.data[0].conversationId).toBeTruthy();
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(op.token))).body.counts.sent).toBe(1);
+    const open = await api().get(`/api/internal/whatsapp/inbox/${list.body.data[0].conversationId}`).set(auth(op.token));
+    expect(open.body.sent[0].text).toBe('Bonjour Camille, à demain 8h.');
+    const other = await setupOperator('Autre');
+    expect((await api().get('/api/internal/whatsapp/sent').set(auth(other.token))).body.data).toHaveLength(0);
   });
 
   it('refuse une réponse après 24 h, et un autre parking ne voit pas la conversation', async () => {

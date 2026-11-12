@@ -1374,6 +1374,75 @@ class ProVehiclesRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProWhatsappConversationPage]
+class ProWhatsappConversationRoute
+    extends PageRouteInfo<ProWhatsappConversationRouteArgs> {
+  ProWhatsappConversationRoute({
+    Key? key,
+    required String id,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProWhatsappConversationRoute.name,
+         args: ProWhatsappConversationRouteArgs(key: key, id: id),
+         rawPathParams: {'id': id},
+         initialChildren: children,
+       );
+
+  static const String name = 'ProWhatsappConversationRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<ProWhatsappConversationRouteArgs>(
+        orElse: () =>
+            ProWhatsappConversationRouteArgs(id: pathParams.getString('id')),
+      );
+      return ProWhatsappConversationPage(key: args.key, id: args.id);
+    },
+  );
+}
+
+class ProWhatsappConversationRouteArgs {
+  const ProWhatsappConversationRouteArgs({this.key, required this.id});
+
+  final Key? key;
+
+  final String id;
+
+  @override
+  String toString() {
+    return 'ProWhatsappConversationRouteArgs{key: $key, id: $id}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProWhatsappConversationRouteArgs) return false;
+    return key == other.key && id == other.id;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ id.hashCode;
+}
+
+/// generated route for
+/// [ProWhatsappInboxPage]
+class ProWhatsappInboxRoute extends PageRouteInfo<void> {
+  const ProWhatsappInboxRoute({List<PageRouteInfo>? children})
+    : super(ProWhatsappInboxRoute.name, initialChildren: children);
+
+  static const String name = 'ProWhatsappInboxRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProWhatsappInboxPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ResultsPage]
 class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
   ResultsRoute({

@@ -253,7 +253,56 @@ export class WhatsappInboxService {
       prisma.whatsappConversation.count({ where: this.whereOf(actor, 'handled', now) }),
       admin ? prisma.whatsappConversation.count({ where: { operatorId: null } }) : Promise.resolve(null),
     ]);
-    return { data: rows.map(row => this.view(row, now)), counts: { unread, all, handled, unknown } };
+    const sent = await prisma.whatsappMessage.count({ where: this.sentWhere(actor, now) });
+    return { data: rows.map(row => this.view(row, now)), counts: { unread, all, handled, unknown, sent } };
+  }
+
+  private sentWhere(actor: AuthenticatedStaff, now: Date): Prisma.WhatsappMessageWhereInput {
+    return { operatorId: actor.operatorId, createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) } };
+  }
+
+  /**
+   * GET /internal/whatsapp/sent (12/11/2026, « Affiche aussi les messages envoyés »): what Plazo sent the parking's
+   * travellers by WhatsApp these 30 days, the newest first, with its text (kept since that day) and the conversation of
+   * that number when the traveller answered.
+   */
+  public async sent(actor: AuthenticatedStaff, now = new Date()) {
+    const rows = await prisma.whatsappMessage.findMany({
+      where: this.sentWhere(actor, now),
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+      select: {
+        id: true,
+        kind: true,
+        to: true,
+        status: true,
+        body: true,
+        smsOutcome: true,
+        createdAt: true,
+        reservation: { select: { id: true, reference: true, externalReference: true, customerName: true } },
+      },
+    });
+    const phones = [...new Set(rows.map(r => r.to))];
+    const conversations = phones.length
+      ? await prisma.whatsappConversation.findMany({
+          where: { operatorId: actor.operatorId, phone: { in: phones } },
+          select: { id: true, phone: true },
+        })
+      : [];
+    const byPhone = new Map(conversations.map(c => [c.phone, c.id]));
+    return {
+      data: rows.map(r => ({
+        id: r.id,
+        kind: r.kind,
+        status: r.status,
+        text: r.body,
+        phone: displayPhone(r.to),
+        at: r.createdAt,
+        smsFallback: r.status === 'fallback' || r.smsOutcome === 'sent',
+        reservation: r.reservation,
+        conversationId: byPhone.get(r.to) ?? null,
+      })),
+    };
   }
 
   /** The conversations with something unread, for the menu's counter. */
@@ -283,7 +332,7 @@ export class WhatsappInboxService {
             where: { reservationId: row.reservationId, operatorId: row.operatorId },
             orderBy: { createdAt: 'asc' },
             take: 50,
-            select: { id: true, kind: true, status: true, createdAt: true },
+            select: { id: true, kind: true, status: true, body: true, createdAt: true },
           })
         : Promise.resolve([]),
     ]);
@@ -301,7 +350,7 @@ export class WhatsappInboxService {
         at: m.createdAt,
         by: m.staff ? { firstName: m.staff.firstName } : null,
       })),
-      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, at: s.createdAt })),
+      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, text: s.body, at: s.createdAt })),
     };
   }
 
