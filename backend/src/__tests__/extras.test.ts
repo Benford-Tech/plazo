@@ -734,3 +734,161 @@ describe('« Services à faire » et le voyageur prévenu (29/10/2026)', () => {
     pushes.mockRestore();
   });
 });
+
+describe('service ajouté par l’équipe, payé au parking (12/11/2026)', () => {
+  /** A booking typed by the desk (phone), arriving in 2 days. */
+  async function phoneBooking(token: string, plate = 'AB-123-CD', price = 4500) {
+    const res = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send({
+        channel: 'phone',
+        arrivalAt: inDays(2, '08:00'),
+        returnAt: inDays(6, '18:00'),
+        passengers: 1,
+        customerFirstName: 'Vincent',
+        customerLastName: 'Blanc',
+        customerPhone: '06 12 34 56 78',
+        plate,
+        priceCents: price,
+      });
+    if (res.status !== 201) throw new Error(JSON.stringify(res.body));
+    return res.body.data.id as string;
+  }
+  const add = (token: string, id: string, body: Record<string, unknown>) =>
+    api().post(`/api/internal/reservations/${id}/extras`).set(auth(token)).send(body);
+
+  it('ajouté sur une réservation au téléphone : sans Stripe ni commission, dans « Services à faire » et l’historique', async () => {
+    const pushes = jest.spyOn(Container.get(PushService), 'notifyTravellers').mockResolvedValue(1 as never);
+    const op = await parkingWithExtras();
+    const id = await phoneBooking(op.token);
+
+    const before = await api().get(`/api/internal/reservations/${id}/extras`).set(auth(op.token));
+    expect(before.status).toBe(200);
+    expect(before.body.canAdd).toBe(true);
+    expect(before.body.services.map((s: any) => [s.kind, s.priceCents, s.available])).toEqual([
+      ['interior_wash', 5000, true],
+      ['hybrid_charge', 1500, true],
+      ['ev_charge', 3000, true],
+    ]);
+
+    const res = await add(op.token, id, { kind: 'interior_wash', priceCents: 4550, paymentMethod: 'card' });
+    expect(res.status).toBe(201);
+    expect(res.body.extras).toEqual([
+      expect.objectContaining({
+        kind: 'interior_wash',
+        priceCents: 4550,
+        status: 'ordered',
+        source: 'staff',
+        paymentMethod: 'card',
+        paidAt: expect.any(String),
+        addedBy: expect.any(String),
+      }),
+    ]);
+    expect(res.body.services.find((s: any) => s.kind === 'interior_wash')).toMatchObject({ available: false, reason: 'already_ordered' });
+    const row = await prisma.reservationExtra.findUniqueOrThrow({ where: { id: res.body.extra } });
+    expect(row).toMatchObject({ commissionCents: 0, operatorShareCents: 4550, stripePaymentIntentId: null, payoutStatus: null, withBooking: false });
+    expect(fake.paymentIntents.create).not.toHaveBeenCalled();
+    expect(pushes).not.toHaveBeenCalled();
+
+    // The parking's price by default, « Au retour » not paid yet; one charge at a time.
+    const charge = await add(op.token, id, { kind: 'ev_charge', paymentMethod: 'on_return' });
+    expect(charge.status).toBe(201);
+    expect(charge.body.extras[1]).toMatchObject({ priceCents: 3000, paymentMethod: null, paidAt: null });
+    expect((await add(op.token, id, { kind: 'hybrid_charge', paymentMethod: 'cash' })).body.code).toBe('one_charge');
+    expect((await add(op.token, id, { kind: 'interior_wash', paymentMethod: 'cash' })).body.code).toBe('already_ordered');
+    expect((await add(op.token, id, { kind: 'unknown', paymentMethod: 'cash' })).body.code).toBe('not_offered');
+    const bad = await add(op.token, id, { kind: 'fuel', priceCents: 50, paymentMethod: 'comparator' });
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toEqual({ priceCents: 'range', paymentMethod: 'invalid' });
+    expect((await add(op.token, id, { kind: 'fuel' })).body.fields).toEqual({ paymentMethod: 'required' });
+
+    const todo = await api().get('/api/internal/extras').set(auth(op.token));
+    expect(todo.body.counts.todo).toBe(2);
+
+    // Paid on the way back.
+    const paid = await api()
+      .patch(`/api/internal/reservations/${id}/extras/${charge.body.extra}/payment`)
+      .set(auth(op.token))
+      .send({ paymentMethod: 'cash' });
+    expect(paid.status).toBe(200);
+    expect(paid.body.extras[1]).toMatchObject({ paymentMethod: 'cash', paidAt: expect.any(String) });
+
+    // « Pas possible » never calls Stripe, nor tells the traveller of a refund.
+    const refused = await api()
+      .post(`/api/internal/reservations/${id}/extras/${charge.body.extra}/refuse`)
+      .set(auth(op.token))
+      .send({ reason: 'Pas de borne' });
+    expect(refused.status).toBe(200);
+    expect(refused.body.extras[1]).toMatchObject({ status: 'refused', refundedAt: null, refusedReason: 'Pas de borne' });
+    expect(fake.refunds.create).not.toHaveBeenCalled();
+    expect(pushes).not.toHaveBeenCalled();
+
+    const history = await api().get(`/api/internal/reservations/${id}/history`).set(auth(op.token));
+    const added = (history.body.data as any[]).filter(e => e.action === 'extra.added');
+    expect(added).toHaveLength(2);
+    expect(added[1]).toMatchObject({
+      author: expect.objectContaining({ kind: 'staff' }),
+      info: expect.objectContaining({ label: 'Lavage intérieur et shampouineuse' }),
+    });
+    pushes.mockRestore();
+  });
+
+  it('jamais reversé ni remboursé par Plazo, compté dans le chiffre d’affaires avec son moyen de paiement', async () => {
+    const op = await parkingWithExtras();
+    const id = await phoneBooking(op.token);
+    const wash = await add(op.token, id, { kind: 'interior_wash', paymentMethod: 'card' });
+    const charge = await add(op.token, id, { kind: 'ev_charge', paymentMethod: 'on_return' });
+    await api().post(`/api/internal/reservations/${id}/extras/${wash.body.extra}/done`).set(auth(op.token));
+
+    const payouts = await Container.get(ExtraService).runPayouts(new Date(Date.now() + 60 * 86400000));
+    expect(payouts.transferred).toBe(0);
+    expect(fake.transfers.create).not.toHaveBeenCalled();
+
+    const day = addDays(localDate(new Date(), TZ), 2);
+    const report = await api().get(`/api/internal/revenue?from=${day}&to=${day}`).set(auth(op.token));
+    expect(report.status).toBe(200);
+    expect(report.body).toMatchObject({
+      totalCents: 4500 + 5000 + 3000,
+      netCents: 4500 + 5000 + 3000,
+      count: 1,
+      averageCents: 4500,
+      parkingExtras: { count: 2, totalCents: 8000, toCollectCount: 1, toCollectCents: 3000 },
+    });
+    expect(report.body.byPaymentMethod).toEqual(
+      expect.arrayContaining([
+        { method: 'card', count: 1, totalCents: 5000 },
+        { method: null, count: 2, totalCents: 4500 + 3000 },
+      ]),
+    );
+
+    // The car handed back: the 15-minute pass leaves a service paid at the parking alone.
+    await prisma.reservation.update({ where: { id }, data: { status: 'returned' } });
+    expect((await Container.get(ExtraService).settle()).refunded).toBe(0);
+    expect((await prisma.reservationExtra.findUniqueOrThrow({ where: { id: charge.body.extra } })).status).toBe('ordered');
+    expect(fake.refunds.create).not.toHaveBeenCalled();
+
+    // The database refuses a staff row with a commission or a Stripe payment.
+    await expect(
+      prisma.reservationExtra.update({ where: { id: wash.body.extra }, data: { commissionCents: 100, operatorShareCents: 4900 } }),
+    ).rejects.toThrow();
+    await expect(prisma.reservationExtra.update({ where: { id: wash.body.extra }, data: { stripePaymentIntentId: 'pi_x' } })).rejects.toThrow();
+  });
+
+  it('refusé sur une réservation close, pour un rôle sans droit, à un autre loueur ; pas de paiement au parking pour une commande Plazo', async () => {
+    const op = await parkingWithExtras();
+    const id = await phoneBooking(op.token);
+    const driver = await addStaff(op.token, 'driver');
+    expect((await add(driver.token, id, { kind: 'interior_wash', paymentMethod: 'card' })).status).toBe(403);
+    const other = await setupOperator('Autre parking');
+    expect((await add(other.token, id, { kind: 'interior_wash', paymentMethod: 'card' })).status).toBe(404);
+    await prisma.reservation.update({ where: { id }, data: { status: 'returned' } });
+    expect((await add(op.token, id, { kind: 'interior_wash', paymentMethod: 'card' })).body.code).toBe('closed');
+
+    const paid = await paidInApp();
+    const wash = await orderAndPay(paid.reference, paid.manageToken, 'interior_wash');
+    const r = await prisma.reservation.findUniqueOrThrow({ where: { reference: paid.reference } });
+    const res = await api().patch(`/api/internal/reservations/${r.id}/extras/${wash}/payment`).set(auth(op.token)).send({ paymentMethod: 'cash' });
+    expect(res.body.code).toBe('not_parking_payment');
+  });
+});

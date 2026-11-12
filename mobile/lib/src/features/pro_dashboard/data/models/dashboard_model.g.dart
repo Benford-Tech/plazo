@@ -323,6 +323,7 @@ _DashboardVehicleModel _$DashboardVehicleModelFromJson(
   tripDirection: json['tripDirection'] as String?,
   stopName: json['stopName'] as String?,
   returnsToday: json['returnsToday'] as bool? ?? false,
+  toParkSince: readToParkSince(json, 'toParkSince') as String?,
 );
 
 Map<String, dynamic> _$DashboardVehicleModelToJson(
@@ -348,4 +349,5 @@ Map<String, dynamic> _$DashboardVehicleModelToJson(
   'tripDirection': instance.tripDirection,
   'stopName': instance.stopName,
   'returnsToday': instance.returnsToday,
+  'toParkSince': instance.toParkSince,
 };

@@ -309,6 +309,8 @@ export interface Reservation {
   stop?: { id: string; name: string; kind: ShuttleStopKind } | null;
   /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (GET /internal/reservations/:id). */
   boardingCheckIn?: BoardingCheckIn | null;
+  /** 12/11/2026: no place yet, the traveller gone in the shuttle since then: « À garer » (GET /internal/reservations/:id). */
+  toPark?: { since: string } | null;
   /** « Sièges auto » (24/10/2026): the child seats to install in the shuttle; missing from an older API. */
   childSeats?: ChildSeats | null;
 }
@@ -1569,6 +1571,8 @@ export interface DashboardVehicle {
   returnsToday: boolean;
   /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
   boardingCheckIn?: BoardingCheckIn | null;
+  /** 12/11/2026: no place yet, the traveller gone in the shuttle since then: « À garer » (missing from an older API). */
+  toPark?: { since: string } | null;
 }
 
 /** The pro space's home (05/10/2026). */
@@ -1896,6 +1900,8 @@ export interface RevenueReport {
   direct?: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
   byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
+  /** 12/11/2026: the services added by the team and paid at the parking, inside the total; absent from an older API. */
+  parkingExtras?: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
   byDay: {
     date: string;
     count: number;
@@ -2176,6 +2182,8 @@ export interface ContractTemplates {
 export type SignedContractFileKind = "template" | "signed" | "proof";
 
 export interface SignedContractRow {
+  /** The contract's id (archive, unarchive). */
+  id: string;
   reservationId: string;
   reference: string;
   customerName: string;
@@ -2192,12 +2200,17 @@ export interface SignedContractRow {
   signedSha256: string | null;
   files: { template: boolean; signed: boolean; proof: boolean };
   reserved: boolean;
+  /** Put away from the register (12/11/2026); nothing is erased. */
+  archivedAt: string | null;
 }
 
 export interface SignedContractsPage {
   data: SignedContractRow[];
   total: number;
+  /** The pills « Signés · Avec réserve · Archivés », whatever the pill chosen (12/11/2026). */
+  signedCount: number;
   reservedCount: number;
+  archivedCount: number;
   page: number;
   totalPages: number;
 }
@@ -2207,6 +2220,8 @@ export interface SignedContractsQuery {
   to?: string;
   q?: string;
   reserved?: boolean;
+  /** The archived contracts only. */
+  archived?: boolean;
   page?: number;
 }
 
@@ -2229,9 +2244,70 @@ export interface BookingContract {
     method: "sms_code" | "handwritten" | "booking_link";
     device: string;
     phoneMasked: string | null;
+    /** The staff member whose phone was used (12/11/2026). */
+    witnessName?: string | null;
     proofSha256: string;
     signedSha256: string | null;
   } | null;
+}
+
+export type InspectionKind = "dropoff" | "return";
+
+/** A photo of a condition report: the four sides, the old dashboard / interior slots, or a damage close-up. */
+export interface InspectionPhotoRef {
+  id: string;
+  slot: string;
+  takenAt: string;
+}
+
+/** A damage touched on the car's outline (x, y from 0 to 1), numbered 1, 2, 3… */
+export interface InspectionDamage {
+  n: number;
+  x: number;
+  y: number;
+  label: string;
+  photoId: string | null;
+}
+
+/** The team's condition report (GET …/paperwork › dropoff | return). */
+export interface BookingInspection {
+  kind: InspectionKind;
+  startedAt: string;
+  completedAt: string | null;
+  performedBy: string | null;
+  damages: InspectionDamage[];
+  mileageKm: number | null;
+  fuelQuarters: number | null;
+  notes: string | null;
+  photos: InspectionPhotoRef[];
+  photosErased: boolean;
+  decision: "pending" | "accepted" | "accepted_by_default" | "reserved";
+  decidedAt: string | null;
+  decisionMethod: "sms_code" | "handwritten" | "booking_link" | null;
+  reserveText: string | null;
+}
+
+/** The traveller's own photos, once sent to the parking. */
+export interface TravellerInspectionReport {
+  kind: InspectionKind;
+  startedAt: string;
+  completedAt: string | null;
+  notes: string | null;
+  photos: InspectionPhotoRef[];
+  photosErased: boolean;
+}
+
+/** GET /internal/reservations/:id/paperwork: the contract and the condition reports, read-only on the web. */
+export interface BookingPaperwork {
+  status: ReservationStatus;
+  photosAvailable: boolean;
+  contract: BookingContract;
+  dropoff: BookingInspection | null;
+  return: BookingInspection | null;
+  travellerReports: {
+    dropoff: TravellerInspectionReport | null;
+    return: TravellerInspectionReport | null;
+  };
 }
 
 // ---- Services for the car (21/10/2026) -----------------------------------------------------------------------------
@@ -2273,6 +2349,34 @@ export interface ReservationExtra {
   refundedAt: string | null;
   doneBy: string | null;
   refusedBy: string | null;
+  /** 12/11/2026: `staff` = added by the team, paid at the parking (no Stripe, no Plazo commission). */
+  source?: ExtraSource;
+  /** Paid at the parking: how; null with `source: "staff"`: « À payer au retour ». */
+  paymentMethod?: ParkingPaymentMethod | null;
+  addedBy?: string | null;
+}
+
+export type ExtraSource = "traveller" | "staff";
+/** How a service added at the parking is paid (12/11/2026); `on_return`: « Au retour », not yet. */
+export type ParkingPaymentMethod = "card" | "cash" | "cheque" | "transfer" | "holiday_vouchers";
+export type ParkingPaymentChoice = ParkingPaymentMethod | "on_return";
+
+/** A service the team can add to a booking (« + Ajouter un service »), with why not when it cannot. */
+export interface AddableExtra {
+  kind: string;
+  label: string;
+  icon: string;
+  group: string | null;
+  priceCents: number;
+  available: boolean;
+  reason: string | null;
+}
+
+/** GET /internal/reservations/:id/extras */
+export interface ReservationExtrasView {
+  extras: ReservationExtra[];
+  services?: AddableExtra[];
+  canAdd?: boolean;
 }
 
 /** 29/10/2026 (A): « Services à faire », GET /internal/extras?view=. */

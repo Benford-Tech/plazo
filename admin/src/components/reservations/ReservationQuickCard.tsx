@@ -95,8 +95,6 @@ export function ReservationQuickCard({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   const r = query.data;
-  const phone = r?.customerPhone.replace(/[^+\d]/g, "") ?? "";
-  const flight = r ? flightState(r) : null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-stretch sm:justify-end"
@@ -132,203 +130,226 @@ export function ReservationQuickCard({
             <Skeleton className="h-32 rounded-xl" />
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <Plate value={r.plate} />
-              <span className="min-w-0 flex-1 truncate text-[17px] font-semibold">
-                {r.customerName}
-              </span>
-<StatusPill status={r.status} />
-            </div>
-            <div className="flex gap-2">
-              <a
-                href={`tel:${phone}`}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-lime-deep font-semibold text-lime-deep hover:bg-panel-2"
-              >
-                <Phone className="h-4 w-4" aria-hidden="true" />
-                {t.call}
-              </a>
-              <a
-                href={`sms:${phone}`}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-panel-line font-semibold hover:bg-panel-2"
-              >
-                <MessageSquare className="h-4 w-4" aria-hidden="true" />
-                {t.sms}
-              </a>
-            </div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-xl border border-panel-line bg-panel p-3 text-[14px]">
-              {/* 28/10/2026: the two movements in their colours, as on the planning (green arrival, indigo departure). */}
-              <dt className="self-center">
-                <MovementPill kind="arrival" />
-              </dt>
-              <dd className="font-mono">
-                {dateTimeShort(r.arrivalAt)} · {t.passengers(r.passengers)}
-                {r.departureFlight && (
-                  <span className="ml-1 inline-flex items-center gap-1 text-muted-foreground">
-                    <PlaneTakeoff className="h-3.5 w-3.5" aria-hidden="true" />
-                    {r.departureFlight}
-                  </span>
-                )}
-              </dd>
-              <dt className="self-center">
-                <MovementPill kind="departure" />
-              </dt>
-              <dd className="font-mono">
-                {dateTimeShort(r.returnAt)}
-                {r.handover === "valet" ? (
-                  <ValetPill label={fr.reservation.handovers.valet} className="ml-1.5 font-sans" />
-                ) : r.stop && (
-                  <span className="ml-1 text-muted-foreground">
-                    · {r.stop.name}
-                  </span>
-                )}
-              </dd>
-              {hasChildSeats(r.childSeats) && (
-                <>
-                  <dt className="text-muted-foreground">{t.childSeats}</dt>
-                  <dd
-                    className="flex items-center gap-1.5"
-                    data-testid="card-child-seats"
-                  >
-                    <ChildSeatIcon className="text-lime-deep" />
-                    {childSeatsSummary(r.childSeats)}
-                  </dd>
-                </>
-              )}
-              <dt className="text-muted-foreground">{t.flight}</dt>
-              <dd className="flex flex-wrap items-center gap-1.5 font-mono">
-                {r.returnFlight ? (
-                  <>
-                    <PlaneLanding
-                      className="h-3.5 w-3.5 text-lime-deep"
-                      aria-hidden="true"
-                    />
-                    {r.returnFlight}
-                    {flight && <Badge tone={flight.tone}>{flight.text}</Badge>}
-                    {(r.flightTerminal || r.flightGate) && (
-                      <span className="text-muted-foreground">
-                        {[
-                          r.flightTerminal
-                            ? t.terminal(r.flightTerminal)
-                            : null,
-                          r.flightGate ? t.gate(r.flightGate) : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">{t.noFlight}</span>
-                )}
-              </dd>
-              <dt className="text-muted-foreground">{t.spot}</dt>
-              <dd className="flex flex-wrap items-center gap-1.5 font-mono">
-                <SquareParking
-                  className="h-3.5 w-3.5 text-lime-deep"
-                  aria-hidden="true"
-                />
-                <span
-                  data-testid="card-spot"
-                  className={r.spot || r.file ? "" : "text-muted-foreground"}
-                >
-                  {r.file
-                    ? t.inFile(r.file.code, r.filePosition ?? null)
-                    : (r.spot?.code ?? t.noSpot)}
-                </span>
-                <KeyRound
-                  className="ml-2 h-3.5 w-3.5 text-lime-deep"
-                  aria-hidden="true"
-                />
-                <span
-                  data-testid="card-keys"
-                  className={r.keyHook ? "" : "text-muted-foreground"}
-                >
-                  {r.keyHook ?? (r.keysLeftAt ? t.keysLeft : t.noKeys)}
-                </span>
-              </dd>
-              {r.carLat != null && r.carLng != null && (
-                <>
-                  <dt className="text-muted-foreground">{t.car}</dt>
-                  <dd className="font-mono">
-                    {fr.reservation.carBy[r.carLocatedBy ?? "traveller"]}
-                    {r.carNote ? ` · ${r.carNote}` : ""}{" "}
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${r.carLat},${r.carLng}&travelmode=walking`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-lime-deep underline"
-                    >
-                      {t.carDirections}
-                    </a>
-                  </dd>
-                </>
-              )}
-            </dl>
-            {r.boardingCheckIn && (
-              <p
-                data-testid="card-boarding"
-                className="text-[13px] text-muted-foreground"
-              >
-                {t.boardingCheckIn(
-                  r.boardingCheckIn.driverFirstName,
-                  timeOf(r.boardingCheckIn.at),
-                )}
-              </p>
-            )}
-            {(r.vehicleModel || r.vehicleColour) && (
-              <p
-                data-testid="card-vehicle"
-                className="text-[13px] text-muted-foreground"
-              >
-                {t.vehicle} ·{" "}
-                {fr.reservation.vehicleDetails(r.vehicleModel, r.vehicleColour)}
-              </p>
-            )}
-            {r.returnNoticeKind && r.returnNoticeAt && (
-              <p
-                data-testid="card-notice"
-                className="rounded-xl border border-panel-line bg-warn-soft p-3 text-[13px] font-semibold text-warn-text"
-              >
-                {t.returnNotice} ·{" "}
-                {fr.reservation.returnNoticeLine(
-                  r.returnNoticeKind,
-                  r.returnNoticeText ?? null,
-                  dateTimeShort(r.returnNoticeAt),
-                )}
-              </p>
-            )}
-            {r.customerNote && (
-              <p
-                data-testid="card-message"
-                className="whitespace-pre-line rounded-xl border border-lime-deep/40 bg-panel p-3 text-[13px]"
-              >
-                <span className="font-semibold">{t.customerNote} :</span>{" "}
-                {r.customerNote}
-              </p>
-            )}
-            {r.notes && (
-              <p className="whitespace-pre-line rounded-xl border border-panel-line bg-panel p-3 text-[13px]">
-                {r.notes}
-              </p>
-            )}
-            <section className="space-y-2">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {t.next.title}
-              </h3>
-              <NextStep reservation={r} onNavigate={onClose} compact />
-            </section>
-            <ReservationExtras reservationId={r.id} compact />
-            <Link
-              to={`/reservations/${r.id}`}
-              onClick={onClose}
-              className="block text-center text-[13px] font-semibold text-lime-deep hover:underline"
-            >
-              {t.open}
-            </Link>
-          </div>
+          <QuickCardBody r={r} onNavigate={onClose} />
         )}
       </aside>
+    </div>
+  );
+}
+
+/**
+ * The body of the operational card, shared by the drawer and the planning's live panel (12/11/2026): plate and status,
+ * call and SMS, movements, flight, spot and keys, notes, the next gesture, extras and the link to the full page.
+ * `live` goes right under the plate line (the panel's timeline of what the traveller did).
+ */
+export function QuickCardBody({
+  r,
+  onNavigate,
+  live,
+}: {
+  r: Reservation;
+  onNavigate?: () => void;
+  live?: ReactNode;
+}) {
+  const phone = r.customerPhone.replace(/[^+\d]/g, "");
+  const flight = flightState(r);
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Plate value={r.plate} />
+        <span className="min-w-0 flex-1 truncate text-[17px] font-semibold">
+          {r.customerName}
+        </span>
+<StatusPill status={r.status} />
+      </div>
+      {live}
+      <div className="flex gap-2">
+        <a
+          href={`tel:${phone}`}
+          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-lime-deep font-semibold text-lime-deep hover:bg-panel-2"
+        >
+          <Phone className="h-4 w-4" aria-hidden="true" />
+          {t.call}
+        </a>
+        <a
+          href={`sms:${phone}`}
+          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-panel-line font-semibold hover:bg-panel-2"
+        >
+          <MessageSquare className="h-4 w-4" aria-hidden="true" />
+          {t.sms}
+        </a>
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 rounded-xl border border-panel-line bg-panel p-3 text-[14px]">
+        {/* 28/10/2026: the two movements in their colours, as on the planning (green arrival, indigo departure). */}
+        <dt className="self-center">
+          <MovementPill kind="arrival" />
+        </dt>
+        <dd className="font-mono">
+          {dateTimeShort(r.arrivalAt)} · {t.passengers(r.passengers)}
+          {r.departureFlight && (
+            <span className="ml-1 inline-flex items-center gap-1 text-muted-foreground">
+              <PlaneTakeoff className="h-3.5 w-3.5" aria-hidden="true" />
+              {r.departureFlight}
+            </span>
+          )}
+        </dd>
+        <dt className="self-center">
+          <MovementPill kind="departure" />
+        </dt>
+        <dd className="font-mono">
+          {dateTimeShort(r.returnAt)}
+          {r.handover === "valet" ? (
+            <ValetPill label={fr.reservation.handovers.valet} className="ml-1.5 font-sans" />
+          ) : r.stop && (
+            <span className="ml-1 text-muted-foreground">
+              · {r.stop.name}
+            </span>
+          )}
+        </dd>
+        {hasChildSeats(r.childSeats) && (
+          <>
+            <dt className="text-muted-foreground">{t.childSeats}</dt>
+            <dd
+              className="flex items-center gap-1.5"
+              data-testid="card-child-seats"
+            >
+              <ChildSeatIcon className="text-lime-deep" />
+              {childSeatsSummary(r.childSeats)}
+            </dd>
+          </>
+        )}
+        <dt className="text-muted-foreground">{t.flight}</dt>
+        <dd className="flex flex-wrap items-center gap-1.5 font-mono">
+          {r.returnFlight ? (
+            <>
+              <PlaneLanding
+                className="h-3.5 w-3.5 text-lime-deep"
+                aria-hidden="true"
+              />
+              {r.returnFlight}
+              {flight && <Badge tone={flight.tone}>{flight.text}</Badge>}
+              {(r.flightTerminal || r.flightGate) && (
+                <span className="text-muted-foreground">
+                  {[
+                    r.flightTerminal
+                      ? t.terminal(r.flightTerminal)
+                      : null,
+                    r.flightGate ? t.gate(r.flightGate) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-muted-foreground">{t.noFlight}</span>
+          )}
+        </dd>
+        <dt className="text-muted-foreground">{t.spot}</dt>
+        <dd className="flex flex-wrap items-center gap-1.5 font-mono">
+          <SquareParking
+            className="h-3.5 w-3.5 text-lime-deep"
+            aria-hidden="true"
+          />
+          <span
+            data-testid="card-spot"
+            className={r.spot || r.file ? "" : "text-muted-foreground"}
+          >
+            {r.file
+              ? t.inFile(r.file.code, r.filePosition ?? null)
+              : (r.spot?.code ??
+                (r.toPark ? t.toPark(timeOf(r.toPark.since)) : t.noSpot))}
+          </span>
+          <KeyRound
+            className="ml-2 h-3.5 w-3.5 text-lime-deep"
+            aria-hidden="true"
+          />
+          <span
+            data-testid="card-keys"
+            className={r.keyHook ? "" : "text-muted-foreground"}
+          >
+            {r.keyHook ?? (r.keysLeftAt ? t.keysLeft : t.noKeys)}
+          </span>
+        </dd>
+        {r.carLat != null && r.carLng != null && (
+          <>
+            <dt className="text-muted-foreground">{t.car}</dt>
+            <dd className="font-mono">
+              {fr.reservation.carBy[r.carLocatedBy ?? "traveller"]}
+              {r.carNote ? ` · ${r.carNote}` : ""}{" "}
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${r.carLat},${r.carLng}&travelmode=walking`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-lime-deep underline"
+              >
+                {t.carDirections}
+              </a>
+            </dd>
+          </>
+        )}
+      </dl>
+      {r.boardingCheckIn && (
+        <p
+          data-testid="card-boarding"
+          className="text-[13px] text-muted-foreground"
+        >
+          {t.boardingCheckIn(
+            r.boardingCheckIn.driverFirstName,
+            timeOf(r.boardingCheckIn.at),
+          )}
+        </p>
+      )}
+      {(r.vehicleModel || r.vehicleColour) && (
+        <p
+          data-testid="card-vehicle"
+          className="text-[13px] text-muted-foreground"
+        >
+          {t.vehicle} ·{" "}
+          {fr.reservation.vehicleDetails(r.vehicleModel, r.vehicleColour)}
+        </p>
+      )}
+      {r.returnNoticeKind && r.returnNoticeAt && (
+        <p
+          data-testid="card-notice"
+          className="rounded-xl border border-panel-line bg-warn-soft p-3 text-[13px] font-semibold text-warn-text"
+        >
+          {t.returnNotice} ·{" "}
+          {fr.reservation.returnNoticeLine(
+            r.returnNoticeKind,
+            r.returnNoticeText ?? null,
+            dateTimeShort(r.returnNoticeAt),
+          )}
+        </p>
+      )}
+      {r.customerNote && (
+        <p
+          data-testid="card-message"
+          className="whitespace-pre-line rounded-xl border border-lime-deep/40 bg-panel p-3 text-[13px]"
+        >
+          <span className="font-semibold">{t.customerNote} :</span>{" "}
+          {r.customerNote}
+        </p>
+      )}
+      {r.notes && (
+        <p className="whitespace-pre-line rounded-xl border border-panel-line bg-panel p-3 text-[13px]">
+          {r.notes}
+        </p>
+      )}
+      <section className="space-y-2">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.next.title}
+        </h3>
+        <NextStep reservation={r} onNavigate={onNavigate} compact />
+      </section>
+      <ReservationExtras reservationId={r.id} compact />
+      <Link
+        to={`/reservations/${r.id}`}
+        onClick={onNavigate}
+        className="block text-center text-[13px] font-semibold text-lime-deep hover:underline"
+      >
+        {t.open}
+      </Link>
     </div>
   );
 }

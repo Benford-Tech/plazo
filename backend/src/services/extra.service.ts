@@ -33,6 +33,8 @@ import {
   orderDeadline,
   orderRefusal,
   OrderRefusal,
+  ParkingPaymentMethod,
+  parkingPaymentOf,
 } from '@/domain/extras';
 import { payoutDueAt } from '@/domain/payout';
 import { dayBounds, localDate } from '@/domain/time';
@@ -69,6 +71,10 @@ export type ExtraOrderView = {
   refusedAt: string | null;
   refusedReason: string | null;
   refundedAt: string | null;
+  /** 12/11/2026: `traveller` (paid online on Plazo) or `staff` (added by the team, paid at the parking). */
+  source: ReservationExtra['source'];
+  /** Paid at the parking: how (null with `source: 'staff'`: « À payer au retour »). */
+  paymentMethod: ReservationExtra['paymentMethod'];
 };
 
 export type ExtraPayment = { clientSecret: string; paymentIntentId: string; amountCents: number; currency: string };
@@ -98,6 +104,8 @@ function orderView(e: ReservationExtra, rows: readonly Pick<ParkingExtra, 'kind'
     refusedAt: e.refusedAt?.toISOString() ?? null,
     refusedReason: e.refusedReason,
     refundedAt: e.refundedAt?.toISOString() ?? null,
+    source: e.source,
+    paymentMethod: e.paymentMethod,
   };
 }
 
@@ -708,6 +716,25 @@ export class ExtraService {
       const e = await tx.reservationExtra.findUniqueOrThrow({ where: { id: extraId }, include: { reservation: true } });
       if (e.status !== 'ordered') return false;
       const now = new Date();
+      // 12/11/2026: a service the team added is paid at the parking: nothing goes through Stripe, nothing to refund here.
+      if (e.source === 'staff') {
+        if (as !== 'refused') return false;
+        await tx.reservationExtra.update({
+          where: { id: e.id },
+          data: { status: 'refused', refusedAt: now, refusedById: actor?.id ?? null, refusedReason: reason?.trim() || null },
+        });
+        await this.audit.record(
+          actor ?? { id: null, operatorId: e.operatorId },
+          {
+            action: 'extra.refused',
+            entityType: 'reservation',
+            entityId: e.reservationId,
+            details: { extraId: e.id, kind: e.kind, priceCents: e.priceCents, source: 'staff' },
+          },
+          tx,
+        );
+        return 'staff' as const;
+      }
       let refundId: string | null = null;
       const live = e.withBooking ? e.reservation : e;
       if (!this.payments.testUnderLiveKeys(live)) {
@@ -747,6 +774,8 @@ export class ExtraService {
       );
       return true;
     }, STRIPE_TX);
+    // Paid at the parking: the traveller's push speaks of a card refund, so none.
+    if (done === 'staff') return true;
     if (done) {
       const e = await prisma.reservationExtra.findUniqueOrThrow({ where: { id: extraId } });
       await this.push
@@ -755,7 +784,7 @@ export class ExtraService {
         })
         .catch(() => 0);
     }
-    return done;
+    return done === true;
   }
 
   // ---- The team ---------------------------------------------------------------------------------------------------
@@ -769,19 +798,142 @@ export class ExtraService {
   private async staffViewOf(reservationId: string) {
     const orders = await prisma.reservationExtra.findMany({
       where: { reservationId, ...SHOWN },
-      include: { doneBy: { select: { firstName: true } }, refusedBy: { select: { firstName: true } }, acceptedBy: { select: { firstName: true } } },
+      include: {
+        doneBy: { select: { firstName: true } },
+        refusedBy: { select: { firstName: true } },
+        acceptedBy: { select: { firstName: true } },
+        addedBy: { select: { firstName: true } },
+      },
       orderBy: { createdAt: 'asc' },
     });
-    const { parkingId } = await prisma.reservation.findUniqueOrThrow({ where: { id: reservationId }, select: { parkingId: true } });
-    const rows = await this.serviceRows(parkingId);
+    const r = await prisma.reservation.findUniqueOrThrow({ where: { id: reservationId }, include: { extras: true } });
+    const rows = await this.serviceRows(r.parkingId);
+    const now = new Date();
+    const services = enabledOffersFrom(rows).map(o => {
+      const reason = this.staffRefusalOf(r, o, rows, now);
+      return { kind: o.kind, label: o.label, icon: o.icon, group: o.group, priceCents: o.priceCents, available: reason === null, reason };
+    });
     return {
       extras: orders.map(e => ({
         ...orderView(e, rows),
         acceptedBy: e.acceptedBy?.firstName ?? null,
         doneBy: e.doneBy?.firstName ?? null,
         refusedBy: e.refusedBy?.firstName ?? null,
+        addedBy: e.addedBy?.firstName ?? null,
       })),
+      // 12/11/2026 (« + Ajouter un service »): what the team can add, each with why not when it cannot.
+      services,
+      canAdd: services.some(s => s.available),
     };
+  }
+
+  /** Why the team cannot add this service to the booking now (any channel, no lead time), or null. */
+  private staffRefusalOf(r: Reservation & { extras: ReservationExtra[] }, offer: ExtraOffer | null, rows: readonly ParkingExtra[], now: Date) {
+    const active = r.extras
+      .filter(e => ACTIVE_EXTRA_STATUSES.includes(e.status) && !(e.status === 'pending_payment' && !e.withBooking))
+      .map(e => ({ kind: e.kind, group: rows.find(row => row.kind === e.kind)?.groupKey ?? null }));
+    return orderRefusal(r, offer, { active, now, byStaff: true });
+  }
+
+  /**
+   * POST /internal/reservations/:id/extras { kind, priceCents?, paymentMethod } (12/11/2026, « Payé au parking »): the
+   * team adds a service the parking offers to any booking, at the parking's price unless told otherwise (1 € to 1 000 €),
+   * paid at the parking by card, cash, cheque, transfer, holiday vouchers, or `on_return` (« Au retour »). No Stripe, no
+   * Plazo commission, no payout; it goes straight to « Services à faire ». 400 kind / priceCents / paymentMethod; 409
+   * not_offered, closed, already_ordered, one_charge, one_of_group.
+   */
+  public async addByStaff(actor: AuthenticatedStaff, id: string, body: { kind?: unknown; priceCents?: unknown; paymentMethod?: unknown }) {
+    const fields: Record<string, string> = {};
+    if (typeof body.kind !== 'string' || body.kind.length === 0 || body.kind.length > 40) fields.kind = 'invalid';
+    let priceCents: number | null = null;
+    if (body.priceCents !== undefined && body.priceCents !== null) {
+      if (typeof body.priceCents !== 'number' || !Number.isInteger(body.priceCents)) fields.priceCents = 'invalid';
+      else if (body.priceCents < MIN_EXTRA_PRICE_CENTS || body.priceCents > MAX_EXTRA_PRICE_CENTS) fields.priceCents = 'range';
+      else priceCents = body.priceCents;
+    }
+    const method = body.paymentMethod === undefined || body.paymentMethod === null ? 'required' : parkingPaymentOf(body.paymentMethod);
+    if (method === 'required' || method === 'invalid') fields.paymentMethod = method;
+    if (Object.keys(fields).length) throw new ValidationException(fields);
+    const paymentMethod = method as ParkingPaymentMethod | null;
+    const kind = body.kind as string;
+    const own = await this.ownReservation(actor, id);
+    const created = await prisma
+      .$transaction(async tx => {
+        await this.lockReservation(tx, own.id);
+        const r = await tx.reservation.findUniqueOrThrow({ where: { id: own.id }, include: { extras: true } });
+        const rows = await this.serviceRows(r.parkingId, tx);
+        const offer = enabledOffersFrom(rows).find(o => o.kind === kind) ?? null;
+        const now = new Date();
+        const refusal = this.staffRefusalOf(r, offer, rows, now);
+        if (refusal) throw new HttpException(httpStatus.CONFLICT, `This service cannot be added (${refusal})`, refusal);
+        const price = priceCents ?? offer!.priceCents;
+        const extra = await tx.reservationExtra.create({
+          data: {
+            reservationId: r.id,
+            operatorId: r.operatorId,
+            kind,
+            label: offer!.label,
+            priceCents: price,
+            commissionCents: 0,
+            operatorShareCents: price,
+            status: 'ordered',
+            source: 'staff',
+            paymentMethod,
+            paidAt: paymentMethod ? now : null,
+            addedById: actor.id,
+          },
+        });
+        await this.audit.record(
+          actor,
+          {
+            action: 'extra.added',
+            entityType: 'reservation',
+            entityId: r.id,
+            details: { extraId: extra.id, kind, label: offer!.label, priceCents: price, paymentMethod: paymentMethod ?? 'on_return' },
+          },
+          tx,
+        );
+        return extra;
+      })
+      .catch(error => {
+        // The unique index of the active orders: someone ordered it at the same time.
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+          throw new HttpException(httpStatus.CONFLICT, 'This service is already ordered', 'already_ordered');
+        }
+        throw error;
+      });
+    return { extra: created.id, ...(await this.staffViewOf(own.id)) };
+  }
+
+  /**
+   * PATCH /internal/reservations/:id/extras/:extraId/payment { paymentMethod } (12/11/2026): how a service added by the
+   * team was paid, e.g. « Au retour » once the traveller has paid. 409 not_parking_payment for a service paid on Plazo.
+   */
+  public async setParkingPayment(actor: AuthenticatedStaff, id: string, extraId: string, raw: unknown) {
+    const method = raw === undefined || raw === null ? 'required' : parkingPaymentOf(raw);
+    if (method === 'required' || method === 'invalid') throw new ValidationException({ paymentMethod: method });
+    const { e } = await this.ownOrder(actor, id, extraId);
+    if (e.source !== 'staff') throw new HttpException(httpStatus.CONFLICT, 'This service was paid on Plazo', 'not_parking_payment');
+    if (e.status !== 'ordered' && e.status !== 'done') throw new HttpException(httpStatus.CONFLICT, 'This service is not to do', 'not_to_do');
+    if (e.paymentMethod !== method) {
+      await prisma.$transaction(async tx => {
+        await tx.reservationExtra.update({
+          where: { id: e.id },
+          data: { paymentMethod: method, paidAt: method ? (e.paidAt ?? new Date()) : null },
+        });
+        await this.audit.record(
+          actor,
+          {
+            action: 'extra.payment',
+            entityType: 'reservation',
+            entityId: id,
+            details: { extraId: e.id, kind: e.kind, paymentMethod: { from: e.paymentMethod ?? 'on_return', to: method ?? 'on_return' } },
+          },
+          tx,
+        );
+      });
+    }
+    return this.staffViewOf(id);
   }
 
   /** GET /internal/reservations/:id/extras */
@@ -990,7 +1142,8 @@ export class ExtraService {
   public async settle(now = new Date()) {
     const result = { refunded: 0, failed: 0, expired: 0 };
     const due = await prisma.reservationExtra.findMany({
-      where: { status: 'ordered', reservation: { status: { in: [...CLOSED_BOOKING_STATUSES] } } },
+      // A service the team added was paid at the parking (or is still to be): never refunded by Plazo.
+      where: { status: 'ordered', source: 'traveller', reservation: { status: { in: [...CLOSED_BOOKING_STATUSES] } } },
       select: { id: true },
       take: 50,
     });

@@ -740,6 +740,15 @@ export default function RevenuePage() {
                 </span>
               </p>
             )}
+            {/* 12/11/2026 (« Payé au parking »): the services the team added, inside the total, out of the bookings' lines. */}
+            {report.parkingExtras && report.parkingExtras.count > 0 && (
+              <p data-testid="revenue-parking-extras" className="rounded-xl bg-panel-2 px-3 py-2 text-sm">
+                {t.parkingExtras(euros(report.parkingExtras.totalCents), report.parkingExtras.count)}
+                {report.parkingExtras.toCollectCount > 0 && (
+                  <span className="text-warn-text"> · {t.parkingExtrasToCollect(euros(report.parkingExtras.toCollectCents))}</span>
+                )}
+              </p>
+            )}
             {report.byChannel.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t.noRevenue}</p>
             ) : (

@@ -201,6 +201,7 @@ const INFO_KEYS = [
   'priceCents',
   'amountCents',
   'fileName',
+  'label',
   'source',
 ] as const;
 

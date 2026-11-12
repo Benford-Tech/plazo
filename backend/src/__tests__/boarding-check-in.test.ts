@@ -382,7 +382,7 @@ describe('embarquer en un geste (14/10/2026)', () => {
     expect(arrival(files.body.arrivals)).toMatchObject({ onSite: true, boardingCheckIn: checkIn });
   });
 
-  it('le tableau de bord garde la voiture pointée à l’embarquement « à placer » après la dépose', async () => {
+  it('12/11/2026 : client parti en navette, sa voiture sans place est « À garer », sans alerte', async () => {
     runTodayAt('10:00');
     const { op, karim } = await setup();
     await api()
@@ -398,8 +398,38 @@ describe('embarquer en un geste (14/10/2026)', () => {
     const unplaced = dashboard.body.alerts
       .filter((a: { kind: string }) => a.kind === 'no_spot')
       .map((a: { reservationId: string }) => a.reservationId);
-    // The boarded car stays to put away; one checked in at the desk keeps the former rule (« Sur place » only).
-    expect(unplaced).toEqual([late.id]);
+    // Both travellers have left in the shuttle: their cars are still to put away, but no longer an alert.
+    expect(unplaced).toEqual([]);
     expect(dashboard.body.breakdown.toPlaceToday).toBe(1);
+    const vehicle = (id: string) => (dashboard.body.vehicles as { id: string; toPark: { since: string } | null }[]).find(v => v.id === id)!;
+    expect(vehicle(late.id).toPark).toEqual({ since: trip.passengers.find((p: { reservationId: string }) => p.reservationId === late.id).arrivedAt });
+    expect(vehicle(here.id).toPark).toEqual({ since: trip.startedAt });
+    // The sheet says it too; still in « Arrivées à placer » of the Occupation.
+    const sheet = await api().get(`/api/internal/reservations/${late.id}`).set(auth(op.token));
+    expect(sheet.body.toPark).toEqual(vehicle(late.id).toPark);
+    const files = await api().get(`/api/internal/parkings/${op.parking.id}/files`).set(auth(op.token));
+    expect(files.body.arrivals.map((a: { id: string }) => a.id)).toContain(late.id);
+    // Once the car has its file, nothing more to park.
+    expect((await api().post(`/api/internal/reservations/${late.id}/file`).set(auth(op.token)).send({ fileId: files.body.files[0].id })).status).toBe(
+      200,
+    );
+    const after = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect((after.body.vehicles as { id: string; toPark: unknown }[]).find(v => v.id === late.id)!.toPark).toBeNull();
+  });
+
+  it('12/11/2026 : avant l’embarquement, la voiture sans place reste « Sans place » avec l’alerte', async () => {
+    runTodayAt('10:00');
+    const { op } = await setup();
+    await api()
+      .put(`/api/internal/parkings/${op.parking.id}/files`)
+      .set(auth(op.token))
+      .send({ files: [{ code: 'F07', capacity: 3 }] });
+    const here = await booking(op.token, 'BN-655-RT', { status: 'arrived', arrivalAt: hoursFromNow(-1) });
+    const dashboard = await api().get('/api/internal/dashboard').set(auth(op.token));
+    expect(
+      dashboard.body.alerts.filter((a: { kind: string }) => a.kind === 'no_spot').map((a: { reservationId: string }) => a.reservationId),
+    ).toEqual([here.id]);
+    expect((dashboard.body.vehicles as { id: string; toPark: unknown }[]).find(v => v.id === here.id)!.toPark).toBeNull();
+    expect((await api().get(`/api/internal/reservations/${here.id}`).set(auth(op.token))).body.toPark).toBeNull();
   });
 });

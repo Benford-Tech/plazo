@@ -147,6 +147,26 @@ void main() {
     expect(find.text('Crochet n°'), findsOneWidget);
   });
 
+  testWidgets('12/11/2026 · client parti en navette : sa voiture sans place est « À garer » en gris, plus « Sans place »', (tester) async {
+    final since = DateTime(2026, 10, 3, 11, 22);
+    final vehicle = DashboardVehicleModel.fromJson({
+      'id': 'r3',
+      'reference': 'R3',
+      'customerName': 'Louis Leroy',
+      'plate': 'LM-789-NP',
+      'status': 'shuttled_out',
+      'arrivalAt': t0.toIso8601String(),
+      'returnAt': DateTime.utc(2026, 10, 9, 21).toIso8601String(),
+      'toPark': {'since': since.toIso8601String()},
+    });
+    expect(vehicle.toParkSince, since.toIso8601String());
+    await show(tester, dashboard.copyWith(alerts: const [], vehicles: [dashboard.vehicles.first, vehicle]));
+    await tester.scrollUntilVisible(find.text('Crochet n°'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Sans place'), findsNothing);
+    expect(find.text('À garer'), findsOneWidget);
+    expect(find.text('À garer · client en navette 11:22'), findsOneWidget);
+  });
+
   testWidgets('16/10/2026 · « Import » À voir quand Claude n’a pas pu lire un mail dans l’heure, avec la cause', (tester) async {
     await show(
       tester,

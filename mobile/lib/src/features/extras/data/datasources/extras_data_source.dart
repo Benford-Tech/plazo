@@ -12,6 +12,8 @@ abstract class ExtrasDataSource {
   Future<StaffExtrasModel> accept(String reservationId, String extraId);
   Future<StaffExtrasModel> done(String reservationId, String extraId);
   Future<StaffExtrasModel> refuse(String reservationId, String extraId, String? reason);
+  Future<StaffExtrasModel> add(String reservationId, {required String kind, required int priceCents, required String paymentMethod});
+  Future<StaffExtrasModel> setPayment(String reservationId, String extraId, String paymentMethod);
   Future<ExtraSettingsModel> settings(String parkingId);
   Future<ExtraSettingsModel> updateSettings(String parkingId, {int? leadHours, List<ExtraSettingModel>? offers});
 }
@@ -52,6 +54,14 @@ class ExtrasDataSourceImpl implements ExtrasDataSource {
   @override
   Future<StaffExtrasModel> refuse(String reservationId, String extraId, String? reason) =>
       client.refuse(reservationId, extraId, {if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim()});
+
+  @override
+  Future<StaffExtrasModel> add(String reservationId, {required String kind, required int priceCents, required String paymentMethod}) =>
+      client.add(reservationId, {'kind': kind, 'priceCents': priceCents, 'paymentMethod': paymentMethod});
+
+  @override
+  Future<StaffExtrasModel> setPayment(String reservationId, String extraId, String paymentMethod) =>
+      client.setPayment(reservationId, extraId, {'paymentMethod': paymentMethod});
 
   @override
   Future<ExtraSettingsModel> settings(String parkingId) => client.settings(parkingId);

@@ -10,7 +10,7 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
-import { BookingContractCard } from "@/components/reservations/BookingContractCard";
+import { BookingPaperworkCard } from "@/components/reservations/BookingPaperworkCard";
 import { BookingInvoiceCard } from "@/components/reservations/BookingInvoiceCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { TravellerMessages } from "@/components/reservations/TravellerMessages";
@@ -435,8 +435,10 @@ export default function ReservationPage() {
           <ReservationExtras
             reservationId={r.id}
             mayAct={can(user?.role, "reservations:status")}
+            mayAdd={can(user?.role, "reservations:manage") && !user?.demo}
+            mayConfigure={can(user?.role, "parking:manage")}
           />
-          <BookingContractCard reservationId={r.id} status={r.status} />
+          <BookingPaperworkCard reservationId={r.id} status={r.status} />
           {/* « Facture » (06/11/2026, direction A): the invoice in the parking's name, for those who manage bookings. */}
           {can(user?.role, "reservations:manage") && (
             <BookingInvoiceCard
@@ -498,7 +500,10 @@ export default function ReservationPage() {
                 <span className="tabular font-mono">
                   {r.file
                     ? quickCardFr.inFile(r.file.code, r.filePosition ?? null)
-                    : (r.spot?.code ?? quickCardFr.noSpot)}
+                    : (r.spot?.code ??
+                      (r.toPark
+                        ? quickCardFr.toPark(timeOf(r.toPark.since))
+                        : quickCardFr.noSpot))}
                 </span>
                 <span className="ml-2 text-muted-foreground">
                   · {quickCardFr.keys}{" "}

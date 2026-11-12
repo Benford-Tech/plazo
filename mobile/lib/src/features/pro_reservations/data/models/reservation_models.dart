@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../shared/child_seats/child_seats.dart';
+import '../../../../shared/to_park/to_park.dart';
 
 part 'reservation_models.freezed.dart';
 part 'reservation_models.g.dart';
@@ -82,6 +83,9 @@ abstract class ReservationModel with _$ReservationModel {
 
     /// 14/10/2026: the arrival recorded by the driver at boarding (null: checked in at the desk, or not yet).
     BoardingCheckInModel? boardingCheckIn,
+
+    /// 12/11/2026: no place yet, the traveller gone in the shuttle since then: « À garer » instead of « Pas de place ».
+    @JsonKey(readValue: readToParkSince) DateTime? toParkSince,
 
     /// 24/10/2026: the child car seats asked for the shuttle (none from an older API).
     @Default(ChildSeats.none) ChildSeats childSeats,

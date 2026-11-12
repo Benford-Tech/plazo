@@ -82,6 +82,9 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
           : BoardingCheckInModel.fromJson(
               json['boardingCheckIn'] as Map<String, dynamic>,
             ),
+      toParkSince: readToParkSince(json, 'toParkSince') == null
+          ? null
+          : DateTime.parse(readToParkSince(json, 'toParkSince') as String),
       childSeats: json['childSeats'] == null
           ? ChildSeats.none
           : ChildSeats.fromJson(json['childSeats'] as Map<String, dynamic>),
@@ -138,6 +141,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'file': instance.file,
       'filePosition': instance.filePosition,
       'boardingCheckIn': instance.boardingCheckIn,
+      'toParkSince': instance.toParkSince?.toIso8601String(),
       'childSeats': instance.childSeats,
       'handover': instance.handover,
     };

@@ -462,6 +462,35 @@ describe("DashboardPage", () => {
     expect(within(alerts).getAllByRole("listitem")).toHaveLength(9);
   });
 
+  it("12/11/2026 : client parti en navette, sa voiture sans place est « À garer » en gris, hors du filtre « Sans place »", async () => {
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      vehicles: dashboard.vehicles.map((v) =>
+        v.id === "r3"
+          ? {
+              ...v,
+              status: "shuttled_out",
+              toPark: { since: "2026-10-05T09:22:00Z" },
+            }
+          : v,
+      ),
+    });
+    renderPage();
+    const vehicles = (
+      await screen.findByRole("heading", { name: "Véhicules sur le parking" })
+    ).closest("section")!;
+    const louis = within(vehicles)
+      .getByRole("button", { name: /Louis Leroy/ })
+      .closest<HTMLElement>("[data-testid=vehicle-row]")!;
+    expect(within(louis).getByTestId("vehicle-to-park")).toHaveTextContent(
+      "À garer · client en navette 11:22",
+    );
+    expect(louis).not.toHaveTextContent("Sans place");
+    const filters = within(vehicles).getByTestId("vehicle-filters");
+    expect(filters).not.toHaveTextContent("Sans place");
+    expect(filters).toHaveTextContent("À garer1");
+  });
+
   it("26/10/2026 : les clés changent d'état d'un clic : laissées, crochet n°, puis « Clés ? »", async () => {
     api.setKeys.mockResolvedValue({
       keysLeftAt: "2026-10-05T07:47:00Z",

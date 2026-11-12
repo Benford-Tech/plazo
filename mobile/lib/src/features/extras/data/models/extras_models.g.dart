@@ -53,6 +53,9 @@ _ExtraOrderModel _$ExtraOrderModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['acceptedAt'] as String),
       acceptedBy: json['acceptedBy'] as String?,
+      source: json['source'] as String? ?? 'traveller',
+      paymentMethod: json['paymentMethod'] as String?,
+      addedBy: json['addedBy'] as String?,
     );
 
 Map<String, dynamic> _$ExtraOrderModelToJson(_ExtraOrderModel instance) =>
@@ -72,6 +75,27 @@ Map<String, dynamic> _$ExtraOrderModelToJson(_ExtraOrderModel instance) =>
       'refusedBy': instance.refusedBy,
       'acceptedAt': instance.acceptedAt?.toIso8601String(),
       'acceptedBy': instance.acceptedBy,
+      'source': instance.source,
+      'paymentMethod': instance.paymentMethod,
+      'addedBy': instance.addedBy,
+    };
+
+_AddableExtraModel _$AddableExtraModelFromJson(Map<String, dynamic> json) =>
+    _AddableExtraModel(
+      kind: json['kind'] as String,
+      label: json['label'] as String,
+      priceCents: (json['priceCents'] as num).toInt(),
+      available: json['available'] as bool? ?? true,
+      reason: json['reason'] as String?,
+    );
+
+Map<String, dynamic> _$AddableExtraModelToJson(_AddableExtraModel instance) =>
+    <String, dynamic>{
+      'kind': instance.kind,
+      'label': instance.label,
+      'priceCents': instance.priceCents,
+      'available': instance.available,
+      'reason': instance.reason,
     };
 
 _TravellerExtrasModel _$TravellerExtrasModelFromJson(
@@ -138,10 +162,22 @@ _StaffExtrasModel _$StaffExtrasModelFromJson(Map<String, dynamic> json) =>
               ?.map((e) => ExtraOrderModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <ExtraOrderModel>[],
+      services:
+          (json['services'] as List<dynamic>?)
+              ?.map(
+                (e) => AddableExtraModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <AddableExtraModel>[],
+      canAdd: json['canAdd'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$StaffExtrasModelToJson(_StaffExtrasModel instance) =>
-    <String, dynamic>{'extras': instance.extras};
+    <String, dynamic>{
+      'extras': instance.extras,
+      'services': instance.services,
+      'canAdd': instance.canAdd,
+    };
 
 _ExtraSettingModel _$ExtraSettingModelFromJson(Map<String, dynamic> json) =>
     _ExtraSettingModel(

@@ -1,16 +1,25 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { signal } from "@/test/arrival-fixtures";
 import PlanningPage from "./PlanningPage";
 
-const api = vi.hoisted(() => ({ getPlanning: vi.fn(), getLiveArrivals: vi.fn() }));
+const api = vi.hoisted(() => ({ getPlanning: vi.fn(), getLiveArrivals: vi.fn(), getReservation: vi.fn(), getReservationExtras: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { role: "driver" } as Record<string, unknown> }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
-  return { ...actual, adminApi: { ...actual.adminApi, getPlanning: (...a: unknown[]) => api.getPlanning(...a), getLiveArrivals: () => api.getLiveArrivals() } };
+  return {
+    ...actual,
+    adminApi: {
+      ...actual.adminApi,
+      getPlanning: (...a: unknown[]) => api.getPlanning(...a),
+      getLiveArrivals: () => api.getLiveArrivals(),
+      getReservation: (...a: unknown[]) => api.getReservation(...a),
+      getReservationExtras: (...a: unknown[]) => api.getReservationExtras(...a),
+    },
+  };
 });
 
 const booking = (id: string, name: string, plate: string, at: string, extra: Record<string, unknown> = {}) => ({
@@ -201,5 +210,133 @@ describe("Planning : les prochains en tête (direction A)", () => {
     await userEvent.click(screen.getByTestId("past-arrival"));
     expect(screen.getByTestId("planning-row-a1").closest("li")).toHaveClass("opacity-50");
     expect(screen.queryByTestId("planning-row-d1")).toBeNull();
+  });
+});
+
+const renderPage = () =>
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <PlanningPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+
+describe("Planning : la réservation en direct à droite (12/11/2026)", () => {
+  const original = window.matchMedia;
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.matchMedia = ((query: string) => ({
+      matches: query === "(min-width: 1024px)",
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ["Date", "setInterval", "clearInterval", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date("2026-11-12T10:00:00.000Z")); // 11:00 in Paris
+    api.getLiveArrivals.mockResolvedValue({
+      serverTime: "2026-11-12T10:00:00.000Z",
+      signals: [
+        signal({
+          id: "s9",
+          reservationId: "m1",
+          state: "at_meeting_point",
+          customerName: "Sébastien Morel",
+          plate: "GH-456-JK",
+          position: null,
+          startedAt: "2026-11-12T09:58:00.000Z",
+          atMeetingPointAt: "2026-11-12T10:12:00.000Z",
+          note: "Je suis en avance",
+        }),
+      ],
+    });
+    api.getPlanning.mockResolvedValue({
+      date: "2026-11-12",
+      timezone: "Europe/Paris",
+      parking: { id: "p1", name: "Parking Démo LYS", bookableCapacity: 100 },
+      arrivals: [booking("m1", "Sébastien Morel", "GH-456-JK", "2026-11-12T10:15:00.000Z")],
+      returns: [],
+      nights: [],
+      stats: { arrivals: 1, arrived: 0, returns: 0, returnsWithFlight: 0 },
+    });
+    api.getReservation.mockResolvedValue({
+      ...booking("m1", "Sébastien Morel", "GH-456-JK", "2026-11-12T10:15:00.000Z"),
+      customerPhone: "06 12 34 56 78",
+      vehicleModel: "Peugeot 3008",
+      vehicleColour: "gris",
+      nextStatuses: ["arrived", "cancelled"],
+    });
+    api.getReservationExtras.mockResolvedValue({ data: [], available: [] });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    window.matchMedia = original;
+  });
+
+  it("ouvre la réservation à côté du planning, la relit toutes les 5 s et se ferme", async () => {
+    renderPage();
+    const rowButton = await screen.findByTestId("planning-row-m1");
+    await act(async () => rowButton.click());
+    const panel = await screen.findByTestId("live-panel");
+    // The planning stays: no drawer, the row outlined.
+    expect(screen.queryByTestId("quick-card")).toBeNull();
+    expect(rowButton.closest("li")).toHaveAttribute("data-selected", "true");
+    expect(rowButton).toHaveAttribute("aria-pressed", "true");
+    expect(await within(panel).findByText("Sébastien Morel")).toBeInTheDocument();
+    expect(within(panel).getByTestId("live-pill")).toHaveTextContent(/En direct · il y a \d s/);
+    expect(within(panel).getByTestId("card-vehicle")).toHaveTextContent("Peugeot 3008");
+    // What the traveller did: on the way with their word, then at the meeting point (now).
+    expect(within(panel).getByTestId("live-step-on_the_way")).toHaveAttribute("data-state", "done");
+    expect(within(panel).getByTestId("live-step-on_the_way")).toHaveTextContent("« Je suis en avance »");
+    expect(within(panel).getByTestId("live-step-meeting_point")).toHaveAttribute("data-state", "now");
+    expect(within(panel).getByTestId("live-step-boarded")).toHaveAttribute("data-state", "todo");
+    expect(within(panel).getByRole("link", { name: "Ouvrir la fiche complète" })).toHaveAttribute("href", "/reservations/m1");
+
+    const calls = api.getReservation.mock.calls.length;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5100);
+    });
+    await waitFor(() => expect(api.getReservation.mock.calls.length).toBeGreaterThan(calls));
+
+    await act(async () => within(panel).getByRole("button", { name: "Fermer la réservation" }).click());
+    expect(screen.queryByTestId("live-panel")).toBeNull();
+    expect(rowButton.closest("li")).not.toHaveAttribute("data-selected");
+  });
+
+  it("replie les deux prochains en une ligne, garde le retard et se souvient du choix", async () => {
+    api.getLiveArrivals.mockResolvedValue({ serverTime: "2026-11-12T10:00:00.000Z", signals: [] });
+    api.getPlanning.mockResolvedValue({
+      date: "2026-11-12",
+      timezone: "Europe/Paris",
+      parking: { id: "p1", name: "Parking Démo LYS", bookableCapacity: 100 },
+      arrivals: [
+        booking("m1", "Sébastien Morel", "GH-456-JK", "2026-11-12T10:25:00.000Z"),
+        booking("m0", "Paul Durand", "AA-111-AA", "2026-11-12T09:30:00.000Z"),
+      ],
+      returns: [booking("g1", "Inès Garcia", "BB-222-BB", "2026-11-12T10:40:00.000Z", { status: "return_requested" })],
+      nights: [],
+      stats: { arrivals: 2, arrived: 0, returns: 1, returnsWithFlight: 0 },
+    });
+    const first = renderPage();
+    await screen.findByTestId("next-arrival");
+    await act(async () => screen.getByRole("button", { name: "Replier" }).click());
+    const line = screen.getByTestId("planning-next");
+    expect(line).toHaveAttribute("data-collapsed", "true");
+    expect(screen.queryByTestId("next-arrival")).toBeNull();
+    expect(within(line).getByTestId("folded-arrival")).toHaveTextContent("↑ 11:25S. Moreldans 25 min");
+    expect(within(line).getByTestId("folded-return")).toHaveTextContent("↓ 11:40I. Garcia");
+    expect(within(line).getByTestId("folded-late")).toHaveTextContent("En retard · 1");
+    expect(window.localStorage.getItem("plazo:planning-next-collapsed")).toBe("1");
+
+    first.unmount();
+    renderPage();
+    expect(await screen.findByRole("button", { name: "Déplier" })).toBeInTheDocument();
+    await act(async () => screen.getByRole("button", { name: "Déplier" }).click());
+    expect(screen.getByTestId("next-arrival")).toBeInTheDocument();
+    expect(window.localStorage.getItem("plazo:planning-next-collapsed")).toBeNull();
   });
 });

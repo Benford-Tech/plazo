@@ -42,6 +42,7 @@ function sentence(e: HistoryEvent): string {
   }
   if (e.action.startsWith("inspection.") && typeof info.kind === "string" && t.inspectionKind[info.kind])
     return `${base} ${t.inspectionKind[info.kind]}`;
+  if (e.action.startsWith("extra.") && typeof info.label === "string" && info.label) return `${base} · ${info.label}`;
   return base;
 }
 

@@ -3911,7 +3911,8 @@ as int?,
 mixin _$DashboardVehicleModel {
 
  String get id; String get reference; String get customerName; int get passengers; String get plate; String get status; String get arrivalAt; String get returnAt; String? get spotCode; String? get stayClass; String? get keyHook;/// 26/10/2026: when the keys were left without a hook (« Clés laissées »); null: « Clés ? » unless hung.
- String? get keysLeftAt; String? get returnFlight; String? get flightStatus; String? get flightScheduledAt; String? get flightEstimatedAt; String? get flightLandedAt; String? get tripDirection; String? get stopName; bool get returnsToday;
+ String? get keysLeftAt; String? get returnFlight; String? get flightStatus; String? get flightScheduledAt; String? get flightEstimatedAt; String? get flightLandedAt; String? get tripDirection; String? get stopName; bool get returnsToday;/// 12/11/2026: no place yet, the traveller gone in the shuttle since then (`toPark.since`): « À garer », not an alert.
+@JsonKey(readValue: readToParkSince) String? get toParkSince;
 /// Create a copy of DashboardVehicleModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -3925,20 +3926,20 @@ $DashboardVehicleModelCopyWith<DashboardVehicleModel> get copyWith => _$Dashboar
 @override
 bool operator ==(Object other) {
   final _this = this as DashboardVehicleModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardVehicleModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.spotCode, _this.spotCode) || other.spotCode == _this.spotCode)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.keysLeftAt, _this.keysLeftAt) || other.keysLeftAt == _this.keysLeftAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.flightStatus, _this.flightStatus) || other.flightStatus == _this.flightStatus)&&(identical(other.flightScheduledAt, _this.flightScheduledAt) || other.flightScheduledAt == _this.flightScheduledAt)&&(identical(other.flightEstimatedAt, _this.flightEstimatedAt) || other.flightEstimatedAt == _this.flightEstimatedAt)&&(identical(other.flightLandedAt, _this.flightLandedAt) || other.flightLandedAt == _this.flightLandedAt)&&(identical(other.tripDirection, _this.tripDirection) || other.tripDirection == _this.tripDirection)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.returnsToday, _this.returnsToday) || other.returnsToday == _this.returnsToday));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardVehicleModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.spotCode, _this.spotCode) || other.spotCode == _this.spotCode)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.keysLeftAt, _this.keysLeftAt) || other.keysLeftAt == _this.keysLeftAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.flightStatus, _this.flightStatus) || other.flightStatus == _this.flightStatus)&&(identical(other.flightScheduledAt, _this.flightScheduledAt) || other.flightScheduledAt == _this.flightScheduledAt)&&(identical(other.flightEstimatedAt, _this.flightEstimatedAt) || other.flightEstimatedAt == _this.flightEstimatedAt)&&(identical(other.flightLandedAt, _this.flightLandedAt) || other.flightLandedAt == _this.flightLandedAt)&&(identical(other.tripDirection, _this.tripDirection) || other.tripDirection == _this.tripDirection)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.returnsToday, _this.returnsToday) || other.returnsToday == _this.returnsToday)&&(identical(other.toParkSince, _this.toParkSince) || other.toParkSince == _this.toParkSince));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DashboardVehicleModel;
-  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.passengers,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.spotCode,_this.stayClass,_this.keyHook,_this.keysLeftAt,_this.returnFlight,_this.flightStatus,_this.flightScheduledAt,_this.flightEstimatedAt,_this.flightLandedAt,_this.tripDirection,_this.stopName,_this.returnsToday]);
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.passengers,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.spotCode,_this.stayClass,_this.keyHook,_this.keysLeftAt,_this.returnFlight,_this.flightStatus,_this.flightScheduledAt,_this.flightEstimatedAt,_this.flightLandedAt,_this.tripDirection,_this.stopName,_this.returnsToday,_this.toParkSince]);
 }
 
 @override
 String toString() {
   final _this = this as DashboardVehicleModel;
-  return 'DashboardVehicleModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, passengers: ${_this.passengers}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, spotCode: ${_this.spotCode}, stayClass: ${_this.stayClass}, keyHook: ${_this.keyHook}, keysLeftAt: ${_this.keysLeftAt}, returnFlight: ${_this.returnFlight}, flightStatus: ${_this.flightStatus}, flightScheduledAt: ${_this.flightScheduledAt}, flightEstimatedAt: ${_this.flightEstimatedAt}, flightLandedAt: ${_this.flightLandedAt}, tripDirection: ${_this.tripDirection}, stopName: ${_this.stopName}, returnsToday: ${_this.returnsToday})';
+  return 'DashboardVehicleModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, passengers: ${_this.passengers}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, spotCode: ${_this.spotCode}, stayClass: ${_this.stayClass}, keyHook: ${_this.keyHook}, keysLeftAt: ${_this.keysLeftAt}, returnFlight: ${_this.returnFlight}, flightStatus: ${_this.flightStatus}, flightScheduledAt: ${_this.flightScheduledAt}, flightEstimatedAt: ${_this.flightEstimatedAt}, flightLandedAt: ${_this.flightLandedAt}, tripDirection: ${_this.tripDirection}, stopName: ${_this.stopName}, returnsToday: ${_this.returnsToday}, toParkSince: ${_this.toParkSince})';
 }
 
 
@@ -3949,7 +3950,7 @@ abstract mixin class $DashboardVehicleModelCopyWith<$Res>  {
   factory $DashboardVehicleModelCopyWith(DashboardVehicleModel value, $Res Function(DashboardVehicleModel) _then) = _$DashboardVehicleModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String customerName, int passengers, String plate, String status, String arrivalAt, String returnAt, String? spotCode, String? stayClass, String? keyHook, String? keysLeftAt, String? returnFlight, String? flightStatus, String? flightScheduledAt, String? flightEstimatedAt, String? flightLandedAt, String? tripDirection, String? stopName, bool returnsToday
+ String id, String reference, String customerName, int passengers, String plate, String status, String arrivalAt, String returnAt, String? spotCode, String? stayClass, String? keyHook, String? keysLeftAt, String? returnFlight, String? flightStatus, String? flightScheduledAt, String? flightEstimatedAt, String? flightLandedAt, String? tripDirection, String? stopName, bool returnsToday,@JsonKey(readValue: readToParkSince) String? toParkSince
 });
 
 
@@ -3966,7 +3967,7 @@ class _$DashboardVehicleModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardVehicleModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? spotCode = freezed,Object? stayClass = freezed,Object? keyHook = freezed,Object? keysLeftAt = freezed,Object? returnFlight = freezed,Object? flightStatus = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? tripDirection = freezed,Object? stopName = freezed,Object? returnsToday = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? spotCode = freezed,Object? stayClass = freezed,Object? keyHook = freezed,Object? keysLeftAt = freezed,Object? returnFlight = freezed,Object? flightStatus = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? tripDirection = freezed,Object? stopName = freezed,Object? returnsToday = null,Object? toParkSince = freezed,}) {
   return _then(DashboardVehicleModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -3988,7 +3989,8 @@ as String?,flightLandedAt: freezed == flightLandedAt ? _self.flightLandedAt : fl
 as String?,tripDirection: freezed == tripDirection ? _self.tripDirection : tripDirection // ignore: cast_nullable_to_non_nullable
 as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
 as String?,returnsToday: null == returnsToday ? _self.returnsToday : returnsToday // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,toParkSince: freezed == toParkSince ? _self.toParkSince : toParkSince // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -4073,10 +4075,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday, @JsonKey(readValue: readToParkSince)  String? toParkSince)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DashboardVehicleModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday,_that.toParkSince);case _:
   return orElse();
 
 }
@@ -4094,10 +4096,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday, @JsonKey(readValue: readToParkSince)  String? toParkSince)  $default,) {final _that = this;
 switch (_that) {
 case _DashboardVehicleModel():
-return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday,_that.toParkSince);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -4114,10 +4116,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  int passengers,  String plate,  String status,  String arrivalAt,  String returnAt,  String? spotCode,  String? stayClass,  String? keyHook,  String? keysLeftAt,  String? returnFlight,  String? flightStatus,  String? flightScheduledAt,  String? flightEstimatedAt,  String? flightLandedAt,  String? tripDirection,  String? stopName,  bool returnsToday, @JsonKey(readValue: readToParkSince)  String? toParkSince)?  $default,) {final _that = this;
 switch (_that) {
 case _DashboardVehicleModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.spotCode,_that.stayClass,_that.keyHook,_that.keysLeftAt,_that.returnFlight,_that.flightStatus,_that.flightScheduledAt,_that.flightEstimatedAt,_that.flightLandedAt,_that.tripDirection,_that.stopName,_that.returnsToday,_that.toParkSince);case _:
   return null;
 
 }
@@ -4129,7 +4131,7 @@ return $default(_that.id,_that.reference,_that.customerName,_that.passengers,_th
 @JsonSerializable()
 
 class _DashboardVehicleModel implements DashboardVehicleModel {
-  const _DashboardVehicleModel({required this.id, required this.reference, required this.customerName, this.passengers = 1, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.spotCode, this.stayClass, this.keyHook, this.keysLeftAt, this.returnFlight, this.flightStatus, this.flightScheduledAt, this.flightEstimatedAt, this.flightLandedAt, this.tripDirection, this.stopName, this.returnsToday = false});
+  const _DashboardVehicleModel({required this.id, required this.reference, required this.customerName, this.passengers = 1, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.spotCode, this.stayClass, this.keyHook, this.keysLeftAt, this.returnFlight, this.flightStatus, this.flightScheduledAt, this.flightEstimatedAt, this.flightLandedAt, this.tripDirection, this.stopName, this.returnsToday = false, @JsonKey(readValue: readToParkSince) this.toParkSince});
   factory _DashboardVehicleModel.fromJson(Map<String, dynamic> json) => _$DashboardVehicleModelFromJson(json);
 
 @override final  String id;
@@ -4153,6 +4155,8 @@ class _DashboardVehicleModel implements DashboardVehicleModel {
 @override final  String? tripDirection;
 @override final  String? stopName;
 @override@JsonKey() final  bool returnsToday;
+/// 12/11/2026: no place yet, the traveller gone in the shuttle since then (`toPark.since`): « À garer », not an alert.
+@override@JsonKey(readValue: readToParkSince) final  String? toParkSince;
 
 /// Create a copy of DashboardVehicleModel
 /// with the given fields replaced by the non-null parameter values.
@@ -4167,18 +4171,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardVehicleModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.spotCode, spotCode) || other.spotCode == spotCode)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.keysLeftAt, keysLeftAt) || other.keysLeftAt == keysLeftAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.flightStatus, flightStatus) || other.flightStatus == flightStatus)&&(identical(other.flightScheduledAt, flightScheduledAt) || other.flightScheduledAt == flightScheduledAt)&&(identical(other.flightEstimatedAt, flightEstimatedAt) || other.flightEstimatedAt == flightEstimatedAt)&&(identical(other.flightLandedAt, flightLandedAt) || other.flightLandedAt == flightLandedAt)&&(identical(other.tripDirection, tripDirection) || other.tripDirection == tripDirection)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.returnsToday, returnsToday) || other.returnsToday == returnsToday));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardVehicleModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.spotCode, spotCode) || other.spotCode == spotCode)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.keysLeftAt, keysLeftAt) || other.keysLeftAt == keysLeftAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.flightStatus, flightStatus) || other.flightStatus == flightStatus)&&(identical(other.flightScheduledAt, flightScheduledAt) || other.flightScheduledAt == flightScheduledAt)&&(identical(other.flightEstimatedAt, flightEstimatedAt) || other.flightEstimatedAt == flightEstimatedAt)&&(identical(other.flightLandedAt, flightLandedAt) || other.flightLandedAt == flightLandedAt)&&(identical(other.tripDirection, tripDirection) || other.tripDirection == tripDirection)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.returnsToday, returnsToday) || other.returnsToday == returnsToday)&&(identical(other.toParkSince, toParkSince) || other.toParkSince == toParkSince));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,reference,customerName,passengers,plate,status,arrivalAt,returnAt,spotCode,stayClass,keyHook,keysLeftAt,returnFlight,flightStatus,flightScheduledAt,flightEstimatedAt,flightLandedAt,tripDirection,stopName,returnsToday]);
+    return Object.hashAll([runtimeType,id,reference,customerName,passengers,plate,status,arrivalAt,returnAt,spotCode,stayClass,keyHook,keysLeftAt,returnFlight,flightStatus,flightScheduledAt,flightEstimatedAt,flightLandedAt,tripDirection,stopName,returnsToday,toParkSince]);
 }
 
 @override
 String toString() {
-    return 'DashboardVehicleModel(id: $id, reference: $reference, customerName: $customerName, passengers: $passengers, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, spotCode: $spotCode, stayClass: $stayClass, keyHook: $keyHook, keysLeftAt: $keysLeftAt, returnFlight: $returnFlight, flightStatus: $flightStatus, flightScheduledAt: $flightScheduledAt, flightEstimatedAt: $flightEstimatedAt, flightLandedAt: $flightLandedAt, tripDirection: $tripDirection, stopName: $stopName, returnsToday: $returnsToday)';
+    return 'DashboardVehicleModel(id: $id, reference: $reference, customerName: $customerName, passengers: $passengers, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, spotCode: $spotCode, stayClass: $stayClass, keyHook: $keyHook, keysLeftAt: $keysLeftAt, returnFlight: $returnFlight, flightStatus: $flightStatus, flightScheduledAt: $flightScheduledAt, flightEstimatedAt: $flightEstimatedAt, flightLandedAt: $flightLandedAt, tripDirection: $tripDirection, stopName: $stopName, returnsToday: $returnsToday, toParkSince: $toParkSince)';
 }
 
 
@@ -4189,7 +4193,7 @@ abstract mixin class _$DashboardVehicleModelCopyWith<$Res> implements $Dashboard
   factory _$DashboardVehicleModelCopyWith(_DashboardVehicleModel value, $Res Function(_DashboardVehicleModel) _then) = __$DashboardVehicleModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String customerName, int passengers, String plate, String status, String arrivalAt, String returnAt, String? spotCode, String? stayClass, String? keyHook, String? keysLeftAt, String? returnFlight, String? flightStatus, String? flightScheduledAt, String? flightEstimatedAt, String? flightLandedAt, String? tripDirection, String? stopName, bool returnsToday
+ String id, String reference, String customerName, int passengers, String plate, String status, String arrivalAt, String returnAt, String? spotCode, String? stayClass, String? keyHook, String? keysLeftAt, String? returnFlight, String? flightStatus, String? flightScheduledAt, String? flightEstimatedAt, String? flightLandedAt, String? tripDirection, String? stopName, bool returnsToday,@JsonKey(readValue: readToParkSince) String? toParkSince
 });
 
 
@@ -4206,7 +4210,7 @@ class __$DashboardVehicleModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardVehicleModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? spotCode = freezed,Object? stayClass = freezed,Object? keyHook = freezed,Object? keysLeftAt = freezed,Object? returnFlight = freezed,Object? flightStatus = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? tripDirection = freezed,Object? stopName = freezed,Object? returnsToday = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? spotCode = freezed,Object? stayClass = freezed,Object? keyHook = freezed,Object? keysLeftAt = freezed,Object? returnFlight = freezed,Object? flightStatus = freezed,Object? flightScheduledAt = freezed,Object? flightEstimatedAt = freezed,Object? flightLandedAt = freezed,Object? tripDirection = freezed,Object? stopName = freezed,Object? returnsToday = null,Object? toParkSince = freezed,}) {
   return _then(_DashboardVehicleModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -4228,7 +4232,8 @@ as String?,flightLandedAt: freezed == flightLandedAt ? _self.flightLandedAt : fl
 as String?,tripDirection: freezed == tripDirection ? _self.tripDirection : tripDirection // ignore: cast_nullable_to_non_nullable
 as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
 as String?,returnsToday: null == returnsToday ? _self.returnsToday : returnsToday // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,toParkSince: freezed == toParkSince ? _self.toParkSince : toParkSince // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

@@ -242,7 +242,16 @@ class _Sheet extends StatelessWidget {
             if (r.file != null)
               ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
             else
-              ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
+              (
+                'res.spot'.tr(),
+                r.spot?.code ??
+                    (r.spotId != null
+                        ? 'res.spot_placed'.tr()
+                        // 12/11/2026: the traveller gone in the shuttle, the car still to put away (not an alert).
+                        : r.toParkSince != null
+                        ? 'res.to_park'.tr(args: [hhmm(r.toParkSince!)])
+                        : 'occupation.no_spot'.tr()),
+              ),
             // On the parking the keys are changed below (direction A, 01/11/2026); otherwise only read.
             if (r.keyHook != null && !onSite) ('occupation.key_hook'.tr(), r.keyHook!),
             if (r.boardingCheckIn != null) ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),
@@ -273,7 +282,14 @@ class _Sheet extends StatelessWidget {
         if (r.status != 'cancelled' && r.status != 'no_show')
           PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
         // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
-        StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
+        // 12/11/2026 (« Payé au parking »): the team adds a service, paid at the parking.
+        StaffExtrasCard(
+          key: ValueKey('extras-${r.id}-${r.status}'),
+          reservationId: r.id,
+          canAct: can(role, 'reservations:status'),
+          canAdd: can(role, 'reservations:manage'),
+          canConfigure: can(role, 'parking:manage'),
+        ),
         // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
         // « Facture » (06/11/2026, direction A): the invoice in the parking's name.
         if (can(role, 'reservations:manage')) InvoiceCard(key: ValueKey('invoice-${r.id}-${r.status}-${r.priceCents}'), reservationId: r.id),

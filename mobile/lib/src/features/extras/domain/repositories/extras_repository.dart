@@ -13,6 +13,8 @@ abstract class ExtrasRepository {
   Future<Either<Failure, StaffExtrasModel>> accept(String reservationId, String extraId);
   Future<Either<Failure, StaffExtrasModel>> done(String reservationId, String extraId);
   Future<Either<Failure, StaffExtrasModel>> refuse(String reservationId, String extraId, String? reason);
+  Future<Either<Failure, StaffExtrasModel>> add(String reservationId, {required String kind, required int priceCents, required String paymentMethod});
+  Future<Either<Failure, StaffExtrasModel>> setPayment(String reservationId, String extraId, String paymentMethod);
   Future<Either<Failure, ExtraSettingsModel>> settings(String parkingId);
   Future<Either<Failure, ExtraSettingsModel>> updateSettings(String parkingId, {int? leadHours, List<ExtraSettingModel>? offers});
 }
@@ -45,6 +47,14 @@ class ExtrasRepositoryImpl implements ExtrasRepository {
   @override
   Future<Either<Failure, StaffExtrasModel>> refuse(String reservationId, String extraId, String? reason) =>
       _dataSource.refuse(reservationId, extraId, reason).makeRequest();
+
+  @override
+  Future<Either<Failure, StaffExtrasModel>> add(String reservationId, {required String kind, required int priceCents, required String paymentMethod}) =>
+      _dataSource.add(reservationId, kind: kind, priceCents: priceCents, paymentMethod: paymentMethod).makeRequest();
+
+  @override
+  Future<Either<Failure, StaffExtrasModel>> setPayment(String reservationId, String extraId, String paymentMethod) =>
+      _dataSource.setPayment(reservationId, extraId, paymentMethod).makeRequest();
 
   @override
   Future<Either<Failure, ExtraSettingsModel>> settings(String parkingId) => _dataSource.settings(parkingId).makeRequest();

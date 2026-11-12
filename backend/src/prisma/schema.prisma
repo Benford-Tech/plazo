@@ -220,8 +220,10 @@ model Staff {
   extrasDone           ReservationExtra[]         @relation("ExtraDoneBy")
   extrasRefused        ReservationExtra[]         @relation("ExtraRefusedBy")
   extrasAccepted       ReservationExtra[]         @relation("ExtraAcceptedBy")
+  extrasAdded          ReservationExtra[]         @relation("ExtraAddedBy")
   valetArrivalRuns     Reservation[]              @relation("ValetArrivalRuns")
   valetDepartureRuns   Reservation[]              @relation("ValetDepartureRuns")
+  archivedContracts    ReservationContract[]      @relation("ContractArchivedBy")
 
   @@index([operatorId])
   @@map("staff")
@@ -1778,9 +1780,13 @@ model ReservationContract {
   signedBlobKey String?
   signedSha256  String?
   proofBlobKey  String?
+  // 12/11/2026 (« Archiver un contrat signé »): put away from the register; nothing is erased, retention unchanged.
+  archivedAt    DateTime?
+  archivedById  String?
 
   reservation Reservation               @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   template    OperatorContractTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  archivedBy  Staff?                    @relation("ContractArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
 
   @@index([templateId])
   @@map("reservation_contracts")
@@ -1984,6 +1990,12 @@ model PartnerContract {
 
 // ---- Services for the car (21/10/2026) ------------------------------------------------------------------------------
 
+/// Who ordered a service: the traveller on Plazo (paid online), or the team for the traveller (paid at the parking).
+enum ExtraSource {
+  traveller
+  staff
+}
+
 enum ExtraStatus {
   pending_payment // ordered, not paid yet (the app's payment sheet, or the booking's own payment)
   ordered // paid, to do before the return
@@ -2052,10 +2064,16 @@ model ReservationExtra {
   refusedReason         String?
   refundedAt            DateTime?
   transferredAt         DateTime?
+  // 12/11/2026 (« Payé au parking »): a service the team adds at the counter or on the phone, paid at the parking:
+  // no Stripe, no Plazo commission, no payout. `paymentMethod` null with `paidAt` null: « À payer au retour ».
+  source                ExtraSource   @default(traveller)
+  paymentMethod         PaymentMethod?
+  addedById             String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @default(now()) @updatedAt
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  addedBy     Staff?      @relation("ExtraAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
   doneBy      Staff?      @relation("ExtraDoneBy", fields: [doneById], references: [id], onDelete: SetNull)
   refusedBy   Staff?      @relation("ExtraRefusedBy", fields: [refusedById], references: [id], onDelete: SetNull)
   acceptedBy  Staff?      @relation("ExtraAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)

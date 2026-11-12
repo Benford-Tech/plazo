@@ -682,6 +682,9 @@ export const fr = {
     averageSub: (days: number | null) =>
       days === null ? "—" : `${days.toLocaleString("fr-FR")} jours en moyenne`,
     byChannel: "Par canal",
+    parkingExtras: (amount: string, n: number) =>
+      `Services payés au parking : ${amount} · ${n} service${n > 1 ? "s" : ""}, compris dans le total, sans commission`,
+    parkingExtrasToCollect: (amount: string) => `dont ${amount} à payer au retour`,
     byPaymentMethod: "Par moyen de paiement",
     paidByUnknown: "Non précisé",
     bookingsShort: (n: number) => `${n} rés.`,
@@ -1033,6 +1036,8 @@ export const fr = {
       count: (n: number) => `${n} véhicule${n > 1 ? "s" : ""}`,
       empty: "Aucun véhicule sur le parking.",
       noSpot: "Sans place",
+      // 12/11/2026: no place yet, the traveller gone in the shuttle; not an alert.
+      toPark: (time: string) => `À garer · client en navette ${time}`,
       keys: (hook: string) => `Clés ${hook}`,
       noKeys: "Clés ?",
       returnToday: (time: string) => `Retour ${time}`,
@@ -1052,6 +1057,7 @@ export const fr = {
         all: "Tous",
         returnsToday: "Retours du jour",
         noSpot: "Sans place",
+        toPark: "À garer",
         noKeys: "Clés ?",
         flightLate: "Vol en retard",
       },
@@ -1681,6 +1687,18 @@ export const fr = {
     smsWarning: (n: number) => `${n} SMS en attente · téléphone injoignable`,
     smsWarningHint:
       "Allumez le téléphone du parking et ouvrez l'appli SMS Gateway. Les SMS en attente plus de 2 h sont abandonnés.",
+    // 12/11/2026: the booking opened next to the planning, refreshed every 5 s.
+    live: {
+      title: "Réservation en direct",
+      pill: (ago: string) => `En direct · ${ago}`,
+      waiting: "En direct",
+      close: "Fermer la réservation",
+      timeline: "Ce que le client a fait",
+    },
+    // 12/11/2026: the two next cards folded into one line.
+    fold: "Replier",
+    unfold: "Déplier",
+    now: "Maintenant",
   },
   reservation: {
     pricePaid: "Prix payé",
@@ -3944,6 +3962,8 @@ export const quickCardFr = {
   gate: (g: string) => `porte ${g}`,
   spot: "Place",
   noSpot: "pas de place",
+  // 12/11/2026: no place yet, the traveller gone in the shuttle (not an alert).
+  toPark: (time: string) => `À garer · client en navette ${time}`,
   // S-C (07/10/2026): "F07 · 3e depuis l'allée".
   inFile: (code: string, position: number | null) =>
     position === null
@@ -5037,6 +5057,28 @@ export const contractTemplateFr = {
       "Chaque contrat tel que signé, avec sa preuve. Les contrats sont gardés avec la réservation, puis effacés à son anonymisation.",
     signed: (n: number) => `Signés · ${n}`,
     reserved: (n: number) => `Avec réserve · ${n}`,
+    archived: (n: number) => `Archivés · ${n}`,
+    archive: "Archiver",
+    unarchive: "Désarchiver",
+    archivedToast: "Contrat archivé : il reste gardé, dans « Archivés ».",
+    unarchivedToast: "Contrat remis avec les contrats signés.",
+    archivedEmpty: "Aucun contrat archivé.",
+    archivedHint:
+      "Les contrats archivés sont gardés tels quels, avec leur PDF signé et leur preuve, aussi longtemps qu'avant.",
+    archiveBefore: "Archiver les contrats d'avant le…",
+    archiveBeforeLabel: "Séjours terminés avant le",
+    archiveBeforeSubmit: "Archiver",
+    archiveBeforeCancel: "Annuler",
+    archiveBeforeTitle: "Archiver les contrats",
+    archiveBeforeConfirm: (date: string) =>
+      `Archiver tous les contrats signés des séjours terminés avant le ${date} ? Rien n'est effacé : vous les retrouvez dans « Archivés ».`,
+    archiveBeforeDone: (n: number) =>
+      n === 0
+        ? "Aucun contrat à archiver avant cette date."
+        : n === 1
+          ? "1 contrat archivé."
+          : `${n} contrats archivés.`,
+    more: "Plus d'actions",
     searchAria: "Trouver un contrat",
     searchPlaceholder: "Plaque, nom, référence…",
     from: "Du",
@@ -5107,6 +5149,73 @@ export const contractTemplateFr = {
   },
 };
 
+/** « Contrat et état des lieux » of the booking page (12/11/2026, section 2 des maquettes): read-only on the web. */
+export const paperworkFr = {
+  title: "Contrat et état des lieux",
+  contractSigned: (date: string) => `Contrat signé · ${date}`,
+  contractUnsigned: "Contrat pas encore signé",
+  signedBy: "Signé par",
+  how: {
+    sms_code: (phone: string | null) =>
+      phone ? `code par SMS au ${phone}` : "code par SMS",
+    handwritten: () => "signature à la main",
+    booking_link: () => "lien de réservation",
+  } as Record<string, (phone: string | null) => string>,
+  witness: (name: string) => `témoin ${name}`,
+  version: (v: string, template: { version: number } | null) =>
+    template ? `Contrat du parking v${template.version}` : `Modèle ${PRODUCT.name} ${v}`,
+  signedPdf: "PDF signé",
+  proof: "Preuve de signature",
+  tabsAria: "États des lieux",
+  tabDropoff: (date: string | null) => (date ? `Dépôt · ${date}` : "Dépôt"),
+  tabReturn: (date: string | null) => (date ? `Retour · ${date}` : "Retour"),
+  tabTraveller: (n: number) => `Photos du client · ${n}`,
+  notDone: "Pas encore fait.",
+  inProgress: "En cours dans Plazo Pro",
+  by: (name: string) => `par ${name}`,
+  slots: {
+    front: "Avant",
+    right: "Droite",
+    back: "Arrière",
+    left: "Gauche",
+    dashboard: "Compteur",
+    interior: "Intérieur",
+    damage: "Gros plan",
+  } as Record<string, string>,
+  noPhoto: "Pas de photo",
+  photosUnavailable: "Photos indisponibles",
+  photosErased: "Photos effacées (durée de conservation écoulée).",
+  photoError: "Photo illisible",
+  damages: "Dégâts",
+  noDamage: "Aucun dégât noté",
+  closeUp: "gros plan",
+  outline: "Silhouette de la voiture avec les dégâts numérotés",
+  mileage: "Kilométrage",
+  km: (n: number) => `${n.toLocaleString("fr-FR")} km`,
+  fuel: "Carburant",
+  fuelValue: (q: number) => (q === 0 ? "Vide" : q === 4 ? "Plein" : `${q}/4`),
+  notes: "Remarques",
+  client: "Client",
+  decision: {
+    pending: "En attente de sa réponse",
+    accepted: "Conforme",
+    accepted_by_default: "Accepté par défaut (parti en navette sans répondre)",
+    reserved: "Réserve",
+  } as Record<string, string>,
+  decisionHow: {
+    sms_code: "code par SMS",
+    handwritten: "signé à la main",
+    booking_link: "dans l'application",
+  } as Record<string, string>,
+  travellerAt: { dropoff: "Au dépôt", return: "Au retour" } as Record<string, string>,
+  travellerSent: (date: string) => `envoyées le ${date}`,
+  lightbox: "Photo en grand",
+  close: "Fermer",
+  open: (slot: string) => `Agrandir la photo ${slot}`,
+  compareDropoff: "Au dépôt",
+  compareReturn: "Au retour",
+};
+
 // Services for the car (21/10/2026): the parking's offer (Parking › Réglages) and the orders on a booking.
 export const extrasFr = {
   settings: {
@@ -5161,6 +5270,50 @@ export const extrasFr = {
     errors: {
       not_to_do: "Ce service n'est plus à faire.",
       refund_failed: "Le remboursement n'a pas abouti, réessayez.",
+      not_offered: "Ce service n'est plus proposé par le parking.",
+      closed: "Cette réservation ne prend plus de service.",
+      already_ordered: "Ce service est déjà commandé.",
+      one_charge: "Une recharge est déjà commandée.",
+      one_of_group: "Un service du même genre est déjà commandé.",
+      not_parking_payment: "Ce service a été payé en ligne.",
+      demo_read_only: "Démo : rien n'est enregistré.",
+    } as Record<string, string>,
+    // 12/11/2026 (« Payé au parking »): the block is always on the booking page, and the team adds a service.
+    titleAll: "Services additionnels",
+    paidOnline: "Payé en ligne",
+    paidAtParking: (method: string) => `Payé au parking · ${method}`,
+    toCollect: "À payer au retour",
+    refusedStaff: "Pas possible",
+    refusedStaffLine: (reason: string | null) => (reason ? `Motif : ${reason}` : "Pas fait"),
+    confirmRefuseStaff: "Confirmer « Pas possible »",
+    hintStaff: "Payé au parking : rien n'est remboursé par Plazo, rendez l'argent au client s'il a déjà payé.",
+    addedLine: (by: string | null) => `Ajouté au parking${by ? ` par ${by}` : ""}`,
+    add: "+ Ajouter un service",
+    addTitle: "Ajouter un service",
+    price: "Prix",
+    paidBy: "Payé par",
+    submit: "Ajouter",
+    addedToast: "Service ajouté : il est dans « Services à faire ».",
+    priceInvalid: "Montant invalide (ex. 45,50), entre 1 € et 1 000 €.",
+    chooseService: "Choisissez un service.",
+    none: "Aucun service additionnel n'est proposé par le parking.",
+    noneLink: "Les régler dans Parking › Réglages",
+    markPaid: "Noter le paiement",
+    paymentSaved: "Paiement noté.",
+    methods: {
+      card: "CB",
+      cash: "Espèces",
+      cheque: "Chèque",
+      transfer: "Virement",
+      holiday_vouchers: "Chèques-vacances",
+      on_return: "Au retour",
+    } as Record<string, string>,
+    reasons: {
+      already_ordered: "déjà commandé",
+      one_charge: "une recharge est déjà commandée",
+      one_of_group: "un service du même genre est déjà commandé",
+      closed: "réservation close",
+      not_offered: "plus proposé",
     } as Record<string, string>,
   },
   // 29/10/2026 (A): « Services à faire », sorted by « à faire avant » (one hour before the expected return).
@@ -5365,8 +5518,13 @@ export const historyFr = {
     "extra.accepted": "a accepté un service",
     "extra.done": "a fait un service",
     "extra.paid": "a payé un service",
+    "extra.added": "a ajouté un service",
+    "extra.refused": "a marqué un service « Pas possible »",
+    "extra.payment": "a noté le paiement d'un service",
     "contract.code_sent": "a envoyé le code de signature",
     "contract.signed": "a signé le contrat",
+    "contract.archived": "a archivé le contrat",
+    "contract.unarchived": "a désarchivé le contrat",
     "inspection.started": "a commencé l'état des lieux",
     "inspection.completed": "a terminé l'état des lieux",
     "inspection.answered": "a répondu à l'état des lieux",
