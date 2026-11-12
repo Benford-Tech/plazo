@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { Service } from 'typedi';
+import { Container, Service } from 'typedi';
 import prisma from '@/database';
 import { TravellerMessage, travellerMessages } from '@/domain/traveller-message-log';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -9,7 +9,7 @@ import { STAFF_VISIBLE } from './reservation.service';
 /** GET /internal/reservations/:id/messages (04/11/2026): the SMS and WhatsApp messages sent to the traveller. */
 @Service()
 export class TravellerMessageLogService {
-  public async forReservation(actor: AuthenticatedStaff, id: string): Promise<{ data: TravellerMessage[] }> {
+  public async forReservation(actor: AuthenticatedStaff, id: string) {
     const reservation = await prisma.reservation.findFirst({
       where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
       select: { id: true },
@@ -30,6 +30,9 @@ export class TravellerMessageLogService {
         select: { id: true, kind: true, status: true, createdAt: true, updatedAt: true },
       }),
     ]);
-    return { data: travellerMessages(whatsapp, sms) };
+    // 12/11/2026: what the traveller wrote back on WhatsApp, and the team's replies.
+    const { WhatsappInboxService } = await import('./whatsapp-inbox.service');
+    const conversation = await Container.get(WhatsappInboxService).forReservation(actor.operatorId, id);
+    return { data: travellerMessages(whatsapp, sms) as TravellerMessage[], conversation };
   }
 }

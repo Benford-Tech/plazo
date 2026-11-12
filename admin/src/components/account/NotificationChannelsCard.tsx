@@ -15,7 +15,7 @@ const t = fr.notifChannels;
 export const CHANNELS_KEY = ["notifications", "channels"] as const;
 
 const GROUPS: { key: keyof typeof t.groups; events: NotificationEvent[] }[] = [
-  { key: "bookings", events: ["booking_new", "booking_change", "inbox", "extra"] },
+  { key: "bookings", events: ["booking_new", "booking_change", "inbox", "whatsapp", "extra"] },
   { key: "clients", events: ["arrival", "return", "shuttle", "valet"] },
   { key: "team", events: ["team", "platform"] },
 ];

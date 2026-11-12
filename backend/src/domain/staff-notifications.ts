@@ -10,6 +10,8 @@ export const NOTIFICATION_EVENTS = [
   'booking_new',
   'booking_change',
   'inbox',
+  // 12/11/2026: a traveller wrote to Plazo's WhatsApp number (« Messages WhatsApp »).
+  'whatsapp',
   'extra',
   'arrival',
   'return',
@@ -44,7 +46,7 @@ export interface NotifiedStaff {
 /** The events a role hears of at all: a mail to check needs the inbox, a join request the team. */
 export function eventsFor(role: StaffRole): NotificationEvent[] {
   return NOTIFICATION_EVENTS.filter(event => {
-    if (event === 'inbox') return can(role, 'reservations:manage');
+    if (event === 'inbox' || event === 'whatsapp') return can(role, 'reservations:manage');
     if (event === 'team') return can(role, 'team:manage');
     return true;
   });
@@ -52,14 +54,14 @@ export function eventsFor(role: StaffRole): NotificationEvent[] {
 
 /** Browser and bell by default, per role (the phone keeps its older settings, see `phoneDefault`). */
 const BROWSER: Record<StaffRole, NotificationEvent[]> = {
-  manager: ['booking_new', 'booking_change', 'inbox', 'extra', 'team'],
-  agent: ['booking_new', 'booking_change', 'inbox', 'arrival'],
+  manager: ['booking_new', 'booking_change', 'inbox', 'whatsapp', 'extra', 'team'],
+  agent: ['booking_new', 'booking_change', 'inbox', 'whatsapp', 'arrival'],
   driver: [],
   valet: [],
 };
 const BELL: Record<StaffRole, NotificationEvent[]> = {
   manager: [...NOTIFICATION_EVENTS],
-  agent: ['booking_new', 'booking_change', 'inbox', 'extra', 'arrival', 'return', 'platform'],
+  agent: ['booking_new', 'booking_change', 'inbox', 'whatsapp', 'extra', 'arrival', 'return', 'platform'],
   driver: ['arrival', 'return', 'shuttle', 'platform'],
   valet: ['valet', 'extra', 'return', 'platform'],
 };
@@ -86,6 +88,9 @@ function phoneDefault(staff: NotifiedStaff, event: NotificationEvent): boolean {
       return staff.role === 'valet' || staff.role === 'manager' || staff.post === 'valet';
     case 'inbox':
       return false;
+    // A traveller waiting for an answer: on the phone of the managers and the front desk.
+    case 'whatsapp':
+      return staff.role === 'manager' || staff.role === 'agent';
   }
 }
 
@@ -158,6 +163,7 @@ export function notificationTarget(data: Record<string, string> | undefined): st
   if (!data) return null;
   if (data.reservationId) return `/reservations/${data.reservationId}`;
   if (data.type === 'inbox') return data.emailId ? `/reservations/a-verifier?mail=${data.emailId}` : '/reservations/a-verifier';
+  if (data.type === 'whatsapp') return data.conversationId ? `/reservations/whatsapp?c=${data.conversationId}` : '/reservations/whatsapp';
   if (data.type === 'team') return '/equipe';
   if (data.type === 'shuttle') return '/navettes';
   if (data.type === 'sms_phone') return '/parking/reglages#sms';

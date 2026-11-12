@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AtSign, Bell, CalendarPlus, KeyRound, PlaneLanding, RefreshCcw, Sparkles, UserPlus, Users, Bus } from "lucide-react";
+import { AtSign, Bell, MessageCircle, CalendarPlus, KeyRound, PlaneLanding, RefreshCcw, Sparkles, UserPlus, Users, Bus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminApi } from "@/lib/api";
@@ -13,6 +13,7 @@ const ICONS: Record<NotificationEvent, { icon: typeof Bell; tone: string }> = {
   booking_new: { icon: CalendarPlus, tone: "bg-ok-soft text-ok" },
   booking_change: { icon: RefreshCcw, tone: "bg-warn-soft text-warn" },
   inbox: { icon: AtSign, tone: "bg-warn-soft text-warn" },
+  whatsapp: { icon: MessageCircle, tone: "bg-ok-soft text-ok-text" },
   extra: { icon: Sparkles, tone: "bg-lime/20 text-lime-deep" },
   arrival: { icon: UserPlus, tone: "bg-ok-soft text-ok" },
   return: { icon: PlaneLanding, tone: "bg-info-soft text-info" },

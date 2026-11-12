@@ -11,6 +11,7 @@ import { StaffPhotoService } from '@/services/staff-photo.service';
 import { InboundEmailService } from '@/services/inbound-email.service';
 import { ExtraService } from '@/services/extra.service';
 import { can } from '@/domain/roles';
+import { WhatsappInboxService } from '@/services/whatsapp-inbox.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class StaffController {
@@ -43,12 +44,15 @@ export class StaffController {
 
   /** GET /internal/nav/counts (30/10/2026): the menu's counters. */
   public navCounts = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    const [inbox, extras] = await Promise.all([
-      can(req.staff.role, 'reservations:manage') ? Container.get(InboundEmailService).todoCount(req.staff.operatorId) : null,
+    const manage = can(req.staff.role, 'reservations:manage');
+    const [inbox, extras, whatsapp] = await Promise.all([
+      manage ? Container.get(InboundEmailService).todoCount(req.staff.operatorId) : null,
       Container.get(ExtraService).todoCount(req.staff.operatorId),
+      // 12/11/2026: conversations with an unread WhatsApp message.
+      manage ? Container.get(WhatsappInboxService).unreadCount(req.staff.operatorId) : null,
     ]);
     res.set('Cache-Control', 'no-store');
-    res.json({ inbox, extras });
+    res.json({ inbox, extras, whatsapp });
   });
 
   /** GET /internal/staff/me */

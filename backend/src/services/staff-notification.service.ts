@@ -59,7 +59,7 @@ async function loadStoredKeys(): Promise<VapidKeys | null> {
 
 /** « 21:42 » categories of the bell's filters. */
 export const BELL_FILTERS: Record<string, NotificationEvent[]> = {
-  bookings: ['booking_new', 'booking_change', 'inbox', 'extra'],
+  bookings: ['booking_new', 'booking_change', 'inbox', 'whatsapp', 'extra'],
   shuttle: ['arrival', 'return', 'shuttle', 'valet'],
   team: ['team', 'platform'],
 };
