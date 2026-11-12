@@ -93,6 +93,10 @@ class _ProBellPageState extends State<ProBellPage> {
     final booking = RegExp(r'^/reservations/([^/?]+)$').firstMatch(target);
     if (booking != null) {
       await context.router.push(ProReservationRoute(id: booking.group(1)!));
+    } else if (RegExp(r'^/reservations/whatsapp\?c=([^&]+)$').firstMatch(target) case final wa?) {
+      await context.router.push(ProWhatsappConversationRoute(id: wa.group(1)!));
+    } else if (target.startsWith('/reservations/whatsapp')) {
+      await context.router.push(const ProWhatsappInboxRoute());
     } else if (target == '/equipe') {
       await context.router.push(const ProTeamRoute());
     }

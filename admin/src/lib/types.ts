@@ -2742,7 +2742,21 @@ export interface WhatsappConversation {
 
 export interface WhatsappInboxList {
   data: WhatsappConversation[];
-  counts: { unread: number; all: number; handled: number; unknown: number | null };
+  counts: { unread: number; all: number; handled: number; unknown: number | null; sent?: number };
+}
+
+/** « Envoyés » (12/11/2026): one WhatsApp Plazo sent a traveller of the parking (30 days). */
+export interface WhatsappSentMessage {
+  id: string;
+  kind: string;
+  status: string;
+  /** The text the traveller read (kept since 12/11/2026). */
+  text: string | null;
+  phone: string;
+  at: string;
+  smsFallback: boolean;
+  reservation: { id: string; reference: string; externalReference: string | null; customerName: string } | null;
+  conversationId: string | null;
 }
 
 export interface WhatsappInboxMessage {
@@ -2761,7 +2775,7 @@ export interface WhatsappConversationDetail {
   conversation: WhatsappConversation;
   messages: WhatsappInboxMessage[];
   /** What Plazo sent this booking by WhatsApp (confirmation, day before…), shown between the messages. */
-  sent: { id: string; kind: string; status: string; at: string }[];
+  sent: { id: string; kind: string; status: string; text?: string | null; at: string }[];
 }
 
 export interface ReservationConversation {

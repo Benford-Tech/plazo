@@ -56,6 +56,7 @@ import type {
   WhatsappSettings,
   TravellerMessage,
   WhatsappInboxView,
+  WhatsappSentMessage,
   WhatsappInboxList,
   WhatsappConversationDetail,
   WhatsappInboxMessage,
@@ -1195,6 +1196,7 @@ export const adminApi = {
   // 12/11/2026 (« Messages WhatsApp »): what travellers write to Plazo's number.
   whatsappInbox: (view: WhatsappInboxView) =>
     apiRequest<WhatsappInboxList>(`/internal/whatsapp/inbox?view=${view}`),
+  whatsappSent: () => apiRequest<{ data: WhatsappSentMessage[] }>("/internal/whatsapp/sent"),
   whatsappConversation: (id: string) =>
     apiRequest<WhatsappConversationDetail>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}`),
   replyWhatsapp: (id: string, text: string) =>

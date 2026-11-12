@@ -14,6 +14,7 @@ import '../../../pro_auth/data/models/staff_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../../core/helpers/posts.dart';
 import '../../../../shared/tutorials/tutorials_page.dart';
+import '../../../pro_whatsapp/presentation/whatsapp_unread_badge.dart';
 
 /// "Plus" of Plazo Pro: who is signed in, then the menu by role (M-A, 26/10/2026): the post of the day, the manager's
 /// tools, one block per post the member can hold, the account; version at the bottom.
@@ -133,6 +134,14 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'extras.board.title'.tr(),
               onTap: () => context.router.push(const ProExtrasRoute()),
             ),
+            if (can(role, 'reservations:manage'))
+              _Tile(
+                key: const Key('pmore-whatsapp'),
+                icon: Icons.chat_rounded,
+                label: 'whatsapp_inbox.menu'.tr(),
+                badge: const WhatsappUnreadBadge(),
+                onTap: () => context.router.push(const ProWhatsappInboxRoute()),
+              ),
           ],
           if (_holds(staff, 'valet')) ...[
             const SizedBox(height: 14),
@@ -206,10 +215,11 @@ class ProMoreTabPage extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({super.key, required this.icon, required this.label, required this.onTap});
+  const _Tile({super.key, required this.icon, required this.label, required this.onTap, this.badge});
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Widget? badge;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -217,7 +227,13 @@ class _Tile extends StatelessWidget {
     contentPadding: const EdgeInsets.symmetric(horizontal: 4),
     leading: Icon(icon, color: AppColors.accent),
     title: Text(label, style: AppText.body(size: 15.5, weight: 500)),
-    trailing: const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.muted),
+    trailing: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ?badge,
+        const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.muted),
+      ],
+    ),
     onTap: onTap,
   );
 }

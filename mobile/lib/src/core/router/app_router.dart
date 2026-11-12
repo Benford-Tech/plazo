@@ -17,6 +17,8 @@ import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_vehicle_page.dart';
 import '../../features/pro_bell/presentation/pro_bell_page.dart';
+import '../../features/pro_whatsapp/presentation/pro_whatsapp_inbox_page.dart';
+import '../../features/pro_whatsapp/presentation/pro_whatsapp_conversation_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
@@ -112,6 +114,9 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProVehicleRoute.page, path: '/pro/vehicule', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
       AutoRoute(page: ProBellRoute.page, path: '/pro/cloche', guards: [proGuard]),
+      // « Messages WhatsApp » (12/11/2026, direction A): what travellers write to Plazo's WhatsApp number.
+      AutoRoute(page: ProWhatsappInboxRoute.page, path: '/pro/whatsapp', guards: [proGuard]),
+      AutoRoute(page: ProWhatsappConversationRoute.page, path: '/pro/whatsapp/:id', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
       AutoRoute(page: ProExtrasRoute.page, path: '/pro/services', guards: [proGuard]),
       AutoRoute(page: ProOccupationRoute.page, path: '/pro/occupation', guards: [proGuard]),
