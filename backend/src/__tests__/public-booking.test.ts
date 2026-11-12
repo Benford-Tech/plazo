@@ -136,6 +136,7 @@ describe('réservation sur le site', () => {
         phone: '04 72 00 00 00',
         meetingLabel: null,
         meetingInstructions: null,
+        conditions: null,
       },
       arrivalAt: inDays(5, '06:30'),
       returnAt: inDays(7, '15:05'),

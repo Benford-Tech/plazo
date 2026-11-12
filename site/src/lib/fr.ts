@@ -888,6 +888,8 @@ const frBase = {
     freeUntil: (when: string) => `Annulation gratuite jusqu’au ${when}`,
     nonRefundable: "Non annulable en ligne",
     dayTitle: "Le jour du départ",
+    /** 12/11/2026: the parking's supplements and conditions. */
+    conditionsTitle: "À savoir",
     step1Title: "Rendez-vous au parking",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Prévoyez ${min ? `${min} min de navette` : "le trajet en navette"} avant l’heure conseillée par votre compagnie.`,

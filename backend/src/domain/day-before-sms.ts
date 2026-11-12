@@ -286,10 +286,14 @@ const sameWindow = (text: string, window: string) =>
 export function conditionsLabel(
   night: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null,
   own: string | null,
+  surcharges: string | null = null,
 ): string | null {
   const parts: string[] = [];
   const text = oneLineConditions(own);
-  if (night && !(text && sameWindow(text, `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`))) {
+  // 12/11/2026: a parking that set its supplements (« Suppléments et conditions ») says its night supplement there.
+  if (surcharges !== null) {
+    if (surcharges) parts.push(surcharges);
+  } else if (night && !(text && sameWindow(text, `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`))) {
     const window = `entre ${hourLabel(night.start)} et ${hourLabel(night.end)}`;
     const a = night.arrivalFeeCents;
     const r = night.returnFeeCents;
@@ -334,6 +338,8 @@ export function parkingValuesOf(
     night?: { start: string; end: string; arrivalFeeCents: number | null; returnFeeCents: number | null } | null;
     /** 11/11/2026 (« il manque le numéro du parking »): the parking's SMS phone, when the listing gives no phone. */
     senderPhone?: string | null;
+    /** 12/11/2026: the sentences of the parking's supplements ('' = set, none on; null/absent = never set). */
+    surcharges?: string | null;
   } = {},
 ): ParkingValues {
   return {
@@ -346,7 +352,7 @@ export function parkingValuesOf(
     services,
     hours: parking.listing?.openingHours?.trim() || null,
     gps: stop && stop.lat !== undefined && stop.lng !== undefined ? gpsLabel({ lat: stop.lat, lng: stop.lng }) : gpsLabel(extra.meetingPoint ?? null),
-    conditions: conditionsLabel(extra.night ?? null, parking.travellerConditions ?? null),
+    conditions: conditionsLabel(extra.night ?? null, parking.travellerConditions ?? null, extra.surcharges ?? null),
     driverPhone: parking.driverPhone?.trim() || null,
   };
 }

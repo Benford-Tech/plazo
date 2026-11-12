@@ -59,6 +59,8 @@ import type {
   ReminderBoard,
   ReminderSettingsInput,
   ShuttleTracking,
+  Surcharge,
+  SurchargeSettings,
   SignupInput,
   ListingInput,
   ListingResponse,
@@ -564,6 +566,15 @@ export const adminApi = {
         body: json({ reason }),
       },
     ),
+  surcharges: (parkingId: string) => apiRequest<SurchargeSettings>(`/internal/parkings/${parkingId}/surcharges`),
+  setSurcharges: (
+    parkingId: string,
+    body: { surcharges: (Omit<Surcharge, "id"> & { id?: string })[]; night: { start: string; end: string } | null },
+  ) =>
+    apiRequest<SurchargeSettings>(`/internal/parkings/${parkingId}/surcharges`, {
+      method: "PUT",
+      body: json(body),
+    }),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
       method: "PUT",

@@ -2711,3 +2711,22 @@ export interface ReservationInvoices {
   request: { at: string; company: string | null; address: string | null } | null;
   invoices: InvoiceView[];
 }
+
+/** 12/11/2026: the parking's supplements (« Suppléments et conditions »). */
+export type SurchargeKind = "late" | "night" | "breakdown" | "custom";
+export interface Surcharge {
+  id: string;
+  kind: SurchargeKind;
+  enabled: boolean;
+  amountCents: number;
+  minutes: number | null;
+  label: string | null;
+  note: string | null;
+}
+export interface SurchargeSettings {
+  surcharges: Surcharge[];
+  night: { start: string; end: string } | null;
+  nightFeesCharged: boolean;
+  configured: boolean;
+  line: string | null;
+}

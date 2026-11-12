@@ -290,6 +290,12 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
                 </li>
               ))}
             </ol>
+            {b.parking.conditions && (
+              <div className="card p-4 md:px-6" data-testid="booking-conditions">
+                <b className="text-[15px] leading-snug">{fr.manage.conditionsTitle}</b>
+                <p className="mt-0.5 text-sm leading-relaxed text-soft">{b.parking.conditions}.</p>
+              </div>
+            )}
           </section>
         )}
 
