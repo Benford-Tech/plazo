@@ -9,6 +9,8 @@ import type {
 import type {
   Airport,
   ExtraKind,
+  ParkingPaymentChoice,
+  ReservationExtrasView,
   ExtraSettings,
   PaymentMethod,
   ReservationExtra,
@@ -526,8 +528,20 @@ export const adminApi = {
       body: json(body),
     }),
   getReservationExtras: (id: string) =>
-    apiRequest<{ extras: ReservationExtra[] }>(
+    apiRequest<ReservationExtrasView>(`/internal/reservations/${id}/extras`),
+  /** 12/11/2026 (« Payé au parking »): the team adds a service to the booking. */
+  addExtra: (
+    id: string,
+    body: { kind: string; priceCents: number; paymentMethod: ParkingPaymentChoice },
+  ) =>
+    apiRequest<ReservationExtrasView & { extra: string }>(
       `/internal/reservations/${id}/extras`,
+      { method: "POST", body: json(body) },
+    ),
+  setExtraPayment: (id: string, extraId: string, paymentMethod: ParkingPaymentChoice) =>
+    apiRequest<ReservationExtrasView>(
+      `/internal/reservations/${id}/extras/${extraId}/payment`,
+      { method: "PATCH", body: json({ paymentMethod }) },
     ),
   getExtrasBoard: (view: ExtrasBoardView) =>
     apiRequest<ExtrasBoard>(`/internal/extras?view=${view}`),

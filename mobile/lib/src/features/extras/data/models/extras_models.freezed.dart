@@ -302,7 +302,10 @@ as String?,
 mixin _$ExtraOrderModel {
 
  String get id; String get kind; String get label; int get priceCents; String get status; bool get withBooking; DateTime? get paidAt; DateTime? get doneAt; DateTime? get refusedAt; String? get refusedReason; DateTime? get refundedAt;/// Staff only: who marked it done or not possible (first name).
- String? get doneBy; String? get refusedBy; DateTime? get acceptedAt; String? get acceptedBy;
+ String? get doneBy; String? get refusedBy;/// Staff accepted it (« Accepter »): the traveller is told.
+ DateTime? get acceptedAt; String? get acceptedBy;/// 12/11/2026 (« Payé au parking »): `staff` = added by the team, paid at the parking (no Stripe, no commission).
+ String get source;/// Paid at the parking: card · cash · cheque · transfer · holiday_vouchers; null for `staff`: « À payer au retour ».
+ String? get paymentMethod; String? get addedBy;
 /// Create a copy of ExtraOrderModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -316,20 +319,20 @@ $ExtraOrderModelCopyWith<ExtraOrderModel> get copyWith => _$ExtraOrderModelCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as ExtraOrderModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExtraOrderModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.withBooking, _this.withBooking) || other.withBooking == _this.withBooking)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt)&&(identical(other.doneAt, _this.doneAt) || other.doneAt == _this.doneAt)&&(identical(other.refusedAt, _this.refusedAt) || other.refusedAt == _this.refusedAt)&&(identical(other.refusedReason, _this.refusedReason) || other.refusedReason == _this.refusedReason)&&(identical(other.refundedAt, _this.refundedAt) || other.refundedAt == _this.refundedAt)&&(identical(other.doneBy, _this.doneBy) || other.doneBy == _this.doneBy)&&(identical(other.refusedBy, _this.refusedBy) || other.refusedBy == _this.refusedBy)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.acceptedBy, _this.acceptedBy) || other.acceptedBy == _this.acceptedBy));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExtraOrderModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.withBooking, _this.withBooking) || other.withBooking == _this.withBooking)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt)&&(identical(other.doneAt, _this.doneAt) || other.doneAt == _this.doneAt)&&(identical(other.refusedAt, _this.refusedAt) || other.refusedAt == _this.refusedAt)&&(identical(other.refusedReason, _this.refusedReason) || other.refusedReason == _this.refusedReason)&&(identical(other.refundedAt, _this.refundedAt) || other.refundedAt == _this.refundedAt)&&(identical(other.doneBy, _this.doneBy) || other.doneBy == _this.doneBy)&&(identical(other.refusedBy, _this.refusedBy) || other.refusedBy == _this.refusedBy)&&(identical(other.acceptedAt, _this.acceptedAt) || other.acceptedAt == _this.acceptedAt)&&(identical(other.acceptedBy, _this.acceptedBy) || other.acceptedBy == _this.acceptedBy)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.paymentMethod, _this.paymentMethod) || other.paymentMethod == _this.paymentMethod)&&(identical(other.addedBy, _this.addedBy) || other.addedBy == _this.addedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ExtraOrderModel;
-  return Object.hash(runtimeType,_this.id,_this.kind,_this.label,_this.priceCents,_this.status,_this.withBooking,_this.paidAt,_this.doneAt,_this.refusedAt,_this.refusedReason,_this.refundedAt,_this.doneBy,_this.refusedBy,_this.acceptedAt,_this.acceptedBy);
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.label,_this.priceCents,_this.status,_this.withBooking,_this.paidAt,_this.doneAt,_this.refusedAt,_this.refusedReason,_this.refundedAt,_this.doneBy,_this.refusedBy,_this.acceptedAt,_this.acceptedBy,_this.source,_this.paymentMethod,_this.addedBy);
 }
 
 @override
 String toString() {
   final _this = this as ExtraOrderModel;
-  return 'ExtraOrderModel(id: ${_this.id}, kind: ${_this.kind}, label: ${_this.label}, priceCents: ${_this.priceCents}, status: ${_this.status}, withBooking: ${_this.withBooking}, paidAt: ${_this.paidAt}, doneAt: ${_this.doneAt}, refusedAt: ${_this.refusedAt}, refusedReason: ${_this.refusedReason}, refundedAt: ${_this.refundedAt}, doneBy: ${_this.doneBy}, refusedBy: ${_this.refusedBy}, acceptedAt: ${_this.acceptedAt}, acceptedBy: ${_this.acceptedBy})';
+  return 'ExtraOrderModel(id: ${_this.id}, kind: ${_this.kind}, label: ${_this.label}, priceCents: ${_this.priceCents}, status: ${_this.status}, withBooking: ${_this.withBooking}, paidAt: ${_this.paidAt}, doneAt: ${_this.doneAt}, refusedAt: ${_this.refusedAt}, refusedReason: ${_this.refusedReason}, refundedAt: ${_this.refundedAt}, doneBy: ${_this.doneBy}, refusedBy: ${_this.refusedBy}, acceptedAt: ${_this.acceptedAt}, acceptedBy: ${_this.acceptedBy}, source: ${_this.source}, paymentMethod: ${_this.paymentMethod}, addedBy: ${_this.addedBy})';
 }
 
 
@@ -340,7 +343,7 @@ abstract mixin class $ExtraOrderModelCopyWith<$Res>  {
   factory $ExtraOrderModelCopyWith(ExtraOrderModel value, $Res Function(ExtraOrderModel) _then) = _$ExtraOrderModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String kind, String label, int priceCents, String status, bool withBooking, DateTime? paidAt, DateTime? doneAt, DateTime? refusedAt, String? refusedReason, DateTime? refundedAt, String? doneBy, String? refusedBy, DateTime? acceptedAt, String? acceptedBy
+ String id, String kind, String label, int priceCents, String status, bool withBooking, DateTime? paidAt, DateTime? doneAt, DateTime? refusedAt, String? refusedReason, DateTime? refundedAt, String? doneBy, String? refusedBy, DateTime? acceptedAt, String? acceptedBy, String source, String? paymentMethod, String? addedBy
 });
 
 
@@ -357,7 +360,7 @@ class _$ExtraOrderModelCopyWithImpl<$Res>
 
 /// Create a copy of ExtraOrderModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? label = null,Object? priceCents = null,Object? status = null,Object? withBooking = null,Object? paidAt = freezed,Object? doneAt = freezed,Object? refusedAt = freezed,Object? refusedReason = freezed,Object? refundedAt = freezed,Object? doneBy = freezed,Object? refusedBy = freezed,Object? acceptedAt = freezed,Object? acceptedBy = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? label = null,Object? priceCents = null,Object? status = null,Object? withBooking = null,Object? paidAt = freezed,Object? doneAt = freezed,Object? refusedAt = freezed,Object? refusedReason = freezed,Object? refundedAt = freezed,Object? doneBy = freezed,Object? refusedBy = freezed,Object? acceptedAt = freezed,Object? acceptedBy = freezed,Object? source = null,Object? paymentMethod = freezed,Object? addedBy = freezed,}) {
   return _then(ExtraOrderModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -374,6 +377,9 @@ as DateTime?,doneBy: freezed == doneBy ? _self.doneBy : doneBy // ignore: cast_n
 as String?,refusedBy: freezed == refusedBy ? _self.refusedBy : refusedBy // ignore: cast_nullable_to_non_nullable
 as String?,acceptedAt: freezed == acceptedAt ? _self.acceptedAt : acceptedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acceptedBy: freezed == acceptedBy ? _self.acceptedBy : acceptedBy // ignore: cast_nullable_to_non_nullable
+as String?,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,paymentMethod: freezed == paymentMethod ? _self.paymentMethod : paymentMethod // ignore: cast_nullable_to_non_nullable
+as String?,addedBy: freezed == addedBy ? _self.addedBy : addedBy // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -459,10 +465,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy,  String source,  String? paymentMethod,  String? addedBy)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExtraOrderModel() when $default != null:
-return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy);case _:
+return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy,_that.source,_that.paymentMethod,_that.addedBy);case _:
   return orElse();
 
 }
@@ -480,10 +486,10 @@ return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy,  String source,  String? paymentMethod,  String? addedBy)  $default,) {final _that = this;
 switch (_that) {
 case _ExtraOrderModel():
-return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy);case _:
+return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy,_that.source,_that.paymentMethod,_that.addedBy);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -500,10 +506,10 @@ return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String kind,  String label,  int priceCents,  String status,  bool withBooking,  DateTime? paidAt,  DateTime? doneAt,  DateTime? refusedAt,  String? refusedReason,  DateTime? refundedAt,  String? doneBy,  String? refusedBy,  DateTime? acceptedAt,  String? acceptedBy,  String source,  String? paymentMethod,  String? addedBy)?  $default,) {final _that = this;
 switch (_that) {
 case _ExtraOrderModel() when $default != null:
-return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy);case _:
+return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_that.withBooking,_that.paidAt,_that.doneAt,_that.refusedAt,_that.refusedReason,_that.refundedAt,_that.doneBy,_that.refusedBy,_that.acceptedAt,_that.acceptedBy,_that.source,_that.paymentMethod,_that.addedBy);case _:
   return null;
 
 }
@@ -515,7 +521,7 @@ return $default(_that.id,_that.kind,_that.label,_that.priceCents,_that.status,_t
 @JsonSerializable()
 
 class _ExtraOrderModel extends ExtraOrderModel {
-  const _ExtraOrderModel({required this.id, required this.kind, required this.label, required this.priceCents, required this.status, this.withBooking = false, this.paidAt, this.doneAt, this.refusedAt, this.refusedReason, this.refundedAt, this.doneBy, this.refusedBy, this.acceptedAt, this.acceptedBy}): super._();
+  const _ExtraOrderModel({required this.id, required this.kind, required this.label, required this.priceCents, required this.status, this.withBooking = false, this.paidAt, this.doneAt, this.refusedAt, this.refusedReason, this.refundedAt, this.doneBy, this.refusedBy, this.acceptedAt, this.acceptedBy, this.source = 'traveller', this.paymentMethod, this.addedBy}): super._();
   factory _ExtraOrderModel.fromJson(Map<String, dynamic> json) => _$ExtraOrderModelFromJson(json);
 
 @override final  String id;
@@ -532,8 +538,14 @@ class _ExtraOrderModel extends ExtraOrderModel {
 /// Staff only: who marked it done or not possible (first name).
 @override final  String? doneBy;
 @override final  String? refusedBy;
+/// Staff accepted it (« Accepter »): the traveller is told.
 @override final  DateTime? acceptedAt;
 @override final  String? acceptedBy;
+/// 12/11/2026 (« Payé au parking »): `staff` = added by the team, paid at the parking (no Stripe, no commission).
+@override@JsonKey() final  String source;
+/// Paid at the parking: card · cash · cheque · transfer · holiday_vouchers; null for `staff`: « À payer au retour ».
+@override final  String? paymentMethod;
+@override final  String? addedBy;
 
 /// Create a copy of ExtraOrderModel
 /// with the given fields replaced by the non-null parameter values.
@@ -548,18 +560,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExtraOrderModel&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.status, status) || other.status == status)&&(identical(other.withBooking, withBooking) || other.withBooking == withBooking)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.doneAt, doneAt) || other.doneAt == doneAt)&&(identical(other.refusedAt, refusedAt) || other.refusedAt == refusedAt)&&(identical(other.refusedReason, refusedReason) || other.refusedReason == refusedReason)&&(identical(other.refundedAt, refundedAt) || other.refundedAt == refundedAt)&&(identical(other.doneBy, doneBy) || other.doneBy == doneBy)&&(identical(other.refusedBy, refusedBy) || other.refusedBy == refusedBy)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.acceptedBy, acceptedBy) || other.acceptedBy == acceptedBy));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExtraOrderModel&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.status, status) || other.status == status)&&(identical(other.withBooking, withBooking) || other.withBooking == withBooking)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.doneAt, doneAt) || other.doneAt == doneAt)&&(identical(other.refusedAt, refusedAt) || other.refusedAt == refusedAt)&&(identical(other.refusedReason, refusedReason) || other.refusedReason == refusedReason)&&(identical(other.refundedAt, refundedAt) || other.refundedAt == refundedAt)&&(identical(other.doneBy, doneBy) || other.doneBy == doneBy)&&(identical(other.refusedBy, refusedBy) || other.refusedBy == refusedBy)&&(identical(other.acceptedAt, acceptedAt) || other.acceptedAt == acceptedAt)&&(identical(other.acceptedBy, acceptedBy) || other.acceptedBy == acceptedBy)&&(identical(other.source, source) || other.source == source)&&(identical(other.paymentMethod, paymentMethod) || other.paymentMethod == paymentMethod)&&(identical(other.addedBy, addedBy) || other.addedBy == addedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,kind,label,priceCents,status,withBooking,paidAt,doneAt,refusedAt,refusedReason,refundedAt,doneBy,refusedBy,acceptedAt,acceptedBy);
+    return Object.hash(runtimeType,id,kind,label,priceCents,status,withBooking,paidAt,doneAt,refusedAt,refusedReason,refundedAt,doneBy,refusedBy,acceptedAt,acceptedBy,source,paymentMethod,addedBy);
 }
 
 @override
 String toString() {
-    return 'ExtraOrderModel(id: $id, kind: $kind, label: $label, priceCents: $priceCents, status: $status, withBooking: $withBooking, paidAt: $paidAt, doneAt: $doneAt, refusedAt: $refusedAt, refusedReason: $refusedReason, refundedAt: $refundedAt, doneBy: $doneBy, refusedBy: $refusedBy, acceptedAt: $acceptedAt, acceptedBy: $acceptedBy)';
+    return 'ExtraOrderModel(id: $id, kind: $kind, label: $label, priceCents: $priceCents, status: $status, withBooking: $withBooking, paidAt: $paidAt, doneAt: $doneAt, refusedAt: $refusedAt, refusedReason: $refusedReason, refundedAt: $refundedAt, doneBy: $doneBy, refusedBy: $refusedBy, acceptedAt: $acceptedAt, acceptedBy: $acceptedBy, source: $source, paymentMethod: $paymentMethod, addedBy: $addedBy)';
 }
 
 
@@ -570,7 +582,7 @@ abstract mixin class _$ExtraOrderModelCopyWith<$Res> implements $ExtraOrderModel
   factory _$ExtraOrderModelCopyWith(_ExtraOrderModel value, $Res Function(_ExtraOrderModel) _then) = __$ExtraOrderModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String kind, String label, int priceCents, String status, bool withBooking, DateTime? paidAt, DateTime? doneAt, DateTime? refusedAt, String? refusedReason, DateTime? refundedAt, String? doneBy, String? refusedBy, DateTime? acceptedAt, String? acceptedBy
+ String id, String kind, String label, int priceCents, String status, bool withBooking, DateTime? paidAt, DateTime? doneAt, DateTime? refusedAt, String? refusedReason, DateTime? refundedAt, String? doneBy, String? refusedBy, DateTime? acceptedAt, String? acceptedBy, String source, String? paymentMethod, String? addedBy
 });
 
 
@@ -587,7 +599,7 @@ class __$ExtraOrderModelCopyWithImpl<$Res>
 
 /// Create a copy of ExtraOrderModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? label = null,Object? priceCents = null,Object? status = null,Object? withBooking = null,Object? paidAt = freezed,Object? doneAt = freezed,Object? refusedAt = freezed,Object? refusedReason = freezed,Object? refundedAt = freezed,Object? doneBy = freezed,Object? refusedBy = freezed,Object? acceptedAt = freezed,Object? acceptedBy = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? kind = null,Object? label = null,Object? priceCents = null,Object? status = null,Object? withBooking = null,Object? paidAt = freezed,Object? doneAt = freezed,Object? refusedAt = freezed,Object? refusedReason = freezed,Object? refundedAt = freezed,Object? doneBy = freezed,Object? refusedBy = freezed,Object? acceptedAt = freezed,Object? acceptedBy = freezed,Object? source = null,Object? paymentMethod = freezed,Object? addedBy = freezed,}) {
   return _then(_ExtraOrderModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
@@ -604,6 +616,291 @@ as DateTime?,doneBy: freezed == doneBy ? _self.doneBy : doneBy // ignore: cast_n
 as String?,refusedBy: freezed == refusedBy ? _self.refusedBy : refusedBy // ignore: cast_nullable_to_non_nullable
 as String?,acceptedAt: freezed == acceptedAt ? _self.acceptedAt : acceptedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acceptedBy: freezed == acceptedBy ? _self.acceptedBy : acceptedBy // ignore: cast_nullable_to_non_nullable
+as String?,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
+as String,paymentMethod: freezed == paymentMethod ? _self.paymentMethod : paymentMethod // ignore: cast_nullable_to_non_nullable
+as String?,addedBy: freezed == addedBy ? _self.addedBy : addedBy // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$AddableExtraModel {
+
+ String get kind; String get label; int get priceCents; bool get available; String? get reason;
+/// Create a copy of AddableExtraModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AddableExtraModelCopyWith<AddableExtraModel> get copyWith => _$AddableExtraModelCopyWithImpl<AddableExtraModel>(this as AddableExtraModel, _$identity);
+
+  /// Serializes this AddableExtraModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as AddableExtraModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AddableExtraModel&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.available, _this.available) || other.available == _this.available)&&(identical(other.reason, _this.reason) || other.reason == _this.reason));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as AddableExtraModel;
+  return Object.hash(runtimeType,_this.kind,_this.label,_this.priceCents,_this.available,_this.reason);
+}
+
+@override
+String toString() {
+  final _this = this as AddableExtraModel;
+  return 'AddableExtraModel(kind: ${_this.kind}, label: ${_this.label}, priceCents: ${_this.priceCents}, available: ${_this.available}, reason: ${_this.reason})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AddableExtraModelCopyWith<$Res>  {
+  factory $AddableExtraModelCopyWith(AddableExtraModel value, $Res Function(AddableExtraModel) _then) = _$AddableExtraModelCopyWithImpl;
+@useResult
+$Res call({
+ String kind, String label, int priceCents, bool available, String? reason
+});
+
+
+
+
+}
+/// @nodoc
+class _$AddableExtraModelCopyWithImpl<$Res>
+    implements $AddableExtraModelCopyWith<$Res> {
+  _$AddableExtraModelCopyWithImpl(this._self, this._then);
+
+  final AddableExtraModel _self;
+  final $Res Function(AddableExtraModel) _then;
+
+/// Create a copy of AddableExtraModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? label = null,Object? priceCents = null,Object? available = null,Object? reason = freezed,}) {
+  return _then(AddableExtraModel(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,priceCents: null == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
+as int,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
+as bool,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [AddableExtraModel].
+extension AddableExtraModelPatterns on AddableExtraModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AddableExtraModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AddableExtraModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AddableExtraModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _AddableExtraModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AddableExtraModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AddableExtraModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String kind,  String label,  int priceCents,  bool available,  String? reason)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AddableExtraModel() when $default != null:
+return $default(_that.kind,_that.label,_that.priceCents,_that.available,_that.reason);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String kind,  String label,  int priceCents,  bool available,  String? reason)  $default,) {final _that = this;
+switch (_that) {
+case _AddableExtraModel():
+return $default(_that.kind,_that.label,_that.priceCents,_that.available,_that.reason);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String kind,  String label,  int priceCents,  bool available,  String? reason)?  $default,) {final _that = this;
+switch (_that) {
+case _AddableExtraModel() when $default != null:
+return $default(_that.kind,_that.label,_that.priceCents,_that.available,_that.reason);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AddableExtraModel implements AddableExtraModel {
+  const _AddableExtraModel({required this.kind, required this.label, required this.priceCents, this.available = true, this.reason});
+  factory _AddableExtraModel.fromJson(Map<String, dynamic> json) => _$AddableExtraModelFromJson(json);
+
+@override final  String kind;
+@override final  String label;
+@override final  int priceCents;
+@override@JsonKey() final  bool available;
+@override final  String? reason;
+
+/// Create a copy of AddableExtraModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AddableExtraModelCopyWith<_AddableExtraModel> get copyWith => __$AddableExtraModelCopyWithImpl<_AddableExtraModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AddableExtraModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AddableExtraModel&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.available, available) || other.available == available)&&(identical(other.reason, reason) || other.reason == reason));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,kind,label,priceCents,available,reason);
+}
+
+@override
+String toString() {
+    return 'AddableExtraModel(kind: $kind, label: $label, priceCents: $priceCents, available: $available, reason: $reason)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AddableExtraModelCopyWith<$Res> implements $AddableExtraModelCopyWith<$Res> {
+  factory _$AddableExtraModelCopyWith(_AddableExtraModel value, $Res Function(_AddableExtraModel) _then) = __$AddableExtraModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String kind, String label, int priceCents, bool available, String? reason
+});
+
+
+
+
+}
+/// @nodoc
+class __$AddableExtraModelCopyWithImpl<$Res>
+    implements _$AddableExtraModelCopyWith<$Res> {
+  __$AddableExtraModelCopyWithImpl(this._self, this._then);
+
+  final _AddableExtraModel _self;
+  final $Res Function(_AddableExtraModel) _then;
+
+/// Create a copy of AddableExtraModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? kind = null,Object? label = null,Object? priceCents = null,Object? available = null,Object? reason = freezed,}) {
+  return _then(_AddableExtraModel(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,priceCents: null == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
+as int,available: null == available ? _self.available : available // ignore: cast_nullable_to_non_nullable
+as bool,reason: freezed == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -1497,7 +1794,7 @@ $ExtraPaymentModelCopyWith<$Res> get payment {
 /// @nodoc
 mixin _$StaffExtrasModel {
 
- List<ExtraOrderModel> get extras;
+ List<ExtraOrderModel> get extras; List<AddableExtraModel> get services; bool get canAdd;
 /// Create a copy of StaffExtrasModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1511,20 +1808,20 @@ $StaffExtrasModelCopyWith<StaffExtrasModel> get copyWith => _$StaffExtrasModelCo
 @override
 bool operator ==(Object other) {
   final _this = this as StaffExtrasModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffExtrasModel&&const DeepCollectionEquality().equals(other.extras, _this.extras));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffExtrasModel&&const DeepCollectionEquality().equals(other.extras, _this.extras)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.canAdd, _this.canAdd) || other.canAdd == _this.canAdd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StaffExtrasModel;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.extras));
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.extras),const DeepCollectionEquality().hash(_this.services),_this.canAdd);
 }
 
 @override
 String toString() {
   final _this = this as StaffExtrasModel;
-  return 'StaffExtrasModel(extras: ${_this.extras})';
+  return 'StaffExtrasModel(extras: ${_this.extras}, services: ${_this.services}, canAdd: ${_this.canAdd})';
 }
 
 
@@ -1535,7 +1832,7 @@ abstract mixin class $StaffExtrasModelCopyWith<$Res>  {
   factory $StaffExtrasModelCopyWith(StaffExtrasModel value, $Res Function(StaffExtrasModel) _then) = _$StaffExtrasModelCopyWithImpl;
 @useResult
 $Res call({
- List<ExtraOrderModel> extras
+ List<ExtraOrderModel> extras, List<AddableExtraModel> services, bool canAdd
 });
 
 
@@ -1552,10 +1849,12 @@ class _$StaffExtrasModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffExtrasModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? extras = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? extras = null,Object? services = null,Object? canAdd = null,}) {
   return _then(StaffExtrasModel(
 extras: null == extras ? _self.extras : extras // ignore: cast_nullable_to_non_nullable
-as List<ExtraOrderModel>,
+as List<ExtraOrderModel>,services: null == services ? _self.services : services // ignore: cast_nullable_to_non_nullable
+as List<AddableExtraModel>,canAdd: null == canAdd ? _self.canAdd : canAdd // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1640,10 +1939,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ExtraOrderModel> extras)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ExtraOrderModel> extras,  List<AddableExtraModel> services,  bool canAdd)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StaffExtrasModel() when $default != null:
-return $default(_that.extras);case _:
+return $default(_that.extras,_that.services,_that.canAdd);case _:
   return orElse();
 
 }
@@ -1661,10 +1960,10 @@ return $default(_that.extras);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ExtraOrderModel> extras)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ExtraOrderModel> extras,  List<AddableExtraModel> services,  bool canAdd)  $default,) {final _that = this;
 switch (_that) {
 case _StaffExtrasModel():
-return $default(_that.extras);case _:
+return $default(_that.extras,_that.services,_that.canAdd);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1681,10 +1980,10 @@ return $default(_that.extras);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ExtraOrderModel> extras)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ExtraOrderModel> extras,  List<AddableExtraModel> services,  bool canAdd)?  $default,) {final _that = this;
 switch (_that) {
 case _StaffExtrasModel() when $default != null:
-return $default(_that.extras);case _:
+return $default(_that.extras,_that.services,_that.canAdd);case _:
   return null;
 
 }
@@ -1696,7 +1995,7 @@ return $default(_that.extras);case _:
 @JsonSerializable()
 
 class _StaffExtrasModel implements StaffExtrasModel {
-  const _StaffExtrasModel({ List<ExtraOrderModel> extras = const <ExtraOrderModel>[]}): _extras = extras;
+  const _StaffExtrasModel({ List<ExtraOrderModel> extras = const <ExtraOrderModel>[],  List<AddableExtraModel> services = const <AddableExtraModel>[], this.canAdd = false}): _extras = extras,_services = services;
   factory _StaffExtrasModel.fromJson(Map<String, dynamic> json) => _$StaffExtrasModelFromJson(json);
 
  final  List<ExtraOrderModel> _extras;
@@ -1706,6 +2005,14 @@ class _StaffExtrasModel implements StaffExtrasModel {
   return EqualUnmodifiableListView(_extras);
 }
 
+ final  List<AddableExtraModel> _services;
+@override@JsonKey() List<AddableExtraModel> get services {
+  if (_services is EqualUnmodifiableListView) return _services;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_services);
+}
+
+@override@JsonKey() final  bool canAdd;
 
 /// Create a copy of StaffExtrasModel
 /// with the given fields replaced by the non-null parameter values.
@@ -1720,18 +2027,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffExtrasModel&&const DeepCollectionEquality().equals(other.extras, _extras));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffExtrasModel&&const DeepCollectionEquality().equals(other.extras, _extras)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.canAdd, canAdd) || other.canAdd == canAdd));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_extras));
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_extras),const DeepCollectionEquality().hash(_services),canAdd);
 }
 
 @override
 String toString() {
-    return 'StaffExtrasModel(extras: $extras)';
+    return 'StaffExtrasModel(extras: $extras, services: $services, canAdd: $canAdd)';
 }
 
 
@@ -1742,7 +2049,7 @@ abstract mixin class _$StaffExtrasModelCopyWith<$Res> implements $StaffExtrasMod
   factory _$StaffExtrasModelCopyWith(_StaffExtrasModel value, $Res Function(_StaffExtrasModel) _then) = __$StaffExtrasModelCopyWithImpl;
 @override @useResult
 $Res call({
- List<ExtraOrderModel> extras
+ List<ExtraOrderModel> extras, List<AddableExtraModel> services, bool canAdd
 });
 
 
@@ -1759,10 +2066,12 @@ class __$StaffExtrasModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffExtrasModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? extras = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? extras = null,Object? services = null,Object? canAdd = null,}) {
   return _then(_StaffExtrasModel(
 extras: null == extras ? _self._extras : extras // ignore: cast_nullable_to_non_nullable
-as List<ExtraOrderModel>,
+as List<ExtraOrderModel>,services: null == services ? _self._services : services // ignore: cast_nullable_to_non_nullable
+as List<AddableExtraModel>,canAdd: null == canAdd ? _self.canAdd : canAdd // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

@@ -32,6 +32,18 @@ export interface RevenueBooking {
   commissionCents?: number | null;
 }
 
+/**
+ * 12/11/2026 (« Payé au parking »): a service the team added to a booking, paid at the parking (or « Au retour »): no
+ * commission. It counts on its booking's arrival day, or on the day it was added when counting by booking day.
+ */
+export interface RevenueExtra {
+  arrivalAt: Date;
+  createdAt: Date;
+  priceCents: number;
+  /** Null: « À payer au retour », not paid yet. */
+  paymentMethod: PaymentMethod | null;
+}
+
 /** One line of « Par canal »: a channel, and for comparators their name (« Allopark », « Onepark »…). */
 export interface RevenueChannel {
   channel: ReservationChannel;
@@ -67,6 +79,11 @@ export interface RevenueReport {
   /** 29/10/2026 (« Payé par »): the amounts by payment method, the largest first; `method` null: not said. */
   byPaymentMethod: { method: PaidBy | null; count: number; totalCents: number }[];
   byDay: { date: string; count: number; totalCents: number; netCents: number }[];
+  /**
+   * 12/11/2026: the services added by the team and paid at the parking, inside `totalCents`, `netCents`, `byDay` and
+   * `byPaymentMethod` (never in `count`, the averages or `byChannel`, which are the bookings'); `toCollect`: « Au retour ».
+   */
+  parkingExtras: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
 }
 
 /** Every local date from `from` to `to`, both included. */
@@ -95,14 +112,22 @@ function channelGroup(booking: Pick<RevenueBooking, 'channel' | 'channelDetail'>
 export function revenueReport(
   bookings: RevenueBooking[],
   period: { from: string; to: string; basis: RevenueBasis; timeZone: string },
+  parkingExtras: readonly RevenueExtra[] = [],
 ): RevenueReport {
   const { from, to, basis, timeZone } = period;
   const inPeriod = bookings.filter(b => {
     const day = revenueDay(b, basis, timeZone);
     return day >= from && day <= to;
   });
+  const extras = parkingExtras.filter(e => {
+    const day = revenueDay(e, basis, timeZone);
+    return day >= from && day <= to;
+  });
+  const extrasCents = extras.reduce((sum, e) => sum + e.priceCents, 0);
+  const toCollect = extras.filter(e => e.paymentMethod === null);
   const priced = inPeriod.filter((b): b is RevenueBooking & { priceCents: number } => b.priceCents !== null);
-  const totalCents = priced.reduce((sum, b) => sum + b.priceCents, 0);
+  const bookingsCents = priced.reduce((sum, b) => sum + b.priceCents, 0);
+  const totalCents = bookingsCents + extrasCents;
   const fee = (b: RevenueBooking) => b.commissionCents ?? 0;
   const commissionCents = priced.reduce((sum, b) => sum + fee(b), 0);
 
@@ -132,6 +157,12 @@ export function revenueReport(
     line.totalCents += b.priceCents;
     methods.set(method, line);
   }
+  for (const e of extras) {
+    const line = methods.get(e.paymentMethod) ?? { method: e.paymentMethod, count: 0, totalCents: 0 };
+    line.count += 1;
+    line.totalCents += e.priceCents;
+    methods.set(e.paymentMethod, line);
+  }
 
   const perDay = new Map(daysOf(from, to).map(date => [date, { date, count: 0, totalCents: 0, netCents: 0 }]));
   for (const b of priced) {
@@ -139,6 +170,11 @@ export function revenueReport(
     line.count += 1;
     line.totalCents += b.priceCents;
     line.netCents += b.priceCents - fee(b);
+  }
+  for (const e of extras) {
+    const line = perDay.get(revenueDay(e, basis, timeZone))!;
+    line.totalCents += e.priceCents;
+    line.netCents += e.priceCents;
   }
 
   const days = priced.reduce((sum, b) => sum + billableDays(b.arrivalAt, b.returnAt, timeZone), 0);
@@ -150,7 +186,7 @@ export function revenueReport(
     commissionCents,
     netCents: totalCents - commissionCents,
     count: priced.length,
-    averageCents: priced.length ? Math.round(totalCents / priced.length) : null,
+    averageCents: priced.length ? Math.round(bookingsCents / priced.length) : null,
     averageDays: priced.length ? Math.round((days / priced.length) * 10) / 10 : null,
     withoutAmount: inPeriod.length - priced.length,
     byChannel: [...channels.values()].sort((a, b) => b.totalCents - a.totalCents || b.count - a.count),
@@ -162,6 +198,12 @@ export function revenueReport(
       (a, b) => Number(a.method === null) - Number(b.method === null) || b.totalCents - a.totalCents || b.count - a.count,
     ),
     byDay: [...perDay.values()],
+    parkingExtras: {
+      count: extras.length,
+      totalCents: extrasCents,
+      toCollectCount: toCollect.length,
+      toCollectCents: toCollect.reduce((sum, e) => sum + e.priceCents, 0),
+    },
   };
 }
 
@@ -261,9 +303,10 @@ export function revenueByMonth(
   months: { month: string; from: string; to: string }[],
   basis: RevenueBasis,
   timeZone: string,
+  parkingExtras: readonly RevenueExtra[] = [],
 ): RevenueMonth[] {
   return months.map(m => {
-    const r = revenueReport(bookings, { from: m.from, to: m.to, basis, timeZone });
+    const r = revenueReport(bookings, { from: m.from, to: m.to, basis, timeZone }, parkingExtras);
     return {
       month: m.month,
       from: m.from,

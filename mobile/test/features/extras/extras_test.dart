@@ -109,6 +109,34 @@ class FakeExtrasRepository implements ExtrasRepository {
   }
 
   @override
+  Future<Either<Failure, StaffExtrasModel>> add(String reservationId, {required String kind, required int priceCents, required String paymentMethod}) async {
+    calls.add('add:$kind:$priceCents:$paymentMethod');
+    staffView = staffView.copyWith(
+      extras: [
+        ...staffView.extras,
+        ExtraOrderModel(
+          id: 'x-$kind',
+          kind: kind,
+          label: _wash.label,
+          priceCents: priceCents,
+          status: 'ordered',
+          source: 'staff',
+          paymentMethod: paymentMethod == 'on_return' ? null : paymentMethod,
+          addedBy: 'Julie',
+        ),
+      ],
+    );
+    return Right(staffView);
+  }
+
+  @override
+  Future<Either<Failure, StaffExtrasModel>> setPayment(String reservationId, String extraId, String paymentMethod) async {
+    calls.add('pay:$extraId:$paymentMethod');
+    staffView = staffView.copyWith(extras: [for (final e in staffView.extras) e.id == extraId ? e.copyWith(paymentMethod: paymentMethod) : e]);
+    return Right(staffView);
+  }
+
+  @override
   Future<Either<Failure, ExtraSettingsModel>> settings(String parkingId) async => Right(settingsView);
 
   @override
@@ -285,6 +313,78 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('extra-done-ev_charge')), findsNothing);
+    });
+
+    testWidgets('« + Ajouter un service » : la feuille, le prix modifiable, « Payé par », puis « Payé au parking »', (tester) async {
+      repo.staffView = const StaffExtrasModel(
+        extras: [ExtraOrderModel(id: 'x1', kind: 'ev_charge', label: 'Recharge électrique', priceCents: 3000, status: 'ordered')],
+        services: [
+          AddableExtraModel(kind: 'interior_wash', label: 'Lavage intérieur', priceCents: 5000),
+          AddableExtraModel(kind: 'ev_charge', label: 'Recharge électrique', priceCents: 3000, available: false, reason: 'already_ordered'),
+        ],
+        canAdd: true,
+      );
+      await pumpLocalized(
+        tester,
+        const Scaffold(
+          body: SingleChildScrollView(child: StaffExtrasCard(reservationId: 'r1', canAct: true, canAdd: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Payé en ligne'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('extra-add')));
+      await tester.pumpAndSettle();
+      expect(find.text('Déjà commandé'), findsOneWidget);
+      final price = tester.widget<TextField>(find.byKey(const Key('extra-add-price')));
+      expect(price.controller!.text, '50,00');
+      await tester.enterText(find.byKey(const Key('extra-add-price')), 'abc');
+      await tester.tap(find.byKey(const Key('extra-add-confirm')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('extra-add-error')), findsOneWidget);
+      expect(repo.calls, isEmpty);
+      await tester.enterText(find.byKey(const Key('extra-add-price')), '45,50');
+      await tester.tap(find.byKey(const Key('extra-add-method-cash')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('extra-add-confirm')));
+      await tester.tap(find.byKey(const Key('extra-add-confirm')));
+      await tester.pumpAndSettle();
+      expect(repo.calls, ['add:interior_wash:4550:cash']);
+      expect(find.text('Payé au parking · Espèces'), findsOneWidget);
+      expect(find.textContaining('ajouté au parking par Julie'), findsOneWidget);
+    });
+
+    testWidgets('« Au retour » : « À payer au retour » puis le paiement noté', (tester) async {
+      repo.staffView = const StaffExtrasModel(
+        extras: [ExtraOrderModel(id: 'x2', kind: 'interior_wash', label: 'Lavage intérieur', priceCents: 5000, status: 'ordered', source: 'staff')],
+        services: [AddableExtraModel(kind: 'interior_wash', label: 'Lavage intérieur', priceCents: 5000, available: false, reason: 'already_ordered')],
+      );
+      await pumpLocalized(
+        tester,
+        const Scaffold(
+          body: SingleChildScrollView(child: StaffExtrasCard(reservationId: 'r1', canAct: true, canAdd: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('À payer au retour'), findsOneWidget);
+      expect(find.byKey(const Key('extra-add')), findsNothing);
+      await tester.tap(find.byKey(const Key('extra-pay-interior_wash')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('extra-pay-method-card')));
+      await tester.pumpAndSettle();
+      expect(repo.calls, ['pay:x2:card']);
+      expect(find.text('Payé au parking · CB'), findsOneWidget);
+    });
+
+    testWidgets('aucun service proposé : le gérant sait où les régler', (tester) async {
+      repo.staffView = const StaffExtrasModel();
+      await pumpLocalized(
+        tester,
+        const Scaffold(
+          body: SingleChildScrollView(child: StaffExtrasCard(reservationId: 'r1', canAct: true, canAdd: true, canConfigure: true)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Réglages du parking'), findsOneWidget);
     });
 
     testWidgets('réglages : active un service, change son prix et le délai', (tester) async {

@@ -435,6 +435,8 @@ export default function ReservationPage() {
           <ReservationExtras
             reservationId={r.id}
             mayAct={can(user?.role, "reservations:status")}
+            mayAdd={can(user?.role, "reservations:manage") && !user?.demo}
+            mayConfigure={can(user?.role, "parking:manage")}
           />
           <BookingPaperworkCard reservationId={r.id} status={r.status} />
           {/* « Facture » (06/11/2026, direction A): the invoice in the parking's name, for those who manage bookings. */}

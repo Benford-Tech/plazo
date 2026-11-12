@@ -282,7 +282,14 @@ class _Sheet extends StatelessWidget {
         if (r.status != 'cancelled' && r.status != 'no_show')
           PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
         // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
-        StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
+        // 12/11/2026 (« Payé au parking »): the team adds a service, paid at the parking.
+        StaffExtrasCard(
+          key: ValueKey('extras-${r.id}-${r.status}'),
+          reservationId: r.id,
+          canAct: can(role, 'reservations:status'),
+          canAdd: can(role, 'reservations:manage'),
+          canConfigure: can(role, 'parking:manage'),
+        ),
         // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
         // « Facture » (06/11/2026, direction A): the invoice in the parking's name.
         if (can(role, 'reservations:manage')) InvoiceCard(key: ValueKey('invoice-${r.id}-${r.status}-${r.priceCents}'), reservationId: r.id),

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StaffExtrasState {
 
- String? get reservationId; StaffExtrasModel? get data; String? get busyId;/// done | refused, or an API code in [errorCode].
+ String? get reservationId; StaffExtrasModel? get data; String? get busyId;/// accepted | done | refused | added | paid, or an API code in [errorCode].
  String? get notice; String? get errorCode;
 /// Create a copy of StaffExtrasState
 /// with the given fields replaced by the non-null parameter values.
@@ -235,7 +235,7 @@ class _StaffExtrasState extends StaffExtrasState {
 @override final  String? reservationId;
 @override final  StaffExtrasModel? data;
 @override final  String? busyId;
-/// done | refused, or an API code in [errorCode].
+/// accepted | done | refused | added | paid, or an API code in [errorCode].
 @override final  String? notice;
 @override final  String? errorCode;
 

@@ -28,6 +28,16 @@ export class ExtraController {
     res.json(await this.extras.staffOrders(req.staff, param(req, 'id')));
   });
 
+  /** POST /internal/reservations/:id/extras (12/11/2026: added by the team, paid at the parking) */
+  public add = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.status(201).json(await this.extras.addByStaff(req.staff, param(req, 'id'), req.body ?? {}));
+  });
+
+  /** PATCH /internal/reservations/:id/extras/:extraId/payment */
+  public payment = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.extras.setParkingPayment(req.staff, param(req, 'id'), param(req, 'extraId'), req.body?.paymentMethod));
+  });
+
   /** GET /internal/extras?view=todo|done|refused */
   public board = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');

@@ -1900,6 +1900,8 @@ export interface RevenueReport {
   direct?: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
   byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
+  /** 12/11/2026: the services added by the team and paid at the parking, inside the total; absent from an older API. */
+  parkingExtras?: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
   byDay: {
     date: string;
     count: number;
@@ -2347,6 +2349,34 @@ export interface ReservationExtra {
   refundedAt: string | null;
   doneBy: string | null;
   refusedBy: string | null;
+  /** 12/11/2026: `staff` = added by the team, paid at the parking (no Stripe, no Plazo commission). */
+  source?: ExtraSource;
+  /** Paid at the parking: how; null with `source: "staff"`: « À payer au retour ». */
+  paymentMethod?: ParkingPaymentMethod | null;
+  addedBy?: string | null;
+}
+
+export type ExtraSource = "traveller" | "staff";
+/** How a service added at the parking is paid (12/11/2026); `on_return`: « Au retour », not yet. */
+export type ParkingPaymentMethod = "card" | "cash" | "cheque" | "transfer" | "holiday_vouchers";
+export type ParkingPaymentChoice = ParkingPaymentMethod | "on_return";
+
+/** A service the team can add to a booking (« + Ajouter un service »), with why not when it cannot. */
+export interface AddableExtra {
+  kind: string;
+  label: string;
+  icon: string;
+  group: string | null;
+  priceCents: number;
+  available: boolean;
+  reason: string | null;
+}
+
+/** GET /internal/reservations/:id/extras */
+export interface ReservationExtrasView {
+  extras: ReservationExtra[];
+  services?: AddableExtra[];
+  canAdd?: boolean;
 }
 
 /** 29/10/2026 (A): « Services à faire », GET /internal/extras?view=. */

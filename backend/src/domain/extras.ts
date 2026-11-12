@@ -201,16 +201,26 @@ export type ActiveOrder = { kind: string; group: string | null };
 /** The refusal when the group already has an order: `one_charge` for the charges (the code of 21/10/2026). */
 const groupRefusal = (group: string): OrderRefusal => (group === 'charge' ? 'one_charge' : 'one_of_group');
 
+/**
+ * 12/11/2026 (« Payé au parking »): the team adds a service to any booking, whatever its channel, from the booking to the
+ * car's trip out (never on a booking still waiting for its payment), and with no lead time: the team knows what it can do.
+ */
+export const STAFF_ADDABLE_BOOKING_STATUSES: readonly ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out'];
+
 /** Why a service cannot be ordered on this booking now, or null. `active` = its active orders. */
 export function orderRefusal(
   booking: { status: ReservationStatus; returnAt: Date; channel: string; paymentStatus: string | null },
   offer: Pick<ExtraOffer, 'kind' | 'group' | 'leadHours'> | null,
-  options: { active: readonly ActiveOrder[]; now: Date },
+  options: { active: readonly ActiveOrder[]; now: Date; byStaff?: boolean },
 ): OrderRefusal | null {
   if (!offer) return 'not_offered';
-  if (booking.channel !== 'plazo' || booking.paymentStatus === null) return 'not_online';
-  if (!ORDERABLE_BOOKING_STATUSES.includes(booking.status)) return 'closed';
-  if (options.now >= orderDeadline(booking.returnAt, offer.leadHours)) return 'too_late';
+  if (options.byStaff) {
+    if (!STAFF_ADDABLE_BOOKING_STATUSES.includes(booking.status)) return 'closed';
+  } else {
+    if (booking.channel !== 'plazo' || booking.paymentStatus === null) return 'not_online';
+    if (!ORDERABLE_BOOKING_STATUSES.includes(booking.status)) return 'closed';
+    if (options.now >= orderDeadline(booking.returnAt, offer.leadHours)) return 'too_late';
+  }
   if (options.active.some(a => a.kind === offer.kind)) return 'already_ordered';
   if (offer.group && options.active.some(a => a.kind !== offer.kind && a.group === offer.group)) return groupRefusal(offer.group);
   return null;
@@ -284,6 +294,17 @@ type ReturnTimes = {
 /** When the traveller is expected back: the flight's landing when it is known (landed, revised, scheduled), else the booked return. */
 export function expectedReturnOf(r: ReturnTimes): Date {
   return r.flightLandedAt ?? r.flightEstimatedAt ?? r.flightScheduledAt ?? r.returnAt;
+}
+
+/** How the team says a service added at the parking is paid (12/11/2026): a method, or `on_return` (« Au retour », not yet). */
+export const PARKING_PAYMENT_METHODS = ['card', 'cash', 'cheque', 'transfer', 'holiday_vouchers'] as const;
+export type ParkingPaymentMethod = (typeof PARKING_PAYMENT_METHODS)[number];
+export const ON_RETURN = 'on_return';
+
+/** The body's `paymentMethod`, read: a method, null for « Au retour », or `invalid`. */
+export function parkingPaymentOf(raw: unknown): ParkingPaymentMethod | null | 'invalid' {
+  if (raw === ON_RETURN) return null;
+  return typeof raw === 'string' && (PARKING_PAYMENT_METHODS as readonly string[]).includes(raw) ? (raw as ParkingPaymentMethod) : 'invalid';
 }
 
 /** « À faire avant »: one hour before the expected return. */

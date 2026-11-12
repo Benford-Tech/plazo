@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ExtraController } from '@/controllers/extra.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { lookupLimiter } from '@/middlewares/rateLimiter';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
  * @swagger
@@ -27,7 +27,14 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     tags: [Extras]
  * /internal/reservations/{id}/extras:
  *   get:
- *     summary: The services ordered on a booking
+ *     summary: "The services ordered on a booking, and those the team can add: { extras, services: [{ kind, label, icon, group, priceCents, available, reason }], canAdd }"
+ *     tags: [Extras]
+ *   post:
+ *     summary: "12/11/2026, « Payé au parking »: the team adds a service { kind, priceCents?, paymentMethod: card | cash | cheque | transfer | holiday_vouchers | on_return } → 201 { extra, extras, services, canAdd }; 409 not_offered, closed, already_ordered, one_charge, one_of_group"
+ *     tags: [Extras]
+ * /internal/reservations/{id}/extras/{extraId}/payment:
+ *   patch:
+ *     summary: "How a service added by the team was paid { paymentMethod } (on_return: not yet); 409 not_parking_payment"
  *     tags: [Extras]
  * /internal/extras:
  *   get:
@@ -69,6 +76,13 @@ export class ExtraRoute implements Routes {
     this.router.get('/internal/parkings/:id/extras', StaffAuthMiddleware('parking:manage'), this.extras.settings);
     this.router.put('/internal/parkings/:id/extras', StaffAuthMiddleware('parking:manage'), this.extras.updateSettings);
     this.router.get('/internal/reservations/:id/extras', StaffAuthMiddleware('reservations:view'), this.extras.staffOrders);
+    this.router.post('/internal/reservations/:id/extras', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.extras.add);
+    this.router.patch(
+      '/internal/reservations/:id/extras/:extraId/payment',
+      StaffAuthMiddleware('reservations:manage'),
+      RefuseInDemo(),
+      this.extras.payment,
+    );
     this.router.get('/internal/extras', StaffAuthMiddleware('reservations:view'), this.extras.board);
     this.router.post('/internal/reservations/:id/extras/:extraId/accept', StaffAuthMiddleware('reservations:status'), this.extras.accept);
     this.router.post('/internal/reservations/:id/extras/:extraId/done', StaffAuthMiddleware('reservations:status'), this.extras.done);

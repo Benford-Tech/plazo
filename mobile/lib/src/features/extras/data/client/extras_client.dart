@@ -17,11 +17,7 @@ abstract class ExtrasClient {
 
   /// { kind }
   @POST('public/bookings/{reference}/extras')
-  Future<ExtraOrderResponseModel> order(
-    @Path('reference') String reference,
-    @Header('x-booking-token') String token,
-    @Body() Map<String, dynamic> body,
-  );
+  Future<ExtraOrderResponseModel> order(@Path('reference') String reference, @Header('x-booking-token') String token, @Body() Map<String, dynamic> body);
 
   @POST('public/bookings/{reference}/extras/{id}/sync')
   Future<TravellerExtrasModel> sync(@Path('reference') String reference, @Header('x-booking-token') String token, @Path('id') String id);
@@ -43,6 +39,14 @@ abstract class ExtrasClient {
   /// { reason? }
   @POST('internal/reservations/{id}/extras/{extraId}/refuse')
   Future<StaffExtrasModel> refuse(@Path('id') String id, @Path('extraId') String extraId, @Body() Map<String, dynamic> body);
+
+  /// 12/11/2026: { kind, priceCents, paymentMethod } (added by the team, paid at the parking).
+  @POST('internal/reservations/{id}/extras')
+  Future<StaffExtrasModel> add(@Path('id') String id, @Body() Map<String, dynamic> body);
+
+  /// { paymentMethod }
+  @PATCH('internal/reservations/{id}/extras/{extraId}/payment')
+  Future<StaffExtrasModel> setPayment(@Path('id') String id, @Path('extraId') String extraId, @Body() Map<String, dynamic> body);
 
   @GET('internal/parkings/{id}/extras')
   Future<ExtraSettingsModel> settings(@Path('id') String parkingId);
