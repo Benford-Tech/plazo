@@ -11,7 +11,10 @@ import {
   MEDIA_MAX_BYTES,
   phoneTail,
   previewOf,
+  APP_MESSAGE_MAX_LENGTH,
+  appConversationPhone,
   REPLY_MAX_LENGTH,
+  replyChannelOf,
   replyUntil,
 } from '@/domain/whatsapp-inbox';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -56,6 +59,8 @@ export interface ConversationView {
   handledAt: Date | null;
   preview: { direction: string; text: string } | null;
   replyUntil: Date | null;
+  /** 12/11/2026: where a reply goes (the Plazo app, WhatsApp within Meta's 24 hours), null: only a call. */
+  replyBy: 'app' | 'whatsapp' | null;
   /** No parking found for this number: the platform's « Numéro inconnu ». */
   unknown: boolean;
 }
@@ -223,7 +228,7 @@ export class WhatsappInboxService {
     const last = row.messages[0];
     return {
       id: row.id,
-      phone: displayPhone(row.phone),
+      phone: row.phone.startsWith('app:') ? '' : displayPhone(row.phone),
       name: row.reservation?.customerName || row.profileName || null,
       profileName: row.profileName,
       reservation: row.reservation,
@@ -232,7 +237,8 @@ export class WhatsappInboxService {
       unread: row.unread,
       handledAt: row.handledAt,
       preview: last ? { direction: last.direction, text: previewOf(last) } : null,
-      replyUntil: replyUntil(row.lastInboundAt, now),
+      replyUntil: row.phone.startsWith('app:') ? null : replyUntil(row.lastInboundAt, now),
+      replyBy: replyChannelOf(row, now),
       unknown: row.operatorId === null,
     };
   }
@@ -347,6 +353,7 @@ export class WhatsappInboxService {
         hasMedia: !!m.mediaId,
         mediaMime: m.mediaMime,
         status: m.status,
+        channel: m.channel,
         at: m.createdAt,
         by: m.staff ? { firstName: m.staff.firstName } : null,
       })),
@@ -360,17 +367,42 @@ export class WhatsappInboxService {
     if (!text) throw new ValidationException({ text: 'required' });
     if (text.length > REPLY_MAX_LENGTH) throw new ValidationException({ text: 'too_long' });
     const row = await this.find(actor, id);
-    if (!replyUntil(row.lastInboundAt, now))
-      throw new HttpException(httpStatus.CONFLICT, 'Meta allows a free reply only within 24 hours', 'window_closed');
-    if (!this.whatsapp.available()) throw new HttpException(httpStatus.CONFLICT, 'WhatsApp is not configured', 'whatsapp_unavailable');
-    const result = await this.whatsapp.sendText(row.phone, text);
-    if (!result.ok) {
-      logger.warn(`[WhatsApp inbox] reply refused for conversation ${id}: ${result.code}`);
-      throw new HttpException(httpStatus.BAD_GATEWAY, 'WhatsApp refused the reply', result.code);
+    const channel = replyChannelOf(row, now);
+    let message;
+    if (channel === 'app') {
+      // The traveller wrote from the Plazo app: the reply shows there, with a push to their phone.
+      const last = await prisma.whatsappInboxMessage.findFirst({
+        where: { conversationId: id, channel: 'app', direction: 'in' },
+        orderBy: { createdAt: 'desc' },
+        select: { reservationId: true },
+      });
+      const reservationId = last?.reservationId ?? row.reservationId;
+      message = await prisma.whatsappInboxMessage.create({
+        data: { conversationId: id, direction: 'out', type: 'text', text, status: 'sent', staffId: actor.id, channel: 'app', reservationId },
+      });
+      if (reservationId) {
+        const parking = await prisma.reservation.findUnique({
+          where: { id: reservationId },
+          select: { reference: true, parking: { select: { name: true } } },
+        });
+        await this.push.notifyTravellers(
+          [reservationId],
+          { title: `Message de ${parking?.parking.name ?? 'votre parking'}`, body: text.length > 140 ? `${text.slice(0, 139)}…` : text },
+          { data: { type: 'parking_message', reference: parking?.reference ?? '' }, collapseId: `parking-message-${reservationId}`, ttl: 24 * 3600 },
+        );
+      }
+    } else {
+      if (channel !== 'whatsapp') throw new HttpException(httpStatus.CONFLICT, 'Meta allows a free reply only within 24 hours', 'window_closed');
+      if (!this.whatsapp.available()) throw new HttpException(httpStatus.CONFLICT, 'WhatsApp is not configured', 'whatsapp_unavailable');
+      const result = await this.whatsapp.sendText(row.phone, text);
+      if (!result.ok) {
+        logger.warn(`[WhatsApp inbox] reply refused for conversation ${id}: ${result.code}`);
+        throw new HttpException(httpStatus.BAD_GATEWAY, 'WhatsApp refused the reply', result.code);
+      }
+      message = await prisma.whatsappInboxMessage.create({
+        data: { conversationId: id, direction: 'out', type: 'text', text, waMessageId: result.id, status: 'sent', staffId: actor.id },
+      });
     }
-    const message = await prisma.whatsappInboxMessage.create({
-      data: { conversationId: id, direction: 'out', type: 'text', text, waMessageId: result.id, status: 'sent', staffId: actor.id },
-    });
     await prisma.whatsappConversation.update({ where: { id }, data: { lastMessageAt: message.createdAt, unread: 0 } });
     await this.audit.record(actor, {
       action: 'whatsapp.reply',
@@ -386,9 +418,73 @@ export class WhatsappInboxService {
       hasMedia: false,
       mediaMime: null,
       status: 'sent',
+      channel: message.channel,
       at: message.createdAt,
       by: { firstName: actor.firstName },
     };
+  }
+
+  // ---- The traveller, from the Plazo app (12/11/2026, « Écrire au parking ») ----------------------
+
+  /** GET /public/bookings/:ref/messages: the booking's messages written or answered in the app, oldest first. */
+  public async travellerThread(reservation: { id: string; operatorId: string; anonymizedAt?: Date | null }) {
+    const messages = await prisma.whatsappInboxMessage.findMany({
+      where: { reservationId: reservation.id, channel: 'app', conversation: { operatorId: reservation.operatorId } },
+      orderBy: { createdAt: 'asc' },
+      take: 300,
+      include: { staff: { select: { firstName: true } } },
+    });
+    return {
+      messages: messages.map(m => ({
+        id: m.id,
+        from: m.direction === 'in' ? 'me' : 'parking',
+        text: m.text ?? '',
+        at: m.createdAt,
+        by: m.direction === 'out' ? (m.staff?.firstName ?? null) : null,
+      })),
+      canWrite: !reservation.anonymizedAt,
+    };
+  }
+
+  /** POST /public/bookings/:ref/messages { text }: lands in the parking's conversation of that traveller, the team told. */
+  public async travellerWrite(
+    reservation: { id: string; operatorId: string; customerPhone: string; customerName: string; reference: string; anonymizedAt?: Date | null },
+    raw: unknown,
+    now = new Date(),
+  ) {
+    if (reservation.anonymizedAt) throw new HttpException(httpStatus.CONFLICT, 'Booking anonymized', 'anonymized');
+    const text = typeof raw === 'string' ? raw.replace(/\r\n?/g, '\n').trim() : '';
+    if (!text) throw new ValidationException({ text: 'required' });
+    if (text.length > APP_MESSAGE_MAX_LENGTH) throw new ValidationException({ text: 'too_long' });
+    const phone = appConversationPhone(reservation.customerPhone, reservation.id);
+    const tail = phone.startsWith('app:') ? '' : phoneTail(phone);
+    const existing = await prisma.whatsappConversation.findFirst({
+      where: { operatorId: reservation.operatorId, ...(tail ? { phone: { endsWith: tail } } : { phone }) },
+      orderBy: { lastMessageAt: 'desc' },
+    });
+    const conversation = existing
+      ? await prisma.whatsappConversation.update({
+          where: { id: existing.id },
+          data: { reservationId: reservation.id, lastMessageAt: now, lastAppAt: now, unread: { increment: 1 }, handledAt: null },
+        })
+      : await prisma.whatsappConversation.create({
+          data: { operatorId: reservation.operatorId, reservationId: reservation.id, phone, lastMessageAt: now, lastAppAt: now, unread: 1 },
+        });
+    const message = await prisma.whatsappInboxMessage.create({
+      data: { conversationId: conversation.id, direction: 'in', type: 'text', text, channel: 'app', reservationId: reservation.id, createdAt: now },
+    });
+    const said = text.replace(/\s+/g, ' ');
+    await this.push.notifyStaff(
+      reservation.operatorId,
+      'whatsapp',
+      {
+        title: `Message · ${reservation.customerName || 'Client'}`,
+        body: `${reservation.reference} · « ${said.length > 110 ? `${said.slice(0, 109)}…` : said} » (app Plazo)`,
+      },
+      { data: { type: 'whatsapp', conversationId: conversation.id }, collapseId: `whatsapp-${conversation.id}`, ttl: 6 * 3600 },
+    );
+    logger.info(`[WhatsApp inbox] app message received for operator ${reservation.operatorId}`);
+    return { id: message.id, from: 'me', text, at: message.createdAt, by: null };
   }
 
   /** POST /internal/whatsapp/inbox/:id/handle | unhandle */

@@ -31,6 +31,11 @@ class _AppState extends State<App> {
     _pushOpened = locator<PushService>().opened.listen((data) {
       if (data['type'] == 'arrival') unawaited(_router.navigate(const ProShellRoute(children: [ProTodayRoute()])));
       if (data['type'] == 'join_request') unawaited(_router.navigate(const ProTeamRoute()));
+      // « Écrire au parking » (12/11/2026, Plazo): the parking answered, open the booking's thread.
+      final reference = data['reference'];
+      if (data['type'] == 'parking_message' && reference is String && reference.isNotEmpty) {
+        unawaited(_router.push(MyBookingRoute(reference: reference)));
+      }
       // « Message WhatsApp » (12/11/2026): the conversation it is about.
       if (data['type'] == 'whatsapp') {
         final id = data['conversationId'];

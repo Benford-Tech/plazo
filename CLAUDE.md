@@ -1400,7 +1400,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Non lus · À traiter · Traités · Envoyés) et `/pro/whatsapp/:id` (`ProWhatsappConversationPage` : bulles, messages de Plazo, photo ouverte
      dans l'app, vocal et document sur le web, réponse dans les 24 h sinon « Appeler », « Marquer comme traité », « Ouvrir la réservation ») ;
      Plus › Accueil › « Messages WhatsApp » avec le nombre de non lus (`WhatsappUnreadBadge`, `nav/counts`) ; la cloche et le push
-     (`type: 'whatsapp'`, `conversationId`) ouvrent la conversation. Test `whatsapp_inbox_test.dart`.
+     (`type: 'whatsapp'`, `conversationId`) ouvrent la conversation. Test `whatsapp_inbox_test.dart`. **« Écrire au parking » depuis l'app Plazo (12/11/2026,
+     « après avoir importé ma réservation je peux écrire directement au parking et ça arrive en conversation WhatsApp de Plazo Pro »,
+     choix « Dans l'app »)** : carte « Écrire au parking » de Ma réservation (`features/parking_messages` : `ParkingMessagesCard`, fil relu
+     toutes les 15 s, `ParkingMessagesDataSource` par Dio avec le jeton de la réservation ; tout statut sauf attente de paiement et annulée) ;
+     `GET|POST /public/bookings/:ref/messages` (`x-booking-token`, 2 000 caractères, `parkingMessageLimiter` 20 par 15 min, 409 `anonymized`)
+     → `WhatsappInboxService.travellerWrite` : le message (`WhatsappInboxMessage.channel` `app`, `reservationId` ; migration
+     `whatsapp_app_messages`, CHECK) va dans la conversation du loueur et du numéro du voyageur (9 derniers chiffres, sinon `app:<id>` sans
+     numéro, `appConversationPhone`), `lastAppAt`, non lu, push et cloche « Message · <client> » ; le voyageur ne voit que les messages
+     `app` de sa réservation (`travellerThread`). Réponse de l'équipe : `replyBy` de la vue (`replyChannelOf` : l'app quand le dernier
+     message du client vient de l'app ou que les 24 h de Meta sont passées après un message de l'app, sinon WhatsApp dans les 24 h, sinon
+     un appel) ; dans l'app, rien chez Meta, push « Message de <parking> » (`type: 'parking_message'`, ouvre Ma réservation). Web et Plazo
+     Pro : pastille « App Plazo » sur ces messages, barre de réponse « Le client vous a écrit depuis l'app Plazo… ». Le site n'a pas la
+     carte. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`, `parking_messages_card_test.dart`, `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

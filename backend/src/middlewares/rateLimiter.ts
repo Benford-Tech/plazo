@@ -88,6 +88,9 @@ export const lookupLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, skip
 // A traveller's own photos of the car: six slots, retaken now and then; an upload is up to 3 MB.
 export const photoUploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, skip, keyGenerator, message: tooMany('too_many_requests') });
 
+// « Écrire au parking » from the Plazo app (12/11/2026): each message tells the parking's team.
+export const parkingMessageLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, skip, keyGenerator, message: tooMany('too_many_requests') });
+
 // Bookings on the site: anonymous and free (paid on site), each one holds a real place and sends an
 // email and an SMS. A traveller rarely books more than a couple of stays in an hour; failed
 // attempts (validation, full nights) do not count.

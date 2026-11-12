@@ -111,6 +111,7 @@ import '../features/pro_settings/data/datasources/settings_data_source.dart';
 import '../features/pro_settings/data/operator_logo_data_source.dart';
 import '../features/pro_bell/data/bell_data_source.dart';
 import '../features/pro_whatsapp/data/whatsapp_inbox_data_source.dart';
+import '../features/parking_messages/parking_messages_data_source.dart';
 import '../features/pro_settings/data/staff_photo_data_source.dart';
 import '../features/pro_settings/domain/repositories/settings_repository.dart';
 import '../features/pro_settings/domain/usecases/settings_use_cases.dart';

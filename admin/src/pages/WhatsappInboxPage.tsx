@@ -184,6 +184,14 @@ function Bubble({ item }: { item: ChatItem }) {
           {m.by.firstName}
         </span>
       )}
+      {m.channel === "app" && (
+        <span
+          data-testid="wa-app"
+          className="mb-0.5 inline-block rounded-full bg-[#EEF7DD] px-1.5 text-[10px] font-semibold text-lime-deep"
+        >
+          {t.appBadge}
+        </span>
+      )}
       {m.type === "location" && (
         <span className="flex items-center gap-1 text-xs font-semibold">
           <MapPin className="h-3.5 w-3.5" />
@@ -326,6 +334,8 @@ function Thread({
       <p className="p-4 text-sm text-muted-foreground">{t.mediaLoading}</p>
     );
   const c = detail.conversation;
+  const replyBy =
+    c.replyBy !== undefined ? c.replyBy : c.replyUntil ? "whatsapp" : null;
   const r = c.reservation;
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -388,11 +398,19 @@ function Thread({
         <div ref={end} />
       </div>
       {c.unknown && <UnknownAttach id={id} onDone={onChanged} />}
+      {/* « Écrire au parking » (12/11/2026): the reply goes to the Plazo app when the traveller wrote from it. */}
       <form
         onSubmit={submit}
         className="flex flex-col gap-2 border-t border-panel-line px-4 py-3"
       >
-        {c.replyUntil ? (
+        {replyBy === "app" ? (
+          <span
+            className="text-xs font-semibold text-lime-deep"
+            data-testid="wa-window-app"
+          >
+            {t.replyInApp}
+          </span>
+        ) : c.replyUntil ? (
           <span
             className="text-xs font-semibold text-lime-deep"
             data-testid="wa-window"
@@ -415,16 +433,16 @@ function Thread({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                if (text.trim() && c.replyUntil) reply.mutate();
+                if (text.trim() && replyBy) reply.mutate();
               }
             }}
-            disabled={!c.replyUntil}
+            disabled={!replyBy}
             rows={2}
             maxLength={4096}
             placeholder={t.placeholder}
             className="min-w-0 flex-1 resize-y rounded-lg border border-panel-line bg-white px-3 py-2 text-sm disabled:bg-panel-2"
           />
-          {c.replyUntil ? (
+          {replyBy ? (
             <button
               type="submit"
               disabled={!text.trim() || reply.isPending}
@@ -433,12 +451,14 @@ function Thread({
               {reply.isPending ? t.sending : t.send}
             </button>
           ) : (
-            <a
-              href={`tel:${c.phone.replace(/\s/g, "")}`}
-              className="self-end rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-            >
-              {t.call(c.phone)}
-            </a>
+            c.phone && (
+              <a
+                href={`tel:${c.phone.replace(/\s/g, "")}`}
+                className="self-end rounded-full bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+              >
+                {t.call(c.phone)}
+              </a>
+            )
           )}
         </div>
         <div className="flex flex-wrap gap-2">

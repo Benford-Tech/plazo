@@ -3,7 +3,7 @@ import { PublicBookingController } from '@/controllers/public-booking.controller
 import { ChildSeatsDto } from '@/dtos/child-seats.dto';
 import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { bookingLimiter, lookupLimiter, lookupReferenceLimiter } from '@/middlewares/rateLimiter';
+import { bookingLimiter, lookupLimiter, lookupReferenceLimiter, parkingMessageLimiter } from '@/middlewares/rateLimiter';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -230,6 +230,9 @@ export class PublicBookingRoute implements Routes {
     // Where the car is parked (06/10/2026), recorded by the traveller who parked it themselves.
     this.router.put('/public/bookings/:reference/car-location', ValidationMiddleware(CarLocationDto), this.bookings.locateCar);
     this.router.delete('/public/bookings/:reference/car-location', this.bookings.clearCarLocation);
+    // « Écrire au parking » (12/11/2026): the traveller's messages from the Plazo app, in the parking's WhatsApp inbox.
+    this.router.get('/public/bookings/:reference/messages', this.bookings.messages);
+    this.router.post('/public/bookings/:reference/messages', parkingMessageLimiter, this.bookings.writeMessage);
     this.router.post('/public/bookings/:reference/checkout', this.bookings.checkout);
     this.router.post('/public/bookings/:reference/payment-intent', this.bookings.paymentIntent);
     this.router.post('/public/bookings/:reference/release', this.bookings.release);

@@ -6,6 +6,7 @@ import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLo
 import { cleanAcquisition } from '@/domain/acquisition';
 import { fromSite } from '@/middlewares/rateLimiter';
 import { PublicBookingService } from '@/services/public-booking.service';
+import { WhatsappInboxService } from '@/services/whatsapp-inbox.service';
 import catchAsync from '@/utils/catchAsync';
 
 // The manage token travels in a header, never in the URL (request logs).
@@ -13,6 +14,21 @@ const bookingToken = (req: Request) => req.get('x-booking-token') || undefined;
 
 export class PublicBookingController {
   public bookingService = Container.get(PublicBookingService);
+  public inbox = Container.get(WhatsappInboxService);
+
+  /** GET /public/bookings/:reference/messages (12/11/2026, « Écrire au parking » from the Plazo app) */
+  public messages = catchAsync(async (req: Request, res: Response) => {
+    const booking = await this.bookingService.load(req.params.reference as string, bookingToken(req));
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.inbox.travellerThread(booking));
+  });
+
+  /** POST /public/bookings/:reference/messages { text } */
+  public writeMessage = catchAsync(async (req: Request, res: Response) => {
+    const booking = await this.bookingService.load(req.params.reference as string, bookingToken(req));
+    res.set('Cache-Control', 'no-store');
+    res.status(httpStatus.CREATED).json(await this.inbox.travellerWrite(booking, req.body?.text));
+  });
 
   /** POST /public/bookings */
   public create = catchAsync(async (req: Request, res: Response) => {
