@@ -239,9 +239,6 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const row = await prisma.whatsappMessage.findFirstOrThrow();
     expect(row).toMatchObject({ status: 'sent', waMessageId: 'wamid.1', to: '+33612345678', kind: 'booking_reminder' });
     expect(row.fallbackText).toContain('Bonjour Camille');
-    expect(row.text).toBe(
-      `Message de ${op.operator.name} pour votre réservation - :\nBonjour Camille, · nous vous attendons demain à 06:30.\nMerci d'avoir choisi votre parking avec Plazo.`,
-    );
 
     await sms.sendTravellerSms(op.operator.id, { ...reminder(), kind: 'test' });
     expect(calls(BREVO_SMS_URL)).toHaveLength(1);

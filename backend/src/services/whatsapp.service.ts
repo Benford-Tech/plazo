@@ -7,7 +7,6 @@ import { namesOfCustomer } from '@/domain/customer-name';
 import {
   arrivalDateLabel,
   arrivalTimeLabel,
-  genericMessageText,
   nextWhatsappStatus,
   parseTemplateRules,
   templateRuleFor,
@@ -298,8 +297,6 @@ export class WhatsappService {
     const parkingName = whatsappParam(operator?.name ?? 'Votre parking', 80);
     const rule = operator ? templateRuleFor(parseTemplateRules(this.config().templates), operator, sms.kind) : null;
     let result: SendResult;
-    // What the traveller reads (12/11/2026): the day-before template's text is the SMS text itself (`reminderText`).
-    let shown = sms.text;
     if (rule && booking) {
       const timeZone = booking.parking?.timezone ?? 'Europe/Paris';
       const firstName = namesOfCustomer(booking).firstName || booking.customerName || 'Madame, Monsieur';
@@ -322,7 +319,6 @@ export class WhatsappService {
       result = await this.sendTemplate(recipient, sms.whatsapp.params, { name: this.config().reminderTemplate, image: sms.whatsapp.image });
     } else {
       result = await this.sendTemplate(recipient, [parkingName, booking?.reference ?? '-', whatsappParam(sms.text)]);
-      shown = genericMessageText(parkingName, booking?.reference ?? '-', sms.text);
     }
     await prisma.whatsappMessage.create({
       data: {
@@ -334,7 +330,6 @@ export class WhatsappService {
         status: result.ok ? 'sent' : 'failed',
         errorCode: result.ok ? null : result.code,
         fallbackText: result.ok && smsFallback ? sms.text : null,
-        text: shown.slice(0, 4096),
         smsOutcome: null,
       },
     });

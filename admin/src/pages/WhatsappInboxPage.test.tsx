@@ -46,7 +46,7 @@ const detail = (over: Partial<WhatsappConversation> = {}): WhatsappConversationD
     { id: "m1", direction: "in", type: "text", text: "On arrive plutôt vers 8h, c’est possible ?", hasMedia: false, mediaMime: null, status: null, at: new Date(now - 120000).toISOString(), by: null },
     { id: "m2", direction: "in", type: "image", text: null, hasMedia: true, mediaMime: "image/jpeg", status: null, at: new Date(now - 60000).toISOString(), by: null },
   ],
-  sent: [{ id: "s1", kind: "booking_reminder", status: "read", text: "Bonjour Camille, à demain 06:30.", at: new Date(now - 3600000).toISOString() }],
+  sent: [{ id: "s1", kind: "booking_reminder", status: "read", at: new Date(now - 3600000).toISOString() }],
 });
 
 function renderAt(path: string) {
@@ -77,7 +77,6 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     await userEvent.click(await screen.findByTestId("wa-conv-c1"));
     expect(await screen.findByTestId("wa-thread")).toBeInTheDocument();
     expect(screen.getByTestId("wa-sent")).toHaveTextContent("Veille du dépôt envoyé par Plazo");
-    expect(screen.getByTestId("wa-sent-text")).toHaveTextContent("Bonjour Camille, à demain 06:30.");
     expect(screen.getAllByTestId("wa-in")).toHaveLength(2);
     expect(screen.getByText("Voir la photo")).toBeInTheDocument();
     expect(screen.getByTestId("wa-window")).toHaveTextContent("Réponse libre possible jusqu'à");

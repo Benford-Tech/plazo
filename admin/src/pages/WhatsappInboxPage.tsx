@@ -28,7 +28,7 @@ const listTime = (iso: string) => (dayOf(iso) === todayLocal() ? timeOf(iso) : d
 
 type ChatItem =
   | { kind: "message"; at: string; message: WhatsappInboxMessage }
-  | { kind: "sent"; at: string; id: string; label: string; status: string; text: string | null };
+  | { kind: "sent"; at: string; id: string; label: string; status: string };
 
 function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
   const items: ChatItem[] = [
@@ -39,7 +39,6 @@ function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
       id: s.id,
       label: t.sentByPlazo(travellerMessagesFr.kind[s.kind] ?? travellerMessagesFr.otherKind),
       status: t.sentStatus[s.status] ?? s.status,
-      text: s.text ?? null,
     })),
   ];
   return items.sort((a, b) => a.at.localeCompare(b.at));
@@ -80,11 +79,6 @@ function Bubble({ item }: { item: ChatItem }) {
     return (
       <div data-testid="wa-sent" className="max-w-[78%] self-end rounded-xl bg-[#DCF8C6] px-3 py-1.5 text-xs text-[#0B3B19] opacity-90">
         <span className="font-semibold">{item.label}</span>
-        {item.text && (
-          <span data-testid="wa-sent-text" className="mt-1 block whitespace-pre-wrap break-words text-sm opacity-100">
-            {item.text}
-          </span>
-        )}
         <span className="tabular mt-0.5 block text-right font-mono text-[11px] text-[#3F6B4A]">
           {timeOf(item.at)} · {item.status}
         </span>

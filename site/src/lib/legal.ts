@@ -31,12 +31,12 @@ export interface LegalDoc {
  * - Terms: 19/10/2026, the signed contract and the condition reports (articles 9 and 11); 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
  *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 12/11/2026, the WhatsApp messages' text kept 30 days (shown in the WhatsApp inbox); 03/11/2026, the messages by WhatsApp (Meta) with the SMS as fallback; 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ * - Privacy: 03/11/2026, the messages by WhatsApp (Meta) with the SMS as fallback; 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "30 octobre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "12 novembre 2026";
+export const PRIVACY_VERSION = "7 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -406,7 +406,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
-            "Messages WhatsApp : ceux que Plazo vous envoie (numéro, texte et état de remise) et ceux que vous écrivez au numéro WhatsApp de Plazo, lisibles par l’équipe du parking : 30 jours.",
+            "Suivi des messages WhatsApp (numéro du destinataire et état de remise) : 30 jours ; le texte n’est gardé que le temps de l’envoyer par SMS s’il n’est pas remis, 2 heures au plus.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,
             `Lettre ${p} : votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre ; une inscription que vous ne confirmez pas n’est ajoutée à aucune liste. Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire ; vous pouvez en demander l’effacement (article 8). Pour limiter les e-mails de confirmation envoyés à une même adresse, son empreinte reste en mémoire 48 heures au plus.`,

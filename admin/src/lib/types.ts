@@ -2791,8 +2791,7 @@ export interface WhatsappConversationDetail {
   conversation: WhatsappConversation;
   messages: WhatsappInboxMessage[];
   /** What Plazo sent this booking by WhatsApp (confirmation, day before…), shown between the messages. */
-  /** What Plazo sent this booking by WhatsApp; `text` null for a message sent before 12/11/2026. */
-  sent: { id: string; kind: string; status: string; text?: string | null; at: string }[];
+  sent: { id: string; kind: string; status: string; at: string }[];
 }
 
 export interface ReservationConversation {
