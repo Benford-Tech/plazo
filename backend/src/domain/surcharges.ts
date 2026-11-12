@@ -194,3 +194,30 @@ export function surchargeConditions(parking: { surcharges: unknown; nightStart: 
   const night = parking.nightStart && parking.nightEnd ? { start: parking.nightStart, end: parking.nightEnd } : null;
   return surchargesLine(surchargesOf(parking.surcharges), night) ?? '';
 }
+
+/** B (12/11/2026): the name of a supplement on a booking, its invoice line and the history. */
+export function surchargeName(s: Surcharge): string {
+  switch (s.kind) {
+    case 'late':
+      return 'Retard au rendez-vous';
+    case 'night':
+      return 'Prise en charge ou restitution de nuit';
+    case 'breakdown':
+      return s.note ? `Dépannage (${s.note})` : 'Dépannage';
+    case 'custom':
+      return s.label ?? 'Supplément';
+  }
+}
+
+/**
+ * B: the late-arrival supplement Plazo suggests, when the traveller dropped the car off more than the parking's minutes
+ * after the booked time. The team decides; null when the rule is off, the car is not there yet or it was on time.
+ */
+export function lateSuggestion(
+  rule: Surcharge | undefined,
+  booking: { arrivalAt: Date; arrivedAt: Date | null },
+): { lateMinutes: number; amountCents: number } | null {
+  if (!rule || rule.kind !== 'late' || !rule.enabled || !rule.minutes || !booking.arrivedAt) return null;
+  const late = Math.floor((booking.arrivedAt.getTime() - booking.arrivalAt.getTime()) / 60_000);
+  return late > rule.minutes ? { lateMinutes: late, amountCents: rule.amountCents } : null;
+}

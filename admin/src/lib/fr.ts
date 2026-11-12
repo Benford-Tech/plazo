@@ -685,6 +685,8 @@ export const fr = {
     parkingExtras: (amount: string, n: number) =>
       `Services payés au parking : ${amount} · ${n} service${n > 1 ? "s" : ""}, compris dans le total, sans commission`,
     parkingExtrasToCollect: (amount: string) => `dont ${amount} à payer au retour`,
+    surcharges: (amount: string, n: number) =>
+      `Suppléments (retard, nuit, dépannage…) : ${amount} · ${n} supplément${n > 1 ? "s" : ""}, compris dans le total`,
     byPaymentMethod: "Par moyen de paiement",
     paidByUnknown: "Non précisé",
     bookingsShort: (n: number) => `${n} rés.`,
@@ -5543,6 +5545,8 @@ export const historyFr = {
     "extra.added": "a ajouté un service",
     "extra.refused": "a marqué un service « Pas possible »",
     "extra.payment": "a noté le paiement d'un service",
+    "surcharge.added": "a ajouté un supplément",
+    "surcharge.removed": "a retiré un supplément",
     "contract.code_sent": "a envoyé le code de signature",
     "contract.signed": "a signé le contrat",
     "contract.archived": "a archivé le contrat",
@@ -5787,7 +5791,7 @@ export const surchargesFr = {
   preview: "Ce que lit le client",
   previewWhere: "Message de la veille ({conditions}), mail de confirmation et « Ma réservation ».",
   previewNone: "Aucun supplément allumé : rien n'est écrit.",
-  info: "Information seulement : rien n'est ajouté au prix d'une réservation.",
+  info: "Rien n'est prélevé tout seul : l'équipe applique un supplément sur la fiche de la réservation, à encaisser au parking.",
   save: "Enregistrer",
   saved: "Suppléments enregistrés.",
   amountInvalid: "Montant invalide (ex. 10 ou 12,50).",
@@ -5796,5 +5800,32 @@ export const surchargesFr = {
     invalid: "Valeur invalide.",
     too_long: "Trop long.",
     same_time: "Le début et la fin doivent être différents.",
+  } as Record<string, string>,
+};
+
+/** « Suppléments » of the booking page (12/11/2026, B). */
+export const bookingSurchargesFr = {
+  title: "Suppléments",
+  lateTitle: (minutes: number) => `Retard de ${minutes} min au rendez-vous`,
+  lateText: (scheduled: string, arrived: string, amount: string) => `Prévu à ${scheduled}, voiture déposée à ${arrived} : supplément de ${amount} selon vos réglages.`,
+  apply: (amount: string) => `Appliquer ${amount}`,
+  no: "Non",
+  quick: "Ajouter d'un toucher",
+  other: "Autre montant…",
+  otherLabel: "Nom",
+  otherAmount: "Montant (€)",
+  add: "Ajouter",
+  cancel: "Annuler",
+  remove: "Retirer",
+  addedBy: (by: string | null, at: string) => (by ? `ajouté par ${by} à ${at}` : `ajouté à ${at}`),
+  total: "À encaisser au parking",
+  note: "Encaissé au parking, compté dans le chiffre d'affaires et ajouté à la facture. Rien n'est prélevé tout seul.",
+  settings: "Régler les suppléments",
+  amountInvalid: "Montant invalide (ex. 10 ou 12,50).",
+  added: "Supplément ajouté.",
+  removed: "Supplément retiré.",
+  errors: {
+    not_offered: "Ce supplément n'est plus proposé : rechargez la page.",
+    reservation_closed: "Réservation annulée ou non venue : pas de supplément.",
   } as Record<string, string>,
 };

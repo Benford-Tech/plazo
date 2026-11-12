@@ -84,6 +84,8 @@ export interface RevenueReport {
    * `byPaymentMethod` (never in `count`, the averages or `byChannel`, which are the bookings'); `toCollect`: « Au retour ».
    */
   parkingExtras: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
+  /** 12/11/2026 (B): the supplements the team applied (late arrival, night, breakdown…), in `totalCents` too. */
+  surcharges: { count: number; totalCents: number };
 }
 
 /** Every local date from `from` to `to`, both included. */
@@ -113,6 +115,7 @@ export function revenueReport(
   bookings: RevenueBooking[],
   period: { from: string; to: string; basis: RevenueBasis; timeZone: string },
   parkingExtras: readonly RevenueExtra[] = [],
+  surchargeItems: readonly RevenueExtra[] = [],
 ): RevenueReport {
   const { from, to, basis, timeZone } = period;
   const inPeriod = bookings.filter(b => {
@@ -123,11 +126,16 @@ export function revenueReport(
     const day = revenueDay(e, basis, timeZone);
     return day >= from && day <= to;
   });
+  const surcharges = surchargeItems.filter(e => {
+    const day = revenueDay(e, basis, timeZone);
+    return day >= from && day <= to;
+  });
+  const surchargesCents = surcharges.reduce((sum, e) => sum + e.priceCents, 0);
   const extrasCents = extras.reduce((sum, e) => sum + e.priceCents, 0);
   const toCollect = extras.filter(e => e.paymentMethod === null);
   const priced = inPeriod.filter((b): b is RevenueBooking & { priceCents: number } => b.priceCents !== null);
   const bookingsCents = priced.reduce((sum, b) => sum + b.priceCents, 0);
-  const totalCents = bookingsCents + extrasCents;
+  const totalCents = bookingsCents + extrasCents + surchargesCents;
   const fee = (b: RevenueBooking) => b.commissionCents ?? 0;
   const commissionCents = priced.reduce((sum, b) => sum + fee(b), 0);
 
@@ -157,7 +165,7 @@ export function revenueReport(
     line.totalCents += b.priceCents;
     methods.set(method, line);
   }
-  for (const e of extras) {
+  for (const e of [...extras, ...surcharges]) {
     const line = methods.get(e.paymentMethod) ?? { method: e.paymentMethod, count: 0, totalCents: 0 };
     line.count += 1;
     line.totalCents += e.priceCents;
@@ -171,7 +179,7 @@ export function revenueReport(
     line.totalCents += b.priceCents;
     line.netCents += b.priceCents - fee(b);
   }
-  for (const e of extras) {
+  for (const e of [...extras, ...surcharges]) {
     const line = perDay.get(revenueDay(e, basis, timeZone))!;
     line.totalCents += e.priceCents;
     line.netCents += e.priceCents;
@@ -204,6 +212,7 @@ export function revenueReport(
       toCollectCount: toCollect.length,
       toCollectCents: toCollect.reduce((sum, e) => sum + e.priceCents, 0),
     },
+    surcharges: { count: surcharges.length, totalCents: surchargesCents },
   };
 }
 

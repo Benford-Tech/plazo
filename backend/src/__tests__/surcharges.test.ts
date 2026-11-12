@@ -112,3 +112,72 @@ describe('GET/PUT /internal/parkings/:id/surcharges', () => {
     await api().get(`/api/internal/parkings/${op.parking.id}/surcharges`).set(auth(other.token)).expect(404);
   });
 });
+
+describe('B : les suppléments sur une réservation (12/11/2026)', () => {
+  const booking = (op: Awaited<ReturnType<typeof setupOperator>>, arrivedAt: Date | null) =>
+    prisma.reservation.create({
+      data: {
+        reference: 'RSUP01',
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        channel: 'phone',
+        status: arrivedAt ? 'arrived' : 'upcoming',
+        arrivalAt: new Date('2026-11-12T08:00:00Z'),
+        arrivedAt,
+        returnAt: new Date('2026-11-15T18:00:00Z'),
+        passengers: 1,
+        customerName: 'Camille Martin',
+        customerPhone: '06 12 34 56 78',
+        plate: 'AB-123-CD',
+        plateKey: 'AB123CD',
+        priceCents: 5400,
+      },
+    });
+
+  it('Plazo propose le retard, l’équipe applique ou dit non, ajoute et retire ; compté dans le chiffre et la facture', async () => {
+    const op = await setupOperator();
+    await api().put(`/api/internal/parkings/${op.parking.id}/surcharges`).set(auth(op.token)).send(body).expect(200);
+    const r = await booking(op, new Date('2026-11-12T08:48:00Z'));
+    const path = `/api/internal/reservations/${r.id}/surcharges`;
+
+    const first = await api().get(path).set(auth(op.token)).expect(200);
+    expect(first.body.suggestion).toMatchObject({
+      kind: 'late',
+      lateMinutes: 48,
+      amountCents: 1000,
+      scheduledAt: '2026-11-12T09:00',
+      arrivedAt: '2026-11-12T09:48',
+    });
+    expect(first.body.options.map((o: { key: string }) => o.key)).toEqual(['late', 'night', 'breakdown']);
+
+    const late = await api().post(path).set(auth(op.token)).send({ key: 'late' }).expect(201);
+    expect(late.body.suggestion).toBeNull();
+    expect(late.body.surcharges[0]).toMatchObject({ kind: 'late', label: 'Retard au rendez-vous (48 min)', amountCents: 1000 });
+
+    const other = await api().post(path).set(auth(op.token)).send({ label: 'Clé perdue', amountCents: 2500 }).expect(201);
+    expect(other.body.totalCents).toBe(3500);
+    await api().post(path).set(auth(op.token)).send({ key: 'inconnu' }).expect(409);
+    const bad = await api().post(path).set(auth(op.token)).send({ label: '', amountCents: 0 }).expect(400);
+    expect(bad.body.fields).toEqual({ label: 'required', amountCents: 'invalid' });
+
+    const removed = await api().delete(`${path}/${other.body.surcharges[1].id}`).set(auth(op.token)).expect(200);
+    expect(removed.body.totalCents).toBe(1000);
+    expect(await prisma.auditLog.count({ where: { entityId: r.id, action: { startsWith: 'surcharge.' } } })).toBe(3);
+
+    const revenue = await api().get('/api/internal/revenue?from=2026-11-01&to=2026-11-30').set(auth(op.token)).expect(200);
+    expect(revenue.body.surcharges).toEqual({ count: 1, totalCents: 1000 });
+    expect(revenue.body.totalCents).toBe(6400);
+  });
+
+  it('« Non » au retard proposé ; une arrivée à l’heure ne propose rien', async () => {
+    const op = await setupOperator();
+    await api().put(`/api/internal/parkings/${op.parking.id}/surcharges`).set(auth(op.token)).send(body).expect(200);
+    const r = await booking(op, new Date('2026-11-12T08:20:00Z'));
+    const path = `/api/internal/reservations/${r.id}/surcharges`;
+    expect((await api().get(path).set(auth(op.token)).expect(200)).body.suggestion).toBeNull();
+    await prisma.reservation.update({ where: { id: r.id }, data: { arrivedAt: new Date('2026-11-12T09:00:00Z') } });
+    expect((await api().get(path).set(auth(op.token)).expect(200)).body.suggestion).toMatchObject({ lateMinutes: 60 });
+    const no = await api().post(`${path}/dismiss`).set(auth(op.token)).expect(200);
+    expect(no.body.suggestion).toBeNull();
+  });
+});

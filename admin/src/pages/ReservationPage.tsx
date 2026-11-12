@@ -12,6 +12,7 @@ import { DeleteReservation } from "@/components/reservations/DeleteReservation";
 import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { BookingPaperworkCard } from "@/components/reservations/BookingPaperworkCard";
 import { BookingInvoiceCard } from "@/components/reservations/BookingInvoiceCard";
+import { BookingSurchargesCard } from "@/components/reservations/BookingSurchargesCard";
 import { LinkedEmails } from "@/components/reservations/LinkedEmails";
 import { TravellerMessages } from "@/components/reservations/TravellerMessages";
 import { ReservationHistory } from "@/components/reservations/ReservationHistory";
@@ -438,6 +439,8 @@ export default function ReservationPage() {
             mayAdd={can(user?.role, "reservations:manage") && !user?.demo}
             mayConfigure={can(user?.role, "parking:manage")}
           />
+          {/* « Suppléments » (12/11/2026, B): late arrival, night, breakdown, applied by the team. */}
+          <BookingSurchargesCard reservationId={r.id} mayConfigure={can(user?.role, "parking:manage")} />
           <BookingPaperworkCard reservationId={r.id} status={r.status} />
           {/* « Facture » (06/11/2026, direction A): the invoice in the parking's name, for those who manage bookings. */}
           {can(user?.role, "reservations:manage") && (

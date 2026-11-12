@@ -1902,6 +1902,8 @@ export interface RevenueReport {
   byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
   /** 12/11/2026: the services added by the team and paid at the parking, inside the total; absent from an older API. */
   parkingExtras?: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
+  /** 12/11/2026 (B): the supplements applied by the team, inside the total. */
+  surcharges?: { count: number; totalCents: number };
   byDay: {
     date: string;
     count: number;
@@ -2729,4 +2731,13 @@ export interface SurchargeSettings {
   nightFeesCharged: boolean;
   configured: boolean;
   line: string | null;
+}
+
+/** 12/11/2026 (B): the supplements applied on a booking. */
+export interface BookingSurcharges {
+  surcharges: { id: string; kind: string; label: string; amountCents: number; at: string; by: string | null }[];
+  options: { key: string; kind: SurchargeKind; label: string; amountCents: number }[];
+  suggestion: { kind: "late"; lateMinutes: number; amountCents: number; scheduledAt: string; arrivedAt: string } | null;
+  totalCents: number;
+  canEdit: boolean;
 }
