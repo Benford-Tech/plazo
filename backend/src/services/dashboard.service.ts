@@ -4,6 +4,7 @@ import type { ReadingOutage } from '@/domain/email-reading';
 import { shortName } from '@/domain/arrival';
 import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
+import { DROPOFF_TRIPS_INCLUDE, dropoffStartOf, isPlaced, toParkSince } from '@/domain/to-park';
 import { BOARDING_CHECK_IN_SELECT, BoardingCheckIn, boardingCheckInOf, ShuttleDirection } from '@/domain/shuttle';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { can } from '@/domain/roles';
@@ -116,6 +117,11 @@ export interface DashboardVehicle {
   returnsToday: boolean;
   /** « Pointé à l'embarquement par Karim »: checked in as they boarded a drop-off, else null. */
   boardingCheckIn: BoardingCheckIn | null;
+  /**
+   * 12/11/2026: no place yet, but the traveller has left in the shuttle (`since`: boarded or the drop-off started):
+   * « À garer · client en navette 11:22 », no alert. Null otherwise (« Sans place » when `spotCode` is null).
+   */
+  toPark: { since: string } | null;
 }
 
 export interface NoPriceBooking {
@@ -215,6 +221,7 @@ export class DashboardService {
           file: { select: { code: true } },
           stop: { select: { name: true } },
           boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
+          shuttleTrips: DROPOFF_TRIPS_INCLUDE,
         },
         orderBy: { returnAt: 'asc' },
       }),
@@ -235,7 +242,7 @@ export class DashboardService {
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
     // 01/11/2026 (« Les voitures avec crochets ont une place »): the hook is the car's place (`placeHookOf`), so a car whose
     // keys hang on a hook is placed, even with no spot or file recorded.
-    const placed = (r: { spotId: string | null; fileId: string | null; keyHook?: string | null }) => !!r.spotId || !!r.fileId || !!r.keyHook?.trim();
+    const placed = isPlaced;
     // A car to put away: checked in, no spot or file; one checked in at boarding (« Embarquer en un geste ») stays so once
     // the drop-off has ended, its traveller gone to the terminal.
     const toPutAway = (r: {
@@ -245,6 +252,16 @@ export class DashboardService {
       status: ReservationStatus;
       boardingTripId: string | null;
     }) => !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
+    // 12/11/2026: once its traveller has left in the shuttle, a car with no place is still to put away (« Arrivées à
+    // placer », `toPlaceToday`) but no longer an alert: « À garer · client en navette 11:22 ».
+    const toParkOf = (r: (typeof onSite)[number]) =>
+      toParkSince(
+        r,
+        dropoffStartOf(
+          r.status,
+          r.shuttleTrips.map(p => p.trip),
+        ),
+      );
     // 01/11/2026 (« il devrait avoir 39 voitures sur place »): a car hours past its return (its flight's landing when
     // later), not on a trip, left without « Rendu »: no longer counted on the parking, listed in « Retour dépassé ».
     const overdueDue = (r: { returnAt: Date; flightLandedAt: Date | null; flightEstimatedAt: Date | null }) => {
@@ -276,7 +293,7 @@ export class DashboardService {
 
     // Arrived (or boarded), no spot or file (only when the parking has a plan).
     if (hasPlan) {
-      for (const r of onSite.filter(toPutAway)) {
+      for (const r of onSite.filter(r => toPutAway(r) && !toParkOf(r))) {
         const since = r.arrivedAt ?? r.arrivalAt;
         alerts.push({
           kind: freeSpots === 0 ? 'no_free_spot' : 'no_spot',
@@ -652,6 +669,7 @@ export class DashboardService {
         stopName: r.stop?.name ?? null,
         returnsToday: todayIds.has(r.id),
         boardingCheckIn: boardingCheckInOf(r),
+        toPark: (since => (since ? { since: since.toISOString() } : null))(toParkOf(r)),
       })),
     };
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
 import 'package:parking_app/src/features/pro_today/data/models/planning_model.dart';
 import 'package:parking_app/src/features/pro_today/presentation/bloc/pro_today_bloc.dart';
@@ -159,6 +160,43 @@ void main() {
 
     await show(tester, date: '2026-10-28');
     expect(find.byKey(const Key('planning-next')), findsNothing);
+  });
+
+  testWidgets('12/11/2026 : la flèche replie les deux cartes en une ligne, retards gardés, choix retenu sur le téléphone', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    resetNextCardsMemory();
+    await show(tester);
+    await tester.pump();
+    final toggle = find.byKey(const Key('planning-next-toggle'));
+    expect(find.byTooltip('Replier'), findsOneWidget);
+    expect(find.byKey(const Key('next-arrival')), findsOneWidget);
+    await tester.tap(toggle);
+    await tester.pump();
+    // Folded: one line, ↑ arrival · ↓ departure, the late one kept in an amber pill.
+    expect(find.byKey(const Key('next-arrival')), findsNothing);
+    expect(find.byKey(const Key('next-departure')), findsNothing);
+    expect(find.byKey(const Key('late-departure')), findsNothing);
+    final line = find.byKey(const Key('planning-next'));
+    expect(
+      find.descendant(of: line, matching: find.textContaining('15:10 Théo Dubois · dans 56 min', findRichText: true)),
+      findsOneWidget,
+    );
+    expect(find.descendant(of: line, matching: find.textContaining('16:30 Nadia Roux', findRichText: true)), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('planning-next-late')), matching: find.text('En retard · 1')), findsOneWidget);
+    expect(find.byTooltip('Déplier'), findsOneWidget);
+    expect((await SharedPreferences.getInstance()).getBool(nextCardsCollapsedKey), isTrue);
+
+    // A later launch reads it back: folded from the start.
+    resetNextCardsMemory();
+    await show(tester, date: '2026-10-28');
+    await show(tester);
+    await tester.pump();
+    expect(find.byKey(const Key('planning-next-late')), findsOneWidget);
+    expect(find.byKey(const Key('next-arrival')), findsNothing);
+    await tester.tap(find.byKey(const Key('planning-next-toggle')));
+    await tester.pump();
+    expect(find.byKey(const Key('next-arrival')), findsOneWidget);
+    expect((await SharedPreferences.getInstance()).getBool(nextCardsCollapsedKey), isFalse);
   });
 
   testWidgets('poste Chauffeur : le planning seul, sans la barre Tableau de bord · Planning, qui avance aussi (30/10/2026)', (tester) async {

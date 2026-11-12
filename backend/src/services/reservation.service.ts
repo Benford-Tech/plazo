@@ -36,6 +36,7 @@ import { REQUIRED_FOR_IMPORT } from '@/domain/inbound-email';
 import { ImportedFlights, importedFlights, notesWithLines, unreadableFlightLines } from '@/domain/imported-flights';
 import { chronologicalPage } from '@/domain/chronological-pages';
 import { BOARDING_CHECK_IN_SELECT, boardingCheckInOf } from '@/domain/shuttle';
+import { DROPOFF_TRIPS_INCLUDE, dropoffStartOf, toParkSince } from '@/domain/to-park';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CommissionService } from './commission.service';
@@ -1184,12 +1185,21 @@ export class ReservationService {
         file: { select: { id: true, code: true, name: true } },
         stop: { select: { id: true, name: true, kind: true } },
         boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
+        shuttleTrips: DROPOFF_TRIPS_INCLUDE,
         // 29/10/2026: the file a booking was imported from, and whether the import was removed since.
         import: { select: { id: true, fileName: true, createdAt: true, undoneAt: true } },
       },
     });
     if (!found) throw notFound();
-    const { boardingTrip, ...reservation } = found;
+    const { boardingTrip, shuttleTrips, ...reservation } = found;
+    // 12/11/2026: no place yet, traveller gone in the shuttle: « À garer » instead of « Sans place ».
+    const toParkAt = toParkSince(
+      reservation,
+      dropoffStartOf(
+        reservation.status,
+        shuttleTrips.map(p => p.trip),
+      ),
+    );
     const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
     // 01/11/2026: the « Surréservation » badge follows the parking's real load, not the flag stored at creation.
     const parking = await prisma.parking.findUnique({
@@ -1205,6 +1215,7 @@ export class ReservationService {
       commission: await this.commissionFor(actor, reservation),
       filePosition,
       boardingCheckIn: boardingCheckInOf({ ...reservation, boardingTrip }),
+      toPark: toParkAt ? { since: toParkAt.toISOString() } : null,
       nextStatuses: this.nextStatuses(actor, reservation),
     };
   }

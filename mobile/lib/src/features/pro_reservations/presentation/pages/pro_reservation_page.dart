@@ -242,7 +242,16 @@ class _Sheet extends StatelessWidget {
             if (r.file != null)
               ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
             else
-              ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
+              (
+                'res.spot'.tr(),
+                r.spot?.code ??
+                    (r.spotId != null
+                        ? 'res.spot_placed'.tr()
+                        // 12/11/2026: the traveller gone in the shuttle, the car still to put away (not an alert).
+                        : r.toParkSince != null
+                        ? 'res.to_park'.tr(args: [hhmm(r.toParkSince!)])
+                        : 'occupation.no_spot'.tr()),
+              ),
             // On the parking the keys are changed below (direction A, 01/11/2026); otherwise only read.
             if (r.keyHook != null && !onSite) ('occupation.key_hook'.tr(), r.keyHook!),
             if (r.boardingCheckIn != null) ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),

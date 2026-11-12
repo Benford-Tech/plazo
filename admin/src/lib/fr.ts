@@ -1033,6 +1033,8 @@ export const fr = {
       count: (n: number) => `${n} véhicule${n > 1 ? "s" : ""}`,
       empty: "Aucun véhicule sur le parking.",
       noSpot: "Sans place",
+      // 12/11/2026: no place yet, the traveller gone in the shuttle; not an alert.
+      toPark: (time: string) => `À garer · client en navette ${time}`,
       keys: (hook: string) => `Clés ${hook}`,
       noKeys: "Clés ?",
       returnToday: (time: string) => `Retour ${time}`,
@@ -1052,6 +1054,7 @@ export const fr = {
         all: "Tous",
         returnsToday: "Retours du jour",
         noSpot: "Sans place",
+        toPark: "À garer",
         noKeys: "Clés ?",
         flightLate: "Vol en retard",
       },
@@ -3944,6 +3947,8 @@ export const quickCardFr = {
   gate: (g: string) => `porte ${g}`,
   spot: "Place",
   noSpot: "pas de place",
+  // 12/11/2026: no place yet, the traveller gone in the shuttle (not an alert).
+  toPark: (time: string) => `À garer · client en navette ${time}`,
   // S-C (07/10/2026): "F07 · 3e depuis l'allée".
   inFile: (code: string, position: number | null) =>
     position === null
