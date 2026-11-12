@@ -5,7 +5,7 @@ import '../../services/secure_storage_service.dart';
 
 /// « Écrire au parking » (12/11/2026): one message of the booking's thread, the traveller's (`me`) or the parking team's.
 class ParkingMessage {
-  const ParkingMessage({required this.id, required this.mine, required this.text, required this.at, required this.by});
+  const ParkingMessage({required this.id, required this.mine, required this.text, required this.at, required this.by, this.whatsapp = false, this.kind});
 
   factory ParkingMessage.fromJson(Map<String, dynamic> json) => ParkingMessage(
     id: json['id'] as String,
@@ -13,7 +13,15 @@ class ParkingMessage {
     text: json['text'] as String? ?? '',
     at: DateTime.tryParse(json['at'] as String? ?? '')?.toLocal() ?? DateTime.now(),
     by: json['by'] as String?,
+    whatsapp: json['channel'] == 'whatsapp',
+    kind: json['from'] == 'plazo' ? (json['kind'] as String? ?? 'other') : null,
   );
+
+  /// Written or answered on WhatsApp (the whole conversation shows in the app, 12/11/2026).
+  final bool whatsapp;
+
+  /// A message Plazo sent the booking (confirmation, day before…), null otherwise.
+  final String? kind;
 
   final String id;
   final bool mine;

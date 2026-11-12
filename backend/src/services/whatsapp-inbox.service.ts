@@ -95,7 +95,7 @@ export class WhatsappInboxService {
 
   private async store(message: InboundWhatsapp, now: Date): Promise<boolean> {
     if (await prisma.whatsappInboxMessage.findUnique({ where: { waMessageId: message.id }, select: { id: true } })) return false;
-    const place = await this.place(message.from, now);
+    const place = await this.place(message.from, message.text, now);
     const existing = await prisma.whatsappConversation.findFirst({ where: { operatorId: place.operatorId, phone: message.from } });
     const conversation = existing
       ? await prisma.whatsappConversation.update({
@@ -149,35 +149,54 @@ export class WhatsappInboxService {
   /**
    * The parking and the booking of the number that writes: the last WhatsApp Plazo sent to it (45 days), else a booking
    * of that phone still running or of the last 30 days. None: the platform's « Numéro inconnu ».
+   *
+   * 12/11/2026 (« les parkings ne doivent pas voir les messages des autres parkings et de leurs clients »): Plazo has one
+   * number for every parking. When that number is a client of several parkings, the message goes to one of them only if
+   * it names one of its bookings (Plazo's reference or the comparator's number); otherwise it waits in « Numéro inconnu »
+   * for the platform, never guessed.
    */
-  private async place(phone: string, now: Date): Promise<{ operatorId: string | null; reservationId: string | null }> {
+  private async place(phone: string, text: string | null, now: Date): Promise<{ operatorId: string | null; reservationId: string | null }> {
     const tail = phoneTail(phone);
-    if (tail.length < 9) return { operatorId: null, reservationId: null };
-    const sent = await prisma.whatsappMessage.findFirst({
-      where: { to: { endsWith: tail }, createdAt: { gte: new Date(now.getTime() - 45 * 86400000) } },
-      orderBy: { createdAt: 'desc' },
-      select: { operatorId: true, reservationId: true },
-    });
-    const rows = await prisma.$queryRaw<{ id: string; operatorId: string }[]>`
-      SELECT id, "operatorId" FROM reservations
-      WHERE "deletedAt" IS NULL AND "anonymizedAt" IS NULL
-        AND status NOT IN ('cancelled', 'no_show', 'pending_payment')
-        AND "returnAt" >= ${new Date(now.getTime() - 30 * 86400000)}
-        AND right(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 9) = ${tail}
-        ${sent ? Prisma.sql`AND "operatorId" = ${sent.operatorId}` : Prisma.empty}
-      ORDER BY abs(extract(epoch FROM ("arrivalAt" - ${now}::timestamp))) ASC
-      LIMIT 1`;
-    if (sent) {
-      const running = sent.reservationId
-        ? await prisma.reservation.findFirst({
-            where: { id: sent.reservationId, status: { notIn: ['cancelled', 'no_show'] } },
-            select: { id: true },
-          })
-        : null;
-      return { operatorId: sent.operatorId, reservationId: running?.id ?? rows[0]?.id ?? sent.reservationId };
+    const none = { operatorId: null, reservationId: null };
+    if (tail.length < 9) return none;
+    const [sentRows, rows] = await Promise.all([
+      prisma.whatsappMessage.findMany({
+        where: { to: { endsWith: tail }, createdAt: { gte: new Date(now.getTime() - 45 * 86400000) } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { operatorId: true, reservationId: true },
+      }),
+      prisma.$queryRaw<{ id: string; operatorId: string; reference: string; externalReference: string | null }[]>`
+        SELECT id, "operatorId", reference, "externalReference" FROM reservations
+        WHERE "deletedAt" IS NULL AND "anonymizedAt" IS NULL
+          AND status NOT IN ('cancelled', 'no_show', 'pending_payment')
+          AND "returnAt" >= ${new Date(now.getTime() - 30 * 86400000)}
+          AND right(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 9) = ${tail}
+        ORDER BY abs(extract(epoch FROM ("arrivalAt" - ${now}::timestamp))) ASC
+        LIMIT 50`,
+    ]);
+    const operators = new Set([...sentRows.map(r => r.operatorId), ...rows.map(r => r.operatorId)]);
+    if (operators.size === 0) return none;
+    if (operators.size > 1) {
+      const said = (text ?? '').toUpperCase().replace(/[\s#]/g, '');
+      const named = rows.filter(r => {
+        const numbers = [r.reference, r.externalReference ? lookupNumber(r.externalReference) : ''].filter(n => n.length >= 5);
+        return numbers.some(n => said.includes(n.toUpperCase()));
+      });
+      const namedOperators = new Set(named.map(r => r.operatorId));
+      if (namedOperators.size !== 1) return none;
+      return { operatorId: named[0].operatorId, reservationId: named[0].id };
     }
-    if (rows[0]) return { operatorId: rows[0].operatorId, reservationId: rows[0].id };
-    return { operatorId: null, reservationId: null };
+    const [operatorId] = [...operators];
+    const sent = sentRows[0];
+    if (sent?.reservationId) {
+      const running = await prisma.reservation.findFirst({
+        where: { id: sent.reservationId, operatorId, status: { notIn: ['cancelled', 'no_show'] } },
+        select: { id: true },
+      });
+      return { operatorId, reservationId: running?.id ?? rows[0]?.id ?? sent.reservationId };
+    }
+    return { operatorId, reservationId: rows[0]?.id ?? null };
   }
 
   private async notify(operatorId: string, conversationId: string, message: InboundWhatsapp, reservationId: string | null) {
@@ -426,24 +445,70 @@ export class WhatsappInboxService {
 
   // ---- The traveller, from the Plazo app (12/11/2026, « Écrire au parking ») ----------------------
 
-  /** GET /public/bookings/:ref/messages: the booking's messages written or answered in the app, oldest first. */
-  public async travellerThread(reservation: { id: string; operatorId: string; anonymizedAt?: Date | null }) {
-    const messages = await prisma.whatsappInboxMessage.findMany({
-      where: { reservationId: reservation.id, channel: 'app', conversation: { operatorId: reservation.operatorId } },
-      orderBy: { createdAt: 'asc' },
-      take: 300,
-      include: { staff: { select: { firstName: true } } },
+  /**
+   * GET /public/bookings/:ref/messages: the whole conversation of this traveller with the parking (« Tout dans l'app du
+   * client », 12/11/2026), oldest first: what they wrote by WhatsApp or in the app, the team's replies either way, and
+   * what Plazo sent this booking by WhatsApp. WhatsApp messages of the number count from two days before the booking
+   * was made to 30 days after its return; app messages are those of this booking.
+   */
+  public async travellerThread(reservation: {
+    id: string;
+    operatorId: string;
+    customerPhone: string;
+    createdAt: Date;
+    returnAt: Date;
+    anonymizedAt?: Date | null;
+  }) {
+    const phone = appConversationPhone(reservation.customerPhone, reservation.id);
+    const tail = phone.startsWith('app:') ? '' : phoneTail(phone);
+    const conversations = await prisma.whatsappConversation.findMany({
+      where: { operatorId: reservation.operatorId, OR: [{ phone: `app:${reservation.id}` }, ...(tail ? [{ phone: { endsWith: tail } }] : [])] },
+      select: { id: true },
     });
-    return {
-      messages: messages.map(m => ({
+    const from = new Date(reservation.createdAt.getTime() - 2 * 86400000);
+    const to = new Date(reservation.returnAt.getTime() + INBOX_RETENTION_DAYS * 86400000);
+    const [messages, sent] = await Promise.all([
+      prisma.whatsappInboxMessage.findMany({
+        where: {
+          OR: [
+            { reservationId: reservation.id, channel: 'app', conversation: { operatorId: reservation.operatorId } },
+            ...(conversations.length
+              ? [{ conversationId: { in: conversations.map(c => c.id) }, channel: 'whatsapp', createdAt: { gte: from, lte: to } }]
+              : []),
+          ],
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 300,
+        include: { staff: { select: { firstName: true } } },
+      }),
+      prisma.whatsappMessage.findMany({
+        where: { reservationId: reservation.id, operatorId: reservation.operatorId, status: { not: 'failed' } },
+        orderBy: { createdAt: 'asc' },
+        take: 50,
+        select: { id: true, kind: true, body: true, createdAt: true },
+      }),
+    ]);
+    const items = [
+      ...messages.map(m => ({
         id: m.id,
         from: m.direction === 'in' ? 'me' : 'parking',
-        text: m.text ?? '',
+        text: m.text ?? previewOf(m),
         at: m.createdAt,
         by: m.direction === 'out' ? (m.staff?.firstName ?? null) : null,
+        channel: m.channel,
+        kind: null as string | null,
       })),
-      canWrite: !reservation.anonymizedAt,
-    };
+      ...sent.map(s => ({
+        id: s.id,
+        from: 'plazo',
+        text: s.body ?? '',
+        at: s.createdAt,
+        by: null,
+        channel: 'whatsapp',
+        kind: s.kind as string | null,
+      })),
+    ].sort((a, b) => a.at.getTime() - b.at.getTime());
+    return { messages: items, canWrite: !reservation.anonymizedAt };
   }
 
   /** POST /public/bookings/:ref/messages { text }: lands in the parking's conversation of that traveller, the team told. */

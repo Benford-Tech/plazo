@@ -2932,7 +2932,7 @@
     "title": "Écrire au parking",
     "the_parking": "le parking",
     "intro": "Une question, un changement d'heure ? Écrivez à {} : l'équipe vous répond ici, avec une notification.",
-    "hint": "L'équipe du parking vous répond ici, avec une notification.",
+    "hint": "Vos messages WhatsApp et ceux écrits ici, au même endroit. L'équipe vous répond ici, avec une notification.",
     "placeholder": "Votre message…",
     "send": "Envoyer",
     "errors": {
@@ -2940,6 +2940,14 @@
       "too_many_requests": "Trop de messages d'un coup : réessayez dans quelques minutes.",
       "not_found": "Réservation introuvable sur ce téléphone.",
       "unknown": "Le message n'est pas parti. Réessayez."
+    },
+    "whatsapp": "WhatsApp",
+    "sent_kind": {
+      "booking_confirmed": "Confirmation de réservation",
+      "booking_reminder": "Message de la veille",
+      "flight_landed": "À votre atterrissage",
+      "signature_code": "Code de signature",
+      "other": "Message"
     }
   }
 }

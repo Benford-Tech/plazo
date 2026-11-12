@@ -1407,8 +1407,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET|POST /public/bookings/:ref/messages` (`x-booking-token`, 2 000 caractères, `parkingMessageLimiter` 20 par 15 min, 409 `anonymized`)
      → `WhatsappInboxService.travellerWrite` : le message (`WhatsappInboxMessage.channel` `app`, `reservationId` ; migration
      `whatsapp_app_messages`, CHECK) va dans la conversation du loueur et du numéro du voyageur (9 derniers chiffres, sinon `app:<id>` sans
-     numéro, `appConversationPhone`), `lastAppAt`, non lu, push et cloche « Message · <client> » ; le voyageur ne voit que les messages
-     `app` de sa réservation (`travellerThread`). Réponse de l'équipe : `replyBy` de la vue (`replyChannelOf` : l'app quand le dernier
+     numéro, `appConversationPhone`), `lastAppAt`, non lu, push et cloche « Message · <client> » ; le voyageur voit toute la conversation
+     (« Dans la même conversation » → « Tout dans l'app du client », 12/11/2026 ; `travellerThread`) : ses messages WhatsApp du numéro
+     (de 2 jours avant la réservation à 30 jours après le retour), ceux de l'app pour sa réservation, les réponses de l'équipe des deux
+     canaux et les messages envoyés par Plazo à la réservation (`from: 'plazo'`, `kind`, texte gardé), chacun avec son canal ; bulles
+     « WhatsApp » et « Message de la veille » dans la carte. **Cloisonnement (12/11/2026, « les parkings ne doivent pas voir les messages des autres
+     parkings et de leurs clients »)** : toutes les routes de la boîte sont filtrées par loueur ; un WhatsApp d'un numéro client de plusieurs
+     parkings (WhatsApp envoyés depuis 45 jours, réservations en cours ou des 30 derniers jours) ne va à aucun d'eux, sauf s'il cite le
+     numéro d'une de leurs réservations (référence Plazo ou du comparateur) : sinon « Numéro inconnu » pour la plateforme (`place`). Réponse de l'équipe : `replyBy` de la vue (`replyChannelOf` : l'app quand le dernier
      message du client vient de l'app ou que les 24 h de Meta sont passées après un message de l'app, sinon WhatsApp dans les 24 h, sinon
      un appel) ; dans l'app, rien chez Meta, push « Message de <parking> » (`type: 'parking_message'`, ouvre Ma réservation). Web et Plazo
      Pro : pastille « App Plazo » sur ces messages, barre de réponse « Le client vous a écrit depuis l'app Plazo… ». Le site n'a pas la
