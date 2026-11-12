@@ -1370,6 +1370,27 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (frais de nuit puis `Parking.travellerConditions`, `conditionsLabel`), `{chauffeur}` (`Parking.driverPhone`) ; champs
      « Téléphone du chauffeur » et « Conditions pour vos clients » de Parking › Réglages (`PATCH /internal/parkings/:id`,
      migration `parking_message_fields`, CHECK 30 / 400, conditions ramenées sur une ligne). **Test par WhatsApp (11/11/2026, « je ne reçois pas le message WhatsApp », « le lien n'est pas bon dans le test »)** : « M'envoyer un test » de la page part par le modèle de la veille et sa photo (`reminderTestWhatsapp`, `reminder_test` essayé par WhatsApp quand il porte ses valeurs), SMS en repli ; le lien de l'exemple est le vrai lien du départ de la soirée, sinon la page « Ma réservation » (plus de faux code `R7KQ2M-XXXXXXXX`).
+     **Boîte « Messages WhatsApp », direction A (12/11/2026, « une boîte de réception des messages envoyés par WhatsApp »,
+     maquettes https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko)** : le webhook de Meta (champ `messages`, déjà abonné) porte aussi ce
+     que les voyageurs écrivent au numéro de Plazo ; `inboundMessagesOf` (`domain/whatsapp-inbox.ts` : texte, photo, vocal, vidéo,
+     document, position, réponse de bouton, nom du profil) puis `WhatsappInboxService.receive` (appelé par `handleWebhook`, une fois
+     par `waMessageId`) : la conversation (`whatsapp_conversations`, une par loueur et numéro, index uniques partiels ; migration
+     `whatsapp_inbox`) va au loueur et à la réservation du dernier WhatsApp que Plazo a envoyé à ce numéro (45 jours), sinon d'une
+     réservation de ce téléphone en cours ou des 30 derniers jours (9 derniers chiffres), sinon « Numéro inconnu » (`operatorId` nul,
+     plateforme seulement, `POST …/inbox/:id/attach { reference }` la rattache, fusionnée avec la conversation existante) ; messages
+     `whatsapp_inbox_messages` (`in` / `out`, texte ≤ 4 096, `mediaId`, état d'une réponse suivi par les mêmes webhooks,
+     `applyStatus`), gardés 30 jours (purge de nuit avec les autres WhatsApp). Notification nouvelle `whatsapp` « Message WhatsApp ·
+     Camille Martin » (cloche, navigateur, téléphone des gérants et de l'accueil ; `reservations:manage` ; cible
+     `/reservations/whatsapp?c=`). Routes (`reservations:manage`) : `GET /internal/whatsapp/inbox?view=unread|all|handled|unknown`
+     (`counts`, `unknown` nul hors plateforme), `GET …/inbox/:id` (marque lu ; avec les WhatsApp envoyés par Plazo à la réservation,
+     `sent`), `POST …/:id/reply { text }` (texte libre, `RefuseInDemo`, 409 `window_closed` après les 24 h de Meta, 502 avec le code
+     de Meta, tracé `whatsapp.reply`), `POST …/:id/handle|unhandle`, `GET …/inbox/messages/:messageId/media` (photo ou vocal relus
+     chez Meta avec le jeton, 4 Mo, 413 `media_too_large`, 404 `media_gone`) ; `nav/counts` › `whatsapp`. Web : Réservations ›
+     « Messages WhatsApp » (`WhatsappInboxPage`, compteur ambre) : pilules Non lus · À traiter · Traités · Numéro inconnu, liste à
+     gauche, conversation à droite façon WhatsApp avec les messages de Plazo (« Veille du dépôt envoyé par Plazo · lu ✓✓ »), réponse
+     avec « Réponse libre possible jusqu'à … », sinon « Appeler le … », « Marquer comme traité » ; sur téléphone la liste puis la
+     conversation ; bloc « Conversation WhatsApp » dans « Messages au voyageur » de la fiche (`conversation` de
+     `GET …/reservations/:id/messages`). Plazo Pro : la cloche seulement. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

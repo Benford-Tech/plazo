@@ -115,6 +115,7 @@ describe("AdminLayout rail sections", () => {
     ).toEqual([
       "/reservations",
       "/reservations/a-verifier",
+      "/reservations/whatsapp",
       "/reservations/services",
       "/reservations/sms-veille",
       "/reservations/importer",

@@ -216,6 +216,53 @@ export class WhatsappService {
   }
 
   /**
+   * 12/11/2026 (boîte de réception WhatsApp): a free text reply, allowed by Meta within 24 hours of the traveller's last
+   * message. Never throws.
+   */
+  public async sendText(e164: string, body: string): Promise<SendResult> {
+    const { token, phoneNumberId, graphVersion } = this.config();
+    if (!token || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
+    try {
+      const res = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(phoneNumberId)}/messages`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: whatsappRecipient(e164), type: 'text', text: { body, preview_url: false } }),
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+      const data: any = await res.json().catch(() => null);
+      const id = data?.messages?.[0]?.id;
+      if (res.ok && typeof id === 'string') return { ok: true, id };
+      const code = data?.error?.code;
+      return { ok: false, code: code === undefined || code === null ? `http_${res.status}` : `meta_${String(code).slice(0, 20)}` };
+    } catch (error) {
+      return { ok: false, code: error instanceof Error && error.name === 'TimeoutError' ? 'whatsapp_timeout' : 'whatsapp_network' };
+    }
+  }
+
+  /** A photo or voice note a traveller sent: Meta's address for its id, then the bytes (with the token). Null on failure. */
+  public async fetchMedia(mediaId: string, maxBytes: number): Promise<{ bytes: Buffer; contentType: string } | 'too_large' | null> {
+    const { token, graphVersion } = this.config();
+    if (!token) return null;
+    try {
+      const meta = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(mediaId)}`, {
+        headers: { authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+      const info: any = await meta.json().catch(() => null);
+      if (!meta.ok || typeof info?.url !== 'string' || !info.url.startsWith('https://')) return null;
+      if (Number(info.file_size) > maxBytes) return 'too_large';
+      const res = await fetch(info.url, { headers: { authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(this.timeoutMs * 2) });
+      if (!res.ok) return null;
+      const bytes = Buffer.from(await res.arrayBuffer());
+      if (bytes.length > maxBytes) return 'too_large';
+      const contentType = typeof info.mime_type === 'string' ? info.mime_type : res.headers.get('content-type') || 'application/octet-stream';
+      return { bytes, contentType };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * WhatsApp is on for this operator and Plazo's number is configured. On for every parking unless a manager turned it
    * off (10/11/2026, « pour tous les parkings »): an operator without a settings row is on.
    */
@@ -301,7 +348,10 @@ export class WhatsappService {
   }
 
   /** POST /public/whatsapp/webhook: the delivery statuses of our messages. A failed one falls back to SMS. */
-  public async handleWebhook(raw: Buffer | undefined, signature: string | undefined): Promise<{ updated: number; fallbacks: number }> {
+  public async handleWebhook(
+    raw: Buffer | undefined,
+    signature: string | undefined,
+  ): Promise<{ updated: number; fallbacks: number; received?: number }> {
     const { appSecret } = this.config();
     if (!appSecret) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'WhatsApp webhook not configured', 'whatsapp_unavailable');
     if (!raw || !validWhatsappSignature(raw, signature, appSecret))
@@ -314,9 +364,15 @@ export class WhatsappService {
     }
     let updated = 0;
     let fallbacks = 0;
+    const { WhatsappInboxService } = await import('./whatsapp-inbox.service');
+    const inbox = Container.get(WhatsappInboxService);
     for (const update of statusUpdatesOf(payload)) {
       const row = await prisma.whatsappMessage.findUnique({ where: { waMessageId: update.id } });
-      if (!row) continue;
+      if (!row) {
+        // 12/11/2026: a reply the team sent from the WhatsApp inbox.
+        if (await inbox.applyStatus(update)) updated++;
+        continue;
+      }
       const status = nextWhatsappStatus(row.status as WhatsappStatus, update.status);
       if (status === row.status) continue;
       await prisma.whatsappMessage.updateMany({
@@ -331,7 +387,8 @@ export class WhatsappService {
       updated++;
       if (status === 'failed' && (await this.fallBack(row.id))) fallbacks++;
     }
-    return { updated, fallbacks };
+    const received = await inbox.receive(payload);
+    return { updated, fallbacks, ...(received ? { received } : {}) };
   }
 
   /** Sends the SMS of a message WhatsApp did not deliver. Claimed first: two passes never send it twice. */
@@ -383,7 +440,9 @@ export class WhatsappService {
     const { count } = await prisma.whatsappMessage.deleteMany({
       where: { createdAt: { lt: new Date(now.getTime() - WHATSAPP_RETENTION_DAYS * 86400000) } },
     });
-    return count;
+    // 12/11/2026: what travellers wrote, after 30 days too.
+    const { WhatsappInboxService } = await import('./whatsapp-inbox.service');
+    return count + (await Container.get(WhatsappInboxService).purge(now));
   }
 
   // ---- Settings (Parking › Réglages) -------------------------------------------------------------

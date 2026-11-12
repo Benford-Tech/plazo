@@ -55,6 +55,12 @@ import type {
   PlatformSeo,
   WhatsappSettings,
   TravellerMessage,
+  WhatsappInboxView,
+  WhatsappInboxList,
+  WhatsappConversationDetail,
+  WhatsappInboxMessage,
+  WhatsappConversation,
+  ReservationConversation,
   PlatformReservations,
   ReminderBoard,
   ReminderSettingsInput,
@@ -916,7 +922,7 @@ export const adminApi = {
     apiRequest<{ data: HistoryEvent[] }>(`/internal/reservations/${reservationId}/history`),
   // « Messages au voyageur » (04/11/2026): the SMS and WhatsApp messages sent, newest first.
   getReservationMessages: (reservationId: string) =>
-    apiRequest<{ data: TravellerMessage[] }>(
+    apiRequest<{ data: TravellerMessage[]; conversation?: ReservationConversation | null }>(
       `/internal/reservations/${reservationId}/messages`,
     ),
   getReservationEmails: (reservationId: string) =>
@@ -1185,7 +1191,25 @@ export const adminApi = {
     return res.blob();
   },
   navCounts: () =>
-    apiRequest<{ inbox: number | null; extras: number }>("/internal/nav/counts"),
+    apiRequest<{ inbox: number | null; extras: number; whatsapp?: number | null }>("/internal/nav/counts"),
+  // 12/11/2026 (« Messages WhatsApp »): what travellers write to Plazo's number.
+  whatsappInbox: (view: WhatsappInboxView) =>
+    apiRequest<WhatsappInboxList>(`/internal/whatsapp/inbox?view=${view}`),
+  whatsappConversation: (id: string) =>
+    apiRequest<WhatsappConversationDetail>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}`),
+  replyWhatsapp: (id: string, text: string) =>
+    apiRequest<WhatsappInboxMessage>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}/reply`, { method: "POST", body: json({ text }) }),
+  handleWhatsapp: (id: string, handled: boolean) =>
+    apiRequest<WhatsappConversation>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}/${handled ? "handle" : "unhandle"}`, { method: "POST" }),
+  attachWhatsapp: (id: string, reference: string) =>
+    apiRequest<{ id: string; reservation: { id: string; reference: string } }>(
+      `/internal/whatsapp/inbox/${encodeURIComponent(id)}/attach`,
+      { method: "POST", body: json({ reference }) },
+    ),
+  whatsappMedia: async (messageId: string) => {
+    const res = await authorizedFetch(`/internal/whatsapp/inbox/messages/${encodeURIComponent(messageId)}/media`);
+    return res.blob();
+  },
   // 06/11/2026 (direction A): the invoices a parking issues to its customers.
   billingSettings: () => apiRequest<BillingSettings>("/internal/billing/settings"),
   updateBillingSettings: (input: BillingSettingsInput) =>
