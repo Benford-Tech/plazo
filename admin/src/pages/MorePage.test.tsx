@@ -29,6 +29,7 @@ describe("« Plus » of the phone's tab bar (10/11/2026)", () => {
     expect(hrefs()).toEqual([
       "/mon-compte",
       "/chiffre-affaires",
+      "/statistiques",
       "/plazo/fiche",
       "/plazo/tarifs",
       "/equipe",

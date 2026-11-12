@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BusFront,
   CalendarDays,
   ChevronDown,
@@ -93,6 +94,8 @@ export const NAV: NavItem[] = [
   },
   // CA-B (09/10/2026): managers only.
   { label: fr.nav.revenue, to: "/chiffre-affaires", icon: Euro, permission: "revenue:view", section: "manager" },
+  // 12/11/2026 (statistics B): which channels pay.
+  { label: fr.nav.stats, to: "/statistiques", icon: BarChart3, permission: "revenue:view", section: "manager" },
   {
     label: fr.nav.plazo,
     to: "/plazo",

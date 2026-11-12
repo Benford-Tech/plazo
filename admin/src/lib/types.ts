@@ -1934,6 +1934,32 @@ export interface RevenueMonth {
   withoutAmount: number;
 }
 
+/** 12/11/2026 (statistics B): one channel over the 12 months of GET /internal/revenue/channels. */
+export interface ChannelProfit {
+  channel: ReservationChannel;
+  detail: string | null;
+  comparatorKey: string | null;
+  rateBp: number | null;
+  /** A comparator with no rate set: its net is not known. */
+  missingRate: boolean;
+  count: number;
+  totalCents: number;
+  commissionCents: number;
+  netCents: number;
+  netPerBookingCents: number | null;
+  /** One net per month, the oldest first. */
+  monthlyNetCents: number[];
+}
+
+/** GET /internal/revenue/channels: « Quelles plateformes vous rapportent ». */
+export interface RevenueChannels {
+  today: string;
+  basis: RevenueBasis;
+  months: RevenueMonth[];
+  channels: ChannelProfit[];
+  withoutAmount: number;
+}
+
 /** GET /internal/revenue/months: the 12 months ending with the one asked, the oldest first. */
 export interface RevenueMonths {
   today: string;

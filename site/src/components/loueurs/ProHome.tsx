@@ -15,7 +15,14 @@ type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 const t = fr.proHome;
 
 /** The sections the header's menu points to. */
-export const PRO_HOME_SECTIONS = { software: "logiciel", live: "navette-et-clients", app: "application", marketplace: "vendre-sur-plazo", paperwork: "contrat" } as const;
+export const PRO_HOME_SECTIONS = {
+  software: "logiciel",
+  live: "navette-et-clients",
+  app: "application",
+  marketplace: "vendre-sur-plazo",
+  paperwork: "contrat",
+  features: "fonctionnalites",
+} as const;
 
 export const btnLime = "inline-flex min-h-11 items-center justify-center rounded-[10px] bg-lime px-4 text-[14px] font-semibold text-lime-ink no-underline hover:brightness-95";
 export const btnOutline =
@@ -28,6 +35,32 @@ export const pillWarn = `${pill} bg-[#fff4e0] text-[#b45309]`;
 export const pillInfo = `${pill} bg-[#e8effd] text-[#4338ca]`;
 export const screenLine = "flex flex-wrap items-center gap-2 rounded-[10px] bg-pro-ground px-3 py-2";
 export const hour = "font-mono font-bold text-lime-deep";
+
+/** The icon of a family of « Tout ce que fait Plazo Pro » (stroke, 20 px). */
+function FeatureIcon({ kind }: { kind: string }) {
+  const path =
+    kind === "day" ? (
+      <>
+        <rect x="3" y="4" width="18" height="17" rx="2" />
+        <path d="M3 9h18M8 2v4M16 2v4" />
+      </>
+    ) : kind === "bookings" ? (
+      <path d="M4 4h16v12H5l-1 4z" />
+    ) : kind === "shuttle" ? (
+      <>
+        <rect x="3" y="6" width="18" height="11" rx="2" />
+        <circle cx="7" cy="18" r="2" />
+        <circle cx="17" cy="18" r="2" />
+      </>
+    ) : (
+      <path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6" />
+    );
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {path}
+    </svg>
+  );
+}
 
 /** Whole euros (« 149 € »). */
 const eur = (cents: number) => formatEuros(cents).replace(",00", "");
@@ -282,6 +315,36 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
             <li key={pain}>{pain}</li>
           ))}
         </ol>
+      </section>
+
+      {/* 12/11/2026 (choix A): everything Plazo Pro does, in four families. */}
+      <section id={PRO_HOME_SECTIONS.features} aria-labelledby="pro-home-features" className="mx-auto w-full max-w-[1180px] scroll-mt-24 px-4 pb-12 md:px-6">
+        <p className="text-[13px] font-semibold tracking-[.08em] text-lime-deep uppercase">{t.featuresKicker}</p>
+        <h2 id="pro-home-features" className={sectionTitle}>
+          {t.featuresTitle}
+        </h2>
+        <p className="mt-2 max-w-[760px] text-pro-soft">{t.featuresLead}</p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {t.features.map(family => (
+            <div key={family.title} className="flex flex-col gap-3 rounded-[14px] border border-pro-line bg-white p-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-lime text-lime-ink" aria-hidden="true">
+                <FeatureIcon kind={family.icon} />
+              </span>
+              <h3 className="text-[18px] font-bold">{family.title}</h3>
+              <ul className="list-disc space-y-2 pl-[18px] text-[14px] leading-[1.45]">
+                {family.items.map(item => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-4 rounded-[14px] bg-lime-ink px-6 py-5 text-lime-band">
+          <span className="min-w-[240px] flex-1 text-[16px]">{t.featuresBand}</span>
+          <a href={demoHref} className={btnLime}>
+            {fr.proPricing.tryDemo}
+          </a>
+        </div>
       </section>
 
       {/* Plans. */}

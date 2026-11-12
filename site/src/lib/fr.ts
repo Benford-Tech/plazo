@@ -206,6 +206,57 @@ const frBase = {
       "Des clients qui attendent la navette au retour",
       "Des litiges sans preuve sur l’état de la voiture",
     ],
+    // 12/11/2026 (choix A des maquettes https://claude.ai/artifact/WS4dDNLNNvW9M87KAN3LfV): only what Plazo Pro does today.
+    featuresKicker: "Fonctionnalités",
+    featuresTitle: `Tout ce que fait ${P} Pro`,
+    featuresLead: "Du premier mail du comparateur au client qui repart avec ses clés : un seul outil pour toute l’équipe, sur ordinateur et téléphone.",
+    features: [
+      {
+        icon: "day",
+        title: "Votre journée",
+        items: [
+          "Les prochaines arrivées et les prochains départs, qui avancent avec la journée",
+          "Les retards repérés tout seuls",
+          "Les voitures sur place, nuit par nuit, jusqu’à 3 mois",
+          "Un poste par personne : accueil, chauffeur, voiturier, gérant",
+          "Une notification quand il faut agir",
+        ],
+      },
+      {
+        icon: "bookings",
+        title: "Vos réservations",
+        items: [
+          "Les comparateurs arrivent seuls dans votre planning",
+          "Modifications et annulations prises en compte",
+          "Les non-venus et les voitures oubliées signalés",
+          "L’historique de chaque réservation : qui, quoi, quand",
+          "Vos anciennes réservations importées en un fichier",
+        ],
+      },
+      {
+        icon: "shuttle",
+        title: "Navette et voitures",
+        items: [
+          "Les clients à emmener et à aller chercher, par créneau",
+          "L’heure d’atterrissage réelle de chaque client",
+          "Vos clients voient la navette arriver",
+          "Chaque voiture à sa place, les clés à leur crochet",
+          "Contrat signé et état des lieux en photos",
+        ],
+      },
+      {
+        icon: "money",
+        title: "Votre argent",
+        items: [
+          "Le chiffre d’affaires par mois et par comparateur",
+          "Ce que chaque comparateur vous prend, et ce que vous gardez",
+          "Les réservations sans prix mises en avant",
+          "Services en plus (lavage, recharge) et suppléments (retard, nuit)",
+          "Factures à votre nom et à votre logo",
+        ],
+      },
+    ],
+    featuresBand: `Et vos clients vous trouvent sur ${P.toLowerCase()}.fr : réservation et paiement en ligne, sans rien à gérer.`,
     pricesTitle: "Construisez votre offre",
     pricesLead: "Sans engagement en mensuel. Prix HT par mois et par parking.",
     planLines: { essentiel: "Toutes vos réservations au même endroit", operations: "+ plan, files de voiturier et navettes", complet: "+ contrat, état des lieux et marges" },

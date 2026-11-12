@@ -44,6 +44,11 @@ export class RevenueController {
     res.json(await this.revenue.summary(req.staff));
   });
 
+  /** GET /internal/revenue/channels?to=&basis= (12/11/2026, statistics B) */
+  public channels = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.revenue.channels(req.staff, req.query));
+  });
+
   /** GET /internal/revenue/months?to=&basis= */
   public months = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');
