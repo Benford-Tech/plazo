@@ -16,6 +16,21 @@ describe("ProHome", () => {
     expect(within(prices).getByRole("link", { name: "Voir tous les tarifs" })).toHaveAttribute("href", "/loueurs/tarifs");
   });
 
+  it("lists what Plazo Pro does in four families, without technical words (12/11/2026)", () => {
+    render(<ProHome action={vi.fn(async () => EMPTY_FORM)} demoHref="/pro/demo" pricingHref="/loueurs/tarifs" />);
+    const features = screen.getByRole("region", { name: "Tout ce que fait Plazo Pro" });
+    expect(document.getElementById("fonctionnalites")).toBe(features);
+    expect(within(features).getAllByRole("heading", { level: 3 }).map(h => h.textContent)).toEqual([
+      "Votre journée",
+      "Vos réservations",
+      "Navette et voitures",
+      "Votre argent",
+    ]);
+    expect(within(features).getAllByRole("listitem")).toHaveLength(20);
+    expect(within(features).getByRole("link", { name: "Essayer la démo" })).toHaveAttribute("href", "/pro/demo");
+    expect(features.textContent).not.toMatch(/GPS|SMS|suivi de vol|API|Claude/);
+  });
+
   it("sends a demo request without a selection", async () => {
     const action = vi.fn(async (_state: unknown, form: FormData) => {
       expect(form.get("request")).toBe("demo");

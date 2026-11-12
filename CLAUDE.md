@@ -2008,6 +2008,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Logiciel · Application · Vendre sur Plazo · Contrat et état des lieux · Tarifs ; pied de page Solutions · Commencer · Plazo ; chaque
   page pose sa largeur (`main` pleine largeur). « Vous êtes un parking ? » (en-tête et pied de page voyageurs) mène à `/loueurs`
   (`PRO_HOME_PATH`), au plan du site aussi.
+  **« Tout ce que fait Plazo Pro », choix A (12/11/2026, d'après une liste de fonctions d'un concurrent, maquettes
+  https://claude.ai/artifact/WS4dDNLNNvW9M87KAN3LfV)** : section `#fonctionnalites` de l'accueil, entre « Fait sur le terrain » et
+  « Construisez votre offre » : quatre cartes Votre journée · Vos réservations · Navette et voitures · Votre argent, cinq lignes
+  chacune (`fr.proHome.features`, seulement ce qui existe aujourd'hui, sans mot technique), puis un bandeau vert foncé « Et vos
+  clients vous trouvent sur plazo.fr » avec « Essayer la démo » ; test `ProHome.test.tsx`.
   **Navette en direct et messages des clients (27/10/2026, « mets en avant la carte avec le suivi navette, la communication avec le
   parking », choix « A et B » des maquettes https://claude.ai/artifact/QgoMEx8FgeqMt4mv6LpLvC)** : **A** la carte dessinée
   (`components/loueurs/LiveShuttleMap.tsx`, SVG et non des tuiles : parking « P » au halo citron, route vers le Terminal 1, navette
