@@ -362,6 +362,7 @@ function signedContractsParams(q: SignedContractsQuery): string {
   if (q.q?.trim()) params.set("q", q.q.trim());
   if (q.reserved) params.set("reserved", "1");
   if (q.archived) params.set("archived", "1");
+  if (q.month) params.set("month", q.month);
   if (q.page && q.page > 1) params.set("page", String(q.page));
   return params.toString();
 }

@@ -35,7 +35,7 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *     summary: The PDF stamped with example values and the fields sent ({ fields }), application/pdf
  * /internal/contracts:
  *   get:
- *     summary: The signed contracts, the latest first (?from=&to=&q=&reserved=1&archived=1&page=)
+ *     summary: The signed contracts, the latest first (?from=&to=&month=YYYY-MM&q=&reserved=1&archived=1&page=)
  *     description: Archived contracts are left out unless archived=1; signedCount, reservedCount and archivedCount follow the dates and the search.
  * /internal/contracts/{contractId}/archive:
  *   post:

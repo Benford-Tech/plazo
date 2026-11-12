@@ -2211,6 +2211,10 @@ export interface SignedContractsPage {
   signedCount: number;
   reservedCount: number;
   archivedCount: number;
+  /** Every month « YYYY-MM » holding a contract of the chosen pill and search, the latest first (12/11/2026, choix B). */
+  months: { month: string; count: number }[];
+  /** The month shown, or null for every month. */
+  month: string | null;
   page: number;
   totalPages: number;
 }
@@ -2222,6 +2226,8 @@ export interface SignedContractsQuery {
   reserved?: boolean;
   /** The archived contracts only. */
   archived?: boolean;
+  /** One local month « YYYY-MM » of the parking. */
+  month?: string;
   page?: number;
 }
 

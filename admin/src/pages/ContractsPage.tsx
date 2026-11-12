@@ -151,9 +151,7 @@ function RowActions({
 /** « Contrats » (26/10/2026, R-A): every signed contract with its PDF and its proof, searchable, exportable, archivable. */
 export default function ContractsPage() {
   const [q, setQ] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [applied, setApplied] = useState({ from: "", to: "" });
+  const [month, setMonth] = useState<string | null>(null);
   const [view, setView] = useState<View>("signed");
   const [page, setPage] = useState(1);
   const [before, setBefore] = useState<string | null>(null);
@@ -163,8 +161,7 @@ export default function ContractsPage() {
   const archived = view === "archived";
   const query = {
     q,
-    from: applied.from || undefined,
-    to: applied.to || undefined,
+    month: month ?? undefined,
     reserved,
     archived,
     page,
@@ -172,6 +169,8 @@ export default function ContractsPage() {
   const list = useQuery({
     queryKey: ["contracts", query],
     queryFn: () => adminApi.getSignedContracts(query),
+    // Keep the months column and the list in place while another month loads.
+    placeholderData: (previous) => previous,
   });
   const download = useMutation({
     mutationFn: async ({
@@ -222,6 +221,10 @@ export default function ContractsPage() {
   };
   const choose = (next: View) => {
     setView(next);
+    setPage(1);
+  };
+  const chooseMonth = (next: string | null) => {
+    setMonth(next);
     setPage(1);
   };
   const exportCsv = useMutation({
@@ -280,36 +283,6 @@ export default function ContractsPage() {
             </button>
           )}
         </div>
-        <form
-          className="flex flex-wrap items-center gap-2 text-sm"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setApplied({ from, to });
-            setPage(1);
-          }}
-        >
-          <label className="flex items-center gap-1">
-            {t.from}
-            <input
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="h-8 rounded-full border border-panel-line bg-white px-2 text-[13px]"
-            />
-          </label>
-          <label className="flex items-center gap-1">
-            {t.to}
-            <input
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="h-8 rounded-full border border-panel-line bg-white px-2 text-[13px]"
-            />
-          </label>
-          <button type="submit" className={ghost}>
-            {t.apply}
-          </button>
-        </form>
         <input
           type="search"
           value={q}
@@ -371,6 +344,28 @@ export default function ContractsPage() {
       </div>
       {archived && (
         <p className="text-[13px] text-muted-foreground">{t.archivedHint}</p>
+      )}
+      <div className="grid gap-4 lg:grid-cols-[180px_minmax(0,1fr)]">
+        <MonthsColumn
+          months={data?.months ?? []}
+          month={month}
+          total={
+            reserved
+              ? (data?.reservedCount ?? 0)
+              : archived
+                ? (data?.archivedCount ?? 0)
+                : (data?.signedCount ?? 0)
+          }
+          onChoose={chooseMonth}
+        />
+        <div className="min-w-0 space-y-3">
+      {month && (
+        <div className="flex items-baseline gap-2" data-testid="contracts-month-head">
+          <h2 className="font-narrow text-lg font-bold">{monthLabel(month)}</h2>
+          <span className="text-[13px] text-muted-foreground">
+            {t.months.monthCount(data?.total ?? 0)}
+          </span>
+        </div>
       )}
       {list.isError && (
         <p className="text-sm text-destructive">{describeError(list.error)}</p>
@@ -482,6 +477,106 @@ export default function ContractsPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+/** « Novembre 2026 » from « 2026-11 ». */
+function monthLabel(month: string): string {
+  const [year, m] = month.split("-");
+  return `${t.months.names[Number(m) - 1]} ${year}`;
+}
+
+/**
+ * The months column (12/11/2026, « classe les contrats par date, mois année », choix B): every year with its months and
+ * their counts, like a binder; a month shows its contracts only. On a phone, a list to pick from.
+ */
+function MonthsColumn({
+  months,
+  month,
+  total,
+  onChoose,
+}: {
+  months: { month: string; count: number }[];
+  month: string | null;
+  total: number;
+  onChoose: (month: string | null) => void;
+}) {
+  const years = [...new Set(months.map((m) => m.month.slice(0, 4)))];
+  // The latest year (and the one of the month shown) start open, the older ones folded; a click flips one.
+  const [flipped, setFlipped] = useState<Set<string>>(() => new Set());
+  if (months.length === 0) return <div className="hidden lg:block" />;
+  const item = (selected: boolean) =>
+    cn(
+      "flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-[13px]",
+      selected ? "bg-lime font-semibold text-lime-ink" : "text-muted-foreground hover:bg-panel-2",
+    );
+  return (
+    <>
+      <label className="flex items-center gap-2 text-sm lg:hidden">
+        {t.months.select}
+        <select
+          value={month ?? ""}
+          onChange={(e) => onChoose(e.target.value || null)}
+          className="h-9 min-w-0 flex-1 rounded-full border border-panel-line bg-white px-3 text-[13px]"
+          data-testid="contracts-month-select"
+        >
+          <option value="">{`${t.months.all} · ${total}`}</option>
+          {months.map((m) => (
+            <option key={m.month} value={m.month}>
+              {`${monthLabel(m.month)} · ${m.count}`}
+            </option>
+          ))}
+        </select>
+      </label>
+      <nav aria-label={t.months.aria} className="hidden lg:block" data-testid="contracts-months">
+        <button type="button" aria-pressed={month === null} onClick={() => onChoose(null)} className={item(month === null)}>
+          <span>{t.months.all}</span>
+          <span className="font-mono">{total}</span>
+        </button>
+        {years.map((year) => {
+          const open = (year === years[0] || !!month?.startsWith(year)) !== flipped.has(year);
+          return (
+            <div key={year} className="mt-2">
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() =>
+                  setFlipped((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(year)) next.delete(year);
+                    else next.add(year);
+                    return next;
+                  })
+                }
+                className="flex w-full items-center justify-between px-2 py-1 text-left text-[13px] font-bold"
+              >
+                {year}
+                <span className="text-muted-foreground" aria-hidden="true">
+                  {open ? "▾" : "▸"}
+                </span>
+              </button>
+              {open &&
+                months
+                  .filter((m) => m.month.startsWith(year))
+                  .map((m) => (
+                    <button
+                      key={m.month}
+                      type="button"
+                      aria-pressed={month === m.month}
+                      onClick={() => onChoose(m.month)}
+                      className={cn(item(month === m.month), "pl-4")}
+                    >
+                      <span>{t.months.names[Number(m.month.slice(5)) - 1]}</span>
+                      <span className="font-mono">{m.count}</span>
+                    </button>
+                  ))}
+            </div>
+          );
+        })}
+      </nav>
+    </>
   );
 }
