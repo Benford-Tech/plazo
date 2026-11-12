@@ -32,6 +32,21 @@ class StaffExtraRefused extends StaffExtrasEvent {
   final String? reason;
 }
 
+/// 12/11/2026 (« + Ajouter un service »): added by the team, paid at the parking (`on_return`: « Au retour »).
+class StaffExtraAdded extends StaffExtrasEvent {
+  const StaffExtraAdded({required this.kind, required this.priceCents, required this.paymentMethod});
+  final String kind;
+  final int priceCents;
+  final String paymentMethod;
+}
+
+/// « Noter le paiement » of a service added « Au retour ».
+class StaffExtraPaid extends StaffExtrasEvent {
+  const StaffExtraPaid(this.extraId, this.paymentMethod);
+  final String extraId;
+  final String paymentMethod;
+}
+
 class StaffExtrasNoticeShown extends StaffExtrasEvent {
   const StaffExtrasNoticeShown();
 }
@@ -45,7 +60,7 @@ abstract class StaffExtrasState with _$StaffExtrasState {
     StaffExtrasModel? data,
     String? busyId,
 
-    /// accepted | done | refused, or an API code in [errorCode].
+    /// accepted | done | refused | added | paid, or an API code in [errorCode].
     String? notice,
     String? errorCode,
   }) = _StaffExtrasState;
@@ -61,6 +76,10 @@ class StaffExtrasBloc extends Bloc<StaffExtrasEvent, StaffExtrasState> {
     on<StaffExtraAccepted>((e, emit) => _act(emit, e.extraId, 'accepted', (id) => _extras.accept(id, e.extraId)));
     on<StaffExtraDone>((e, emit) => _act(emit, e.extraId, 'done', (id) => _extras.done(id, e.extraId)));
     on<StaffExtraRefused>((e, emit) => _act(emit, e.extraId, 'refused', (id) => _extras.refuse(id, e.extraId, e.reason)));
+    on<StaffExtraAdded>(
+      (e, emit) => _act(emit, 'add', 'added', (id) => _extras.add(id, kind: e.kind, priceCents: e.priceCents, paymentMethod: e.paymentMethod)),
+    );
+    on<StaffExtraPaid>((e, emit) => _act(emit, e.extraId, 'paid', (id) => _extras.setPayment(id, e.extraId, e.paymentMethod)));
     on<StaffExtrasNoticeShown>((e, emit) => emit(state.copyWith(notice: null, errorCode: null)));
   }
 

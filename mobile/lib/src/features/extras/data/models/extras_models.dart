@@ -42,14 +42,32 @@ abstract class ExtraOrderModel with _$ExtraOrderModel {
     /// Staff only: who marked it done or not possible (first name).
     String? doneBy,
     String? refusedBy,
+
     /// Staff accepted it (« Accepter »): the traveller is told.
     DateTime? acceptedAt,
     String? acceptedBy,
+
+    /// 12/11/2026 (« Payé au parking »): `staff` = added by the team, paid at the parking (no Stripe, no commission).
+    @Default('traveller') String source,
+
+    /// Paid at the parking: card · cash · cheque · transfer · holiday_vouchers; null for `staff`: « À payer au retour ».
+    String? paymentMethod,
+    String? addedBy,
   }) = _ExtraOrderModel;
 
   factory ExtraOrderModel.fromJson(Map<String, dynamic> json) => _$ExtraOrderModelFromJson(json);
 
   bool get toDo => status == 'ordered';
+  bool get byStaff => source == 'staff';
+}
+
+/// A service the team can add to a booking (« + Ajouter un service », 12/11/2026), with why not when it cannot.
+@freezed
+abstract class AddableExtraModel with _$AddableExtraModel {
+  const factory AddableExtraModel({required String kind, required String label, required int priceCents, @Default(true) bool available, String? reason}) =
+      _AddableExtraModel;
+
+  factory AddableExtraModel.fromJson(Map<String, dynamic> json) => _$AddableExtraModelFromJson(json);
 }
 
 /// GET /public/bookings/:ref/extras.
@@ -98,7 +116,11 @@ abstract class ExtraOrderResponseModel with _$ExtraOrderResponseModel {
 /// GET /internal/reservations/:id/extras.
 @freezed
 abstract class StaffExtrasModel with _$StaffExtrasModel {
-  const factory StaffExtrasModel({@Default(<ExtraOrderModel>[]) List<ExtraOrderModel> extras}) = _StaffExtrasModel;
+  const factory StaffExtrasModel({
+    @Default(<ExtraOrderModel>[]) List<ExtraOrderModel> extras,
+    @Default(<AddableExtraModel>[]) List<AddableExtraModel> services,
+    @Default(false) bool canAdd,
+  }) = _StaffExtrasModel;
 
   factory StaffExtrasModel.fromJson(Map<String, dynamic> json) => _$StaffExtrasModelFromJson(json);
 }
@@ -121,8 +143,7 @@ abstract class ExtraSettingModel with _$ExtraSettingModel {
 /// GET/PUT /internal/parkings/:id/extras (managers).
 @freezed
 abstract class ExtraSettingsModel with _$ExtraSettingsModel {
-  const factory ExtraSettingsModel({@Default(24) int leadHours, @Default(<ExtraSettingModel>[]) List<ExtraSettingModel> offers}) =
-      _ExtraSettingsModel;
+  const factory ExtraSettingsModel({@Default(24) int leadHours, @Default(<ExtraSettingModel>[]) List<ExtraSettingModel> offers}) = _ExtraSettingsModel;
 
   factory ExtraSettingsModel.fromJson(Map<String, dynamic> json) => _$ExtraSettingsModelFromJson(json);
 }

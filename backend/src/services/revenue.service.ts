@@ -9,6 +9,7 @@ import {
   REVENUE_BASES,
   RevenueBasis,
   RevenueBooking,
+  RevenueExtra,
   revenueCsv,
   revenueByMonth,
   revenueDay,
@@ -159,12 +160,37 @@ export class RevenueService {
     }));
   }
 
+  /**
+   * 12/11/2026 (« Payé au parking »): the services the team added, paid at the parking or « Au retour », on the bookings
+   * that count (never refused ones, never a cancelled booking); by the booking's arrival or the day they were added.
+   */
+  private async parkingExtras(actor: AuthenticatedStaff, period: RevenuePeriod, timeZone: string): Promise<RevenueExtra[]> {
+    const start = dayBounds(period.from, timeZone).start;
+    const end = dayBounds(period.to, timeZone).end;
+    const rows = await prisma.reservationExtra.findMany({
+      where: {
+        operatorId: actor.operatorId,
+        source: 'staff',
+        status: { in: ['ordered', 'done'] },
+        ...(period.basis === 'booked' ? { createdAt: { gte: start, lt: end } } : {}),
+        reservation: {
+          AND: [STAFF_VISIBLE],
+          status: { not: 'cancelled' },
+          ...(period.basis === 'arrival' ? { arrivalAt: { gte: start, lt: end } } : {}),
+        },
+      },
+      select: { priceCents: true, paymentMethod: true, createdAt: true, reservation: { select: { arrivalAt: true } } },
+    });
+    return rows.map(e => ({ arrivalAt: e.reservation.arrivalAt, createdAt: e.createdAt, priceCents: e.priceCents, paymentMethod: e.paymentMethod }));
+  }
+
   public async report(actor: AuthenticatedStaff, query: RevenueQuery, now: Date = new Date()): Promise<RevenuePage> {
     this.require(actor, 'revenue:view');
     const period = this.period(query);
     const parking = await this.parkings.getPrimary(actor);
     const bookings = await this.bookings(actor, period, parking.timezone);
-    const report = revenueReport(bookings as RevenueBooking[], { ...period, timeZone: parking.timezone });
+    const extras = await this.parkingExtras(actor, period, parking.timezone);
+    const report = revenueReport(bookings as RevenueBooking[], { ...period, timeZone: parking.timezone }, extras);
     // « Par canal » edits a comparator's rate in place: its key and the rate in force today.
     const today = localDate(now, parking.timezone);
     const rates = await this.commissions.rates(actor.operatorId);
@@ -199,12 +225,14 @@ export class RevenueService {
     const weekStart = addDays(today, -6);
     const from = weekStart < monthStart ? weekStart : monthStart;
     const bookings = (await this.bookings(actor, { from, to: monthEnd, basis: 'arrival' }, timeZone)) as RevenueBooking[];
-    const month = revenueReport(bookings, { from: monthStart, to: monthEnd, basis: 'arrival', timeZone });
+    const extras = await this.parkingExtras(actor, { from, to: monthEnd, basis: 'arrival' }, timeZone);
+    const month = revenueReport(bookings, { from: monthStart, to: monthEnd, basis: 'arrival', timeZone }, extras);
+    const inside = (first: string, last: string, day: string) => day >= first && day <= last;
     const sumOf = (first: string, last: string) =>
       bookings.reduce((sum, b) => {
         const day = revenueDay(b, 'arrival', timeZone);
-        return day >= first && day <= last && b.priceCents !== null ? sum + b.priceCents : sum;
-      }, 0);
+        return inside(first, last, day) && b.priceCents !== null ? sum + b.priceCents : sum;
+      }, 0) + extras.reduce((sum, e) => (inside(first, last, revenueDay(e, 'arrival', timeZone)) ? sum + e.priceCents : sum), 0);
     return {
       today,
       month: {
@@ -233,12 +261,10 @@ export class RevenueService {
     const basis = query.basis === undefined || query.basis === '' ? 'arrival' : query.basis;
     if (!REVENUE_BASES.includes(basis as RevenueBasis)) throw fieldError('basis', 'invalid_basis');
     const months = monthsEndingWith(to, MONTHS_SHOWN);
-    const bookings = (await this.bookings(
-      actor,
-      { from: months[0].from, to: months[months.length - 1].to, basis: basis as RevenueBasis },
-      timeZone,
-    )) as RevenueBooking[];
-    const lines = revenueByMonth(bookings, months, basis as RevenueBasis, timeZone);
+    const span = { from: months[0].from, to: months[months.length - 1].to, basis: basis as RevenueBasis };
+    const bookings = (await this.bookings(actor, span, timeZone)) as RevenueBooking[];
+    const extras = await this.parkingExtras(actor, span, timeZone);
+    const lines = revenueByMonth(bookings, months, basis as RevenueBasis, timeZone, extras);
     return {
       today,
       basis: basis as RevenueBasis,

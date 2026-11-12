@@ -2294,7 +2294,10 @@
       "not_online": "La réservation doit d'abord être payée.",
       "online_booking_unavailable": "Le paiement en ligne n'est pas disponible pour le moment.",
       "not_to_do": "Ce service n'est plus à faire.",
-      "refund_failed": "Le remboursement a échoué : réessayez."
+      "refund_failed": "Le remboursement a échoué : réessayez.",
+      "one_of_group": "Un service du même genre est déjà commandé.",
+      "not_parking_payment": "Ce service a été payé en ligne.",
+      "demo_read_only": "Démo : rien n'est enregistré."
     },
     "staff_title": "Services commandés",
     "to_do_count": {
@@ -2312,7 +2315,10 @@
     "staff_notice": {
       "accepted": "Accepté : le client est prévenu.",
       "done": "Marqué fait : le client est prévenu.",
-      "refused": "Remboursé : le client est prévenu."
+      "refused": "Remboursé : le client est prévenu.",
+      "added": "Service ajouté : il est dans « Services à faire ».",
+      "paid": "Paiement noté.",
+      "refused_staff": "Marqué « Pas possible »."
     },
     "board": {
       "title": "Services à faire",
@@ -2346,6 +2352,39 @@
       "commission": "Commission Plazo prise sur chaque service, comme sur les séjours.",
       "save": "Enregistrer",
       "saved": "Services enregistrés."
+    },
+    "staff_title_all": "Services additionnels",
+    "add_service": "+ Ajouter un service",
+    "add_title": "Ajouter un service",
+    "price": "Prix",
+    "paid_by": "Payé par",
+    "add_submit": "Ajouter",
+    "price_invalid": "Montant invalide (ex. 45,50), entre 1 € et 1 000 €.",
+    "choose_service": "Choisissez un service.",
+    "paid_online": "Payé en ligne",
+    "paid_at_parking": "Payé au parking · {}",
+    "to_collect": "À payer au retour",
+    "added_line": "{} · ajouté au parking",
+    "added_line_by": "{} · ajouté au parking par {}",
+    "mark_paid": "Noter le paiement",
+    "refuse_text_staff": "Payé au parking : rien n'est remboursé par Plazo. Rendez l'argent au client s'il a déjà payé.",
+    "refuse_confirm_staff": "Confirmer",
+    "refused_line_staff": "Pas possible · {}",
+    "none": "Aucun service additionnel n'est proposé : réglez-les dans Plus › Réglages du parking.",
+    "methods": {
+      "card": "CB",
+      "cash": "Espèces",
+      "cheque": "Chèque",
+      "transfer": "Virement",
+      "holiday_vouchers": "Chèques-vacances",
+      "on_return": "Au retour"
+    },
+    "staff_reason": {
+      "closed": "Réservation close",
+      "already_ordered": "Déjà commandé",
+      "one_charge": "Une recharge déjà commandée",
+      "one_of_group": "Même genre déjà commandé",
+      "not_offered": "Plus proposé"
     }
   },
   "child_seats": {
