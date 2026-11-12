@@ -22,6 +22,7 @@ import '../../../../shared/widgets/gradient_button.dart';
 import '../../../extras/presentation/widgets/staff_extras_card.dart';
 import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
 import '../../../pro_keys/presentation/keys_control.dart';
+import '../../../pro_surcharges/presentation/surcharges_card.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
@@ -290,6 +291,8 @@ class _Sheet extends StatelessWidget {
           canAdd: can(role, 'reservations:manage'),
           canConfigure: can(role, 'parking:manage'),
         ),
+        // « Suppléments » (12/11/2026, B in Plazo Pro): late arrival, night, breakdown… collected at the parking.
+        SurchargesCard(key: ValueKey('surcharges-${r.id}-${r.status}'), reservationId: r.id),
         // « Mails liés » (27/10/2026): the mails the booking came from, for those who reach the inbox.
         // « Facture » (06/11/2026, direction A): the invoice in the parking's name.
         if (can(role, 'reservations:manage')) InvoiceCard(key: ValueKey('invoice-${r.id}-${r.status}-${r.priceCents}'), reservationId: r.id),
@@ -617,10 +620,11 @@ class _HandoverSheetState extends State<_HandoverSheet> {
       // Edge-to-edge (Android 15+): the sheet runs under the navigation bar; its height is added below « Rendre » (it is 0
       // while the keyboard is open, which the insets then cover).
       padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text('res.handover.title'.tr(), style: AppText.title(size: 20)),
           const SizedBox(height: 4),
           Text(
@@ -651,6 +655,8 @@ class _HandoverSheetState extends State<_HandoverSheet> {
             decoration: InputDecoration(labelText: 'res.handover.note'.tr(), helperText: 'res.handover.note_hint'.tr()),
           ),
           const SizedBox(height: 10),
+          // 12/11/2026: the supplements to collect before the car goes (the same block as the booking's sheet).
+          SurchargesCard(reservationId: r.id, compact: true),
           GradientButton(
             key: const Key('handover-confirm'),
             icon: Icons.check_rounded,
@@ -660,7 +666,8 @@ class _HandoverSheetState extends State<_HandoverSheet> {
               Navigator.of(context).pop(_note.text.trim());
             },
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

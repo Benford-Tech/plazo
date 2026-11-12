@@ -2925,5 +2925,31 @@
     "sent_no_text": "Texte non gardé (envoyé avant le 12/11/2026).",
     "sent_sms_fallback": "SMS envoyé aussi",
     "open_conversation": "Voir la conversation ›"
+  },
+  "surcharges": {
+    "title": "Suppléments",
+    "late_title": "Retard de {} min au rendez-vous",
+    "late_text": "Prévu à {}, voiture déposée à {} : supplément de {} selon vos réglages.",
+    "apply": "Appliquer {}",
+    "no": "Non",
+    "quick": "Ajouter d'un toucher",
+    "other": "Autre montant…",
+    "other_title": "Autre supplément",
+    "other_label": "Nom",
+    "other_amount": "Montant",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "added_by": "ajouté par {} à {}",
+    "added_at": "ajouté à {}",
+    "total": "À encaisser au parking",
+    "note": "Encaissé au parking, compté dans le chiffre d'affaires et ajouté à la facture. Rien n'est prélevé tout seul.",
+    "added": "Supplément ajouté.",
+    "removed": "Supplément retiré.",
+    "label_required": "Donnez un nom au supplément.",
+    "amount_invalid": "Montant invalide (ex. 10 ou 12,50).",
+    "errors": {
+      "not_offered": "Ce supplément n'est plus proposé : rechargez la fiche.",
+      "reservation_closed": "Réservation annulée ou non venue : pas de supplément."
+    }
   }
 }

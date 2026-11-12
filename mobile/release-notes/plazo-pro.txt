@@ -5,5 +5,5 @@ Plazo Pro, pour les équipes des parkings d'aéroport.
 • Plan du parking, files, clés en un toucher.
 • Navette : Aller et Retour, sièges auto.
 • Voiturier : courses au terminal, services.
-• Contrat, état des lieux, factures.
+• Contrat, état des lieux, factures, suppléments.
 • Cloche des notifications, menu par rôle, photo, logo.

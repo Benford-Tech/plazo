@@ -20,6 +20,7 @@ void _initDataSource() {
     ..registerLazySingleton<TravellerInvoicesDataSource>(() => TravellerInvoicesDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReservationTrashDataSource>(() => ReservationTrashDataSourceImpl(locator()))
     ..registerLazySingleton<KeysDataSource>(() => KeysDataSourceImpl(locator()))
+    ..registerLazySingleton<SurchargesDataSource>(() => SurchargesDataSourceImpl(locator()))
     ..registerLazySingleton<NotificationsDataSource>(() => NotificationsDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReturnDataSource>(() => ReturnDataSourceImpl(locator(), locator(), locator()))
     ..registerLazySingleton<ShuttleDataSource>(() => ShuttleDataSourceImpl(locator()))
