@@ -76,6 +76,35 @@ describe('équipe', () => {
     expect(reset.status).toBe(404);
   });
 
+  it('un autre gérant ne change ni le mot de passe ni les droits d’un administrateur de la plateforme (12/11/2026)', async () => {
+    const { manager, token } = await setupOperator();
+    await prisma.staff.update({ where: { id: manager.id }, data: { emailVerifiedAt: new Date() } });
+    const other = await addStaff(token, 'manager');
+    process.env.PLATFORM_ADMIN_EMAILS = manager.email;
+    try {
+      const reset = await api().post(`/api/internal/staff/${manager.id}/reset-password`).set(auth(other.token)).send({ password: 'pris-en-main-1' });
+      expect(reset.status).toBe(403);
+      expect(reset.body.code).toBe('platform_admin_protected');
+      const off = await api().patch(`/api/internal/staff/${manager.id}`).set(auth(other.token)).send({ isActive: false });
+      expect(off.body.code).toBe('platform_admin_protected');
+      // The admin still manages the other one.
+      expect((await api().patch(`/api/internal/staff/${other.id}`).set(auth(token)).send({ role: 'agent' })).status).toBe(200);
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
+  });
+
+  it('un jeton de rafraîchissement ne sert qu’une fois, même pour deux appels simultanés (12/11/2026)', async () => {
+    const { manager } = await setupOperator();
+    const session = await login(manager.email, PASSWORD);
+    const refresh = session.tokenData.refresh.token;
+    const [a, b] = await Promise.all([
+      api().post('/api/internal/auth/refresh').send({ refreshToken: refresh }),
+      api().post('/api/internal/auth/refresh').send({ refreshToken: refresh }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 401]);
+  });
+
   it('la réinitialisation et le changement de mot de passe invalident les anciens accès', async () => {
     const { token } = await setupOperator();
     const agent = await addStaff(token, 'agent');

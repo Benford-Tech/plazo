@@ -241,6 +241,8 @@ export interface PublicBooking {
     shuttleMinutes: number | null;
     openingHours: string | null;
     phone?: string | null;
+    /** 12/11/2026: the parking's supplements and conditions, one line. */
+    conditions?: string | null;
   };
   arrivalAt: string;
   returnAt: string;

@@ -749,6 +749,12 @@ export default function RevenuePage() {
                 )}
               </p>
             )}
+            {/* 12/11/2026 (B): the supplements the team applied, inside the total. */}
+            {report.surcharges && report.surcharges.count > 0 && (
+              <p data-testid="revenue-surcharges" className="rounded-xl bg-panel-2 px-3 py-2 text-sm">
+                {t.surcharges(euros(report.surcharges.totalCents), report.surcharges.count)}
+              </p>
+            )}
             {report.byChannel.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t.noRevenue}</p>
             ) : (

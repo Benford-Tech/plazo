@@ -34,7 +34,7 @@ class _AppLinkPageState extends State<AppLinkPage> {
     try {
       final target = await locator<AppLinkDataSource>().resolve(widget.code);
       if (!mounted) return;
-      await context.router.replace(MyBookingRoute(reference: target.reference, token: target.manageToken));
+      await context.router.replace(MyBookingRoute(reference: target.reference, token: target.manageToken ?? ''));
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }

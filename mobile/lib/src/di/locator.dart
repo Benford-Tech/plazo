@@ -79,6 +79,7 @@ import '../features/traveller_invoices/traveller_invoices_data_source.dart';
 import '../features/pro_reservations/data/datasources/linked_emails_data_source.dart';
 import '../features/pro_reservations/data/datasources/reservation_trash_data_source.dart';
 import '../features/pro_keys/data/keys_data_source.dart';
+import '../features/pro_surcharges/data/surcharges_data_source.dart';
 import '../features/pro_start/data/getting_started_data_source.dart';
 import '../features/pro_forecast/data/forecast_data_source.dart';
 import '../features/pro_valet/data/valet_runs_data_source.dart';

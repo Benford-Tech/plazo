@@ -686,6 +686,8 @@ export const fr = {
     parkingExtras: (amount: string, n: number) =>
       `Services payés au parking : ${amount} · ${n} service${n > 1 ? "s" : ""}, compris dans le total, sans commission`,
     parkingExtrasToCollect: (amount: string) => `dont ${amount} à payer au retour`,
+    surcharges: (amount: string, n: number) =>
+      `Suppléments (retard, nuit, dépannage…) : ${amount} · ${n} supplément${n > 1 ? "s" : ""}, compris dans le total`,
     byPaymentMethod: "Par moyen de paiement",
     paidByUnknown: "Non précisé",
     bookingsShort: (n: number) => `${n} rés.`,
@@ -1178,10 +1180,10 @@ export const fr = {
       `Places réservables avec ces réglages : ${n}`,
     driverPhone: "Téléphone du chauffeur (le jour du dépôt)",
     driverPhoneHelp: "Dans le message de la veille, pour l'accueil et le transfert : {chauffeur}.",
-    travellerConditions: "Conditions pour vos clients",
+    travellerConditions: "Autres conditions pour vos clients",
     travellerConditionsPlaceholder: "Retard de plus de 30 minutes : supplément de 10 € ; dépannage (batterie) : 5 €",
     travellerConditionsHelp:
-      "Dans le message de la veille ({conditions}), après vos frais de nuit, que Plazo ajoute lui-même. Séparez par « ; » ou collez une liste à puces : Plazo la met sur une ligne.",
+      "Texte libre, dit après vos suppléments (« Suppléments et conditions » ci-dessous) dans le message de la veille ({conditions}). Séparez par « ; » ou collez une liste à puces : Plazo la met sur une ligne.",
     valetMeetingPoint: "Rendez-vous du voiturier à l'aéroport",
     valetMeetingPointPlaceholder: "Terminal 1 · dépose-minute",
     valetMeetingPointHelp:
@@ -5549,6 +5551,8 @@ export const historyFr = {
     "extra.added": "a ajouté un service",
     "extra.refused": "a marqué un service « Pas possible »",
     "extra.payment": "a noté le paiement d'un service",
+    "surcharge.added": "a ajouté un supplément",
+    "surcharge.removed": "a retiré un supplément",
     "contract.code_sent": "a envoyé le code de signature",
     "contract.signed": "a signé le contrat",
     "contract.archived": "a archivé le contrat",
@@ -5761,6 +5765,75 @@ export const invoiceFr = {
       demo_read_only: "Démo : aucune facture n'est émise.",
     } as Record<string, string>,
   },
+};
+
+/** « Suppléments et conditions » of Parking › Réglages (12/11/2026, choix A). */
+export const surchargesFr = {
+  title: "Suppléments et conditions",
+  intro: "Chaque supplément s'allume, se règle, et Plazo écrit la phrase lui-même.",
+  demo: "Démo : les réglages ne se modifient pas.",
+  kinds: {
+    late: "Retard au rendez-vous",
+    night: "Prise en charge ou restitution de nuit",
+    breakdown: "Dépannage",
+    custom: "Supplément",
+  },
+  on: "Allumé",
+  off: "Éteint",
+  toggle: (name: string) => `Activer : ${name}`,
+  minutes: "Au-delà de (minutes)",
+  amount: "Montant (€)",
+  note: "Précision (facultatif)",
+  notePlaceholder: { late: "service sur rendez-vous", breakdown: "batterie, etc.", custom: "" },
+  label: "Nom",
+  labelPlaceholder: "Clé perdue, plein, lavage…",
+  from: "De",
+  to: "À",
+  nightShared: "Les mêmes heures que les frais de nuit de « Mes tarifs » : réglées une seule fois.",
+  nightCharged: "Les réservations faites sur Plazo paient déjà leurs frais de nuit en ligne (« Mes tarifs »).",
+  addOwn: "Un autre supplément : un nom et un montant.",
+  add: "+ Ajouter un supplément",
+  remove: "Retirer",
+  preview: "Ce que lit le client",
+  previewWhere: "Message de la veille ({conditions}), mail de confirmation et « Ma réservation ».",
+  previewNone: "Aucun supplément allumé : rien n'est écrit.",
+  info: "Rien n'est prélevé tout seul : l'équipe applique un supplément sur la fiche de la réservation, à encaisser au parking.",
+  save: "Enregistrer",
+  saved: "Suppléments enregistrés.",
+  amountInvalid: "Montant invalide (ex. 10 ou 12,50).",
+  fieldErrors: {
+    required: "À remplir.",
+    invalid: "Valeur invalide.",
+    too_long: "Trop long.",
+    same_time: "Le début et la fin doivent être différents.",
+  } as Record<string, string>,
+};
+
+/** « Suppléments » of the booking page (12/11/2026, B). */
+export const bookingSurchargesFr = {
+  title: "Suppléments",
+  lateTitle: (minutes: number) => `Retard de ${minutes} min au rendez-vous`,
+  lateText: (scheduled: string, arrived: string, amount: string) => `Prévu à ${scheduled}, voiture déposée à ${arrived} : supplément de ${amount} selon vos réglages.`,
+  apply: (amount: string) => `Appliquer ${amount}`,
+  no: "Non",
+  quick: "Ajouter d'un toucher",
+  other: "Autre montant…",
+  otherLabel: "Nom",
+  otherAmount: "Montant (€)",
+  add: "Ajouter",
+  cancel: "Annuler",
+  remove: "Retirer",
+  addedBy: (by: string | null, at: string) => (by ? `ajouté par ${by} à ${at}` : `ajouté à ${at}`),
+  total: "À encaisser au parking",
+  note: "Encaissé au parking, compté dans le chiffre d'affaires et ajouté à la facture. Rien n'est prélevé tout seul.",
+  settings: "Régler les suppléments",
+  amountInvalid: "Montant invalide (ex. 10 ou 12,50).",
+  added: "Supplément ajouté.",
+  removed: "Supplément retiré.",
+  errors: {
+    not_offered: "Ce supplément n'est plus proposé : rechargez la page.",
+    reservation_closed: "Réservation annulée ou non venue : pas de supplément.",
+  } as Record<string, string>,
 };
 
 /** 12/11/2026 (« Messages WhatsApp », direction A of https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko). */

@@ -66,6 +66,9 @@ import type {
   ReminderBoard,
   ReminderSettingsInput,
   ShuttleTracking,
+  Surcharge,
+  SurchargeSettings,
+  BookingSurcharges,
   SignupInput,
   ListingInput,
   ListingResponse,
@@ -571,6 +574,22 @@ export const adminApi = {
         body: json({ reason }),
       },
     ),
+  bookingSurcharges: (id: string) => apiRequest<BookingSurcharges>(`/internal/reservations/${id}/surcharges`),
+  addBookingSurcharge: (id: string, body: { key: string } | { label: string; amountCents: number }) =>
+    apiRequest<BookingSurcharges>(`/internal/reservations/${id}/surcharges`, { method: "POST", body: json(body) }),
+  removeBookingSurcharge: (id: string, surchargeId: string) =>
+    apiRequest<BookingSurcharges>(`/internal/reservations/${id}/surcharges/${surchargeId}`, { method: "DELETE" }),
+  dismissBookingSurcharge: (id: string) =>
+    apiRequest<BookingSurcharges>(`/internal/reservations/${id}/surcharges/dismiss`, { method: "POST" }),
+  surcharges: (parkingId: string) => apiRequest<SurchargeSettings>(`/internal/parkings/${parkingId}/surcharges`),
+  setSurcharges: (
+    parkingId: string,
+    body: { surcharges: (Omit<Surcharge, "id"> & { id?: string })[]; night: { start: string; end: string } | null },
+  ) =>
+    apiRequest<SurchargeSettings>(`/internal/parkings/${parkingId}/surcharges`, {
+      method: "PUT",
+      body: json(body),
+    }),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
       method: "PUT",

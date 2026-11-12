@@ -7,6 +7,7 @@ import 'package:parking_app/src/features/extras/presentation/bloc/extra_settings
 import 'package:parking_app/src/features/extras/presentation/bloc/staff_extras_bloc.dart';
 import 'package:parking_app/src/features/extras/presentation/bloc/traveller_extras_bloc.dart';
 import 'package:parking_app/src/features/paperwork/presentation/bloc/paperwork_bloc.dart';
+import 'package:parking_app/src/features/pro_surcharges/data/surcharges_data_source.dart';
 import 'package:parking_app/src/features/pro_settings/data/staff_photo_data_source.dart';
 
 class QuietPaperworkBloc extends MockBloc<PaperworkEvent, PaperworkState> implements PaperworkBloc {}
@@ -31,6 +32,7 @@ void registerQuietPaperwork() {
 /// The services for the car (21/10/2026) stay hidden: their blocs never load anything.
 void registerQuietExtras() {
   registerQuietStaffPhoto();
+  if (!locator.isRegistered<SurchargesDataSource>()) locator.registerSingleton<SurchargesDataSource>(QuietSurcharges());
   if (!locator.isRegistered<StaffExtrasBloc>()) {
     locator.registerFactory<StaffExtrasBloc>(() {
       final bloc = QuietStaffExtrasBloc();
@@ -87,4 +89,16 @@ class FakeStaffPhoto implements StaffPhotoDataSource {
 /// Mon compte's photo card in the tests of other parts of the page.
 void registerQuietStaffPhoto() {
   if (!locator.isRegistered<StaffPhotoDataSource>()) locator.registerSingleton<StaffPhotoDataSource>(FakeStaffPhoto());
+}
+
+/// « Suppléments » (12/11/2026): the parking offers none, so the block stays hidden.
+class QuietSurcharges implements SurchargesDataSource {
+  @override
+  Future<BookingSurcharges> list(String reservationId) async => const BookingSurcharges();
+  @override
+  Future<BookingSurcharges> add(String reservationId, {String? key, String? label, int? amountCents}) async => const BookingSurcharges();
+  @override
+  Future<BookingSurcharges> remove(String reservationId, String surchargeId) async => const BookingSurcharges();
+  @override
+  Future<BookingSurcharges> dismiss(String reservationId) async => const BookingSurcharges();
 }

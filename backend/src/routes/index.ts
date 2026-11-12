@@ -14,6 +14,7 @@ import { ListingRoute } from './listing.route';
 import { ParkingRoute } from './parking.route';
 import { PaperworkRoute } from './paperwork.route';
 import { ExtraRoute } from './extra.route';
+import { SurchargeRoute } from './surcharge.route';
 import { ContractTemplateRoute } from './contract-template.route';
 import { GettingStartedRoute } from './getting-started.route';
 import { LiveSyncRoute } from './live-sync.route';
@@ -47,6 +48,7 @@ const AppRoutes = [
   new ReservationRoute(),
   new PaperworkRoute(),
   new ExtraRoute(),
+  new SurchargeRoute(),
   new PartnerContractRoute(),
   new ContractTemplateRoute(),
   new GettingStartedRoute(),

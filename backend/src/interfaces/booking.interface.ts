@@ -31,6 +31,11 @@ export interface PublicBooking {
     /** The return meeting point (B, 06/10/2026): the parking's label and directions, or null when not set. */
     meetingLabel: string | null;
     meetingInstructions: string | null;
+    /**
+     * 12/11/2026: the parking's supplements and conditions, one line (« Retard de plus de 30 minutes : supplément de
+     * 10 € ; … »), or null.
+     */
+    conditions: string | null;
   };
   arrivalAt: string;
   returnAt: string;

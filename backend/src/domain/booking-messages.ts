@@ -202,6 +202,7 @@ export function confirmationEmail(productName: string, booking: PublicBooking, m
 ${detailsTable(booking)}
 ${total ? totalHtml(booking, total) : ''}
 ${stepsHtml(booking)}
+${booking.parking.conditions ? `<p style="margin:16px 0 0;font-size:14px"><strong>À savoir :</strong> ${escapeHtml(booking.parking.conditions)}.</p>` : ''}
 <p style="margin:16px 0 0;font-size:14px">${escapeHtml(cancellationSentence(booking))}</p>
 ${manage}`,
   );
@@ -217,6 +218,7 @@ ${manage}`,
     'Le jour du départ :',
     ...departureDaySteps(booking).map(([title, body], i) => `${i + 1}. ${title} — ${body}`),
     '',
+    ...(booking.parking.conditions ? [`À savoir : ${booking.parking.conditions}.`, ''] : []),
     cancellationSentence(booking),
     '',
     manageUrl

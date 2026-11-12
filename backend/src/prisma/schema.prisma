@@ -223,6 +223,7 @@ model Staff {
   extrasRefused        ReservationExtra[]         @relation("ExtraRefusedBy")
   extrasAccepted       ReservationExtra[]         @relation("ExtraAcceptedBy")
   extrasAdded          ReservationExtra[]         @relation("ExtraAddedBy")
+  surchargesAdded      ReservationSurcharge[]
   valetArrivalRuns     Reservation[]              @relation("ValetArrivalRuns")
   valetDepartureRuns   Reservation[]              @relation("ValetDepartureRuns")
   archivedContracts    ReservationContract[]      @relation("ContractArchivedBy")
@@ -455,6 +456,8 @@ model Parking {
   /// traveller (late fee, breakdown service…), for the day-before message ({chauffeur}, {conditions}).
   driverPhone         String?
   travellerConditions String?
+  /// 12/11/2026: the parking's supplements (late arrival, night, breakdown, its own), set once; null = never set.
+  surcharges          Json?
 
   // Services for the car (21/10/2026, « lavage intérieur, recharge hybride, recharge électrique via Plazo, même après le
   // dépôt »): a traveller orders them until this many hours before the booked return (CHECK 0 to 168).
@@ -887,6 +890,8 @@ model Reservation {
   confirmationSentAt       DateTime?
   createdById              String?
   arrivedAt                DateTime?
+  /// 12/11/2026 (B): the team answered « Non » to the suggested late-arrival supplement.
+  surchargeSuggestionDismissedAt DateTime?
   // « Embarquer en un geste » (14/10/2026): the drop-off trip at whose boarding the traveller, not checked in yet, was
   // checked in (« Pointé à l'embarquement »); null otherwise, and again when the booking goes back to "upcoming".
   boardingTripId           String?
@@ -966,6 +971,7 @@ model Reservation {
   signatureCodes        SignatureCode[]
   invoices              Invoice[]
   extras                ReservationExtra[]
+  surcharges            ReservationSurcharge[]
   appLinkClaims         AppLinkClaim[]
 
   @@unique([operatorId, externalReference])
@@ -2088,6 +2094,27 @@ model ReservationExtra {
   @@index([operatorId, status])
   @@index([payoutStatus, status])
   @@map("reservation_extras")
+}
+
+/// 12/11/2026 (« A puis B », B): a supplement the team applied on a booking (late arrival, night, breakdown, the
+/// parking's own), its name and amount frozen; collected at the parking, counted in the revenue and on the invoice.
+model ReservationSurcharge {
+  id            String   @id @default(cuid())
+  operatorId    String
+  reservationId String
+  /// late | night | breakdown | custom | other (an amount typed on the spot)
+  kind          String
+  label         String
+  amountCents   Int
+  addedById     String?
+  createdAt     DateTime @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  addedBy     Staff?      @relation(fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@index([operatorId, createdAt])
+  @@map("reservation_surcharges")
 }
 
 /// 21/10/2026 (C): a prospect's own link to the demo (plazo.fr/pro/demo/<token>), valid 14 days; Plazo counts its opens.

@@ -11,6 +11,7 @@ import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingLogoCard } from "@/components/parking/ParkingLogoCard";
 import { TravellerSms } from "@/components/account/TravellerSms";
 import { WhatsappCard } from "@/components/parking/WhatsappCard";
+import { SurchargesCard } from "@/components/parking/SurchargesCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
@@ -279,6 +280,7 @@ export default function ParkingPage() {
           </form>
         </CardContent>
       </Card>
+      {parking && <SurchargesCard parkingId={parking.id} />}
       <ParkingLogoCard />
       <InboundEmailCard />
       {/* 03/11/2026 (« mets le dans les réglages parkings »): moved from Mon compte, for the managers and the platform in consultation. */}

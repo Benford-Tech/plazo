@@ -4,8 +4,10 @@ import { cancellableUntil, canCancel, canEditFlight } from './booking';
 import { billableDays } from './pricing';
 import { carView } from './car-location';
 import { childSeatsOf } from './child-seats';
-import { nightFeeOf } from './night-fees';
+import { conditionsLabel } from './day-before-sms';
+import { nightFeeOf, nightRule } from './night-fees';
 import { dropoffTimes } from './shuttle-waves';
+import { surchargeConditions } from './surcharges';
 import { localDateTime } from './time';
 
 /** A booking made on the site, with its parking's public page. */
@@ -73,6 +75,17 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
       phone: listing.contactPhone,
       meetingLabel: parking.returnMeetingLabel,
       meetingInstructions: parking.returnMeetingInstructions,
+      conditions: conditionsLabel(
+        nightRule({
+          enabled: parking.nightFeeEnabled,
+          start: parking.nightStart,
+          end: parking.nightEnd,
+          arrivalFeeCents: parking.nightArrivalFeeCents,
+          returnFeeCents: parking.nightReturnFeeCents,
+        }),
+        parking.travellerConditions,
+        surchargeConditions(parking),
+      ),
     },
     arrivalAt: localDateTime(reservation.arrivalAt, tz),
     returnAt: localDateTime(reservation.returnAt, tz),

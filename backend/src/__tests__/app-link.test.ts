@@ -145,10 +145,12 @@ describe('claim puis resume (téléphone parti au store)', () => {
     expect(found.body).toMatchObject({
       found: true,
       match: 'device',
+      needsContact: true,
       reference: booking.reference,
-      manageToken: booking.manageToken,
-      firstName: 'Léa',
     });
+    // Same address is not proof enough: neither the booking's key nor the traveller's name.
+    expect(found.body.manageToken).toBeUndefined();
+    expect(found.body.firstName).toBeUndefined();
     // Consumed.
     expect((await api().post('/api/public/app-link/resume').set(siteHeaders('203.0.113.9')).send({ platform: 'ios' })).body).toEqual({
       found: false,

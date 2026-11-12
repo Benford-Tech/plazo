@@ -2,7 +2,15 @@ import { nextDemoReset } from '@/domain/prospect-demo';
 import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { BCRYPT_ROUNDS, INVITATION_TTL_DAYS, isPlatformAdmin, PLAZO_PRO_APP_STORE_URL, PLAZO_PRO_PLAY_STORE_URL, PRODUCT_NAME } from '@/config';
+import {
+  BCRYPT_ROUNDS,
+  INVITATION_TTL_DAYS,
+  isPlatformAdmin,
+  isVerifiedPlatformAdmin,
+  PLAZO_PRO_APP_STORE_URL,
+  PLAZO_PRO_PLAY_STORE_URL,
+  PRODUCT_NAME,
+} from '@/config';
 import prisma, { IdentityProvider, Staff, StaffRole } from '@/database';
 import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
@@ -287,9 +295,21 @@ export class StaffService {
     return { emailSent };
   }
 
+  /**
+   * 12/11/2026 (security): a member whose email is a platform admin's is changed (role, deactivation, password) only by
+   * themselves or by a verified platform admin, never by another manager of the same operator (« Plazo (tests) »), who
+   * would otherwise take over the whole platform.
+   */
+  private protectPlatformAdmin(actor: AuthenticatedStaff, target: { id: string; email: string | null }) {
+    if (target.id === actor.id || !isPlatformAdmin(target.email)) return;
+    if (isVerifiedPlatformAdmin(actor as unknown as { email: string | null; emailVerifiedAt: Date | null })) return;
+    throw new HttpException(httpStatus.FORBIDDEN, 'Only a platform admin can change this member', 'platform_admin_protected');
+  }
+
   public async update(actor: AuthenticatedStaff, staffId: string, data: UpdateStaffDto) {
     this.requireTeamManager(actor);
     const target = await this.findInOperator(actor, staffId);
+    this.protectPlatformAdmin(actor, target);
     const losesManagerRights = data.isActive === false || (data.role !== undefined && data.role !== 'manager');
 
     if (staffId === actor.id && losesManagerRights) {
@@ -336,7 +356,7 @@ export class StaffService {
 
   public async resetPassword(actor: AuthenticatedStaff, staffId: string, password: string) {
     this.requireTeamManager(actor);
-    await this.findInOperator(actor, staffId);
+    this.protectPlatformAdmin(actor, await this.findInOperator(actor, staffId));
     await prisma.staff.update({ where: { id: staffId }, data: { password: await hash(password, BCRYPT_ROUNDS), passwordSetAt: new Date() } });
     await this.tokenService.revokeAll(staffId);
     await this.audit.record(actor, { action: 'staff.password_reset', entityType: 'staff', entityId: staffId });

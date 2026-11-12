@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import { isPublicHttpsUrl } from '@/domain/public-url';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isProspectDemoOperator } from './demo-guard';
@@ -677,6 +678,7 @@ export class SmsService {
         }
       }
       const baseUrl = input.baseUrl?.trim().replace(/\/+$/, '') || null;
+      if (baseUrl && !isPublicHttpsUrl(baseUrl)) throw new ValidationException({ baseUrl: 'invalid_url' });
       data = {
         mode: 'gateway',
         gatewayBaseUrl: baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl,

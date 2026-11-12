@@ -79,7 +79,13 @@ export class WhatsappController {
   /** GET /internal/whatsapp/inbox/messages/:messageId/media */
   public media = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const media = await this.inboxService.media(req.staff, req.params.messageId as string);
-    res.set('Content-Type', media.contentType);
+    // 12/11/2026 (security): the type is the sender's word. Only images, sound, video and PDF keep theirs; anything else
+    // (an HTML or SVG « document ») is served as a download, never as a page that could run script.
+    const safe = safeMediaType(media.contentType);
+    res.set('Content-Type', safe ?? 'application/octet-stream');
+    if (!safe) res.set('Content-Disposition', 'attachment');
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Content-Security-Policy', "default-src 'none'; sandbox");
     res.set('Cache-Control', 'private, max-age=3600');
     res.send(media.bytes);
   });
@@ -99,4 +105,12 @@ export class WhatsappController {
   public webhook = catchAsync(async (req: Request, res: Response) => {
     res.json(await this.whatsapp.handleWebhook(rawBody(req), req.get('x-hub-signature-256') || undefined));
   });
+}
+
+/** A traveller's WhatsApp media type Plazo lets the browser show: images (not SVG), sound, video, PDF. Null otherwise. */
+export function safeMediaType(type: string): string | null {
+  const t = type.split(';')[0].trim().toLowerCase();
+  if (/^image\/(jpeg|png|webp|gif|heic|heif)$/.test(t)) return t;
+  if (/^audio\/[a-z0-9.+-]+$/.test(t) || /^video\/(mp4|3gpp|quicktime|webm)$/.test(t) || t === 'application/pdf') return t;
+  return null;
 }

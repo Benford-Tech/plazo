@@ -85,6 +85,7 @@ const BOOKING_SELECT = {
   invoiceRequestAddress: true,
   parking: { select: { name: true, address: true, timezone: true } },
   extras: { where: { status: 'done' }, select: { label: true, priceCents: true }, orderBy: { doneAt: 'asc' } },
+  surcharges: { select: { label: true, amountCents: true }, orderBy: { createdAt: 'asc' } },
 } satisfies Prisma.ReservationSelect;
 
 type BookingForInvoice = Prisma.ReservationGetPayload<{ select: typeof BOOKING_SELECT }>;
@@ -654,6 +655,7 @@ export class InvoiceService {
     const items = [
       { label: stay, detail, totalTtcCents: booking.priceCents ?? 0 },
       ...booking.extras.map(e => ({ label: e.label, detail: 'Service additionnel', totalTtcCents: e.priceCents })),
+      ...booking.surcharges.map(x => ({ label: x.label, detail: 'Supplément', totalTtcCents: x.amountCents })),
     ];
     const totals = invoiceLines(items, vatRateBp);
     const seller: InvoiceSeller = {

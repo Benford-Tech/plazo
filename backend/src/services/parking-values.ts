@@ -1,6 +1,7 @@
 import prisma from '@/database';
 import { ParkingValues, parkingValuesOf } from '@/domain/day-before-sms';
 import { nightRule } from '@/domain/night-fees';
+import { surchargeConditions } from '@/domain/surcharges';
 
 /**
  * 09/11/2026 (« variabilise au maximum, c'est pour tous les parkings »): the parking's details for the variables of the
@@ -19,6 +20,7 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
       returnMeetingInstructions: true,
       driverPhone: true,
       travellerConditions: true,
+      surcharges: true,
       nightFeeEnabled: true,
       nightStart: true,
       nightEnd: true,
@@ -55,5 +57,6 @@ export async function loadParkingValues(parkingId: string, stopId: string | null
     meetingPoint: point && point.lat !== null && point.lng !== null ? { lat: point.lat, lng: point.lng } : null,
     night,
     senderPhone: sms?.senderPhone ?? null,
+    surcharges: surchargeConditions(parking),
   });
 }

@@ -37,6 +37,20 @@ void main() {
       expect(appLinkPlatform(), anyOf('ios', 'android'));
     });
 
+    test('reconnu par l’adresse seulement : ni clé ni prénom, l’app demande le contact (12/11/2026)', () {
+      final target = AppLinkTarget.fromJson({
+        'found': true,
+        'match': 'device',
+        'needsContact': true,
+        'reference': 'R7KQ2M',
+        'parking': {'title': 'Parking des Cèdres'},
+        'arrivalAt': '2026-10-29T06:30',
+        'returnAt': '2026-11-02T18:00',
+      });
+      expect(target.manageToken, isNull);
+      expect(target.firstName, '');
+    });
+
     testWidgets('un code inconnu : « Lien inconnu ou expiré » et « Retrouver ma réservation »', (tester) async {
       if (locator.isRegistered<AppLinkDataSource>()) locator.unregister<AppLinkDataSource>();
       locator.registerSingleton<AppLinkDataSource>(_FailingAppLinks());

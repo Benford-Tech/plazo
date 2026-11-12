@@ -16,7 +16,8 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    // geolocation for « Prévenir de mon arrivée » (ArrivalBlock), on the site itself only.
+    value: "camera=(), microphone=(), geolocation=(self)",
   },
 ];
 

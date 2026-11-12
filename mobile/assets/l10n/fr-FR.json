@@ -1088,6 +1088,10 @@
     "found_title": "Retrouvée pour vous",
     "found_text": "Vous avez ouvert le lien de votre réservation avant d'installer l'app : la voici.",
     "found_text_named": "Bonjour {}, vous avez ouvert le lien de votre réservation avant d'installer l'app : la voici.",
+    "found_text_check": "Vous avez ouvert le lien d'une réservation avant d'installer l'app. Pour l'ouvrir, confirmez l'e-mail ou le téléphone donné à la réservation.",
+    "contact": "E-mail ou téléphone de la réservation",
+    "contact_required": "Indiquez l'e-mail ou le téléphone de la réservation.",
+    "contact_wrong": "Ce n'est pas celui de la réservation.",
     "open": "Ouvrir ma réservation",
     "not_me": "Ce n'est pas moi",
     "invalid_title": "Lien inconnu ou expiré",
@@ -2948,6 +2952,32 @@
       "flight_landed": "À votre atterrissage",
       "signature_code": "Code de signature",
       "other": "Message"
+    }
+  },
+  "surcharges": {
+    "title": "Suppléments",
+    "late_title": "Retard de {} min au rendez-vous",
+    "late_text": "Prévu à {}, voiture déposée à {} : supplément de {} selon vos réglages.",
+    "apply": "Appliquer {}",
+    "no": "Non",
+    "quick": "Ajouter d'un toucher",
+    "other": "Autre montant…",
+    "other_title": "Autre supplément",
+    "other_label": "Nom",
+    "other_amount": "Montant",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "added_by": "ajouté par {} à {}",
+    "added_at": "ajouté à {}",
+    "total": "À encaisser au parking",
+    "note": "Encaissé au parking, compté dans le chiffre d'affaires et ajouté à la facture. Rien n'est prélevé tout seul.",
+    "added": "Supplément ajouté.",
+    "removed": "Supplément retiré.",
+    "label_required": "Donnez un nom au supplément.",
+    "amount_invalid": "Montant invalide (ex. 10 ou 12,50).",
+    "errors": {
+      "not_offered": "Ce supplément n'est plus proposé : rechargez la fiche.",
+      "reservation_closed": "Réservation annulée ou non venue : pas de supplément."
     }
   }
 }

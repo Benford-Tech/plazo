@@ -220,6 +220,7 @@ describe('messages au voyageur', () => {
       phone: null,
       meetingLabel: null,
       meetingInstructions: null,
+      conditions: null,
     },
     arrivalAt: '2026-10-04T23:30',
     returnAt: '2026-10-11T15:05',
