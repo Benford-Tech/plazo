@@ -1631,6 +1631,8 @@ export const fr = {
     nextDay: "Jour suivant",
     newReservation: "+ Réservation",
     nightsTitle: "Occupation des nuits",
+    pickDay: "Choisir un jour",
+    openDay: (day: string) => `Voir le planning du ${day}`,
     overbookedBy: (n: number) => `Surréservé +${n}`,
     almostFull: "Presque plein",
     free: (n: number) => `${n} libre${n > 1 ? "s" : ""}`,

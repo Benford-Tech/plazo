@@ -501,6 +501,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
+   - **Dates du planning cliquables et en-tête resserré (12/11/2026, « rend les dates cliquable sur le planning », « prend trop de place »)** :
+     web : la date en tête du planning du jour ouvre le calendrier du navigateur (`planning-date-input`), chaque nuit de la bande
+     d'occupation est un bouton compact (« JEU. 12 · 42 / 99 », libres en info-bulle, `night-<date>`) qui ouvre ce jour, le jour
+     affiché cerclé ; titre, flèches et « + Réservation » plus petits. Plazo Pro ouvrait déjà le calendrier en touchant la date
+     (`date-pick`). Test `PlanningPage.test.tsx`.
    - **Planning prévisionnel, direction A « Calendrier par mois » (28/10/2026, « un calendrier/planning prévisionnel affichable
      sur 1 semaine à 3 mois », maquettes https://claude.ai/artifact/VDdfnQyG8f56DMPVa4FPFF)** : pilules « Jour · Prévisionnel »
      (`PlanningTabs`) en tête du menu Planning ; page `/pro/planning/previsionnel` (`ForecastPage`, `lib/forecast.ts`) : Semaine
