@@ -51,6 +51,8 @@ const page = (
   signedCount: rows.length,
   reservedCount: rows.filter((r) => r.reserved).length,
   archivedCount: 0,
+  months: [],
+  month: null,
   page: 1,
   totalPages: 1,
   ...over,
@@ -129,6 +131,37 @@ describe("ContractsPage (26/10/2026, registre R-A)", () => {
     await waitFor(() =>
       expect(api.reservationContractFile).toHaveBeenCalledWith("r1", "signed"),
     );
+  });
+
+  it("classe par année et par mois ; un mois n'affiche que ses contrats (12/11/2026, choix B)", async () => {
+    api.getSignedContracts.mockImplementation(async (q: { month?: string }) =>
+      page([row()], {
+        total: q.month ? 14 : 22,
+        signedCount: 22,
+        month: q.month ?? null,
+        months: [
+          { month: "2026-11", count: 14 },
+          { month: "2026-10", count: 7 },
+          { month: "2025-12", count: 1 },
+        ],
+      }),
+    );
+    renderPage();
+    const nav = await screen.findByTestId("contracts-months");
+    expect(within(nav).getByRole("button", { name: /Tous les mois/ })).toHaveAttribute("aria-pressed", "true");
+    // The latest year is open, the older one folded.
+    expect(within(nav).getByRole("button", { name: /Novembre/ })).toBeInTheDocument();
+    expect(within(nav).queryByRole("button", { name: /Décembre/ })).toBeNull();
+    await userEvent.click(within(nav).getByRole("button", { name: /Novembre/ }));
+    await waitFor(() =>
+      expect(api.getSignedContracts).toHaveBeenLastCalledWith(
+        expect.objectContaining({ month: "2026-11", page: 1 }),
+      ),
+    );
+    expect(await screen.findByTestId("contracts-month-head")).toHaveTextContent("Novembre 2026");
+    const column = screen.getByTestId("contracts-months");
+    await userEvent.click(within(column).getByRole("button", { name: /2025/ }));
+    expect(within(column).getByRole("button", { name: /Décembre/ })).toBeInTheDocument();
   });
 
   it("recherche, filtre « Avec réserve » et exporte en CSV", async () => {

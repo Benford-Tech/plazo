@@ -23,6 +23,7 @@ function registerQuery(req: Request) {
     search: text(req.query.q),
     reserved: req.query.reserved === '1' || req.query.reserved === 'true',
     archived: req.query.archived === '1' || req.query.archived === 'true',
+    month: text(req.query.month),
     page: req.query.page ? Number(req.query.page) || 1 : 1,
   };
 }

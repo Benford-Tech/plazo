@@ -1483,7 +1483,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    `{ archived }`) ; tracés `contract.archived` / `contract.unarchived` dans l'Historique ; `GET /internal/contracts` cache les archivés
    (`?archived=1` les seuls, `signedCount`, `reservedCount`, `archivedCount`, export idem) ; rien n'est effacé, durées inchangées ; page
    Contrats : pilules Signés · Avec réserve · Archivés, « Archiver » / « Désarchiver » par ligne, « Archiver les contrats d'avant le… »
-   (`useConfirm`).
+   (`useConfirm`). **Classés par mois et par année, choix B (12/11/2026, « classe les contrats par date, mois année », maquettes
+   https://claude.ai/artifact/Xz2e9TynZrf43pYHttgHvo)** : `GET /internal/contracts` rend `months [{ month: 'YYYY-MM', count }]` (mois du
+   parking, la pilule et la recherche suivies, le mois choisi ignoré) et accepte `?month=YYYY-MM` (export CSV aussi) ; page Contrats :
+   colonne « Tous les mois · N » puis chaque année (la plus récente ouverte, les autres repliées d'un clic) et ses mois avec leur
+   nombre (`MonthsColumn`, `contracts-months`), un mois n'affiche que ses contrats sous « Novembre 2026 · 14 contrats » ; sur
+   téléphone une liste déroulante (`contracts-month-select`) ; les champs « Du / Au » sont retirés.
    **Le contrat du parking et le registre des contrats signés (26/10/2026, « chaque parking peut héberger le contrat de
    stationnement à ses clients. chaque contrat est stocké ainsi que la preuve de signature », choix « A » (Mon PDF) des maquettes
    https://claude.ai/artifact/WFFKgJUsqFDWQvebjayV6J, registre R-A pris par défaut)** : table `operator_contract_templates`

@@ -103,4 +103,36 @@ describe('archiver un contrat signé', () => {
     const list = await api().get('/api/internal/contracts').set(auth(op.token));
     expect(list.body).toMatchObject({ total: 1, archivedCount: 2 });
   });
+
+  it('classe les contrats par mois, à l’heure du parking (12/11/2026, choix B)', async () => {
+    const op = await setupOperator();
+    const ids = await Promise.all([
+      booking(op.token, '2026-11-01T08:00', '2026-11-05T18:00', 'ab123cd'),
+      booking(op.token, '2026-11-02T08:00', '2026-11-06T18:00', 'ef456gh'),
+      booking(op.token, '2026-11-03T08:00', '2026-11-07T18:00', 'ij789kl'),
+    ]);
+    const rows = await Promise.all(ids.map(signed));
+    // 31/10 23:30 in Paris is still October; 1/11 00:30 in Paris is November (23:30 UTC the day before).
+    await prisma.reservationContract.update({ where: { id: rows[0].id }, data: { signedAt: new Date('2026-10-31T22:30:00Z') } });
+    await prisma.reservationContract.update({ where: { id: rows[1].id }, data: { signedAt: new Date('2026-10-31T23:30:00Z') } });
+    await prisma.reservationContract.update({ where: { id: rows[2].id }, data: { signedAt: new Date('2025-12-15T10:00:00Z') } });
+
+    const all = await api().get('/api/internal/contracts').set(auth(op.token));
+    expect(all.body.months).toEqual([
+      { month: '2026-11', count: 1 },
+      { month: '2026-10', count: 1 },
+      { month: '2025-12', count: 1 },
+    ]);
+    expect(all.body.month).toBeNull();
+
+    const nov = await api().get('/api/internal/contracts?month=2026-11').set(auth(op.token));
+    expect(nov.body).toMatchObject({ total: 1, month: '2026-11' });
+    expect(nov.body.data[0].id).toBe(rows[1].id);
+    // The column keeps every month while one is chosen.
+    expect(nov.body.months).toHaveLength(3);
+    const dec = await api().get('/api/internal/contracts?month=2025-12').set(auth(op.token));
+    expect(dec.body.data.map((r: { id: string }) => r.id)).toEqual([rows[2].id]);
+    // A malformed month is ignored.
+    expect((await api().get('/api/internal/contracts?month=2026-13').set(auth(op.token))).body.total).toBe(3);
+  });
 });

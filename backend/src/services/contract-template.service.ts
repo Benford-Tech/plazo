@@ -7,12 +7,13 @@ import { bookingFieldFacts, ContractField, fieldsOf, prefilledPdf, SAMPLE_FACTS,
 import { DEFAULT_TEMPLATE_TITLE, signedFileNames } from '@/domain/contract-template';
 import { checkPdf, cleanFileName, sha256Hex } from '@/domain/partner-contract';
 import { plateKey } from '@/domain/reservation';
-import { dayBounds, localDateTime } from '@/domain/time';
+import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { operatorTimezone } from './operator-timezone';
 import { PhotoStorageService, StoredPhoto } from './photo-storage.service';
 import { PublicBookingService } from './public-booking.service';
 import { STAFF_VISIBLE } from './reservation.service';
@@ -77,6 +78,16 @@ export interface RegisterQuery {
   reserved?: boolean;
   /** The archived contracts only (12/11/2026); by default the register leaves them out. */
   archived?: boolean;
+  /** One local month « YYYY-MM » of the parking (12/11/2026, « classe les contrats par date, mois année », choix B). */
+  month?: string;
+}
+
+const MONTH_RE = /^(\d{4})-(0[1-9]|1[0-2])$/;
+
+/** The next month « YYYY-MM ». */
+function nextMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
 }
 
 export const REGISTER_PAGE = 50;
@@ -327,9 +338,13 @@ export class ContractTemplateService {
     return this.fileOf({ id: booking.id }, kind);
   }
 
-  private registerWhere(operatorId: string, q: RegisterQuery): Prisma.ReservationContractWhereInput {
+  private registerWhere(operatorId: string, q: RegisterQuery, timeZone?: string): Prisma.ReservationContractWhereInput {
     const search = q.search?.trim();
     const signedAt: Prisma.DateTimeFilter = {};
+    if (q.month && MONTH_RE.test(q.month) && timeZone) {
+      signedAt.gte = dayBounds(`${q.month}-01`, timeZone).start;
+      signedAt.lt = dayBounds(`${nextMonth(q.month)}-01`, timeZone).start;
+    }
     if (q.from && /^\d{4}-\d{2}-\d{2}$/.test(q.from)) signedAt.gte = new Date(`${q.from}T00:00:00Z`);
     if (q.to && /^\d{4}-\d{2}-\d{2}$/.test(q.to)) signedAt.lt = new Date(new Date(`${q.to}T00:00:00Z`).getTime() + 86400000);
     return {
@@ -402,26 +417,39 @@ export class ContractTemplateService {
   }
 
   /**
-   * GET /internal/contracts?from=&to=&q=&reserved=1&archived=1&page= : the register, the latest signature first. The
+   * GET /internal/contracts?from=&to=&month=&q=&reserved=1&archived=1&page= : the register, the latest signature first. The
    * counts of the pills (« Signés · Avec réserve · Archivés ») follow the dates and the search, not the pill chosen.
    */
   public async register(operatorId: string, q: RegisterQuery & { page?: number }) {
-    const where = this.registerWhere(operatorId, q);
+    const timeZone = await operatorTimezone(operatorId);
+    const where = this.registerWhere(operatorId, q, timeZone);
     const page = Math.max(1, Math.floor(q.page ?? 1));
-    const base = { from: q.from, to: q.to, search: q.search };
-    const [total, signedCount, reservedCount, archivedCount, rows] = await Promise.all([
+    const base = { from: q.from, to: q.to, search: q.search, month: q.month };
+    // The months column (choix B): every month that holds a contract of the chosen pill and search, with its count, in
+    // the parking's local time; it ignores the month chosen, so the other months stay reachable.
+    const monthsWhere = this.registerWhere(operatorId, { ...q, month: undefined }, timeZone);
+    const [total, signedCount, reservedCount, archivedCount, rows, signedDates] = await Promise.all([
       prisma.reservationContract.count({ where }),
-      prisma.reservationContract.count({ where: this.registerWhere(operatorId, base) }),
-      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, reserved: true }) }),
-      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, archived: true }) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, base, timeZone) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, reserved: true }, timeZone) }),
+      prisma.reservationContract.count({ where: this.registerWhere(operatorId, { ...base, archived: true }, timeZone) }),
       this.rowsOf(where, (page - 1) * REGISTER_PAGE, REGISTER_PAGE),
+      prisma.reservationContract.findMany({ where: monthsWhere, select: { signedAt: true } }),
     ]);
+    const byMonth = new Map<string, number>();
+    for (const { signedAt } of signedDates) {
+      const month = localDate(signedAt, timeZone).slice(0, 7);
+      byMonth.set(month, (byMonth.get(month) ?? 0) + 1);
+    }
+    const months = [...byMonth.entries()].sort(([a], [b]) => (a < b ? 1 : -1)).map(([month, count]) => ({ month, count }));
     return {
       data: rows,
       total,
       signedCount,
       reservedCount,
       archivedCount,
+      months,
+      month: q.month && MONTH_RE.test(q.month) ? q.month : null,
       page,
       totalPages: Math.max(1, Math.ceil(total / REGISTER_PAGE)),
     };
@@ -517,7 +545,7 @@ export class ContractTemplateService {
 
   /** GET /internal/contracts/export: CSV (« ; », UTF-8 with BOM), 5 000 lines at most. */
   public async exportCsv(operatorId: string, q: RegisterQuery): Promise<string> {
-    const rows = await this.rowsOf(this.registerWhere(operatorId, q), 0, EXPORT_MAX);
+    const rows = await this.rowsOf(this.registerWhere(operatorId, q, await operatorTimezone(operatorId)), 0, EXPORT_MAX);
     const cell = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const header = [
       'Signé le',
