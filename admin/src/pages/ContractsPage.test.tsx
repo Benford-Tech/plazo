@@ -9,13 +9,19 @@ const api = vi.hoisted(() => ({
   getSignedContracts: vi.fn(),
   reservationContractFile: vi.fn(),
   exportSignedContracts: vi.fn(),
+  archiveContract: vi.fn(),
+  unarchiveContract: vi.fn(),
+  archiveContractsBefore: vi.fn(),
 }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock("sonner", () => ({ toast }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
 });
 
 const row = (over: Partial<SignedContractRow> = {}): SignedContractRow => ({
+  id: `c-${over.reservationId ?? "r1"}`,
   reservationId: "r1",
   reference: "PLZ-7K2M",
   customerName: "Camille Martin",
@@ -32,6 +38,7 @@ const row = (over: Partial<SignedContractRow> = {}): SignedContractRow => ({
   signedSha256: "e07b".padEnd(64, "0"),
   files: { template: true, signed: true, proof: true },
   reserved: false,
+  archivedAt: null,
   ...over,
 });
 
@@ -41,7 +48,9 @@ const page = (
 ): SignedContractsPage => ({
   data: rows,
   total: rows.length,
+  signedCount: rows.length,
   reservedCount: rows.filter((r) => r.reserved).length,
+  archivedCount: 0,
   page: 1,
   totalPages: 1,
   ...over,
@@ -152,5 +161,83 @@ describe("ContractsPage (26/10/2026, registre R-A)", () => {
         expect.objectContaining({ q: "ab-123", reserved: true }),
       ),
     );
+  });
+
+  it("archive un contrat, montre « Archivés » et désarchive (12/11/2026)", async () => {
+    api.getSignedContracts.mockImplementation(
+      async (q: { archived?: boolean }) =>
+        q.archived
+          ? page([row({ archivedAt: "2026-11-12T10:00:00Z" })], {
+              signedCount: 1,
+              archivedCount: 1,
+            })
+          : page([row(), row({ reservationId: "r2" })], { archivedCount: 1 }),
+    );
+    api.archiveContract.mockResolvedValue({
+      id: "c-r1",
+      reservationId: "r1",
+      archivedAt: "2026-11-12T10:00:00Z",
+    });
+    api.unarchiveContract.mockResolvedValue({
+      id: "c-r1",
+      reservationId: "r1",
+      archivedAt: null,
+    });
+    renderPage();
+    const rows = await screen.findAllByTestId("contract-row");
+    expect(screen.getByTestId("contract-filters")).toHaveTextContent(
+      "Archivés · 1",
+    );
+    await userEvent.click(
+      within(rows[0]).getByRole("button", { name: "Archiver" }),
+    );
+    await waitFor(() =>
+      expect(api.archiveContract).toHaveBeenCalledWith("c-r1"),
+    );
+    expect(toast.success).toHaveBeenCalledWith(
+      expect.stringContaining("Contrat archivé"),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Archivés/ }));
+    await waitFor(() =>
+      expect(api.getSignedContracts).toHaveBeenLastCalledWith(
+        expect.objectContaining({ archived: true }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByTestId("contract-row")).toHaveLength(1),
+    );
+    await userEvent.click(
+      within(screen.getByTestId("contract-row")).getByRole("button", {
+        name: "Désarchiver",
+      }),
+    );
+    await waitFor(() =>
+      expect(api.unarchiveContract).toHaveBeenCalledWith("c-r1"),
+    );
+  });
+
+  it("archive d'un coup les contrats d'avant une date, après confirmation", async () => {
+    api.getSignedContracts.mockResolvedValue(page([row()]));
+    api.archiveContractsBefore.mockResolvedValue({ archived: 3 });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderPage();
+    await screen.findAllByTestId("contract-row");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Archiver les contrats d'avant le…" }),
+    );
+    const form = screen.getByTestId("archive-before");
+    await userEvent.type(
+      within(form).getByLabelText("Séjours terminés avant le"),
+      "2026-11-01",
+    );
+    await userEvent.click(
+      within(form).getByRole("button", { name: "Archiver" }),
+    );
+    await waitFor(() =>
+      expect(api.archiveContractsBefore).toHaveBeenCalledWith("2026-11-01"),
+    );
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("01/11/2026"));
+    expect(toast.success).toHaveBeenCalledWith("3 contrats archivés.");
   });
 });

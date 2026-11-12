@@ -117,6 +117,8 @@ import type {
   RevenueSummary,
   GettingStarted,
   BookingContract,
+  BookingPaperwork,
+  InspectionKind,
   ContractField,
   ContractTemplates,
   SignedContractFileKind,
@@ -357,6 +359,7 @@ function signedContractsParams(q: SignedContractsQuery): string {
   if (q.to) params.set("to", q.to);
   if (q.q?.trim()) params.set("q", q.q.trim());
   if (q.reserved) params.set("reserved", "1");
+  if (q.archived) params.set("archived", "1");
   if (q.page && q.page > 1) params.set("page", String(q.page));
   return params.toString();
 }
@@ -1240,9 +1243,36 @@ export const adminApi = {
       `/internal/reservations/${reservationId}/contract/file?kind=${kind}`,
     ),
   getBookingContract: (reservationId: string) =>
-    apiRequest<{ contract: BookingContract }>(
+    apiRequest<BookingPaperwork>(
       `/internal/reservations/${reservationId}/paperwork`,
     ),
+  // 12/11/2026: a photo of a condition report, private (sent with the staff's token, shown from a blob).
+  inspectionPhoto: async (
+    reservationId: string,
+    kind: InspectionKind,
+    photoId: string,
+  ) => {
+    const res = await authorizedFetch(
+      `/internal/reservations/${reservationId}/inspections/${kind}/photos/${photoId}`,
+    );
+    return res.blob();
+  },
+  // 12/11/2026 (« Archiver un contrat signé »): put away from the register, nothing erased.
+  archiveContract: (contractId: string) =>
+    apiRequest<{ id: string; reservationId: string; archivedAt: string | null }>(
+      `/internal/contracts/${contractId}/archive`,
+      { method: "POST" },
+    ),
+  unarchiveContract: (contractId: string) =>
+    apiRequest<{ id: string; reservationId: string; archivedAt: string | null }>(
+      `/internal/contracts/${contractId}/unarchive`,
+      { method: "POST" },
+    ),
+  archiveContractsBefore: (before: string) =>
+    apiRequest<{ archived: number }>("/internal/contracts/archive-before", {
+      method: "POST",
+      body: json({ before }),
+    }),
   getMyContract: () => apiRequest<MyContract>("/internal/contract"),
   signMyContract: (contractId: string, signerName: string) =>
     apiRequest<MyContract>(`/internal/contract/${contractId}/sign`, {

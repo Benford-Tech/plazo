@@ -35,7 +35,17 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *     summary: The PDF stamped with example values and the fields sent ({ fields }), application/pdf
  * /internal/contracts:
  *   get:
- *     summary: The signed contracts, the latest first (?from=&to=&q=&reserved=1&page=)
+ *     summary: The signed contracts, the latest first (?from=&to=&q=&reserved=1&archived=1&page=)
+ *     description: Archived contracts are left out unless archived=1; signedCount, reservedCount and archivedCount follow the dates and the search.
+ * /internal/contracts/{contractId}/archive:
+ *   post:
+ *     summary: "Puts a signed contract away from the register (12/11/2026); nothing is erased. Idempotent; 404 not_found, 409 not_signed"
+ * /internal/contracts/{contractId}/unarchive:
+ *   post:
+ *     summary: Back in the register; idempotent
+ * /internal/contracts/archive-before:
+ *   post:
+ *     summary: "Archives every signed contract whose return is before { before: 'YYYY-MM-DD' } (local time of its parking) → { archived }"
  * /internal/contracts/export:
  *   get:
  *     summary: The same as CSV (« ; », UTF-8 with BOM)
@@ -61,6 +71,9 @@ export class ContractTemplateRoute implements Routes {
     this.router.post('/internal/contract-template/:templateId/preview', manage, this.templates.preview);
     this.router.get('/internal/contracts', manage, this.templates.register);
     this.router.get('/internal/contracts/export', manage, this.templates.exportCsv);
+    this.router.post('/internal/contracts/archive-before', manage, RefuseInDemo(), this.templates.archiveBefore);
+    this.router.post('/internal/contracts/:contractId/archive', manage, RefuseInDemo(), this.templates.archive);
+    this.router.post('/internal/contracts/:contractId/unarchive', manage, RefuseInDemo(), this.templates.unarchive);
     this.router.get('/internal/reservations/:id/contract/file', StaffAuthMiddleware('reservations:view'), this.templates.staffFile);
     this.router.get('/public/bookings/:reference/contract/file', lookupLimiter, this.templates.travellerFile);
   }
