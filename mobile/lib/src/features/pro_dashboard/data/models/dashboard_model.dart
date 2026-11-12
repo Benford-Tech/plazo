@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../shared/to_park/to_park.dart';
+
 part 'dashboard_model.freezed.dart';
 part 'dashboard_model.g.dart';
 
@@ -188,6 +190,9 @@ abstract class DashboardVehicleModel with _$DashboardVehicleModel {
     String? tripDirection,
     String? stopName,
     @Default(false) bool returnsToday,
+
+    /// 12/11/2026: no place yet, the traveller gone in the shuttle since then (`toPark.since`): « À garer », not an alert.
+    @JsonKey(readValue: readToParkSince) String? toParkSince,
   }) = _DashboardVehicleModel;
 
   factory DashboardVehicleModel.fromJson(Map<String, dynamic> json) => _$DashboardVehicleModelFromJson(json);

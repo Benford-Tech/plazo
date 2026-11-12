@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
@@ -697,13 +698,85 @@ class _DayList extends StatelessWidget {
 
 /// « Prochain départ » and « Prochaine arrivée » over today's list (direction A of 30/10/2026): the earliest
 /// movement of each side not done yet, with how long until it; each moves on by itself once its traveller is done.
-class _NextCards extends StatelessWidget {
+/// 12/11/2026 (« repliables »): a chevron in the corner folds both cards into one line (↑ arrival · ↓ departure, the
+/// late ones in an amber pill), the choice kept on the phone (`planning.next_collapsed`, unfolded by default).
+class _NextCards extends StatefulWidget {
   const _NextCards({required this.entries, required this.now});
   final List<DayEntry> entries;
   final DateTime now;
 
+  /// Read once per launch, so a rebuilt page does not unfold for a frame.
+  static bool? _remembered;
+
+  @override
+  State<_NextCards> createState() => _NextCardsState();
+}
+
+/// The preference that keeps « Prochaine arrivée / Prochain départ » folded.
+const nextCardsCollapsedKey = 'planning.next_collapsed';
+
+/// Forget the choice read at launch (tests).
+@visibleForTesting
+void resetNextCardsMemory() => _NextCards._remembered = null;
+
+class _NextCardsState extends State<_NextCards> {
+  bool _collapsed = _NextCards._remembered ?? false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_NextCards._remembered == null) unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getBool(nextCardsCollapsedKey) ?? false;
+      _NextCards._remembered = value;
+      if (mounted && value != _collapsed) setState(() => _collapsed = value);
+    } catch (_) {
+      // No storage: unfolded.
+    }
+  }
+
+  Future<void> _toggle() async {
+    final value = !_collapsed;
+    setState(() => _collapsed = value);
+    _NextCards._remembered = value;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(nextCardsCollapsedKey, value);
+    } catch (_) {
+      // Kept for this launch only.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final entries = widget.entries;
+    final now = widget.now;
+    final toggle = IconButton(
+      key: const Key('planning-next-toggle'),
+      tooltip: (_collapsed ? 'pro.next_expand' : 'pro.next_collapse').tr(),
+      onPressed: _toggle,
+      visualDensity: VisualDensity.compact,
+      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+      padding: EdgeInsets.zero,
+      icon: Icon(_collapsed ? Icons.expand_more_rounded : Icons.expand_less_rounded, size: 22, color: AppColors.muted),
+    );
+    if (_collapsed) {
+      return Padding(
+        key: const Key('planning-next'),
+        padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+        child: _NextLine(
+          arrival: nextOf(entries, isReturn: false, now: now),
+          departure: nextOf(entries, isReturn: true, now: now),
+          late: lateOf(entries, isReturn: false, now: now).length + lateOf(entries, isReturn: true, now: now).length,
+          now: now,
+          toggle: toggle,
+        ),
+      );
+    }
     Widget card(bool isReturn) => _NextCard(
       entry: nextOf(entries, isReturn: isReturn, now: now),
       late: lateOf(entries, isReturn: isReturn, now: now),
@@ -713,13 +786,93 @@ class _NextCards extends StatelessWidget {
     return Padding(
       key: const Key('planning-next'),
       padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
-      child: IntrinsicHeight(
+      child: Stack(
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: card(true)),
+                const SizedBox(width: 8),
+                Expanded(child: card(false)),
+              ],
+            ),
+          ),
+          Positioned(top: 0, right: 0, child: toggle),
+        ],
+      ),
+    );
+  }
+}
+
+/// The folded cards: « ↑ 11:15 S. Morel · dans 25 min · ↓ 11:40 I. Garcia », then « En retard · 2 » and the chevron.
+class _NextLine extends StatelessWidget {
+  const _NextLine({required this.arrival, required this.departure, required this.late, required this.now, required this.toggle});
+  final DayEntry? arrival;
+  final DayEntry? departure;
+  final int late;
+  final DateTime now;
+  final Widget toggle;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget side(DayEntry? e, bool isReturn) {
+      final colour = movementColor(isReturn ? Movement.departure : Movement.arrival);
+      final arrow = isReturn ? '↓' : '↑';
+      return InkWell(
+        key: Key(isReturn ? 'next-line-departure' : 'next-line-arrival'),
+        onTap: e == null ? null : () => context.router.push(ProReservationRoute(id: e.row.booking.id)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '$arrow ',
+                  style: AppText.strong(size: 13).copyWith(color: colour, fontWeight: FontWeight.w800),
+                ),
+                if (e == null)
+                  TextSpan(text: 'pro.next_none_short'.tr(), style: AppText.muted(size: 12.5))
+                else ...[
+                  TextSpan(text: '${hhmm(e.at)} ', style: AppText.tabular(size: 13)),
+                  TextSpan(text: e.row.booking.customerName, style: AppText.strong(size: 12.5)),
+                  TextSpan(text: ' · ${untilLabel(e.at, now)}', style: AppText.tabular(size: 11.5, color: AppColors.accent)),
+                ],
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: BorderSide(color: AppColors.panelLine),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(11, 2, 2, 2),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: card(true)),
+            Expanded(child: side(arrival, false)),
             const SizedBox(width: 8),
-            Expanded(child: card(false)),
+            Expanded(child: side(departure, true)),
+            if (late > 0)
+              Container(
+                key: const Key('planning-next-late'),
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: AppStatus.warnSoft, borderRadius: BorderRadius.circular(999)),
+                child: Text(
+                  'pro.late_count'.tr(args: ['$late']),
+                  style: AppText.label(size: 10.5, color: AppStatus.warnText).copyWith(fontWeight: FontWeight.w800),
+                ),
+              ),
+            toggle,
           ],
         ),
       ),

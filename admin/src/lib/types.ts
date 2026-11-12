@@ -309,6 +309,8 @@ export interface Reservation {
   stop?: { id: string; name: string; kind: ShuttleStopKind } | null;
   /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (GET /internal/reservations/:id). */
   boardingCheckIn?: BoardingCheckIn | null;
+  /** 12/11/2026: no place yet, the traveller gone in the shuttle since then: « À garer » (GET /internal/reservations/:id). */
+  toPark?: { since: string } | null;
   /** « Sièges auto » (24/10/2026): the child seats to install in the shuttle; missing from an older API. */
   childSeats?: ChildSeats | null;
 }
@@ -1569,6 +1571,8 @@ export interface DashboardVehicle {
   returnsToday: boolean;
   /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
   boardingCheckIn?: BoardingCheckIn | null;
+  /** 12/11/2026: no place yet, the traveller gone in the shuttle since then: « À garer » (missing from an older API). */
+  toPark?: { since: string } | null;
 }
 
 /** The pro space's home (05/10/2026). */

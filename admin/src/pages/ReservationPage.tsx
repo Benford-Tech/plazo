@@ -498,7 +498,10 @@ export default function ReservationPage() {
                 <span className="tabular font-mono">
                   {r.file
                     ? quickCardFr.inFile(r.file.code, r.filePosition ?? null)
-                    : (r.spot?.code ?? quickCardFr.noSpot)}
+                    : (r.spot?.code ??
+                      (r.toPark
+                        ? quickCardFr.toPark(timeOf(r.toPark.since))
+                        : quickCardFr.noSpot))}
                 </span>
                 <span className="ml-2 text-muted-foreground">
                   · {quickCardFr.keys}{" "}

@@ -257,7 +257,8 @@ export function QuickCardBody({
           >
             {r.file
               ? t.inFile(r.file.code, r.filePosition ?? null)
-              : (r.spot?.code ?? t.noSpot)}
+              : (r.spot?.code ??
+                (r.toPark ? t.toPark(timeOf(r.toPark.since)) : t.noSpot))}
           </span>
           <KeyRound
             className="ml-2 h-3.5 w-3.5 text-lime-deep"

@@ -21,7 +21,13 @@ const SHOWN = 8;
 const COLS =
   "grid items-center gap-x-3 gap-y-1.5 md:grid-cols-[minmax(150px,1fr)_auto_auto_auto_auto]";
 
-type Filter = "all" | "returnsToday" | "noSpot" | "noKeys" | "flightLate";
+type Filter =
+  | "all"
+  | "returnsToday"
+  | "noSpot"
+  | "toPark"
+  | "noKeys"
+  | "flightLate";
 
 function isFlightLate(v: DashboardVehicle): boolean {
   return (
@@ -39,7 +45,9 @@ function isFlightLate(v: DashboardVehicle): boolean {
 const MATCH: Record<Filter, (v: DashboardVehicle) => boolean> = {
   all: () => true,
   returnsToday: (v) => v.returnsToday,
-  noSpot: (v) => !v.spotCode,
+  // 12/11/2026: a car whose traveller has left in the shuttle is « À garer », no longer « Sans place ».
+  noSpot: (v) => !v.spotCode && !v.toPark,
+  toPark: (v) => !v.spotCode && !!v.toPark,
   noKeys: (v) => !v.keyHook && !v.keysLeftAt,
   flightLate: isFlightLate,
 };
@@ -48,6 +56,7 @@ const FILTERS: Filter[] = [
   "all",
   "returnsToday",
   "noSpot",
+  "toPark",
   "noKeys",
   "flightLate",
 ];
@@ -213,6 +222,7 @@ export function VehiclesTable({ vehicles }: { vehicles: DashboardVehicle[] }) {
 function VehicleLine({ v }: { v: DashboardVehicle }) {
   const card = useQuickCard();
   const open = () => card.open(v.id);
+  const toPark = !v.spotCode && v.toPark ? v.toPark : null;
   const place = v.spotCode
     ? [v.spotCode, v.stayClass ? t.stay[v.stayClass] : null]
         .filter(Boolean)
@@ -247,14 +257,20 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
           </span>
         </button>
       </span>
-      <span
-        className={cn(
-          "font-mono text-[13px] font-bold",
-          v.spotCode ? "text-lime-deep" : "text-bad-text",
-        )}
-      >
-        {place}
-      </span>
+      {toPark ? (
+        <span data-testid="vehicle-to-park">
+          <Badge tone="line">{t.toPark(timeOf(toPark.since))}</Badge>
+        </span>
+      ) : (
+        <span
+          className={cn(
+            "font-mono text-[13px] font-bold",
+            v.spotCode ? "text-lime-deep" : "text-bad-text",
+          )}
+        >
+          {place}
+        </span>
+      )}
       <KeysControl v={v} />
       {/* 28/10/2026: every car here has its departure next; today's in the indigo pill of the planning. */}
       <span>
