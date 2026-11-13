@@ -10,6 +10,7 @@ import {
   FileSignature,
   Globe,
   LayoutDashboard,
+  MessageCircle,
   SquareParking,
   Users,
 } from "lucide-react";
@@ -44,11 +45,29 @@ export type NavItem = {
   section: NavSection;
   /** The paths that belong to the entry (its children's, and the detail pages under it). */
   match?: string;
+  /** Paths under `match` that belong to another entry (13/11/2026: the messages, out of the bookings). */
+  exclude?: string;
   children?: NavChild[];
+  /** A counter on the entry itself (an entry without pages). */
+  counter?: Counter;
+  /** 13/11/2026: its own tab in the phone's tab bar instead of its section's. */
+  ownTab?: boolean;
 };
 const sub = fr.nav.sub;
 export const NAV: NavItem[] = [
   { label: fr.nav.dashboard, to: "/", icon: LayoutDashboard, permission: "reservations:view", section: "today" },
+  // 13/11/2026 (« mets les messages sur le menu en bas », « plus en évidence sur le web »): the clients' messages, an entry
+  // of their own near the top of the rail, and a tab of their own on a phone.
+  {
+    label: fr.nav.messages,
+    to: "/reservations/whatsapp",
+    icon: MessageCircle,
+    permission: "reservations:status",
+    section: "today",
+    match: "/reservations/whatsapp/*",
+    counter: "whatsapp",
+    ownTab: true,
+  },
   {
     label: fr.nav.planning,
     to: "/planning",
@@ -69,10 +88,10 @@ export const NAV: NavItem[] = [
     permission: "reservations:view",
     section: "reservations",
     match: "/reservations/*",
+    exclude: "/reservations/whatsapp/*",
     children: [
       { label: sub.allReservations, to: "/reservations", end: true },
       { label: sub.inbox, to: "/reservations/a-verifier", permission: "reservations:manage", counter: "inbox" },
-      { label: sub.whatsapp, to: "/reservations/whatsapp", permission: "reservations:status", counter: "whatsapp" },
       { label: sub.extras, to: "/reservations/services", permission: "reservations:manage", counter: "extras" },
       { label: sub.reminders, to: "/reservations/sms-veille", permission: "reservations:manage" },
       { label: sub.importFile, to: "/reservations/importer", permission: "parking:manage" },
@@ -116,6 +135,7 @@ export const NAV: NavItem[] = [
 
 /** Whether the page shown belongs to the entry (its own path, its children's, its detail pages). */
 export function isInItem(item: NavItem, pathname: string): boolean {
+  if (item.exclude && (matchPath({ path: item.exclude }, pathname) || pathname === item.exclude.replace("/*", ""))) return false;
   return item.to === "/"
     ? pathname === "/"
     : !!matchPath({ path: item.match ?? item.to, end: !item.match }, pathname) || pathname === item.to;
@@ -130,7 +150,7 @@ export function flatPages(items: NavItem[]): FlatPage[] {
   }
   return items.flatMap((item): FlatPage[] => {
     const kids = item.children ?? [];
-    if (kids.length === 0) return [{ label: item.label, to: item.to, end: item.to === "/", icon: item.icon }];
+    if (kids.length === 0) return [{ label: item.label, to: item.to, end: item.to === "/", counter: item.counter, icon: item.icon }];
     return kids.map((c, i) => ({ label: i === 0 ? item.label : c.label, to: c.to, end: c.end, counter: c.counter, icon: item.icon, group: item.label, page: c.label }));
   });
 }

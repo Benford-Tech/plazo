@@ -2253,6 +2253,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   est décrit une seule fois dans `components/nav-items.ts` (`NAV`, `isInItem`, `flatPages`), lu par le rail, la barre et « Plus ». Les
   pilules « Jour · Prévisionnel » du Planning sont cachées sur téléphone. L'ordinateur garde le rail. Tests `AdminLayout.test.tsx`,
   `MorePage.test.tsx`.
+  **Messages en évidence (13/11/2026, « mets les messages sur le menu en bas », « plus en évidence sur le web »)** : « Messages »
+  (`/reservations/whatsapp`, `reservations:status`, chauffeur compris) devient une entrée à part du rail, sous Tableau de bord, avec le
+  nombre de non lus (`NavItem.counter`), et n'est plus une page de Réservations (`NavItem.exclude`) ; sur téléphone, un onglet à lui entre
+  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
+  la cloche (`header-messages`, citron avec le nombre quand il y a des non lus). Plazo Pro garde Plus › « Messages WhatsApp ».
   **Menu du web, direction A, et photo de profil (30/10/2026, « Réorganise le menu sur le web. Pouvoir mettre sa photo »,
   maquettes https://claude.ai/artifact/8XWAMJ28UwJFmvFBxuv66i)** : le rail de l'espace pro (`AdminLayout.tsx`, 236 px) a quatre
   groupes par usage, Aujourd'hui (Tableau de bord, Planning › Jour · Prévisionnel, Navettes), Réservations (Toutes, Boîte de

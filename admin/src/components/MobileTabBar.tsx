@@ -1,4 +1,4 @@
-import { CalendarClock, ClipboardList, MoreHorizontal, SquareParking } from "lucide-react";
+import { CalendarClock, ClipboardList, MessageCircle, MoreHorizontal, SquareParking } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
@@ -6,11 +6,12 @@ import { CountBadge } from "./CountBadge";
 import { flatPages, isInItem, type Counter, type Icon, type NavItem, type NavSection } from "./nav-items";
 
 type Counts = Partial<Record<Counter, number | null>> | undefined;
-type Tab = "today" | "reservations" | "parking" | "more";
+type Tab = "today" | "reservations" | "messages" | "parking" | "more";
 
 const TAB_ICONS: Record<Tab, Icon> = {
   today: CalendarClock,
   reservations: ClipboardList,
+  messages: MessageCircle,
   parking: SquareParking,
   more: MoreHorizontal,
 };
@@ -21,10 +22,14 @@ const MORE_PATHS = ["/plus", "/mon-compte", "/notifications"];
 /** The tab of the page shown: its section's, the manager's pages and the account under « Plus ». */
 export function tabOf(items: NavItem[], pathname: string): Tab {
   const item = items.find((i) => isInItem(i, pathname));
+  if (item?.ownTab) return "messages";
   if (item && item.section !== "manager") return item.section as Tab;
   if (item || MORE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return "more";
   return "today";
 }
+
+/** A section's entries, without those that have a tab of their own (13/11/2026: the messages). */
+const inSection = (items: NavItem[], section: NavSection) => items.filter((i) => i.section === section && !i.ownTab);
 
 const sum = (counts: Counts, keys: (Counter | undefined)[]) =>
   keys.reduce((n, k) => n + (k && counts ? (counts[k] ?? 0) : 0), 0);
@@ -38,10 +43,16 @@ export function MobileTabBar({ items, counts }: { items: NavItem[]; counts: Coun
   const { pathname } = useLocation();
   const current = tabOf(items, pathname);
   const tabs = TAB_SECTIONS.flatMap((section) => {
-    const pages = flatPages(items.filter((i) => i.section === section));
+    const pages = flatPages(inSection(items, section));
     if (pages.length === 0) return [];
     return [{ tab: section as Tab, to: pages[0].to, label: fr.nav.sections[section], badge: sum(counts, pages.map((p) => p.counter)) }];
   });
+  // 13/11/2026 (« mets les messages sur le menu en bas »): the clients' messages, a tab of their own after the bookings.
+  const messages = items.find((i) => i.ownTab);
+  if (messages) {
+    const at = tabs.findIndex((t) => t.tab === "reservations");
+    tabs.splice(at < 0 ? tabs.length : at + 1, 0, { tab: "messages", to: messages.to, label: messages.label, badge: sum(counts, [messages.counter]) });
+  }
   tabs.push({ tab: "more", to: "/plus", label: fr.nav.more, badge: 0 });
 
   return (
@@ -95,7 +106,8 @@ export function MobilePagePills({ items, counts }: { items: NavItem[]; counts: C
   const { pathname } = useLocation();
   const current = tabOf(items, pathname);
   if (current === "more") return null;
-  const pages = flatPages(items.filter((i) => i.section === current));
+  if (current === "messages") return null;
+  const pages = flatPages(inSection(items, current));
   if (pages.length < 2) return null;
   return (
     <div data-testid="nav-subrow" className="flex gap-1.5 overflow-x-auto border-t border-panel-line px-3 py-2 lg:hidden">

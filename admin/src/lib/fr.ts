@@ -561,6 +561,8 @@ export const fr = {
     revenue: "Chiffre d'affaires",
     stats: "Statistiques",
     dashboard: "Tableau de bord",
+    messages: "Messages",
+    unreadMessages: (n: number) => (n === 1 ? "1 message non lu" : `${n} messages non lus`),
     parking: "Parking",
     team: "Équipe",
     account: "Mon compte",

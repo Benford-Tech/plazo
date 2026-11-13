@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageCircle } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { NAV, SECTIONS, isInItem, type Counter, type NavItem } from "./nav-items";
 import { MobilePagePills, MobileTabBar } from "./MobileTabBar";
 import { CountBadge } from "./CountBadge";
@@ -104,7 +104,7 @@ export function AdminLayout() {
                     const kids = item.children ?? [];
                     const hasKids = kids.length > 1;
                     const open = hasKids && (active || !!unfolded[item.to]);
-                    const total = kids.reduce((n, c) => n + countOf(c.counter), 0);
+                    const total = kids.reduce((n, c) => n + countOf(c.counter), countOf(item.counter));
                     return (
                       <div key={item.to} className="contents lg:block" data-testid={`nav-item-${item.to}`}>
                         <div className="flex shrink-0 items-center">
@@ -183,6 +183,28 @@ export function AdminLayout() {
             <span className="ml-auto">
               <RevenueMaskToggle />
             </span>
+            {/* 13/11/2026 (« plus en évidence sur le web »): the clients' messages one click away, with what is unread. */}
+            {can(user?.role, "reservations:status") && (
+              <Link
+                to="/reservations/whatsapp"
+                data-testid="header-messages"
+                aria-label={countOf("whatsapp") ? fr.nav.unreadMessages(countOf("whatsapp")) : fr.nav.messages}
+                className={cn(
+                  "flex h-9 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold",
+                  countOf("whatsapp")
+                    ? "border-transparent bg-primary text-primary-foreground"
+                    : "border-panel-line bg-panel text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                {fr.nav.messages}
+                {countOf("whatsapp") > 0 && (
+                  <span className="min-w-[18px] rounded-full bg-[#D97706] px-1 text-center font-mono text-[10px] leading-4 text-white">
+                    {countOf("whatsapp")}
+                  </span>
+                )}
+              </Link>
+            )}
             <NotificationBell />
           </header>
           <EmailVerificationBanner />
