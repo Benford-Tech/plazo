@@ -124,9 +124,10 @@ export class ReturnMeetingPointDto {
   @IsString()
   public instructions?: string | null;
 
-  /** Photo of the meeting point (a URL: no upload yet). */
+  /** Photo of the meeting point (a URL; an uploaded photo is Plazo's own address, 13/11/2026). */
   @IsOptional()
-  @ValidateIf(o => !!o.photoUrl)
+  // Plazo's own address of an uploaded photo is relative when the site's address is not set.
+  @ValidateIf(o => !!o.photoUrl && !/^\/api\/public\/parkings\/[^/]+\/meeting-photo\/[0-9a-f]{18}\.(jpeg|png|webp)$/.test(o.photoUrl))
   @IsUrl({ protocols: ['https', 'http'], require_protocol: true, require_tld: false }, { message: 'invalid_url' })
   @MaxLength(500, { message: 'too_long' })
   @IsString()

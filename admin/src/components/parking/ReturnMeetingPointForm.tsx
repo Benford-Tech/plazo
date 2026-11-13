@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { geocode, type GeocodeHit } from "@/lib/geocode";
+import { MAX_PHOTO_BYTES, shrinkPhoto } from "@/lib/shrink-photo";
 import type { ReturnMeetingPoint } from "@/lib/types";
 
 const MeetingPointMap = lazy(() => import("./MeetingPointMap"));
@@ -150,20 +151,7 @@ export function ReturnMeetingPointForm() {
               {fieldErrors.instructions ? errorMessage(fieldErrors.instructions) : t.instructionsHelp(left)}
             </p>
           </div>
-          <FormField
-            id="mp-photo"
-            label={t.photoUrl}
-            type="url"
-            inputMode="url"
-            placeholder="https://…"
-            value={form.photoUrl}
-            onChange={e => setForm({ ...form, photoUrl: e.target.value })}
-            help={t.photoUrlHelp}
-            error={fieldErrors.photoUrl}
-          />
-          {form.photoUrl.trim().startsWith("http") && (
-            <img src={form.photoUrl.trim()} alt={t.photoPreview} className="h-32 w-auto border border-border object-cover" />
-          )}
+          <MeetingPhotoField value={form.photoUrl} onChange={photoUrl => setForm(f => (f ? { ...f, photoUrl } : f))} />
           <div className="flex flex-wrap gap-2">
             <Button type="submit" className="h-11 text-base" disabled={save.isPending}>
               {fr.common.save}
@@ -177,5 +165,107 @@ export function ReturnMeetingPointForm() {
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * The meeting point's photo, choix A (13/11/2026, « pouvoir uploader la photo du point de rendez-vous »): a thumbnail with
+ * « Changer » and « Retirer », or a drop zone. The photo is sent at once (Plazo serves it publicly); its address is then
+ * saved with the point, like the rest of the form.
+ */
+function MeetingPhotoField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const t = fr.meetingPoint;
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+
+  const send = async (file: File | undefined) => {
+    if (!file || busy) return;
+    setBusy(true);
+    try {
+      const photo = await shrinkPhoto(file);
+      if (!photo) return void toast.error(t.photoUnreadable);
+      if (photo.size > MAX_PHOTO_BYTES) return void toast.error(t.photoTooLarge);
+      const { photoUrl } = await adminApi.uploadMeetingPhoto(photo);
+      onChange(photoUrl);
+      toast.success(t.photoSaved);
+    } catch (err) {
+      const fields = err instanceof ApiError ? err.fields : undefined;
+      if (fields?.photo === "too_large") toast.error(t.photoTooLarge);
+      else if (fields?.photo) toast.error(t.photoUnreadable);
+      else if (err instanceof ApiError && err.code === "photos_unavailable") toast.error(t.photoUnavailable);
+      else toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+      if (input.current) input.current.value = "";
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      if (value.includes("/meeting-photo/")) await adminApi.removeMeetingPhoto();
+      onChange("");
+      toast.success(t.photoRemoved);
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const picker = (
+    <input
+      ref={input}
+      id="mp-photo"
+      type="file"
+      accept="image/jpeg,image/png,image/webp,image/heic"
+      className="sr-only"
+      onChange={e => void send(e.target.files?.[0])}
+    />
+  );
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="mp-photo">{t.photo}</Label>
+      {picker}
+      {value ? (
+        <div className="flex flex-wrap items-center gap-4">
+          <img src={value} alt={t.photoPreview} className="h-28 w-40 rounded-lg border border-border object-cover" />
+          <div className="flex flex-col gap-2">
+            <Button type="button" variant="outline" className="h-10" disabled={busy} onClick={() => input.current?.click()}>
+              {busy ? t.photoUploading : t.photoChange}
+            </Button>
+            <Button type="button" variant="ghost" className="h-10 text-destructive" disabled={busy} onClick={() => void remove()}>
+              {t.photoRemove}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-testid="mp-photo-drop"
+          disabled={busy}
+          onClick={() => input.current?.click()}
+          onDragOver={e => {
+            e.preventDefault();
+            setOver(true);
+          }}
+          onDragLeave={() => setOver(false)}
+          onDrop={e => {
+            e.preventDefault();
+            setOver(false);
+            void send(e.dataTransfer.files?.[0]);
+          }}
+          className={`flex h-28 w-full max-w-sm flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-sm ${
+            over ? "border-lime-deep bg-lime/10" : "border-border bg-muted/30"
+          }`}
+        >
+          <span className="font-semibold text-lime-deep">{busy ? t.photoUploading : t.photoAdd}</span>
+          <span className="text-muted-foreground">{t.photoDrop}</span>
+        </button>
+      )}
+      <p className="text-sm text-muted-foreground">{t.photoHelp}</p>
+    </div>
   );
 }

@@ -427,8 +427,10 @@ model Parking {
   returnMeetingLabel        String?
   // Written directions to the meeting point for the traveller (500 characters at most).
   returnMeetingInstructions String?
-  // Photo of the meeting point (URL; no upload yet, like the listing's photos).
+  // Photo of the meeting point (URL). 13/11/2026: uploaded by the managers, then the URL is Plazo's own public address.
   returnMeetingPhotoUrl     String?
+  // The uploaded photo in the photo store (never served by its key; null for a pasted URL).
+  returnMeetingPhotoKey     String?
   createdAt                 DateTime                              @default(now())
   updatedAt                 DateTime                              @default(now()) @updatedAt
 
