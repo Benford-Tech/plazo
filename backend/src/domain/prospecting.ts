@@ -2,7 +2,8 @@ import { airportCity } from './airport-names';
 import { createHash } from 'crypto';
 import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml, travellerStoreBadges } from './account-messages';
 import { EmailMessage } from './booking-messages';
-import { parseRegion, RegionKey } from './prospect-regions';
+import { parseLanguage, parseRegion, PROSPECT_LANGUAGES, ProspectLanguage, RegionKey } from './prospect-regions';
+export type { ProspectLanguage } from './prospect-regions';
 export { displayPhone } from '@/domain/phone';
 import { displayPhone } from '@/domain/phone';
 import { addDays, localDate, localDateTime, parseInstant } from './time';
@@ -49,7 +50,9 @@ export type VariableName = (typeof VARIABLES)[number];
 export type TemplateValues = Record<VariableName, string>;
 
 /** Plazo's own texts, until the platform admin writes theirs (« Modifier les mails »). */
-export function defaultSteps(productName: string): SequenceStep[] {
+export function defaultSteps(productName: string, language: ProspectLanguage = 'fr'): SequenceStep[] {
+  if (language === 'de') return germanSteps(productName);
+  if (language === 'en') return englishSteps(productName);
   // 08/11/2026 (« un mail concis avec les liens store et le lien de démo, une liste des fonctionnalités de Plazo Pro et
   // l'avantage pour leurs utilisateurs ; dis qu'une dizaine de parkings l'utilisent déjà »): short mails, the features as a
   // list, what the parking's customers gain, {lien_demo} (the button) in each; the store badges are added by prospectEmail.
@@ -103,6 +106,119 @@ export function defaultSteps(productName: string): SequenceStep[] {
         'répondez à ce mail : nous préparons tout sur {parking}, plan et tarifs compris.\n\n' +
         'La démo reste ouverte : {lien_demo}\n\n' +
         'Bonne continuation,',
+    },
+  ];
+}
+
+/**
+ * 13/11/2026 (« fais les 3 », the European prospects): the same three mails in German and in English. Same delays and
+ * switches as the French ones (only the subject and the text are translated); the comparators named are the European
+ * ones Plazo reads, and « une dizaine de parkings » says « in France », where they are.
+ */
+function germanSteps(P: string): SequenceStep[] {
+  return [
+    {
+      step: 1,
+      enabled: true,
+      delayDays: 0,
+      subject: '{parking}: Ihre Buchungen, ohne Abtippen',
+      body:
+        'Hallo {prénom},\n\n' +
+        `${P} Pro ist die Software für Flughafenparkplätze mit Shuttle oder Valet-Service. Rund zehn Parkplätze in Frankreich ` +
+        'arbeiten bereits täglich damit.\n\n' +
+        'Für Ihr Team:\n' +
+        '- die Buchungen der Vergleichsportale (ParkVia, Parclick, ParkMundo…) landen von selbst in einem einzigen Tagesplan;\n' +
+        '- der Shuttle: wer hingebracht und wer abgeholt wird, Rückflüge werden verfolgt;\n' +
+        '- der Lageplan des Parkplatzes, der Stellplatz jedes Fahrzeugs und seine Schlüssel;\n' +
+        '- der unterschriebene Vertrag und das Übergabeprotokoll mit Fotos auf dem Smartphone;\n' +
+        '- die Erinnerung am Vortag und der Umsatz nach Abzug der Provisionen.\n\n' +
+        'Für Ihre Kunden:\n' +
+        `- sie verfolgen den Shuttle live in der App ${P}, im App Store und bei Google Play;\n` +
+        '- nach der Landung erhalten sie den Treffpunkt: Anrufen ist nicht mehr nötig;\n' +
+        '- sie finden ihre Buchung und ihr Auto mit einem Fingertipp.\n\n' +
+        'Testen Sie die Demo in zwei Minuten: {lien_demo}\n\n' +
+        `${P} Pro läuft auf iPhone und Android (Links unten). Eine Frage? Antworten Sie einfach auf diese E-Mail.\n\n` +
+        'Mit freundlichen Grüßen',
+    },
+    {
+      step: 2,
+      enabled: true,
+      delayDays: 4,
+      subject: 'Rufen Ihre Kunden nach der Landung an?',
+      body:
+        'Hallo {prénom},\n\n' +
+        `mit ${P} Pro klingelt das Telefon nicht mehr, wenn Ihre Kunden aus dem Urlaub zurückkommen:\n` +
+        '- der Rückflug wird verfolgt, eine Verspätung verschiebt die Abholzeit von selbst;\n' +
+        '- Ihr Fahrer sieht seine aktuelle Liste auf dem Smartphone;\n' +
+        `- Ihr Kunde erhält den Treffpunkt und sieht den Shuttle in ${P} kommen.\n\n` +
+        'Rund zehn Parkplätze arbeiten bereits so. Sehen Sie es sich in der Demo an: {lien_demo}\n\n' +
+        'Mit freundlichen Grüßen',
+    },
+    {
+      step: 3,
+      enabled: true,
+      delayDays: 10,
+      subject: 'Ich melde mich nicht mehr',
+      body:
+        'Hallo {prénom},\n\n' +
+        'das ist meine letzte Nachricht. Falls Ihnen das Abtippen der Buchungen oder die Anrufe nach der Landung eines Tages ' +
+        'zu viel werden, antworten Sie einfach auf diese E-Mail: Wir richten alles für {parking} ein, Lageplan und Preise inklusive.\n\n' +
+        'Die Demo bleibt offen: {lien_demo}\n\n' +
+        'Alles Gute',
+    },
+  ];
+}
+
+function englishSteps(P: string): SequenceStep[] {
+  return [
+    {
+      step: 1,
+      enabled: true,
+      delayDays: 0,
+      subject: '{parking}: your bookings, no retyping',
+      body:
+        'Hello {prénom},\n\n' +
+        `${P} Pro is the software for airport car parks with a shuttle or valet service. Around ten car parks in France ` +
+        'already run on it every day.\n\n' +
+        'For your team:\n' +
+        '- bookings from the comparison sites (ParkVia, Parclick, ParkMundo…) land by themselves in a single daily schedule;\n' +
+        '- the shuttle: who to take, who to pick up, return flights tracked;\n' +
+        "- the car park map, each car's space and its keys;\n" +
+        '- the signed contract and the condition report with photos, on the phone;\n' +
+        '- the reminder the day before, and revenue net of commissions.\n\n' +
+        'For your customers:\n' +
+        `- they follow the shuttle live in the ${P} app, on the App Store and Google Play;\n` +
+        '- when they land, they get the meeting point: no need to call;\n' +
+        '- they find their booking and their car in one tap.\n\n' +
+        'Try the demo in two minutes: {lien_demo}\n\n' +
+        `${P} Pro runs on iPhone and Android (links below). Any question? Just reply to this email.\n\n` +
+        'Best regards,',
+    },
+    {
+      step: 2,
+      enabled: true,
+      delayDays: 4,
+      subject: 'Do your customers call when they land?',
+      body:
+        'Hello {prénom},\n\n' +
+        `With ${P} Pro, the phone stops ringing when your customers come back from holiday:\n` +
+        '- the return flight is tracked, and a delay moves the pick-up time by itself;\n' +
+        '- your driver sees an up-to-date list on their phone;\n' +
+        `- your customer gets the meeting point and watches the shuttle arrive in ${P}.\n\n` +
+        'Around ten car parks already work this way. See it in the demo: {lien_demo}\n\n' +
+        'Best regards,',
+    },
+    {
+      step: 3,
+      enabled: true,
+      delayDays: 10,
+      subject: "I won't bother you again",
+      body:
+        'Hello {prénom},\n\n' +
+        'This is my last message. If retyping bookings or the calls at landing ever become too much, just reply to this ' +
+        'email: we will set everything up for {parking}, map and prices included.\n\n' +
+        'The demo stays open: {lien_demo}\n\n' +
+        'All the best,',
     },
   ];
 }
@@ -201,8 +317,85 @@ function linkify(escaped: string): string {
   return escaped.replace(/https?:\/\/[^\s<]+?(?=[.,;:!?)]*(?:\s|$))/g, url => `<a href="${url}" style="color:#1E5E2E">${url}</a>`);
 }
 
+/** The words around the text, in the prospect's language (13/11/2026). */
+interface Chrome {
+  why: (parking: string, product: string) => string;
+  who: (product: string, publisher: string) => string;
+  stop: (product: string) => string;
+  demo: (product: string) => string;
+  teamApp: (product: string) => string;
+  travellerApp: (product: string) => string;
+  proPlay: (product: string) => string;
+  proApple: (product: string) => string;
+  appPlay: (product: string) => string;
+  appApple: (product: string) => string;
+  appleSoon: string;
+  screens: [string, string, string];
+  bannerAlt: string;
+  unsubscribeSubject: string;
+}
+
+const CHROME: Record<ProspectLanguage, Chrome> = {
+  fr: {
+    why: (parking, product) =>
+      `Vous recevez ce message à l'adresse professionnelle de ${parking}, parce que ${product} s'adresse aux parkings proches des aéroports.`,
+    who: (product, publisher) => `${product} est édité par ${publisher}.`,
+    stop: product => `Ne plus recevoir de messages de ${product}`,
+    demo: product => `Voir la démo de ${product}`,
+    teamApp: product => `L'application de l'équipe, ${product} Pro :`,
+    travellerApp: product => `L'application de vos clients, ${product}, déjà sur l'App Store et Google Play :`,
+    proPlay: product => `${product} Pro sur Google Play (Android)`,
+    proApple: product => `${product} Pro sur l'App Store (iPhone)`,
+    appPlay: product => `${product}, l'application de vos clients, sur Google Play (Android)`,
+    appApple: product => `${product}, l'application de vos clients, sur l'App Store (iPhone)`,
+    appleSoon: APPLE_REVIEW_NOTE,
+    screens: ['Le planning du jour', 'La navette en direct', 'Chaque voiture à sa place'],
+    bannerAlt: "Plazo Pro, le logiciel des parkings d'aéroport : navettes en direct, réservations des comparateurs, chaque voiture à sa place",
+    unsubscribeSubject: 'Ne plus recevoir de messages',
+  },
+  de: {
+    why: (parking, product) =>
+      `Sie erhalten diese Nachricht an die geschäftliche Adresse von ${parking}, weil sich ${product} an Parkplätze in Flughafennähe richtet.`,
+    who: (product, publisher) => `${product} wird herausgegeben von ${publisher}.`,
+    stop: product => `Keine Nachrichten mehr von ${product} erhalten`,
+    demo: product => `Demo von ${product} ansehen`,
+    teamApp: product => `Die App für Ihr Team, ${product} Pro:`,
+    travellerApp: product => `Die App für Ihre Kunden, ${product}, bereits im App Store und bei Google Play:`,
+    proPlay: product => `${product} Pro bei Google Play (Android)`,
+    proApple: product => `${product} Pro im App Store (iPhone)`,
+    appPlay: product => `${product}, die App für Ihre Kunden, bei Google Play (Android)`,
+    appApple: product => `${product}, die App für Ihre Kunden, im App Store (iPhone)`,
+    appleSoon: 'Die Prüfung durch Apple läuft: Den Link erhalten Sie, sobald die App veröffentlicht ist.',
+    screens: ['Der Tagesplan', 'Der Shuttle live', 'Jedes Auto an seinem Platz'],
+    bannerAlt: 'Plazo Pro, die Software für Flughafenparkplätze: Shuttle live, Buchungen der Vergleichsportale, jedes Auto an seinem Platz',
+    unsubscribeSubject: 'Keine Nachrichten mehr',
+  },
+  en: {
+    why: (parking, product) =>
+      `You are receiving this message at the business address of ${parking} because ${product} is made for car parks near airports.`,
+    who: (product, publisher) => `${product} is published by ${publisher}.`,
+    stop: product => `Stop receiving messages from ${product}`,
+    demo: product => `See the ${product} demo`,
+    teamApp: product => `Your team's app, ${product} Pro:`,
+    travellerApp: product => `Your customers' app, ${product}, already on the App Store and Google Play:`,
+    proPlay: product => `${product} Pro on Google Play (Android)`,
+    proApple: product => `${product} Pro on the App Store (iPhone)`,
+    appPlay: product => `${product}, your customers' app, on Google Play (Android)`,
+    appApple: product => `${product}, your customers' app, on the App Store (iPhone)`,
+    appleSoon: 'Apple is reviewing the app: we will send you the link as soon as it is published.',
+    screens: ["The day's schedule", 'The shuttle, live', 'Every car in its space'],
+    bannerAlt: 'Plazo Pro, the software for airport car parks: live shuttles, comparison-site bookings, every car in its space',
+    unsubscribeSubject: 'Stop receiving messages',
+  },
+};
+
+/** The subject of the mailto of List-Unsubscribe, in the prospect's language. */
+export const unsubscribeSubject = (language: ProspectLanguage = 'fr'): string => CHROME[language].unsubscribeSubject;
+
 export function prospectEmail(input: {
   productName: string;
+  /** 13/11/2026: the language of the words around the text (the text itself is the step's). French by default. */
+  language?: ProspectLanguage;
   company: Publisher;
   senderName: string;
   /** PROSPECTING_PHONE: written under the sender's name. */
@@ -225,26 +418,28 @@ export function prospectEmail(input: {
   const signatureLines = [input.senderName.trim(), phone].filter(Boolean);
   const signature = signatureLines.join('\n');
   const publisher = publisherLine(input.company);
-  const why =
-    `Vous recevez ce message à l'adresse professionnelle de ${input.values.parking}, parce que ${input.productName} ` +
-    "s'adresse aux parkings proches des aéroports.";
-  const who = publisher ? `${input.productName} est édité par ${publisher}.` : '';
-  const stop = `Ne plus recevoir de messages de ${input.productName}`;
+  const language = input.language ?? 'fr';
+  const words = CHROME[language];
+  const why = words.why(input.values.parking, input.productName);
+  const who = publisher ? words.who(input.productName, publisher) : '';
+  const stop = words.stop(input.productName);
 
   const stores = input.stores;
+  // French puts a space before the colon.
+  const colon = language === 'fr' ? ' :' : ':';
   const storeLines = stores
     ? [
-        `${input.productName} Pro sur Google Play (Android) : ${stores.playStoreUrl}`,
-        `${input.productName} Pro sur l'App Store (iPhone) : ${stores.appStoreUrl ?? APPLE_REVIEW_NOTE}`,
+        `${words.proPlay(input.productName)}${colon} ${stores.playStoreUrl}`,
+        `${words.proApple(input.productName)}${colon} ${stores.appStoreUrl ?? words.appleSoon}`,
         ...(input.travellerStores
           ? [
-              `${input.productName}, l'application de vos clients, sur Google Play (Android) : ${input.travellerStores.playStoreUrl}`,
-              `${input.productName}, l'application de vos clients, sur l'App Store (iPhone) : ${input.travellerStores.appStoreUrl}`,
+              `${words.appPlay(input.productName)}${colon} ${input.travellerStores.playStoreUrl}`,
+              `${words.appApple(input.productName)}${colon} ${input.travellerStores.appStoreUrl}`,
             ]
           : []),
       ].join('\n')
     : '';
-  const text = [body, signature, storeLines, '--', why, who, `${stop} : ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
+  const text = [body, signature, storeLines, '--', why, who, `${stop}${colon} ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
 
   // 23/10/2026 (« mets à niveau le mail de prospection »): the operators' emails' shape (light ground, white card, the
   // Plazo plate), the text itself kept as the sender's own words; a « Voir la démo » button when the step gives the
@@ -254,27 +449,39 @@ export function prospectEmail(input: {
   const blocks = body.split(/\n{2,}/).map(p => `<p style="margin:0 0 14px">${linkify(escapeHtml(p)).replace(/\n/g, '<br>')}</p>`);
   const screensBase = input.screens ? input.stores?.badgesBase : null;
   // Under the greeting and the introduction (the second paragraph), before the feature lists.
-  if (screensBase) blocks.splice(Math.min(2, blocks.length), 0, screensHtml(screensBase, C));
+  if (screensBase) blocks.splice(Math.min(2, blocks.length), 0, screensHtml(screensBase, C, language === 'fr' ? undefined : words.screens));
   const paragraphs = blocks.join('');
   const demoButton = demoUrl
-    ? `<p style="margin:4px 0 18px"><a href="${escapeHtml(demoUrl)}" style="display:inline-block;background:${C.lime};color:${C.limeInk};text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px">Voir la démo de ${escapeHtml(input.productName)}</a></p>`
+    ? `<p style="margin:4px 0 18px"><a href="${escapeHtml(demoUrl)}" style="display:inline-block;background:${C.lime};color:${C.limeInk};text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px">${escapeHtml(words.demo(input.productName))}</a></p>`
     : '';
   const html = `<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(subject)}</title></head>
+<html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background:${C.tint};font-family:Helvetica,Arial,sans-serif;color:${C.ink}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.tint}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid ${C.line};border-radius:14px">
 ${
   // The banner carries the Plazo plate itself: the small plate is left out under it.
   screensBase
-    ? bannerHtml(screensBase, demoUrl)
+    ? bannerHtml(screensBase, demoUrl, words.bannerAlt)
     : `<tr><td style="padding:18px 24px 0"><span style="display:inline-block;background:${C.lime};color:${C.limeInk};font-weight:800;font-size:16px;padding:6px 12px;border-radius:8px">${escapeHtml(input.productName)}</span></td></tr>`
 }
 <tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}${
     stores?.badgesBase
-      ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">L'application de l'équipe, ${escapeHtml(input.productName)} Pro :</p>${storeBadgesHtml(proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }))}${
+      ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">${escapeHtml(words.teamApp(input.productName))}</p>${storeBadgesHtml(
+          relabel(
+            proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }),
+            [words.proPlay(input.productName), words.proApple(input.productName)],
+            words.appleSoon,
+          ),
+        )}${
           input.travellerStores
-            ? `<p style="margin:14px 0 0;font-size:13px;color:${C.soft}">L'application de vos clients, ${escapeHtml(input.productName)}, déjà sur l'App Store et Google Play :</p>${storeBadgesHtml(travellerStoreBadges(input.productName, { badgesBase: stores.badgesBase, ...input.travellerStores }))}`
+            ? `<p style="margin:14px 0 0;font-size:13px;color:${C.soft}">${escapeHtml(words.travellerApp(input.productName))}</p>${storeBadgesHtml(
+                relabel(
+                  travellerStoreBadges(input.productName, { badgesBase: stores.badgesBase, ...input.travellerStores }),
+                  [words.appPlay(input.productName), words.appApple(input.productName)],
+                  words.appleSoon,
+                ),
+              )}`
             : ''
         }`
       : ''
@@ -287,15 +494,20 @@ ${
   return { subject, text, html };
 }
 
+/** The badges' alternative texts and note in the prospect's language. */
+function relabel<T extends { label: string; note?: string }>(badges: T[], labels: string[], appleSoon: string): T[] {
+  return badges.map((b, i) => ({ ...b, label: labels[i] ?? b.label, ...(b.note ? { note: appleSoon } : {}) }));
+}
+
 /** 09/11/2026 (« mets A et B ensemble »): the Plazo Pro share card on top of the first mail, a link to the demo when there is one. */
 export const MAIL_BANNER = {
   file: 'plazo-pro-banniere.jpg',
   alt: "Plazo Pro, le logiciel des parkings d'aéroport : navettes en direct, réservations des comparateurs, chaque voiture à sa place",
 } as const;
 
-function bannerHtml(base: string, demoUrl: string): string {
+function bannerHtml(base: string, demoUrl: string, alt: string = MAIL_BANNER.alt): string {
   const img =
-    `<img src="${escapeHtml(`${base.replace(/\/+$/, '')}/mail/${MAIL_BANNER.file}`)}" width="600" alt="${escapeHtml(MAIL_BANNER.alt)}" ` +
+    `<img src="${escapeHtml(`${base.replace(/\/+$/, '')}/mail/${MAIL_BANNER.file}`)}" width="600" alt="${escapeHtml(alt)}" ` +
     'style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px 14px 0 0">';
   return `<tr><td style="padding:0;line-height:0">${demoUrl ? `<a href="${escapeHtml(demoUrl)}">${img}</a>` : img}</td></tr>`;
 }
@@ -307,13 +519,13 @@ export const MAIL_SCREENS = [
   { file: 'plazo-pro-places.jpg', label: 'Chaque voiture à sa place', alt: 'Les arrivées à ranger, avec la file proposée pour chaque voiture' },
 ] as const;
 
-function screensHtml(base: string, C: { line: string; deep: string }): string {
+function screensHtml(base: string, C: { line: string; deep: string }, labels?: readonly string[]): string {
   const root = base.replace(/\/+$/, '');
   const cells = MAIL_SCREENS.map(
-    s =>
+    (s, i) =>
       `<td width="33%" valign="top" align="center" style="padding:0 4px;font-size:12px;line-height:1.35;font-weight:700;color:${C.deep}">` +
-      `<img src="${escapeHtml(`${root}/mail/${s.file}`)}" width="168" alt="${escapeHtml(s.alt)}" style="display:block;width:100%;max-width:168px;height:auto;border:1px solid ${C.line};border-radius:10px;margin:0 auto 6px">` +
-      `${escapeHtml(s.label)}</td>`,
+      `<img src="${escapeHtml(`${root}/mail/${s.file}`)}" width="168" alt="${escapeHtml(labels?.[i] ?? s.alt)}" style="display:block;width:100%;max-width:168px;height:auto;border:1px solid ${C.line};border-radius:10px;margin:0 auto 6px">` +
+      `${escapeHtml(labels?.[i] ?? s.label)}</td>`,
   ).join('');
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:2px 0 18px;table-layout:fixed"><tr>${cells}</tr></table>`;
 }
@@ -332,6 +544,10 @@ export interface ProspectInput {
   /** A region key or name (« Auvergne-Rhône-Alpes »); null or empty: the airport's region. */
   region?: unknown;
   phone?: unknown;
+  /** 13/11/2026: the parking's site (« www.exemple.de » or a full address). */
+  website?: unknown;
+  /** 13/11/2026: fr, de or en (or « Allemand », « English »…); null or empty: the region's language. */
+  language?: unknown;
   notes?: unknown;
 }
 
@@ -339,15 +555,18 @@ export interface ProspectFields {
   companyName: string;
   contactFirstName: string | null;
   contactLastName: string | null;
-  email: string;
+  /** 13/11/2026 (« fais les 3 »): optional; a prospect without one is called, never emailed. */
+  email: string | null;
   town: string | null;
   airportCode: string | null;
   region: RegionKey | null;
   phone: string | null;
+  website: string | null;
+  language: ProspectLanguage | null;
   notes: string | null;
 }
 
-type TextField = Exclude<keyof ProspectFields, 'region'>;
+type TextField = Exclude<keyof ProspectFields, 'region' | 'language'>;
 const LIMITS: Record<TextField, number> = {
   companyName: 120,
   contactFirstName: 60,
@@ -356,10 +575,41 @@ const LIMITS: Record<TextField, number> = {
   town: 80,
   airportCode: 10,
   phone: 30,
+  website: 300,
   notes: 1000,
 };
 
 export const normalizeProspectEmail = (email: string): string => email.trim().toLowerCase();
+
+/**
+ * A site typed by a person: « www.exemple.de », « exemple.de/kontakt » or a full http(s) address, as an https address
+ * (http kept when typed). Null when it is not a web address.
+ */
+export function normalizeWebsite(text: string): string | null {
+  const raw = text.trim();
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withScheme);
+    if (!/^https?:$/.test(url.protocol) || !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(url.hostname) || url.username || url.password) return null;
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The key that finds a prospect without an email in the list (13/11/2026): its name, without accents, case, spaces or
+ * the legal form, so that « Parken zum Fliegen GmbH » and « parken zum fliegen » are the same prospect.
+ */
+export function companyKey(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/\b(gmbh|sarl|sas|sasu|sa|ltd|limited|bv|nv|oy|ab|as|srl|sl|spa|kg|ag|s\.?r\.?o)\b\.?/g, ' ')
+    .replace(/[^a-z0-9]/g, '');
+}
 
 /** sha256 of the lower-cased address: the opt-out list keeps no address in clear. */
 export function suppressionHash(email: string): string {
@@ -369,7 +619,7 @@ export function suppressionHash(email: string): string {
 /**
  * Checks one prospect, typed or from a CSV row (shared by the form, the import and its preview). `partial`: an update,
  * where an absent field stays as it is. Field codes: required, too_long, invalid_email, invalid_airport, invalid_region,
- * invalid.
+ * invalid_website, invalid_language, invalid. The email is optional since 13/11/2026 (the prospect is then called).
  */
 export function validateProspect(
   input: ProspectInput,
@@ -400,11 +650,22 @@ export function validateProspect(
   text('companyName', true);
   text('contactFirstName', false);
   text('contactLastName', false);
-  text('email', true);
+  text('email', false);
   text('town', false);
   text('airportCode', false);
   text('phone', false);
+  text('website', false);
   text('notes', false);
+  const language = input.language;
+  if (!(language === undefined && partial)) {
+    if (language === undefined || language === null || (typeof language === 'string' && !language.trim())) value.language = null;
+    else if (typeof language !== 'string') fields.language = 'invalid';
+    else {
+      const parsed = parseLanguage(language);
+      if (parsed) value.language = parsed;
+      else fields.language = 'invalid_language';
+    }
+  }
   // The region chosen by hand: a key or a name, whatever the case and accents; empty gives the airport's region.
   const region = input.region;
   if (!(region === undefined && partial)) {
@@ -419,6 +680,11 @@ export function validateProspect(
   if (typeof value.email === 'string') {
     value.email = normalizeProspectEmail(value.email);
     if (!EMAIL_RE.test(value.email)) fields.email = 'invalid_email';
+  }
+  if (typeof value.website === 'string') {
+    const site = normalizeWebsite(value.website);
+    if (site) value.website = site;
+    else fields.website = 'invalid_website';
   }
   if (typeof value.airportCode === 'string') {
     value.airportCode = value.airportCode.toUpperCase();
@@ -470,6 +736,59 @@ export function validateSequence(
     fields['steps.3.delayDays'] = 'delay_order';
   }
   return Object.keys(fields).length ? { ok: false, fields } : { ok: true, steps: clean, dailyCap: dailyCap as number };
+}
+
+export type Translations = Partial<Record<Exclude<ProspectLanguage, 'fr'>, { step: 1 | 2 | 3; subject: string; body: string }[]>>;
+export type Sequences = Record<ProspectLanguage, SequenceStep[]>;
+
+/**
+ * Checks the German and English texts of « Modifier les mails » (13/11/2026): a subject and a text for each step. Field
+ * codes as `translations.de.2.body`: required, too_long, unknown_variable.
+ */
+export function validateTranslations(input: unknown): { ok: true; value: Translations } | { ok: false; fields: Record<string, string> } {
+  if (input === undefined || input === null) return { ok: true, value: {} };
+  if (typeof input !== 'object' || Array.isArray(input)) return { ok: false, fields: { translations: 'invalid' } };
+  const fields: Record<string, string> = {};
+  const value: Translations = {};
+  for (const language of PROSPECT_LANGUAGES) {
+    if (language === 'fr') continue;
+    const steps = (input as Record<string, unknown>)[language];
+    if (steps === undefined || steps === null) continue;
+    if (!Array.isArray(steps) || steps.length !== 3) {
+      fields[`translations.${language}`] = 'invalid';
+      continue;
+    }
+    value[language] = steps.map((raw, index) => {
+      const n = (index + 1) as 1 | 2 | 3;
+      const key = (field: string) => `translations.${language}.${n}.${field}`;
+      const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+      const subject = typeof item.subject === 'string' ? item.subject.replace(/[\r\n]+/g, ' ').trim() : '';
+      const body = typeof item.body === 'string' ? item.body.replace(/\r\n?/g, '\n').trim() : '';
+      if (!subject) fields[key('subject')] = 'required';
+      else if (subject.length > 150) fields[key('subject')] = 'too_long';
+      else if (unknownVariables(subject).length) fields[key('subject')] = 'unknown_variable';
+      if (!body) fields[key('body')] = 'required';
+      else if (body.length > 5000) fields[key('body')] = 'too_long';
+      else if (unknownVariables(body).length) fields[key('body')] = 'unknown_variable';
+      return { step: n, subject, body };
+    });
+  }
+  return Object.keys(fields).length ? { ok: false, fields } : { ok: true, value };
+}
+
+/**
+ * The three sequences: the French one (its delays and switches are everyone's), and its German and English texts, saved or
+ * Plazo's own when none is saved (or damaged).
+ */
+export function sequencesOf(storedSteps: unknown, storedTranslations: unknown, productName: string): Sequences {
+  const fr = stepsOf(storedSteps, productName);
+  const checked = validateTranslations(storedTranslations);
+  const saved = checked.ok ? checked.value : {};
+  const translate = (language: 'de' | 'en'): SequenceStep[] => {
+    const texts = saved[language] ?? defaultSteps(productName, language);
+    return fr.map((s, i) => ({ ...s, subject: texts[i].subject, body: texts[i].body }));
+  };
+  return { fr, de: translate('de'), en: translate('en') };
 }
 
 /** The steps saved in the database, or Plazo's texts when the value is missing or damaged. */

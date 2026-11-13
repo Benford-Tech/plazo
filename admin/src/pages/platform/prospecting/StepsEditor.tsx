@@ -7,21 +7,48 @@ import { Label } from "@/components/ui/label";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { VARIABLES } from "@/lib/prospecting";
-import type { ProspectingSettings, ProspectingStep } from "@/lib/types";
+import type { ProspectLanguage, ProspectingSettings, ProspectingStep } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { Modal } from "./Modal";
 
 const t = fr.platform.prospecting;
+const LANGUAGES: ProspectLanguage[] = ["fr", "de", "en"];
+type Texts = { subject: string; body: string }[];
 
-/** « Modifier les mails »: the three steps (subject, message, delay, on / off) and the daily cap. */
+/**
+ * « Modifier les mails »: the three steps (subject, message, delay, on / off) and the daily cap. 13/11/2026: the same mails
+ * in German and in English (subject and message only: the French delays and switches are theirs); only a language whose
+ * texts were changed is saved, so the others keep following Plazo's own texts.
+ */
 export function StepsEditor({ settings, onClose }: { settings: ProspectingSettings; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [steps, setSteps] = useState<ProspectingStep[]>(() => settings.steps.map(s => ({ ...s })));
+  const [texts, setTexts] = useState<Record<"de" | "en", Texts>>(() => ({
+    de: (settings.sequences?.de ?? settings.steps).map(s => ({ subject: s.subject, body: s.body })),
+    en: (settings.sequences?.en ?? settings.steps).map(s => ({ subject: s.subject, body: s.body })),
+  }));
+  const [touched, setTouched] = useState<Set<"de" | "en">>(new Set());
+  const [language, setLanguage] = useState<ProspectLanguage>("fr");
   const [cap, setCap] = useState(String(settings.dailyCap));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const change = (n: number, patch: Partial<ProspectingStep>) => setSteps(list => list.map(s => (s.step === n ? { ...s, ...patch } : s)));
+  const changeText = (lang: "de" | "en", n: number, patch: Partial<Texts[number]>) => {
+    setTexts(all => ({ ...all, [lang]: all[lang].map((s, i) => (i === n - 1 ? { ...s, ...patch } : s)) }));
+    setTouched(set => new Set(set).add(lang));
+  };
+  // The steps shown: the French ones, or their German / English texts on the French delays.
+  const shown: ProspectingStep[] = language === "fr" ? steps : steps.map((s, i) => ({ ...s, ...texts[language][i] }));
+  const prefix = (n: number, field: string) => (language === "fr" ? `steps.${n}.${field}` : `translations.${language}.${n}.${field}`);
+  const errorIn = (lang: ProspectLanguage) =>
+    Object.keys(errors).some(k => (lang === "fr" ? k.startsWith("steps.") || k === "dailyCap" : k.startsWith(`translations.${lang}.`)));
 
   const save = useMutation({
-    mutationFn: () => adminApi.updateProspectingSettings({ steps, dailyCap: Number(cap) }),
+    mutationFn: () =>
+      adminApi.updateProspectingSettings({
+        steps,
+        dailyCap: Number(cap),
+        ...(touched.size ? { translations: Object.fromEntries([...touched].map(l => [l, texts[l]])) } : {}),
+      }),
     onSuccess: ({ data }) => {
       queryClient.setQueryData(["platform", "prospects", "settings"], { data });
       queryClient.invalidateQueries({ queryKey: ["platform", "prospects"] });
@@ -34,7 +61,7 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
     },
   });
   const test = useMutation({
-    mutationFn: (s: ProspectingStep) => adminApi.sendProspectTest({ step: s.step, subject: s.subject, body: s.body }),
+    mutationFn: (s: ProspectingStep) => adminApi.sendProspectTest({ step: s.step, subject: s.subject, body: s.body, language }),
     onSuccess: ({ sentTo }) => toast.success(t.testSent(sentTo)),
     onError: (err: Error) => toast.error(describeError(err)),
   });
@@ -44,6 +71,25 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
       <p className="text-sm text-muted-foreground">
         {t.editorHelp} {t.variables} {VARIABLES.join(" ")}
       </p>
+      <div role="group" aria-label={t.editorLanguage} className="flex flex-wrap gap-2">
+        {LANGUAGES.map(l => (
+          <button
+            key={l}
+            type="button"
+            aria-pressed={language === l}
+            data-testid={`steps-language-${l}`}
+            onClick={() => setLanguage(l)}
+            className={cn(
+              "min-h-11 rounded-full px-3.5 text-sm",
+              language === l ? "bg-lime-deep font-semibold text-white" : "border border-panel-line bg-white hover:bg-panel-2",
+              errorIn(l) && language !== l && "border-destructive text-destructive",
+            )}
+          >
+            {t.languages[l]}
+          </button>
+        ))}
+      </div>
+      {language !== "fr" && <p className="text-sm text-muted-foreground">{t.editorTranslationNote}</p>}
       <form
         className="space-y-4"
         onSubmit={e => {
@@ -51,10 +97,15 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
           save.mutate();
         }}
       >
-        {steps.map(s => (
-          <fieldset key={s.step} className="space-y-3 rounded-[12px] border border-panel-line p-4">
-            <legend className="px-1 font-bold">{t.stepTitle[s.step]}</legend>
-            {s.step > 1 && (
+        {shown.map(s => (
+          <fieldset key={`${language}-${s.step}`} className="space-y-3 rounded-[12px] border border-panel-line p-4">
+            <legend className="px-1 font-bold">
+              {t.stepTitle[s.step]}
+              {language !== "fr" && s.step > 1 && (
+                <span className="ml-2 font-mono text-xs font-normal text-lime-deep">{s.enabled ? t.stepWhen(s.delayDays) : t.stepOff}</span>
+              )}
+            </legend>
+            {language === "fr" && s.step > 1 && (
               <div className="flex flex-wrap items-end gap-4">
                 <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
                   <input
@@ -84,8 +135,8 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
               label={t.subject}
               maxLength={150}
               value={s.subject}
-              error={errors[`steps.${s.step}.subject`]}
-              onChange={e => change(s.step, { subject: e.target.value })}
+              error={errors[prefix(s.step, "subject")]}
+              onChange={e => (language === "fr" ? change(s.step, { subject: e.target.value }) : changeText(language, s.step, { subject: e.target.value }))}
             />
             <div className="space-y-1.5">
               <Label htmlFor={`step-${s.step}-body`}>{t.body}</Label>
@@ -94,10 +145,10 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
                 className="flex min-h-40 w-full rounded-md border border-input bg-background px-3 py-2 text-base"
                 maxLength={5000}
                 value={s.body}
-                aria-invalid={!!errors[`steps.${s.step}.body`]}
-                onChange={e => change(s.step, { body: e.target.value })}
+                aria-invalid={!!errors[prefix(s.step, "body")]}
+                onChange={e => (language === "fr" ? change(s.step, { body: e.target.value }) : changeText(language, s.step, { body: e.target.value }))}
               />
-              {errors[`steps.${s.step}.body`] && <p className="text-sm text-destructive">{errorMessage(errors[`steps.${s.step}.body`])}</p>}
+              {errors[prefix(s.step, "body")] && <p className="text-sm text-destructive">{errorMessage(errors[prefix(s.step, "body")])}</p>}
             </div>
             <Button type="button" variant="outline" className="h-11" disabled={test.isPending || !settings.configured} onClick={() => test.mutate(s)}>
               {t.testStep}

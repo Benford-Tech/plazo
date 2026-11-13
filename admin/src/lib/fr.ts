@@ -347,7 +347,9 @@ export const fr = {
     invalid_key_hook:
       "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",
     invalid_airport: "Code aéroport invalide (3 lettres).",
-    invalid_region: "Région inconnue (ex. Auvergne-Rhône-Alpes).",
+    invalid_region: "Région ou pays inconnu (ex. Auvergne-Rhône-Alpes, Allemagne).",
+    invalid_website: "Adresse de site invalide (ex. www.exemple.de).",
+    invalid_language: "Langue inconnue : français, allemand ou anglais.",
     invalid: "Valeur invalide.",
     invalid_coordinate: "Coordonnées invalides.",
     invalid_bbox: "Zone invalide.",
@@ -3238,7 +3240,19 @@ export const fr = {
       regionManual: "choisie à la main",
       regionAuto: "Automatique (d'après l'aéroport)",
       regionHelp:
-        "Par défaut, la région de l'aéroport. Choisissez-en une si le parking n'en dépend pas.",
+        "Par défaut, la région (ou le pays) de l'aéroport. Choisissez-en une si le parking n'en dépend pas.",
+      // 13/11/2026 (« fais les 3 »): the countries of Europe, the language of the mails, the prospects without an email.
+      regionGroupFrance: "France",
+      regionGroupEurope: "Europe",
+      languages: { fr: "Français", de: "Allemand", en: "Anglais" } as Record<"fr" | "de" | "en", string>,
+      languageShort: { fr: "FR", de: "DE", en: "EN" } as Record<"fr" | "de" | "en", string>,
+      languageAuto: "Automatique (d'après la région)",
+      languageHelp:
+        "Allemand en Allemagne et en Autriche, anglais ailleurs en Europe, français en France, en Belgique et au Luxembourg.",
+      languageOf: (label: string) => `Mails en ${label.toLowerCase()}`,
+      noEmail: "Pas d'e-mail · à appeler",
+      noEmailCheck: (name: string) => `${name} n'a pas d'e-mail : à appeler, aucun mail ne part`,
+      website: "Site",
       colParking: "Parking",
       colContact: "Contact",
       colAirport: "Aéroport",
@@ -3305,7 +3319,8 @@ export const fr = {
       testSent: (email: string) => `Test envoyé à ${email}.`,
       send: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
       notEligible: (n: number) =>
-        `${n} déjà contacté${n > 1 ? "s" : ""} ou fermé${n > 1 ? "s" : ""} : ignoré${n > 1 ? "s" : ""}.`,
+        `${n} déjà contacté${n > 1 ? "s" : ""}, fermé${n > 1 ? "s" : ""} ou sans e-mail : ignoré${n > 1 ? "s" : ""}.`,
+      previewLanguage: (label: string) => `Mail en ${label.toLowerCase()}`,
       confirmTitle: "Envoyer la séquence",
       confirm: (n: number, remaining: number) =>
         `Le premier mail part maintenant pour ${Math.min(n, remaining)} prospect${Math.min(n, remaining) > 1 ? "s" : ""}` +
@@ -3357,8 +3372,11 @@ export const fr = {
         airportCode: "Aéroport (code)",
         region: "Région",
         phone: "Téléphone",
+        website: "Site web",
+        language: "Langue des mails",
         notes: "Notes",
       },
+      emailHelp: "Facultatif : sans e-mail, le prospect s'appelle et ne reçoit aucun mail.",
       airportHelp: "Code IATA, ex. LYS.",
       save: "Enregistrer",
       cancel: "Annuler",
@@ -3366,7 +3384,7 @@ export const fr = {
       // The import.
       importTitle: "Importer un CSV",
       importHelp:
-        "Première ligne : les noms des colonnes. Reconnues : parking, prénom, nom, e-mail, ville, aéroport, région (facultative, sinon celle de l'aéroport), téléphone, notes (séparateur ; ou ,). Seulement des adresses professionnelles que vous avez le droit d'utiliser.",
+        "Première ligne : les noms des colonnes. Reconnues : parking (obligatoire), prénom, nom, e-mail (facultatif : sans lui, le prospect s'appelle), ville, aéroport, région ou pays (sinon celui de l'aéroport), langue (sinon celle du pays), téléphone, site, notes (séparateur ; ou ,). Seulement des adresses professionnelles que vous avez le droit d'utiliser.",
       importFile: "Fichier CSV",
       importReading: "Lecture…",
       importMissing: (cols: string[]) =>
@@ -3395,6 +3413,9 @@ export const fr = {
       editorTitle: "Modifier les mails",
       editorHelp:
         "Les relances partent N jours après le premier contact. Une relance éteinte est sautée.",
+      editorLanguage: "Langue",
+      editorTranslationNote:
+        "Mêmes délais et mêmes étapes actives que les mails en français ; seuls l'objet et le message changent.",
       subject: "Objet",
       body: "Message",
       delay: "Jours après le premier contact",

@@ -29,7 +29,7 @@ describe("CSV des prospects", () => {
   });
 
   it("signale les colonnes obligatoires absentes", () => {
-    expect(readProspectsCsv("Prénom;Ville\nCamille;Genas").missing).toEqual(["companyName", "email"]);
+    expect(readProspectsCsv("Prénom;Ville\nCamille;Genas").missing).toEqual(["companyName"]);
   });
 });
 

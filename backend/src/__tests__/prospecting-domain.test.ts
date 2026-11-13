@@ -104,7 +104,7 @@ describe('variables des mails', () => {
       stores: { badgesBase: 'https://site.example', playStoreUrl: 'https://play.google.com/store/apps/details?id=x', appStoreUrl: null },
       travellerStores: { playStoreUrl: 'https://play.google.com/store/apps/details?id=t', appStoreUrl: 'https://apps.apple.com/fr/app/plazo/id1' },
     });
-    expect(withTraveller.html).toContain("L'application de vos clients, Plazo, déjà sur l'App Store et Google Play");
+    expect(withTraveller.html).toContain('L&#39;application de vos clients, Plazo, déjà sur l&#39;App Store et Google Play');
     expect(withTraveller.html).toContain('href="https://apps.apple.com/fr/app/plazo/id1"');
     expect(withTraveller.html).toContain('src="https://site.example/badges/app-store-fr.png"');
     expect(withTraveller.html).toContain('href="https://play.google.com/store/apps/details?id=t"');
@@ -184,6 +184,8 @@ describe('validation', () => {
         contactLastName: null,
         town: null,
         phone: null,
+        website: null,
+        language: null,
         notes: null,
         region: null,
       },

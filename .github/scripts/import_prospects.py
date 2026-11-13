@@ -2,7 +2,7 @@
 de prospects »).
 
 The CSV is the one the page reads (« Importer un CSV »): first line = the column names (parking, prénom, nom, e-mail,
-ville, aéroport, téléphone, région, notes), separator « , », « ; » or tab, read like admin/src/lib/prospecting.ts. It comes
+ville, aéroport, région ou pays, langue, téléphone, site, notes), separator « , », « ; » or tab, read like admin/src/lib/prospecting.ts. It comes
 gzip-compressed and base64-encoded in CSV_GZ_B64 (a workflow input: the text stays under GitHub's input size limit), or as
 a path in CSV_PATH (local runs).
 
@@ -37,7 +37,9 @@ HEADERS = {
     "email": "email", "mail": "email", "adressemail": "email", "adresseemail": "email", "courriel": "email",
     "ville": "town", "commune": "town", "town": "town", "city": "town",
     "aeroport": "airportCode", "airport": "airportCode", "codeaeroport": "airportCode",
-    "region": "region",
+    "region": "region", "pays": "region", "country": "region",
+    "site": "website", "siteweb": "website", "siteinternet": "website", "website": "website", "web": "website", "url": "website",
+    "langue": "language", "language": "language",
     "telephone": "phone", "tel": "phone", "phone": "phone",
     "notes": "notes", "note": "notes", "commentaire": "notes", "commentaires": "notes", "remarques": "notes",
 }
@@ -78,7 +80,8 @@ def read_rows(text):
         fail("The CSV is empty")
     columns = [HEADERS.get(header_key(h)) for h in lines[0]]
     ignored = [h for h, c in zip(lines[0], columns) if not c and h.strip()]
-    missing = [c for c in ("companyName", "email") if c not in columns]
+    # The email is optional since 13/11/2026 (a prospect without one is called, never emailed).
+    missing = [c for c in ("companyName",) if c not in columns]
     if missing:
         fail(f"Missing columns: {', '.join('parking' if c == 'companyName' else 'e-mail' for c in missing)}")
     if ignored:
