@@ -21,8 +21,16 @@ void main() {
 
   Future<void> show(WidgetTester tester, StaffModel staff) async {
     final auth = MockAuthBloc();
-    whenListen(auth, const Stream<ProAuthState>.empty(), initialState: ProAuthState(status: ProAuthStatus.signedIn, staff: staff));
-    await pumpLocalized(tester, BlocProvider<ProAuthBloc>.value(value: auth, child: const ProMoreTabPage()), size: const Size(400, 1600));
+    whenListen(
+      auth,
+      const Stream<ProAuthState>.empty(),
+      initialState: ProAuthState(status: ProAuthStatus.signedIn, staff: staff),
+    );
+    await pumpLocalized(
+      tester,
+      BlocProvider<ProAuthBloc>.value(value: auth, child: const ProMoreTabPage()),
+      size: const Size(400, 1600),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -41,17 +49,30 @@ void main() {
     for (final title in ['MON POSTE DU JOUR', 'GÉRANT', 'CHAUFFEUR', 'ACCUEIL', 'VOITURIER', 'COMPTE']) {
       expect(find.text(title), findsOneWidget, reason: title);
     }
-    for (final key in ['pmore-post', 'pmore-start', 'pmore-revenue', 'pmore-team', 'pmore-plan', 'pmore-vehicles', 'pmore-settings', 'pmore-shuttle', 'pmore-reservations', 'pmore-services', 'pmore-whatsapp', 'pmore-planning', 'pmore-tutorials', 'pmore-account', 'pmore-logout']) {
+    for (final key in [
+      'pmore-post',
+      'pmore-start',
+      'pmore-revenue',
+      'pmore-team',
+      'pmore-plan',
+      'pmore-vehicles',
+      'pmore-settings',
+      'pmore-shuttle',
+      'pmore-reservations',
+      'pmore-services',
+      'pmore-whatsapp',
+      'pmore-planning',
+      'pmore-tutorials',
+      'pmore-account',
+      'pmore-logout',
+    ]) {
       expect(find.byKey(Key(key)), findsOneWidget, reason: key);
     }
     expect(find.byKey(const Key('pmore-vehicle')), findsNothing);
   });
 
-  testWidgets('un chauffeur ne voit que son poste, la navette et le compte', (tester) async {
-    await show(
-      tester,
-      const StaffModel(id: 'd1', name: 'Karim Benali', email: 'k@example.com', role: 'driver', post: 'driver', allowedPosts: ['driver']),
-    );
+  testWidgets('un chauffeur ne voit que son poste, la navette, WhatsApp et le compte', (tester) async {
+    await show(tester, const StaffModel(id: 'd1', name: 'Karim Benali', email: 'k@example.com', role: 'driver', post: 'driver', allowedPosts: ['driver']));
     expect(find.text('MON POSTE DU JOUR'), findsOneWidget);
     expect(find.text('CHAUFFEUR'), findsOneWidget);
     expect(find.text('COMPTE'), findsOneWidget);
@@ -63,7 +84,7 @@ void main() {
     expect(find.byKey(const Key('pmore-start')), findsOneWidget);
     expect(find.byKey(const Key('pmore-revenue')), findsNothing);
     expect(find.byKey(const Key('pmore-planning')), findsNothing);
-    expect(find.byKey(const Key('pmore-whatsapp')), findsNothing);
+    expect(find.byKey(const Key('pmore-whatsapp')), findsOneWidget);
   });
 
   testWidgets('sans allowedPosts (ancienne API), l\'accueil couvre aussi la navette et les places', (tester) async {

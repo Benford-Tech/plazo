@@ -49,7 +49,7 @@ export class StaffController {
       manage ? Container.get(InboundEmailService).todoCount(req.staff.operatorId) : null,
       Container.get(ExtraService).todoCount(req.staff.operatorId),
       // 12/11/2026: conversations with an unread WhatsApp message.
-      manage ? Container.get(WhatsappInboxService).unreadCount(req.staff.operatorId) : null,
+      can(req.staff.role, 'reservations:status') ? Container.get(WhatsappInboxService).unreadCount(req.staff.operatorId) : null,
     ]);
     res.set('Cache-Control', 'no-store');
     res.json({ inbox, extras, whatsapp });

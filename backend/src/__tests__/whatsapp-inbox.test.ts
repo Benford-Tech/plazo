@@ -226,8 +226,11 @@ describe('Boîte WhatsApp : réception, réponse, traité', () => {
     const late = await api().post(`/api/internal/whatsapp/inbox/${conv.id}/reply`).set(auth(op.token)).send({ text: 'Bonjour' });
     expect(late.status).toBe(409);
     expect(late.body.code).toBe('window_closed');
+    // 13/11/2026: the driver reads the inbox too, but never another parking's.
     const driver = await addStaff(op.token, 'driver');
-    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(driver.token))).status).toBe(403);
+    expect((await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(driver.token))).status).toBe(200);
+    const otherDriver = await addStaff(other.token, 'driver');
+    expect((await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(otherDriver.token))).status).toBe(404);
   });
 
   it('un client de deux parkings : aucun parking ne voit le message, sauf celui dont il cite la réservation', async () => {
@@ -398,7 +401,7 @@ describe('« Écrire au client » depuis Plazo Pro (13/11/2026)', () => {
     expect((await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(other.token)).send({ text: 'x' })).status).toBe(404);
   });
 
-  it('le chauffeur écrit aussi au client, sans ouvrir la boîte de réception', async () => {
+  it('le chauffeur écrit aussi au client et lit la boîte de réception', async () => {
     const op = await setupOperator();
     const res = await booking(op.operator.id, op.parking.id);
     const driver = await addStaff(op.token, 'driver');
@@ -406,7 +409,11 @@ describe('« Écrire au client » depuis Plazo Pro (13/11/2026)', () => {
     const sent = await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(driver.token)).send({ text: 'Je suis devant le terminal.' });
     expect(sent.status).toBe(201);
     expect(sent.body).toMatchObject({ channel: 'whatsapp' });
-    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(driver.token))).status).toBe(403);
+    const box = await api().get('/api/internal/whatsapp/inbox?view=all').set(auth(driver.token));
+    expect(box.status).toBe(200);
+    expect(box.body.data.map((c: any) => c.id)).toContain(sent.body.conversationId);
+    expect((await api().get(`/api/internal/whatsapp/inbox/${sent.body.conversationId}`).set(auth(driver.token))).status).toBe(200);
+    expect((await api().get('/api/internal/nav/counts').set(auth(driver.token))).body.whatsapp).toEqual(expect.any(Number));
   });
 
   it('WhatsApp refusé : le SMS du parking part à la place', async () => {
