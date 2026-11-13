@@ -9,7 +9,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
-import { isProspectDemoOperator } from './demo-guard';
+import { isSilentOperator } from './demo-guard';
 import { STAFF_VISIBLE } from './reservation.service';
 import { SmsService } from './sms.service';
 import { WhatsappService } from './whatsapp.service';
@@ -48,7 +48,7 @@ export class StaffMessageService {
   private async channels(actor: AuthenticatedStaff, r: Awaited<ReturnType<StaffMessageService['load']>>, now: Date) {
     const phone = appConversationPhone(r.customerPhone, r.id);
     const hasPhone = !phone.startsWith('app:');
-    const demo = await isProspectDemoOperator(actor.operatorId);
+    const demo = await isSilentOperator(actor.operatorId);
     const whatsappOn = hasPhone && !demo && (await this.whatsapp.enabledFor(actor.operatorId));
     const conversation = hasPhone
       ? await prisma.whatsappConversation.findFirst({

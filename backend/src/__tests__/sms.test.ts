@@ -419,6 +419,21 @@ describe('envoi par le téléphone du parking', () => {
     expect(calls(/\/messages\/gw-1$/)).toHaveLength(1);
   });
 
+  it('le parking de test n’envoie rien aux voyageurs : ni SMS, ni WhatsApp, ni mail (13/11/2026)', async () => {
+    const test = await setupOperator('Essais');
+    await prisma.operator.update({ where: { id: test.operator.id }, data: { name: 'Essais (tests)' } });
+    await useBrevoSms(test.operator.id);
+    notifications.settings.apiKey = 'brevo-key';
+    expect(await sms.sendTravellerSms(test.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Bonjour' })).toBe(
+      'skipped',
+    );
+    expect(await sms.sendTravellerSms(test.operator.id, { reservationId: null, kind: 'booking_reminder', to: '0612345678', text: 'Demain' })).toBe(
+      'skipped',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await prisma.smsOutbox.count()).toBe(0);
+  });
+
   it('« Pas de SMS » : rien ne part, rien n’est enregistré ; Brevo : l’ancien chemin, tracé dans la boîte d’envoi', async () => {
     const none = await setupOperator();
     expect(await sms.sendTravellerSms(none.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'x' })).toBe('skipped');
