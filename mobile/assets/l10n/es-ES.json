@@ -2959,7 +2959,7 @@
     "title": "Escribir al aparcamiento",
     "the_parking": "el aparcamiento",
     "intro": "¿Una pregunta, un cambio de hora? Escribe a {}: el equipo te responde aquí, con una notificación.",
-    "hint": "Tus mensajes de WhatsApp y los que escribes aquí, en el mismo sitio. El equipo te responde aquí, con una notificación.",
+    "hint": "Sus mensajes al aparcamiento y sus respuestas, con los que Plazo le ha enviado. El equipo le responde aquí, con una notificación.",
     "placeholder": "Tu mensaje…",
     "send": "Enviar",
     "errors": {
