@@ -11,6 +11,7 @@ import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/night_fees.dart';
 import '../../../../core/helpers/plate.dart';
+import '../../../../core/helpers/formatters.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
@@ -33,6 +34,7 @@ import '../../data/models/public_booking_model.dart';
 import '../bloc/booking_bloc.dart';
 import '../bloc/car_location_bloc.dart';
 import '../widgets/booking_card.dart';
+import '../widgets/booking_steps.dart';
 import '../widgets/car_location_card.dart';
 import '../widgets/child_seats_card.dart';
 import '../../../parking_messages/parking_messages_card.dart';
@@ -101,6 +103,33 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
       child: TutorialSpot(
         tutorial: Tutorials.booking,
         child: Scaffold(
+          // C (13/11/2026): « Écrire au parking » always at hand, the conversation in a sheet.
+          floatingActionButton: BlocBuilder<BookingBloc, BookingState>(
+            buildWhen: (a, b) => a.booking?.status != b.booking?.status,
+            builder: (context, state) {
+              final b = state.booking;
+              if (b == null || !ParkingMessagesCard.relevant(b.status)) return const SizedBox.shrink();
+              return FloatingActionButton.extended(
+                key: const Key('booking-write'),
+                backgroundColor: AppColors.action,
+                foregroundColor: AppColors.onAccent,
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                label: Text('booking.write_parking'.tr(), style: AppText.strong(size: 15, color: AppColors.onAccent)),
+                onPressed: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: AppColors.background,
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+                  builder: (sheet) => Padding(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 16 + MediaQuery.viewInsetsOf(sheet).bottom + MediaQuery.paddingOf(sheet).bottom),
+                    child: SingleChildScrollView(
+                      child: ParkingMessagesCard(key: ValueKey('messages-${b.reference}'), reference: b.reference, parkingName: b.parking.title),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           appBar: AppBar(
             titleSpacing: NavigationToolbar.kMiddleSpacing,
             title: Text('trips.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
@@ -144,7 +173,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                         children: [
                           if (confirmed) ConfirmedHero(booking: b),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -160,15 +189,12 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                   const SizedBox(height: 12),
                                 ],
                                 if (b.status == 'cancelled') ...[_CancelledBanner(booking: b), const SizedBox(height: 12)],
+                                // A (13/11/2026, « Mix A et C »): the next thing to do, as the one orange card.
+                                if (b.status == 'upcoming' || b.status == 'arrived') NextStepHero(key: ValueKey('next-${b.reference}-${b.status}'), reference: b.reference),
                                 KeyedSubtree(
                                   key: const Key('booking-card'),
                                   child: BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),
                                 ),
-                                // « Sièges auto » (24/10/2026): the child seats for the shuttle, changeable while expected.
-                                if (ChildSeatsCard.relevant(b)) ...[
-                                  const SizedBox(height: 10),
-                                  ChildSeatsCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
-                                ],
                                 const SizedBox(height: 10),
                                 PaymentSummary(booking: b),
                                 if (b.status == 'pending_payment') ...[
@@ -179,39 +205,14 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                     onPressed: () => context.router.push(PaymentRoute(reference: b.reference)),
                                   ),
                                 ],
-                                const SizedBox(height: 12),
-                                // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
-                                if (kind == ArrivalKind.returnTrip)
-                                  const KeyedSubtree(key: Key('booking-return'), child: ReturnBlock())
-                                else
-                                  const KeyedSubtree(key: Key('booking-arrival'), child: ArrivalBlock()),
-                                // Where the car is parked (06/10/2026): from the drop-off to the return day's own screen.
-                                if (kind != ArrivalKind.returnTrip && CarLocationCard.relevant(b)) ...[
-                                  const SizedBox(height: 12),
-                                  CarLocationCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
-                                ],
-                                // « Contrat signé et état des lieux » (19/10/2026): the contract to sign, the reports to check.
-                                if (travellerPaperworkRelevant(b.status))
+                                const SizedBox(height: 18),
+                                // C: the stay as a timeline, each action at the step it belongs to.
+                                if (b.active && b.status != 'pending_payment') ..._steps(context, b, kind)
+                                else if (travellerPaperworkRelevant(b.status))
                                   TravellerPaperworkBlock(key: ValueKey('paperwork-${b.reference}-${b.status}'), reference: b.reference),
-                                // Services for the car (21/10/2026): a wash or a charge, before or after the drop-off.
-                                if (travellerExtrasRelevant(b.status))
-                                  KeyedSubtree(
-                                    key: const Key('booking-extras'),
-                                    child: TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
-                                  ),
-                                // « Écrire au parking » (12/11/2026): lands in the parking's WhatsApp inbox, the reply comes back here.
-                                if (ParkingMessagesCard.relevant(b.status))
-                                  ParkingMessagesCard(key: ValueKey('messages-${b.reference}'), reference: b.reference, parkingName: b.parking.title),
                                 // The stay's invoice, or « Demander la facture » (07/11/2026); hidden with nothing to show.
                                 if (b.status != 'pending_payment')
                                   TravellerInvoicesCard(key: ValueKey('invoices-${b.reference}-${b.status}'), reference: b.reference),
-                                // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
-                                BlocBuilder<ReturnBloc, ReturnState>(
-                                  buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
-                                  builder: (context, ret) => ret.data?.shuttle != null
-                                      ? const SizedBox.shrink()
-                                      : const Padding(padding: EdgeInsets.only(top: 12), child: StayShuttlesBlock()),
-                                ),
                                 const SizedBox(height: 4),
                                 BookingActions(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
                                 if (b.parking.phone != null && b.active) ...[
@@ -237,6 +238,78 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
       ),
     );
   }
+}
+
+/// The steps of the stay (C, 13/11/2026): before the drop-off, the drop-off day, the stay, the return.
+List<Widget> _steps(BuildContext context, PublicBookingModel b, ArrivalKind? kind) {
+  void refresh(_) => context.read<BookingBloc>().add(const BookingRefreshed());
+  final returnDay = kind == ArrivalKind.returnTrip || b.status == 'return_requested' || b.status == 'back_at_parking';
+  final upcoming = b.status == 'upcoming';
+  final paperwork = travellerPaperworkRelevant(b.status)
+      ? TravellerPaperworkBlock(key: ValueKey('paperwork-${b.reference}-${b.status}'), reference: b.reference)
+      : null;
+  return [
+    if (upcoming)
+      BookingStep(
+        key: const Key('step-before'),
+        number: 1,
+        title: 'booking.step_before'.tr(),
+        current: kind == null,
+        children: [
+          // « Sièges auto » (24/10/2026): the child seats for the shuttle, changeable while expected.
+          if (ChildSeatsCard.relevant(b)) ChildSeatsCard(booking: b, onChanged: refresh),
+          ?paperwork,
+        ],
+      ),
+    BookingStep(
+      key: const Key('step-drop'),
+      number: 2,
+      title: 'booking.step_drop'.tr(args: [localDay(b.arrivalAt)]),
+      current: kind == ArrivalKind.outbound,
+      children: [
+        if (kind != ArrivalKind.returnTrip) const KeyedSubtree(key: Key('booking-arrival'), child: ArrivalBlock()),
+        if (!upcoming) Text('booking.step_done'.tr(), style: AppText.muted(size: 13)),
+      ],
+    ),
+    BookingStep(
+      key: const Key('step-stay'),
+      number: 3,
+      title: 'booking.step_stay'.tr(),
+      current: !upcoming && !returnDay,
+      children: [
+        // Where the car is parked (06/10/2026): from the drop-off to the return day's own screen.
+        if (kind != ArrivalKind.returnTrip && CarLocationCard.relevant(b)) CarLocationCard(booking: b, onChanged: refresh),
+        if (!upcoming) ?paperwork,
+        // Services for the car (21/10/2026): a wash or a charge, before or after the drop-off.
+        if (travellerExtrasRelevant(b.status))
+          KeyedSubtree(
+            key: const Key('booking-extras'),
+            child: TravellerExtrasCard(key: ValueKey('extras-${b.reference}-${b.status}'), reference: b.reference),
+          ),
+        // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
+        BlocBuilder<ReturnBloc, ReturnState>(
+          buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
+          builder: (context, ret) => ret.data?.shuttle != null
+              ? const SizedBox.shrink()
+              : const Padding(padding: EdgeInsets.only(top: 12), child: StayShuttlesBlock()),
+        ),
+      ],
+    ),
+    BookingStep(
+      key: const Key('step-return'),
+      number: 4,
+      title: 'booking.step_return'.tr(args: [localDay(b.returnAt)]),
+      current: returnDay,
+      last: true,
+      children: [
+        if (kind == ArrivalKind.returnTrip)
+          const KeyedSubtree(key: Key('booking-return'), child: ReturnBlock())
+        else
+          Text('booking.step_return_hint'.tr(), style: AppText.muted(size: 13)),
+      ],
+    ),
+    const SizedBox(height: 6),
+  ];
 }
 
 /// "C'est réservé, Camille !" with the reference, where the confirmation goes, and the note that

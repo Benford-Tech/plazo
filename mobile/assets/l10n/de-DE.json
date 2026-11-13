@@ -23,7 +23,22 @@
     "flight": "Flug {}",
     "retry": "Erneut versuchen",
     "outbound": "Hinflug {}",
-    "outbound_shuttle": "Hinflug {} · Shuttle zum Terminal gegen {} geplant"
+    "outbound_shuttle": "Hinflug {} · Shuttle zum Terminal gegen {} geplant",
+    "days": {
+      "one": "{} Tag",
+      "other": "{} Tage"
+    },
+    "next_kicker": "Vor der Abgabe zu erledigen",
+    "next_contract_title": "Unterschreiben Sie Ihren Parkvertrag",
+    "next_contract_text": "Zwei Minuten: ein Code per SMS an {}, dann Ihre Unterschrift mit dem Finger. Am Empfang ist nichts mehr zu unterschreiben.",
+    "next_contract_cta": "Jetzt unterschreiben",
+    "step_before": "Vor der Abgabe",
+    "step_drop": "Abgabetag · {}",
+    "step_stay": "Während des Aufenthalts",
+    "step_return": "Rückgabe · {}",
+    "step_done": "Erledigt.",
+    "step_return_hint": "Am Tag selbst: Ihr Flug verfolgt, der Shuttle live und Ihr Auto gefunden.",
+    "write_parking": "Dem Parkplatz schreiben"
   },
   "arrival": {
     "explain_title": "Kündigen Sie dem Parkplatz Ihre Ankunft an",

@@ -23,7 +23,23 @@
     "flight": "Zbor {}",
     "retry": "Reîncercați",
     "outbound": "Zbor dus {}",
-    "outbound_shuttle": "Zbor dus {} · navetă spre terminal prevăzută în jur de {}"
+    "outbound_shuttle": "Zbor dus {} · navetă spre terminal prevăzută în jur de {}",
+    "days": {
+      "one": "{} zi",
+      "few": "{} zile",
+      "other": "{} de zile"
+    },
+    "next_kicker": "De făcut înainte de predare",
+    "next_contract_title": "Semnați contractul de parcare",
+    "next_contract_text": "Două minute: un cod prin SMS la {}, apoi semnătura cu degetul. Nimic de semnat la recepție.",
+    "next_contract_cta": "Semnați acum",
+    "step_before": "Înainte de predare",
+    "step_drop": "Ziua predării · {}",
+    "step_stay": "În timpul șederii",
+    "step_return": "Întoarcerea · {}",
+    "step_done": "Gata.",
+    "step_return_hint": "În ziua respectivă: zborul urmărit, naveta în direct și mașina găsită.",
+    "write_parking": "Scrieți parcării"
   },
   "arrival": {
     "explain_title": "Anunțați parcarea că sosiți",

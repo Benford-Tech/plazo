@@ -23,7 +23,22 @@
     "flight": "Flight {}",
     "retry": "Try again",
     "outbound": "Outbound flight {}",
-    "outbound_shuttle": "Outbound flight {} · shuttle to the terminal planned around {}"
+    "outbound_shuttle": "Outbound flight {} · shuttle to the terminal planned around {}",
+    "days": {
+      "one": "{} day",
+      "other": "{} days"
+    },
+    "next_kicker": "To do before drop-off",
+    "next_contract_title": "Sign your parking contract",
+    "next_contract_text": "Two minutes: a code by text message to {}, then your signature with your finger. Nothing left to sign at the desk.",
+    "next_contract_cta": "Sign now",
+    "step_before": "Before drop-off",
+    "step_drop": "Drop-off day · {}",
+    "step_stay": "During your stay",
+    "step_return": "Return · {}",
+    "step_done": "Done.",
+    "step_return_hint": "On the day: your flight tracked, the shuttle live and your car found.",
+    "write_parking": "Message the car park"
   },
   "arrival": {
     "explain_title": "Let the car park know you're coming",

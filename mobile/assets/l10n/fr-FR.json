@@ -23,7 +23,22 @@
     "flight": "Vol {}",
     "retry": "Réessayer",
     "outbound": "Vol aller {}",
-    "outbound_shuttle": "Vol aller {} · navette vers le terminal prévue vers {}"
+    "outbound_shuttle": "Vol aller {} · navette vers le terminal prévue vers {}",
+    "days": {
+      "one": "{} jour",
+      "other": "{} jours"
+    },
+    "next_kicker": "À faire avant le dépôt",
+    "next_contract_title": "Signez votre contrat de stationnement",
+    "next_contract_text": "Deux minutes : un code par SMS au {}, puis votre signature au doigt. Plus rien à signer au comptoir.",
+    "next_contract_cta": "Signer maintenant",
+    "step_before": "Avant le dépôt",
+    "step_drop": "Le jour du dépôt · {}",
+    "step_stay": "Pendant le séjour",
+    "step_return": "Le retour · {}",
+    "step_done": "C'est fait.",
+    "step_return_hint": "Le jour J : votre vol suivi, la navette en direct et votre voiture retrouvée.",
+    "write_parking": "Écrire au parking"
   },
   "arrival": {
     "explain_title": "Prévenez le parking de votre arrivée",

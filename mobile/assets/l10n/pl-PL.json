@@ -23,7 +23,24 @@
     "flight": "Lot {}",
     "retry": "Spróbuj ponownie",
     "outbound": "Lot wylotowy {}",
-    "outbound_shuttle": "Lot wylotowy {} · bus na terminal ok. {}"
+    "outbound_shuttle": "Lot wylotowy {} · bus na terminal ok. {}",
+    "days": {
+      "one": "{} dzień",
+      "few": "{} dni",
+      "many": "{} dni",
+      "other": "{} dnia"
+    },
+    "next_kicker": "Do zrobienia przed oddaniem",
+    "next_contract_title": "Podpisz umowę parkingową",
+    "next_contract_text": "Dwie minuty: kod SMS na numer {}, potem podpis palcem. Nic do podpisania przy ladzie.",
+    "next_contract_cta": "Podpisz teraz",
+    "step_before": "Przed oddaniem",
+    "step_drop": "Dzień oddania · {}",
+    "step_stay": "Podczas pobytu",
+    "step_return": "Odbiór · {}",
+    "step_done": "Gotowe.",
+    "step_return_hint": "W dniu powrotu: śledzony lot, bus na żywo i odnaleziony samochód.",
+    "write_parking": "Napisz do parkingu"
   },
   "arrival": {
     "explain_title": "Daj znać parkingowi, że jedziesz",

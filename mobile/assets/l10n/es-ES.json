@@ -23,7 +23,23 @@
     "flight": "Vuelo {}",
     "retry": "Reintentar",
     "outbound": "Vuelo de ida {}",
-    "outbound_shuttle": "Vuelo de ida {} · lanzadera a la terminal prevista hacia las {}"
+    "outbound_shuttle": "Vuelo de ida {} · lanzadera a la terminal prevista hacia las {}",
+    "days": {
+      "one": "{} día",
+      "other": "{} días",
+      "many": "{} días"
+    },
+    "next_kicker": "Antes de la entrega",
+    "next_contract_title": "Firma tu contrato de aparcamiento",
+    "next_contract_text": "Dos minutos: un código por SMS al {} y tu firma con el dedo. Nada que firmar en el mostrador.",
+    "next_contract_cta": "Firmar ahora",
+    "step_before": "Antes de la entrega",
+    "step_drop": "Día de la entrega · {}",
+    "step_stay": "Durante la estancia",
+    "step_return": "La vuelta · {}",
+    "step_done": "Hecho.",
+    "step_return_hint": "Ese día: tu vuelo seguido, la lanzadera en directo y tu coche localizado.",
+    "write_parking": "Escribir al aparcamiento"
   },
   "arrival": {
     "explain_title": "Avisa al aparcamiento de tu llegada",
