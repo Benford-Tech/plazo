@@ -1,6 +1,6 @@
 import { airportCity } from './airport-names';
 import { createHash } from 'crypto';
-import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml } from './account-messages';
+import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml, travellerStoreBadges } from './account-messages';
 import { EmailMessage } from './booking-messages';
 import { parseRegion, RegionKey } from './prospect-regions';
 export { displayPhone } from '@/domain/phone';
@@ -71,7 +71,7 @@ export function defaultSteps(productName: string): SequenceStep[] {
         "- le contrat signé et l'état des lieux en photos sur le téléphone ;\n" +
         "- le SMS de la veille et le chiffre d'affaires net des commissions.\n\n" +
         'Pour vos clients :\n' +
-        `- ils suivent la navette en direct dans l'application ${productName} ;\n` +
+        `- ils suivent la navette en direct dans l'application ${productName}, sur l'App Store et Google Play ;\n` +
         "- à l'atterrissage, ils reçoivent le point de rendez-vous : plus besoin d'appeler ;\n" +
         '- ils retrouvent leur réservation et leur voiture en un geste.\n\n' +
         'Essayez la démo en deux minutes : {lien_demo}\n\n' +
@@ -212,6 +212,8 @@ export function prospectEmail(input: {
   unsubscribeUrl: string;
   /** 23/10/2026 (« avec les liens des apps sur le store »): Plazo Pro's badges under the signature; none without the site's address. */
   stores?: { badgesBase: string | null; playStoreUrl: string; appStoreUrl: string | null };
+  /** 13/11/2026 (« Plazo client a été approuvé sur l'App Store »): the travellers' app Plazo, both stores, under Plazo Pro's. */
+  travellerStores?: { playStoreUrl: string; appStoreUrl: string };
   /** 09/11/2026 (« il faut des images dans le mail pour illustrer », direction B): three Plazo Pro screens under the
    *  introduction, and the Plazo Pro banner on top (« mets A et B ensemble »); the first mail only, served by the site next
    *  to the badges (none without the site's address). */
@@ -234,6 +236,12 @@ export function prospectEmail(input: {
     ? [
         `${input.productName} Pro sur Google Play (Android) : ${stores.playStoreUrl}`,
         `${input.productName} Pro sur l'App Store (iPhone) : ${stores.appStoreUrl ?? APPLE_REVIEW_NOTE}`,
+        ...(input.travellerStores
+          ? [
+              `${input.productName}, l'application de vos clients, sur Google Play (Android) : ${input.travellerStores.playStoreUrl}`,
+              `${input.productName}, l'application de vos clients, sur l'App Store (iPhone) : ${input.travellerStores.appStoreUrl}`,
+            ]
+          : []),
       ].join('\n')
     : '';
   const text = [body, signature, storeLines, '--', why, who, `${stop} : ${input.unsubscribeUrl}`].filter(Boolean).join('\n\n');
@@ -264,7 +272,11 @@ ${
 }
 <tr><td style="padding:20px 24px 24px;font-size:15px;line-height:1.55">${paragraphs}${demoButton}${signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : ''}${
     stores?.badgesBase
-      ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">L'application de l'équipe, ${escapeHtml(input.productName)} Pro :</p>${storeBadgesHtml(proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }))}`
+      ? `<p style="margin:18px 0 0;font-size:13px;color:${C.soft}">L'application de l'équipe, ${escapeHtml(input.productName)} Pro :</p>${storeBadgesHtml(proStoreBadges(input.productName, { badgesBase: stores.badgesBase, playStoreUrl: stores.playStoreUrl, appStoreUrl: stores.appStoreUrl }))}${
+          input.travellerStores
+            ? `<p style="margin:14px 0 0;font-size:13px;color:${C.soft}">L'application de vos clients, ${escapeHtml(input.productName)}, déjà sur l'App Store et Google Play :</p>${storeBadgesHtml(travellerStoreBadges(input.productName, { badgesBase: stores.badgesBase, ...input.travellerStores }))}`
+            : ''
+        }`
       : ''
   }</td></tr>
 </table>

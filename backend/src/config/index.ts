@@ -81,6 +81,12 @@ export const PUBLIC_SITE_URL = (
 export const PLAZO_PRO_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.benfordtech.plazopro';
 export const PLAZO_PRO_APP_STORE_URL = (process.env.PLAZO_PRO_APP_STORE_URL || '').trim().replace(/\/+$/, '') || null;
 
+// 13/11/2026 (« Plazo client a été approuvé sur l'App Store »): the travellers' app Plazo on both stores, for the
+// prospecting mail (« L'application de vos clients »). PLAZO_APP_STORE_URL overrides the page Apple published.
+export const PLAZO_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.benfordtech.plazo';
+export const PLAZO_APP_STORE_URL =
+  (process.env.PLAZO_APP_STORE_URL || '').trim().replace(/\/+$/, '') || 'https://apps.apple.com/fr/app/plazo-parking-a%C3%A9roport/id6821635235';
+
 // « La lettre Plazo » (footer A, 15/10/2026): the Brevo list the travellers join and the template of Brevo's double opt-in
 // email (it must hold Brevo's {{ doubleoptin }} link). Read on every call so that tests can set them. Without both (positive
 // integers, as Brevo numbers them) and BREVO_API_KEY, POST /public/newsletter answers 409 `newsletter_unavailable`.

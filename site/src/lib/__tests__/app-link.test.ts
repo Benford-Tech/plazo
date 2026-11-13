@@ -3,6 +3,7 @@ import {
   APP_LINK_CODE_RE,
   appSchemeUrl,
   appStoreUrl,
+  PLAZO_APP_STORE_PAGE,
   platformOf,
   playStoreUrl,
 } from "../app-link";
@@ -29,7 +30,7 @@ describe("app-link (27/10/2026)", () => {
     expect(playStoreUrl("R7KQ2M-K4x9PqZa")).toBe(
       "https://play.google.com/store/apps/details?id=com.benfordtech.plazo&referrer=plazo_code%3DR7KQ2M-K4x9PqZa",
     );
-    expect(appStoreUrl({})).toBeNull();
+    expect(appStoreUrl({})).toBe(PLAZO_APP_STORE_PAGE);
     expect(
       appStoreUrl({
         PLAZO_APP_STORE_URL: "https://apps.apple.com/fr/app/plazo/id123/",
@@ -37,7 +38,7 @@ describe("app-link (27/10/2026)", () => {
     ).toBe("https://apps.apple.com/fr/app/plazo/id123");
     expect(
       appStoreUrl({ PLAZO_APP_STORE_URL: "http://example.com" }),
-    ).toBeNull();
+    ).toBe(PLAZO_APP_STORE_PAGE);
     expect(appSchemeUrl("R7KQ2M-K4x9PqZa")).toBe("plazo://a/R7KQ2M-K4x9PqZa");
   });
 });
