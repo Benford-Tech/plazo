@@ -4,6 +4,7 @@ import { appLinkCode } from '@/domain/app-link';
 import { cancellationEmail, closingEmail, confirmationEmail, EmailMessage, isGsm7, reminderEmail } from '@/domain/booking-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { logger } from '@/utils/logger';
+import { isSilentBooking } from './demo-guard';
 
 const BREVO_URL = 'https://api.brevo.com/v3';
 
@@ -111,6 +112,11 @@ export class NotificationService {
       return;
     }
     if (!booking.customerEmail) return;
+    // 13/11/2026: nothing leaves the test parking or the prospects' demo.
+    if (await isSilentBooking(booking.reference)) {
+      logger.info(`[Notifications] Test operator: ${tag} email not sent for booking ${booking.reference}`);
+      return;
+    }
     await this.post('email', tag, `booking ${booking.reference}`, '/smtp/email', {
       sender,
       to: [{ email: booking.customerEmail, name: booking.customerName }],
