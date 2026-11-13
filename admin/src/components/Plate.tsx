@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 /**
  * A plate drawn like a French one: blue EU band with "F", black on white (borrowed from direction C). 15/10/2026 (« ne pas
  * planter à l'import quand la plaque est manquante »): a booking imported without its plate shows « À saisir » in the plate.
+ * 13/11/2026 (« plaques pas visible » dans Contrats): never wrapped at its hyphens in a narrow column.
  */
 export function Plate({ value, size = "md", className }: { value: string; size?: "sm" | "md" | "lg"; className?: string }) {
   const sizes = {
@@ -22,7 +23,7 @@ export function Plate({ value, size = "md", className }: { value: string; size?:
       </span>
       <span
         className={cn(
-          "flex items-center bg-white tracking-wide",
+          "flex items-center whitespace-nowrap bg-white tracking-wide",
           missing ? "font-normal text-muted-foreground" : "font-bold text-[#0B0B0C]",
           sizes.text,
         )}

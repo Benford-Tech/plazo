@@ -18,4 +18,9 @@ describe("Plate", () => {
     render(<Plate value="—" />);
     expect(screen.getByText("—")).toHaveClass("font-bold");
   });
+
+  it("13/11/2026 : jamais coupée à ses tirets dans une colonne étroite", () => {
+    render(<Plate value="EN-226-TC" size="sm" />);
+    expect(screen.getByText("EN-226-TC")).toHaveClass("whitespace-nowrap");
+  });
 });
