@@ -1179,7 +1179,16 @@
     "contact": "Nous contacter",
     "version": "Version {}",
     "travellers": "Voyageurs",
-    "about": "À propos"
+    "about": "À propos",
+    "notifications": "Notifications",
+    "notif_booking": "Ma réservation",
+    "notif_booking_text": "navette, rappel, atterrissage",
+    "notif_booking_on": "Toujours",
+    "offers": "Offres et bons plans",
+    "offers_text": "Des idées de séjour et des nouveautés de Plazo, deux par semaine au plus.",
+    "offers_settings": "Activez les notifications de Plazo dans les réglages du téléphone.",
+    "offers_web": "Les notifications ne sont disponibles que dans l'application installée.",
+    "offers_failed": "Impossible d'enregistrer votre choix. Réessayez."
   },
   "return_day": {
     "title": "Votre retour aujourd'hui",

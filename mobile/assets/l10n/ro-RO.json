@@ -1180,7 +1180,16 @@
     "contact": "Contactați-ne",
     "version": "Versiunea {}",
     "travellers": "Călători",
-    "about": "Despre"
+    "about": "Despre",
+    "notifications": "Notificări",
+    "notif_booking": "Rezervarea mea",
+    "notif_booking_text": "navetă, memento, aterizare",
+    "notif_booking_on": "Mereu",
+    "offers": "Oferte și reduceri",
+    "offers_text": "Idei de călătorie și noutăți Plazo, cel mult două pe săptămână.",
+    "offers_settings": "Activați notificările Plazo din setările telefonului.",
+    "offers_web": "Notificările sunt disponibile doar în aplicația instalată.",
+    "offers_failed": "Alegerea nu a putut fi salvată. Încercați din nou."
   },
   "return_day": {
     "title": "Întoarcerea dvs. de azi",

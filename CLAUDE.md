@@ -1795,7 +1795,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `filters.airport`) : le push porte `data { type: 'promotion', path }` et l'app ouvre la recherche ou la fiche à ces dates
   (`/lyon-saint-exupery/recherche?arrivee=…&retour=…`) ; aucun prix ne change ; deux promotions par 7 jours au plus (429 `weekly_limit`,
   `nextPromotionAt` du compte) ; `PlatformNotification.link/filters`. Politique de confidentialité (consentement, durée). Pas encore : B (codes
-  promo), C (campagnes, mail, statistiques). Test `promotions.test.ts`. **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
+  promo), C (campagnes, mail, statistiques). Espace pro : « Genre · Information | Promotion » de la page (`PromotionForm` :
+  filtres, « Ouvre dans l'app » Accueil · Recherche · Fiche d'un parking avec dates, nombre de téléphones, aperçu, « Prochaine promotion
+  possible le … » ; `lib/promotion.ts`). App Plazo : section « Notifications » de Plus (« Ma réservation · Toujours » et l'interrupteur
+  `offers-switch`, `features/offers` : `OffersSwitch`, `OffersDataSource` par Dio, choix gardé `offers.enabled` ; allumer demande la
+  permission des notifications), `AppDevicePing` au lancement (sans demander la permission, `PushService.currentId`), et un push
+  `promotion` ouvre son chemin (`pushPath`, sinon Rechercher). Tests `promotions.test.ts`, `NotificationsPage.test.tsx`,
+  `offers_switch_test.dart`. **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
   https://claude.ai/artifact/YNc1gxT1wvRA9L1hw8MbPK)** : pour le super admin, le nom du parking dans la barre haute (et sur téléphone
   en haut du rail) ouvre `ParkingSwitcher` (`components/platform/ParkingSwitcher.tsx`, `lib/parking-switcher.ts`), qui remplace le menu
   « Changer de vue » (aussi dans la barre de la Plateforme) : recherche sans accents (les archivés en plus quand on cherche), « Récents »
