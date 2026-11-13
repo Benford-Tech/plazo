@@ -1500,8 +1500,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`), **au comptoir seulement (20/10/2026, « A au comptoir »)** : sur
    le téléphone du parking avec un code à 6 chiffres reçu par SMS par le voyageur (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
    heure, toujours par le Brevo de Plazo quel que soit le canal SMS du loueur : `SmsService.sendSignatureCode`, sortie `signature_code`),
-   ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; l'app du voyageur montre le contrat à lire (`contract.atCounter`,
-   `canSign` faux pour le voyageur) et `POST /public/bookings/:ref/contract/code|sign` répondent 409 `contract_at_counter` ; copie
+   ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; **et dans l'app Plazo depuis le 13/11/2026** (« Impossible de signer »,
+   choix « les deux » et M1) : « Signer le contrat » de Ma réservation, case « J'ai lu et j'accepte », code reçu par SMS au mobile de
+   la réservation puis signature au doigt, les deux exigés (`POST /public/bookings/:ref/contract/code`, `…/sign { code, strokes }`,
+   400 par champ ; `travellerCanSign` de la vue, `atCounter` gardé pour les anciennes versions ; sans mobile ni SMS : 409
+   `contract_at_counter`, au comptoir) ; méthode `sms_code`, appareil `traveller_app`, tracé de la signature sur le PDF ; push et
+   cloche « Contrat signé » à l'équipe (audience `bookingChanges`) ; pastille « Contrat signé » sur la ligne d'arrivée du planning de
+   Plazo Pro (`contractSignedAt` de `GET /internal/planning`) ; copie
    envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
    **États des lieux** (`VehicleInspection`
    `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : quatre photos guidées facultatives (avant, droite, arrière, gauche depuis le 30/10/2026,

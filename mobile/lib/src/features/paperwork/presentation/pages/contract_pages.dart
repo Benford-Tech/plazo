@@ -136,6 +136,8 @@ class _ContractBodyState extends State<_ContractBody> {
             const SizedBox(height: 14),
             if (contract.isSigned)
               _Signed(signed: contract.signed!, files: contract.files, owner: state.owner)
+            else if (!widget.staff && contract.travellerCanSign)
+              ..._travellerSteps(context, state, contract)
             else if (!widget.staff && contract.atCounter)
               AppCard(
                 key: const Key('contract-at-counter'),
@@ -168,6 +170,76 @@ class _ContractBodyState extends State<_ContractBody> {
         );
       },
     );
+  }
+
+  /// Plazo (13/11/2026, « Impossible de signer », choice « les deux »): the traveller reads, accepts, gets a code by SMS,
+  /// types it and signs with the finger; both are sent together.
+  List<Widget> _travellerSteps(BuildContext context, PaperworkState state, ContractModel contract) {
+    final bloc = context.read<PaperworkBloc>();
+    final sent = state.codeSent;
+    return [
+      AppCard(
+        key: const Key('contract-app-intro'),
+        color: AppColors.canvas,
+        child: Text('paperwork.app_sign_intro'.tr(args: [contract.phoneMasked]), style: AppText.body(size: 14)),
+      ),
+      CheckboxListTile(
+        key: const Key('contract-accept'),
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        value: _accepted,
+        onChanged: (v) => setState(() => _accepted = v ?? false),
+        title: Text('paperwork.contract_accept'.tr(), style: AppText.body(size: 14)),
+      ),
+      if (sent == null)
+        GradientButton(
+          key: const Key('contract-send-code'),
+          label: 'paperwork.send_code'.tr(args: [contract.phoneMasked]),
+          icon: Icons.sms_outlined,
+          busy: state.busy,
+          onPressed: !_accepted || state.busy ? null : () => bloc.add(const PaperworkCodeRequested()),
+        )
+      else ...[
+        Text('paperwork.code_sent'.tr(args: [sent.sentTo]), style: AppText.body(size: 13.5)),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('contract-code'),
+          controller: _code,
+          keyboardType: TextInputType.number,
+          autofillHints: const [AutofillHints.oneTimeCode],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(6)],
+          textAlign: TextAlign.center,
+          style: AppText.tabular(size: 24).copyWith(letterSpacing: 8),
+          decoration: InputDecoration(labelText: 'paperwork.code_label'.tr(), errorText: state.errorFields?['code'] != null ? 'errors.wrong_code'.tr() : null),
+          onChanged: (_) => setState(() {}),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const Key('contract-resend'),
+            onPressed: state.busy ? null : () => bloc.add(const PaperworkCodeRequested()),
+            child: Text('paperwork.resend_code'.tr()),
+          ),
+        ),
+        Text('paperwork.app_sign_draw'.tr(), style: AppText.label(size: 11)),
+        const SizedBox(height: 6),
+        SignaturePad(controller: _signature),
+        const SizedBox(height: 12),
+        ListenableBuilder(
+          listenable: _signature,
+          builder: (context, _) => GradientButton(
+            key: const Key('contract-sign'),
+            label: 'paperwork.sign_contract'.tr(),
+            busy: state.busy,
+            onPressed: !_accepted || _code.text.length != 6 || !_signature.signed || state.busy
+                ? null
+                : () => bloc.add(PaperworkSigned(code: _code.text, strokes: _signature.toJson())),
+          ),
+        ),
+      ],
+      const SizedBox(height: 8),
+      Text('paperwork.signature_note'.tr(), style: AppText.muted(size: 12), textAlign: TextAlign.center),
+    ];
   }
 
   List<Widget> _codeStep(BuildContext context, PaperworkState state, ContractModel contract) {

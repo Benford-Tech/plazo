@@ -516,7 +516,8 @@
     "continue_google": "Kontynuuj z Google",
     "or_email": "lub przez e-mail",
     "board": "Zabierz do busa",
-    "fetch": "Odbierz"
+    "fetch": "Odbierz",
+    "contract_signed": "Umowa podpisana"
   },
   "errors": {
     "child_seats_exceed_passengers": "Dzieci liczą się jako pasażerowie: dodaj je do liczby pasażerów.",
@@ -2253,7 +2254,10 @@
     "my_photos_note_hint": "Np. mała rysa na lewych tylnych drzwiach, była już wcześniej.",
     "my_photos_send": "Wyślij zdjęcia do parkingu",
     "my_photos_footer": "Po wysłaniu nie można ich już zmienić. Umowę podpisuje się w recepcji, kodem otrzymanym SMS-em.",
-    "my_photos_sent_on": "Zdjęcia wysłane do parkingu: {}, dnia {}."
+    "my_photos_sent_on": "Zdjęcia wysłane do parkingu: {}, dnia {}.",
+    "contract_to_sign_app": "Do podpisania: dotknij, aby podpisać w aplikacji",
+    "app_sign_intro": "Podpisz umowę tutaj: zaznacz pole, odbierz kod SMS na numer {}, wpisz go i podpisz palcem.",
+    "app_sign_draw": "Twój podpis palcem"
   },
   "extras": {
     "title": "Usługi dodatkowe",

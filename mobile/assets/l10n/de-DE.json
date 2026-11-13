@@ -516,7 +516,8 @@
     "continue_google": "Weiter mit Google",
     "or_email": "oder mit Ihrer E-Mail",
     "board": "Einsteigen lassen",
-    "fetch": "Abholen"
+    "fetch": "Abholen",
+    "contract_signed": "Vertrag unterschrieben"
   },
   "errors": {
     "child_seats_exceed_passengers": "Kinder zählen als Fahrgäste: Rechnen Sie sie in die Fahrgastzahl ein.",
@@ -2253,7 +2254,10 @@
     "my_photos_note_hint": "z. B. kleiner Kratzer, schon vorhanden, an der hinteren linken Tür.",
     "my_photos_send": "Meine Fotos an den Parkplatz senden",
     "my_photos_footer": "Einmal gesendet, können sie nicht mehr geändert werden. Der Vertrag wird am Schalter mit einem per SMS erhaltenen Code unterschrieben.",
-    "my_photos_sent_on": "{} Foto(s) am {} an den Parkplatz gesendet."
+    "my_photos_sent_on": "{} Foto(s) am {} an den Parkplatz gesendet.",
+    "contract_to_sign_app": "Zu unterschreiben: tippen, um in der App zu unterschreiben",
+    "app_sign_intro": "Unterschreiben Sie Ihren Vertrag hier: Kästchen ankreuzen, Code per SMS an {} erhalten, eingeben und mit dem Finger unterschreiben.",
+    "app_sign_draw": "Ihre Unterschrift, mit dem Finger"
   },
   "extras": {
     "title": "Zusatzleistungen",

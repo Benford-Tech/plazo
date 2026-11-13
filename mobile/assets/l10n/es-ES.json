@@ -516,7 +516,8 @@
     "continue_google": "Continuar con Google",
     "or_email": "o con tu e-mail",
     "board": "Embarcar",
-    "fetch": "Recoger"
+    "fetch": "Recoger",
+    "contract_signed": "Contrato firmado"
   },
   "errors": {
     "child_seats_exceed_passengers": "Los niños cuentan como pasajeros: súmalos al número de pasajeros.",
@@ -2253,7 +2254,10 @@
     "my_photos_note_hint": "Ej.: pequeño arañazo ya presente en la puerta trasera izquierda.",
     "my_photos_send": "Enviar mis fotos al aparcamiento",
     "my_photos_footer": "Una vez enviadas, ya no se pueden modificar. El contrato se firma en el mostrador, con un código recibido por SMS.",
-    "my_photos_sent_on": "{} foto(s) enviada(s) al aparcamiento el {}."
+    "my_photos_sent_on": "{} foto(s) enviada(s) al aparcamiento el {}.",
+    "contract_to_sign_app": "Por firmar: toca para firmar en la app",
+    "app_sign_intro": "Firma tu contrato aquí: marca la casilla, recibe un código por SMS en el {}, escríbelo y firma con el dedo.",
+    "app_sign_draw": "Tu firma, con el dedo"
   },
   "extras": {
     "title": "Servicios adicionales",

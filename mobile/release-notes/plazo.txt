@@ -1,4 +1,4 @@
-Nouveau : écrivez au parking depuis Ma réservation.
+Nouveau : signez votre contrat dans l'app.
 • En 9 langues : celle du téléphone.
 • Votre prochain départ en tête, puis les parkings libres pour vos dates.
 • Comparez les parkings de l'aéroport : prix total, navette, voiturier.
@@ -6,4 +6,4 @@ Nouveau : écrivez au parking depuis Ma réservation.
 • Le jour J, prévenez le parking et suivez la navette en direct.
 • Au retour, suivez votre vol et la navette, retrouvez votre voiture.
 • Sièges auto gratuits pour les enfants.
-• Votre facture dans Ma réservation.
+• Contrat et facture dans Ma réservation.

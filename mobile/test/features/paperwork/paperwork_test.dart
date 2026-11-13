@@ -12,6 +12,7 @@ import 'package:parking_app/src/features/paperwork/presentation/pages/contract_p
 import 'package:parking_app/src/features/paperwork/presentation/pages/traveller_inspection_page.dart';
 import 'package:parking_app/src/features/paperwork/presentation/pages/traveller_photos_page.dart';
 import 'package:parking_app/src/features/paperwork/presentation/widgets/paperwork_widgets.dart';
+import 'package:parking_app/src/shared/widgets/gradient_button.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
@@ -140,7 +141,7 @@ class FakePaperworkSource implements PaperworkDataSource {
 
   @override
   Future<PaperworkModel> sign(PaperworkOwner owner, {String? code, List<List<List<double>>>? strokes}) async {
-    calls.add('sign:${code ?? 'hand'}');
+    calls.add('sign:${code ?? 'hand'}${strokes != null && code != null ? '+hand' : ''}');
     if (code == '000000') throw const ApiError('wrong_code', fields: {'code': 'wrong_code'}, status: 400).toDio();
     return data = _paperwork(signed: true);
   }
@@ -330,6 +331,36 @@ void main() {
       await tester.scrollUntilVisible(find.byKey(const Key('contract-at-counter')), 300, scrollable: find.byType(Scrollable).first);
       expect(find.byKey(const Key('contract-send-code')), findsNothing);
       expect(find.byKey(const Key('contract-accept')), findsNothing);
+    });
+
+    testWidgets("Plazo (13/11/2026) : le voyageur signe dans l'appli, code par SMS et signature au doigt", (tester) async {
+      source.data = source.data.copyWith(contract: source.data.contract.copyWith(canSign: true, atCounter: true, travellerCanSign: true));
+      await pumpLocalized(tester, Builder(builder: (context) => const TravellerContractPage(reference: 'PZ48K2').wrappedRoute(context)));
+      await tester.pumpAndSettle();
+      final scrollable = find.byType(Scrollable).first;
+      await tester.scrollUntilVisible(find.byKey(const Key('contract-send-code')), 300, scrollable: scrollable);
+      expect(find.byKey(const Key('contract-at-counter')), findsNothing);
+      await tester.tap(find.byKey(const Key('contract-accept')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('contract-send-code')));
+      await tester.pumpAndSettle();
+      expect(source.calls, ['code']);
+      await tester.enterText(find.byKey(const Key('contract-code')), '123456');
+      await tester.pump();
+      await tester.scrollUntilVisible(find.byKey(const Key('contract-sign')), 300, scrollable: scrollable);
+      // Not without the signature.
+      expect(tester.widget<GradientButton>(find.byKey(const Key('contract-sign'))).onPressed, isNull);
+      final pad = find.byType(SignaturePad);
+      final gesture = await tester.startGesture(tester.getCenter(pad) - const Offset(40, 0));
+      for (var i = 0; i < 8; i++) {
+        await gesture.moveBy(const Offset(12, 2));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('contract-sign')));
+      await tester.pumpAndSettle();
+      expect(source.calls.last, 'sign:123456+hand');
     });
 
     testWidgets('« Vos photos de la voiture » : un mot puis « Envoyer mes photos au parking »', (tester) async {

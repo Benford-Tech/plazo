@@ -162,8 +162,11 @@ class TravellerPaperworkBlock extends StatelessWidget {
                 title: 'paperwork.contract'.tr(),
                 text: contract.isSigned
                     ? 'paperwork.contract_signed_short'.tr(args: [DateFormat(withTime('d MMM'), appLocale).format(contract.signed!.signedAt.toLocal())])
+                    : contract.travellerCanSign
+                    ? 'paperwork.contract_to_sign_app'.tr()
                     : 'paperwork.contract_at_counter_short'.tr(),
-                highlight: false,
+                // 13/11/2026: to sign in the app, the card stands out.
+                highlight: !contract.isSigned && contract.travellerCanSign,
                 onTap: () => open(TravellerContractRoute(reference: reference)),
               ),
             );

@@ -516,7 +516,8 @@
     "continue_google": "Continuați cu Google",
     "or_email": "sau cu e-mailul dvs.",
     "board": "Îmbarcare",
-    "fetch": "Preluați"
+    "fetch": "Preluați",
+    "contract_signed": "Contract semnat"
   },
   "errors": {
     "child_seats_exceed_passengers": "Copiii se numără printre pasageri: adăugați-i la numărul de pasageri.",
@@ -2253,7 +2254,10 @@
     "my_photos_note_hint": "Ex. mică zgârietură deja prezentă pe portiera din spate stânga.",
     "my_photos_send": "Trimiteți fotografiile parcării",
     "my_photos_footer": "Odată trimise, nu mai pot fi modificate. Contractul se semnează la ghișeu, cu un cod primit prin SMS.",
-    "my_photos_sent_on": "Fotografii trimise parcării: {}, pe {}."
+    "my_photos_sent_on": "Fotografii trimise parcării: {}, pe {}.",
+    "contract_to_sign_app": "De semnat: atingeți pentru a semna în aplicație",
+    "app_sign_intro": "Semnați contractul aici: bifați căsuța, primiți un cod prin SMS la {}, introduceți-l și semnați cu degetul.",
+    "app_sign_draw": "Semnătura dvs., cu degetul"
   },
   "extras": {
     "title": "Servicii suplimentare",

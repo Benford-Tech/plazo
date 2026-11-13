@@ -516,7 +516,8 @@
     "continue_google": "Continue with Google",
     "or_email": "or with your email",
     "board": "Board",
-    "fetch": "Pick up"
+    "fetch": "Pick up",
+    "contract_signed": "Contract signed"
   },
   "errors": {
     "child_seats_exceed_passengers": "Children count as passengers: add them to the number of passengers.",
@@ -2253,7 +2254,10 @@
     "my_photos_note_hint": "E.g. small scratch already on the rear left door.",
     "my_photos_send": "Send my photos to the car park",
     "my_photos_footer": "Once sent, they can't be changed. The contract is signed at the counter, with a code sent by text.",
-    "my_photos_sent_on": "{} photo(s) sent to the car park on {}."
+    "my_photos_sent_on": "{} photo(s) sent to the car park on {}.",
+    "contract_to_sign_app": "To sign: tap to sign in the app",
+    "app_sign_intro": "Sign your contract here: tick the box, get a code by text message at {}, type it in, then sign with your finger.",
+    "app_sign_draw": "Your signature, with your finger"
   },
   "extras": {
     "title": "Extra services",

@@ -116,8 +116,16 @@ class TodayRowTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (b.handover == 'valet') ...[
-              Align(alignment: Alignment.centerLeft, child: ValetPill(label: 'res.care_valet'.tr())),
+            if (b.handover == 'valet' || (!isReturn && b.contractSignedAt != null)) ...[
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  if (b.handover == 'valet') ValetPill(label: 'res.care_valet'.tr()),
+                  // M1 (13/11/2026): the contract is already signed, nothing to sign at the counter.
+                  if (!isReturn && b.contractSignedAt != null) _ContractSignedPill(key: Key('contract-signed-${b.id}')),
+                ],
+              ),
               const SizedBox(height: 6),
             ],
             Row(
@@ -178,6 +186,24 @@ class TodayRowTile extends StatelessWidget {
           ],
         );
   }
+}
+
+class _ContractSignedPill extends StatelessWidget {
+  const _ContractSignedPill({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: const BoxDecoration(color: AppStatus.okSoft, borderRadius: AppRadius.small),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.verified_rounded, size: 14, color: AppStatus.ok),
+        const SizedBox(width: 4),
+        Text('pro.contract_signed'.tr(), style: AppText.label(size: 11, color: AppColors.accent).copyWith(fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
 }
 
 class _StatusLabel extends StatelessWidget {
