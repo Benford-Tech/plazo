@@ -2948,6 +2948,7 @@
     "unhandle": "Przywróć do obsłużenia",
     "handled": "Rozmowa oznaczona jako obsłużona.",
     "call": "Zadzwoń pod {}",
+    "sms": "Wyślij SMS pod {}",
     "errors": {
       "window_closed": "Dowolna odpowiedź niemożliwa: ostatnia wiadomość klienta ma ponad 24 h.",
       "whatsapp_unavailable": "WhatsApp nie jest skonfigurowany dla Plazo.",

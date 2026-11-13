@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Mic, Paperclip, Phone } from "lucide-react";
+import { ArrowLeft, Copy, MapPin, MessageSquare, Mic, Paperclip, Phone } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -360,13 +360,7 @@ function Thread({
           </span>
         )}
         {r && <StatusPill status={r.status} />}
-        <a
-          href={`tel:${c.phone.replace(/\s/g, "")}`}
-          className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"
-        >
-          <Phone className="h-3.5 w-3.5" />
-          {c.phone}
-        </a>
+        {c.phone && <OwnPhoneActions phone={c.phone} />}
         {r && (
           <Link
             to={`/reservations/${r.id}`}
@@ -729,5 +723,40 @@ export default function WhatsappInboxPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The traveller's number with the team member's own phone (13/11/2026, choix A, « basculer sur l'envoi d'un SMS ou un appel avec son
+ * propre téléphone ») : call, SMS from the phone's own app, and « Copier » for a computer, which often has neither.
+ */
+function OwnPhoneActions({ phone }: { phone: string }) {
+  const digits = phone.replace(/[^\d+]/g, "");
+  const iconLink = "inline-flex h-8 w-8 items-center justify-center rounded-full border border-panel-line text-lime-deep hover:bg-accent";
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="font-mono text-xs text-muted-foreground">{phone}</span>
+      <a href={`sms:${digits}`} aria-label={t.sms(phone)} title={t.sms(phone)} data-testid="wa-sms" className={iconLink}>
+        <MessageSquare className="h-4 w-4" />
+      </a>
+      <a href={`tel:${digits}`} aria-label={t.call(phone)} title={t.call(phone)} data-testid="wa-call" className={iconLink}>
+        <Phone className="h-4 w-4" />
+      </a>
+      <button
+        type="button"
+        aria-label={t.copyNumber}
+        title={t.copyNumber}
+        data-testid="wa-copy-number"
+        className={iconLink}
+        onClick={() => {
+          void navigator.clipboard
+            ?.writeText(phone)
+            .then(() => toast.success(t.numberCopied))
+            .catch(() => undefined);
+        }}
+      >
+        <Copy className="h-4 w-4" />
+      </button>
+    </span>
   );
 }

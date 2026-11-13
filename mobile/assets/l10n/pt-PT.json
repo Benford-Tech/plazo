@@ -2945,6 +2945,7 @@
     "unhandle": "Voltar a pôr a tratar",
     "handled": "Conversa marcada como tratada.",
     "call": "Ligar para o {}",
+    "sms": "Enviar SMS para o {}",
     "errors": {
       "window_closed": "Já não é possível responder livremente: a última mensagem do cliente tem mais de 24 h.",
       "whatsapp_unavailable": "O WhatsApp não está configurado para a Plazo.",

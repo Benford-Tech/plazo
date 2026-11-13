@@ -2942,6 +2942,7 @@
     "unhandle": "Set back to handle",
     "handled": "Conversation marked as handled.",
     "call": "Call {}",
+    "sms": "Text {}",
     "errors": {
       "window_closed": "No more free replies possible: the customer's last message is more than 24 h old.",
       "whatsapp_unavailable": "WhatsApp isn't set up for Plazo.",

@@ -1454,6 +1454,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      no_phone · no_channel · anonymized) et `POST …/write { text, channel }` (`RefuseInDemo` ; 400 `text`, 409 `no_phone` ·
      `whatsapp_unavailable` · `anonymized`, 502 `sms_failed` / code de Meta) → `{ channel, via: text · template · sms, conversationId,
      fallback }` ; tracé `traveller.message_sent` (« a écrit au client » dans l'Historique, groupe Messages ; `whatsapp.reply` aussi).
+     **SMS et appel avec son propre téléphone, choix A (13/11/2026, « pouvoir depuis la conversation WhatsApp basculer sur l'envoi
+     d'un SMS ou un appel avec son propre téléphone », maquettes https://claude.ai/artifact/7H1jYTP1vR68z8u2W1Qevj)** : en tête de la
+     conversation, une icône SMS (`wa-sms`, `sms:` : l'appli SMS du téléphone sur ce numéro) à côté de l'appel (`wa-call`, `tel:`) ;
+     Plazo Pro `ProWhatsappConversationPage` (`_sms`, `whatsapp_inbox.sms` dans les neuf langues), web `OwnPhoneActions` de
+     `WhatsappInboxPage` (numéro, SMS, appel et « Copier le numéro » pour un ordinateur) ; rien pour une conversation de l'app sans
+     numéro ; le SMS part du téléphone du membre, sa réponse n'arrive pas dans Plazo. Tests `whatsapp_inbox_test.dart`,
+     `WhatsappInboxPage.test.tsx`.
      **Le chauffeur aussi (13/11/2026, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
      `reservations:status` (chauffeurs et voituriers compris) et le bouton de la fiche suit. **La boîte aussi (13/11/2026,
      « Le chauffeur y a droit »)** : les routes de « Messages WhatsApp » (liste, Envoyés, conversation, médias, réponse,

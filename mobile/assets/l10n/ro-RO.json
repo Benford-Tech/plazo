@@ -2945,6 +2945,7 @@
     "unhandle": "Puneți din nou de rezolvat",
     "handled": "Conversație marcată ca rezolvată.",
     "call": "Sunați la {}",
+    "sms": "Trimiteți SMS la {}",
     "errors": {
       "window_closed": "Nu mai este posibil un răspuns liber: ultimul mesaj al clientului are peste 24 h.",
       "whatsapp_unavailable": "WhatsApp nu este configurat pentru Plazo.",

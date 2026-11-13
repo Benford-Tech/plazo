@@ -130,6 +130,15 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     renderAt("/reservations/whatsapp?c=c1");
     expect(await screen.findByTestId("wa-window-closed")).toBeInTheDocument();
     expect(screen.getByLabelText("Écrire au client…")).toBeDisabled();
-    expect(screen.getByRole("link", { name: "Appeler le 06 12 34 56 78" })).toHaveAttribute("href", "tel:0612345678");
+    const calls = screen.getAllByRole("link", { name: "Appeler le 06 12 34 56 78" });
+    expect(calls.length).toBeGreaterThan(0);
+    calls.forEach((link) => expect(link).toHaveAttribute("href", "tel:0612345678"));
+  });
+
+  it("propose un SMS et un appel avec son propre téléphone, et de copier le numéro (choix A du 13/11/2026)", async () => {
+    renderAt("/reservations/whatsapp?c=c1");
+    expect(await screen.findByTestId("wa-sms")).toHaveAttribute("href", "sms:0612345678");
+    expect(screen.getByTestId("wa-call")).toHaveAttribute("href", "tel:0612345678");
+    expect(screen.getByTestId("wa-copy-number")).toBeInTheDocument();
   });
 });
