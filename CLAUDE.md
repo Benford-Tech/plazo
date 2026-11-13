@@ -1857,6 +1857,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `storeBadgesHtml` partagés avec l'invitation, `ProspectingService.stores()` ; Google Play cliquable, App Store grisé tant que
   `PLAZO_PRO_APP_STORE_URL` manque ; deux lignes dans la version texte), puis sous la carte la raison, l'éditeur et le lien de
   désinscription.
+  **L'app des voyageurs dans le mail (13/11/2026, « mets à niveau le mail de prospection car Plazo client a été approuvé sur l'appstore »)** :
+  sous les badges de Plazo Pro, « L'application de vos clients, Plazo, déjà sur l'App Store et Google Play » et ses deux badges
+  (`travellerStoreBadges`, option `travellerStores` de `prospectEmail`, `PLAZO_PLAY_STORE_URL` / `PLAZO_APP_STORE_URL` de `config`, la page
+  publiée par Apple par défaut), deux lignes dans la version texte ; le mail 1 par défaut dit « dans l'application Plazo, sur l'App Store et
+  Google Play » ; la page de rebond du lien court (`appStoreUrl` de `site/src/lib/app-link.ts`) prend la même page par défaut au lieu de
+  « Bientôt sur l'App Store ». Plazo Pro reste « Validation par Apple en cours » tant que `PLAZO_PRO_APP_STORE_URL` manque.
   **Images dans le premier mail, direction B (09/11/2026, « il faut des images dans le mail pour illustrer », maquettes
   https://claude.ai/artifact/3tvu7w8QKu47ti3QYW5eLq)** : sous l'introduction (après le deuxième paragraphe) du mail 1 seulement,
   trois écrans de Plazo Pro côte à côte avec leur légende, « Le planning du jour », « La navette en direct », « Chaque voiture à

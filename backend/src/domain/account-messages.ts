@@ -120,6 +120,26 @@ ${actionHtml}
 </td></tr></table>`;
 }
 
+/** 13/11/2026: the two store badges of the travellers' app Plazo, both published. */
+export function travellerStoreBadges(productName: string, stores: { badgesBase: string; playStoreUrl: string; appStoreUrl: string }): StoreBadge[] {
+  return [
+    {
+      label: `${productName} sur Google Play (Android)`,
+      url: stores.playStoreUrl,
+      imageUrl: `${stores.badgesBase}${STORE_BADGE_PATHS.googlePlay}`,
+      width: 155,
+      height: 60,
+    },
+    {
+      label: `${productName} sur l'App Store (iPhone)`,
+      url: stores.appStoreUrl,
+      imageUrl: `${stores.badgesBase}${STORE_BADGE_PATHS.appStore}`,
+      width: 142,
+      height: 45,
+    },
+  ];
+}
+
 /** The two store badges of Plazo Pro (23/10/2026): Google Play linked, the App Store greyed and noted until Apple publishes. */
 export function proStoreBadges(productName: string, stores: { badgesBase: string; playStoreUrl: string; appStoreUrl: string | null }): StoreBadge[] {
   return [
