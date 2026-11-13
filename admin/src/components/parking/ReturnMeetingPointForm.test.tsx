@@ -8,6 +8,8 @@ import { ShuttleVehicles } from "./ShuttleVehicles";
 const api = vi.hoisted(() => ({
   getReturnMeetingPoint: vi.fn(),
   setReturnMeetingPoint: vi.fn(),
+  uploadMeetingPhoto: vi.fn(),
+  removeMeetingPhoto: vi.fn(),
   getVehicles: vi.fn(),
   getTeam: vi.fn(),
   addVehicle: vi.fn(),
@@ -36,6 +38,8 @@ describe("Point de rendez-vous au retour", () => {
   beforeEach(() => {
     api.getReturnMeetingPoint.mockResolvedValue({ data: null });
     api.setReturnMeetingPoint.mockImplementation(async (point: unknown) => ({ data: point }));
+    api.uploadMeetingPhoto.mockResolvedValue({ photoUrl: "https://example.com/p.jpg" });
+    api.removeMeetingPhoto.mockResolvedValue(undefined);
   });
 
   it("place le point sur la carte, saisit libellé et consignes, et enregistre", async () => {
@@ -52,8 +56,11 @@ describe("Point de rendez-vous au retour", () => {
     await user.type(screen.getByLabelText("Libellé"), "Terminal 1 · Porte 12");
     await user.type(screen.getByLabelText("Consignes pour le voyageur"), "Sortez côté parkings.");
     expect(screen.getByText(/479 caractères restants/)).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Photo du point de rendez-vous (adresse web)"), "https://example.com/p.jpg");
-    expect(screen.getByRole("img", { name: "Aperçu de la photo du point de rendez-vous" })).toHaveAttribute("src", "https://example.com/p.jpg");
+    // 13/11/2026 (choix A): the photo is a file, sent at once, then saved with the point.
+    await user.upload(screen.getByLabelText("Photo du point de rendez-vous"), new File([new Uint8Array([0xff, 0xd8, 0xff, 1])], "rdv.jpg", { type: "image/jpeg" }));
+    expect(await screen.findByRole("img", { name: "Aperçu de la photo du point de rendez-vous" })).toHaveAttribute("src", "https://example.com/p.jpg");
+    expect(api.uploadMeetingPhoto).toHaveBeenCalledTimes(1);
+    expect(toast.success).toHaveBeenCalledWith("Photo enregistrée.");
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
     await waitFor(() =>
       expect(api.setReturnMeetingPoint).toHaveBeenCalledWith({
@@ -71,16 +78,30 @@ describe("Point de rendez-vous au retour", () => {
   it("montre le point existant, traduit les erreurs de champ, et peut le supprimer", async () => {
     const user = userEvent.setup();
     api.getReturnMeetingPoint.mockResolvedValue({ data: { lat: 45.72, lng: 5.08, label: "T1", instructions: "x", photoUrl: null } });
-    api.setReturnMeetingPoint.mockRejectedValueOnce(new ApiError(400, "validation_failed", "validation_failed", { photoUrl: "invalid_url" }));
+    api.setReturnMeetingPoint.mockRejectedValueOnce(new ApiError(400, "validation_failed", "validation_failed", { label: "too_long" }));
     renderIn(<ReturnMeetingPointForm />);
     expect(await screen.findByText("marker 45.72,5.08")).toBeInTheDocument();
     expect(screen.getByLabelText("Libellé")).toHaveValue("T1");
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-    expect(await screen.findByText("Adresse web invalide (http:// ou https://).")).toBeInTheDocument();
+    expect(await screen.findByText("Texte trop long.")).toBeInTheDocument();
     api.setReturnMeetingPoint.mockResolvedValueOnce({ data: null });
     await user.click(screen.getByRole("button", { name: "Supprimer le point" }));
     await waitFor(() => expect(api.setReturnMeetingPoint).toHaveBeenLastCalledWith(null));
     expect(toast.success).toHaveBeenCalledWith("Point de rendez-vous supprimé.");
+  });
+
+  it("retire une photo envoyée, refuse un fichier trop lourd", async () => {
+    const user = userEvent.setup();
+    const url = "https://www.plazo.fr/api/public/parkings/p1/meeting-photo/0123456789abcdef01.jpeg";
+    api.getReturnMeetingPoint.mockResolvedValue({ data: { lat: 45.72, lng: 5.08, label: "T1", instructions: null, photoUrl: url } });
+    renderIn(<ReturnMeetingPointForm />);
+    expect(await screen.findByRole("img", { name: "Aperçu de la photo du point de rendez-vous" })).toHaveAttribute("src", url);
+    await user.click(screen.getByRole("button", { name: "Retirer" }));
+    await waitFor(() => expect(api.removeMeetingPhoto).toHaveBeenCalledTimes(1));
+    expect(await screen.findByTestId("mp-photo-drop")).toBeInTheDocument();
+    api.uploadMeetingPhoto.mockRejectedValueOnce(new ApiError(400, "validation_failed", "validation_failed", { photo: "too_large" }));
+    await user.upload(screen.getByLabelText("Photo du point de rendez-vous"), new File([new Uint8Array([0xff, 0xd8, 0xff, 1])], "rdv.jpg", { type: "image/jpeg" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Photo trop lourde (3 Mo au plus)."));
   });
 
   it("cherche un lieu par le géocodeur IGN et place le point dessus", async () => {

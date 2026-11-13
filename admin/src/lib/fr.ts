@@ -1210,9 +1210,18 @@ export const fr = {
     instructions: "Consignes pour le voyageur",
     instructionsHelp: (left: number) =>
       `Chemin depuis la sortie bagages, repères, où attendre. ${left} caractères restants.`,
-    photoUrl: "Photo du point de rendez-vous (adresse web)",
-    photoUrlHelp:
-      "Pas encore d'envoi de fichier : collez l'adresse d'une photo en ligne (https://…), comme pour les photos de votre fiche.",
+    photo: "Photo du point de rendez-vous",
+    photoAdd: "Ajouter une photo",
+    photoDrop: "Cliquez ou glissez une photo ici",
+    photoHelp: "JPEG, PNG ou WebP · 3 Mo max. Le voyageur la voit à son retour, et elle illustre le message de la veille.",
+    photoChange: "Changer",
+    photoRemove: "Retirer",
+    photoUploading: "Envoi de la photo…",
+    photoSaved: "Photo enregistrée.",
+    photoRemoved: "Photo retirée.",
+    photoUnreadable: "Cette image n'a pas pu être lue : choisissez un JPEG, un PNG ou un WebP.",
+    photoTooLarge: "Photo trop lourde (3 Mo au plus).",
+    photoUnavailable: "L'envoi de photos n'est pas disponible pour le moment.",
     photoPreview: "Aperçu de la photo du point de rendez-vous",
     coordinates: (lat: number, lng: number) =>
       `Position : ${lat.toFixed(5)}, ${lng.toFixed(5)}`,

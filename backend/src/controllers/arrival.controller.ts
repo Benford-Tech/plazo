@@ -13,6 +13,7 @@ import {
 } from '@/dtos/arrival.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ArrivalService } from '@/services/arrival.service';
+import { MeetingPhotoService } from '@/services/meeting-photo.service';
 import { ParkingService } from '@/services/parking.service';
 import { MorningEmailService } from '@/services/morning-email.service';
 import { ShuttleService } from '@/services/shuttle.service';
@@ -94,7 +95,32 @@ export class ArrivalController {
       data.lat !== null && data.lng !== null
         ? { lat: data.lat, lng: data.lng, label: data.label, instructions: data.instructions, photoUrl: data.photoUrl }
         : null;
-    res.json({ data: await this.arrivals.setReturnMeetingPoint(parking.id, point) });
+    const saved = await this.arrivals.setReturnMeetingPoint(parking.id, point);
+    // A pasted URL or a cleared point: the uploaded photo is no longer used (13/11/2026).
+    await Container.get(MeetingPhotoService).forgetUnused(parking.id);
+    res.json({ data: saved });
+  });
+
+  /** POST /internal/parking/return-meeting-point/photo (13/11/2026) */
+  public setMeetingPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await Container.get(MeetingPhotoService).set(req.staff, req.body));
+  });
+
+  /** DELETE /internal/parking/return-meeting-point/photo */
+  public removeMeetingPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    await Container.get(MeetingPhotoService).remove(req.staff);
+    res.status(httpStatus.NO_CONTENT).end();
+  });
+
+  /** GET /public/parkings/:id/meeting-photo/:file — public: the traveller's page and WhatsApp's header read it. */
+  public meetingPhoto = catchAsync(async (req: Request, res: Response) => {
+    const photo = await Container.get(MeetingPhotoService).get(req.params.id as string, req.params.file as string);
+    res.set('Content-Type', photo.contentType);
+    // A new upload is a new file name: the address never changes content.
+    res.set('Cache-Control', 'public, max-age=604800, immutable');
+    res.set('X-Content-Type-Options', 'nosniff');
+    if (photo.size != null) res.set('Content-Length', String(photo.size));
+    photo.stream.pipe(res);
   });
 
   /** PUT /internal/notifications/devices */

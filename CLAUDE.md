@@ -1309,6 +1309,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `everyone`) : pilule blanche « EN DIRECT » sur la photo (`LiveShuttlePill` site : depuis Boutique, 11/10/2026, pilule papier
      en coin haut gauche de la photo, capitales encre et point orange qui respire, comme `LivePill` du jour J ; `LiveShuttleTag`
      app) et minibus devant le prix sur la pastille de la carte des résultats.
+   - **Photo du point de rendez-vous envoyée, choix A (13/11/2026, « pouvoir uploader la photo du point de rendez-vous »)** : dans
+     « Point de rendez-vous du retour » (Parking › Réglages, `ReturnMeetingPointForm`), le champ d'adresse web devient une zone photo
+     (`MeetingPhotoField` : vignette avec « Changer » et « Retirer », ou zone « Ajouter une photo » à cliquer ou glisser ; JPEG, PNG ou
+     WebP, redessinée en JPEG de 1 600 px au plus par le navigateur, `lib/shrink-photo.ts`) ; `POST /internal/parking/return-meeting-point/photo`
+     (octets bruts, 3 Mo, `parking:manage`, `RefuseInDemo`, permis en consultation ; 400 `photo` required · too_large · not_an_image ;
+     tracé `parking.meeting_photo_set`) range la photo dans le magasin privé (`Parking.returnMeetingPhotoKey`, migration `meeting_photo`) et
+     pose `returnMeetingPhotoUrl` = adresse publique de Plazo `/api/public/parkings/:id/meeting-photo/<nom>` (servie avec un cache public
+     d'une semaine, un nouveau nom à chaque envoi ; lue par la page du voyageur et l'en-tête WhatsApp du message de la veille), `DELETE …`
+     la retire ; une adresse collée ou un point supprimé efface la photo envoyée (`MeetingPhotoService.forgetUnused`), effacée aussi avec
+     le loueur. Tests `meeting-photo.test.ts`, `ReturnMeetingPointForm.test.tsx`.
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app

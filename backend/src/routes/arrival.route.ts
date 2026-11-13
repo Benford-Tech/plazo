@@ -11,7 +11,7 @@ import {
   StopArrivalDto,
 } from '@/dtos/arrival.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -256,6 +256,22 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               label: { type: string, nullable: true, example: "Terminal 1 · arrêt navettes" }
  *               instructions: { type: string, nullable: true, maxLength: 500, description: Written directions shown to the traveller }
  *               photoUrl: { type: string, format: uri, nullable: true, description: Photo of the meeting point (URL) }
+ * /internal/parking/return-meeting-point/photo:
+ *   post:
+ *     summary: "Upload the meeting point's photo — the image's bytes (JPEG, PNG or WebP, 3 MB at most; 13/11/2026)"
+ *     tags: [Arrivals]
+ *     responses:
+ *       200: { description: "{ photoUrl } — Plazo's own public address, also saved as the point's photo" }
+ *       400: { description: "validation_failed: fields.photo = required | too_large | not_an_image" }
+ *       503: { description: photos_unavailable (no photo store) }
+ *   delete:
+ *     summary: Remove the meeting point's photo
+ *     tags: [Arrivals]
+ * /public/parkings/{id}/meeting-photo/{file}:
+ *   get:
+ *     summary: The meeting point's uploaded photo (public, long cache; 404 photo_not_found)
+ *     tags: [Arrivals]
+ *     security: []
  * /internal/notifications/devices:
  *   put:
  *     summary: Register this phone for pushes (OneSignal subscription id)
@@ -327,6 +343,20 @@ export class ArrivalRoute implements Routes {
       ValidationMiddleware(ReturnMeetingPointDto),
       this.arrivals.setReturnMeetingPoint,
     );
+    // Managers; permitted in consultation (the platform prepares a parking), refused in the demo.
+    this.router.post(
+      '/internal/parking/return-meeting-point/photo',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      this.arrivals.setMeetingPhoto,
+    );
+    this.router.delete(
+      '/internal/parking/return-meeting-point/photo',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      this.arrivals.removeMeetingPhoto,
+    );
+    this.router.get('/public/parkings/:id/meeting-photo/:file', this.arrivals.meetingPhoto);
 
     this.router.put(
       '/internal/notifications/devices',
