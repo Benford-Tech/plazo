@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { TestSmsDto, UpdateWhatsappSettingsDto } from '@/dtos/sms.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { StaffMessageService } from '@/services/staff-message.service';
 import { INBOX_VIEWS, InboxView, WhatsappInboxService } from '@/services/whatsapp-inbox.service';
 import { WhatsappService } from '@/services/whatsapp.service';
 import catchAsync from '@/utils/catchAsync';
@@ -42,6 +44,17 @@ export class WhatsappController {
     const view = INBOX_VIEWS.includes(asked) ? asked : 'all';
     res.set('Cache-Control', 'no-store');
     res.json(await this.inboxService.list(req.staff, view));
+  });
+
+  /** GET /internal/reservations/:id/write (« Écrire au client », 13/11/2026) */
+  public writeStatus = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(StaffMessageService).status(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/reservations/:id/write { text, channel } */
+  public write = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.status(httpStatus.CREATED).json(await Container.get(StaffMessageService).send(req.staff, req.params.id as string, req.body ?? {}));
   });
 
   /** GET /internal/whatsapp/sent */

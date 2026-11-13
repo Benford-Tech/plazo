@@ -39,7 +39,8 @@ const MAX_ATTEMPTS = 6;
 const RECONCILE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_RECONCILE_PER_RUN = 15;
 
-export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test'] as const;
+// 13/11/2026: 'staff_message', a message the team writes from Plazo Pro (« Écrire au client »).
+export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test', 'staff_message'] as const;
 export type SmsKind = (typeof SMS_KINDS)[number];
 
 export interface TravellerSms {

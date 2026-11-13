@@ -53,6 +53,9 @@ export class WhatsappRoute implements Routes {
     );
     // 12/11/2026: « Messages WhatsApp », what travellers write to Plazo's number (direction A).
     this.router.get('/internal/whatsapp/inbox', StaffAuthMiddleware('reservations:manage'), this.whatsapp.inbox);
+    // « Écrire au client » (13/11/2026): from Plazo's WhatsApp number, the parking's SMS as the fallback.
+    this.router.get('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:manage'), this.whatsapp.writeStatus);
+    this.router.post('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.whatsapp.write);
     this.router.get('/internal/whatsapp/sent', StaffAuthMiddleware('reservations:manage'), this.whatsapp.sent);
     this.router.get('/internal/whatsapp/inbox/messages/:messageId/media', StaffAuthMiddleware('reservations:manage'), this.whatsapp.media);
     this.router.get('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:manage'), this.whatsapp.conversation);

@@ -1433,6 +1433,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      un appel) ; dans l'app, rien chez Meta, push « Message de <parking> » (`type: 'parking_message'`, ouvre Ma réservation). Web et Plazo
      Pro : pastille « App Plazo » sur ces messages, barre de réponse « Le client vous a écrit depuis l'app Plazo… ». Le site n'a pas la
      carte. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`, `parking_messages_card_test.dart`, `whatsapp_inbox_test.dart`.
+     **« Écrire au client » depuis Plazo Pro (13/11/2026, « Ajoute l'envoi par WhatsApp et par le numéro Plazo dans l'App pro », choix
+     « Écrire depuis Plazo »)** : bouton bulle `res-write` du bloc Contact de la fiche réservation (`reservations:manage`, à côté d'Appeler et
+     SMS du téléphone de l'équipe) → feuille `WriteToTravellerSheet` (`features/pro_whatsapp`) : WhatsApp du numéro Plazo ou SMS du parking,
+     message de 900 caractères au plus ; dans les 24 h de Meta après le dernier WhatsApp du client, texte libre ; sinon dans le modèle commun
+     `plazo_message` (« Message de <parking> pour votre réservation <réf> : » … « Merci d'avoir choisi… », lignes montrées autour du champ) ;
+     le message rejoint la conversation du loueur et de ce numéro (créée au besoin) dans « Messages WhatsApp », où arrive la réponse ;
+     WhatsApp refusé → SMS du parking (`sendSmsOnly`, genre `staff_message`), « SMS envoyé à la place ». Serveur `StaffMessageService` :
+     `GET /internal/reservations/:id/write` (`whatsapp { available, freeUntil, frame }`, `sms { available }`, `canWrite`, `refusal`
+     no_phone · no_channel · anonymized) et `POST …/write { text, channel }` (`RefuseInDemo` ; 400 `text`, 409 `no_phone` ·
+     `whatsapp_unavailable` · `anonymized`, 502 `sms_failed` / code de Meta) → `{ channel, via: text · template · sms, conversationId,
+     fallback }` ; tracé `traveller.message_sent` (« a écrit au client » dans l'Historique, groupe Messages ; `whatsapp.reply` aussi).
+     Le web n'a pas encore le bouton. Tests `whatsapp-inbox.test.ts`, `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
