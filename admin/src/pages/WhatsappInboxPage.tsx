@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Copy, MapPin, MessageSquare, Mic, Paperclip, Phone } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, MapPin, MessageSquare, Mic, Minus, Paperclip, Phone, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -274,14 +274,20 @@ function AttachForm({ id, onDone }: { id: string; onDone: () => void }) {
   );
 }
 
-function Thread({
+/**
+ * One conversation. `docked` (13/11/2026, barre des messages, choix A): the small window at the bottom of the screen, with
+ * « Réduire » and « Fermer » in its header and its messages scrolled inside it.
+ */
+export function Thread({
   id,
   onBack,
   onChanged,
+  docked,
 }: {
   id: string;
   onBack: () => void;
   onChanged: () => void;
+  docked?: { onMinimize: () => void; onClose: () => void };
 }) {
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -343,7 +349,31 @@ function Thread({
   };
   let lastDay = "";
   return (
-    <div className="flex min-w-0 flex-col" data-testid="wa-thread">
+    <div className={cn("flex min-w-0 flex-col", docked && "h-full")} data-testid="wa-thread">
+      {docked ? (
+        <div className="flex items-center gap-1.5 border-b border-panel-line px-3 py-2">
+          <b className="min-w-0 flex-1 truncate text-sm">
+            {c.name ?? c.phone}
+            {r && <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">{r.externalReference ?? r.reference}</span>}
+          </b>
+          {c.phone && (
+            <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} aria-label={t.call(c.phone)} title={t.call(c.phone)} className={dockIcon}>
+              <Phone className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {r && (
+            <Link to={`/reservations/${r.id}`} aria-label={t.openBooking} title={t.openBooking} className={dockIcon}>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          )}
+          <button type="button" onClick={docked.onMinimize} aria-label={t.dock.minimize} title={t.dock.minimize} data-testid="dock-minimize" className={dockIcon}>
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={docked.onClose} aria-label={t.dock.close} title={t.dock.close} data-testid="dock-close" className={dockIcon}>
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-panel-line px-4 py-3">
         <button
           type="button"
@@ -370,7 +400,13 @@ function Thread({
           </Link>
         )}
       </div>
-      <div className="flex min-h-[320px] flex-col gap-2 bg-[#EFEAE2] p-4">
+      )}
+      <div
+        className={cn(
+          "flex flex-col gap-2 bg-[#EFEAE2]",
+          docked ? "min-h-0 flex-1 overflow-y-auto p-3" : "min-h-[320px] p-4",
+        )}
+      >
         {items.map((item) => {
           const day = dayOf(item.at);
           const separator = day !== lastDay;
@@ -395,7 +431,7 @@ function Thread({
       {/* « Écrire au parking » (12/11/2026): the reply goes to the Plazo app when the traveller wrote from it. */}
       <form
         onSubmit={submit}
-        className="flex flex-col gap-2 border-t border-panel-line px-4 py-3"
+        className={cn("flex flex-col gap-2 border-t border-panel-line", docked ? "px-3 py-2" : "px-4 py-3")}
       >
         {replyBy === "app" ? (
           <span
@@ -431,7 +467,7 @@ function Thread({
               }
             }}
             disabled={!replyBy}
-            rows={2}
+            rows={docked ? 1 : 2}
             maxLength={4096}
             placeholder={t.placeholder}
             className="min-w-0 flex-1 resize-y rounded-lg border border-panel-line bg-white px-3 py-2 text-sm disabled:bg-panel-2"
@@ -455,12 +491,15 @@ function Thread({
             )
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className={cn("flex flex-wrap gap-2", docked && "justify-end")}>
           <button
             type="button"
             onClick={() => handle.mutate(!c.handledAt)}
             disabled={handle.isPending}
-            className="rounded-full border border-panel-line px-3 py-1.5 text-sm font-semibold hover:bg-accent"
+            className={cn(
+              "rounded-full border border-panel-line font-semibold hover:bg-accent",
+              docked ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
+            )}
           >
             {c.handledAt ? t.unhandle : t.handle}
           </button>
@@ -469,6 +508,9 @@ function Thread({
     </div>
   );
 }
+
+const dockIcon =
+  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-panel-line text-lime-deep hover:bg-accent";
 
 /** « Numéro inconnu » (platform admins): attach to a booking by its reference. */
 function UnknownAttach({ id, onDone }: { id: string; onDone: () => void }) {

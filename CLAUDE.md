@@ -1461,7 +1461,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `WhatsappInboxPage` (numéro, SMS, appel et « Copier le numéro » pour un ordinateur) ; rien pour une conversation de l'app sans
      numéro ; le SMS part du téléphone du membre, sa réponse n'arrive pas dans Plazo. Tests `whatsapp_inbox_test.dart`,
      `WhatsappInboxPage.test.tsx`.
-     **Le chauffeur aussi (13/11/2026, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
+     **Barre des messages, choix A (13/11/2026, « sur le web mets une barre latérale de message comme Facebook », maquettes
+     https://claude.ai/artifact/LiooeN3fnHrkGLSfHPCMpo)** : sur un écran large (dès `xl`, 1 280 px), une barre à droite de chaque page
+     de l'espace pro (`components/messages/MessagesSidebar.tsx`, `lib/messages-bar.ts`, montée dans `AdminLayout`, `reservations:status`,
+     absente de la page Messages) liste les conversations de « À traiter » (non lues d'abord, `sortForBar` ; initiales, point vert quand
+     le client a écrit depuis moins de 24 h, `wroteRecently` ; recherche sans accents par nom, numéro ou référence ; relue toutes les
+     15 s) ; un clic ouvre une fenêtre en bas de l'écran (`Thread` de `WhatsappInboxPage` avec `docked` : appeler, ouvrir la
+     réservation, « Réduire », « Fermer », réponse et « Marquer comme traité » comme sur la page), deux au plus (`MAX_OPEN`), les
+     autres réduites en onglets (4 au plus) ; « Replier » la ramène à une colonne de pastilles avec le nombre de non lus (gardé dans
+     le navigateur, `plazo:messages-bar-collapsed`). Téléphone : l'onglet « Messages » comme avant. Test `MessagesSidebar.test.tsx`.
+, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
      `reservations:status` (chauffeurs et voituriers compris) et le bouton de la fiche suit. **La boîte aussi (13/11/2026,
      « Le chauffeur y a droit »)** : les routes de « Messages WhatsApp » (liste, Envoyés, conversation, médias, réponse,
      traité ; le rattachement d'un numéro inconnu reste à l'accueil et aux gérants), `nav/counts` › `whatsapp`, la page web,

@@ -22,6 +22,7 @@ import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { RevenueMaskToggle } from "./platform/RevenueMaskToggle";
 import { NotificationBell } from "./notifications/NotificationBell";
 import { ParkingSwitcher } from "./platform/ParkingSwitcher";
+import { MessagesSidebar } from "./messages/MessagesSidebar";
 
 const COUNTERS_KEY = ["nav-counts"];
 
@@ -213,6 +214,8 @@ export function AdminLayout() {
             <Outlet />
           </main>
         </div>
+        {/* 13/11/2026 (barre des messages, choix A): the conversations on the right of every page, on a wide screen. */}
+        <MessagesSidebar />
       </div>
       <MobileTabBar items={items} counts={counts} />
     </div>

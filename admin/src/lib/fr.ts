@@ -5877,6 +5877,19 @@ export const bookingSurchargesFr = {
 
 /** 12/11/2026 (« Messages WhatsApp », direction A of https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko). */
 export const whatsappInboxFr = {
+  /** 13/11/2026 (barre des messages, choix A): the side bar and its small windows. */
+  dock: { minimize: "Réduire", close: "Fermer", open: (name: string) => `Ouvrir la conversation avec ${name}` },
+  bar: {
+    title: "Messages",
+    search: "Chercher un client",
+    collapse: "Replier la barre des messages",
+    expand: "Déplier la barre des messages",
+    seeAll: "Tout voir",
+    empty: "Aucune conversation à traiter.",
+    noMatch: "Aucun client trouvé.",
+    recent: "A écrit il y a moins de 24 h",
+    label: "Barre des messages",
+  },
   title: "Messages WhatsApp",
   intro: "Ce que vos clients répondent au numéro WhatsApp de Plazo, rangé par réservation.",
   views: { unread: "Non lus", all: "À traiter", handled: "Traités", sent: "Envoyés", unknown: "Numéro inconnu" } as Record<string, string>,
