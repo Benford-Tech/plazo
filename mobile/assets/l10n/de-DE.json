@@ -2942,6 +2942,7 @@
     "unhandle": "Wieder auf „zu bearbeiten“ setzen",
     "handled": "Unterhaltung als erledigt markiert.",
     "call": "{} anrufen",
+    "sms": "SMS an {}",
     "errors": {
       "window_closed": "Keine freie Antwort mehr möglich: Die letzte Nachricht des Kunden ist älter als 24 Std.",
       "whatsapp_unavailable": "WhatsApp ist für Plazo nicht eingerichtet.",

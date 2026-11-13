@@ -2942,6 +2942,7 @@
     "unhandle": "Remettre à traiter",
     "handled": "Conversation marquée comme traitée.",
     "call": "Appeler le {}",
+    "sms": "Envoyer un SMS au {}",
     "errors": {
       "window_closed": "Plus de réponse libre possible : le dernier message du client date de plus de 24 h.",
       "whatsapp_unavailable": "WhatsApp n'est pas configuré pour Plazo.",
