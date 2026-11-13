@@ -1260,6 +1260,14 @@ export const adminApi = {
     }),
   creditInvoice: (invoiceId: string) =>
     apiRequest<ReservationInvoices>(`/internal/invoices/${invoiceId}/credit-note`, { method: "POST", body: json({}) }),
+  // 13/11/2026: the photo of the return meeting point (a JPEG of 1 600 px at most), served publicly by Plazo.
+  uploadMeetingPhoto: (photo: Blob) =>
+    apiRequest<{ photoUrl: string }>("/internal/parking/return-meeting-point/photo", {
+      method: "POST",
+      body: photo,
+      headers: { "Content-Type": photo.type || "image/jpeg" },
+    }),
+  removeMeetingPhoto: () => apiRequest<void>("/internal/parking/return-meeting-point/photo", { method: "DELETE" }),
   // 02/11/2026 (direction B): the parking's logo, a 512 px square PNG, for the team.
   setOperatorLogo: (logo: Blob) =>
     apiRequest<{ logoUpdatedAt: string }>("/internal/operator/logo", {
