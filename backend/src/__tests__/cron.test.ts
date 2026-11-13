@@ -19,6 +19,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       deleted: 1,
       demoReset: false,
       appLinkClaimsDeleted: 0,
+      appDevicesPurged: 0,
       arrivalSignalsEnded: 0,
       shuttleTripsEnded: 0,
       smsAbandoned: 0,
