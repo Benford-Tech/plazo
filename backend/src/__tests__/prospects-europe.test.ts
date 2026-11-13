@@ -1,5 +1,6 @@
 import {
   companyKey,
+  sameCompany,
   defaultSteps,
   normalizeWebsite,
   prospectEmail,
@@ -151,5 +152,8 @@ describe('prospects européens : e-mail facultatif, site', () => {
     expect(companyKey('Panda Parken GmbH')).toBe(companyKey('Panda-Parken'));
     expect(companyKey('Måby Parkering AS')).toBe('mabyparkering');
     expect(companyKey('Flight Park')).not.toBe(companyKey('Flight Parking'));
+    expect(sameCompany({ companyName: 'Star Parking', airportCode: 'BRU' }, { companyName: 'Star Parking', airportCode: 'MXP' })).toBe(false);
+    expect(sameCompany({ companyName: 'Star Parking', airportCode: 'BRU' }, { companyName: 'star parking', airportCode: 'bru' })).toBe(true);
+    expect(sameCompany({ companyName: 'McParking', airportCode: null }, { companyName: 'McParking', airportCode: 'SVQ' })).toBe(true);
   });
 });

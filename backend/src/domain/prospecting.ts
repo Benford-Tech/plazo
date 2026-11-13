@@ -611,6 +611,15 @@ export function companyKey(name: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+/**
+ * Whether two prospects without an email are the same parking: the same name (`companyKey`) at the same airport, or the
+ * same name when one of them has no airport. « Star Parking » at Brussels is not the one at Milan.
+ */
+export function sameCompany(a: { companyName: string; airportCode: string | null }, b: { companyName: string; airportCode: string | null }): boolean {
+  if (companyKey(a.companyName) !== companyKey(b.companyName)) return false;
+  return !a.airportCode || !b.airportCode || a.airportCode.toUpperCase() === b.airportCode.toUpperCase();
+}
+
 /** sha256 of the lower-cased address: the opt-out list keeps no address in clear. */
 export function suppressionHash(email: string): string {
   return createHash('sha256').update(normalizeProspectEmail(email)).digest('hex');

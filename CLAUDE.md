@@ -1944,7 +1944,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Français · Allemand · Anglais, seule une langue modifiée est enregistrée ; aperçu et test dans la langue du premier choisi. La
   page de désinscription reste en français. **E-mail facultatif** : `Prospect.email` peut être nul (un prospect sans adresse
   s'appelle : « Pas d'e-mail · à appeler », téléphone et site sous le contact), jamais inscrit ni envoyé (`sendNow`, `claim`,
-  `sendOne`) ; doublon d'un prospect sans adresse = même nom sans accents, forme juridique ni parenthèses (`companyKey`, import
+  `sendOne`) ; doublon d'un prospect sans adresse = même nom sans accents, forme juridique ni parenthèses, au même aéroport ou sans aéroport d'un côté (`companyKey`, `sameCompany`, import
   et formulaire, 409 `prospect_exists`) ; `Prospect.website` (colonne « site », `normalizeWebsite`, 400 `invalid_website`).
   Tests `prospects-europe.test.ts`, `prospecting.test.ts`, `ProspectingPage.test.tsx`.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
