@@ -226,3 +226,6 @@ export const aiLimiter = rateLimit({
   },
   message: tooMany('too_many_requests'),
 });
+
+/** 13/11/2026: a Plazo app phone telling whether it accepts the offers (at start-up and on the switch): 30 per 15 minutes. */
+export const appDeviceLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });

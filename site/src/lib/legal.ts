@@ -36,7 +36,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "13 novembre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "12 novembre 2026";
+export const PRIVACY_VERSION = "13 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -353,12 +353,13 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, WhatsApp, SMS ou notification : exécution du contrat.",
             "Suivre vos vols pour caler la navette : exécution du contrat.",
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
+            `Recevoir les offres et bons plans de ${p} par notification dans l’application (deux par semaine au plus) : votre consentement, donné en allumant « Offres et bons plans » dans Plus › Notifications (éteint par défaut), et retiré en l’éteignant ; ${p} garde l’identifiant de notification du téléphone, ce choix et sa date.`,
             `Sécuriser le service, prévenir la fraude et les abus, garder la trace des modifications des réservations, traiter vos réclamations et défendre nos droits : intérêt légitime de ${p} et du parking.`,
             `Répondre aux messages envoyés par le formulaire de contact : exécution du contrat quand ils portent sur une réservation, sinon intérêt légitime de ${p} à répondre à qui l’interroge.`,
             `Vous envoyer la lettre ${p} (nouveaux aéroports, nouveaux parkings et offres de saison) : votre consentement, donné en vous inscrivant puis en confirmant par le lien reçu par e-mail ; vous le retirez à tout moment par le lien de désinscription de chaque lettre.`,
             "Tenir la comptabilité et répondre aux autorités : obligation légale.",
           ],
-          `${p} ne vend pas vos données, ne fait pas de publicité ciblée et ne vous envoie pas de prospection commerciale sans votre accord : la lettre ${p} ne part qu’aux adresses inscrites et confirmées. Les notifications envoyées par ${p} pendant un séjour ne portent que sur le service (par exemple une perturbation à l’aéroport).`,
+          `${p} ne vend pas vos données, ne fait pas de publicité ciblée et ne vous envoie pas de prospection commerciale sans votre accord : la lettre ${p} ne part qu’aux adresses inscrites et confirmées, et les offres par notification qu’aux téléphones dont le propriétaire a allumé « Offres et bons plans ». Elles peuvent tenir compte de l’aéroport où vous avez déjà réservé avec ce téléphone et de l’existence d’une réservation à venir, sans autre profilage. Les notifications envoyées par ${p} pendant un séjour ne portent que sur le service (par exemple une perturbation à l’aéroport).`,
         ],
       },
       {
@@ -405,6 +406,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve (le temps de traiter le litige). Le contrat signé (texte, PDF signé et preuve) et l’état des lieux (sans les photos) suivent la réservation et sont supprimés avec son anonymisation ; le parking peut en garder une copie, dans son propre registre.",
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
+            "Téléphones de l’application et leur choix « Offres et bons plans » : effacés 13 mois après la dernière ouverture de l’application.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
             "Messages WhatsApp et messages écrits depuis l’app Plazo (numéro, texte des messages envoyés par Plazo, messages que vous écrivez et réponses de l’équipe, état de remise) : 30 jours ; les photos et messages vocaux restent chez WhatsApp et ne sont que relus à la demande de l’équipe.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",

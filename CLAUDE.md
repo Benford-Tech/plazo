@@ -1783,7 +1783,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`. Notifications de la plateforme
   (choix E-A + C-A du 05/10/2026) : `/pro/plateforme/notifications`, table `platform_notifications`, routes
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
-  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
+  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Promotions aux voyageurs, choix A « Message
+  promo » (13/11/2026, « l'admin de la plateforme peut envoyer des notif, des promo de réservation aux utilisateurs Plazo client », maquettes
+  https://claude.ai/artifact/QVEjFhRHjcKpbf5gt8RcpX)** : genre « Promotion » de Plateforme › Notifications (audience `promotion`, migration
+  `traveller_offers`) : un push aux seuls téléphones de l'app Plazo qui ont allumé « Offres et bons plans » (Plus › Notifications de l'app,
+  éteint d'office ; table `traveller_app_devices` : identifiant OneSignal, plateforme, `offers`, `offersAt`, `lastSeenAt`, sans donnée
+  personnelle ; `PUT /public/app-devices/:subscriptionId { offers?, platform? }` au lancement et à l'interrupteur, `DELETE` ; `appDeviceLimiter`
+  30 par 15 min ; effacés 13 mois après la dernière ouverture, `purge-expired-tokens` › `appDevicesPurged`), réservation ou non ; filtres
+  « Ont déjà réservé à <aéroport> » et « Sans réservation à venir » (`TravellerAppDeviceService.offerIds`, par `traveller_devices`) ; lien
+  `{ kind: search | parking, airport, parking?, arrival?, return? }` (`domain/promotion.ts`, `promotionLinkErrors`, 400 `link.*` /
+  `filters.airport`) : le push porte `data { type: 'promotion', path }` et l'app ouvre la recherche ou la fiche à ces dates
+  (`/lyon-saint-exupery/recherche?arrivee=…&retour=…`) ; aucun prix ne change ; deux promotions par 7 jours au plus (429 `weekly_limit`,
+  `nextPromotionAt` du compte) ; `PlatformNotification.link/filters`. Politique de confidentialité (consentement, durée). Pas encore : B (codes
+  promo), C (campagnes, mail, statistiques). Test `promotions.test.ts`. **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
   https://claude.ai/artifact/YNc1gxT1wvRA9L1hw8MbPK)** : pour le super admin, le nom du parking dans la barre haute (et sur téléphone
   en haut du rail) ouvre `ParkingSwitcher` (`components/platform/ParkingSwitcher.tsx`, `lib/parking-switcher.ts`), qui remplace le menu
   « Changer de vue » (aussi dans la barre de la Plateforme) : recherche sans accents (les archivés en plus quand on cherche), « Récents »

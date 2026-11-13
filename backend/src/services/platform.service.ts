@@ -12,6 +12,17 @@ import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto'
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
+import {
+  PROMOTIONS_PER_WEEK,
+  PROMOTION_WINDOW_MS,
+  PromotionFilters,
+  PromotionLink,
+  cleanPromotionLink,
+  nextPromotionAt,
+  promotionLinkErrors,
+  promotionPath,
+} from '@/domain/promotion';
+import { TravellerAppDeviceService } from './traveller-app-device.service';
 import { logger } from '@/utils/logger';
 import { AccountService } from './account.service';
 import { AuditService } from './audit.service';
@@ -78,6 +89,7 @@ export class PlatformService {
   public audit = Container.get(AuditService);
   public listings = Container.get(ListingService);
   public notifications = Container.get(NotificationService);
+  public appDevices = Container.get(TravellerAppDeviceService);
   public operatorService = Container.get(OperatorService);
   public paymentService = Container.get(PaymentService);
   public push = Container.get(PushService);
@@ -97,12 +109,31 @@ export class PlatformService {
   // ---- Notifications (E-A, 05/10/2026) ------------------------------------------------------------
 
   /** How many phones a broadcast would reach, before sending ("Envoyer à N téléphones"). */
-  public async notificationAudience(audience: PlatformAudience, operatorId?: string | null): Promise<{ devices: number; configured: boolean }> {
-    const ids = await this.broadcastIds(audience, operatorId);
-    return { devices: ids.length, configured: this.push.enabled() };
+  public async notificationAudience(
+    audience: PlatformAudience,
+    operatorId?: string | null,
+    filters?: PromotionFilters,
+  ): Promise<{ devices: number; configured: boolean; nextPromotionAt?: string | null }> {
+    const ids = await this.broadcastIds(audience, operatorId, filters);
+    if (audience !== 'promotion') return { devices: ids.length, configured: this.push.enabled() };
+    const next = await this.nextPromotionAt(new Date());
+    return { devices: ids.length, configured: this.push.travellerEnabled(), nextPromotionAt: next?.toISOString() ?? null };
   }
 
-  private async broadcastIds(audience: PlatformAudience, operatorId?: string | null): Promise<string[]> {
+  /** 13/11/2026: when the next promotion may go (two a week), null: now. */
+  private async nextPromotionAt(now: Date): Promise<Date | null> {
+    const recent = await prisma.platformNotification.findMany({
+      where: { audience: 'promotion', createdAt: { gte: new Date(now.getTime() - PROMOTION_WINDOW_MS) } },
+      select: { createdAt: true },
+    });
+    return nextPromotionAt(
+      recent.map(r => r.createdAt),
+      now,
+    );
+  }
+
+  private async broadcastIds(audience: PlatformAudience, operatorId?: string | null, filters?: PromotionFilters): Promise<string[]> {
+    if (audience === 'promotion') return this.appDevices.offerIds(filters ?? {});
     if (audience === 'travellers') return this.push.travellerBroadcastIds();
     if (audience === 'operator') {
       if (!operatorId) throw new ValidationException({ operatorId: 'required' });
@@ -116,8 +147,9 @@ export class PlatformService {
   public async sendNotification(actor: AuthenticatedStaff, data: PlatformNotificationDto) {
     const audience = data.audience as PlatformAudience;
     const operatorId = audience === 'operator' ? (data.operatorId ?? null) : null;
-    const ids = await this.broadcastIds(audience, operatorId);
     const now = new Date();
+    const promotion = audience === 'promotion' ? await this.promotionOf(data, now) : null;
+    const ids = await this.broadcastIds(audience, operatorId, promotion?.filters);
     if (audience === 'travellers') {
       const since = dayBounds(localDate(now, PLATFORM_TZ), PLATFORM_TZ).start;
       const today = await prisma.platformNotification.count({ where: { audience: 'travellers', createdAt: { gte: since } } });
@@ -128,13 +160,32 @@ export class PlatformService {
       }
     }
     const message = { title: data.title.trim(), body: data.body.trim() };
-    const url = data.url?.trim() || null;
-    const options = { data: { type: 'platform' }, ...(url ? { url } : {}) };
-    const recipients =
-      audience === 'travellers' ? await this.push.broadcastTravellers(ids, message, options) : await this.push.broadcastStaff(ids, message, options);
-    if (audience !== 'travellers') await this.push.bellPlatform(message, operatorId);
+    // A promotion opens the app on its link (the site's same path), never a browser.
+    const url = promotion
+      ? promotion.link
+        ? `${this.notifications.settings.publicSiteUrl.replace(/\/+$/, '')}${promotionPath(promotion.link)}`
+        : null
+      : data.url?.trim() || null;
+    const options = promotion
+      ? { data: { type: 'promotion', ...(promotion.link ? { path: promotionPath(promotion.link) } : {}) }, ttl: 86400 }
+      : { data: { type: 'platform' }, ...(url ? { url } : {}) };
+    const traveller = audience === 'travellers' || audience === 'promotion';
+    const recipients = traveller ? await this.push.broadcastTravellers(ids, message, options) : await this.push.broadcastStaff(ids, message, options);
+    if (!traveller) await this.push.bellPlatform(message, operatorId);
     const row = await prisma.platformNotification.create({
-      data: { audience, operatorId, title: message.title, body: message.body, url, recipients, sentById: actor.id, sentByName: actor.name },
+      data: {
+        audience,
+        operatorId,
+        title: message.title,
+        body: message.body,
+        url,
+        recipients,
+        sentById: actor.id,
+        sentByName: actor.name,
+        ...(promotion
+          ? { link: (promotion.link ?? Prisma.JsonNull) as Prisma.InputJsonValue, filters: promotion.filters as unknown as Prisma.InputJsonValue }
+          : {}),
+      },
       include: { operator: { select: { name: true } } },
     });
     await this.audit.record(
@@ -143,10 +194,57 @@ export class PlatformService {
         action: 'platform.notification_sent',
         entityType: 'platform_notification',
         entityId: row.id,
-        details: { audience, operatorId, title: message.title, body: message.body, recipients },
+        details: {
+          audience,
+          operatorId,
+          title: message.title,
+          body: message.body,
+          recipients,
+          ...(promotion
+            ? { link: (promotion.link ?? null) as Prisma.InputJsonValue, filters: promotion.filters as unknown as Prisma.InputJsonValue }
+            : {}),
+        },
       },
     );
     return this.notificationView(row);
+  }
+
+  /**
+   * 13/11/2026 (promotions, choix A): the link and the filters of a promotion, checked; 429 weekly_limit past two a week.
+   * The link's airport must exist and its parking be published there.
+   */
+  private async promotionOf(data: PlatformNotificationDto, now: Date): Promise<{ link: PromotionLink | null; filters: PromotionFilters }> {
+    const errors = promotionLinkErrors(data.link);
+    const rawFilters = (data.filters ?? {}) as Record<string, unknown>;
+    if (typeof rawFilters !== 'object' || Array.isArray(rawFilters)) errors.filters = 'invalid';
+    const filters: PromotionFilters = {
+      airport: typeof rawFilters.airport === 'string' && rawFilters.airport.trim() ? rawFilters.airport.trim() : null,
+      noUpcoming: rawFilters.noUpcoming === true,
+    };
+    if (filters.airport && !(await prisma.airport.findUnique({ where: { slug: filters.airport }, select: { id: true } }))) {
+      errors['filters.airport'] = 'not_found';
+    }
+    const link = data.link ? cleanPromotionLink(data.link as PromotionLink) : null;
+    if (link && !errors['link.airport']) {
+      const airport = await prisma.airport.findUnique({ where: { slug: link.airport }, select: { id: true } });
+      if (!airport) errors['link.airport'] = 'not_found';
+      else if (link.kind === 'parking' && !errors['link.parking']) {
+        const listing = await prisma.listing.findFirst({
+          where: { airportId: airport.id, slug: link.parking, status: 'published' },
+          select: { id: true },
+        });
+        if (!listing) errors['link.parking'] = 'not_found';
+      }
+    }
+    if (Object.keys(errors).length) throw new ValidationException(errors);
+    const next = await this.nextPromotionAt(now);
+    if (next) {
+      throw new HttpException(httpStatus.TOO_MANY_REQUESTS, 'Weekly limit of promotions reached', 'weekly_limit', {
+        limit: PROMOTIONS_PER_WEEK,
+        nextAt: next.toISOString(),
+      });
+    }
+    return { link, filters };
   }
 
   /** The last broadcasts, newest first. */
@@ -167,6 +265,8 @@ export class PlatformService {
     title: string;
     body: string;
     url: string | null;
+    link?: Prisma.JsonValue | null;
+    filters?: Prisma.JsonValue | null;
     recipients: number;
     sentByName: string;
     createdAt: Date;
@@ -179,6 +279,8 @@ export class PlatformService {
       title: r.title,
       body: r.body,
       url: r.url,
+      link: (r.link ?? null) as PromotionLink | null,
+      filters: (r.filters ?? null) as PromotionFilters | null,
       recipients: r.recipients,
       sentByName: r.sentByName,
       createdAt: r.createdAt.toISOString(),

@@ -1437,11 +1437,27 @@ model TravellerDevice {
   @@map("traveller_devices")
 }
 
+/// A phone with the Plazo app, booking or not (13/11/2026, promotions choix A): whether it accepted the offers (« Offres et
+/// bons plans », off by default) and when, so the platform reaches only those who said yes. No personal data: OneSignal's id only.
+model TravellerAppDevice {
+  id             String    @id @default(cuid())
+  subscriptionId String    @unique
+  platform       String?
+  offers         Boolean   @default(false)
+  offersAt       DateTime? // when it was last switched on or off
+  lastSeenAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+
+  @@index([offers])
+  @@map("traveller_app_devices")
+}
+
 /// Who a platform broadcast goes to (E-A, 05/10/2026).
 enum PlatformAudience {
   staff // every operator's active staff (notifyPlatform)
   travellers // every traveller phone registered on a current booking
   operator // one operator's staff
+  promotion // 13/11/2026 (choix A): the Plazo app's phones that accepted the offers
 }
 
 // A push sent by the super admin to the staff or the travellers (E-A, 05/10/2026): the history of
@@ -1453,6 +1469,10 @@ model PlatformNotification {
   title      String
   body       String
   url        String? // opened when the notification is tapped
+  /// 13/11/2026 (promotion): what the push opens in the app, `{ kind: search | parking, airport, parking?, arrival?, return? }`,
+  /// and the filters it was sent with, `{ airport?, noUpcoming? }`.
+  link       Json?
+  filters    Json?
   recipients Int // phones the push went to
   sentById   String?
   sentByName String
