@@ -274,7 +274,7 @@ export const de: Dict = {
       [`Welche Vergleichsportale liest ${P} Pro?`, "Allopark, Onepark, Parclick, ParkMundo, ParkVia und Park Hit. Sie leiten deren Mails an die Adresse Ihres Parkplatzes weiter, und die Buchung erscheint von selbst in Ihrem Plan."],
       ["Müssen meine Kunden eine App installieren?", `Nein. Der Link zu ihrer Buchung öffnet sich auch im Browser. Die App ${P} bietet zusätzlich Benachrichtigungen.`],
       ["Funktioniert das für einen Valet-Parkplatz ohne Markierungen?", "Ja. Ihre Autos werden nach Rückgabedatum in Reihen geparkt, damit jedes wieder herauskommt, ohne ein anderes umzuparken."],
-      ["Was kostet das?", "Je nach Paket 79 € bis 229 € netto pro Monat und pro Parkplatz, −10 % bei jährlicher Zahlung. Monatlich ohne Vertragsbindung."],
+      ["Was kostet das?", "Je nach Paket 99 € bis 299 € netto pro Monat und pro Parkplatz, −10 % bei jährlicher Zahlung. Monatlich ohne Vertragsbindung."],
       ["Auf welchen Geräten?", `Am Computer im Browser und auf Android-Smartphones mit der App ${P} Pro. Die iPhone-App wird gerade von Apple geprüft.`],
       ["Kann ich es vorher ausprobieren?", "Ja: Die Demo ist kostenlos und ohne Anmeldung. Wählen Sie eine Rolle (Leitung, Empfang, Fahrer oder Valet) und testen Sie auf einem fiktiven Parkplatz."],
     ] as [string, string][],

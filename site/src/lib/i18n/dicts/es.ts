@@ -276,7 +276,7 @@ export const es: Dict = {
       [`¿Qué comparadores lee ${P} Pro?`, "Allopark, Onepark, Parclick, ParkMundo, ParkVia y Park Hit. Usted reenvía sus correos a la dirección de su parking y la reserva se crea sola en su planning."],
       ["¿Mis clientes tienen que instalar una aplicación?", `No. El enlace de su reserva también se abre en el navegador. La aplicación ${P} les añade las notificaciones.`],
       ["¿Sirve para un parking con aparcacoches sin plazas marcadas?", "Sí. Sus coches se aparcan en filas según su fecha de regreso, para que cada uno salga sin mover ningún otro."],
-      ["¿Cuánto cuesta?", "De 79 € a 229 € sin IVA al mes y por parking según el plan, −10 % en la modalidad anual. Sin permanencia en la modalidad mensual."],
+      ["¿Cuánto cuesta?", "De 99 € a 299 € sin IVA al mes y por parking según el plan, −10 % en la modalidad anual. Sin permanencia en la modalidad mensual."],
       ["¿En qué dispositivos?", `En el ordenador, desde el navegador, y en móviles Android con la aplicación ${P} Pro. La aplicación para iPhone está en proceso de validación por Apple.`],
       ["¿Puedo probarlo antes?", "Sí: la demo es gratuita y sin registro. Elija un puesto (gerente, recepción, conductor o aparcacoches) y pruebe en un parking ficticio."],
     ] as [string, string][],

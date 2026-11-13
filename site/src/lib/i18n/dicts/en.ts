@@ -289,7 +289,7 @@ export const en: Dict = {
       [`Which comparison sites does ${P} Pro read?`, "Allopark, Onepark, Parclick, ParkMundo, ParkVia and Park Hit. You forward their emails to your car park’s address, and the booking appears in your schedule on its own."],
       ["Do my customers need to install an app?", `No. Their booking link also opens in the browser. The ${P} app adds notifications.`],
       ["Does it work for a valet car park without marked bays?", "Yes. Your cars are parked in rows by return date, so each one can leave without moving another."],
-      ["How much does it cost?", "From €79 to €229 excl. VAT per month and per car park depending on the plan, −10% when paid yearly. No commitment on monthly billing."],
+      ["How much does it cost?", "From €99 to €299 excl. VAT per month and per car park depending on the plan, −10% when paid yearly. No commitment on monthly billing."],
       ["On which devices?", `On computer, in the browser, and on Android phones with the ${P} Pro app. The iPhone app is awaiting approval from Apple.`],
       ["Can I try it first?", "Yes: the demo is free, with no sign-up. Choose a role (manager, front desk, driver or valet) and try it on a fictional car park."],
     ] as [string, string][],

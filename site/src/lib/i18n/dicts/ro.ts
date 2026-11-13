@@ -278,7 +278,7 @@ export const ro: Dict = {
       [`Ce comparatoare citește ${P} Pro?`, "Allopark, Onepark, Parclick, ParkMundo, ParkVia și Park Hit. Redirecționați e-mailurile lor către adresa parcării dumneavoastră, iar rezervarea se creează singură în planning."],
       ["Clienții trebuie să instaleze o aplicație?", `Nu. Linkul rezervării se deschide și în browser. Aplicația ${P} le adaugă notificările.`],
       ["Funcționează pentru o parcare cu valet fără marcaje?", "Da. Mașinile sunt așezate în șiruri după data de retur, astfel încât fiecare să plece fără a muta alta."],
-      ["Cât costă?", "Între 79 € și 229 € fără TVA pe lună și pe parcare, în funcție de formulă, −10 % la plata anuală. Fără angajament la plata lunară."],
+      ["Cât costă?", "Între 99 € și 299 € fără TVA pe lună și pe parcare, în funcție de formulă, −10 % la plata anuală. Fără angajament la plata lunară."],
       ["Pe ce dispozitive?", `Pe calculator, în browser, și pe telefoanele Android cu aplicația ${P} Pro. Aplicația pentru iPhone este în curs de validare la Apple.`],
       ["Pot încerca înainte?", "Da: demo-ul este gratuit, fără înregistrare. Alegeți un post (administrator, recepție, șofer sau valet) și încercați pe o parcare fictivă."],
     ] as [string, string][],

@@ -276,7 +276,7 @@ export const pt: Dict = {
       ["Que comparadores o Plazo Pro lê?", "Allopark, Onepark, Parclick, ParkMundo, ParkVia e Park Hit. Reencaminha os e-mails deles para o endereço do seu parque, e a reserva é criada sozinha no seu planeamento."],
       ["Os meus clientes têm de instalar uma aplicação?", `Não. A ligação da reserva também abre no navegador. A aplicação ${P} acrescenta-lhes as notificações.`],
       ["Funciona para um parque com valet sem marcações no chão?", "Sim. Os seus carros são arrumados em filas segundo a data de regresso, para que cada um saia sem mover outro."],
-      ["Quanto custa?", "De 79 € a 229 € sem IVA por mês e por parque, consoante o plano, −10 % no plano anual. Sem fidelização no plano mensal."],
+      ["Quanto custa?", "De 99 € a 299 € sem IVA por mês e por parque, consoante o plano, −10 % no plano anual. Sem fidelização no plano mensal."],
       ["Em que dispositivos?", `No computador, no navegador, e no telemóvel Android com a aplicação ${P} Pro. A aplicação para iPhone está em validação pela Apple.`],
       ["Posso experimentar antes?", "Sim: a demonstração é gratuita, sem registo. Escolha uma função (gerente, receção, motorista ou valet) e experimente num parque fictício."],
     ] as [string, string][],

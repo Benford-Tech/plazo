@@ -35,7 +35,7 @@ export const PRO_PLANS: ProPlan[] = [
   {
     id: "essentiel",
     name: "Essentiel",
-    monthlyCents: 7900,
+    monthlyCents: 9900,
     pitch: "Pour sortir des carnets et des mails : toutes les réservations au même endroit.",
     features: [
       "Saisie au téléphone et au comptoir",
@@ -48,7 +48,7 @@ export const PRO_PLANS: ProPlan[] = [
   {
     id: "operations",
     name: "Opérations",
-    monthlyCents: 14900,
+    monthlyCents: 19900,
     recommended: true,
     pitch: "Pour les parkings avec navette et voituriers.",
     features: [
@@ -62,7 +62,7 @@ export const PRO_PLANS: ProPlan[] = [
   {
     id: "complet",
     name: "Complet",
-    monthlyCents: 22900,
+    monthlyCents: 29900,
     pitch: "Pour piloter les marges et protéger le parking en cas de litige.",
     features: [
       "Toutes les fonctions d’Opérations",

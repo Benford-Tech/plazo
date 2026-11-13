@@ -12,7 +12,7 @@ describe("ProHome", () => {
     expect(screen.getAllByRole("link", { name: "Essayer la démo" })[0]).toHaveAttribute("href", "/pro/demo");
     for (const id of ["logiciel", "application", "vendre-sur-plazo", "contrat"]) expect(document.getElementById(id)).not.toBeNull();
     const prices = screen.getByRole("region", { name: "Construisez votre offre" });
-    expect(within(prices).getByText(/^149\s€$/)).toBeInTheDocument();
+    expect(within(prices).getByText(/^199\s€$/)).toBeInTheDocument();
     expect(within(prices).getByRole("link", { name: "Voir tous les tarifs" })).toHaveAttribute("href", "/loueurs/tarifs");
   });
 

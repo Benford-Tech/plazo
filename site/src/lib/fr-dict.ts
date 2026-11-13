@@ -293,7 +293,7 @@ const frBase = {
       ["Quels comparateurs Plazo Pro lit-il ?", "Allopark, Onepark, Parclick, ParkMundo, ParkVia et Park Hit. Vous faites suivre leurs mails à l’adresse de votre parking, et la réservation se crée seule dans votre planning."],
       ["Mes clients doivent-ils installer une application ?", `Non. Le lien de leur réservation s’ouvre aussi dans le navigateur. L’application ${P} leur ajoute les notifications.`],
       ["Ça marche pour un parking voiturier sans marquage ?", "Oui. Vos voitures sont rangées en files selon leur date de retour, pour que chacune reparte sans en déplacer une autre."],
-      ["Combien ça coûte ?", "De 79 € à 229 € HT par mois et par parking selon la formule, −10 % à l’année. Sans engagement en mensuel."],
+      ["Combien ça coûte ?", "De 99 € à 299 € HT par mois et par parking selon la formule, −10 % à l’année. Sans engagement en mensuel."],
       ["Sur quels appareils ?", `Sur ordinateur, dans le navigateur, et sur téléphone Android avec l’application ${P} Pro. L’application iPhone est en cours de validation chez Apple.`],
       ["Je peux essayer avant ?", "Oui : la démo est gratuite, sans inscription. Choisissez un poste (gérant, accueil, chauffeur ou voiturier) et essayez sur un parking fictif."],
     ] as [string, string][],
