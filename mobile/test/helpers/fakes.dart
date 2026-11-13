@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:parking_app/src/core/error/exceptions.dart';
 import 'package:parking_app/src/features/booking/data/datasources/booking_data_source.dart';
@@ -146,18 +147,22 @@ class FakeBookingDataSource implements BookingDataSource {
       _next('childSeats', () => booking(reference: reference).copyWith(childSeats: seats));
 
   @override
-  Future<PaymentIntentModel> paymentIntent({required String reference}) => _next(
-    'intent',
-    () => const PaymentIntentModel(clientSecret: 'pi_1_secret', paymentIntentId: 'pi_1', amountCents: 4500, currency: 'eur'),
-  );
+  Future<PaymentIntentModel> paymentIntent({required String reference}) =>
+      _next('intent', () => const PaymentIntentModel(clientSecret: 'pi_1_secret', paymentIntentId: 'pi_1', amountCents: 4500, currency: 'eur'));
 
   @override
-  Future<CheckoutModel> checkout({required String reference}) => _next('checkout', () => const CheckoutModel(url: 'https://checkout.stripe.test/c/pay/cs_1'));
+  Future<CheckoutModel> checkout({required String reference}) =>
+      _next('checkout', () => const CheckoutModel(url: 'https://checkout.stripe.test/c/pay/cs_1'));
 
   @override
   Future<PublicBookingModel> release({required String reference}) => _next(
     'release',
-    () => booking(reference: reference, status: 'cancelled', paymentMode: 'online', payment: const BookingPaymentModel(status: 'expired')),
+    () => booking(
+      reference: reference,
+      status: 'cancelled',
+      paymentMode: 'online',
+      payment: const BookingPaymentModel(status: 'expired'),
+    ),
   );
 
   @override
@@ -289,6 +294,48 @@ class FakePaymentSheet implements PaymentSheetService {
     String? amountLabel,
   }) async {
     presented.add(clientSecret);
+    onPresent?.call();
+    return outcome;
+  }
+
+  bool wallet = false;
+  final cardPayments = <String>[];
+  final walletPayments = <({String clientSecret, int amountCents})>[];
+
+  @override
+  Future<bool> walletSupported({required String publishableKey, required String currency}) async => wallet;
+
+  @override
+  Widget cardField({required ValueChanged<bool> onComplete, bool enabled = true}) =>
+      TextField(key: const Key('payment-card-field'), enabled: enabled, onChanged: (v) => onComplete(v.length >= 4));
+
+  @override
+  Widget walletButton({required VoidCallback onPressed}) =>
+      TextButton(key: const Key('payment-wallet'), onPressed: onPressed, child: const Text('G Pay'));
+
+  @override
+  Future<PaymentSheetOutcome> payByCard({
+    required String publishableKey,
+    required String clientSecret,
+    String? name,
+    String? email,
+    String? phone,
+  }) async {
+    cardPayments.add(clientSecret);
+    onPresent?.call();
+    return outcome;
+  }
+
+  @override
+  Future<PaymentSheetOutcome> payByWallet({
+    required String publishableKey,
+    required String clientSecret,
+    required String merchantDisplayName,
+    required String merchantCountryCode,
+    required String currency,
+    required int amountCents,
+  }) async {
+    walletPayments.add((clientSecret: clientSecret, amountCents: amountCents));
     onPresent?.call();
     return outcome;
   }

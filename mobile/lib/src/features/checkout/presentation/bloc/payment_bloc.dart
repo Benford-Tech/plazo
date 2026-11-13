@@ -4,7 +4,6 @@ import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../core/error/failure.dart';
-import '../../../../core/helpers/money.dart';
 import '../../../../core/utils/use_case.dart';
 import '../../../../services/link_service.dart';
 import '../../../../services/payment_sheet_service.dart';
@@ -49,6 +48,9 @@ enum PaymentStatus {
 /// A notice under the button after the sheet closed.
 enum PaymentNotice { canceled, failed }
 
+/// 13/11/2026 B: what the traveller pays with on the page (the sheet stays for web demos and the services).
+enum PaymentMethodChoice { card, wallet }
+
 sealed class PaymentEvent {
   const PaymentEvent();
 }
@@ -61,8 +63,20 @@ class PaymentTicked extends PaymentEvent {
   const PaymentTicked();
 }
 
+/// « Payer 136,00 € »: the card typed on the page (Stripe Checkout on web builds).
 class PaymentPayPressed extends PaymentEvent {
   const PaymentPayPressed();
+}
+
+/// The Google Pay / Apple Pay button.
+class PaymentWalletPressed extends PaymentEvent {
+  const PaymentWalletPressed();
+}
+
+/// The card field: number, expiry and CVC complete or not.
+class PaymentCardChanged extends PaymentEvent {
+  const PaymentCardChanged(this.complete);
+  final bool complete;
 }
 
 /// "Actualiser" while verifying, or the countdown reached zero.
@@ -84,12 +98,21 @@ abstract class PaymentState with _$PaymentState {
     @Default(PaymentStatus.loading) PaymentStatus status,
     PublicBookingModel? booking,
     PaymentsConfigModel? config,
+
     /// Seconds left on the hold, counted down from the API's figure (never the phone's clock).
     int? secondsLeft,
     PaymentNotice? notice,
+
     /// Stripe's message of a failed attempt, or the translated API error.
     String? message,
     @Default(false) bool busy,
+
+    /// Google Pay or Apple Pay can be used on this phone.
+    @Default(false) bool walletAvailable,
+    @Default(false) bool cardComplete,
+
+    /// The method being paid with, for its button's spinner.
+    PaymentMethodChoice? payingWith,
   }) = _PaymentState;
 
   /// The native sheet can be used (else: Checkout, on web builds).
@@ -118,6 +141,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<PaymentStarted>(_onStarted);
     on<PaymentTicked>(_onTicked);
     on<PaymentPayPressed>(_onPay);
+    on<PaymentWalletPressed>(_onWallet);
+    on<PaymentCardChanged>((e, emit) => emit(state.copyWith(cardComplete: e.complete)));
     on<PaymentRefreshRequested>(_onRefresh);
     on<PaymentEditPressed>(_onEdit);
   }
@@ -149,6 +174,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       (f) => emit(state.copyWith(status: PaymentStatus.error, message: f.message, config: config)),
       (b) => _applyBooking(b as PublicBookingModel, emit, config: config),
     );
+    if (state.status == PaymentStatus.ready && state.sheetAvailable(_sheet)) {
+      final wallet = await _sheet.walletSupported(publishableKey: config!.publishableKey!, currency: config.currency);
+      emit(state.copyWith(walletAvailable: wallet));
+    }
   }
 
   /// Where a booking read from the API puts the payment step.
@@ -187,36 +216,60 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
   Future<void> _onPay(PaymentPayPressed event, Emitter<PaymentState> emit) async {
     if (state.status != PaymentStatus.ready || state.busy) return;
-    emit(state.copyWith(notice: null, message: null, busy: true));
-    if (state.sheetAvailable(_sheet)) {
-      await _paySheet(emit);
-    } else {
-      await _payCheckout(emit);
+    if (!state.sheetAvailable(_sheet)) {
+      emit(state.copyWith(notice: null, message: null, busy: true));
+      return _payCheckout(emit);
     }
+    // The button is greyed until the card is complete; a tap that slips through does nothing.
+    if (!state.cardComplete) return;
+    final b = state.booking!;
+    await _payNative(
+      PaymentMethodChoice.card,
+      emit,
+      (config, intent) => _sheet.payByCard(
+        publishableKey: config.publishableKey!,
+        clientSecret: intent.clientSecret!,
+        name: b.customerName,
+        email: b.customerEmail,
+        phone: b.customerPhone.isEmpty ? null : b.customerPhone,
+      ),
+    );
   }
 
-  Future<void> _paySheet(Emitter<PaymentState> emit) async {
-    emit(state.copyWith(status: PaymentStatus.presenting));
+  Future<void> _onWallet(PaymentWalletPressed event, Emitter<PaymentState> emit) async {
+    if (state.status != PaymentStatus.ready || state.busy || !state.walletAvailable) return;
+    await _payNative(PaymentMethodChoice.wallet, emit, (config, intent) {
+      final b = state.booking!;
+      return _sheet.payByWallet(
+        publishableKey: config.publishableKey!,
+        clientSecret: intent.clientSecret!,
+        merchantDisplayName: config.merchantDisplayName,
+        merchantCountryCode: config.merchantCountryCode,
+        currency: config.currency,
+        amountCents: intent.amountCents ?? ((b.priceCents ?? 0) + b.extrasCents),
+      );
+    });
+  }
+
+  /// Creates (or reads back) the PaymentIntent, then confirms it on the phone with the card or the wallet.
+  Future<void> _payNative(
+    PaymentMethodChoice method,
+    Emitter<PaymentState> emit,
+    Future<PaymentSheetOutcome> Function(PaymentsConfigModel config, PaymentIntentModel intent) confirm,
+  ) async {
+    emit(state.copyWith(notice: null, message: null, busy: true, payingWith: method, status: PaymentStatus.presenting));
     final result = await _intent(state.reference);
     if (result.isLeft) return _failed(result.fold((f) => f, (_) => throw StateError('')), emit);
     final intent = result.fold((_) => throw StateError(''), (i) => i);
     if (intent.paid || intent.clientSecret == null) return _verify(emit);
-    final config = state.config!;
-    final outcome = await _sheet.present(
-      publishableKey: config.publishableKey!,
-      clientSecret: intent.clientSecret!,
-      merchantDisplayName: config.merchantDisplayName,
-      merchantCountryCode: config.merchantCountryCode,
-      currency: config.currency,
-      amountLabel: intent.amountCents == null ? null : formatEuros(intent.amountCents!),
-    );
+    final outcome = await confirm(state.config!, intent);
     switch (outcome.result) {
       case PaymentSheetResult.completed:
         await _verify(emit);
       case PaymentSheetResult.canceled:
-        emit(state.copyWith(status: PaymentStatus.ready, notice: PaymentNotice.canceled, busy: false));
+        emit(state.copyWith(status: PaymentStatus.ready, notice: PaymentNotice.canceled, busy: false, payingWith: null));
       case PaymentSheetResult.failed:
-        emit(state.copyWith(status: PaymentStatus.ready, notice: PaymentNotice.failed, message: outcome.message, busy: false));
+        emit(state.copyWith(status: PaymentStatus.ready, notice: PaymentNotice.failed, message: outcome.message, busy: false, payingWith: null));
     }
   }
 
@@ -237,13 +290,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
       if (state.status != PaymentStatus.expired) emit(state.copyWith(status: PaymentStatus.expired, busy: false));
       return;
     }
-    emit(state.copyWith(status: PaymentStatus.ready, busy: false, message: failure.message));
+    emit(state.copyWith(status: PaymentStatus.ready, busy: false, payingWith: null, message: failure.message));
   }
 
   /// Polls the booking until the API confirms it (it asks Stripe on every read).
   Future<void> _verify(Emitter<PaymentState> emit) async {
     _timer?.cancel();
-    emit(state.copyWith(status: PaymentStatus.verifying, busy: false, notice: null));
+    emit(state.copyWith(status: PaymentStatus.verifying, busy: false, notice: null, payingWith: null));
     for (var i = 0; i < pollAttempts; i++) {
       final result = await _getBooking(state.reference);
       final booking = result.fold((_) => null, (b) => b);
