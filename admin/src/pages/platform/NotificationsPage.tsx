@@ -9,7 +9,9 @@ import { adminApi, ApiError } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import type { PlatformAudience, PlatformNotification } from "@/lib/types";
+import { promotionFiltersSummary, promotionLinkSummary } from "@/lib/promotion";
 import { cn } from "@/lib/utils";
+import PromotionForm from "./notifications/PromotionForm";
 
 const t = fr.platform.notifications;
 const TITLE_MAX = 50;
@@ -19,6 +21,7 @@ const labelClass = "text-[11px] uppercase tracking-[0.08em] text-muted-foregroun
 const selectClass = "flex h-11 w-full border border-input bg-background px-3 text-base";
 
 const audienceLabel = (n: PlatformNotification) => (n.audience === "operator" ? `${t.audiences.operator} · ${n.operatorName ?? "—"}` : t.audiences[n.audience]);
+type Kind = "information" | "promotion";
 
 /**
  * "Notifications" tab of the platform space (E-A, C-A, 05/10/2026): a push to every operator's
@@ -27,6 +30,7 @@ const audienceLabel = (n: PlatformNotification) => (n.audience === "operator" ? 
  */
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
+  const [kind, setKind] = useState<Kind>("information");
   const [audience, setAudience] = useState<PlatformAudience>("staff");
   const [operatorId, setOperatorId] = useState("");
   const [title, setTitle] = useState("");
@@ -36,13 +40,16 @@ export default function NotificationsPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const history = useQuery({ queryKey: ["platform", "notifications"], queryFn: adminApi.getPlatformNotifications });
+  const airports = useQuery({ queryKey: ["airports"], queryFn: adminApi.getAirports, staleTime: Infinity });
+  const prepend = (row: PlatformNotification) =>
+    queryClient.setQueryData(["platform", "notifications"], (old: { data: PlatformNotification[] } | undefined) => ({ data: [row, ...(old?.data ?? [])] }));
   // A plain call: React Query would pass its context as the « view » argument.
   const operators = useQuery({ queryKey: ["platform", "operators"], queryFn: () => adminApi.getPlatformOperators(), enabled: audience === "operator" });
   const target = audience === "operator" ? operatorId || null : null;
   const reach = useQuery({
     queryKey: ["platform", "notifications", "audience", audience, target],
     queryFn: () => adminApi.getPlatformNotificationAudience(audience, target),
-    enabled: audience !== "operator" || !!target,
+    enabled: kind === "information" && (audience !== "operator" || !!target),
   });
 
   const send = useMutation({
@@ -53,7 +60,7 @@ export default function NotificationsPage() {
       setTitle("");
       setBody("");
       setUrl("");
-      queryClient.setQueryData(["platform", "notifications"], (old: { data: PlatformNotification[] } | undefined) => ({ data: [data, ...(old?.data ?? [])] }));
+      prepend(data);
       toast.success(t.sent(data.recipients));
     },
     onError: (err: Error) => {
@@ -70,7 +77,23 @@ export default function NotificationsPage() {
     <>
       <h1 className="text-[26px] font-bold uppercase tracking-[0.03em]">{t.title}</h1>
       <p className="max-w-3xl text-sm text-muted-foreground">{t.intro}</p>
-      {reach.data && !reach.data.configured && <p className="border border-destructive/40 p-3 text-destructive">{t.notConfigured}</p>}
+      <div role="radiogroup" aria-label={t.kind} className="inline-flex rounded-full border border-border bg-card p-1" data-testid="pn-kind">
+        {(["information", "promotion"] as Kind[]).map(k => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={kind === k}
+            onClick={() => setKind(k)}
+            className={cn("min-h-11 rounded-full px-5 text-sm font-semibold", kind === k ? "bg-lime text-lime-ink" : "text-muted-foreground hover:text-foreground")}
+          >
+            {t.kinds[k]}
+          </button>
+        ))}
+      </div>
+      {kind === "promotion" && <PromotionForm onSent={prepend} />}
+      {kind === "information" && reach.data && !reach.data.configured && <p className="border border-destructive/40 p-3 text-destructive">{t.notConfigured}</p>}
+      {kind === "information" && (
       <form
         className="max-w-3xl space-y-4"
         aria-label={t.title}
@@ -139,6 +162,7 @@ export default function NotificationsPage() {
           </Button>
         </div>
       </form>
+      )}
       {confirming && (
         <div role="dialog" aria-modal="true" aria-labelledby="pn-confirm-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-md space-y-4 border border-lime-deep bg-background p-5">
@@ -185,11 +209,21 @@ export default function NotificationsPage() {
                 {history.data!.data.map(n => (
                   <tr key={n.id} className="border-b border-border align-top">
                     <td className="tabular whitespace-nowrap px-2 py-2 font-mono text-lime-deep">{dateTimeShort(n.createdAt)}</td>
-                    <td className="px-2 py-2">{audienceLabel(n)}</td>
+                    <td className="px-2 py-2">
+                      {n.audience === "promotion" ? (
+                        <>
+                          <span className="inline-flex rounded-full bg-lime px-2.5 py-0.5 text-xs font-semibold text-lime-ink">{t.audiences.promotion}</span>
+                          <span className="mt-1 block text-sm text-muted-foreground">{promotionFiltersSummary(n.filters, airports.data)}</span>
+                        </>
+                      ) : (
+                        audienceLabel(n)
+                      )}
+                    </td>
                     <td className="px-2 py-2">
                       <span className="font-semibold">{n.title}</span>
                       <span className="block text-sm text-muted-foreground">{n.body}</span>
-                      {n.url && (
+                      {n.audience === "promotion" && <span className="block text-sm text-lime-deep">{promotionLinkSummary(n.link, airports.data)}</span>}
+                      {n.url && n.audience !== "promotion" && (
                         <a href={n.url} className="block text-sm text-lime-deep underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
                           {n.url}
                         </a>

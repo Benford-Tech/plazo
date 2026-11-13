@@ -1214,7 +1214,18 @@ export interface PaymentStatus {
   payoutSchedule: PayoutSchedule;
 }
 
-export type PlatformAudience = "staff" | "travellers" | "operator";
+export type PlatformAudience = "staff" | "travellers" | "operator" | "promotion";
+
+/** 13/11/2026 (promotions, choix A): where a promotion opens the Plazo app; dates as `YYYY-MM-DDTHH:mm`. */
+export type PromotionLink =
+  | { kind: "search"; airport: string; arrival?: string | null; return?: string | null }
+  | { kind: "parking"; airport: string; parking: string; arrival?: string | null; return?: string | null };
+
+/** 13/11/2026: who receives a promotion, on top of the phones that accepted the offers. */
+export interface PromotionFilters {
+  airport?: string | null;
+  noUpcoming?: boolean;
+}
 
 /** A push sent by the platform (E-A, 05/10/2026). */
 export interface PlatformNotification {
@@ -1225,6 +1236,9 @@ export interface PlatformNotification {
   title: string;
   body: string;
   url: string | null;
+  /** 13/11/2026: a promotion's link (null: the app's home) and its filters; absent for the other kinds. */
+  link?: PromotionLink | null;
+  filters?: PromotionFilters | null;
   recipients: number;
   sentByName: string;
   createdAt: string;
@@ -1236,6 +1250,8 @@ export interface PlatformNotificationInput {
   title: string;
   body: string;
   url?: string | null;
+  link?: PromotionLink | null;
+  filters?: PromotionFilters;
 }
 
 export interface PlatformPayments {

@@ -85,6 +85,7 @@ import type {
   PlatformAudience,
   PlatformNotification,
   PlatformNotificationInput,
+  PromotionFilters,
   DemoLink,
   MorningEmailPreference,
   DemoRole,
@@ -1462,9 +1463,15 @@ export const adminApi = {
   getPlatformNotificationAudience: (
     audience: PlatformAudience,
     operatorId?: string | null,
+    filters?: PromotionFilters,
   ) =>
-    apiRequest<{ devices: number; configured: boolean }>(
-      `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
+    apiRequest<{ devices: number; configured: boolean; nextPromotionAt?: string | null }>(
+      `/internal/platform/notifications/audience?${new URLSearchParams({
+        audience,
+        ...(operatorId ? { operatorId } : {}),
+        ...(filters?.airport ? { airport: filters.airport } : {}),
+        ...(filters?.noUpcoming ? { noUpcoming: "1" } : {}),
+      })}`,
     ),
   // Prospection (18/10/2026).
   getProspects: (
