@@ -3002,5 +3002,36 @@
       "not_offered": "Este suplemento ya no se ofrece: recarga la ficha.",
       "reservation_closed": "Reserva cancelada o no presentada: sin suplemento."
     }
+  },
+  "write_traveller": {
+    "button": "Escribir desde Plazo",
+    "title": "Escribir al cliente",
+    "from_plazo": "Enviado desde el número de Plazo: la respuesta del cliente llega a «Mensajes de WhatsApp».",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS del aparcamiento",
+    "placeholder": "Tu mensaje…",
+    "hint_free": "El cliente te ha escrito: texto libre hasta las {} (regla de Meta).",
+    "hint_template": "Fuera de las 24 h de Meta, tu mensaje sale en la plantilla aprobada, entre estas dos líneas.",
+    "hint_sms": "Enviado por el canal SMS del aparcamiento; la respuesta del cliente no llega a Plazo.",
+    "hint_fallback": "Si WhatsApp no funciona, se envía el SMS del aparcamiento en su lugar.",
+    "send_whatsapp": "Enviar por WhatsApp",
+    "send_sms": "Enviar por SMS",
+    "sent_whatsapp": "Mensaje enviado por WhatsApp.",
+    "sent_sms": "SMS enviado.",
+    "sent_sms_fallback": "WhatsApp no ha funcionado: SMS enviado en su lugar.",
+    "open": "Ver",
+    "refusal": {
+      "no_phone": "No hay número de teléfono en esta reserva.",
+      "no_channel": "Ni WhatsApp ni SMS están configurados para este aparcamiento.",
+      "anonymized": "Reserva anonimizada."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp no está disponible para este aparcamiento.",
+      "sms_failed": "El SMS no se ha enviado.",
+      "sms_unavailable": "WhatsApp ha rechazado el mensaje y no hay SMS configurado.",
+      "no_phone": "No hay número de teléfono en esta reserva.",
+      "demo_read_only": "Demo: el mensaje no se envía.",
+      "generic": "El mensaje no se ha enviado. Inténtalo de nuevo."
+    }
   }
 }

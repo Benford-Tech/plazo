@@ -28,8 +28,12 @@ void main() {
   const agent = StaffModel(id: 'a1', name: 'Sarah Cohen', email: 's@example.com', role: 'agent', post: 'agent');
 
   /// A page under the app's route name, so that the shell's tabs find it as in the app.
-  AutoRoute page(String name, String path, Widget Function(BuildContext, RouteData) build, {List<AutoRoute>? children}) =>
-      AutoRoute(page: PageInfo.builder(name, builder: build), path: path, initial: name == ProShellRoute.name, children: children);
+  AutoRoute page(String name, String path, Widget Function(BuildContext, RouteData) build, {List<AutoRoute>? children}) => AutoRoute(
+    page: PageInfo.builder(name, builder: build),
+    path: path,
+    initial: name == ProShellRoute.name,
+    children: children,
+  );
 
   Widget label(String text) => Scaffold(body: Center(child: Text(text)));
 
@@ -38,7 +42,11 @@ void main() {
     tester.view.physicalSize = const Size(800, 400) * tester.view.devicePixelRatio;
     addTearDown(tester.view.resetPhysicalSize);
     final auth = MockAuthBloc();
-    whenListen(auth, const Stream<ProAuthState>.empty(), initialState: const ProAuthState(status: ProAuthStatus.signedIn, staff: agent));
+    whenListen(
+      auth,
+      const Stream<ProAuthState>.empty(),
+      initialState: const ProAuthState(status: ProAuthStatus.signedIn, staff: agent),
+    );
     final router = RootStackRouter.build(
       routes: [
         page(

@@ -118,6 +118,15 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'shuttle.title'.tr(),
               onTap: () => context.router.push(ProShuttleRoute()),
             ),
+            // 13/11/2026 (« Le chauffeur y a droit »): the WhatsApp inbox, once (the front desk's block has it otherwise).
+            if (!_holds(staff, 'agent'))
+              _Tile(
+                key: const Key('pmore-whatsapp'),
+                icon: Icons.chat_rounded,
+                label: 'whatsapp_inbox.menu'.tr(),
+                badge: const WhatsappUnreadBadge(),
+                onTap: () => context.router.push(const ProWhatsappInboxRoute()),
+              ),
           ],
           if (_holds(staff, 'agent')) ...[
             const SizedBox(height: 14),
@@ -134,7 +143,7 @@ class ProMoreTabPage extends StatelessWidget {
               label: 'extras.board.title'.tr(),
               onTap: () => context.router.push(const ProExtrasRoute()),
             ),
-            if (can(role, 'reservations:manage'))
+            if (can(role, 'reservations:status'))
               _Tile(
                 key: const Key('pmore-whatsapp'),
                 icon: Icons.chat_rounded,

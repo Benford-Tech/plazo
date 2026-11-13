@@ -180,7 +180,7 @@ const App = () => (
               <Route
                 path="/reservations/whatsapp"
                 element={
-                  <RequirePermission permission="reservations:manage">
+                  <RequirePermission permission="reservations:status">
                     <WhatsappInboxPage />
                   </RequirePermission>
                 }

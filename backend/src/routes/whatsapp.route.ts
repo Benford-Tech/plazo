@@ -52,13 +52,16 @@ export class WhatsappRoute implements Routes {
       this.whatsapp.test,
     );
     // 12/11/2026: « Messages WhatsApp », what travellers write to Plazo's number (direction A).
-    this.router.get('/internal/whatsapp/inbox', StaffAuthMiddleware('reservations:manage'), this.whatsapp.inbox);
-    this.router.get('/internal/whatsapp/sent', StaffAuthMiddleware('reservations:manage'), this.whatsapp.sent);
-    this.router.get('/internal/whatsapp/inbox/messages/:messageId/media', StaffAuthMiddleware('reservations:manage'), this.whatsapp.media);
-    this.router.get('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:manage'), this.whatsapp.conversation);
-    this.router.post('/internal/whatsapp/inbox/:id/reply', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.whatsapp.reply);
-    this.router.post('/internal/whatsapp/inbox/:id/handle', StaffAuthMiddleware('reservations:manage'), this.whatsapp.handle);
-    this.router.post('/internal/whatsapp/inbox/:id/unhandle', StaffAuthMiddleware('reservations:manage'), this.whatsapp.unhandle);
+    this.router.get('/internal/whatsapp/inbox', StaffAuthMiddleware('reservations:status'), this.whatsapp.inbox);
+    // « Écrire au client » (13/11/2026): from Plazo's WhatsApp number, the parking's SMS as the fallback.
+    this.router.get('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:status'), this.whatsapp.writeStatus);
+    this.router.post('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:status'), RefuseInDemo(), this.whatsapp.write);
+    this.router.get('/internal/whatsapp/sent', StaffAuthMiddleware('reservations:status'), this.whatsapp.sent);
+    this.router.get('/internal/whatsapp/inbox/messages/:messageId/media', StaffAuthMiddleware('reservations:status'), this.whatsapp.media);
+    this.router.get('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:status'), this.whatsapp.conversation);
+    this.router.post('/internal/whatsapp/inbox/:id/reply', StaffAuthMiddleware('reservations:status'), RefuseInDemo(), this.whatsapp.reply);
+    this.router.post('/internal/whatsapp/inbox/:id/handle', StaffAuthMiddleware('reservations:status'), this.whatsapp.handle);
+    this.router.post('/internal/whatsapp/inbox/:id/unhandle', StaffAuthMiddleware('reservations:status'), this.whatsapp.unhandle);
     this.router.post('/internal/whatsapp/inbox/:id/attach', StaffAuthMiddleware('reservations:manage'), this.whatsapp.attach);
     this.router.get('/public/whatsapp/webhook', this.whatsapp.verify);
     this.router.post('/public/whatsapp/webhook', this.whatsapp.webhook);

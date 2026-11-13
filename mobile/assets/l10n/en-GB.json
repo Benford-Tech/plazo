@@ -2999,5 +2999,36 @@
       "not_offered": "This surcharge is no longer offered: reload the booking.",
       "reservation_closed": "Booking cancelled or no-show: no surcharge."
     }
+  },
+  "write_traveller": {
+    "button": "Write from Plazo",
+    "title": "Write to the customer",
+    "from_plazo": "Sent from the Plazo number: the customer's reply arrives in “WhatsApp messages”.",
+    "whatsapp": "WhatsApp",
+    "sms": "Car park text",
+    "placeholder": "Your message…",
+    "hint_free": "The customer wrote to you: free text until {} (Meta's rule).",
+    "hint_template": "Outside Meta's 24 hours, your message goes in the approved template, between these two lines.",
+    "hint_sms": "Sent through the car park's text channel; the customer's reply does not arrive in Plazo.",
+    "hint_fallback": "If WhatsApp does not go through, the car park's text is sent instead.",
+    "send_whatsapp": "Send by WhatsApp",
+    "send_sms": "Send by text",
+    "sent_whatsapp": "Message sent by WhatsApp.",
+    "sent_sms": "Text sent.",
+    "sent_sms_fallback": "WhatsApp did not go through: text sent instead.",
+    "open": "View",
+    "refusal": {
+      "no_phone": "No phone number on this booking.",
+      "no_channel": "Neither WhatsApp nor text messages are set up for this car park.",
+      "anonymized": "Booking anonymised."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp is not available for this car park.",
+      "sms_failed": "The text was not sent.",
+      "sms_unavailable": "WhatsApp refused the message and no text channel is set up.",
+      "no_phone": "No phone number on this booking.",
+      "demo_read_only": "Demo: the message is not sent.",
+      "generic": "The message was not sent. Try again."
+    }
   }
 }

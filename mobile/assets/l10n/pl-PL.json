@@ -3005,5 +3005,36 @@
       "not_offered": "Ta dopłata nie jest już oferowana: odśwież kartę.",
       "reservation_closed": "Rezerwacja anulowana lub niestawiennictwo: brak dopłaty."
     }
+  },
+  "write_traveller": {
+    "button": "Napisz z Plazo",
+    "title": "Napisz do klienta",
+    "from_plazo": "Wysłane z numeru Plazo: odpowiedź klienta trafi do „Wiadomości WhatsApp”.",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS parkingu",
+    "placeholder": "Twoja wiadomość…",
+    "hint_free": "Klient do Ciebie napisał: dowolny tekst do {} (zasada Meta).",
+    "hint_template": "Poza 24 godzinami Meta wiadomość wychodzi w zatwierdzonym szablonie, między tymi dwiema liniami.",
+    "hint_sms": "Wysłane kanałem SMS parkingu; odpowiedź klienta nie trafi do Plazo.",
+    "hint_fallback": "Jeśli WhatsApp nie przejdzie, zamiast niego zostanie wysłany SMS parkingu.",
+    "send_whatsapp": "Wyślij przez WhatsApp",
+    "send_sms": "Wyślij SMS",
+    "sent_whatsapp": "Wiadomość wysłana przez WhatsApp.",
+    "sent_sms": "SMS wysłany.",
+    "sent_sms_fallback": "WhatsApp nie przeszedł: zamiast tego wysłano SMS.",
+    "open": "Zobacz",
+    "refusal": {
+      "no_phone": "Brak numeru telefonu w tej rezerwacji.",
+      "no_channel": "Dla tego parkingu nie skonfigurowano ani WhatsApp, ani SMS.",
+      "anonymized": "Rezerwacja zanonimizowana."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp nie jest dostępny dla tego parkingu.",
+      "sms_failed": "SMS nie został wysłany.",
+      "sms_unavailable": "WhatsApp odrzucił wiadomość, a SMS nie jest skonfigurowany.",
+      "no_phone": "Brak numeru telefonu w tej rezerwacji.",
+      "demo_read_only": "Demo: wiadomość nie zostanie wysłana.",
+      "generic": "Wiadomość nie została wysłana. Spróbuj ponownie."
+    }
   }
 }

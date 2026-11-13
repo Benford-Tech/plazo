@@ -3002,5 +3002,36 @@
       "not_offered": "Acest supliment nu mai este oferit: reîncărcați fișa.",
       "reservation_closed": "Rezervare anulată sau client neprezentat: fără supliment."
     }
+  },
+  "write_traveller": {
+    "button": "Scrieți din Plazo",
+    "title": "Scrieți clientului",
+    "from_plazo": "Trimis de pe numărul Plazo: răspunsul clientului ajunge în „Mesaje WhatsApp”.",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS-ul parcării",
+    "placeholder": "Mesajul dvs.…",
+    "hint_free": "Clientul v-a scris: text liber până la {} (regula Meta).",
+    "hint_template": "În afara celor 24 h ale Meta, mesajul pleacă în șablonul aprobat, între aceste două rânduri.",
+    "hint_sms": "Trimis prin canalul SMS al parcării; răspunsul clientului nu ajunge în Plazo.",
+    "hint_fallback": "Dacă WhatsApp nu trece, se trimite SMS-ul parcării în loc.",
+    "send_whatsapp": "Trimiteți prin WhatsApp",
+    "send_sms": "Trimiteți prin SMS",
+    "sent_whatsapp": "Mesaj trimis prin WhatsApp.",
+    "sent_sms": "SMS trimis.",
+    "sent_sms_fallback": "WhatsApp nu a trecut: s-a trimis SMS în loc.",
+    "open": "Vedeți",
+    "refusal": {
+      "no_phone": "Nu există număr de telefon la această rezervare.",
+      "no_channel": "Nici WhatsApp, nici SMS nu sunt configurate pentru această parcare.",
+      "anonymized": "Rezervare anonimizată."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp nu este disponibil pentru această parcare.",
+      "sms_failed": "SMS-ul nu a fost trimis.",
+      "sms_unavailable": "WhatsApp a refuzat mesajul și nu este configurat niciun SMS.",
+      "no_phone": "Nu există număr de telefon la această rezervare.",
+      "demo_read_only": "Demo: mesajul nu este trimis.",
+      "generic": "Mesajul nu a fost trimis. Încercați din nou."
+    }
   }
 }

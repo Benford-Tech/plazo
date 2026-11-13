@@ -2999,5 +2999,36 @@
       "not_offered": "Dieser Zuschlag wird nicht mehr angeboten: Laden Sie die Buchung neu.",
       "reservation_closed": "Buchung storniert oder nicht erschienen: kein Zuschlag."
     }
+  },
+  "write_traveller": {
+    "button": "Über Plazo schreiben",
+    "title": "Dem Kunden schreiben",
+    "from_plazo": "Von der Plazo-Nummer gesendet: Die Antwort des Kunden kommt unter „WhatsApp-Nachrichten“ an.",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS des Parkplatzes",
+    "placeholder": "Ihre Nachricht…",
+    "hint_free": "Der Kunde hat Ihnen geschrieben: freier Text bis {} (Regel von Meta).",
+    "hint_template": "Außerhalb der 24 Stunden von Meta geht Ihre Nachricht in der genehmigten Vorlage zwischen diesen beiden Zeilen raus.",
+    "hint_sms": "Über den SMS-Kanal des Parkplatzes gesendet; die Antwort des Kunden kommt nicht in Plazo an.",
+    "hint_fallback": "Wenn WhatsApp nicht durchgeht, wird stattdessen die SMS des Parkplatzes gesendet.",
+    "send_whatsapp": "Per WhatsApp senden",
+    "send_sms": "Per SMS senden",
+    "sent_whatsapp": "Nachricht per WhatsApp gesendet.",
+    "sent_sms": "SMS gesendet.",
+    "sent_sms_fallback": "WhatsApp ging nicht durch: stattdessen SMS gesendet.",
+    "open": "Ansehen",
+    "refusal": {
+      "no_phone": "Keine Telefonnummer bei dieser Buchung.",
+      "no_channel": "Für diesen Parkplatz sind weder WhatsApp noch SMS eingerichtet.",
+      "anonymized": "Buchung anonymisiert."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp ist für diesen Parkplatz nicht verfügbar.",
+      "sms_failed": "Die SMS wurde nicht gesendet.",
+      "sms_unavailable": "WhatsApp hat die Nachricht abgelehnt und keine SMS ist eingerichtet.",
+      "no_phone": "Keine Telefonnummer bei dieser Buchung.",
+      "demo_read_only": "Demo: Die Nachricht wird nicht gesendet.",
+      "generic": "Die Nachricht wurde nicht gesendet. Bitte erneut versuchen."
+    }
   }
 }

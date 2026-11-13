@@ -3002,5 +3002,36 @@
       "not_offered": "Este suplemento já não é proposto: atualize a ficha.",
       "reservation_closed": "Reserva cancelada ou cliente não compareceu: sem suplemento."
     }
+  },
+  "write_traveller": {
+    "button": "Escrever a partir do Plazo",
+    "title": "Escrever ao cliente",
+    "from_plazo": "Enviado a partir do número Plazo: a resposta do cliente chega a «Mensagens WhatsApp».",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS do parque",
+    "placeholder": "A sua mensagem…",
+    "hint_free": "O cliente escreveu-lhe: texto livre até às {} (regra da Meta).",
+    "hint_template": "Fora das 24 h da Meta, a sua mensagem segue no modelo aprovado, entre estas duas linhas.",
+    "hint_sms": "Enviado pelo canal SMS do parque; a resposta do cliente não chega ao Plazo.",
+    "hint_fallback": "Se o WhatsApp não passar, é enviado o SMS do parque.",
+    "send_whatsapp": "Enviar por WhatsApp",
+    "send_sms": "Enviar por SMS",
+    "sent_whatsapp": "Mensagem enviada por WhatsApp.",
+    "sent_sms": "SMS enviado.",
+    "sent_sms_fallback": "O WhatsApp não passou: SMS enviado em vez disso.",
+    "open": "Ver",
+    "refusal": {
+      "no_phone": "Sem número de telefone nesta reserva.",
+      "no_channel": "Nem WhatsApp nem SMS estão configurados para este parque.",
+      "anonymized": "Reserva anonimizada."
+    },
+    "errors": {
+      "whatsapp_unavailable": "O WhatsApp não está disponível para este parque.",
+      "sms_failed": "O SMS não foi enviado.",
+      "sms_unavailable": "O WhatsApp recusou a mensagem e não há SMS configurado.",
+      "no_phone": "Sem número de telefone nesta reserva.",
+      "demo_read_only": "Demo: a mensagem não é enviada.",
+      "generic": "A mensagem não foi enviada. Tente novamente."
+    }
   }
 }
