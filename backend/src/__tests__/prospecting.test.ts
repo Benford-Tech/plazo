@@ -540,16 +540,18 @@ describe('Plateforme › Prospection : prospects européens (13/11/2026, « fais
       { companyName: 'Parken zum Fliegen GmbH', airportCode: 'STR', website: 'parken-zum-fliegen.de', phone: '+49 711 000000' },
       { companyName: 'parken zum fliegen', airportCode: 'STR' },
       { companyName: 'Lot Park Fictif', region: 'Pologne' },
+      // The same name at another airport: another parking.
+      { companyName: 'Parken zum Fliegen', airportCode: 'HAM' },
       { companyName: 'Flug Park Fictif', email: 'info@flugpark-fictif.example', airportCode: 'DUS', contactFirstName: 'Jonas' },
     ];
     const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
     expect(preview.status).toBe(200);
-    expect(preview.body.counts).toEqual({ new: 3, duplicate: 1, suppressed: 0, invalid: 0 });
+    expect(preview.body.counts).toEqual({ new: 4, duplicate: 1, suppressed: 0, invalid: 0 });
     const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: false });
-    expect(done.body.created).toBe(3);
+    expect(done.body.created).toBe(4);
     // Imported again: every row is a duplicate (by its name, or its address).
     const again = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
-    expect(again.body.counts).toMatchObject({ new: 0, duplicate: 4 });
+    expect(again.body.counts).toMatchObject({ new: 0, duplicate: 5 });
     // By hand too.
     expect((await api().post(P).set(auth(admin.token)).send({ companyName: 'Lot-Park Fictif' })).body.code).toBe('prospect_exists');
 
@@ -563,11 +565,11 @@ describe('Plateforme › Prospection : prospects européens (13/11/2026, « fais
       languageOverride: null,
     });
     expect(byName['Lot Park Fictif']).toMatchObject({ region: { key: 'pologne', manual: true }, language: 'en' });
-    expect((await api().get(P).query({ region: 'allemagne' }).set(auth(admin.token))).body.data).toHaveLength(2);
+    expect((await api().get(P).query({ region: 'allemagne' }).set(auth(admin.token))).body.data).toHaveLength(3);
 
     const ids = list.body.data.map((p: any) => p.id);
     const sent = await api().post(`${P}/send`).set(auth(admin.token)).send({ ids });
-    expect(sent.body).toMatchObject({ enrolled: 1, sent: 1, skipped: 2 });
+    expect(sent.body).toMatchObject({ enrolled: 1, sent: 1, skipped: 3 });
     const [mail] = emails();
     expect(mail.to[0].email).toBe('info@flugpark-fictif.example');
     expect(mail.subject).toBe('Flug Park Fictif: Ihre Buchungen, ohne Abtippen');

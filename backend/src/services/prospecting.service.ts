@@ -14,7 +14,6 @@ import {
 import prisma, { Prisma, Prospect, ProspectStatus } from '@/database';
 import {
   capDayStart,
-  companyKey,
   DEFAULT_DAILY_CAP,
   followUpDueAt,
   inSendingWindow,
@@ -31,6 +30,7 @@ import {
   remainingToday,
   retentionCutoff,
   RETRY_AFTER_MINUTES,
+  sameCompany,
   SequenceStep,
   Sequences,
   sequencesOf,
@@ -369,11 +369,10 @@ export class ProspectingService {
     return !!(await prisma.prospectSuppression.findUnique({ where: { emailHash: suppressionHash(email) } }));
   }
 
-  /** A prospect without an email (13/11/2026) is the one of the same name: never listed twice. */
-  private async assertNameFree(companyName: string, exceptId?: string) {
-    const key = companyKey(companyName);
-    const rows = await prisma.prospect.findMany({ select: { id: true, companyName: true } });
-    if (rows.some(r => r.id !== exceptId && companyKey(r.companyName) === key)) {
+  /** A prospect without an email (13/11/2026) is the one of the same name at the same airport: never listed twice. */
+  private async assertNameFree(candidate: { companyName: string; airportCode: string | null }, exceptId?: string) {
+    const rows = await prisma.prospect.findMany({ select: { id: true, companyName: true, airportCode: true } });
+    if (rows.some(r => r.id !== exceptId && sameCompany(r, candidate))) {
       throw new HttpException(httpStatus.CONFLICT, 'Prospect already listed', 'prospect_exists');
     }
   }
@@ -401,7 +400,7 @@ export class ProspectingService {
     if (!checked.ok) throw new ValidationException(checked.fields);
     const value = checked.value as Required<typeof checked.value>;
     if (value.email) await this.assertAddressFree(value.email);
-    else await this.assertNameFree(value.companyName);
+    else await this.assertNameFree(value);
     const prospect = await prisma.prospect.create({ data: { ...value, source: 'manual' } });
     await this.record(actor, 'prospect.created', 'prospect', prospect.id, { source: 'manual' });
     return this.viewOf(prospect);
@@ -431,7 +430,8 @@ export class ProspectingService {
   /**
    * « Importer un CSV »: the rows the page read from the file. `dryRun` answers what would happen (the preview) without
    * writing. Each row: new, duplicate (already listed, or twice in the file), suppressed (opted out) or invalid. A row
-   * without an email (13/11/2026) is a duplicate of a prospect of the same name (`companyKey`), with or without an email.
+   * without an email (13/11/2026) is a duplicate of a prospect of the same name at the same airport (`sameCompany`), with
+   * or without an email.
    */
   public async importRows(actor: AuthenticatedStaff, rows: unknown, dryRun: boolean) {
     if (!Array.isArray(rows) || rows.length === 0) throw new ValidationException({ rows: 'required' });
@@ -441,24 +441,25 @@ export class ProspectingService {
     const [existing, suppressed, names] = await Promise.all([
       prisma.prospect.findMany({ where: { email: { in: emails } }, select: { email: true } }),
       prisma.prospectSuppression.findMany({ where: { emailHash: { in: emails.map(suppressionHash) } }, select: { emailHash: true } }),
-      checked.some(c => c.ok && !c.value.email) ? prisma.prospect.findMany({ select: { companyName: true } }) : Promise.resolve([]),
+      checked.some(c => c.ok && !c.value.email)
+        ? prisma.prospect.findMany({ select: { companyName: true, airportCode: true } })
+        : Promise.resolve([]),
     ]);
     const listed = new Set(existing.map(e => e.email));
-    const listedNames = new Set(names.map(n => companyKey(n.companyName)));
     const optedOut = new Set(suppressed.map(s => s.emailHash));
     const seen = new Set<string>();
-    const seenNames = new Set<string>();
+    const seenCompanies: { companyName: string; airportCode: string | null }[] = [];
     const toCreate: Prisma.ProspectCreateManyInput[] = [];
     const results = checked.map((c, index) => {
       if (!c.ok) return { row: index + 1, outcome: 'invalid' as const, fields: c.fields };
       const email = c.value.email ?? null;
-      const name = companyKey(c.value.companyName!);
+      const company = { companyName: c.value.companyName!, airportCode: c.value.airportCode ?? null };
       if (email && optedOut.has(suppressionHash(email))) return { row: index + 1, outcome: 'suppressed' as const, email };
-      if (email ? listed.has(email) || seen.has(email) : listedNames.has(name) || seenNames.has(name)) {
+      if (email ? listed.has(email) || seen.has(email) : [...names, ...seenCompanies].some(n => sameCompany(n, company))) {
         return { row: index + 1, outcome: 'duplicate' as const, email };
       }
       if (email) seen.add(email);
-      seenNames.add(name);
+      seenCompanies.push(company);
       toCreate.push({ ...(c.value as Required<typeof c.value>), source: 'csv' });
       return { row: index + 1, outcome: 'new' as const, email };
     });
