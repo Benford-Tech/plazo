@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { FacebookIcon, InstagramIcon, LinkedInIcon, LockIcon } from "@/components/FooterIcons";
 import { HelpCard } from "@/components/HelpCard";
 import { HiddenOn } from "@/components/HiddenOn";
@@ -10,6 +10,8 @@ import { currentYear, type FooterConfig, footerConfig, legalLine, type SocialNet
 import { fr } from "@/lib/fr";
 import { topicLinks } from "@/lib/guides";
 import { AIRPORTS, airportPath, CONTACT_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH } from "@/lib/site";
+import { FooterLanguages } from "@/components/LanguagePicker";
+import { currentLocale } from "@/lib/i18n/runtime";
 
 // 44 px targets on phones (20 px line + 2 x 12 px), with the same spacing whether a label takes one line or two; from md
 // up the mockup's 14 px / 1.6 lines, 6 px apart, with a mouse only (a tablet's finger keeps the 44 px).
@@ -101,8 +103,8 @@ export function SiteFooter({ config = footerConfig(), year = currentYear() }: { 
                   {fr.footer.faq}
                 </Link>
               </li>
-              {/* The topic guides of each airport (09/10/2026), linked from every page. */}
-              {AIRPORTS.flatMap(a =>
+              {/* The topic guides of each airport (09/10/2026), linked from every page; written in French only for now. */}
+              {currentLocale() === "fr" && AIRPORTS.flatMap(a =>
                 topicLinks(a.slug).map(topic => (
                   <li key={topic.href}>
                     <Link href={topic.href} className={linkClass}>
@@ -197,10 +199,11 @@ export function SiteFooter({ config = footerConfig(), year = currentYear() }: { 
             )}
           </div>
 
-          <div className="flex flex-col gap-1 border-t border-white/10 pt-[18px] pb-7 text-[12px] leading-normal font-medium text-lilac/60 md:flex-row md:flex-wrap md:justify-between md:gap-x-6 md:gap-y-2 md:pt-5 md:text-[12.5px]">
+          <div className="flex flex-col gap-1 border-t border-white/10 pt-[18px] pb-4 text-[12px] leading-normal font-medium text-lilac/60 md:flex-row md:flex-wrap md:justify-between md:gap-x-6 md:gap-y-2 md:pt-5 md:text-[12.5px]">
             <p>{legal.copyright}</p>
             {legal.identity && <p>{legal.identity}</p>}
           </div>
+          <FooterLanguages className="border-t border-white/10 pt-4 pb-7 text-[13px] md:pt-5" />
         </div>
       </footer>
     </div>

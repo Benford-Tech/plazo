@@ -2,6 +2,7 @@ import { StayFields } from "./StayFields";
 import { Caret, IconChip, PlaneIcon, pillBox, pillFocusWithin, pillIdle, pillNative, pillNativeLabel } from "./stay/pill";
 import { fr } from "@/lib/fr";
 import { AIRPORTS } from "@/lib/site";
+import { lp } from "@/lib/i18n/runtime";
 
 /**
  * Search bar (airport, drop-off, return) as a white card of fields (Boutique: the warm hairline, a shadow
@@ -42,7 +43,7 @@ export function SearchForm({
   const airports = AIRPORTS.some(a => a.slug === airport.slug) ? AIRPORTS : [{ slug: airport.slug, name: airport.name }, ...AIRPORTS];
   return (
     <form
-      action="/recherche"
+      action={lp("/recherche")}
       method="get"
       className={`card flex flex-col gap-2 p-2.5 text-ink ${stacked ? "" : "xl:flex-row xl:items-start"} ${floating ? "shadow-float" : ""}`}
     >

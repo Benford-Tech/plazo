@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import nextConfig from "../../../next.config";
 import { DEFAULT_AIRPORT } from "../site";
 
-// C (09/10/2026): the home page is the default airport's page, cached (ISR), with one address.
+// C (09/10/2026): the home page (13/11/2026: in every language; the proxy serves « / » from « /fr ») is the default airport's page, cached (ISR), with one address.
 describe("the home page and the default airport's page", () => {
   it("serve one page under one address: « / » shows it, its own address redirects there for good", async () => {
     expect(await nextConfig.redirects!()).toContainEqual({
@@ -13,7 +13,7 @@ describe("the home page and the default airport's page", () => {
     const rewrites = await nextConfig.rewrites!();
     expect(
       Array.isArray(rewrites) ? rewrites : rewrites.beforeFiles,
-    ).toContainEqual({ source: "/", destination: `/${DEFAULT_AIRPORT}` });
+    ).toContainEqual({ source: "/:lang(fr|en|de|es|pt|pl|ro|ru|uk)", destination: `/:lang/${DEFAULT_AIRPORT}` });
   });
 });
 

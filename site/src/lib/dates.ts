@@ -1,17 +1,17 @@
 import { TIMEZONE } from "./site";
+import { currentDict } from "./i18n/runtime";
 import type { CancellationPolicy } from "./types";
 
 /**
  * Dates exchanged with the API are wall-clock times at the parking ("2026-10-04T06:30", Europe/Paris).
- * French display strings are built by hand so that the server and the browser always agree.
+ * Display strings are built by hand from the language's words (dict.dates) so that the server and the browser
+ * always agree.
  */
 
 const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const TIME_RE = /^(\d{2}):(\d{2})$/;
 
-const WEEKDAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
-const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
 /** Longest stay the API accepts. */
 export const MAX_STAY_DAYS = 90;
@@ -98,18 +98,17 @@ export function defaultStay(now: Date = new Date(), timeZone: string = TIMEZONE)
   return { arrivee: `${tomorrow}T08:00`, retour: `${addDays(tomorrow, 7)}T18:00` };
 }
 
-/** "2026-10-04" -> "dim. 4 oct." */
+/** "2026-10-04" -> "dim. 4 oct." (in French) */
 export function formatDay(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return currentDict().dates.day(currentDict().dates.weekdays[d.getUTCDay()], d.getUTCDate(), currentDict().dates.months[d.getUTCMonth()]);
 }
-
-const LONG_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 /** "2026-10-09" -> "9 octobre 2026" (dates printed in the guides). */
 export function longDate(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
-  return `${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${LONG_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const words = currentDict().dates;
+  return words.longDate(d.getUTCDate(), words.longMonths[d.getUTCMonth()], d.getUTCFullYear());
 }
 
 /** "2026-10-04T06:30" -> "dim. 4 oct. · 06:30" */
@@ -121,7 +120,7 @@ export function formatDateTime(local: string): string {
 /** "2026-10-03T06:30" -> "sam. 3 oct. à 06:30" */
 export function formatDateTimeAt(local: string): string {
   const parsed = parseLocal(local);
-  return parsed ? `${formatDay(parsed.date)} à ${parsed.time}` : local;
+  return parsed ? currentDict().dates.at(formatDay(parsed.date), parsed.time) : local;
 }
 
 /** Billable days of a stay, as the API counts them: every local calendar day touched. */
@@ -134,7 +133,7 @@ export function stayDays(arrivee: string, retour: string): number {
 }
 
 export function daysLabel(days: number): string {
-  return `${days} jour${days > 1 ? "s" : ""}`;
+  return currentDict().dates.days(days);
 }
 
 const POLICY_HOURS: Record<CancellationPolicy, number | null> = {

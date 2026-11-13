@@ -1,7 +1,7 @@
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 import { SHUTTLE_PATH } from "@/lib/shuttle-icon";
 
-const t = fr.proHome;
+const t = lazy(() => fr.proHome);
 
 export type ProMessage = (typeof t.messages)[number];
 

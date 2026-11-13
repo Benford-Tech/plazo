@@ -1,12 +1,12 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ProFaq } from "@/components/loueurs/ProFaq";
 import { btnLime, btnOutline, hour, pillInfo, pillOk, pillWarn, Screen, screenLine, sectionTitle } from "@/components/loueurs/ProHome";
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 import { PRODUCT_NAME } from "@/lib/product";
 import { PRO_TOPICS, type ProTopic, type ScreenRow } from "@/lib/pro-topics";
 import { proTopicPath } from "@/lib/site";
 
-const t = fr.proHome;
+const t = lazy(() => fr.proHome);
 const PILLS = { ok: pillOk, warn: pillWarn, info: pillInfo } as const;
 
 function Row({ row }: { row: ScreenRow }) {

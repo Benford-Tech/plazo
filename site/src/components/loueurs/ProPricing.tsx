@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { FieldError } from "@/components/FieldError";
 import { EMPTY_FORM, type FormState } from "@/lib/forms";
-import { errorMessage, fr } from "@/lib/fr";
+import { errorMessage, fr, lazy } from "@/lib/fr";
 import { formatEuros } from "@/lib/money";
 import {
   commissionExample,
@@ -20,7 +20,7 @@ import {
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const t = fr.proPricing;
+const t = lazy(() => fr.proPricing);
 const STORAGE_KEY = "plazo:pro-pricing";
 
 /** Whole euros when exact (« 149 € »), else with cents (« 134,10 € »). */

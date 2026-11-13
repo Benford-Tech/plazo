@@ -1,0 +1,79 @@
+import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Manrope, Playfair_Display } from "next/font/google";
+import { HiddenOn } from "@/components/HiddenOn";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { VisitTracker } from "@/components/VisitTracker";
+import { fr, texts } from "@/lib/fr";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { LOCALE_TAGS, LOCALES } from "@/lib/i18n/locales";
+import { enterLocale } from "@/lib/i18n/server";
+import { paymentsOnline } from "@/lib/payments";
+import { PRODUCT_NAME } from "@/lib/product";
+import { openGraph } from "@/lib/seo";
+import { OPERATORS_PREFIX, siteUrl } from "@/lib/site";
+import "../globals.css";
+
+// Boutique (11/10/2026): Manrope for the text and the prices, Playfair Display regular (no more italic) for the
+// titles, JetBrains Mono for the hours only.
+const manrope = Manrope({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-manrope", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400"], variable: "--font-playfair", display: "swap" });
+const jetbrains = JetBrains_Mono({ subsets: ["latin"], weight: ["500"], variable: "--font-jetbrains", display: "swap" });
+
+/** Every language is a static segment (13/11/2026): French at the root, the others under /en, /de… (proxy.ts). */
+export function generateStaticParams() {
+  return LOCALES.map(lang => ({ lang }));
+}
+
+export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
+  enterLocale((await params).lang);
+  // The default description says how travellers pay (asked to the API; at the parking if it cannot say).
+  const online = await paymentsOnline();
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: fr.meta.defaultTitle, template: `%s · ${PRODUCT_NAME}` },
+    description: texts(online).meta.defaultDescription,
+    applicationName: PRODUCT_NAME,
+    openGraph: openGraph({}),
+    formatDetection: { telephone: false, email: false, address: false },
+  };
+}
+
+// The browser bar takes the ivory ground of the page (--color-ground).
+export const viewport: Viewport = {
+  themeColor: "#f7f3ee",
+};
+
+export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
+  const locale = enterLocale((await params).lang);
+  return (
+    <html lang={LOCALE_TAGS[locale]} className={`${manrope.variable} ${playfair.variable} ${jetbrains.variable}`}>
+      <body className="flex min-h-dvh flex-col font-sans antialiased">
+        <LocaleProvider locale={locale}>
+        <a
+          href="#contenu"
+          className="sr-only z-50 rounded-full border border-line bg-paper px-5 py-3 text-[15px] font-bold text-ink no-underline shadow-float focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          {fr.a11y.skipToContent}
+        </a>
+        {/* Plazo Pro's pages carry their own header and footer: hidden by path on /loueurs, and by CSS wherever the pro
+            layout is on the page (on pro.plazo.fr the path is « / », 28/10/2026). */}
+        <div data-traveller-chrome className="contents">
+          <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+            <SiteHeader />
+          </HiddenOn>
+        </div>
+        <div id="contenu" className="flex flex-1 flex-col">
+          {children}
+        </div>
+        <div data-traveller-chrome className="contents">
+          <HiddenOn prefixes={[OPERATORS_PREFIX]}>
+            <SiteFooter />
+          </HiddenOn>
+        </div>
+        <VisitTracker />
+        </LocaleProvider>
+      </body>
+    </html>
+  );
+}

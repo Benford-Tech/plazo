@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { StayFields } from "./StayFields";
 import { cancellableUntil, formatDateTimeAt, stayQuery } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
@@ -6,6 +6,7 @@ import { perDayLabel } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import type { CancellationPolicy, NightRule, Offer, ParkingPayment } from "@/lib/types";
 import { NightRuleNote, PriceLines } from "./PriceLines";
+import { lp } from "@/lib/i18n/runtime";
 
 /**
  * Booking card of a parking page: dates, availability, price lines and the "Book" button. Without
@@ -76,7 +77,7 @@ export function BookingCard({
         )
       )}
 
-      <form action="/recherche" method="get" className="flex flex-col gap-3">
+      <form action={lp("/recherche")} method="get" className="flex flex-col gap-3">
         <input type="hidden" name="aeroport" value={airportSlug} />
         <input type="hidden" name="parking" value={parkingSlug} />
         {!offer && <p className="text-[14.5px] leading-snug text-soft">{fr.parking.askDates}</p>}

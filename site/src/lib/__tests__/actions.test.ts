@@ -14,7 +14,9 @@ vi.mock("../api", async () => {
   const actual = await vi.importActual<typeof import("../api")>("../api");
   return { ApiError: actual.ApiError, api: { createBooking, lookupBooking, changeFlight, cancelBooking } };
 });
+let requestHeaders = new Headers();
 vi.mock("next/headers", () => ({
+  headers: async () => requestHeaders,
   cookies: async () => ({
     get: (name: string) => (cookieJar.has(name) ? { name, value: cookieJar.get(name)!.value } : undefined),
     set: (name: string, value: string, options: Record<string, unknown>) => cookieJar.set(name, { value, options }),
@@ -54,6 +56,19 @@ describe("bookAction", () => {
     createBooking.mockReset();
     redirect.mockClear();
     cookieJar.clear();
+  });
+
+  it("opens the booking in the language of the page the form was posted from (13/11/2026)", async () => {
+    requestHeaders = new Headers({ "x-plazo-locale": "en" });
+    try {
+      createBooking.mockResolvedValue({ reference: "RAB234", manageToken: "tok_0123456789abcdefghij", booking: {} });
+      await expect(bookAction(EMPTY_FORM, form({ ...filled, idempotencyKey: "6f1c2a9e-3b7d-4e8f-9a0b-1c2d3e4f5a6c" }))).rejects.toThrow(
+        "REDIRECT /en/ma-reservation/RAB234?confirmee=1",
+      );
+      expect(cookieJar.get("cle-RAB234")?.options).toEqual(expect.objectContaining({ path: "/en/ma-reservation/RAB234" }));
+    } finally {
+      requestHeaders = new Headers();
+    }
   });
 
   it("forwards the traveller's fields (no price) and opens the booking page, with the key in a cookie only", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fr, frOnline, texts } from "../fr";
+import { fr, texts } from "../fr";
 
 /** Every text of a (partial) copy tree, functions called with sample arguments. */
 function strings(node: unknown): string[] {
@@ -14,8 +14,8 @@ const ON_SITE_WORDING = /sur place|rien à payer en ligne|rien à rembourser|rie
 
 describe("copy (every booking is paid online, 06/10/2026)", () => {
   it("there is one copy: texts() always gives the online wording", () => {
-    expect(texts(false)).toBe(fr);
-    expect(texts(true)).toBe(fr);
+    expect(texts(false)).toBe(texts(true));
+    expect(texts(true).parking).toBe(fr.parking);
     expect(fr.parking.payOnSite).toBe("Total à payer en ligne");
     expect(fr.booking.submit).toBe("Continuer vers le paiement");
     for (const key of ["meta", "home", "results", "parking", "booking", "manage", "calendar"] as const) {
@@ -23,9 +23,8 @@ describe("copy (every booking is paid online, 06/10/2026)", () => {
     }
   });
 
-  it("payments on: no « paid at the parking » wording left in the replaced texts", () => {
+  it("payments on: no « paid at the parking » wording left in the texts", () => {
     const online = texts(true);
-    for (const text of strings(frOnline)) expect(text).not.toMatch(ON_SITE_WORDING);
     expect(online.meta.defaultDescription).toContain("Paiement sécurisé par carte");
     expect(online.home.faq.find(([q]) => q === "Comment je paie ?")![1]).toMatch(/paiement sécurisé par carte sur/i);
     expect(online.home.faq.find(([q]) => q === "Puis-je annuler ?")![1]).toContain("remboursée intégralement sur votre carte sous 5 à 10 jours");
