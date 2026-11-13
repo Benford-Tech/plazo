@@ -38,8 +38,15 @@ PublicBookingModel held({
   nightFee: nightFee,
 );
 
-final paid = booking(paymentMode: 'online', payment: const BookingPaymentModel(status: 'paid'));
-final expired = booking(status: 'cancelled', paymentMode: 'online', payment: const BookingPaymentModel(status: 'expired'));
+final paid = booking(
+  paymentMode: 'online',
+  payment: const BookingPaymentModel(status: 'paid'),
+);
+final expired = booking(
+  status: 'cancelled',
+  paymentMode: 'online',
+  payment: const BookingPaymentModel(status: 'expired'),
+);
 
 void main() {
   setUpAll(setUpLocalizedTests);
@@ -79,9 +86,12 @@ void main() {
     );
   }
 
+  /// Ready, with a complete card typed in the field (13/11/2026: the card is paid on the page).
   Future<PaymentBloc> ready() async {
     final bloc = make()..add(const PaymentStarted());
     await bloc.stream.firstWhere((s) => s.status == PaymentStatus.ready);
+    bloc.add(const PaymentCardChanged(true));
+    await bloc.stream.firstWhere((s) => s.cardComplete);
     return bloc;
   }
 
@@ -106,9 +116,34 @@ void main() {
     final states = await bloc.stream.takeWhile((s) => s.status != PaymentStatus.paid).map((s) => s.status).toList();
     expect(states, containsAllInOrder([PaymentStatus.presenting, PaymentStatus.verifying]));
     expect(bloc.state.status, PaymentStatus.paid);
-    expect(sheet.presented, ['pi_1_secret']);
+    expect(sheet.cardPayments, ['pi_1_secret']);
     expect(api.calls.where((c) => c == 'intent'), hasLength(1));
     expect(drafts.draft, isNull);
+    await bloc.close();
+  });
+
+  test('carte incomplète : « Payer » ne fait rien', () async {
+    api.answer('get', held());
+    final bloc = make()..add(const PaymentStarted());
+    await bloc.stream.firstWhere((s) => s.status == PaymentStatus.ready);
+    bloc.add(const PaymentPayPressed());
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(api.calls, isNot(contains('intent')));
+    expect(sheet.cardPayments, isEmpty);
+    await bloc.close();
+  });
+
+  test('Google Pay / Apple Pay : proposé quand le téléphone le permet, payé avec le montant du PaymentIntent', () async {
+    api
+      ..answer('get', held())
+      ..answer('get', paid);
+    sheet.wallet = true;
+    final bloc = make()..add(const PaymentStarted());
+    await bloc.stream.firstWhere((s) => s.walletAvailable);
+    bloc.add(const PaymentWalletPressed());
+    await bloc.stream.firstWhere((s) => s.status == PaymentStatus.paid);
+    expect(sheet.walletPayments.single.clientSecret, 'pi_1_secret');
+    expect(sheet.cardPayments, isEmpty);
     await bloc.close();
   });
 
@@ -140,7 +175,7 @@ void main() {
     final bloc = await ready();
     bloc.add(const PaymentPayPressed());
     await bloc.stream.firstWhere((s) => s.status == PaymentStatus.expired);
-    expect(sheet.presented, isEmpty);
+    expect(sheet.cardPayments, isEmpty);
     // "Recommencer": the hold is released, the form opens again (draft kept).
     bloc.add(const PaymentEditPressed());
     await bloc.stream.firstWhere((s) => s.status == PaymentStatus.released);
@@ -167,7 +202,7 @@ void main() {
     final bloc = await ready();
     bloc.add(const PaymentPayPressed());
     await bloc.stream.firstWhere((s) => s.status == PaymentStatus.paid);
-    expect(sheet.presented, isEmpty);
+    expect(sheet.cardPayments, isEmpty);
     await bloc.close();
   });
 
@@ -202,7 +237,7 @@ void main() {
     bloc.add(const PaymentPayPressed());
     final s = await bloc.stream.firstWhere((s) => s.message != null);
     expect(s.status, PaymentStatus.ready);
-    expect(sheet.presented, isEmpty);
+    expect(sheet.cardPayments, isEmpty);
     await bloc.close();
   });
 
@@ -217,25 +252,42 @@ void main() {
     setUp(() => locator.registerSingleton<PaymentSheetService>(sheet));
     tearDown(locator.reset);
 
-    testWidgets('récapitulatif, « Votre place est réservée pendant 29:45 », « Payer 45,00 € »', (tester) async {
+    testWidgets('récapitulatif, « Votre place est réservée pendant 29:45 », la carte puis « Payer 45,00 € »', (tester) async {
       api.answer('get', held());
+      sheet.wallet = true;
       final bloc = make();
-      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()));
+      await pumpLocalized(
+        tester,
+        BlocProvider.value(value: bloc, child: const PaymentView()),
+        size: const Size(400, 2000),
+      );
       bloc.add(const PaymentStarted());
       await tester.pump();
       await tester.pump();
       expect(find.text('2 · Paiement'), findsOneWidget);
-      expect(find.text('Récapitulatif'), findsOneWidget);
+      expect(find.text('RÉCAPITULATIF'), findsOneWidget);
       expect(find.text('AB-123-CD'), findsOneWidget);
       expect(find.bySemanticsLabel('Votre place est réservée pendant 29:45'), findsOneWidget);
+      expect(find.text('COMMENT PAYER ?'), findsOneWidget);
+      expect(find.byKey(const Key('payment-wallet')), findsOneWidget);
+      expect(find.text('ou par carte'), findsOneWidget);
+      expect(find.text('Carte bancaire'), findsOneWidget);
       expect(find.text('Payer 45,00 €'), findsOneWidget);
-      expect(find.text('Paiement sécurisé par Stripe · carte, Apple Pay ou Google Pay'), findsOneWidget);
+      expect(find.textContaining('Paiement sécurisé par Stripe : Plazo ne voit jamais votre carte.'), findsOneWidget);
 
+      // Greyed until the card is complete.
+      await tester.tap(find.byKey(const Key('payment-pay')));
+      await tester.pump();
+      expect(sheet.cardPayments, isEmpty);
+
+      await tester.enterText(find.byKey(const Key('payment-card-field')), '4242');
+      await tester.pump();
       sheet.outcome = const PaymentSheetOutcome(PaymentSheetResult.canceled);
       await tester.tap(find.byKey(const Key('payment-pay')));
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
+      expect(sheet.cardPayments, ['pi_1_secret']);
       expect(find.text('Paiement annulé : rien n\'a été débité. Votre place reste réservée.'), findsOneWidget);
       // Stops the countdown's timer before the test ends.
       unawaited(bloc.close());
@@ -245,7 +297,11 @@ void main() {
     testWidgets('frais de nuit : les deux heures, « Forfait 8 jours », « Frais de nuit · dépôt à 23:30 », « Payer 51,60 € »', (tester) async {
       api.answer('get', held(arrivalAt: '2026-10-10T23:30', priceCents: 5160, basePriceCents: 3660, nightFee: dropOffNightFee));
       final bloc = make();
-      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()));
+      await pumpLocalized(
+        tester,
+        BlocProvider.value(value: bloc, child: const PaymentView()),
+        size: const Size(400, 1400),
+      );
       bloc.add(const PaymentStarted());
       await tester.pump();
       await tester.pump();
@@ -272,7 +328,11 @@ void main() {
         held(arrivalAt: '2026-10-10T22:30', priceCents: 6160, basePriceCents: 3660, nightFee: both).copyWith(returnAt: '2026-10-17T05:30'),
       );
       final bloc = make();
-      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()), size: const Size(320, 900));
+      await pumpLocalized(
+        tester,
+        BlocProvider.value(value: bloc, child: const PaymentView()),
+        size: const Size(320, 900),
+      );
       bloc.add(const PaymentStarted());
       await tester.pump();
       await tester.pump();
