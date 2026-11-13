@@ -242,7 +242,7 @@ class _Sheet extends StatelessWidget {
                   key: const Key('res-write'),
                   tooltip: 'write_traveller.button'.tr(),
                   icon: const Icon(Icons.chat_rounded, color: AppColors.accent),
-                  onPressed: () => showWriteToTraveller(context, reservationId: r.id, canOpenInbox: can(role, 'reservations:manage')),
+                  onPressed: () => showWriteToTraveller(context, reservationId: r.id),
                 ),
               IconButton(
                 key: const Key('res-sms'),

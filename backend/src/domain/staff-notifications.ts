@@ -46,7 +46,9 @@ export interface NotifiedStaff {
 /** The events a role hears of at all: a mail to check needs the inbox, a join request the team. */
 export function eventsFor(role: StaffRole): NotificationEvent[] {
   return NOTIFICATION_EVENTS.filter(event => {
-    if (event === 'inbox' || event === 'whatsapp') return can(role, 'reservations:manage');
+    if (event === 'inbox') return can(role, 'reservations:manage');
+    // 13/11/2026 (« Le chauffeur y a droit »): the WhatsApp inbox is the driver's and the valet's too.
+    if (event === 'whatsapp') return can(role, 'reservations:status');
     if (event === 'team') return can(role, 'team:manage');
     return true;
   });
@@ -62,7 +64,7 @@ const BROWSER: Record<StaffRole, NotificationEvent[]> = {
 const BELL: Record<StaffRole, NotificationEvent[]> = {
   manager: [...NOTIFICATION_EVENTS],
   agent: ['booking_new', 'booking_change', 'inbox', 'whatsapp', 'extra', 'arrival', 'return', 'platform'],
-  driver: ['arrival', 'return', 'shuttle', 'platform'],
+  driver: ['arrival', 'return', 'shuttle', 'whatsapp', 'platform'],
   valet: ['valet', 'extra', 'return', 'platform'],
 };
 
