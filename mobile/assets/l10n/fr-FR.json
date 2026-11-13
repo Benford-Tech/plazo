@@ -2937,7 +2937,7 @@
     "title": "Écrire au parking",
     "the_parking": "le parking",
     "intro": "Une question, un changement d'heure ? Écrivez à {} : l'équipe vous répond ici, avec une notification.",
-    "hint": "Vos messages WhatsApp et ceux écrits ici, au même endroit. L'équipe vous répond ici, avec une notification.",
+    "hint": "Vos messages au parking et ses réponses, avec ceux que Plazo vous a envoyés. L'équipe vous répond ici, avec une notification.",
     "placeholder": "Votre message…",
     "send": "Envoyer",
     "errors": {

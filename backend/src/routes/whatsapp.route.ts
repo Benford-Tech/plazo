@@ -4,6 +4,7 @@ import { TestSmsDto, UpdateWhatsappSettingsDto } from '@/dtos/sms.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
+import { staffMessageLimiter } from '@/middlewares/rateLimiter';
 
 /**
  * @swagger
@@ -55,7 +56,13 @@ export class WhatsappRoute implements Routes {
     this.router.get('/internal/whatsapp/inbox', StaffAuthMiddleware('reservations:status'), this.whatsapp.inbox);
     // « Écrire au client » (13/11/2026): from Plazo's WhatsApp number, the parking's SMS as the fallback.
     this.router.get('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:status'), this.whatsapp.writeStatus);
-    this.router.post('/internal/reservations/:id/write', StaffAuthMiddleware('reservations:status'), RefuseInDemo(), this.whatsapp.write);
+    this.router.post(
+      '/internal/reservations/:id/write',
+      StaffAuthMiddleware('reservations:status'),
+      RefuseInDemo(),
+      staffMessageLimiter,
+      this.whatsapp.write,
+    );
     this.router.get('/internal/whatsapp/sent', StaffAuthMiddleware('reservations:status'), this.whatsapp.sent);
     this.router.get('/internal/whatsapp/inbox/messages/:messageId/media', StaffAuthMiddleware('reservations:status'), this.whatsapp.media);
     this.router.get('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:status'), this.whatsapp.conversation);

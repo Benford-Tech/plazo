@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PUBLIC_SITE_URL, whatsappConfig } from '@/config';
@@ -46,6 +47,12 @@ const startOfMonth = (now: Date) => new Date(Date.UTC(now.getUTCFullYear(), now.
  * channel when Meta refuses the message, reports it failed, or has not delivered it within 5 minutes. Logs carry ids and
  * Meta's codes only.
  */
+function sameSecret(received: string, expected: string): boolean {
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 @Service()
 export class WhatsappService {
   public audit = Container.get(AuditService);
@@ -344,7 +351,8 @@ export class WhatsappService {
   /** GET /public/whatsapp/webhook: Meta's subscription check. Returns the challenge to echo, or null (403). */
   public verifySubscription(mode: unknown, token: unknown, challenge: unknown): string | null {
     const { verifyToken } = this.config();
-    if (!verifyToken || mode !== 'subscribe' || token !== verifyToken || typeof challenge !== 'string') return null;
+    if (!verifyToken || mode !== 'subscribe' || typeof token !== 'string' || !sameSecret(token, verifyToken) || typeof challenge !== 'string')
+      return null;
     return challenge;
   }
 
