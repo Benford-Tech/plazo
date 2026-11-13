@@ -1,5 +1,5 @@
 import { fr } from "./fr";
-import type { Prospect, ProspectInput, ProspectingStep } from "./types";
+import type { Prospect, ProspectInput, ProspectingSettings, ProspectingStep } from "./types";
 
 /**
  * Prospection (Plateforme › Prospection, 18/10/2026): reading the admin's CSV file and the preview of a mail. The variables
@@ -35,6 +35,17 @@ const HEADERS: Record<string, Column> = {
   airport: "airportCode",
   codeaeroport: "airportCode",
   region: "region",
+  // 13/11/2026: a country is filed as its region; the site and the language of the mails.
+  pays: "region",
+  country: "region",
+  site: "website",
+  siteweb: "website",
+  siteinternet: "website",
+  website: "website",
+  web: "website",
+  url: "website",
+  langue: "language",
+  language: "language",
   telephone: "phone",
   tel: "phone",
   phone: "phone",
@@ -92,8 +103,8 @@ export interface CsvReading {
   rows: Partial<ProspectInput>[];
   /** Headers Plazo does not know (ignored). */
   ignored: string[];
-  /** Required columns absent from the file. */
-  missing: ("companyName" | "email")[];
+  /** Required columns absent from the file (the email is optional since 13/11/2026). */
+  missing: "companyName"[];
 }
 
 /** The prospects of a CSV file whose first line names the columns (parking, prénom, nom, e-mail, ville, aéroport…). */
@@ -101,7 +112,7 @@ export function readProspectsCsv(text: string): CsvReading {
   const [header = [], ...lines] = parseCsvCells(text);
   const columns = header.map(h => HEADERS[headerKey(h)] ?? null);
   const ignored = header.filter((h, i) => !columns[i] && h.trim() !== "");
-  const missing = (["companyName", "email"] as const).filter(c => !columns.includes(c));
+  const missing = (["companyName"] as const).filter(c => !columns.includes(c));
   const rows = lines.map(cells => {
     const row: Partial<ProspectInput> = {};
     columns.forEach((column, i) => {
@@ -174,6 +185,12 @@ export function renderSubjectText(text: string, values: Values): string {
 /** The variables of a text that Plazo does not know (the API refuses them). */
 export function unknownVariables(text: string): string[] {
   return [...new Set([...text.matchAll(/\{([^{}\s]{1,20})\}/g)].filter(m => !ALIASES[m[1].toLowerCase()]).map(m => m[0]))];
+}
+
+/** The sequence a prospect receives: its language's (13/11/2026), the French one when the settings predate them. */
+export function sequenceFor(prospect: Pick<Prospect, "language"> | null, settings: ProspectingSettings | undefined): ProspectingStep[] {
+  if (!settings) return [];
+  return (prospect && settings.sequences?.[prospect.language]) || settings.steps;
 }
 
 /** The step a prospect will receive next: its first contact while it has not been sent anything. */

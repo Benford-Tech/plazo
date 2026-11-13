@@ -16,6 +16,7 @@ const api = vi.hoisted(() => ({
   importProspects: vi.fn(),
   setProspectStatus: vi.fn(),
   createProspect: vi.fn(),
+  updateProspectingSettings: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
@@ -36,6 +37,9 @@ const base: Prospect = {
   region: { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes", manual: false },
   regionOverride: null,
   phone: null,
+  website: null,
+  language: "fr",
+  languageOverride: null,
   notes: null,
   source: "csv",
   status: "to_contact",
@@ -137,7 +141,7 @@ describe("Plateforme › Prospection", () => {
     await user.click(screen.getByLabelText("Choisir Parking Alpha"));
     await user.click(screen.getByLabelText("Choisir Valet Bêta"));
     await user.click(screen.getByLabelText("Choisir Navette Delta"));
-    expect(screen.getByText("1 déjà contacté ou fermé : ignoré.")).toBeInTheDocument();
+    expect(screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré.")).toBeInTheDocument();
     const preview = screen.getByTestId("prospect-preview");
     expect(screen.getByText("Aperçu pour Parking Alpha")).toBeInTheDocument();
     expect(within(preview).getByText("Camille, vos réservations au même endroit")).toBeInTheDocument();
@@ -312,5 +316,79 @@ describe("Plateforme › Prospection", () => {
         expect(api.createProspect).toHaveBeenCalledWith(expect.objectContaining({ companyName: "Parking Nouveau", region: "bretagne" })),
       );
     });
+  });
+
+  it("prospects européens : sans e-mail à appeler, langue des mails, aperçu et éditeur en allemand (13/11/2026)", async () => {
+    const user = userEvent.setup();
+    const german = (subject: string) => [
+      { step: 1, enabled: true, delayDays: 0, subject, body: "Hallo {prénom}," },
+      { step: 2, enabled: true, delayDays: 4, subject: "Zwei", body: "B" },
+      { step: 3, enabled: true, delayDays: 10, subject: "Drei", body: "C" },
+    ];
+    api.getProspectingSettings.mockResolvedValue({
+      data: { ...settings, sequences: { fr: settings.steps, de: german("{parking}: Ihre Buchungen"), en: german("{parking}: your bookings") } },
+    });
+    const europe: Prospect[] = [
+      {
+        ...base,
+        id: "e1",
+        companyName: "Parken Fictif",
+        email: "info@parken.example",
+        contactFirstName: "Jonas",
+        airportCode: "STR",
+        region: { key: "allemagne", label: "Allemagne", manual: false },
+        language: "de",
+      },
+      {
+        ...base,
+        id: "e2",
+        companyName: "Avio Fictif",
+        email: null,
+        phone: "+39 02 000000",
+        website: "https://www.avio.example",
+        region: { key: "italie", label: "Italie", manual: true },
+        language: "en",
+      },
+    ];
+    api.getProspects.mockResolvedValue({
+      data: europe,
+      counts: { ...counts, all: 2, to_contact: 2, contacted: 0, unsubscribed: 0 },
+      airports: [],
+      regions: [...regions, { key: "allemagne", label: "Allemagne", country: true }, { key: "italie", label: "Italie", country: true }],
+      regionCounts: { allemagne: 1, italie: 1, none: 0 },
+      today: { sent: 0, cap: 50, remaining: 50 },
+      window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
+      configured: true,
+    });
+    renderIn();
+    const avio = (await screen.findByText("Avio Fictif")).closest("tr")!;
+    expect(within(avio).getByTestId("prospect-no-email")).toHaveTextContent("Pas d'e-mail · à appeler");
+    expect(within(avio).getByText("+39 02 000000")).toBeInTheDocument();
+    expect(within(avio).getByRole("link", { name: "Site · avio.example" })).toHaveAttribute("href", "https://www.avio.example");
+    expect(within(avio).getByText("EN")).toBeInTheDocument();
+    expect(within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Europe" })).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Choisir Parken Fictif"));
+    await user.click(screen.getByLabelText("Choisir Avio Fictif"));
+    expect(screen.getByRole("button", { name: "Envoyer à 1 prospect" })).toBeEnabled();
+    expect(screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré.")).toBeInTheDocument();
+    expect(within(screen.getByTestId("prospect-preview")).getByText("Parken Fictif: Ihre Buchungen")).toBeInTheDocument();
+    expect(screen.getByText("· Mail en allemand")).toBeInTheDocument();
+
+    api.updateProspectingSettings.mockResolvedValue({ data: settings });
+    await user.click(screen.getByRole("button", { name: "Modifier les mails" }));
+    await user.click(screen.getByTestId("steps-language-de"));
+    const subject = screen.getAllByLabelText("Objet")[0];
+    expect(subject).toHaveValue("{parking}: Ihre Buchungen");
+    await user.clear(subject);
+    await user.type(subject, "Neu");
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateProspectingSettings).toHaveBeenCalled());
+    const sent = api.updateProspectingSettings.mock.calls[0][0];
+    expect(sent.translations.de[0].subject).toBe("Neu");
+    // English untouched: not saved, it keeps following Plazo's own texts.
+    expect(sent.translations.en).toBeUndefined();
+    expect(sent.steps).toEqual(settings.steps);
   });
 });

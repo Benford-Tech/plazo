@@ -14,6 +14,7 @@ import {
 import prisma, { Prisma, Prospect, ProspectStatus } from '@/database';
 import {
   capDayStart,
+  companyKey,
   DEFAULT_DAILY_CAP,
   followUpDueAt,
   inSendingWindow,
@@ -31,20 +32,27 @@ import {
   retentionCutoff,
   RETRY_AFTER_MINUTES,
   SequenceStep,
-  stepsOf,
+  Sequences,
+  sequencesOf,
   suppressionHash,
   templateValues,
+  Translations,
+  unsubscribeSubject,
   usesDemoLink,
   TemplateValues,
   validateProspect,
   validateSequence,
+  validateTranslations,
 } from '@/domain/prospecting';
 import {
   airportsOfRegion,
   effectiveRegion,
   isRegionKey,
   KNOWN_AIRPORTS,
+  isProspectLanguage,
   NO_REGION,
+  ProspectLanguage,
+  prospectLanguage,
   RegionKey,
   regionView,
   sortedRegions,
@@ -146,10 +154,16 @@ export class ProspectingService {
 
   // ---- Settings ----------------------------------------------------------------------------------------------------
 
-  public async loadSettings(): Promise<{ steps: SequenceStep[]; dailyCap: number; updatedAt: string | null }> {
+  /**
+   * The sequence: the French steps (`steps`, whose delays and switches every language follows) and, since 13/11/2026, the
+   * three sequences by language (`sequences`: French, German, English).
+   */
+  public async loadSettings(): Promise<{ steps: SequenceStep[]; sequences: Sequences; dailyCap: number; updatedAt: string | null }> {
     const row = await prisma.prospectingSettings.findUnique({ where: { id: 'default' } });
+    const sequences = sequencesOf(row?.steps, row?.translations, PRODUCT_NAME);
     return {
-      steps: stepsOf(row?.steps, PRODUCT_NAME),
+      steps: sequences.fr,
+      sequences,
       dailyCap: row?.dailyCap ?? DEFAULT_DAILY_CAP,
       updatedAt: row?.updatedAt.toISOString() ?? null,
     };
@@ -167,15 +181,24 @@ export class ProspectingService {
     };
   }
 
-  /** « Modifier les mails »: the three steps and the daily cap. The follow-ups already scheduled move with the new delays. */
-  public async updateSettings(actor: AuthenticatedStaff, input: { steps?: unknown; dailyCap?: unknown }) {
+  /**
+   * « Modifier les mails »: the three steps and the daily cap, and (13/11/2026) their German and English texts (absent: kept).
+   * The follow-ups already scheduled move with the new delays.
+   */
+  public async updateSettings(actor: AuthenticatedStaff, input: { steps?: unknown; dailyCap?: unknown; translations?: unknown }) {
     const checked = validateSequence(input.steps, input.dailyCap);
-    if (!checked.ok) throw new ValidationException(checked.fields);
+    const translated = validateTranslations(input.translations);
+    const fields = { ...(checked.ok ? {} : checked.fields), ...(translated.ok ? {} : translated.fields) };
+    if (!checked.ok || !translated.ok) throw new ValidationException(fields);
     const steps = checked.steps as unknown as Prisma.InputJsonValue;
+    const current = await prisma.prospectingSettings.findUnique({ where: { id: 'default' }, select: { translations: true } });
+    const kept = validateTranslations(current?.translations);
+    const merged: Translations = { ...(kept.ok ? kept.value : {}), ...translated.value };
+    const translations = (Object.keys(merged).length ? merged : Prisma.JsonNull) as Prisma.InputJsonValue;
     await prisma.prospectingSettings.upsert({
       where: { id: 'default' },
-      create: { id: 'default', steps, dailyCap: checked.dailyCap, updatedById: actor.id },
-      update: { steps, dailyCap: checked.dailyCap, updatedById: actor.id },
+      create: { id: 'default', steps, translations, dailyCap: checked.dailyCap, updatedById: actor.id },
+      update: { steps, translations, dailyCap: checked.dailyCap, updatedById: actor.id },
     });
     const rescheduled = await this.reschedule(checked.steps);
     await this.record(actor, 'prospecting.settings_updated', 'prospecting_settings', 'default', {
@@ -239,6 +262,10 @@ export class ProspectingService {
       region: regionView(p),
       regionOverride: p.region,
       phone: p.phone,
+      website: p.website,
+      // 13/11/2026: the language of its mails (chosen by hand, else its region's) and the one chosen by hand (the form).
+      language: prospectLanguage(p),
+      languageOverride: isProspectLanguage(p.language) ? p.language : null,
       notes: p.notes,
       source: p.source,
       status: p.status,
@@ -342,6 +369,15 @@ export class ProspectingService {
     return !!(await prisma.prospectSuppression.findUnique({ where: { emailHash: suppressionHash(email) } }));
   }
 
+  /** A prospect without an email (13/11/2026) is the one of the same name: never listed twice. */
+  private async assertNameFree(companyName: string, exceptId?: string) {
+    const key = companyKey(companyName);
+    const rows = await prisma.prospect.findMany({ select: { id: true, companyName: true } });
+    if (rows.some(r => r.id !== exceptId && companyKey(r.companyName) === key)) {
+      throw new HttpException(httpStatus.CONFLICT, 'Prospect already listed', 'prospect_exists');
+    }
+  }
+
   private async assertAddressFree(email: string, exceptId?: string) {
     if (await this.isSuppressed(email)) {
       throw new HttpException(httpStatus.CONFLICT, 'This address asked not to be contacted', 'suppressed', undefined);
@@ -364,7 +400,8 @@ export class ProspectingService {
     const checked = validateProspect(input);
     if (!checked.ok) throw new ValidationException(checked.fields);
     const value = checked.value as Required<typeof checked.value>;
-    await this.assertAddressFree(value.email);
+    if (value.email) await this.assertAddressFree(value.email);
+    else await this.assertNameFree(value.companyName);
     const prospect = await prisma.prospect.create({ data: { ...value, source: 'manual' } });
     await this.record(actor, 'prospect.created', 'prospect', prospect.id, { source: 'manual' });
     return this.viewOf(prospect);
@@ -377,7 +414,7 @@ export class ProspectingService {
     const value = checked.value;
     if (value.email !== undefined && value.email !== current.email) {
       if (current.status === 'unsubscribed') throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
-      await this.assertAddressFree(value.email!, id);
+      if (value.email) await this.assertAddressFree(value.email, id);
     }
     const prospect = await prisma.prospect.update({ where: { id }, data: value });
     await this.record(actor, 'prospect.updated', 'prospect', id, { fields: Object.keys(value) });
@@ -393,27 +430,35 @@ export class ProspectingService {
 
   /**
    * « Importer un CSV »: the rows the page read from the file. `dryRun` answers what would happen (the preview) without
-   * writing. Each row: new, duplicate (already listed, or twice in the file), suppressed (opted out) or invalid.
+   * writing. Each row: new, duplicate (already listed, or twice in the file), suppressed (opted out) or invalid. A row
+   * without an email (13/11/2026) is a duplicate of a prospect of the same name (`companyKey`), with or without an email.
    */
   public async importRows(actor: AuthenticatedStaff, rows: unknown, dryRun: boolean) {
     if (!Array.isArray(rows) || rows.length === 0) throw new ValidationException({ rows: 'required' });
     if (rows.length > MAX_IMPORT_ROWS) throw new ValidationException({ rows: 'too_many_rows' });
     const checked = rows.map(row => validateProspect((row && typeof row === 'object' ? row : {}) as ProspectInput));
-    const emails = checked.flatMap(c => (c.ok ? [c.value.email!] : []));
-    const [existing, suppressed] = await Promise.all([
+    const emails = checked.flatMap(c => (c.ok && c.value.email ? [c.value.email] : []));
+    const [existing, suppressed, names] = await Promise.all([
       prisma.prospect.findMany({ where: { email: { in: emails } }, select: { email: true } }),
       prisma.prospectSuppression.findMany({ where: { emailHash: { in: emails.map(suppressionHash) } }, select: { emailHash: true } }),
+      checked.some(c => c.ok && !c.value.email) ? prisma.prospect.findMany({ select: { companyName: true } }) : Promise.resolve([]),
     ]);
     const listed = new Set(existing.map(e => e.email));
+    const listedNames = new Set(names.map(n => companyKey(n.companyName)));
     const optedOut = new Set(suppressed.map(s => s.emailHash));
     const seen = new Set<string>();
+    const seenNames = new Set<string>();
     const toCreate: Prisma.ProspectCreateManyInput[] = [];
     const results = checked.map((c, index) => {
       if (!c.ok) return { row: index + 1, outcome: 'invalid' as const, fields: c.fields };
-      const email = c.value.email!;
-      if (optedOut.has(suppressionHash(email))) return { row: index + 1, outcome: 'suppressed' as const, email };
-      if (listed.has(email) || seen.has(email)) return { row: index + 1, outcome: 'duplicate' as const, email };
-      seen.add(email);
+      const email = c.value.email ?? null;
+      const name = companyKey(c.value.companyName!);
+      if (email && optedOut.has(suppressionHash(email))) return { row: index + 1, outcome: 'suppressed' as const, email };
+      if (email ? listed.has(email) || seen.has(email) : listedNames.has(name) || seenNames.has(name)) {
+        return { row: index + 1, outcome: 'duplicate' as const, email };
+      }
+      if (email) seen.add(email);
+      seenNames.add(name);
       toCreate.push({ ...(c.value as Required<typeof c.value>), source: 'csv' });
       return { row: index + 1, outcome: 'new' as const, email };
     });
@@ -444,7 +489,7 @@ export class ProspectingService {
     if (current.status === 'unsubscribed') throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
     const now = new Date();
     const prospect = await prisma.$transaction(async tx => {
-      if (status === 'unsubscribed') {
+      if (status === 'unsubscribed' && current.email) {
         await tx.prospectSuppression.upsert({
           where: { emailHash: suppressionHash(current.email) },
           create: { emailHash: suppressionHash(current.email) },
@@ -472,7 +517,7 @@ export class ProspectingService {
 
   /**
    * « Envoyer à N prospects »: enrolls the chosen prospects still to contact (never one already in the sequence, closed
-   * or opted out) and sends them the first email now, within today's cap; the others wait for the next sending window.
+   * or opted out, never one without an email) and sends them the first email now, within today's cap; the others wait for the next sending window.
    * The follow-ups then leave by themselves (runDue).
    */
   public async sendNow(actor: AuthenticatedStaff, ids: unknown, now = new Date()) {
@@ -484,17 +529,17 @@ export class ProspectingService {
     const hashes = new Set(
       (
         await prisma.prospectSuppression.findMany({
-          where: { emailHash: { in: rows.map(r => suppressionHash(r.email)) } },
+          where: { emailHash: { in: rows.flatMap(r => (r.email ? [suppressionHash(r.email)] : [])) } },
           select: { emailHash: true },
         })
       ).map(s => s.emailHash),
     );
-    const eligible = rows.filter(r => r.status === 'to_contact' && r.step === 0 && !hashes.has(suppressionHash(r.email))).map(r => r.id);
+    const eligible = rows.filter(r => r.email && r.status === 'to_contact' && r.step === 0 && !hashes.has(suppressionHash(r.email))).map(r => r.id);
     const skipped = wanted.length - eligible.length;
     if (!eligible.length) {
       return { enrolled: 0, sent: 0, failed: 0, queued: 0, skipped, nextOpening: null };
     }
-    const { steps, dailyCap } = await this.loadSettings();
+    const { sequences, dailyCap } = await this.loadSettings();
     const remaining = remainingToday(dailyCap, await this.sentToday(now));
     // Beyond today's cap: the next working day's opening.
     const tomorrow = dayBounds(addDays(localDate(now, PROSPECTING_TZ), 1), PROSPECTING_TZ).start;
@@ -521,7 +566,7 @@ export class ProspectingService {
     let sent = 0;
     let failed = 0;
     for (const id of claimed) {
-      const outcome = await this.sendOne(id, now, steps);
+      const outcome = await this.sendOne(id, now, sequences);
       if (outcome === 'sent') sent += 1;
       if (outcome === 'failed') failed += 1;
     }
@@ -545,13 +590,13 @@ export class ProspectingService {
   public async runDue(now = new Date()) {
     if (!this.configured()) return { configured: false, window: inSendingWindow(now), sent: 0, failed: 0, finished: 0, remaining: 0 };
     if (!inSendingWindow(now)) return { configured: true, window: false, sent: 0, failed: 0, finished: 0, remaining: 0 };
-    const { steps, dailyCap } = await this.loadSettings();
+    const { sequences, dailyCap } = await this.loadSettings();
     const remaining = remainingToday(dailyCap, await this.sentToday(now));
     const result = { configured: true, window: true, sent: 0, failed: 0, finished: 0, remaining };
     if (!remaining) return result;
     const claimed = await this.claim(now, Math.min(remaining, PASS_LIMIT));
     for (const id of claimed) {
-      const outcome = await this.sendOne(id, now, steps);
+      const outcome = await this.sendOne(id, now, sequences);
       if (outcome === 'sent') result.sent += 1;
       if (outcome === 'failed') result.failed += 1;
       if (outcome === 'finished') result.finished += 1;
@@ -570,7 +615,7 @@ export class ProspectingService {
       UPDATE "prospects" SET "sendingAt" = ${now}
       WHERE "id" IN (
         SELECT "id" FROM "prospects"
-        WHERE "nextSendAt" <= ${now} AND "status" IN ('to_contact', 'contacted') AND "stoppedAt" IS NULL
+        WHERE "nextSendAt" <= ${now} AND "status" IN ('to_contact', 'contacted') AND "stoppedAt" IS NULL AND "email" IS NOT NULL
           AND ("sendingAt" IS NULL OR "sendingAt" < ${stale}) ${only}
         ORDER BY "nextSendAt" ASC, "id" ASC
         LIMIT ${limit}
@@ -588,20 +633,30 @@ export class ProspectingService {
     return staff?.email ?? null;
   }
 
-  private headers(prospectId: string, replyTo: string | null): Record<string, string> {
+  private headers(prospectId: string, replyTo: string | null, language: ProspectLanguage = 'fr'): Record<string, string> {
     const url = this.unsubscribeUrl(prospectId);
-    const mailto = replyTo ? `, <mailto:${replyTo}?subject=${encodeURIComponent('Ne plus recevoir de messages')}>` : '';
+    const mailto = replyTo ? `, <mailto:${replyTo}?subject=${encodeURIComponent(unsubscribeSubject(language))}>` : '';
     return { 'List-Unsubscribe': `<${url}>${mailto}`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
   }
 
-  /** Sends the next step to one claimed prospect, records it and schedules the following one. */
-  private async sendOne(id: string, now: Date, steps: SequenceStep[]): Promise<SendOutcome> {
-    const prospect = await prisma.prospect.findUnique({ where: { id } });
+  /**
+   * Sends the next step to one claimed prospect, in its language (13/11/2026), records it and schedules the following one.
+   * A prospect whose email was removed meanwhile leaves the sequence.
+   */
+  private async sendOne(id: string, now: Date, sequences: Sequences): Promise<SendOutcome> {
+    const found = await prisma.prospect.findUnique({ where: { id } });
     const release = () => prisma.prospect.updateMany({ where: { id, sendingAt: now }, data: { sendingAt: null } });
-    if (!prospect || isClosed(prospect.status) || prospect.stoppedAt) {
+    if (!found || isClosed(found.status) || found.stoppedAt) {
       await release();
       return 'skipped';
     }
+    if (!found.email) {
+      await prisma.prospect.update({ where: { id }, data: { nextSendAt: null, sendingAt: null } });
+      return 'skipped';
+    }
+    const prospect = { ...found, email: found.email };
+    const language = prospectLanguage(prospect);
+    const steps = sequences[language];
     if (await this.isSuppressed(prospect.email)) {
       await prisma.prospect.update({ where: { id }, data: { status: 'unsubscribed', nextSendAt: null, stoppedAt: now, sendingAt: null } });
       return 'skipped';
@@ -618,6 +673,7 @@ export class ProspectingService {
     const demoUrl = usesDemoLink(step) ? (await this.demo.linkFor(prospect.id, prospect.enrolledById)).url : '';
     const message = prospectEmail({
       productName: PRODUCT_NAME,
+      language,
       company: PRODUCT_COMPANY,
       senderName: sender.name,
       senderPhone: prospectingSettings().phone,
@@ -632,7 +688,7 @@ export class ProspectingService {
     const result = await this.notifications.emailProspect({ email: prospect.email, ...(name ? { name } : {}) }, message, {
       sender,
       replyTo,
-      headers: this.headers(id, replyTo),
+      headers: this.headers(id, replyTo, language),
       tag: `${TAG}_step${step.step}`,
       about: `prospect ${id}`,
     });
@@ -688,19 +744,30 @@ export class ProspectingService {
     return 'failed';
   }
 
-  /** « M'envoyer un test »: one step (saved, or as typed in the editor) to the admin's own address; not counted in the cap. */
-  public async sendTest(actor: AuthenticatedStaff, input: { step?: unknown; prospectId?: unknown; subject?: unknown; body?: unknown }) {
+  /**
+   * « M'envoyer un test »: one step (saved, or as typed in the editor) to the admin's own address; not counted in the cap.
+   * In the chosen prospect's language, else `language` (13/11/2026), else French.
+   */
+  public async sendTest(
+    actor: AuthenticatedStaff,
+    input: { step?: unknown; prospectId?: unknown; subject?: unknown; body?: unknown; language?: unknown },
+  ) {
     const n = input.step ?? 1;
     if (n !== 1 && n !== 2 && n !== 3) throw new ValidationException({ step: 'invalid' });
+    if (input.language !== undefined && input.language !== null && !isProspectLanguage(input.language)) {
+      throw new ValidationException({ language: 'invalid_language' });
+    }
     this.assertConfigured();
     if (!actor.email) throw new HttpException(httpStatus.CONFLICT, 'No address to send the test to', 'no_email');
-    const { steps } = await this.loadSettings();
-    const saved = steps[n - 1];
+    const { sequences } = await this.loadSettings();
+    const chosen = typeof input.prospectId === 'string' && input.prospectId ? await this.getOrThrow(input.prospectId) : null;
+    const language: ProspectLanguage = chosen ? prospectLanguage(chosen) : isProspectLanguage(input.language) ? input.language : 'fr';
+    const saved = sequences[language][n - 1];
     const subject = typeof input.subject === 'string' && input.subject.trim() ? input.subject.trim().slice(0, 150) : saved.subject;
     const body = typeof input.body === 'string' && input.body.trim() ? input.body.trim().slice(0, 5000) : saved.body;
     let values = SAMPLE_VALUES;
-    if (typeof input.prospectId === 'string' && input.prospectId) {
-      const prospect = await this.getOrThrow(input.prospectId);
+    if (chosen) {
+      const prospect = chosen;
       const names = await this.airportNames([prospect.airportCode]);
       const link = (await this.demo.linksOf([prospect.id])).get(prospect.id);
       values = templateValues(
@@ -712,6 +779,7 @@ export class ProspectingService {
     const sender = this.sender()!;
     const message = prospectEmail({
       productName: PRODUCT_NAME,
+      language,
       company: PRODUCT_COMPANY,
       senderName: sender.name,
       senderPhone: prospectingSettings().phone,
@@ -748,11 +816,14 @@ export class ProspectingService {
     if (!id) return false;
     const prospect = await prisma.prospect.findUnique({ where: { id }, select: { email: true, status: true, stoppedAt: true } });
     if (!prospect) return true;
-    const emailHash = suppressionHash(prospect.email);
-    await prisma.$transaction([
-      prisma.prospectSuppression.upsert({ where: { emailHash }, create: { emailHash }, update: {} }),
-      prisma.prospect.update({ where: { id }, data: { status: 'unsubscribed', nextSendAt: null, stoppedAt: prospect.stoppedAt ?? now } }),
-    ]);
+    const update = prisma.prospect.update({
+      where: { id },
+      data: { status: 'unsubscribed', nextSendAt: null, stoppedAt: prospect.stoppedAt ?? now },
+    });
+    if (prospect.email) {
+      const emailHash = suppressionHash(prospect.email);
+      await prisma.$transaction([prisma.prospectSuppression.upsert({ where: { emailHash }, create: { emailHash }, update: {} }), update]);
+    } else await update;
     if (prospect.status !== 'unsubscribed') logger.info(`[Prospecting] prospect ${id} unsubscribed`);
     return true;
   }

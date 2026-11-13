@@ -10,16 +10,17 @@ import type { Prospect, ProspectInput } from "@/lib/types";
 import { Modal } from "./Modal";
 
 const t = fr.platform.prospecting;
-type Key = Exclude<keyof ProspectInput, "region">;
+type Key = Exclude<keyof ProspectInput, "region" | "language">;
 type Form = Record<Key, string>;
-const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "notes"];
+const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "website", "notes"];
+const LANGUAGES = ["fr", "de", "en"] as const;
 
 const formOf = (p: Prospect | null): Form =>
   Object.fromEntries(KEYS.map(k => [k, (p?.[k] as string | null) ?? ""])) as Form;
 
 /**
  * « + Ajouter un prospect » and « Modifier »: the same form. The region is automatic (the airport's) unless one is chosen
- * (19/10/2026).
+ * (19/10/2026). 13/11/2026: the email is optional, the site and the language of the mails (automatic: the region's).
  */
 export function ProspectForm({
   prospect,
@@ -27,16 +28,21 @@ export function ProspectForm({
   onClose,
 }: {
   prospect: Prospect | null;
-  regions: { key: string; label: string }[];
+  regions: { key: string; label: string; country?: boolean }[];
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Form>(() => formOf(prospect));
   const [region, setRegion] = useState<string>(prospect?.regionOverride ?? "");
+  const [language, setLanguage] = useState<string>(prospect?.languageOverride ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const save = useMutation({
     mutationFn: () => {
-      const input = { ...Object.fromEntries(KEYS.map(k => [k, form[k].trim() || null])), region: region || null } as unknown as ProspectInput;
+      const input = {
+        ...Object.fromEntries(KEYS.map(k => [k, form[k].trim() || null])),
+        region: region || null,
+        language: language || null,
+      } as unknown as ProspectInput;
       return prospect ? adminApi.updateProspect(prospect.id, input) : adminApi.createProspect(input);
     },
     onSuccess: () => {
@@ -45,7 +51,9 @@ export function ProspectForm({
       onClose();
     },
     onError: (err: Error) => {
-      if (err instanceof ApiError && (err.code === "prospect_exists" || err.code === "suppressed")) setErrors({ email: err.code });
+      // Without an email, the same name is the duplicate.
+      if (err instanceof ApiError && (err.code === "prospect_exists" || err.code === "suppressed"))
+        setErrors({ [form.email.trim() ? "email" : "companyName"]: err.code });
       else setErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
       toast.error(describeError(err));
     },
@@ -74,7 +82,7 @@ export function ProspectForm({
           {field("contactFirstName", { maxLength: 60 })}
           {field("contactLastName", { maxLength: 60 })}
         </div>
-        {field("email", { required: true, type: "email", maxLength: 254 })}
+        {field("email", { type: "email", maxLength: 254, help: t.emailHelp })}
         <div className="grid gap-3 sm:grid-cols-2">
           {field("town", { maxLength: 80 })}
           {field("airportCode", { maxLength: 3, help: t.airportHelp, className: "uppercase" })}
@@ -90,11 +98,24 @@ export function ProspectForm({
             className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-base"
           >
             <option value="">{t.regionAuto}</option>
-            {regions.map(r => (
-              <option key={r.key} value={r.key}>
-                {r.label}
-              </option>
-            ))}
+            <optgroup label={t.regionGroupFrance}>
+              {regions
+                .filter(r => !r.country)
+                .map(r => (
+                  <option key={r.key} value={r.key}>
+                    {r.label}
+                  </option>
+                ))}
+            </optgroup>
+            <optgroup label={t.regionGroupEurope}>
+              {regions
+                .filter(r => r.country)
+                .map(r => (
+                  <option key={r.key} value={r.key}>
+                    {r.label}
+                  </option>
+                ))}
+            </optgroup>
           </select>
           {errors.region ? (
             <p id="prospect-region-error" className="text-sm text-destructive">
@@ -106,7 +127,37 @@ export function ProspectForm({
             </p>
           )}
         </div>
-        {field("phone", { type: "tel", maxLength: 30 })}
+        <div className="space-y-1.5">
+          <Label htmlFor="prospect-language">{t.fields.language}</Label>
+          <select
+            id="prospect-language"
+            value={language}
+            aria-invalid={!!errors.language}
+            aria-describedby={errors.language ? "prospect-language-error" : "prospect-language-help"}
+            onChange={e => setLanguage(e.target.value)}
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-base"
+          >
+            <option value="">{t.languageAuto}</option>
+            {LANGUAGES.map(l => (
+              <option key={l} value={l}>
+                {t.languages[l]}
+              </option>
+            ))}
+          </select>
+          {errors.language ? (
+            <p id="prospect-language-error" className="text-sm text-destructive">
+              {errorMessage(errors.language)}
+            </p>
+          ) : (
+            <p id="prospect-language-help" className="text-xs text-muted-foreground">
+              {t.languageHelp}
+            </p>
+          )}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {field("phone", { type: "tel", maxLength: 30 })}
+          {field("website", { maxLength: 300, inputMode: "url", placeholder: "www.exemple.de" })}
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="prospect-notes">{t.fields.notes}</Label>
           <textarea

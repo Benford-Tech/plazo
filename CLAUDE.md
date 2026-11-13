@@ -1927,6 +1927,26 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   secrets `PLAZO_ADMIN_EMAIL` / `PLAZO_ADMIN_PASSWORD` (un administrateur de la plateforme), session fermée à la fin ; rien n'est
   jamais envoyé aux prospects (les mails partent de la page). Liste France du 07/11/2026 (57 parkings, maturité du système
   d'information « SI n/4 » en tête des notes) relevée sur les sites des exploitants eux-mêmes.
+  **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
+  une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
+  `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
+  `portugal`, `republique-tcheque`, `roumanie`, `royaume-uni`, `suede` ; `COUNTRY_KEYS`, la Suisse comprise ; leurs aéroports
+  dans `AIRPORT_REGIONS` ; noms en anglais, dans la langue du pays ou en code, « Deutschland », « UK », « NL », par `parseRegion` ;
+  migration `prospects_europe`), listés après les régions françaises (`sortedRegions` → `country`, groupes « France » et
+  « Europe » des listes) ; colonne CSV « pays ». **Langue des mails** : `Prospect.language` (fr · de · en, nul = celle de la
+  région : allemand en Allemagne et en Autriche, français en France, en Belgique et au Luxembourg, en Suisse d'après l'aéroport,
+  anglais ailleurs ; `regionLanguage`, `prospectLanguage`), colonne CSV « langue », champ « Langue des mails » du formulaire,
+  pastille « DE » / « EN » ; la séquence a ses textes allemands et anglais (`ProspectingSettings.translations`, `defaultSteps(…,
+  language)` : mêmes mails, comparateurs européens lus par Plazo, « rund zehn Parkplätze in Frankreich »), sur les délais et
+  étapes actives du français (`sequencesOf`, `validateTranslations`, `PUT …/settings` › `translations { de?, en? }`, absent =
+  gardé ; `GET` › `sequences`) ; `prospectEmail(…, language)` traduit aussi ce qui entoure le texte (raison, éditeur,
+  désinscription, bouton de la démo, applications, légendes des écrans, `List-Unsubscribe`) ; « Modifier les mails » : pilules
+  Français · Allemand · Anglais, seule une langue modifiée est enregistrée ; aperçu et test dans la langue du premier choisi. La
+  page de désinscription reste en français. **E-mail facultatif** : `Prospect.email` peut être nul (un prospect sans adresse
+  s'appelle : « Pas d'e-mail · à appeler », téléphone et site sous le contact), jamais inscrit ni envoyé (`sendNow`, `claim`,
+  `sendOne`) ; doublon d'un prospect sans adresse = même nom sans accents, forme juridique ni parenthèses (`companyKey`, import
+  et formulaire, 409 `prospect_exists`) ; `Prospect.website` (colonne « site », `normalizeWebsite`, 400 `invalid_website`).
+  Tests `prospects-europe.test.ts`, `prospecting.test.ts`, `ProspectingPage.test.tsx`.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
   réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
   classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,

@@ -132,7 +132,7 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *     summary: The sequence (3 steps), the daily cap, the sender, the Reply-To and the sending window
  *     tags: [Prospection]
  *   put:
- *     summary: « Modifier les mails » — the 3 steps (subject, body, delayDays, enabled; step 1 always on at J0) and dailyCap (1-300); scheduled follow-ups move with the delays
+ *     summary: « Modifier les mails » — the 3 steps (subject, body, delayDays, enabled; step 1 always on at J0), dailyCap (1-300) and translations { de, en } (subject and body of each step; absent kept); scheduled follow-ups move with the delays
  *     tags: [Prospection]
  *     responses:
  *       400: { description: "fields steps.N.subject|body (required, too_long, unknown_variable), steps.N.delayDays (delay_range, delay_order), dailyCap (cap_range)" }

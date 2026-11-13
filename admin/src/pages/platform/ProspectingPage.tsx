@@ -8,7 +8,7 @@ import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
-import { groupByRegion, NO_REGION, type RegionGroup, renderSubjectText, renderText, stepFor, valuesOf, VARIABLES } from "@/lib/prospecting";
+import { groupByRegion, NO_REGION, type RegionGroup, renderSubjectText, renderText, sequenceFor, stepFor, valuesOf, VARIABLES } from "@/lib/prospecting";
 import type { DemoLink, Prospect, ProspectingSettings, ProspectStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ImportDialog } from "./prospecting/ImportDialog";
@@ -29,7 +29,8 @@ const PILL: Record<ProspectStatus | "waiting", string> = {
 const dayMonth = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone: "Europe/Paris" });
 const dayTime = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
 const isOpen = (p: Prospect) => p.status === "to_contact" || p.status === "contacted";
-const eligible = (p: Prospect) => p.status === "to_contact" && p.step === 0;
+// 13/11/2026: a prospect without an email is called, never sent the sequence.
+const eligible = (p: Prospect) => !!p.email && p.status === "to_contact" && p.step === 0;
 const contactName = (p: Prospect) => [p.contactFirstName, p.contactLastName].filter(Boolean).join(" ");
 
 /** The region blocks folded by the admin, kept in this browser only (19/10/2026). */
@@ -80,7 +81,7 @@ const inviteLink = (p: Prospect) =>
     parking: p.companyName,
     ...(p.contactFirstName ? { prenom: p.contactFirstName } : {}),
     ...(p.contactLastName ? { nom: p.contactLastName } : {}),
-    email: p.email,
+    ...(p.email ? { email: p.email } : {}),
   })}`;
 
 const ago = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
@@ -258,7 +259,8 @@ function SendPanel({
   const ready = chosen.filter(eligible);
   const skipped = chosen.length - ready.length;
   const first = chosen[0] ?? null;
-  const steps = settings?.steps ?? [];
+  // 13/11/2026: the sequence in the first chosen prospect's language.
+  const steps = sequenceFor(first, settings);
   const step = steps.find(s => s.step === previewStep) ?? (first ? stepFor(first, steps) : steps[0]);
   const values = first ? valuesOf(first) : null;
 
@@ -272,7 +274,7 @@ function SendPanel({
     onError: (err: Error) => toast.error(describeError(err)),
   });
   const test = useMutation({
-    mutationFn: () => adminApi.sendProspectTest({ step: step?.step ?? 1, prospectId: first?.id ?? null }),
+    mutationFn: () => adminApi.sendProspectTest({ step: step?.step ?? 1, prospectId: first?.id ?? null, language: first?.language }),
     onSuccess: ({ sentTo }) => toast.success(t.testSent(sentTo)),
     onError: (err: Error) => toast.error(describeError(err)),
   });
@@ -318,7 +320,10 @@ function SendPanel({
 
       {step && (
         <div className="space-y-1.5">
-          <span className="text-sm font-semibold">{first ? t.previewFor(first.companyName) : t.previewSample}</span>
+          <span className="text-sm font-semibold">
+            {first ? t.previewFor(first.companyName) : t.previewSample}
+            {first && first.language !== "fr" && <span className="ml-1 font-normal text-muted-foreground">· {t.previewLanguage(t.languages[first.language])}</span>}
+          </span>
           <div className="space-y-2 rounded-[10px] border border-panel-line bg-[#FAFBF9] p-3.5 text-sm leading-relaxed" data-testid="prospect-preview">
             <p className="font-semibold">{values ? renderSubjectText(step.subject, values) : step.subject}</p>
             <p className="whitespace-pre-line">{values ? renderText(step.body, values) : step.body}</p>
@@ -476,13 +481,18 @@ export default function ProspectingPage() {
           className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
         >
           <option value="">{t.regionAll}</option>
-          {regions
-            .filter(r => (regionCounts[r.key] ?? 0) > 0 || r.key === region)
-            .map(r => (
-              <option key={r.key} value={r.key}>
-                {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
-              </option>
-            ))}
+          {[false, true].map(country => {
+            const shown = regions.filter(r => !!r.country === country && ((regionCounts[r.key] ?? 0) > 0 || r.key === region));
+            return shown.length ? (
+              <optgroup key={String(country)} label={country ? t.regionGroupEurope : t.regionGroupFrance}>
+                {shown.map(r => (
+                  <option key={r.key} value={r.key}>
+                    {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null;
+          })}
           {((regionCounts[NO_REGION] ?? 0) > 0 || region === NO_REGION) && (
             <option value={NO_REGION}>{t.regionOption(t.regionNone, regionCounts[NO_REGION] ?? 0)}</option>
           )}
@@ -568,6 +578,7 @@ export default function ProspectingPage() {
                               <td className="px-4 py-2">
                                 <input
                                   type="checkbox"
+                                  title={p.email ? undefined : t.noEmailCheck(p.companyName)}
                                   aria-label={t.selectOne(p.companyName)}
                                   className="h-[18px] w-[18px] accent-[#1E5E2E]"
                                   checked={selected.has(p.id)}
@@ -580,7 +591,24 @@ export default function ProspectingPage() {
                               </td>
                               <td className="max-w-[220px] px-2 py-2">
                                 <span className="block">{contactName(p) || "—"}</span>
-                                <span className="block truncate text-xs text-muted-foreground">{p.email}</span>
+                                {p.email ? (
+                                  <span className="block truncate text-xs text-muted-foreground">{p.email}</span>
+                                ) : (
+                                  <span className="block text-xs font-semibold text-warn-text" data-testid="prospect-no-email">
+                                    {t.noEmail}
+                                  </span>
+                                )}
+                                {!p.email && p.phone && <span className="block font-mono text-xs text-[#4B5563]">{p.phone}</span>}
+                                {p.website && (
+                                  <a
+                                    href={p.website}
+                                    target="_blank"
+                                    rel="noreferrer noopener"
+                                    className="block truncate text-xs font-semibold text-lime-deep underline-offset-4 hover:underline"
+                                  >
+                                    {t.website} · {p.website.replace(/^https?:\/\/(www\.)?/, "")}
+                                  </a>
+                                )}
                               </td>
                               <td className="px-2 py-2">
                                 <span className="block font-mono text-[13px]">{p.airportCode ?? "—"}</span>
@@ -588,6 +616,14 @@ export default function ProspectingPage() {
                                   <span className="block text-xs text-muted-foreground">
                                     {p.region.label}
                                     {p.region.manual && ` · ${t.regionManual}`}
+                                  </span>
+                                )}
+                                {p.language !== "fr" && (
+                                  <span
+                                    title={t.languageOf(t.languages[p.language])}
+                                    className="mt-0.5 inline-block rounded-full bg-info-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-info-text"
+                                  >
+                                    {t.languageShort[p.language]}
                                   </span>
                                 )}
                               </td>

@@ -2005,9 +2005,13 @@ export type ProspectStatus =
   | "not_interested"
   | "unsubscribed";
 
+/** 13/11/2026 (« fais les 3 »): the language of a prospect's mails. */
+export type ProspectLanguage = "fr" | "de" | "en";
+
 export interface Prospect {
   id: string;
-  email: string;
+  /** Optional since 13/11/2026: a prospect without one is called, never emailed. */
+  email: string | null;
   companyName: string;
   contactFirstName: string | null;
   contactLastName: string | null;
@@ -2019,6 +2023,11 @@ export interface Prospect {
   /** The region chosen by hand (a key), null: automatic. */
   regionOverride: string | null;
   phone: string | null;
+  /** 13/11/2026: the parking's site (https). */
+  website: string | null;
+  /** The language of its mails (chosen by hand, else its region's) and the one chosen by hand. */
+  language: ProspectLanguage;
+  languageOverride: ProspectLanguage | null;
   notes: string | null;
   source: "manual" | "csv";
   status: ProspectStatus;
@@ -2057,12 +2066,15 @@ export interface ProspectInput {
   companyName: string;
   contactFirstName: string | null;
   contactLastName: string | null;
-  email: string;
+  email: string | null;
   town: string | null;
   airportCode: string | null;
   /** A region key (form) or name (CSV column « région »); null: automatic (the airport's). */
   region?: string | null;
   phone: string | null;
+  website?: string | null;
+  /** fr, de, en (form) or a name (CSV column « langue »); null: the region's. */
+  language?: string | null;
   notes: string | null;
 }
 
@@ -2076,8 +2088,8 @@ export interface ProspectList {
   data: Prospect[];
   counts: Record<ProspectStatus | "all", number>;
   airports: { code: string; name: string | null; count: number }[];
-  /** Every region, alphabetical. */
-  regions: { key: string; label: string }[];
+  /** Every region: the French regions, then the countries (13/11/2026), each alphabetical. */
+  regions: { key: string; label: string; country?: boolean }[];
   /** Prospects per region key (and `none`), under the airport filter. */
   regionCounts: Record<string, number>;
   today: { sent: number; cap: number; remaining: number };
@@ -2094,7 +2106,10 @@ export interface ProspectingStep {
 }
 
 export interface ProspectingSettings {
+  /** The French steps: their delays and switches are every language's. */
   steps: ProspectingStep[];
+  /** 13/11/2026: the three sequences by language (German and English: Plazo's texts until saved). */
+  sequences: Record<ProspectLanguage, ProspectingStep[]>;
   dailyCap: number;
   updatedAt: string | null;
   sender: { name: string; email: string } | null;

@@ -1667,8 +1667,8 @@ enum ProspectMessageStatus {
 
 model Prospect {
   id               String         @id @default(cuid())
-  // Lower-cased.
-  email            String         @unique
+  // Lower-cased. Optional since 13/11/2026 (« fais les 3 »): a prospect without one is called, never emailed.
+  email            String?        @unique
   companyName      String
   contactFirstName String?
   contactLastName  String?
@@ -1678,6 +1678,10 @@ model Prospect {
   // Region chosen by hand (key of domain/prospect-regions.ts); null: the airport's region (19/10/2026).
   region           String?
   phone            String?
+  // 13/11/2026: the parking's site (https address).
+  website          String?
+  // Language of the mails chosen by hand (fr, de, en); null: the region's (domain/prospect-regions.ts).
+  language         String?
   notes            String?
   source           ProspectSource @default(manual)
   status           ProspectStatus @default(to_contact)
@@ -1729,8 +1733,10 @@ model ProspectMessage {
 // The sequence (3 steps: subject, body, delay, on/off) and the daily cap. One row (id "default"); none: Plazo's texts.
 model ProspectingSettings {
   id          String   @id @default("default")
-  steps       Json
-  dailyCap    Int      @default(50)
+  steps        Json
+  // 13/11/2026: the German and English subjects and texts ({ de: [...], en: [...] }); null: Plazo's own.
+  translations Json?
+  dailyCap     Int      @default(50)
   updatedById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt

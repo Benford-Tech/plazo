@@ -172,8 +172,8 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     expect(byEmail['contact4@parking-fictif.example'].region).toBeNull();
     expect(byEmail['contact6@parking-fictif.example'].region).toEqual({ key: 'occitanie', label: 'Occitanie', manual: true });
     expect(byEmail['contact6@parking-fictif.example'].regionOverride).toBe('occitanie');
-    expect(all.body.regions).toHaveLength(19);
-    expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes' });
+    expect(all.body.regions).toHaveLength(39);
+    expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes', country: false });
     expect(all.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 2, 'provence-alpes-cote-d-azur': 1, occitanie: 1, none: 2, bretagne: 0 });
 
     const ara = await api().get(P).query({ region: 'auvergne-rhone-alpes' }).set(auth(admin.token));
@@ -531,5 +531,67 @@ describe('désinscription (lien public, RFC 8058) et conservation', () => {
     expect(remind.body.prospecting).toEqual({ error: true });
     spy.mockRestore();
     expect((await cron('remind-tomorrow')).body.prospecting).toHaveProperty('configured', true);
+  });
+});
+
+describe('Plateforme › Prospection : prospects européens (13/11/2026, « fais les 3 »)', () => {
+  it('sans e-mail : importé, doublon par le nom, jamais envoyé ; avec e-mail en Allemagne : le mail en allemand', async () => {
+    const rows = [
+      { companyName: 'Parken zum Fliegen GmbH', airportCode: 'STR', website: 'parken-zum-fliegen.de', phone: '+49 711 000000' },
+      { companyName: 'parken zum fliegen', airportCode: 'STR' },
+      { companyName: 'Lot Park Fictif', region: 'Pologne' },
+      { companyName: 'Flug Park Fictif', email: 'info@flugpark-fictif.example', airportCode: 'DUS', contactFirstName: 'Jonas' },
+    ];
+    const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
+    expect(preview.status).toBe(200);
+    expect(preview.body.counts).toEqual({ new: 3, duplicate: 1, suppressed: 0, invalid: 0 });
+    const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: false });
+    expect(done.body.created).toBe(3);
+    // Imported again: every row is a duplicate (by its name, or its address).
+    const again = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
+    expect(again.body.counts).toMatchObject({ new: 0, duplicate: 4 });
+    // By hand too.
+    expect((await api().post(P).set(auth(admin.token)).send({ companyName: 'Lot-Park Fictif' })).body.code).toBe('prospect_exists');
+
+    const list = await api().get(P).set(auth(admin.token));
+    const byName = Object.fromEntries(list.body.data.map((p: any) => [p.companyName, p]));
+    expect(byName['Parken zum Fliegen GmbH']).toMatchObject({
+      email: null,
+      website: 'https://parken-zum-fliegen.de',
+      region: { key: 'allemagne', label: 'Allemagne', manual: false },
+      language: 'de',
+      languageOverride: null,
+    });
+    expect(byName['Lot Park Fictif']).toMatchObject({ region: { key: 'pologne', manual: true }, language: 'en' });
+    expect((await api().get(P).query({ region: 'allemagne' }).set(auth(admin.token))).body.data).toHaveLength(2);
+
+    const ids = list.body.data.map((p: any) => p.id);
+    const sent = await api().post(`${P}/send`).set(auth(admin.token)).send({ ids });
+    expect(sent.body).toMatchObject({ enrolled: 1, sent: 1, skipped: 2 });
+    const [mail] = emails();
+    expect(mail.to[0].email).toBe('info@flugpark-fictif.example');
+    expect(mail.subject).toBe('Flug Park Fictif: Ihre Buchungen, ohne Abtippen');
+    expect(mail.textContent).toContain('Hallo Jonas,');
+    expect(mail.htmlContent).toContain('Keine Nachrichten mehr von Plazo erhalten');
+    expect(mail.headers['List-Unsubscribe']).toContain(encodeURIComponent('Keine Nachrichten mehr'));
+  });
+
+  it('les textes allemands et anglais se modifient et s’enregistrent avec la séquence', async () => {
+    const before = await api().get(`${P}/settings`).set(auth(admin.token));
+    expect(before.body.data.sequences.en[0].subject).toBe('{parking}: your bookings, no retyping');
+    const en = [1, 2, 3].map(step => ({ subject: `Hello ${step}`, body: `Hello {prénom}, mail ${step}. {lien_demo}` }));
+    const bad = await api()
+      .put(`${P}/settings`)
+      .set(auth(admin.token))
+      .send({ steps: before.body.data.steps, dailyCap: 50, translations: { en: [{ subject: '', body: 'x' }, ...en.slice(1)] } });
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toEqual({ 'translations.en.1.subject': 'required' });
+    const res = await api().put(`${P}/settings`).set(auth(admin.token)).send({ steps: before.body.data.steps, dailyCap: 50, translations: { en } });
+    expect(res.status).toBe(200);
+    expect(res.body.data.sequences.en[2]).toMatchObject({ subject: 'Hello 3', delayDays: 10 });
+    // The German texts stay Plazo's own, and a later save without translations keeps the English ones.
+    expect(res.body.data.sequences.de[0].subject).toBe('{parking}: Ihre Buchungen, ohne Abtippen');
+    const kept = await api().put(`${P}/settings`).set(auth(admin.token)).send({ steps: before.body.data.steps, dailyCap: 40 });
+    expect(kept.body.data.sequences.en[0].subject).toBe('Hello 1');
   });
 });
