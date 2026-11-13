@@ -269,7 +269,9 @@ export class FileService {
       where: { parkingId: parking.id },
       include: { _count: { select: { reservations: { where: { status: { in: HOLDING } } } } } },
     });
-    const keep = new Set(data.files.map(f => f.id).filter(Boolean) as string[]);
+    // Only this parking's files: an id from elsewhere is a new file, never a row of another parking (security pass 13/11/2026).
+    const own = new Set(existing.map(e => e.id));
+    const keep = new Set(data.files.map(f => f.id).filter((id): id is string => !!id && own.has(id)));
     const gone = existing.filter(e => !keep.has(e.id));
     const occupied = gone.find(g => g._count.reservations > 0);
     if (occupied) throw new HttpException(httpStatus.CONFLICT, `File ${occupied.code} holds cars`, 'file_occupied');

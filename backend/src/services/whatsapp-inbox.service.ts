@@ -12,7 +12,6 @@ import {
   phoneTail,
   previewOf,
   APP_MESSAGE_MAX_LENGTH,
-  appConversationPhone,
   REPLY_MAX_LENGTH,
   replyChannelOf,
   replyUntil,
@@ -72,6 +71,15 @@ const HANDLED_DAYS = 30;
  * https://claude.ai/artifact/E2oye5And3wLVphw6rE5ko): the messages travellers write to Plazo's number, placed on the
  * parking and the booking of the number that writes, the team told, and a free reply within Meta's 24 hours.
  */
+/**
+ * Security pass of 13/11/2026: a message Plazo sent carries the traveller's booking link, whose code opens the booking as
+ * the traveller (cancel, refund…). The team never needs it: it is hidden from what the inbox shows.
+ */
+export function maskBookingLinks(text: string | null): string | null {
+  if (!text) return text;
+  return text.replace(/https?:\/\/\S*(?:\/a\/|\/ma-reservation\/|[?&]cle=)\S*/gi, '[lien de la réservation]');
+}
+
 @Service()
 export class WhatsappInboxService {
   public audit = Container.get(AuditService);
@@ -320,7 +328,7 @@ export class WhatsappInboxService {
         id: r.id,
         kind: r.kind,
         status: r.status,
-        text: r.body,
+        text: maskBookingLinks(r.body),
         phone: displayPhone(r.to),
         at: r.createdAt,
         smsFallback: r.status === 'fallback' || r.smsOutcome === 'sent',
@@ -376,7 +384,7 @@ export class WhatsappInboxService {
         at: m.createdAt,
         by: m.staff ? { firstName: m.staff.firstName } : null,
       })),
-      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, text: s.body, at: s.createdAt })),
+      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, text: maskBookingLinks(s.body), at: s.createdAt })),
     };
   }
 
@@ -419,7 +427,16 @@ export class WhatsappInboxService {
         throw new HttpException(httpStatus.BAD_GATEWAY, 'WhatsApp refused the reply', result.code);
       }
       message = await prisma.whatsappInboxMessage.create({
-        data: { conversationId: id, direction: 'out', type: 'text', text, waMessageId: result.id, status: 'sent', staffId: actor.id },
+        data: {
+          conversationId: id,
+          direction: 'out',
+          type: 'text',
+          text,
+          waMessageId: result.id,
+          status: 'sent',
+          staffId: actor.id,
+          reservationId: row.reservationId,
+        },
       });
     }
     await prisma.whatsappConversation.update({ where: { id }, data: { lastMessageAt: message.createdAt, unread: 0 } });
@@ -459,24 +476,12 @@ export class WhatsappInboxService {
     returnAt: Date;
     anonymizedAt?: Date | null;
   }) {
-    const phone = appConversationPhone(reservation.customerPhone, reservation.id);
-    const tail = phone.startsWith('app:') ? '' : phoneTail(phone);
-    const conversations = await prisma.whatsappConversation.findMany({
-      where: { operatorId: reservation.operatorId, OR: [{ phone: `app:${reservation.id}` }, ...(tail ? [{ phone: { endsWith: tail } }] : [])] },
-      select: { id: true },
-    });
-    const from = new Date(reservation.createdAt.getTime() - 2 * 86400000);
-    const to = new Date(reservation.returnAt.getTime() + INBOX_RETENTION_DAYS * 86400000);
+    // Security pass of 13/11/2026: the app messages of this booking only. WhatsApp traffic is placed on a booking by the
+    // number alone, and a booking's number is typed by whoever books: shown here, someone booking with another person's
+    // number would read that person's WhatsApp exchange with the parking. WhatsApp stays in WhatsApp.
     const [messages, sent] = await Promise.all([
       prisma.whatsappInboxMessage.findMany({
-        where: {
-          OR: [
-            { reservationId: reservation.id, channel: 'app', conversation: { operatorId: reservation.operatorId } },
-            ...(conversations.length
-              ? [{ conversationId: { in: conversations.map(c => c.id) }, channel: 'whatsapp', createdAt: { gte: from, lte: to } }]
-              : []),
-          ],
-        },
+        where: { reservationId: reservation.id, channel: 'app', conversation: { operatorId: reservation.operatorId } },
         orderBy: { createdAt: 'asc' },
         take: 300,
         include: { staff: { select: { firstName: true } } },
@@ -521,19 +526,17 @@ export class WhatsappInboxService {
     const text = typeof raw === 'string' ? raw.replace(/\r\n?/g, '\n').trim() : '';
     if (!text) throw new ValidationException({ text: 'required' });
     if (text.length > APP_MESSAGE_MAX_LENGTH) throw new ValidationException({ text: 'too_long' });
-    const phone = appConversationPhone(reservation.customerPhone, reservation.id);
-    const tail = phone.startsWith('app:') ? '' : phoneTail(phone);
-    const existing = await prisma.whatsappConversation.findFirst({
-      where: { operatorId: reservation.operatorId, ...(tail ? { phone: { endsWith: tail } } : { phone }) },
-      orderBy: { lastMessageAt: 'desc' },
-    });
+    // Security pass of 13/11/2026: the booking's own `app:<id>` conversation, never the number's WhatsApp one: a booking
+    // made with someone else's number must neither join nor redirect that person's conversation.
+    const ownPhone = `app:${reservation.id}`;
+    const existing = await prisma.whatsappConversation.findFirst({ where: { operatorId: reservation.operatorId, phone: ownPhone } });
     const conversation = existing
       ? await prisma.whatsappConversation.update({
           where: { id: existing.id },
           data: { reservationId: reservation.id, lastMessageAt: now, lastAppAt: now, unread: { increment: 1 }, handledAt: null },
         })
       : await prisma.whatsappConversation.create({
-          data: { operatorId: reservation.operatorId, reservationId: reservation.id, phone, lastMessageAt: now, lastAppAt: now, unread: 1 },
+          data: { operatorId: reservation.operatorId, reservationId: reservation.id, phone: ownPhone, lastMessageAt: now, lastAppAt: now, unread: 1 },
         });
     const message = await prisma.whatsappInboxMessage.create({
       data: { conversationId: conversation.id, direction: 'in', type: 'text', text, channel: 'app', reservationId: reservation.id, createdAt: now },

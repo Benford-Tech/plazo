@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { ListingController } from '@/controllers/listing.controller';
 import { SuggestDescriptionDto, UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { aiLimiter } from '@/middlewares/rateLimiter';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -141,6 +142,8 @@ export class ListingRoute implements Routes {
     this.router.post(
       '/internal/listing/description/suggest',
       StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      aiLimiter,
       ValidationMiddleware(SuggestDescriptionDto),
       this.listing.suggestDescription,
     );

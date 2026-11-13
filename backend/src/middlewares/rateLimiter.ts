@@ -196,3 +196,33 @@ export function fromSite(req: Request, siteKey: string = SITE_API_KEY): boolean 
 }
 
 export const demoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });
+
+/**
+ * Security pass of 13/11/2026: « Écrire au client » (WhatsApp from Plazo's number, the parking's paid SMS as the
+ * fallback) is open to every role that records a status: 30 messages per 15 minutes per staff member.
+ */
+export const staffMessageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  skip,
+  keyGenerator: (req: Request) => {
+    const staffId = (req as Request & { staff?: { id?: string } }).staff?.id;
+    return staffId ? `staff:${staffId}` : rateLimitKey(req);
+  },
+  message: tooMany('too_many_requests'),
+});
+
+/**
+ * Security pass of 13/11/2026: the routes that ask Claude (a listing's description, the plan's zones) cost Plazo per call:
+ * 20 an hour per operator, never from the prospects' demo (RefuseInDemo on the routes).
+ */
+export const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  skip,
+  keyGenerator: (req: Request) => {
+    const operatorId = (req as Request & { staff?: { operatorId?: string } }).staff?.operatorId;
+    return operatorId ? `operator:${operatorId}` : rateLimitKey(req);
+  },
+  message: tooMany('too_many_requests'),
+});

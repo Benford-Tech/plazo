@@ -83,6 +83,7 @@ describe('Staff photo', () => {
     const driver = await addStaff(op.token, 'driver');
     const forDriver = await api().get('/api/internal/nav/counts').set(auth(driver.token));
     expect(forDriver.body.inbox).toBeNull();
-    expect(forDriver.body.whatsapp).toBeNull();
+    // 13/11/2026 (« Le chauffeur y a droit »): the driver reads the WhatsApp inbox.
+    expect(forDriver.body.whatsapp).toBe(0);
   });
 });
