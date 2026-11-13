@@ -91,7 +91,7 @@ export class PaperworkController {
   /** POST /public/bookings/:reference/contract/sign */
   public travellerSign = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
-    res.json(await this.paperwork.travellerSign(param(req, 'reference'), bookingToken(req)));
+    res.json(await this.paperwork.travellerSign(param(req, 'reference'), bookingToken(req), req.body ?? {}));
   });
 
   /** POST /public/bookings/:reference/inspections/:kind/answer */

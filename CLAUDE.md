@@ -1519,8 +1519,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`), **au comptoir seulement (20/10/2026, « A au comptoir »)** : sur
    le téléphone du parking avec un code à 6 chiffres reçu par SMS par le voyageur (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
    heure, toujours par le Brevo de Plazo quel que soit le canal SMS du loueur : `SmsService.sendSignatureCode`, sortie `signature_code`),
-   ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; l'app du voyageur montre le contrat à lire (`contract.atCounter`,
-   `canSign` faux pour le voyageur) et `POST /public/bookings/:ref/contract/code|sign` répondent 409 `contract_at_counter` ; copie
+   ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; **et dans l'app Plazo depuis le 13/11/2026** (« Impossible de signer »,
+   choix « les deux » et M1) : « Signer le contrat » de Ma réservation, case « J'ai lu et j'accepte », code reçu par SMS au mobile de
+   la réservation puis signature au doigt, les deux exigés (`POST /public/bookings/:ref/contract/code`, `…/sign { code, strokes }`,
+   400 par champ ; `travellerCanSign` de la vue, `atCounter` gardé pour les anciennes versions ; sans mobile ni SMS : 409
+   `contract_at_counter`, au comptoir) ; méthode `sms_code`, appareil `traveller_app`, tracé de la signature sur le PDF ; push et
+   cloche « Contrat signé » à l'équipe (audience `bookingChanges`) ; pastille « Contrat signé » sur la ligne d'arrivée du planning de
+   Plazo Pro (`contractSignedAt` de `GET /internal/planning`) ; copie
    envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
    **États des lieux** (`VehicleInspection`
    `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : quatre photos guidées facultatives (avant, droite, arrière, gauche depuis le 30/10/2026,
@@ -2386,6 +2391,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `ProAuthLogoChanged`) ; section « Logo du parking » en tête de Plus › Réglages du parking (`ParkingLogoSection` : galerie, réduite à
   512 px, retirer, aperçu). Tests `operator-logo.test.ts`, `ParkingLogoCard.test.tsx`, `parking_logo_test.dart`.
 
+## Langues (13/11/2026, « traduit en anglais, allemand, espagnol, portugais et quelques grandes langues des pays de l'Est »)
+
+Choix de Joanny : tout est traduit (site, app Plazo, pro.plazo.fr, espace pro et Plazo Pro) en anglais, allemand, espagnol,
+portugais, polonais, roumain, russe et ukrainien ; site et pro.plazo.fr avec une adresse par langue (`/en/…`, le français à la
+racine), pastille « 🌐 FR ▾ » dans l'en-tête et liste en pied de page ; espace pro et Plazo Pro : langue du navigateur ou du
+téléphone, et une ligne « Langue » dans Mon compte gardée sur le compte ; textes légaux traduits avec « la version française
+fait foi ». **Fait : les deux apps** : `assets/l10n/<fr-FR|en-GB|de-DE|es-ES|pt-PT|pl-PL|ro-RO|ru-RU|uk-UA>.json` (les clés
+du français, pluriels `few`/`many` ajoutés en polonais, roumain, russe, ukrainien ; test `l10n_test.dart`), langue du téléphone
+(`supportedAppLocales` de `bootstrap.dart`, `CFBundleLocalizations` de l'Info.plist), dates et montants dans la langue
+(`appLocale`, `withTime` de `formatters.dart`, « €12.50 » en anglais, noms de jours de `stay.dart`). Le français reste la
+référence : un nouveau texte s'ajoute dans les neuf fichiers. **Reste** : réglage « Langue » de Plazo Pro, textes iOS des
+autorisations, site, pro.plazo.fr, espace pro, mails, SMS et pushs (en français).
+
 ## Sécurité (12/11/2026, « blinde la sécurité de l'app pour éviter les intrusions »)
 
 Audit en trois volets (connexion et cloisonnement des loueurs, routes publiques et webhooks, navigateur et déploiement) ; corrigé :
@@ -2666,7 +2684,7 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   position du parking, itinéraire à pied). Accueil Rechercher : salutation, titre, dates et bouton dans une carte blanche,
   carte IGN du séjour avec « N parkings disponibles », distance et navette, carte orange du moins cher
   (`SearchBloc.preview`) ; depuis K-A (06/10/2026) la carte est interactive, chaque parking est une pastille touchable
-  (`_ParkingPin`, `SearchParkingSelected`) et les navettes en circulation y bougent (`_ShuttleMarker`, `SearchBloc.live`). **Accueil A + C (05/11/2026, « Il y a mieux à faire », maquettes https://claude.ai/artifact/U2XFGECBeM3epFB8Dz41mM)** : la carte d'accueil est retirée ; en tête, la prochaine réservation gardée sur le téléphone devient la carte orange (`_NextTripHero`, `next-departure` : « Dans 6 jours » / « Demain » / « Aujourd'hui » / « Séjour en cours », parking, dates, « Voir ma réservation ») et la carte de recherche dit alors « Un autre séjour ? » au lieu du titre ; puis les parkings pour les dates (`_Parkings` : « N parkings pour vos dates », « Voir sur la carte » → résultats ouverts sur leur carte, `ResultsRoute(vue: 'carte')`, pilule « N navettes en circulation », les trois premières `ResultCard`, le moins cher d'abord, les complets à la fin) ; le bouton dit « Voir les N parkings ». Test `home_test.dart`. L'ancienne direction D reste documentée ci-dessous pour mémoire.
+  (`_ParkingPin`, `SearchParkingSelected`) et les navettes en circulation y bougent (`_ShuttleMarker`, `SearchBloc.live`). **Accueil A + C (05/11/2026, « Il y a mieux à faire », maquettes https://claude.ai/artifact/U2XFGECBeM3epFB8Dz41mM)** : la carte d'accueil est retirée ; en tête, la prochaine réservation gardée sur le téléphone devient la carte orange (`_NextTripHero`, `next-departure` : « Dans 6 jours » / « Demain » / « Aujourd'hui » / « Séjour en cours », parking, dates, « Voir ma réservation ») et la carte de recherche dit alors « Un autre séjour ? » au lieu du titre ; puis les parkings pour les dates (`_Parkings` : « N parkings pour vos dates », « Voir sur la carte » → résultats ouverts sur leur carte, `ResultsRoute(vue: 'carte')`, pilule « N navettes en circulation », les trois premières `ResultCard`, le moins cher d'abord, les complets à la fin) ; le bouton dit « Voir les N parkings ». Test `home_test.dart`. L'ancienne direction D reste documentée ci-dessous pour mémoire. **Ma réservation, mix A + C (13/11/2026, « Redesign » puis « Mix A et C », maquettes https://claude.ai/artifact/UeiNVvrQLXcscCkJ7riUPV)** : en tête la carte orange de la prochaine chose à faire (`NextStepHero` de `booking/presentation/widgets/booking_steps.dart` : « Signez votre contrat de stationnement » quand `travellerCanSign`, `next-step-sign`), puis le billet brun façon carte d'embarquement (`BookingCard` : dépôt et retour en grand, « — N jours — », plaque, passagers, vols, référence, `booking-ticket`), le prix, puis la frise du séjour (`BookingStep`, rail et points numérotés, l'étape en cours en orange) : 1 Avant le dépôt (sièges auto, contrat et photos), 2 Le jour du dépôt (prévenir de son arrivée), 3 Pendant le séjour (ma voiture, état des lieux, services, navettes), 4 Le retour (bloc du retour le jour J) ; la facture et les actions dessous ; « Écrire au parking » en bouton flottant qui ouvre la conversation dans une feuille (`booking-write`). Textes `booking.step_*`, `booking.next_*` dans les neuf langues. Test `booking_redesign_test.dart`.
   Direction **D « style Thempo »** (jusqu'au 05/10/2026) — **en-tête orange easyJet `#FF6600`** (T-A,
   03/10/2026, à la place du prune), brun foncé `#2C1A0E` pour les textes forts et les surfaces sombres, accent
   **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), pêche `#f0a36b` pour le temps fort,

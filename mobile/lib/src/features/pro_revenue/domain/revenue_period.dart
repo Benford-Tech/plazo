@@ -1,3 +1,4 @@
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:intl/intl.dart';
 
 /// The page's three periods (P-B, 13/10/2026): a day, a week (Monday to Sunday) or a calendar month.
@@ -62,7 +63,7 @@ String periodLabel(
     case RevenueSpan.day:
       if (anchor == today) return todayWord;
       if (anchor == addDays(today, -1)) return yesterdayWord;
-      return _capitalised(DateFormat('EEEE d MMMM', 'fr_FR').format(a)) + year;
+      return _capitalised(DateFormat('EEEE d MMMM', appLocale).format(a)) + year;
     case RevenueSpan.week:
       final p = revenuePeriod(span, anchor);
       if (holds(p, today)) return thisWeekWord;
@@ -70,9 +71,9 @@ String periodLabel(
       final last = parseDay(p.to);
       final lastYear = last.year == parseDay(today).year ? '' : ' ${last.year}';
       return first.month == last.month
-          ? range('${first.day}', '${DateFormat('d MMMM', 'fr_FR').format(last)}$lastYear')
-          : range(DateFormat('d MMM', 'fr_FR').format(first), '${DateFormat('d MMM', 'fr_FR').format(last)}$lastYear');
+          ? range('${first.day}', '${DateFormat('d MMMM', appLocale).format(last)}$lastYear')
+          : range(DateFormat('d MMM', appLocale).format(first), '${DateFormat('d MMM', appLocale).format(last)}$lastYear');
     case RevenueSpan.month:
-      return _capitalised(DateFormat('MMMM y', 'fr_FR').format(a));
+      return _capitalised(DateFormat('MMMM y', appLocale).format(a));
   }
 }

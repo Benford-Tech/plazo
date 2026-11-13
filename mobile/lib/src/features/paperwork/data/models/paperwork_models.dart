@@ -62,6 +62,9 @@ abstract class ContractModel with _$ContractModel {
     /// Not signed yet and still signable: at the counter, the day of the drop-off.
     @Default(false) bool atCounter,
 
+    /// 13/11/2026 (« Impossible de signer »): the traveller signs in the app, code by SMS and finger signature.
+    @Default(false) bool travellerCanSign,
+
     /// A code can be sent by SMS (a mobile number, SMS configured on the server).
     @Default(false) bool codeAvailable,
     required String phoneMasked,

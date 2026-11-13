@@ -33,7 +33,7 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       - { in: path, name: id, required: true, schema: { type: string } }
  * /internal/reservations/{id}/contract/code:
  *   post:
- *     summary: Refused since the 20/10/2026, 409 contract_at_counter (the contract is signed at the counter) (typed on the staff's phone)
+ *     summary: Sends the signing code to the traveller's mobile (typed on the staff's phone)
  *     tags: [Paperwork]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
@@ -87,12 +87,12 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     security: []
  * /public/bookings/{reference}/contract/code:
  *   post:
- *     summary: Refused since the 20/10/2026, 409 contract_at_counter (the contract is signed at the counter)
+ *     summary: Sends the signing code to the booking's mobile (13/11/2026); 409 contract_at_counter without SMS
  *     tags: [Paperwork]
  *     security: []
  * /public/bookings/{reference}/contract/sign:
  *   post:
- *     summary: Refused since the 20/10/2026, 409 contract_at_counter
+ *     summary: Signs in the app with { code, strokes } (both required, 13/11/2026); 409 contract_at_counter without SMS
  *     tags: [Paperwork]
  *     security: []
  * /public/bookings/{reference}/inspections/{kind}/answer:
@@ -149,7 +149,7 @@ export class PaperworkRoute implements Routes {
 
     const traveller = '/public/bookings/:reference';
     this.router.get(`${traveller}/paperwork`, this.paperwork.travellerGet);
-    // Signed at the counter since the 20/10/2026: both answer 409 contract_at_counter (old app versions).
+    // Signed in the app too since the 13/11/2026 (code by SMS and finger signature); 409 contract_at_counter without SMS.
     this.router.post(`${traveller}/contract/code`, lookupLimiter, this.paperwork.travellerSendCode);
     this.router.post(`${traveller}/contract/sign`, lookupLimiter, this.paperwork.travellerSign);
     // The traveller's own photos (« les deux peuvent faire l'état des lieux », 20/10/2026).

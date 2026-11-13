@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/router/app_router.dart';
@@ -108,7 +109,7 @@ class _ProBellPageState extends State<ProBellPage> {
     final day = DateTime(d.year, d.month, d.day);
     if (day == today) return 'bell.today'.tr();
     if (day == today.subtract(const Duration(days: 1))) return 'bell.yesterday'.tr();
-    return DateFormat('EEEE d MMMM', 'fr_FR').format(d);
+    return DateFormat('EEEE d MMMM', appLocale).format(d);
   }
 
   @override

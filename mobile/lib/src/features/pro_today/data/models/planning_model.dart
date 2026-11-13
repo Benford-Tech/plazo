@@ -34,6 +34,9 @@ abstract class PlanningRowModel with _$PlanningRowModel {
     String? departureCity,
     String? returnCity,
 
+    /// M1 (13/11/2026): when the contract was signed (in the Plazo app or at the counter), for « Contrat signé ».
+    DateTime? contractSignedAt,
+
     /// The stop serving the traveller (D-A); null: the airport.
     String? stopId,
     StaffSignalModel? arrivalSignal,

@@ -2,20 +2,29 @@
 /// the API, never computed in the app; the staff's typed amounts are only read back (parseEuroInput).
 library;
 
+import 'formatters.dart';
+
 const _nbsp = ' ';
 const _narrowNbsp = ' ';
 
-String _thousands(int n) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => _narrowNbsp);
+String _thousands(int n, [String sep = _narrowNbsp]) => n.toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => sep);
 
-/// 5500 -> "55,00 €", 123456 -> "1 234,56 €".
+/// English puts the euro sign first and a dot before the cents ("€55.00"); the other languages of the app write
+/// "55,00 €" like French.
+bool get _english => appLocale.startsWith('en');
+
+/// 5500 -> "55,00 €", 123456 -> "1 234,56 €" ("€1,234.56" in English).
 String formatEuros(int cents) {
   final negative = cents < 0;
   final abs = cents.abs();
-  return '${negative ? '-' : ''}${_thousands(abs ~/ 100)},${(abs % 100).toString().padLeft(2, '0')}$_nbsp€';
+  final cts = (abs % 100).toString().padLeft(2, '0');
+  if (_english) return '${negative ? '-' : ''}€${_thousands(abs ~/ 100, ',')}.$cts';
+  return '${negative ? '-' : ''}${_thousands(abs ~/ 100)},$cts$_nbsp€';
 }
 
-/// Whole euros for filters and slider bounds: 12000 -> "120 €".
-String formatWholeEuros(int cents) => '${_thousands((cents / 100).round())}$_nbsp€';
+/// Whole euros for filters and slider bounds: 12000 -> "120 €" ("€120" in English).
+String formatWholeEuros(int cents) =>
+    _english ? '€${_thousands((cents / 100).round(), ',')}' : '${_thousands((cents / 100).round())}$_nbsp€';
 
 /// Short price of a map pill: whole euros when exact ("45 €"), else with cents ("34,99 €").
 String formatShortEuros(int cents) => cents % 100 == 0 ? formatWholeEuros(cents) : formatEuros(cents);

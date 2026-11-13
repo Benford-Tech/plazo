@@ -39,6 +39,9 @@ _PlanningRowModel _$PlanningRowModelFromJson(Map<String, dynamic> json) =>
       stopName: json['stopName'] as String?,
       departureCity: json['departureCity'] as String?,
       returnCity: json['returnCity'] as String?,
+      contractSignedAt: json['contractSignedAt'] == null
+          ? null
+          : DateTime.parse(json['contractSignedAt'] as String),
       stopId: json['stopId'] as String?,
       arrivalSignal: json['arrivalSignal'] == null
           ? null
@@ -69,6 +72,7 @@ Map<String, dynamic> _$PlanningRowModelToJson(_PlanningRowModel instance) =>
       'stopName': instance.stopName,
       'departureCity': instance.departureCity,
       'returnCity': instance.returnCity,
+      'contractSignedAt': instance.contractSignedAt?.toIso8601String(),
       'stopId': instance.stopId,
       'arrivalSignal': instance.arrivalSignal,
       'handover': instance.handover,

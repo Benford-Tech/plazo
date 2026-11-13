@@ -23,7 +23,22 @@
     "flight": "Vol {}",
     "retry": "Réessayer",
     "outbound": "Vol aller {}",
-    "outbound_shuttle": "Vol aller {} · navette vers le terminal prévue vers {}"
+    "outbound_shuttle": "Vol aller {} · navette vers le terminal prévue vers {}",
+    "days": {
+      "one": "{} jour",
+      "other": "{} jours"
+    },
+    "next_kicker": "À faire avant le dépôt",
+    "next_contract_title": "Signez votre contrat de stationnement",
+    "next_contract_text": "Deux minutes : un code par SMS au {}, puis votre signature au doigt. Plus rien à signer au comptoir.",
+    "next_contract_cta": "Signer maintenant",
+    "step_before": "Avant le dépôt",
+    "step_drop": "Le jour du dépôt · {}",
+    "step_stay": "Pendant le séjour",
+    "step_return": "Le retour · {}",
+    "step_done": "C'est fait.",
+    "step_return_hint": "Le jour J : votre vol suivi, la navette en direct et votre voiture retrouvée.",
+    "write_parking": "Écrire au parking"
   },
   "arrival": {
     "explain_title": "Prévenez le parking de votre arrivée",
@@ -516,7 +531,8 @@
     "continue_google": "Continuer avec Google",
     "or_email": "ou avec votre e-mail",
     "board": "Embarquer",
-    "fetch": "Récupérer"
+    "fetch": "Récupérer",
+    "contract_signed": "Contrat signé"
   },
   "errors": {
     "child_seats_exceed_passengers": "Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.",
@@ -2253,7 +2269,10 @@
     "my_photos_note_hint": "Ex. petite rayure déjà présente sur la portière arrière gauche.",
     "my_photos_send": "Envoyer mes photos au parking",
     "my_photos_footer": "Une fois envoyées, elles ne se modifient plus. Le contrat se signe au comptoir, avec un code reçu par SMS.",
-    "my_photos_sent_on": "{} photo(s) envoyée(s) au parking le {}."
+    "my_photos_sent_on": "{} photo(s) envoyée(s) au parking le {}.",
+    "contract_to_sign_app": "À signer : touchez pour signer dans l'app",
+    "app_sign_intro": "Signez votre contrat ici : cochez la case, recevez un code par SMS au {}, tapez-le puis signez avec le doigt.",
+    "app_sign_draw": "Votre signature, au doigt"
   },
   "extras": {
     "title": "Services additionnels",

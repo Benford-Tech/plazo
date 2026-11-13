@@ -76,7 +76,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("30 octobre 2026"); // four optional photos in the condition report (30/10/2026), the parking's own contract (26/10/2026), night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026), services for the car (21/10/2026), contact@plazo.fr (22/10/2026)
+    expect(termsDoc().version).toBe("13 novembre 2026"); // signed in the app too (13/11/2026), four optional photos in the condition report (30/10/2026), the parking's own contract (26/10/2026), night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026), services for the car (21/10/2026), contact@plazo.fr (22/10/2026)
   });
 
   it("points to the contact form only once the service client has a real address (footer A, 15/10/2026)", () => {
@@ -138,7 +138,7 @@ describe("privacy policy", () => {
 
   it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, then on 22/10/2026 with the support address contact@plazo.fr, the terms and the privacy policy again on 26/10/2026 with the parking's own contract", () => {
     expect(privacyDoc().version).toBe("12 novembre 2026");
-    expect(termsDoc().version).toBe("30 octobre 2026");
+    expect(termsDoc().version).toBe("13 novembre 2026");
     expect(legalNoticeDoc().version).toBe("6 novembre 2026");
   });
 

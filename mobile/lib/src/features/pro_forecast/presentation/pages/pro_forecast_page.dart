@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../di/locator.dart';
@@ -72,9 +73,9 @@ class _ProForecastPageState extends State<ProForecastPage> {
     final to = DateTime.parse(addDays(period.from, period.days - 1));
     String cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
     return switch (_view) {
-      ForecastView.week => '${DateFormat('d MMM', 'fr_FR').format(from)} – ${DateFormat('d MMM y', 'fr_FR').format(to)}',
-      ForecastView.month => cap(DateFormat('MMMM y', 'fr_FR').format(from)),
-      ForecastView.quarter => cap('${DateFormat('MMM', 'fr_FR').format(from)} – ${DateFormat('MMM y', 'fr_FR').format(to)}'),
+      ForecastView.week => '${DateFormat('d MMM', appLocale).format(from)} – ${DateFormat('d MMM y', appLocale).format(to)}',
+      ForecastView.month => cap(DateFormat('MMMM y', appLocale).format(from)),
+      ForecastView.quarter => cap('${DateFormat('MMM', appLocale).format(from)} – ${DateFormat('MMM y', appLocale).format(to)}'),
     };
   }
 
@@ -261,7 +262,7 @@ class _Summary extends StatelessWidget {
               namedArgs: {
                 'cars': '${busiest.parked}',
                 'pct': '${gaugeOf(parked: busiest.parked, bookable: busiest.bookable).pct}',
-                'day': DateFormat('EEE d', 'fr_FR').format(DateTime.parse(busiest.date)),
+                'day': DateFormat('EEE d', appLocale).format(DateTime.parse(busiest.date)),
               },
             ),
             style: AppText.muted(size: 13),
@@ -397,7 +398,7 @@ class _MonthGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = DateFormat('MMMM y', 'fr_FR').format(DateTime.parse(month));
+    final title = DateFormat('MMMM y', appLocale).format(DateTime.parse(month));
     final weekdays = 'forecast.weekdays'.tr().split(',');
     return AppCard(
       key: Key('forecast-month-$month'),
@@ -472,7 +473,7 @@ class _WeekRow extends StatelessWidget {
     final g = gaugeOf(parked: day.parked, bookable: day.bookable);
     final full = g.level == GaugeLevel.full;
     final isToday = day.date == today;
-    final label = DateFormat('EEE d MMM', 'fr_FR').format(DateTime.parse(day.date));
+    final label = DateFormat('EEE d MMM', appLocale).format(DateTime.parse(day.date));
     return Opacity(
       opacity: day.date.compareTo(today) < 0 ? 0.45 : 1,
       child: Material(

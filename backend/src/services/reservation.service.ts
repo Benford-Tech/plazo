@@ -1449,12 +1449,12 @@ export class ReservationService {
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: active, arrivalAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { arrivalAt: 'asc' },
-        include: { stop: { select: { name: true } } },
+        include: PLANNING_INCLUDE,
       }),
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: active, returnAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { returnAt: 'asc' },
-        include: { stop: { select: { name: true } } },
+        include: PLANNING_INCLUDE,
       }),
       this.capacity.nights(parking, day, addDays(day, PLANNING_NIGHTS - 1)),
       this.sms.pendingWarning(parking.operatorId),
@@ -1484,9 +1484,18 @@ export class ReservationService {
  * A row of the day planning (30/10/2026, « afficher l'heure du vol et la destination ») : the booking, the name of its stop
  * (null: the airport) and the cities its flights go to and come from, when the tracking read them.
  */
-function planningRow<T extends Reservation & { stop: { name: string } | null }>({ stop, ...row }: T) {
-  return { ...row, stopName: stop?.name ?? null, departureCity: airportCity(row.departureDestination), returnCity: airportCity(row.flightOrigin) };
+function planningRow<T extends Reservation & { stop: { name: string } | null; contract: { signedAt: Date } | null }>({ stop, contract, ...row }: T) {
+  return {
+    ...row,
+    stopName: stop?.name ?? null,
+    departureCity: airportCity(row.departureDestination),
+    returnCity: airportCity(row.flightOrigin),
+    // M1 (13/11/2026): « Contrat signé » on the row, signed in the Plazo app or at the counter.
+    contractSignedAt: contract?.signedAt.toISOString() ?? null,
+  };
 }
+
+const PLANNING_INCLUDE = { stop: { select: { name: true } }, contract: { select: { signedAt: true } } } as const;
 
 /** 10/10/2026: an import's flight that is no flight number, logged by its field only (never what was typed). */
 function logUnreadableFlights(flights: ImportedFlights, provider: string | null | undefined) {

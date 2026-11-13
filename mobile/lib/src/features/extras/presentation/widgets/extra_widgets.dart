@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/theme.dart';
@@ -52,4 +53,4 @@ class ExtraStatusPill extends StatelessWidget {
 }
 
 /// "12 oct. à 15:12" in the device's zone.
-String extraWhen(DateTime at) => DateFormat("d MMM 'à' HH:mm", 'fr').format(at.toLocal());
+String extraWhen(DateTime at) => DateFormat(withTime('d MMM'), appLocale).format(at.toLocal());

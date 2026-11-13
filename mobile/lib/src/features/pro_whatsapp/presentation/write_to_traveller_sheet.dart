@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -173,7 +174,7 @@ class _WriteToTravellerSheetState extends State<WriteToTravellerSheet> {
               _channel == 'sms'
                   ? 'write_traveller.hint_sms'.tr()
                   : s.freeUntil != null
-                  ? 'write_traveller.hint_free'.tr(args: [DateFormat('d MMM HH:mm', 'fr_FR').format(s.freeUntil!)])
+                  ? 'write_traveller.hint_free'.tr(args: [DateFormat('d MMM HH:mm', appLocale).format(s.freeUntil!)])
                   : 'write_traveller.hint_template'.tr(),
               key: const Key('write-hint'),
               style: AppText.muted(size: 12),
