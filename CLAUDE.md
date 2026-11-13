@@ -1444,7 +1444,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      no_phone · no_channel · anonymized) et `POST …/write { text, channel }` (`RefuseInDemo` ; 400 `text`, 409 `no_phone` ·
      `whatsapp_unavailable` · `anonymized`, 502 `sms_failed` / code de Meta) → `{ channel, via: text · template · sms, conversationId,
      fallback }` ; tracé `traveller.message_sent` (« a écrit au client » dans l'Historique, groupe Messages ; `whatsapp.reply` aussi).
-     Le web n'a pas encore le bouton. Tests `whatsapp-inbox.test.ts`, `whatsapp_inbox_test.dart`.
+     **Le chauffeur aussi (13/11/2026, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
+     `reservations:status` (chauffeurs et voituriers compris) et le bouton de la fiche suit ; sans boîte de réception
+     (`reservations:manage`), la feuille n'offre pas « Voir » (`canOpenInbox`). Le web n'a pas encore le bouton. Tests
+     `whatsapp-inbox.test.ts`, `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

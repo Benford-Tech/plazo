@@ -398,6 +398,17 @@ describe('« Écrire au client » depuis Plazo Pro (13/11/2026)', () => {
     expect((await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(other.token)).send({ text: 'x' })).status).toBe(404);
   });
 
+  it('le chauffeur écrit aussi au client, sans ouvrir la boîte de réception', async () => {
+    const op = await setupOperator();
+    const res = await booking(op.operator.id, op.parking.id);
+    const driver = await addStaff(op.token, 'driver');
+    expect((await api().get(`/api/internal/reservations/${res.id}/write`).set(auth(driver.token))).body.canWrite).toBe(true);
+    const sent = await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(driver.token)).send({ text: 'Je suis devant le terminal.' });
+    expect(sent.status).toBe(201);
+    expect(sent.body).toMatchObject({ channel: 'whatsapp' });
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(driver.token))).status).toBe(403);
+  });
+
   it('WhatsApp refusé : le SMS du parking part à la place', async () => {
     const op = await setupOperator();
     await useBrevoSms(op.operator.id);
