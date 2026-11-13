@@ -2473,6 +2473,13 @@ n'est appelée que si son nom résout vers des adresses publiques (`resolvesToPu
 débit partagées entre les instances de Vercel (aujourd'hui par instance) ; le chauffeur et le voiturier peuvent refuser un service
 payé en ligne (remboursement Stripe) et ajouter un supplément de n'importe quel montant.
 
+**Rien ne part du parking de test (13/11/2026, « pas d'envoi sur le parkin de test »)** : comme la démo des prospects, le loueur
+de test de la plateforme (« … (tests) », `isTestOperatorName`) n'envoie rien à ses voyageurs : ni SMS, ni WhatsApp (`sendTravellerSms`,
+`sendSmsOnly` → `skipped`), ni code de signature, ni mail de réservation (confirmation, veille, clôture, annulation : `isSilentBooking`
+dans `NotificationService.sendEmail`), ni copie du contrat signé ; « Écrire au client » n'y propose pas WhatsApp. `isSilentOperator` de
+`services/demo-guard.ts` (gardé par instance). L'équipe y travaille comme avant ; les pushs de l'app restent (téléphones qui ont ouvert
+la réservation). Test `sms.test.ts`.
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,

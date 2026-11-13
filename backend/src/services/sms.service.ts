@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { isPublicHttpsUrl } from '@/domain/public-url';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { isProspectDemoOperator } from './demo-guard';
+import { isSilentOperator } from './demo-guard';
 import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
@@ -116,7 +116,7 @@ export class SmsService {
     if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);
-        if (recipient && !(await isProspectDemoOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
+        if (recipient && !(await isSilentOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
           const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
           if (await this.whatsapp.trySend(operatorId, sms, recipient, (settings?.mode ?? 'none') !== 'none')) return 'sent';
         }
@@ -131,8 +131,8 @@ export class SmsService {
   public async sendSmsOnly(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
-      // 21/10/2026: the prospects' demo never sends anything.
-      if (await isProspectDemoOperator(operatorId)) {
+      // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.
+      if (await isSilentOperator(operatorId)) {
         logger.info(`[SMS] Demo operator: ${sms.kind} simulated for ${about}`);
         return 'skipped';
       }
@@ -165,8 +165,8 @@ export class SmsService {
    */
   public async sendSignatureCode(operatorId: string, reservationId: string, recipient: string, text: string): Promise<boolean> {
     const about = `reservation ${reservationId}`;
-    // 21/10/2026: the prospects' demo never sends anything (the code cannot be typed: the signature waits).
-    if (await isProspectDemoOperator(operatorId)) return false;
+    // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.(the code cannot be typed: the signature waits).
+    if (await isSilentOperator(operatorId)) return false;
     const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
     await prisma.smsOutbox.create({
       data: {

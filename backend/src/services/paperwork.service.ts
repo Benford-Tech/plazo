@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { isProspectDemoOperator } from './demo-guard';
+import { isSilentOperator } from './demo-guard';
 import { PRODUCT_NAME, signatureCodeSecret } from '@/config';
 import prisma, { OperatorContractTemplate, Prisma, Reservation } from '@/database';
 import { EmailMessage } from '@/domain/booking-messages';
@@ -494,8 +494,8 @@ export class PaperworkService {
   /** The signed copy to the traveller (never fails the signature). */
   private async emailCopy(r: PaperworkRecord) {
     const c = r.contract;
-    // 21/10/2026: the prospects' demo never sends anything.
-    if (await isProspectDemoOperator(r.operatorId)) return;
+    // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.
+    if (await isSilentOperator(r.operatorId)) return;
     if (!c || !r.customerEmail) return;
     const doc = documentFromText(c.text);
     const when = `${localDateTime(c.signedAt, r.parking.timezone).replace('T', ' à ')}`;
