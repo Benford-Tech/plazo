@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { PartnerContract } from "@/lib/types";
@@ -99,5 +99,22 @@ describe("Mon contrat", () => {
     api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: false });
     renderPage();
     expect(await screen.findByText(/n'a pas encore déposé de contrat/)).toBeInTheDocument();
+  });
+
+  it("13/11/2026 : montre les formules à 99, 199 et 299 €, l'annuel et le calcul sur ses chiffres", async () => {
+    api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: true });
+    renderPage();
+    const plans = await screen.findByTestId("plazo-plans");
+    expect(within(plans).getByTestId("price-essentiel")).toHaveTextContent("99 €");
+    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("199 €");
+    expect(within(plans).getByTestId("price-complet")).toHaveTextContent("299 €");
+    await userEvent.click(within(plans).getByTestId("plans-yearly"));
+    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("179 €");
+    const ask = within(screen.getByTestId("plan-complet")).getByRole("link", { name: "Demander cette formule" });
+    expect(ask.getAttribute("href")).toMatch(/^mailto:contact@plazo\.fr\?subject=Formule%20Complet/);
+    // 400 bookings × 3 min + 15 calls × 30 days × 2 min = 35 h at 18 € = 630 €, less 179 € (Opérations, yearly).
+    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 451 €");
+    fireEvent.change(screen.getByRole("slider", { name: /Réservations par mois/ }), { target: { value: "100" } });
+    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 181 €");
   });
 });

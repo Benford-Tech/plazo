@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PlazoPlans } from "@/components/contract/PlazoPlans";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { useAuth } from "@/contexts/AuthContext";
@@ -236,6 +237,8 @@ export default function ContractPage() {
           ))}
         </section>
       )}
+
+      <PlazoPlans operatorName={operatorName} />
     </>
   );
 }

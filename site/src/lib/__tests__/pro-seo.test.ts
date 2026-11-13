@@ -22,8 +22,8 @@ describe("Plazo Pro SEO (28/10/2026)", () => {
     };
     expect(ld["@type"]).toBe("SoftwareApplication");
     expect(ld.name).toBe("Plazo Pro");
-    expect(ld.offers.lowPrice).toBe(79);
-    expect(ld.offers.highPrice).toBe(229);
+    expect(ld.offers.lowPrice).toBe(99);
+    expect(ld.offers.highPrice).toBe(299);
     expect(ld.offers.offers).toHaveLength(3);
     expect(ld.offers.offers[0].priceSpecification.valueAddedTaxIncluded).toBe(false);
     expect(ld.publisher.name).toBe("Benford Tech");

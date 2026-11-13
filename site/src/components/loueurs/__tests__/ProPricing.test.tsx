@@ -24,7 +24,7 @@ describe("ProPricing", () => {
     expect(screen.getByRole("radio", { name: /^★\s*Recommandé\s*Opérations/ })).toHaveAttribute("aria-checked", "true");
     expect(within(recap()).getByText("Logiciel Opérations")).toBeInTheDocument();
     expect(within(recap()).getByText("15 % par réservation")).toBeInTheDocument();
-    expect(within(recap()).getByText(/^149\s€$/)).toBeInTheDocument();
+    expect(within(recap()).getByText(/^199\s€$/)).toBeInTheDocument();
   });
 
   it("changes plan, adds an option and bills yearly", async () => {
@@ -33,8 +33,8 @@ describe("ProPricing", () => {
     await userEvent.click(screen.getByLabelText(/Page de réservation à votre nom/));
     await userEvent.click(screen.getByRole("button", { name: /Annuel/ }));
     expect(within(recap()).getByText("Total annuel HT")).toBeInTheDocument();
-    // (206,10 + 26,10) × 12
-    expect(within(recap()).getByText(/^2\s786,40\s€$/)).toBeInTheDocument();
+    // (269,10 + 26,10) × 12
+    expect(within(recap()).getByText(/^3\s542,40\s€$/)).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("plazo:pro-pricing")!)).toMatchObject({ plan: "complet", yearly: true, options: ["booking_page"] });
   });
 

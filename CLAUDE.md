@@ -2021,7 +2021,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
   Archivo Narrow posés par `loueurs/layout.tsx` ; l'en-tête et le pied de page des voyageurs sont cachés sous `/loueurs` par
-  `HiddenOn prefixes`) : formules Essentiel 79 €, Opérations 149 € (recommandée), Complet 229 € HT par mois, « Annuel −10 % »,
+  `HiddenOn prefixes`) : formules Essentiel 99 €, Opérations 199 € (recommandée), Complet 299 € HT par mois (13/11/2026, « Min 99, puis 199, 299 » ; avant : 79 / 149 / 229), « Annuel −10 % »,
   fiche sur Plazo à 15 % par réservation payée (exemple 60 € → 51 €), options (mise en route 290 € une fois, 1 000 SMS 49 € une fois,
   page de réservation 29 €/mois, deuxième parking « Bientôt »), récapitulatif collant avec le total (barre en bas sur téléphone),
   sélection gardée dans le navigateur (`plazo:pro-pricing`), « Essayer la démo » (`/pro/demo`), « Inscrire mon parking »,
@@ -2328,6 +2328,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   bruts `application/pdf`, `?fileName=&title=`, `RawBodyMiddleware`) et `/internal/contract…` ; PDF dans le magasin Blob privé des
   photos (`PhotoStorageService`), effacés avec le loueur ; `contract` dans la liste des loueurs. Politique de confidentialité, section 10.
   Valeur de preuve d'une signature simple : à confirmer avec le juriste en même temps que les CGU.
+  **Les formules dans « Mon contrat » (13/11/2026, « integre le à plazo pro dans l'onglet "Mon contrat plazo" », d'après la proposition
+  https://claude.ai/artifact/TNSUm4LKb4piLVdhwM1EEW)** : sous le contrat, section `PlazoPlans` (`components/contract/PlazoPlans.tsx`,
+  `lib/pro-plans.ts`, textes `plansFr` de `fr.ts`) : bascule Mensuel · Annuel −10 %, cartes Essentiel 99 € · Opérations 199 €
+  (recommandée) · Complet 299 € HT par mois (annuel arrondi à l'euro : 89 / 179 / 269 €), « Demander cette formule » par e-mail à
+  `supportEmail` (objet « Formule … · <parking> »), calcul « Ce que Plazo vous fait gagner » (réservations par mois × minutes de
+  saisie + appels par jour × 30 × 2 min, au coût horaire choisi, moins la formule : `savings`), fiche sur Plazo à 15 % par
+  réservation payée, « Inclus partout ». Web seulement, rien n'est souscrit en ligne ; les offres de lancement (mois offert, mise
+  en route offerte, prix garanti) attendent la validation de Joanny. Tests `pro-plans.test.ts`, `ContractPage.test.tsx`.
 
 - **Synchronisation en direct entre l'espace pro web et Plazo Pro (02/11/2026, « les actions doivent être synchroniser entre
   l'espace admin et l'application », choix « Statut d'une réservation, Clés / place / file, Navette, Tout, en direct »)** :
