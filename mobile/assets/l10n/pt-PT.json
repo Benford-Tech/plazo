@@ -1180,7 +1180,16 @@
     "contact": "Contacte-nos",
     "version": "Versão {}",
     "travellers": "Viajantes",
-    "about": "Sobre"
+    "about": "Sobre",
+    "notifications": "Notificações",
+    "notif_booking": "A minha reserva",
+    "notif_booking_text": "vaivém, lembrete, aterragem",
+    "notif_booking_on": "Sempre",
+    "offers": "Ofertas e promoções",
+    "offers_text": "Ideias de viagem e novidades da Plazo, no máximo duas por semana.",
+    "offers_settings": "Ative as notificações da Plazo nas definições do telemóvel.",
+    "offers_web": "As notificações só estão disponíveis na aplicação instalada.",
+    "offers_failed": "Não foi possível guardar a sua escolha. Tente novamente."
   },
   "return_day": {
     "title": "O seu regresso hoje",

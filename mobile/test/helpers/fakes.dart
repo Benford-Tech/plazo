@@ -7,6 +7,7 @@ import 'package:parking_app/src/features/search/data/datasources/public_data_sou
 import 'package:parking_app/src/features/search/data/models/public_models.dart';
 import 'package:parking_app/src/services/link_service.dart';
 import 'package:parking_app/src/services/payment_sheet_service.dart';
+import 'package:parking_app/src/services/push_service.dart';
 import 'package:parking_app/src/services/location_service.dart';
 import 'package:parking_app/src/services/secure_storage_service.dart';
 import 'package:parking_app/src/shared/child_seats/child_seats.dart';
@@ -356,4 +357,31 @@ class FakeLinks extends LinkService {
     redirected.add(uri);
     return true;
   }
+}
+
+/// Push notifications without OneSignal: [enableResult] is what the permission prompt gives.
+class FakePushService implements PushService {
+  FakePushService({this.supported = true, this.enableResult = 'sub-1', this.current});
+
+  @override
+  bool supported;
+  String? enableResult;
+  String? current;
+  int enableCalls = 0;
+
+  @override
+  Future<String?> enable() async {
+    enableCalls++;
+    if (enableResult != null) current = enableResult;
+    return enableResult;
+  }
+
+  @override
+  Future<String?> currentId() async => current;
+
+  @override
+  Future<void> disable() async {}
+
+  @override
+  Stream<Map<String, dynamic>> get opened => const Stream.empty();
 }

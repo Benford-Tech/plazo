@@ -73,8 +73,8 @@ export class UnpublishListingDto {
 
 /** A push from the platform (E-A, 05/10/2026): to every operator's staff, every traveller, or one operator's staff. */
 export class PlatformNotificationDto {
-  @IsIn(['staff', 'travellers', 'operator'], { message: 'invalid_audience' })
-  public audience: 'staff' | 'travellers' | 'operator';
+  @IsIn(['staff', 'travellers', 'operator', 'promotion'], { message: 'invalid_audience' })
+  public audience: 'staff' | 'travellers' | 'operator' | 'promotion';
 
   /** Required with audience "operator". */
   @IsOptional()
@@ -98,4 +98,12 @@ export class PlatformNotificationDto {
   @IsUrl({ protocols: ['https'], require_protocol: true }, { message: 'invalid_url' })
   @MaxLength(300, { message: 'too_long' })
   public url?: string | null;
+
+  /** 13/11/2026 (audience "promotion"): what the push opens in the app; checked by the service (`link.airport`…). */
+  @IsOptional()
+  public link?: unknown;
+
+  /** 13/11/2026 (audience "promotion"): { airport?: slug, noUpcoming?: boolean }. */
+  @IsOptional()
+  public filters?: unknown;
 }

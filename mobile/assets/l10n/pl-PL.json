@@ -1181,7 +1181,16 @@
     "contact": "Kontakt",
     "version": "Wersja {}",
     "travellers": "Podróżni",
-    "about": "O nas"
+    "about": "O nas",
+    "notifications": "Powiadomienia",
+    "notif_booking": "Moja rezerwacja",
+    "notif_booking_text": "transfer, przypomnienie, lądowanie",
+    "notif_booking_on": "Zawsze",
+    "offers": "Oferty i okazje",
+    "offers_text": "Pomysły na podróż i nowości Plazo, najwyżej dwa razy w tygodniu.",
+    "offers_settings": "Włącz powiadomienia Plazo w ustawieniach telefonu.",
+    "offers_web": "Powiadomienia są dostępne tylko w zainstalowanej aplikacji.",
+    "offers_failed": "Nie udało się zapisać wyboru. Spróbuj ponownie."
   },
   "return_day": {
     "title": "Twój powrót dziś",

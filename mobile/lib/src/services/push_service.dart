@@ -13,6 +13,10 @@ abstract class PushService {
   /// Asks the permission, opts in, and returns this phone's subscription id (null: refused or unavailable).
   Future<String?> enable();
 
+  /// This phone's subscription id when it already has one, without asking anything (null: none yet, refused or
+  /// unavailable).
+  Future<String?> currentId();
+
   /// Opts out (logout): this phone stops receiving the operator's notifications.
   Future<void> disable();
 
@@ -65,6 +69,14 @@ class OneSignalPushService implements PushService {
     } finally {
       OneSignal.User.pushSubscription.removeObserver(observer);
     }
+  }
+
+  @override
+  Future<String?> currentId() async {
+    if (!supported) return null;
+    _init();
+    final id = OneSignal.User.pushSubscription.id;
+    return id == null || id.isEmpty ? null : id;
   }
 
   @override

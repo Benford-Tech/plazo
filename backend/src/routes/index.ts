@@ -4,6 +4,7 @@ import { MorningEmailRoute } from './morning-email.route';
 import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
 import { SeoRoute } from './seo.route';
+import { AppDeviceRoute } from './app-device.route';
 import { ContactRoute } from './contact.route';
 import { CronRoute } from './cron.route';
 import { DashboardRoute } from './dashboard.route';
@@ -69,6 +70,7 @@ const AppRoutes = [
   new AppLinkRoute(),
   new ContactRoute(),
   new SeoRoute(),
+  new AppDeviceRoute(),
   new ArrivalRoute(),
   new ReturnRoute(),
   new PaymentRoute(),

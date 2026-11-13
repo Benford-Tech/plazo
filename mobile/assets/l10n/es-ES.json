@@ -1180,7 +1180,16 @@
     "contact": "Contacto",
     "version": "Versión {}",
     "travellers": "Viajeros",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "notifications": "Notificaciones",
+    "notif_booking": "Mi reserva",
+    "notif_booking_text": "lanzadera, recordatorio, aterrizaje",
+    "notif_booking_on": "Siempre",
+    "offers": "Ofertas y ventajas",
+    "offers_text": "Ideas de viaje y novedades de Plazo, dos por semana como máximo.",
+    "offers_settings": "Activa las notificaciones de Plazo en los ajustes del teléfono.",
+    "offers_web": "Las notificaciones solo están disponibles en la aplicación instalada.",
+    "offers_failed": "No se ha podido guardar tu elección. Inténtalo de nuevo."
   },
   "return_day": {
     "title": "Tu vuelta hoy",

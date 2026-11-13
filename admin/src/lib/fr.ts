@@ -135,6 +135,8 @@ export const fr = {
     too_many_requests: "Trop de demandes. Réessayez dans un instant.",
     daily_limit:
       "Limite atteinte : deux envois aux voyageurs par jour au plus.",
+    weekly_limit:
+      "Limite atteinte : deux promotions par semaine au plus.",
     invalid_audience: "Destinataires inconnus.",
     email_taken: "Cette adresse email est déjà utilisée.",
     cannot_demote_self:
@@ -3439,6 +3441,7 @@ export const fr = {
         staff: "Tout le personnel",
         travellers: "Tous les voyageurs",
         operator: "Un loueur",
+        promotion: "Promotion",
       } as Record<PlatformAudience, string>,
       operator: "Loueur",
       operatorNone: "Choisir un loueur",
@@ -3470,6 +3473,54 @@ export const fr = {
       colMessage: "Message",
       colRecipients: "Téléphones",
       colBy: "Par",
+      // 13/11/2026 (promotions, direction A « Message promo »).
+      kind: "Genre",
+      kinds: { information: "Information", promotion: "Promotion" },
+      promo: {
+        intro:
+          "Une offre aux voyageurs de l'app Plazo : elle ouvre l'app sur une recherche ou la fiche d'un parking. Aucun prix n'est changé.",
+        who: "Qui la reçoit",
+        accepted: "Ont accepté les offres",
+        bookedAt: (airport: string) => `Ont déjà réservé à ${airport}`,
+        bookedAtAirport: "Aéroport des réservations passées",
+        noUpcoming: "Sans réservation à venir",
+        opens: "Ouvre dans l'app",
+        openHome: "Accueil de l'app",
+        openSearch: "Recherche",
+        openParking: "Fiche d'un parking",
+        airport: "Aéroport",
+        parking: "Parking (adresse de sa fiche)",
+        parkingPlaceholder: "ex. parking-des-cedres",
+        parkingHelp: "La fin de l'adresse de la fiche : plazo.fr/lyon-saint-exupery/<parking>.",
+        arrival: "Arrivée (facultatif)",
+        return: "Retour (facultatif)",
+        datesHelp: "Les deux dates, ou aucune.",
+        preview: "Aperçu",
+        previewNow: "maintenant",
+        summaryHome: "Accueil de l'app",
+        summarySearch: "Recherche",
+        reach: (n: number) =>
+          `${n} téléphone${n > 1 ? "s" : ""} · ont accepté les offres`,
+        send: "Envoyer la promotion",
+        confirmTitle: "Envoyer la promotion",
+        confirm: (n: number) =>
+          `Envoyer cette promotion à ${n} téléphone${n > 1 ? "s" : ""} ? Elle ne peut pas être rappelée.`,
+        confirmYes: "Envoyer",
+        note: "Deux promotions par semaine au plus. Seuls les voyageurs qui ont accepté « Offres et bons plans » dans l'app la reçoivent.",
+        nextAt: (when: string) => `Prochaine promotion possible le ${when}.`,
+        weeklyLimit: (when: string | null) =>
+          when
+            ? `Limite atteinte : deux promotions par semaine au plus. Prochaine possible le ${when}.`
+            : "Limite atteinte : deux promotions par semaine au plus.",
+        sent: (n: number) => `Promotion envoyée à ${n} téléphone${n > 1 ? "s" : ""}.`,
+        fieldErrors: {
+          invalid: "Valeur invalide.",
+          not_found: "Introuvable : vérifiez l'adresse (le parking doit être en ligne).",
+          required: "Indiquez les deux dates, ou aucune.",
+          before_arrival: "Le retour doit être après l'arrivée.",
+        } as Record<string, string>,
+        allTravellers: "ont accepté les offres",
+      },
     },
     // 10/11/2026 (direction A, « naviguer entre les parkings en tant que super admin »).
     switcher: {

@@ -43,12 +43,16 @@ export class PlatformController {
   /** GET /internal/platform/notifications/audience?audience=&operatorId= */
   public notificationAudience = catchAsync(async (req: Request, res: Response) => {
     const audience = String(req.query.audience ?? 'staff');
-    if (!['staff', 'travellers', 'operator'].includes(audience)) throw new ValidationException({ audience: 'invalid_audience' });
+    if (!['staff', 'travellers', 'operator', 'promotion'].includes(audience)) throw new ValidationException({ audience: 'invalid_audience' });
     res.set('Cache-Control', 'no-store');
     res.json(
       await this.platform.notificationAudience(
-        audience as 'staff' | 'travellers' | 'operator',
+        audience as 'staff' | 'travellers' | 'operator' | 'promotion',
         req.query.operatorId ? String(req.query.operatorId) : null,
+        {
+          airport: req.query.airport ? String(req.query.airport) : null,
+          noUpcoming: req.query.noUpcoming === '1' || req.query.noUpcoming === 'true',
+        },
       ),
     );
   });

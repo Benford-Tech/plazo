@@ -42,7 +42,15 @@ class _AppState extends State<App> {
         final id = data['conversationId'];
         unawaited(_router.push(id is String && id.isNotEmpty ? ProWhatsappConversationRoute(id: id) : const ProWhatsappInboxRoute()));
       }
+      // « Offres et bons plans » (13/11/2026, Plazo only): the promotion's page (results for dates, a parking), else Rechercher.
+      if (data['type'] == 'promotion' && !AppConstants.isPro) _openPromotion(data['path']);
     });
+  }
+
+  void _openPromotion(Object? path) {
+    void home() => unawaited(_router.navigate(const AppShellRoute(children: [SearchTabRoute()])));
+    if (path is! String || !path.startsWith('/') || path.startsWith('//') || path.startsWith('/pro')) return home();
+    unawaited(_router.pushPath<void>(path, onFailure: (_) => home()));
   }
 
   @override

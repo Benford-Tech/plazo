@@ -9,7 +9,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'core/constants/app_constants.dart';
 import 'di/locator.dart';
+import 'features/offers/offers_data_source.dart';
 import 'features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import 'services/push_service.dart';
 
@@ -57,6 +59,8 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
   final push = locator<PushService>();
   if (push is OneSignalPushService) push.initialize();
+  // Plazo (traveller) only: tell the server this phone is still there, without asking anything nor waiting.
+  if (!AppConstants.isPro) unawaited(AppDevicePing.run());
   locator<ProAuthBloc>().add(const ProAuthRestoreRequested());
 
   runApp(

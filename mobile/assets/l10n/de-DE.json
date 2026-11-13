@@ -1179,7 +1179,16 @@
     "contact": "Kontakt",
     "version": "Version {}",
     "travellers": "Reisende",
-    "about": "Über uns"
+    "about": "Über uns",
+    "notifications": "Benachrichtigungen",
+    "notif_booking": "Meine Buchung",
+    "notif_booking_text": "Shuttle, Erinnerung, Landung",
+    "notif_booking_on": "Immer",
+    "offers": "Angebote und Tipps",
+    "offers_text": "Reiseideen und Neuigkeiten von Plazo, höchstens zwei pro Woche.",
+    "offers_settings": "Aktivieren Sie die Benachrichtigungen von Plazo in den Einstellungen Ihres Telefons.",
+    "offers_web": "Benachrichtigungen gibt es nur in der installierten App.",
+    "offers_failed": "Ihre Auswahl konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
   },
   "return_day": {
     "title": "Ihre Rückkehr heute",
