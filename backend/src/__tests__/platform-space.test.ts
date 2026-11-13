@@ -612,6 +612,33 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect(refused.body.code).toBe('view_as_read_only');
   });
 
+  it('13/11/2026 : gère l’équipe d’un loueur de test (« … (tests) ») en consultation, comme le compte de la plateforme', async () => {
+    const review = await setupOperator('Parking Revue');
+    await prisma.operator.update({ where: { id: review.operator.id }, data: { name: 'Parking Revue (tests)' } });
+    const res = await api().post(`${P}/operators/${review.operator.id}/view-as`).set(auth(admin.token));
+    expect(res.status).toBe(201);
+    const token = res.body.access.token as string;
+    expect((await api().get('/api/internal/staff/me').set(auth(token))).body.viewAs.platformAccount).toBe(true);
+
+    const email = 'revue-accueil@example.com';
+    const created = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Revue', lastName: 'Accueil', email, role: 'agent', password: PASSWORD });
+    expect(created.status).toBe(201);
+    const reset = await api()
+      .post(`/api/internal/staff/${review.manager.id}/reset-password`)
+      .set(auth(token))
+      .send({ password: 'mot-de-passe-de-revue' });
+    expect(reset.status).toBe(200);
+    expect((await api().post('/api/internal/auth/login').send({ email: review.manager.email, password: 'mot-de-passe-de-revue' })).status).toBe(200);
+    // The admin's own settings stay out of reach there too.
+    expect(
+      (await api().patch('/api/internal/staff/me/password').set(auth(token)).send({ currentPassword: PASSWORD, newPassword: 'autre-mot-de-passe' }))
+        .status,
+    ).toBe(403);
+  });
+
   it('laisse l’équipe, les mots de passe et les réglages personnels en lecture seule', async () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);
