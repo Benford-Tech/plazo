@@ -200,7 +200,8 @@ describe('POST /internal/reservations/import', () => {
     expect(created[1]).toMatchObject({ commissionOverrideCents: null, handover: 'shuttle' });
     expect(created[0].createdAt.toISOString()).toBe(created[0].arrivalAt.toISOString());
     expect(created[0].closingSentAt).not.toBeNull();
-    expect(created[1].reminderExcludedAt).not.toBeNull();
+    // 13/11/2026 (« aucun envoi n'est exclu par Joanny ! »): the file gives Karim's arrival time, he gets his message.
+    expect(created[1]).toMatchObject({ reminderExcludedAt: null, reminderExcludedById: null });
     expect(created.every(r => r.importId === done.body.import.id)).toBe(true);
 
     // The same file again: everything is already in Plazo.
@@ -220,6 +221,23 @@ describe('POST /internal/reservations/import', () => {
     expect(res.body.rows[1].warnings).toEqual(['full_night']);
     const marc = await prisma.reservation.findFirstOrThrow({ where: { customerName: 'Marc Leroy' } });
     expect(marc.overbooked).toBe(true);
+  });
+
+  it("13/11/2026: holds the day-before message of a stay imported without its arrival time, in nobody's name", async () => {
+    const one = [{ line: 2, name: 'Anne Petit', plate: 'AA-111-AA', phone: '0611111111', arrivalDate: '12/11/2030', returnDate: '14/11/2030' }];
+    const res = await api().post(IMPORT).set(auth(op.token)).send({ rows: one, dryRun: false });
+    expect(res.status).toBe(200);
+    const anne = await prisma.reservation.findFirstOrThrow({ where: { customerName: 'Anne Petit' } });
+    expect(anne.reminderExcludedAt).not.toBeNull();
+    expect(anne.reminderExcludedById).toBeNull();
+    const card = await api().get(`/api/internal/reservations/${anne.id}/reminder`).set(auth(op.token));
+    expect(card.body).toMatchObject({ status: 'excluded', excludedReason: 'import_time' });
+
+    // The team sets the time: the message is no longer held.
+    const edit = await api().patch(`/api/internal/reservations/${anne.id}`).set(auth(op.token)).send({ arrivalAt: '2030-11-12T14:30:00.000Z' });
+    expect(edit.status).toBe(200);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: anne.id } });
+    expect(after.reminderExcludedAt).toBeNull();
   });
 
   it('removes an import at any time, keeping the bookings touched since', async () => {

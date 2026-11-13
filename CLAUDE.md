@@ -574,8 +574,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      statut « Annulée » / « Non venu » du fichier, sinon Rendu, Sur place ou Attendu d'après les dates) ; `BookingImportService` :
      doublon = même référence, sinon même voyageur (`sameTraveller`) le même jour d'arrivée, dans Plazo ou plus haut dans le fichier ;
      une nuit à venir déjà complète importe la ligne en « À vérifier » (`overbooked`) ; l'import refait tout sous le verrou des places
-     et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (SMS de la veille en « Ne pas envoyer », messages d'un séjour
-     commencé comptés envoyés, récapitulatif horaire sans les imports ; 11/11/2026 : le retrait de « Ne pas envoyer » est remis à plus tard, le temps de vérifier les heures importées), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
+     et crée d'un coup (`createManyAndReturn`) sans push, SMS ni mail (messages d'un séjour commencé comptés envoyés, récapitulatif horaire sans les imports ; **13/11/2026, « aucun envoi n'est exclu par Joanny ! »** : un séjour à venir importé reçoit son message de la veille comme les autres, sauf quand le fichier ne donne pas l'heure d'arrivée (`ImportedBooking.arrivalTimeGiven` faux : Plazo y met 08:00) : il attend alors, au nom de personne (`reminderExcludedById` nul, `awaitsImportedTime`), « Heure à vérifier · le fichier importé ne donnait pas l'heure d'arrivée » (`excludedReason: 'import_time'` du message de la veille et de la fiche), jusqu'à ce que l'équipe change l'heure d'arrivée (PATCH) ou clique « Rétablir » ; migration `import_reminder_exclusions` : les exclusions faites par l'import ne portent plus le nom de l'importateur, et les séjours à venir dont l'heure n'est pas 08:00 sont rétablis, hors loueurs de test et de démo), `createdAt` = « Réservée le » du fichier, sinon l'arrivée
      d'un séjour commencé, sinon l'import. Table `reservation_imports` et `Reservation.importId` (migration `reservation_imports`) ;
      `GET /internal/reservations/imports` (10 derniers) et « Retirer cet import » `POST …/imports/:id/undo` pendant 24 h : supprime
      les réservations de l'import que personne n'a touchées (aucune trace après l'import, ni trajet, mail, contrat, état des lieux,
@@ -2264,6 +2263,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   est décrit une seule fois dans `components/nav-items.ts` (`NAV`, `isInItem`, `flatPages`), lu par le rail, la barre et « Plus ». Les
   pilules « Jour · Prévisionnel » du Planning sont cachées sur téléphone. L'ordinateur garde le rail. Tests `AdminLayout.test.tsx`,
   `MorePage.test.tsx`.
+  **Messages en évidence (13/11/2026, « mets les messages sur le menu en bas », « plus en évidence sur le web »)** : « Messages »
+  (`/reservations/whatsapp`, `reservations:status`, chauffeur compris) devient une entrée à part du rail, sous Tableau de bord, avec le
+  nombre de non lus (`NavItem.counter`), et n'est plus une page de Réservations (`NavItem.exclude`) ; sur téléphone, un onglet à lui entre
+  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
+  la cloche (`header-messages`, citron avec le nombre quand il y a des non lus). Plazo Pro garde Plus › « Messages WhatsApp ».
   **Menu du web, direction A, et photo de profil (30/10/2026, « Réorganise le menu sur le web. Pouvoir mettre sa photo »,
   maquettes https://claude.ai/artifact/8XWAMJ28UwJFmvFBxuv66i)** : le rail de l'espace pro (`AdminLayout.tsx`, 236 px) a quatre
   groupes par usage, Aujourd'hui (Tableau de bord, Planning › Jour · Prévisionnel, Navettes), Réservations (Toutes, Boîte de

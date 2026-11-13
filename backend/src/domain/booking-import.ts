@@ -99,6 +99,11 @@ export interface ImportedBooking extends CustomerNames {
   bookedAt: Date | null;
   /** Whether the stay is over, under way or to come at the time of the import. */
   timing: 'past' | 'current' | 'future';
+  /**
+   * 13/11/2026: whether the file gives the arrival time itself (a time cell, or a date with its time). False when Plazo
+   * put 08:00 in its place: the day-before message would then give an invented time.
+   */
+  arrivalTimeGiven: boolean;
 }
 
 export type ReadRow = { line: number; errors: ImportError[]; warnings: ImportWarning[]; booking: ImportedBooking | null };
@@ -304,6 +309,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
   );
   if (!names.customerName) errors.push('name_missing');
 
+  let arrivalTimeGiven = false;
   const stayEnd = (dateRaw: string | undefined, timeRaw: string | undefined, fallback: string, side: 'arrival' | 'return') => {
     if (!text(dateRaw)) {
       errors.push(side === 'arrival' ? 'arrival_missing' : 'return_missing');
@@ -311,6 +317,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
     }
     const date = parseImportDate(dateRaw, order);
     const time = text(timeRaw) ? parseImportTime(timeRaw) : (date?.time ?? fallback);
+    if (side === 'arrival') arrivalTimeGiven = !!text(timeRaw) || !!date?.time;
     const instant = date && time ? instantOf(date, time, timeZone) : null;
     if (!instant) errors.push(side === 'arrival' ? 'arrival_invalid' : 'return_invalid');
     return instant;
@@ -416,6 +423,7 @@ export function readImportRow(row: ImportRowInput, timeZone: string, now: Date, 
       stopId: null,
       bookedAt,
       timing,
+      arrivalTimeGiven,
     },
   };
 }
@@ -450,4 +458,12 @@ export function withDestinations<T extends { booking: ImportedBooking | null }>(
     const line = `Destination indiquée dans le fichier : ${b.destination}`;
     return { ...row, booking: { ...b, notes: [b.notes, line].filter(Boolean).join('\n').slice(0, 1000) } };
   });
+}
+
+/**
+ * 13/11/2026: a booking left out of the day-before message by its file import, because the file gave no arrival time:
+ * excluded in nobody's name (a person's exclusion carries their id).
+ */
+export function awaitsImportedTime(r: { importId: string | null; reminderExcludedAt: Date | null; reminderExcludedById: string | null }): boolean {
+  return !!r.importId && !!r.reminderExcludedAt && !r.reminderExcludedById;
 }

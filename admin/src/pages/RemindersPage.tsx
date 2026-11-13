@@ -52,7 +52,7 @@ function statusText(row: ReminderRow): string {
   const time = row.at?.slice(11) ?? "";
   if (row.status === "planned") return t.status.planned(time);
   if (row.status === "sent") return t.status.sent(time);
-  if (row.status === "excluded") return t.status.excluded(row.excludedBy);
+  if (row.status === "excluded") return row.excludedReason === "import_time" ? t.status.importTime : t.status.excluded(row.excludedBy);
   return t.status[row.status];
 }
 

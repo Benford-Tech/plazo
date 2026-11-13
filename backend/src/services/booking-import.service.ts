@@ -352,10 +352,12 @@ export class BookingImportService {
       arrivedAt: onSiteOrDone ? b.arrivalAt : null,
       returnedAt: b.status === 'returned' ? b.returnAt : null,
       cancelledAt: b.status === 'cancelled' ? startedBefore : null,
-      // Nothing goes to the traveller for an imported booking: the day-before SMS is left out (« Ne pas envoyer »,
-      // restorable), and the messages of a stay already begun or over count as sent.
-      reminderExcludedAt: b.status === 'upcoming' ? stamp : null,
-      reminderExcludedById: b.status === 'upcoming' ? actor.id : null,
+      // Nothing goes to the traveller at the import itself: the messages of a stay already begun or over count as sent.
+      // 13/11/2026 (« aucun envoi n'est exclu par Joanny ! »): a stay to come gets its day-before message like any other
+      // booking, unless the file gave no arrival time (Plazo put 08:00 in its place): then it waits, « Heure à vérifier »,
+      // in nobody's name, until the team sets the time (`liftImportExclusion`).
+      reminderExcludedAt: b.status === 'upcoming' && !b.arrivalTimeGiven ? stamp : null,
+      reminderExcludedById: null,
       confirmationSentAt: stamp,
       parkedNotifiedAt: onSiteOrDone ? stamp : null,
       closingSentAt: b.status === 'returned' ? stamp : null,

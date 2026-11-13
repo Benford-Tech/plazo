@@ -88,7 +88,8 @@ describe("AdminLayout rail sections", () => {
         .getAllByRole("link")
         .map((l) => l.getAttribute("href"));
     expect(within(screen.getByTestId("nav-section-today")).getByText("Aujourd'hui")).toBeInTheDocument();
-    expect(hrefs("nav-section-today")).toEqual(["/", "/planning", "/navettes"]);
+    // 13/11/2026: the clients' messages, an entry of their own near the top.
+    expect(hrefs("nav-section-today")).toEqual(["/", "/reservations/whatsapp", "/planning", "/navettes"]);
     expect(hrefs("nav-section-reservations")).toEqual(["/reservations"]);
     expect(hrefs("nav-section-parking")).toEqual(["/parking/occupation"]);
     expect(hrefs("nav-section-manager")).toEqual([
@@ -116,7 +117,6 @@ describe("AdminLayout rail sections", () => {
     ).toEqual([
       "/reservations",
       "/reservations/a-verifier",
-      "/reservations/whatsapp",
       "/reservations/services",
       "/reservations/sms-veille",
       "/reservations/importer",
@@ -280,6 +280,7 @@ describe("AdminLayout tab bar (phone)", () => {
     expect(within(bar).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([
       "/",
       "/reservations",
+      "/reservations/whatsapp",
       "/parking/occupation",
       "/plus",
     ]);
@@ -294,6 +295,15 @@ describe("AdminLayout tab bar (phone)", () => {
     renderOn("/chiffre-affaires");
     expect(screen.getByTestId("tab-more")).toHaveAttribute("aria-current", "page");
     expect(screen.queryByTestId("nav-subrow")).toBeNull();
+  });
+
+  it("13/11/2026: gives the messages a tab of their own, without pills, and a button at the top of the screen", () => {
+    auth.role = "driver";
+    renderOn("/reservations/whatsapp");
+    expect(screen.getByTestId("tab-messages")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("tab-reservations")).not.toHaveAttribute("aria-current");
+    expect(screen.queryByTestId("nav-subrow")).toBeNull();
+    expect(screen.getByTestId("header-messages")).toHaveAttribute("href", "/reservations/whatsapp");
   });
 
   it("gives a driver no Parking pages it may not open, and still Plus", () => {

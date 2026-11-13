@@ -1781,6 +1781,8 @@ export interface ReminderRow {
   /** Local "YYYY-MM-DDTHH:mm": when it leaves (planned) or left. */
   at: string | null;
   excludedBy: string | null;
+  /** 13/11/2026: left out by the file import, which gave no arrival time (nobody's choice). */
+  excludedReason?: "import_time" | null;
   delivery?: ReminderDelivery | null;
 }
 export interface ReminderEvening {
@@ -2566,6 +2568,8 @@ export interface BookingReminder {
   whatsapp?: boolean;
   /** 10/11/2026: how the last one reached the traveller. */
   delivery?: ReminderDelivery | null;
+  /** 13/11/2026: left out by the file import, which gave no arrival time. */
+  excludedReason?: "import_time" | null;
   timezone: string;
 }
 
