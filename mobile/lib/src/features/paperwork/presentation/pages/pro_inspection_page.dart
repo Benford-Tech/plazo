@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -491,7 +492,7 @@ class _CompletedState extends State<_Completed> {
           children: [
             Expanded(
               child: Text(
-                'paperwork.done_by'.tr(args: [r.performedBy ?? '—', DateFormat("d MMM 'à' HH:mm", 'fr').format(r.completedAt!.toLocal())]),
+                'paperwork.done_by'.tr(args: [r.performedBy ?? '—', DateFormat(withTime('d MMM'), appLocale).format(r.completedAt!.toLocal())]),
                 style: AppText.muted(size: 13),
               ),
             ),
@@ -548,7 +549,7 @@ class _CompletedState extends State<_Completed> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${'paperwork.kind_short.$kind'.tr()} · ${DateFormat("d MMM HH:mm", 'fr').format(report.completedAt!.toLocal())}',
+                        '${'paperwork.kind_short.$kind'.tr()} · ${DateFormat("d MMM HH:mm", appLocale).format(report.completedAt!.toLocal())}',
                         style: AppText.muted(size: 12),
                       ),
                     ],

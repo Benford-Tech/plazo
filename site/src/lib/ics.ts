@@ -1,5 +1,6 @@
 import { toInstant } from "./dates";
 import { texts } from "./fr";
+import { lp } from "./i18n/runtime";
 import { formatEuros } from "./money";
 import { PRODUCT_NAME } from "./product";
 import type { PublicBooking } from "./types";
@@ -37,7 +38,7 @@ export function foldLine(line: string): string {
 export function bookingIcs(booking: PublicBooking, options: { siteUrl: string; now?: Date }): string {
   const now = options.now ?? new Date();
   const host = new URL(options.siteUrl).host || "localhost";
-  const manageUrl = `${options.siteUrl}/ma-reservation`;
+  const manageUrl = `${options.siteUrl}${lp("/ma-reservation")}`;
   const t = texts(booking.paymentMode === "online");
   const description = t.calendar.description(booking.reference, booking.priceCents === null ? null : formatEuros(booking.priceCents), manageUrl);
   const event = (id: string, local: string, summary: string) => {

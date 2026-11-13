@@ -4,12 +4,18 @@ import { api } from "@/lib/api";
 import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { topicFacts } from "@/lib/airport-guides";
 import { topicGuide, topicLinks } from "@/lib/guides";
+import { LOCALE_TAGS, LOCALES, localizedPath } from "@/lib/i18n/locales";
 import { isProHost } from "@/lib/pro-host";
 import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, PRO_TOPIC_SLUGS, siteUrl } from "@/lib/site";
 
 // Lists the published parkings, read from the API at request time (never at build time). Demo parkings
 // are fictional: they stay out of it (and their pages are not indexed).
 export const dynamic = "force-dynamic";
+
+/** The same page in every language (13/11/2026): search engines list each address with its alternates. */
+function inEveryLanguage(base: string, path: string): { alternates: { languages: Record<string, string> } } {
+  return { alternates: { languages: Object.fromEntries(LOCALES.map(locale => [LOCALE_TAGS[locale], `${base}${localizedPath(locale, path)}`])) } };
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // pro.plazo.fr (28/10/2026, SEO audit): its sitemap lists Plazo Pro's pages only, the travellers' stay on www.
@@ -22,9 +28,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
   const base = siteUrl();
   const entries: MetadataRoute.Sitemap = [
-    { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${base}/`, changeFrequency: "weekly", priority: 1, ...inEveryLanguage(base, "/") },
     // 13/10/2026: how to delete a Plazo Pro account (asked by the stores), found without the app.
-    { url: `${base}${ACCOUNT_DELETION_PATH}`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${base}${ACCOUNT_DELETION_PATH}`, changeFrequency: "yearly", priority: 0.3, ...inEveryLanguage(base, ACCOUNT_DELETION_PATH) },
     // 27/10/2026: Plazo Pro's home page and pricing page, for the operators.
     // Under /loueurs until Plazo Pro has its own address (then its pages are listed by that host, not this one).
     ...(PRO_SITE_URL
@@ -36,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
   for (const { slug } of AIRPORTS) {
     // The default airport's page is the home page ("/" is its canonical address).
-    if (airportPath(slug) !== "/") entries.push({ url: `${base}${airportPath(slug)}`, changeFrequency: "weekly", priority: 0.9 });
+    if (airportPath(slug) !== "/") entries.push({ url: `${base}${airportPath(slug)}`, changeFrequency: "weekly", priority: 0.9, ...inEveryLanguage(base, airportPath(slug)) });
     // Topic guides (09/10/2026): « parking pas cher », « longue durée », « voiturier », with the day their facts were
     // last checked (C, 09/10/2026: search engines only trust a lastmod that changes with the content).
     for (const topic of topicLinks(slug)) {
@@ -45,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
     try {
       const { listings } = await api.airport(slug);
-      for (const listing of listings.filter(l => !l.isDemo)) entries.push({ url: `${base}/${slug}/${listing.slug}`, changeFrequency: "weekly", priority: 0.8 });
+      for (const listing of listings.filter(l => !l.isDemo)) entries.push({ url: `${base}/${slug}/${listing.slug}`, changeFrequency: "weekly", priority: 0.8, ...inEveryLanguage(base, `/${slug}/${listing.slug}`) });
     } catch {
       // API unavailable: the static entries are still worth serving.
     }

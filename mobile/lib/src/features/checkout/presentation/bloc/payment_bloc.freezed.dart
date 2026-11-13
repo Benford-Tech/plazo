@@ -17,7 +17,9 @@ mixin _$PaymentState {
 
  String get reference; PaymentStatus get status; PublicBookingModel? get booking; PaymentsConfigModel? get config;/// Seconds left on the hold, counted down from the API's figure (never the phone's clock).
  int? get secondsLeft; PaymentNotice? get notice;/// Stripe's message of a failed attempt, or the translated API error.
- String? get message; bool get busy;
+ String? get message; bool get busy;/// Google Pay or Apple Pay can be used on this phone.
+ bool get walletAvailable; bool get cardComplete;/// The method being paid with, for its button's spinner.
+ PaymentMethodChoice? get payingWith;
 /// Create a copy of PaymentState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,20 +31,20 @@ $PaymentStateCopyWith<PaymentState> get copyWith => _$PaymentStateCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as PaymentState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.booking, _this.booking) || other.booking == _this.booking)&&(identical(other.config, _this.config) || other.config == _this.config)&&(identical(other.secondsLeft, _this.secondsLeft) || other.secondsLeft == _this.secondsLeft)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.message, _this.message) || other.message == _this.message)&&(identical(other.busy, _this.busy) || other.busy == _this.busy));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaymentState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.booking, _this.booking) || other.booking == _this.booking)&&(identical(other.config, _this.config) || other.config == _this.config)&&(identical(other.secondsLeft, _this.secondsLeft) || other.secondsLeft == _this.secondsLeft)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.message, _this.message) || other.message == _this.message)&&(identical(other.busy, _this.busy) || other.busy == _this.busy)&&(identical(other.walletAvailable, _this.walletAvailable) || other.walletAvailable == _this.walletAvailable)&&(identical(other.cardComplete, _this.cardComplete) || other.cardComplete == _this.cardComplete)&&(identical(other.payingWith, _this.payingWith) || other.payingWith == _this.payingWith));
 }
 
 
 @override
 int get hashCode {
   final _this = this as PaymentState;
-  return Object.hash(runtimeType,_this.reference,_this.status,_this.booking,_this.config,_this.secondsLeft,_this.notice,_this.message,_this.busy);
+  return Object.hash(runtimeType,_this.reference,_this.status,_this.booking,_this.config,_this.secondsLeft,_this.notice,_this.message,_this.busy,_this.walletAvailable,_this.cardComplete,_this.payingWith);
 }
 
 @override
 String toString() {
   final _this = this as PaymentState;
-  return 'PaymentState(reference: ${_this.reference}, status: ${_this.status}, booking: ${_this.booking}, config: ${_this.config}, secondsLeft: ${_this.secondsLeft}, notice: ${_this.notice}, message: ${_this.message}, busy: ${_this.busy})';
+  return 'PaymentState(reference: ${_this.reference}, status: ${_this.status}, booking: ${_this.booking}, config: ${_this.config}, secondsLeft: ${_this.secondsLeft}, notice: ${_this.notice}, message: ${_this.message}, busy: ${_this.busy}, walletAvailable: ${_this.walletAvailable}, cardComplete: ${_this.cardComplete}, payingWith: ${_this.payingWith})';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $PaymentStateCopyWith<$Res>  {
   factory $PaymentStateCopyWith(PaymentState value, $Res Function(PaymentState) _then) = _$PaymentStateCopyWithImpl;
 @useResult
 $Res call({
- String reference, PaymentStatus status, PublicBookingModel? booking, PaymentsConfigModel? config, int? secondsLeft, PaymentNotice? notice, String? message, bool busy
+ String reference, PaymentStatus status, PublicBookingModel? booking, PaymentsConfigModel? config, int? secondsLeft, PaymentNotice? notice, String? message, bool busy, bool walletAvailable, bool cardComplete, PaymentMethodChoice? payingWith
 });
 
 
@@ -70,7 +72,7 @@ class _$PaymentStateCopyWithImpl<$Res>
 
 /// Create a copy of PaymentState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? booking = freezed,Object? config = freezed,Object? secondsLeft = freezed,Object? notice = freezed,Object? message = freezed,Object? busy = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? booking = freezed,Object? config = freezed,Object? secondsLeft = freezed,Object? notice = freezed,Object? message = freezed,Object? busy = null,Object? walletAvailable = null,Object? cardComplete = null,Object? payingWith = freezed,}) {
   return _then(PaymentState(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -80,7 +82,10 @@ as PaymentsConfigModel?,secondsLeft: freezed == secondsLeft ? _self.secondsLeft 
 as int?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as PaymentNotice?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,busy: null == busy ? _self.busy : busy // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,walletAvailable: null == walletAvailable ? _self.walletAvailable : walletAvailable // ignore: cast_nullable_to_non_nullable
+as bool,cardComplete: null == cardComplete ? _self.cardComplete : cardComplete // ignore: cast_nullable_to_non_nullable
+as bool,payingWith: freezed == payingWith ? _self.payingWith : payingWith // ignore: cast_nullable_to_non_nullable
+as PaymentMethodChoice?,
   ));
 }
 /// Create a copy of PaymentState
@@ -189,10 +194,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy,  bool walletAvailable,  bool cardComplete,  PaymentMethodChoice? payingWith)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaymentState() when $default != null:
-return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy);case _:
+return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy,_that.walletAvailable,_that.cardComplete,_that.payingWith);case _:
   return orElse();
 
 }
@@ -210,10 +215,10 @@ return $default(_that.reference,_that.status,_that.booking,_that.config,_that.se
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy,  bool walletAvailable,  bool cardComplete,  PaymentMethodChoice? payingWith)  $default,) {final _that = this;
 switch (_that) {
 case _PaymentState():
-return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy);case _:
+return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy,_that.walletAvailable,_that.cardComplete,_that.payingWith);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -230,10 +235,10 @@ return $default(_that.reference,_that.status,_that.booking,_that.config,_that.se
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  PaymentStatus status,  PublicBookingModel? booking,  PaymentsConfigModel? config,  int? secondsLeft,  PaymentNotice? notice,  String? message,  bool busy,  bool walletAvailable,  bool cardComplete,  PaymentMethodChoice? payingWith)?  $default,) {final _that = this;
 switch (_that) {
 case _PaymentState() when $default != null:
-return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy);case _:
+return $default(_that.reference,_that.status,_that.booking,_that.config,_that.secondsLeft,_that.notice,_that.message,_that.busy,_that.walletAvailable,_that.cardComplete,_that.payingWith);case _:
   return null;
 
 }
@@ -245,7 +250,7 @@ return $default(_that.reference,_that.status,_that.booking,_that.config,_that.se
 
 
 class _PaymentState extends PaymentState {
-  const _PaymentState({required this.reference, this.status = PaymentStatus.loading, this.booking, this.config, this.secondsLeft, this.notice, this.message, this.busy = false}): super._();
+  const _PaymentState({required this.reference, this.status = PaymentStatus.loading, this.booking, this.config, this.secondsLeft, this.notice, this.message, this.busy = false, this.walletAvailable = false, this.cardComplete = false, this.payingWith}): super._();
   
 
 @override final  String reference;
@@ -258,6 +263,11 @@ class _PaymentState extends PaymentState {
 /// Stripe's message of a failed attempt, or the translated API error.
 @override final  String? message;
 @override@JsonKey() final  bool busy;
+/// Google Pay or Apple Pay can be used on this phone.
+@override@JsonKey() final  bool walletAvailable;
+@override@JsonKey() final  bool cardComplete;
+/// The method being paid with, for its button's spinner.
+@override final  PaymentMethodChoice? payingWith;
 
 /// Create a copy of PaymentState
 /// with the given fields replaced by the non-null parameter values.
@@ -269,18 +279,18 @@ _$PaymentStateCopyWith<_PaymentState> get copyWith => __$PaymentStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.booking, booking) || other.booking == booking)&&(identical(other.config, config) || other.config == config)&&(identical(other.secondsLeft, secondsLeft) || other.secondsLeft == secondsLeft)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.message, message) || other.message == message)&&(identical(other.busy, busy) || other.busy == busy));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaymentState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.booking, booking) || other.booking == booking)&&(identical(other.config, config) || other.config == config)&&(identical(other.secondsLeft, secondsLeft) || other.secondsLeft == secondsLeft)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.message, message) || other.message == message)&&(identical(other.busy, busy) || other.busy == busy)&&(identical(other.walletAvailable, walletAvailable) || other.walletAvailable == walletAvailable)&&(identical(other.cardComplete, cardComplete) || other.cardComplete == cardComplete)&&(identical(other.payingWith, payingWith) || other.payingWith == payingWith));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,reference,status,booking,config,secondsLeft,notice,message,busy);
+    return Object.hash(runtimeType,reference,status,booking,config,secondsLeft,notice,message,busy,walletAvailable,cardComplete,payingWith);
 }
 
 @override
 String toString() {
-    return 'PaymentState(reference: $reference, status: $status, booking: $booking, config: $config, secondsLeft: $secondsLeft, notice: $notice, message: $message, busy: $busy)';
+    return 'PaymentState(reference: $reference, status: $status, booking: $booking, config: $config, secondsLeft: $secondsLeft, notice: $notice, message: $message, busy: $busy, walletAvailable: $walletAvailable, cardComplete: $cardComplete, payingWith: $payingWith)';
 }
 
 
@@ -291,7 +301,7 @@ abstract mixin class _$PaymentStateCopyWith<$Res> implements $PaymentStateCopyWi
   factory _$PaymentStateCopyWith(_PaymentState value, $Res Function(_PaymentState) _then) = __$PaymentStateCopyWithImpl;
 @override @useResult
 $Res call({
- String reference, PaymentStatus status, PublicBookingModel? booking, PaymentsConfigModel? config, int? secondsLeft, PaymentNotice? notice, String? message, bool busy
+ String reference, PaymentStatus status, PublicBookingModel? booking, PaymentsConfigModel? config, int? secondsLeft, PaymentNotice? notice, String? message, bool busy, bool walletAvailable, bool cardComplete, PaymentMethodChoice? payingWith
 });
 
 
@@ -308,7 +318,7 @@ class __$PaymentStateCopyWithImpl<$Res>
 
 /// Create a copy of PaymentState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? booking = freezed,Object? config = freezed,Object? secondsLeft = freezed,Object? notice = freezed,Object? message = freezed,Object? busy = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? booking = freezed,Object? config = freezed,Object? secondsLeft = freezed,Object? notice = freezed,Object? message = freezed,Object? busy = null,Object? walletAvailable = null,Object? cardComplete = null,Object? payingWith = freezed,}) {
   return _then(_PaymentState(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -318,7 +328,10 @@ as PaymentsConfigModel?,secondsLeft: freezed == secondsLeft ? _self.secondsLeft 
 as int?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as PaymentNotice?,message: freezed == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String?,busy: null == busy ? _self.busy : busy // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,walletAvailable: null == walletAvailable ? _self.walletAvailable : walletAvailable // ignore: cast_nullable_to_non_nullable
+as bool,cardComplete: null == cardComplete ? _self.cardComplete : cardComplete // ignore: cast_nullable_to_non_nullable
+as bool,payingWith: freezed == payingWith ? _self.payingWith : payingWith // ignore: cast_nullable_to_non_nullable
+as PaymentMethodChoice?,
   ));
 }
 

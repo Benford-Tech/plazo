@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -741,7 +742,7 @@ class _DateTile extends StatelessWidget {
             children: [
               Text('${kind == Movement.arrival ? '↑' : '↓'} ${label.toUpperCase()}', style: AppText.label(size: 11, color: colour)),
               const SizedBox(height: 4),
-              Text(d == null ? '—' : DateFormat('EEE d MMM', 'fr_FR').format(d), style: AppText.strong(size: 14)),
+              Text(d == null ? '—' : DateFormat('EEE d MMM', appLocale).format(d), style: AppText.strong(size: 14)),
               Text(
                 d == null ? '' : DateFormat('HH:mm').format(d),
                 style: AppText.tabular(size: 18, color: kind == Movement.arrival ? AppColors.accent : colour),

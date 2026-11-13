@@ -1,5 +1,6 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { fr } from "@/lib/fr";
+import { LanguagePicker } from "@/components/LanguagePicker";
 import { Logo } from "@/components/Logo";
 import { PRO_HOME_PATH } from "@/lib/site";
 
@@ -25,6 +26,9 @@ export function SiteHeader() {
               <Link href="/ma-reservation" className={navLink}>
                 {fr.nav.myBooking}
               </Link>
+            </li>
+            <li>
+              <LanguagePicker />
             </li>
             <li className="hidden md:block">
               {/* Plazo Pro's home page (27/10/2026): its own layout, a full page load. */}

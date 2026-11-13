@@ -1,0 +1,42 @@
+name: Comptes de revue Apple
+
+# Puts the password of the secret PLAZO_TEST_PASSWORD on the App Store review accounts of « Parking Revue (tests) »
+# (13/11/2026, « les compte apple doivent utiliser PLAZO_TEST_PASSWORD »): the password given to Apple never goes through a
+# conversation. Signs in with PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD (a platform admin), opens the review operator in
+# consultation, sets the password (or creates a missing account with « creer »), then checks each account by signing in.
+# Prints addresses and outcomes, never a password. By hand only (.github/scripts/review_accounts.py).
+on:
+  workflow_dispatch:
+    inputs:
+      comptes:
+        description: "Adresses des comptes, séparées par des virgules"
+        type: string
+        default: "apple-review-gerant@plazo.fr,apple-review-accueil@plazo.fr"
+      creer:
+        description: "Créer un compte qui manque (« gerant » dans l'adresse : Gérant, sinon Accueil)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-accounts
+  cancel-in-progress: false
+
+jobs:
+  accounts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Comptes de revue Apple
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          PLAZO_TEST_PASSWORD: ${{ secrets.PLAZO_TEST_PASSWORD }}
+          REVIEW_ACCOUNTS: ${{ inputs.comptes }}
+          CREATE: ${{ inputs.creer }}
+        run: python3 .github/scripts/review_accounts.py

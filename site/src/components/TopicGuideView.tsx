@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ArrowIcon, GuideBody, MEASURE } from "./AirportGuide";
 import { AirportLiveProvider } from "./AirportLive";
 import { Breadcrumb } from "./Breadcrumb";

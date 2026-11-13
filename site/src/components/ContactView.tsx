@@ -1,13 +1,13 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ContactForm } from "@/components/ContactForm";
 import { PhoneIcon } from "@/components/FooterIcons";
 import type { FooterConfig } from "@/lib/footer";
 import type { FormState } from "@/lib/forms";
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const t = fr.contact;
+const t = lazy(() => fr.contact);
 
 /**
  * /contact (footer A, 15/10/2026), Boutique like « Ma réservation »: the title on the ivory ground, the form in a white

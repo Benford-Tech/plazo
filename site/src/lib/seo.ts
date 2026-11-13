@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { fr } from "./fr";
 import { PRODUCT_NAME } from "./product";
 import type { ParkingResponse } from "./types";
+import { LOCALE_TAGS, LOCALES, localizedPath } from "./i18n/locales";
+import { currentTag, lp } from "./i18n/runtime";
 
 type OpenGraph = NonNullable<Metadata["openGraph"]>;
 
@@ -18,7 +20,7 @@ export function proOpenGraph(fields: OpenGraph): OpenGraph {
 }
 
 export function openGraph(fields: OpenGraph): OpenGraph {
-  return { siteName: PRODUCT_NAME, locale: "fr_FR", type: "website", images: [SOCIAL_CARD], ...fields };
+  return { siteName: PRODUCT_NAME, locale: currentTag().replace("-", "_"), type: "website", images: [SOCIAL_CARD], ...fields };
 }
 
 /** Longest meta description search engines show whole. */
@@ -32,4 +34,14 @@ export function parkingMetaDescription({ airport, parking }: Pick<ParkingRespons
   const head = text.slice(0, DESCRIPTION_MAX - 1);
   const space = head.lastIndexOf(" ");
   return `${(space > DESCRIPTION_MAX / 2 ? head.slice(0, space) : head).replace(/[\s,;:.]+$/, "")}…`;
+}
+
+/**
+ * Canonical address of a page in the language being rendered, and the same page in every language (hreflang), French
+ * being the x-default (13/11/2026).
+ */
+export function alternatesFor(path: string): { canonical: string; languages: Record<string, string> } {
+  const languages: Record<string, string> = Object.fromEntries(LOCALES.map(locale => [LOCALE_TAGS[locale], localizedPath(locale, path)]));
+  languages["x-default"] = path;
+  return { canonical: lp(path), languages };
 }

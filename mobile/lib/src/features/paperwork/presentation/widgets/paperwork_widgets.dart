@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -305,7 +306,7 @@ class ClientPhotosCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final at = report.completedAt == null ? '' : DateFormat("d MMM 'à' HH:mm", 'fr').format(report.completedAt!.toLocal());
+    final at = report.completedAt == null ? '' : DateFormat(withTime('d MMM'), appLocale).format(report.completedAt!.toLocal());
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: AppCard(
@@ -385,7 +386,7 @@ String fuelLabel(int? quarters) => quarters == null ? '—' : 'paperwork.fuel_va
 
 /// « Validé le 12 nov. à 06:41 », « Réserve le … », « Validé sans réponse », « En attente du client ».
 String decisionLabel(InspectionModel r) {
-  final at = r.decidedAt == null ? '' : DateFormat("d MMM 'à' HH:mm", 'fr').format(r.decidedAt!.toLocal());
+  final at = r.decidedAt == null ? '' : DateFormat(withTime('d MMM'), appLocale).format(r.decidedAt!.toLocal());
   return switch (r.decision) {
     'accepted' => 'paperwork.decision.accepted'.tr(args: [at]),
     'accepted_by_default' => 'paperwork.decision.accepted_by_default'.tr(),

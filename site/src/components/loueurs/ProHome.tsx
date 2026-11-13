@@ -1,10 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Plate } from "@/components/Plate";
 import { LiveShuttleMap, MessageCard } from "@/components/loueurs/LiveShuttleMap";
 import { ProFaq } from "@/components/loueurs/ProFaq";
 import { QuoteForm } from "@/components/loueurs/ProPricing";
 import type { FormState } from "@/lib/forms";
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 import { formatEuros } from "@/lib/money";
 import { PRO_PLANS } from "@/lib/pro-pricing";
 import { PRO_TOPICS } from "@/lib/pro-topics";
@@ -12,7 +12,7 @@ import { proTopicPath, type ProTopicSlug } from "@/lib/site";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const t = fr.proHome;
+const t = lazy(() => fr.proHome);
 
 /** The sections the header's menu points to. */
 export const PRO_HOME_SECTIONS = {

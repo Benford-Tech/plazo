@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -52,7 +53,7 @@ class TravellerInspectionPage extends StatelessWidget implements AutoRouteWrappe
                     : const CircularProgressIndicator(color: AppColors.accent),
               );
             }
-            final at = DateFormat("d MMM 'à' HH:mm", 'fr').format(r.completedAt!.toLocal());
+            final at = DateFormat(withTime('d MMM'), appLocale).format(r.completedAt!.toLocal());
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               children: [

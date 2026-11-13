@@ -586,7 +586,7 @@ class _DeleteSheetState extends State<_DeleteSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final purge = DateFormat('d MMMM', 'fr_FR').format(DateTime.now().add(const Duration(days: 45)));
+    final purge = DateFormat('d MMMM', appLocale).format(DateTime.now().add(const Duration(days: 45)));
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 16 + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom),
       child: Column(

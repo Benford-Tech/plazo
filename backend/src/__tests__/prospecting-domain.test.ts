@@ -92,6 +92,24 @@ describe('variables des mails', () => {
     expect(withStores.text).toContain("Plazo Pro sur l'App Store (iPhone) : Validation par Apple en cours");
     expect(mail.html).not.toContain('badges/');
     expect(withStores.html).not.toContain('/mail/');
+    // 13/11/2026: the travellers' app Plazo, published on both stores, under Plazo Pro's badges.
+    expect(withStores.html).not.toContain("L'application de vos clients");
+    const withTraveller = prospectEmail({
+      productName: 'Plazo',
+      company,
+      senderName: 'Équipe Plazo',
+      step: { subject: 'S', body: 'Message' },
+      values,
+      unsubscribeUrl: 'https://site.example/u/x',
+      stores: { badgesBase: 'https://site.example', playStoreUrl: 'https://play.google.com/store/apps/details?id=x', appStoreUrl: null },
+      travellerStores: { playStoreUrl: 'https://play.google.com/store/apps/details?id=t', appStoreUrl: 'https://apps.apple.com/fr/app/plazo/id1' },
+    });
+    expect(withTraveller.html).toContain("L'application de vos clients, Plazo, déjà sur l'App Store et Google Play");
+    expect(withTraveller.html).toContain('href="https://apps.apple.com/fr/app/plazo/id1"');
+    expect(withTraveller.html).toContain('src="https://site.example/badges/app-store-fr.png"');
+    expect(withTraveller.html).toContain('href="https://play.google.com/store/apps/details?id=t"');
+    expect(withTraveller.text).toContain("Plazo, l'application de vos clients, sur l'App Store (iPhone) : https://apps.apple.com/fr/app/plazo/id1");
+    expect(withTraveller.text).toContain("Plazo Pro sur l'App Store (iPhone) : Validation par Apple en cours");
     // 09/11/2026: the first mail shows three Plazo Pro screens under the introduction, never in the text version.
     const withScreens = prospectEmail({
       productName: 'Plazo',

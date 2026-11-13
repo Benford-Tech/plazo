@@ -3,6 +3,7 @@ import { ExtractJwt, Strategy as JwtStrategy, VerifiedCallback } from 'passport-
 import { SECRET_KEY, isVerifiedPlatformAdmin, platformAdminEmails } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { AuthenticatedStaff, DataStoredInToken } from '@/interfaces/auth.interface';
+import { isTestOperatorName } from '@/domain/test-feed';
 
 export const staffPassport = new Passport();
 
@@ -34,7 +35,11 @@ export const staffJwtStrategy = new JwtStrategy(
         const target = await prisma.operator.findUnique({ where: { id: actingAs } });
         if (!target) return done(null, false);
         const admins = platformAdminEmails();
-        const platformAccount = admins.length > 0 && (await prisma.staff.count({ where: { operatorId: target.id, email: { in: admins } } })) > 0;
+        // 13/11/2026 (« je suis en consultation donc je peux pas le faire »): a test operator (« … (tests) », such as
+        // « Parking Revue (tests) », the App Store review's) is the platform's too: its team is managed in consultation.
+        const platformAccount =
+          isTestOperatorName(target.name) ||
+          (admins.length > 0 && (await prisma.staff.count({ where: { operatorId: target.id, email: { in: admins } } })) > 0);
         const scoped: AuthenticatedStaff = {
           ...staff,
           operatorId: target.id,

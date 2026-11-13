@@ -351,7 +351,7 @@ class _ExtraCard extends StatelessWidget {
   static String _dueLabel(DateTime at) {
     final now = DateTime.now();
     final sameDay = at.year == now.year && at.month == now.month && at.day == now.day;
-    return sameDay ? hhmm(at) : '${DateFormat('EEE d', 'fr_FR').format(at)} · ${hhmm(at)}';
+    return sameDay ? hhmm(at) : '${DateFormat('EEE d', appLocale).format(at)} · ${hhmm(at)}';
   }
 }
 

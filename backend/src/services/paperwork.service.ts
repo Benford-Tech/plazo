@@ -55,6 +55,7 @@ import { ContractTemplateService, toBuffer } from './contract-template.service';
 import { NotificationService } from './notification.service';
 import { PhotoStorageService, StoredPhoto } from './photo-storage.service';
 import { PublicBookingService } from './public-booking.service';
+import { PushService } from './push.service';
 import { STAFF_VISIBLE } from './reservation.service';
 import { SmsService } from './sms.service';
 
@@ -128,6 +129,7 @@ export class PaperworkService {
   public audit = Container.get(AuditService);
   public bookings = Container.get(PublicBookingService);
   public templates = Container.get(ContractTemplateService);
+  public push = Container.get(PushService);
 
   // ---- Loading ----------------------------------------------------------------------------------------------------
 
@@ -201,7 +203,11 @@ export class PaperworkService {
     return template ? templateDocument(facts, templateFacts(template)) : contractDocument(facts);
   }
 
-  /** The contract is signed at the counter, on the parking's phone (20/10/2026): the traveller app only shows it. */
+  /**
+   * Signed at the counter on the parking's phone (20/10/2026), and since the 13/11/2026 also in the Plazo app (« Impossible
+   * de signer », choice « les deux »): a code sent by SMS to the booking's mobile, then a signature with the finger.
+   * `atCounter` stays true for the old app versions, which only show the text; `travellerCanSign` drives the new ones.
+   */
   private contractView(r: PaperworkRecord, viewer: Viewer, current: OperatorContractTemplate | null, staffNames: Map<string, string>) {
     const c = r.contract;
     const signable = !c && CONTRACT_SIGNABLE.includes(r.status);
@@ -209,8 +215,9 @@ export class PaperworkService {
     const template = c ? c.template : current;
     return {
       status: c ? ('signed' as const) : ('unsigned' as const),
-      canSign: signable && viewer === 'staff',
+      canSign: signable && (viewer === 'staff' || this.codeAvailable(r)),
       atCounter: signable,
+      travellerCanSign: viewer === 'traveller' && signable && this.codeAvailable(r),
       codeAvailable: this.codeAvailable(r),
       phoneMasked: maskPhone(r.customerPhone),
       document: c ? documentFromText(c.text) : this.documentToSign(r, current),
@@ -526,16 +533,38 @@ export class PaperworkService {
   }
 
   /**
-   * POST /public/bookings/:reference/contract/code and …/sign: the contract is signed at the counter (choice of the
-   * 20/10/2026), never from the app; the routes stay to answer an old app version clearly.
+   * POST /public/bookings/:reference/contract/code (13/11/2026): the code goes to the booking's mobile, as at the counter.
+   * Refused without SMS (no mobile or SMS off): the contract is then signed at the counter, by hand.
    */
-  public async travellerSendCode(reference: string, token: string | undefined): Promise<never> {
-    await this.loadForTraveller(reference, token);
-    throw conflict('contract_at_counter', "The contract is signed at the counter, on the parking's phone");
+  public async travellerSendCode(reference: string, token: string | undefined) {
+    const r = await this.loadForTraveller(reference, token);
+    if (!this.codeAvailable(r)) throw conflict('contract_at_counter', "The contract is signed at the counter, on the parking's phone");
+    return this.sendCode(r, null);
   }
 
-  public async travellerSign(reference: string, token: string | undefined): Promise<never> {
-    return this.travellerSendCode(reference, token);
+  /**
+   * POST /public/bookings/:reference/contract/sign { code, strokes }: both the code received by SMS and the signature with
+   * the finger (« les deux », 13/11/2026). The team is told (push and bell « Contrat signé »).
+   */
+  public async travellerSign(reference: string, token: string | undefined, body: { code?: unknown; strokes?: unknown } = {}) {
+    const r = await this.loadForTraveller(reference, token);
+    if (!this.codeAvailable(r)) throw conflict('contract_at_counter', "The contract is signed at the counter, on the parking's phone");
+    this.assertSignable(r);
+    const strokes = cleanStrokes(body.strokes);
+    const fields: Record<string, string> = {};
+    if (typeof body.code !== 'string' || !body.code.trim()) fields.code = 'required';
+    if (!strokes) fields.strokes = 'required';
+    if (Object.keys(fields).length) throw new ValidationException(fields);
+    const phoneMasked = await this.consumeCode(r, body.code as string);
+    const signed = await this.sign(r, null, { method: 'sms_code', phoneMasked, strokes });
+    await this.push
+      .notifyStaff(r.operatorId, 'bookingChanges', contractSignedPush(r.customerName, r.reference), {
+        data: { type: 'booking', event: 'contract_signed', reservationId: r.id },
+        collapseId: `contract-signed-${r.id}`,
+        event: 'booking_change',
+      })
+      .catch(() => 0);
+    return this.view(signed, 'traveller');
   }
 
   /** POST /internal/reservations/:id/contract/code: the code goes to the traveller's phone, typed on the staff's. */
@@ -952,4 +981,9 @@ export class PaperworkService {
 
   /** The required slots, for the apps' guided capture. */
   public static readonly requiredSlots = GUIDED_SLOTS;
+}
+
+/** To the team, when a traveller signs the contract in the Plazo app (13/11/2026, M1). */
+export function contractSignedPush(customerName: string, reference: string) {
+  return { title: 'Contrat signé', body: `${customerName} · réservation ${reference} · signé dans l'app` };
 }

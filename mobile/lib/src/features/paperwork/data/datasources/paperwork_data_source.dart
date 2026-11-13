@@ -70,7 +70,7 @@ class PaperworkDataSourceImpl implements PaperworkDataSource {
   @override
   Future<PaperworkModel> sign(PaperworkOwner owner, {String? code, List<List<List<double>>>? strokes}) async => switch (owner) {
     StaffOwner(:final reservationId) => client.staffSign(reservationId, {'code': ?code, 'strokes': ?strokes}),
-    TravellerOwner(:final reference) => client.travellerSign(reference, await _token(reference), {'code': code ?? ''}),
+    TravellerOwner(:final reference) => client.travellerSign(reference, await _token(reference), {'code': code ?? '', 'strokes': ?strokes}),
   };
 
   @override

@@ -283,5 +283,6 @@ export function bookingFieldFacts(
 /** How the signature box reads on the signed PDF: the strokes, or « Signé par code SMS · 09:47 ». */
 export function signatureStamp(method: 'sms_code' | 'handwritten', strokes: number[][][] | null, signedAtLocal: string): StampedSignature {
   const time = signedAtLocal.slice(11, 16);
-  return method === 'handwritten' && strokes?.length ? { strokes, label: '' } : { strokes: null, label: `Signé par code SMS · ${time}` };
+  // A traveller signing in the app gives both (13/11/2026): the drawn signature is shown.
+  return strokes?.length ? { strokes, label: '' } : { strokes: null, label: `Signé par code SMS · ${time}` };
 }

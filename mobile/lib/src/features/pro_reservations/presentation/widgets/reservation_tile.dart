@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../shared/theme/theme.dart';
@@ -9,10 +10,10 @@ import '../../data/models/reservation_models.dart';
 import '../../../../shared/widgets/direct_badge.dart';
 
 /// "sam. 4 oct. 06:30" from an instant, in the phone's time (the parking's, in practice).
-String dayTime(DateTime instant) => DateFormat('EEE d MMM HH:mm', 'fr_FR').format(instant.toLocal());
+String dayTime(DateTime instant) => DateFormat('EEE d MMM HH:mm', appLocale).format(instant.toLocal());
 
 /// "sam. 4 oct." from an instant.
-String dayOf(DateTime instant) => DateFormat('EEE d MMM', 'fr_FR').format(instant.toLocal());
+String dayOf(DateTime instant) => DateFormat('EEE d MMM', appLocale).format(instant.toLocal());
 
 /// « Pointé à l'embarquement par Karim » (14/10/2026): the driver checked the traveller in when the shuttle left.
 String boardingCheckInText(BoardingCheckInModel checkIn) {

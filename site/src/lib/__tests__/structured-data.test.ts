@@ -40,7 +40,7 @@ const parking = (over: Partial<ParkingResponse["parking"]> = {}): Pick<ParkingRe
 describe("structured data (schema.org)", () => {
   it("describes the publisher and the site on the home page", () => {
     expect(organizationLd(BASE)).toMatchObject({ "@type": "Organization", "@id": `${BASE}/#organization`, url: `${BASE}/`, logo: `${BASE}/apple-icon.png` });
-    expect(websiteLd(BASE)).toMatchObject({ "@type": "WebSite", url: `${BASE}/`, inLanguage: "fr-FR", publisher: { "@id": `${BASE}/#organization` } });
+    expect(websiteLd(BASE)).toMatchObject({ "@type": "WebSite", url: `${BASE}/`, inLanguage: ["fr-FR", "en-GB", "de-DE", "es-ES", "pt-PT", "pl-PL", "ro-RO", "ru-RU", "uk-UA"], publisher: { "@id": `${BASE}/#organization` } });
   });
 
   it("adds the footer's social accounts and service line once product.json gives them (A, 15/10/2026)", () => {

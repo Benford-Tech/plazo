@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -129,7 +130,7 @@ class _BodyState extends State<_Body> {
             key: const Key('my-photos-sent'),
             color: AppStatus.okSoft,
             child: Text(
-              'paperwork.my_photos_sent_on'.tr(args: ['${photos.length}', DateFormat("d MMM 'à' HH:mm", 'fr').format(mine!.completedAt!.toLocal())]),
+              'paperwork.my_photos_sent_on'.tr(args: ['${photos.length}', DateFormat(withTime('d MMM'), appLocale).format(mine!.completedAt!.toLocal())]),
               style: AppText.body(size: 14, weight: 600),
             ),
           ),

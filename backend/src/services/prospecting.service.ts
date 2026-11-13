@@ -2,7 +2,15 @@ import { ProspectDemoService } from './prospect-demo.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { PLAZO_PRO_APP_STORE_URL, PLAZO_PRO_PLAY_STORE_URL, PRODUCT_COMPANY, PRODUCT_NAME, prospectingSettings } from '@/config';
+import {
+  PLAZO_APP_STORE_URL,
+  PLAZO_PLAY_STORE_URL,
+  PLAZO_PRO_APP_STORE_URL,
+  PLAZO_PRO_PLAY_STORE_URL,
+  PRODUCT_COMPANY,
+  PRODUCT_NAME,
+  prospectingSettings,
+} from '@/config';
 import prisma, { Prisma, Prospect, ProspectStatus } from '@/database';
 import {
   capDayStart,
@@ -617,6 +625,7 @@ export class ProspectingService {
       values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
       unsubscribeUrl: this.unsubscribeUrl(id),
       stores: this.stores(),
+      travellerStores: { playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL },
       screens: step.step === 1,
     });
     const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
@@ -710,6 +719,7 @@ export class ProspectingService {
       values,
       unsubscribeUrl: this.notifications.siteUrl('/api/public/prospecting/unsubscribe/test') ?? '',
       stores: this.stores(),
+      travellerStores: { playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL },
       screens: n === 1,
     });
     const result = await this.notifications.emailProspect(

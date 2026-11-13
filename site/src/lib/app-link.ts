@@ -25,12 +25,14 @@ export function playStoreUrl(code: string): string {
   return `https://play.google.com/store/apps/details?id=${PLAZO_PACKAGE}&referrer=${encodeURIComponent(`plazo_code=${code}`)}`;
 }
 
-/** The App Store page of the traveller app, once Apple has published it (PLAZO_APP_STORE_URL); null until then. */
+/** The App Store page of the traveller app, published by Apple on 13/11/2026 (PLAZO_APP_STORE_URL overrides it). */
+export const PLAZO_APP_STORE_PAGE = "https://apps.apple.com/fr/app/plazo-parking-a%C3%A9roport/id6821635235";
+
 export function appStoreUrl(
   env: Record<string, string | undefined> = process.env,
 ): string | null {
   const url = env.PLAZO_APP_STORE_URL?.trim().replace(/\/+$/, "") ?? "";
-  return /^https:\/\/apps\.apple\.com\//.test(url) ? url : null;
+  return /^https:\/\/apps\.apple\.com\//.test(url) ? url : PLAZO_APP_STORE_PAGE;
 }
 
 /** The app's own scheme, for « J'ai déjà l'app » when the OS did not open it itself. */

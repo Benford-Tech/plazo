@@ -116,18 +116,12 @@ async function takeReport(token: string, id: string, kind: 'dropoff' | 'return',
 }
 
 describe('contrat', () => {
-  it("au comptoir avec le code reçu par SMS ; l'appli du voyageur le montre sans le faire signer ; copie envoyée ; une seule signature", async () => {
+  it('au comptoir avec le code reçu par SMS ; copie envoyée ; une seule signature', async () => {
     const b = await setup();
     const before = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
     expect(before.status).toBe(200);
-    expect(before.body.contract).toMatchObject({ status: 'unsigned', canSign: false, atCounter: true, phoneMasked: '06 •• •• •• 78' });
+    expect(before.body.contract).toMatchObject({ status: 'unsigned', atCounter: true, travellerCanSign: true, phoneMasked: '06 •• •• •• 78' });
     expect(before.body.contract.document.summary).toEqual(expect.arrayContaining(['Client : Camille Martin', 'Clés : confiées au parking']));
-    // The contract is signed at the counter (20/10/2026): the traveller's routes refuse, and send nothing.
-    for (const path of ['code', 'sign']) {
-      const res = await api().post(`/api/public/bookings/${b.reference}/contract/${path}`).set(bookingToken(b.token)).send({ code: '123456' });
-      expect([res.status, res.body.code]).toEqual([409, 'contract_at_counter']);
-    }
-    expect(sentCodes).toEqual([]);
 
     const staffView = await api().get(`/api/internal/reservations/${b.id}/paperwork`).set(auth(b.op.token));
     expect(staffView.body.contract).toMatchObject({ canSign: true, atCounter: true, codeAvailable: true });
@@ -153,9 +147,42 @@ describe('contrat', () => {
     const again = await api().post(`/api/internal/reservations/${b.id}/contract/sign`).set(auth(b.op.token)).send({ code: sentCodes[0] });
     expect(again.body.code).toBe('already_signed');
     const after = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
-    expect(after.body.contract).toMatchObject({ status: 'signed', canSign: false, atCounter: false });
+    expect(after.body.contract).toMatchObject({ status: 'signed', canSign: false, atCounter: false, travellerCanSign: false });
     // Without the booking's token, nothing.
     expect((await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken('nope'))).status).toBe(404);
+  });
+
+  it("dans l'appli Plazo (13/11/2026) : code par SMS et signature au doigt, les deux exigés ; l'équipe est prévenue", async () => {
+    const b = await setup();
+    const base = `/api/public/bookings/${b.reference}/contract`;
+    const code = await api().post(`${base}/code`).set(bookingToken(b.token));
+    expect([code.status, code.body.sentTo]).toEqual([200, '06 •• •• •• 78']);
+    // Both are required.
+    const neither = await api().post(`${base}/sign`).set(bookingToken(b.token)).send({});
+    expect([neither.status, neither.body.fields]).toEqual([400, { code: 'required', strokes: 'required' }]);
+    const noStrokes = await api().post(`${base}/sign`).set(bookingToken(b.token)).send({ code: sentCodes[0] });
+    expect(noStrokes.body.fields).toEqual({ strokes: 'required' });
+    const wrong = await api().post(`${base}/sign`).set(bookingToken(b.token)).send({ code: '000000', strokes: STROKES });
+    expect(wrong.body.fields).toEqual({ code: 'wrong_code' });
+    const ok = await api().post(`${base}/sign`).set(bookingToken(b.token)).send({ code: sentCodes[0], strokes: STROKES });
+    expect(ok.status).toBe(200);
+    expect(ok.body.contract.signed).toMatchObject({ method: 'sms_code', device: 'traveller_app', phoneMasked: '06 •• •• •• 78' });
+    const row = await prisma.reservationContract.findUniqueOrThrow({ where: { reservationId: b.id } });
+    expect(row.strokes).not.toBeNull();
+    expect(row.witnessedById).toBeNull();
+    // The team's bell says so.
+    const bell = await prisma.staffNotification.findMany({ where: { operatorId: b.op.operator.id, title: 'Contrat signé' } });
+    expect(bell.length).toBeGreaterThan(0);
+    // Without the booking's token, nothing.
+    expect((await api().post(`${base}/code`).set(bookingToken('nope'))).status).toBe(404);
+  });
+
+  it("dans l'appli, sans mobile : au comptoir seulement", async () => {
+    const b = await setup('04 72 00 00 00');
+    const view = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
+    expect(view.body.contract).toMatchObject({ atCounter: true, travellerCanSign: false });
+    const res = await api().post(`/api/public/bookings/${b.reference}/contract/code`).set(bookingToken(b.token));
+    expect([res.status, res.body.code]).toEqual([409, 'contract_at_counter']);
   });
 
   it('au comptoir : signature manuscrite sur le téléphone du parking', async () => {

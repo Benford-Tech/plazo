@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -97,7 +98,7 @@ class _ResumeSheetState extends State<_ResumeSheet> {
     if (at.length < 16) return at;
     final date = DateTime.tryParse(at);
     if (date == null) return at;
-    return '${DateFormat('EEE d MMM', 'fr_FR').format(date)} · ${at.substring(11, 16)}';
+    return '${DateFormat('EEE d MMM', appLocale).format(date)} · ${at.substring(11, 16)}';
   }
 
   Future<void> _open() async {

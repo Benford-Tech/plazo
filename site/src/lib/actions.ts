@@ -8,6 +8,8 @@ import { api, ApiError } from "./api";
 import { CHILD_SEAT_FIELDS, childSeatsFromValues, hasChildSeats } from "./child-seats";
 import { encodeQueryValue } from "./dates";
 import { type FormState, manageHref, paymentHref } from "./forms";
+import { localizedPath } from "./i18n/locales";
+import { actionLocale } from "./i18n/server";
 import { resumeCookie, secureCookies } from "./manage-access";
 import { manageTokenFor, rememberManageToken } from "./manage-session";
 import { formatPlate } from "./plate";
@@ -98,8 +100,8 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
   }
   await rememberManageToken(created.reference, created.manageToken);
   // Paid online: the place is held, the payment step comes next.
-  if (created.booking.status === "pending_payment") redirect(paymentHref(created.reference));
-  redirect(manageHref(created.reference, true));
+  if (created.booking.status === "pending_payment") redirect(localizedPath(await actionLocale(), paymentHref(created.reference)));
+  redirect(localizedPath(await actionLocale(), manageHref(created.reference, true)));
 }
 
 /** "Payer" on the payment step: off to Stripe's payment page (or to the booking, if already paid). */
@@ -108,10 +110,10 @@ export async function payAction(reference: string, _previous: FormState): Promis
   let target: string;
   try {
     const result = await api.checkout(reference, token);
-    target = "url" in result ? result.url : `${manageHref(reference)}?paiement=retour`;
+    target = "url" in result ? result.url : localizedPath(await actionLocale(), `${manageHref(reference)}?paiement=retour`);
   } catch (error) {
     // The hold ended meanwhile: the payment step says so.
-    if (error instanceof ApiError && error.code === "hold_expired") redirect(paymentHref(reference));
+    if (error instanceof ApiError && error.code === "hold_expired") redirect(localizedPath(await actionLocale(), paymentHref(reference)));
     return failure({}, error);
   }
   redirect(target);
@@ -127,7 +129,7 @@ export async function editBookingAction(reference: string, _previous: FormState)
     await api.releaseBooking(reference, token);
   } catch (error) {
     // Paid in the meantime: nothing to edit, the booking is confirmed.
-    if (error instanceof ApiError && error.code === "already_paid") redirect(`${manageHref(reference)}?paiement=retour`);
+    if (error instanceof ApiError && error.code === "already_paid") redirect(localizedPath(await actionLocale(), `${manageHref(reference)}?paiement=retour`));
     return failure({}, error);
   }
   let booking;
@@ -137,9 +139,9 @@ export async function editBookingAction(reference: string, _previous: FormState)
     return failure({}, error);
   }
   const { slug: parking, airport } = booking.parking;
-  const cookie = resumeCookie(airport.slug, parking, reference, token, secureCookies());
+  const cookie = resumeCookie(airport.slug, parking, reference, token, secureCookies(), await actionLocale());
   (await cookies()).set(cookie.name, cookie.value, cookie.options);
-  redirect(`/${airport.slug}/${parking}/reserver?arrivee=${encodeQueryValue(booking.arrivalAt)}&retour=${encodeQueryValue(booking.returnAt)}&reprise=1`);
+  redirect(localizedPath(await actionLocale(), `/${airport.slug}/${parking}/reserver?arrivee=${encodeQueryValue(booking.arrivalAt)}&retour=${encodeQueryValue(booking.returnAt)}&reprise=1`));
 }
 
 export async function lookupAction(_previous: FormState, formData: FormData): Promise<FormState> {
@@ -157,7 +159,7 @@ export async function lookupAction(_previous: FormState, formData: FormData): Pr
     return state.error === "not_found" ? { ...state, error: "lookup_not_found" } : state;
   }
   await rememberManageToken(access.reference, access.manageToken);
-  redirect(manageHref(access.reference));
+  redirect(localizedPath(await actionLocale(), manageHref(access.reference)));
 }
 
 /** The booking's key kept by this browser; the API answers "not_found" without it. */
@@ -192,5 +194,5 @@ export async function cancelAction(reference: string, _previous: FormState): Pro
     return failure({}, error);
   }
   // The page says that the cancellation email is on its way only right after this action.
-  redirect(`${manageHref(reference)}?annulee=1`);
+  redirect(localizedPath(await actionLocale(), `${manageHref(reference)}?annulee=1`));
 }

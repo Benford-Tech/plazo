@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -45,7 +46,7 @@ class PaperworkCard extends StatelessWidget {
               icon: Icons.description_outlined,
               title: 'paperwork.contract'.tr(),
               value: contract.isSigned
-                  ? 'paperwork.contract_signed_short'.tr(args: [DateFormat('d MMM HH:mm', 'fr').format(contract.signed!.signedAt.toLocal())])
+                  ? 'paperwork.contract_signed_short'.tr(args: [DateFormat('d MMM HH:mm', appLocale).format(contract.signed!.signedAt.toLocal())])
                   : contract.canSign
                   ? 'paperwork.contract_to_sign'.tr()
                   : 'paperwork.contract_unsigned'.tr(),
@@ -160,9 +161,12 @@ class TravellerPaperworkBlock extends StatelessWidget {
                 icon: Icons.description_outlined,
                 title: 'paperwork.contract'.tr(),
                 text: contract.isSigned
-                    ? 'paperwork.contract_signed_short'.tr(args: [DateFormat("d MMM 'à' HH:mm", 'fr').format(contract.signed!.signedAt.toLocal())])
+                    ? 'paperwork.contract_signed_short'.tr(args: [DateFormat(withTime('d MMM'), appLocale).format(contract.signed!.signedAt.toLocal())])
+                    : contract.travellerCanSign
+                    ? 'paperwork.contract_to_sign_app'.tr()
                     : 'paperwork.contract_at_counter_short'.tr(),
-                highlight: false,
+                // 13/11/2026: to sign in the app, the card stands out.
+                highlight: !contract.isSigned && contract.travellerCanSign,
                 onTap: () => open(TravellerContractRoute(reference: reference)),
               ),
             );

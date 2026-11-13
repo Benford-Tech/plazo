@@ -428,7 +428,7 @@ String _sentAt(DateTime at, DateTime now) {
   final time = hhmm(at);
   if (diff == 0) return 'join.sent_today'.tr(args: [time]);
   if (diff == 1) return 'join.sent_yesterday'.tr(args: [time]);
-  return 'join.sent_on'.tr(args: [DateFormat('d MMM', 'fr_FR').format(local), time]);
+  return 'join.sent_on'.tr(args: [DateFormat('d MMM', appLocale).format(local), time]);
 }
 
 class _Waiting extends StatelessWidget {
