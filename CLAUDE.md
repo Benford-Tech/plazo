@@ -2801,7 +2801,8 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   (décisions de Joanny, tableaux de bord, ce qui est fait) ; la tenir à jour à chaque point réglé.
 - **Auteur des commits (13/11/2026, « Benford Tech doit être l'auteur des commits »)** : avant le premier commit d'une session,
   `git config user.name "Benford Tech"` et `git config user.email` avec l'adresse des commits « Benford Tech » déjà dans
-  l'historique (`git log --format='%an <%ae>' | grep "Benford Tech" | head -1`) ; jamais « Claude » en auteur (la ligne
-  `Co-Authored-By` reste en bas du message).
+  l'historique (`git log --format='%an <%ae>' | grep "Benford Tech" | head -1`) ; jamais « Claude » en auteur. **Aucune
+  mention de Claude (13/11/2026, « Retire la mention by claude »)** : ni ligne `Co-Authored-By`, ni lien de session dans les
+  messages de commit, ni « Generated with Claude Code » ni lien de session dans les descriptions de PR.
 - **Livraison (07/10/2026)** : une fois le travail vérifié (lint, tests, build) et poussé sur la branche, ouvrir
   automatiquement la PR vers `main` puis la fusionner, sans attendre de demande.
