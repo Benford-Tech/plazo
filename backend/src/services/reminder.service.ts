@@ -1,3 +1,4 @@
+import { awaitsImportedTime } from '@/domain/booking-import';
 import { MessageProof, metaSilent, ProofLevel, proofOf } from '@/domain/delivery-proof';
 import { travellerMessages } from '@/domain/traveller-message-log';
 import httpStatus from 'http-status';
@@ -64,6 +65,8 @@ export interface BookingReminder {
   whatsapp: boolean;
   /** 10/11/2026 (« distingue WhatsApp et SMS »): how the last one reached the traveller, null before any. */
   delivery: ReminderDelivery | null;
+  /** 13/11/2026: 'import_time' when the file import left it out for want of an arrival time (nobody's choice). */
+  excludedReason: 'import_time' | null;
   timezone: string;
 }
 
@@ -100,6 +103,8 @@ export interface ReminderRow {
   at: string | null;
   /** First name of the staff member who left it out. */
   excludedBy: string | null;
+  /** 13/11/2026: 'import_time' when the file import left it out for want of an arrival time (nobody's choice). */
+  excludedReason: 'import_time' | null;
   /** 10/11/2026: by WhatsApp or by SMS, once it left. */
   delivery: ReminderDelivery | null;
 }
@@ -351,6 +356,7 @@ export class ReminderService {
       refusal,
       whatsapp,
       delivery: deliveries.get(r.id) ?? null,
+      excludedReason: status === 'excluded' && awaitsImportedTime(r) ? 'import_time' : null,
       timezone: tz,
     };
   }
@@ -454,6 +460,7 @@ export class ReminderService {
         status,
         at: at ? localDateTime(at, tz) : null,
         excludedBy: r.reminderExcludedById ? (excluders.get(r.reminderExcludedById) ?? null) : null,
+        excludedReason: status === 'excluded' && awaitsImportedTime(r) ? 'import_time' : null,
         delivery: deliveries.get(r.id) ?? null,
       };
       rowsByEvening.set(date, [...(rowsByEvening.get(date) ?? []), row]);

@@ -32,7 +32,7 @@ function statusLine(r: BookingReminder): string {
   const s = remindersFr.status;
   switch (r.status) {
     case "excluded":
-      return s.excluded(null);
+      return r.excludedReason === "import_time" ? s.importTime : s.excluded(null);
     case "waiting":
     case "failed":
     case "disabled":

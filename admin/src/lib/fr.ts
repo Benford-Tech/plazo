@@ -4658,6 +4658,7 @@ export const remindersFr = {
     waiting: "En attente du téléphone",
     failed: "Échec",
     excluded: (by: string | null) => (by ? `Exclu par ${by}` : "Exclu"),
+    importTime: "Heure à vérifier · le fichier importé ne donnait pas l'heure d'arrivée",
     disabled: "Envoi coupé",
     no_mobile: "Pas de mobile",
     foreign: "Numéro hors France",

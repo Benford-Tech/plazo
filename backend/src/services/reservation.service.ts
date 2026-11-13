@@ -1,3 +1,4 @@
+import { awaitsImportedTime } from '@/domain/booking-import';
 import { ReservationTrashService } from './reservation-trash.service';
 import { airportCity } from '@/domain/airport-names';
 import { travellerEmail } from '@/domain/traveller-email';
@@ -912,6 +913,11 @@ export class ReservationService {
           priceCents: priceChanged ? data.priceCents : undefined,
           paymentMethod: paymentChanged ? data.paymentMethod : undefined,
           overbooked: datesChanged ? full.length > 0 : undefined,
+          // 13/11/2026: a booking imported without its arrival time waits for its day-before message in nobody's name
+          // (« Heure à vérifier »); the team setting the time lets it go.
+          ...(datesChanged && stay.arrivalAt.getTime() !== before.arrivalAt.getTime() && awaitsImportedTime(before)
+            ? { reminderExcludedAt: null }
+            : {}),
         },
       });
 
