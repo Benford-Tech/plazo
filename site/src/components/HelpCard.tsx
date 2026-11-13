@@ -1,9 +1,9 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { MailIcon, PhoneIcon } from "@/components/FooterIcons";
 import { type FooterConfig, lowerFirst } from "@/lib/footer";
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 
-const t = fr.help;
+const t = lazy(() => fr.help);
 
 /** The cream tile of an icon (44 px, 12 px corners). */
 function IconTile({ children }: { children: React.ReactNode }) {

@@ -14,7 +14,9 @@ vi.mock("../api", async () => {
   const actual = await vi.importActual<typeof import("../api")>("../api");
   return { ApiError: actual.ApiError, api: { createBooking, checkout, releaseBooking, booking } };
 });
+const requestHeaders = new Headers();
 vi.mock("next/headers", () => ({
+  headers: async () => requestHeaders,
   cookies: async () => ({
     get: (name: string) => (cookieJar.has(name) ? { name, value: cookieJar.get(name)!.value } : undefined),
     set: (name: string, value: string, options: Record<string, unknown>) => cookieJar.set(name, { value, options }),

@@ -4,6 +4,7 @@ import { type FooterConfig, footerConfig } from "./footer";
 import { formatEuros } from "./money";
 import { hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL } from "./product";
 import type { AirportResponse, ParkingResponse } from "./types";
+import { LOCALE_TAGS, LOCALES } from "./i18n/locales";
 
 export type JsonLdObject = Record<string, unknown>;
 
@@ -42,7 +43,7 @@ export function websiteLd(base: string): JsonLdObject {
     "@id": `${base}/#website`,
     name: PRODUCT_NAME,
     url: `${base}/`,
-    inLanguage: "fr-FR",
+    inLanguage: LOCALES.map(locale => LOCALE_TAGS[locale]),
     publisher: { "@id": `${base}/#organization` },
   };
 }

@@ -1,9 +1,17 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { LOCALES } from "./src/lib/i18n/locales";
 import { DEFAULT_AIRPORT, OPERATORS_PREFIX, PRO_HOST, PRO_SITE_URL, PRO_TOPIC_SLUGS, siteUrl } from "./src/lib/site";
 
 /** The topic pages of Plazo Pro, as a path pattern (« navette|voiturier|comparateurs »). */
 const PRO_TOPICS = PRO_TOPIC_SLUGS.join("|");
+
+/**
+ * Languages (13/11/2026): the proxy serves an address without prefix from /fr internally; the rewrites below see that
+ * internal path. LANG matches every language segment, OTHER_LANG the prefixed ones (all but French).
+ */
+const LANG = `:lang(${LOCALES.join("|")})`;
+const OTHER_LANG = `:lang(${LOCALES.filter(l => l !== "fr").join("|")})`;
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -36,6 +44,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: `/${DEFAULT_AIRPORT}`, destination: "/", permanent: true },
+      { source: `/${OTHER_LANG}/${DEFAULT_AIRPORT}`, destination: "/:lang", permanent: true },
       // Plazo Pro on its own address (27/10/2026), once NEXT_PUBLIC_PRO_SITE_URL is set: /loueurs leads there.
       ...(PRO_SITE_URL
         ? [
@@ -59,12 +68,12 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         // pro.plazo.fr (27/10/2026): Plazo Pro's pages at the root of its host; /pro and /api stay the other services.
-        { source: "/", has: [{ type: "host", value: PRO_HOST }], destination: OPERATORS_PREFIX },
-        { source: "/tarifs", has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/tarifs` },
-        { source: `/:topic(${PRO_TOPICS})`, has: [{ type: "host", value: PRO_HOST }], destination: `${OPERATORS_PREFIX}/:topic` },
+        { source: `/${LANG}`, has: [{ type: "host", value: PRO_HOST }], destination: `/:lang${OPERATORS_PREFIX}` },
+        { source: `/${LANG}/tarifs`, has: [{ type: "host", value: PRO_HOST }], destination: `/:lang${OPERATORS_PREFIX}/tarifs` },
+        { source: `/${LANG}/:topic(${PRO_TOPICS})`, has: [{ type: "host", value: PRO_HOST }], destination: `/:lang${OPERATORS_PREFIX}/:topic` },
         // Plazo Pro's lime favicon (28/10/2026): the root favicon.ico link and the browsers' own request get it there.
         { source: "/favicon.ico", has: [{ type: "host", value: PRO_HOST }], destination: "/brand/favicon-pro.ico" },
-        { source: "/", destination: `/${DEFAULT_AIRPORT}` },
+        { source: `/${LANG}`, destination: `/:lang/${DEFAULT_AIRPORT}` },
       ],
       afterFiles: [],
       fallback: [],
@@ -92,7 +101,23 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: `/${OTHER_LANG}/a/:path*`,
+        headers: [
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "private, no-store" },
+        ],
+      },
+      {
         source: "/ma-reservation/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "private, no-store" },
+        ],
+      },
+      {
+        source: `/${OTHER_LANG}/ma-reservation/:path*`,
         headers: [
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },

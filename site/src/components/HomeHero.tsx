@@ -42,6 +42,8 @@ export function HomeHero({
   const results = preview?.results ?? [];
   const featured = featuredOf(results);
   const days = stayDays(arrivee, retour);
+  // The airport's name sits where the language puts it (« l’aéroport de Lyon », « Lyon airport »).
+  const [nearBefore = "", nearAfter = ""] = fr.home.heroNear("\u0000").split("\u0000");
   return (
     <section className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 pt-3 pb-2 md:px-12 md:pt-8 md:pb-4">
       {breadcrumb && <Breadcrumb items={[{ label: fr.nav.home, href: "/" }, { label: airport.name }]} />}
@@ -51,7 +53,7 @@ export function HomeHero({
             {airport.name} · {fr.home.heroKicker}
           </p>
           <h1 className="font-title max-w-[640px] text-[30px] leading-[1.14] text-ink md:text-[46px] md:leading-[1.1] xl:text-[52px]">
-            <span className="text-soft">{fr.home.heroFind}</span> <span className="block">{fr.home.heroNear("")}{nameKeptWhole(airport.name)}</span>
+            <span className="text-soft">{fr.home.heroFind}</span> <span className="block">{nearBefore}{nameKeptWhole(airport.name)}{nearAfter}</span>
           </h1>
           <p className="max-w-[540px] text-[16.5px] leading-relaxed font-medium text-soft max-sm:hidden">{fr.home.heroLead}</p>
           <div className="mt-1 sm:mt-2">

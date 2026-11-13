@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { FieldError } from "./FieldError";
 import { EMPTY_FORM, type FormState } from "@/lib/forms";
-import { errorMessage, fr } from "@/lib/fr";
+import { errorMessage, fr, lazy } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const t = fr.contact;
+const t = lazy(() => fr.contact);
 
 /** Props of a field's input: its error, linked with aria-describedby next to its hint. */
 function described(name: string, error: string | undefined, hint?: boolean) {

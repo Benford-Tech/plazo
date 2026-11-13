@@ -32,3 +32,33 @@ describe("manage links (proxy)", () => {
     expect(run("https://site.example/ma-reservation/RAB234").headers.get("location")).toBeNull();
   });
 });
+
+describe("languages (proxy, 13/11/2026)", () => {
+  const rewritten = (url: string) => run(url).headers.get("x-middleware-rewrite");
+
+  it("serves a French address from /fr internally, the language in a request header for the actions", () => {
+    expect(rewritten("https://site.example/")).toBe("https://site.example/fr");
+    expect(rewritten("https://site.example/contact")).toBe("https://site.example/fr/contact");
+    expect(run("https://site.example/contact").headers.get("x-middleware-request-x-plazo-locale")).toBe("fr");
+  });
+
+  it("lets the other languages through as they are", () => {
+    const res = run("https://site.example/en/contact");
+    expect(res.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("x-middleware-request-x-plazo-locale")).toBe("en");
+  });
+
+  it("gives French one address: /fr/… goes to the address without the prefix", () => {
+    const res = run("https://site.example/fr/contact?x=1");
+    expect(res.status).toBe(308);
+    expect(res.headers.get("location")).toBe("https://site.example/contact?x=1");
+    expect(run("https://site.example/fr").headers.get("location")).toBe("https://site.example/");
+  });
+
+  it("keeps the manage key for the booking's pages in the language of the link", () => {
+    const res = run(`https://site.example/en/ma-reservation/rab234?cle=${TOKEN}`);
+    expect(res.headers.get("location")).toBe("https://site.example/en/ma-reservation/RAB234");
+    expect(res.headers.get("set-cookie")).toContain("Path=/en/ma-reservation/RAB234");
+  });
+});

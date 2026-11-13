@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, localizedPath, type Locale } from "./i18n/locales";
+
 /**
  * Access to a booking's page without an account. The manage key arrives once in a link
  * (/ma-reservation/<ref>?cle=…, from the email or SMS); the proxy then keeps it in an HttpOnly
@@ -32,11 +34,11 @@ export interface ManageCookie {
 }
 
 /** Cookie holding a booking's manage key. */
-export function manageCookie(reference: string, token: string, secure: boolean): ManageCookie {
+export function manageCookie(reference: string, token: string, secure: boolean, locale: Locale = DEFAULT_LOCALE): ManageCookie {
   return {
     name: manageCookieName(reference),
     value: token,
-    options: { httpOnly: true, secure, sameSite: "lax", path: managePath(reference), maxAge: MAX_AGE_SECONDS },
+    options: { httpOnly: true, secure, sameSite: "lax", path: localizedPath(locale, managePath(reference)), maxAge: MAX_AGE_SECONDS },
   };
 }
 
@@ -53,11 +55,11 @@ export function secureCookies(env: Record<string, string | undefined> = process.
 export const RESUME_COOKIE = "reprise";
 const RESUME_MAX_AGE_SECONDS = 3600;
 
-export function resumeCookie(airport: string, parking: string, reference: string, token: string, secure: boolean): ManageCookie {
+export function resumeCookie(airport: string, parking: string, reference: string, token: string, secure: boolean, locale: Locale = DEFAULT_LOCALE): ManageCookie {
   return {
     name: RESUME_COOKIE,
     value: `${reference.toUpperCase()}.${token}`,
-    options: { httpOnly: true, secure, sameSite: "lax", path: `/${airport}/${parking}/reserver`, maxAge: RESUME_MAX_AGE_SECONDS },
+    options: { httpOnly: true, secure, sameSite: "lax", path: localizedPath(locale, `/${airport}/${parking}/reserver`), maxAge: RESUME_MAX_AGE_SECONDS },
   };
 }
 

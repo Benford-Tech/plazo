@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { AccountDeletionPage, Section } from "@/lib/account-deletion";
 import { TO_COMPLETE } from "@/lib/legal";
 

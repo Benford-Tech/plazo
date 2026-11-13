@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useActionState, useId } from "react";
 import { EMPTY_FORM, type FormState } from "@/lib/forms";
-import { errorMessage, fr } from "@/lib/fr";
+import { errorMessage, fr, lazy } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-const t = fr.newsletter;
+const t = lazy(() => fr.newsletter);
 
 /**
  * « La lettre Plazo » on the espresso footer (A, 15/10/2026). The e-mail and « S'inscrire » side by side from md up, stacked

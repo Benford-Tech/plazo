@@ -1,14 +1,14 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { DemoBadge } from "./DemoBadge";
 import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
 import { ShuttleBox } from "./ShuttleBox";
-import { fr } from "@/lib/fr";
+import { fr, lazy } from "@/lib/fr";
 import { type Badge, factChips, perDayLabel, shuttleBox } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import type { SearchResult } from "@/lib/types";
 
-const BADGE_LABEL: Record<Badge, string> = { cheapest: fr.results.cheapest, fastestShuttle: fr.results.fastestShuttle };
+const BADGE_LABEL: Record<Badge, string> = lazy(() => ({ cheapest: fr.results.cheapest, fastestShuttle: fr.results.fastestShuttle }));
 /** « Le moins cher » in orange text on crème orangée; « Navette la plus rapide » neutral cream. */
 const BADGE_TONE: Record<Badge, string> = { cheapest: "pill-hot", fastestShuttle: "" };
 

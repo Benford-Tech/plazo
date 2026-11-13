@@ -2401,8 +2401,21 @@ fait foi ». **Fait : les deux apps** : `assets/l10n/<fr-FR|en-GB|de-DE|es-ES|pt
 du français, pluriels `few`/`many` ajoutés en polonais, roumain, russe, ukrainien ; test `l10n_test.dart`), langue du téléphone
 (`supportedAppLocales` de `bootstrap.dart`, `CFBundleLocalizations` de l'Info.plist), dates et montants dans la langue
 (`appLocale`, `withTime` de `formatters.dart`, « €12.50 » en anglais, noms de jours de `stay.dart`). Le français reste la
-référence : un nouveau texte s'ajoute dans les neuf fichiers. **Reste** : réglage « Langue » de Plazo Pro, textes iOS des
-autorisations, site, pro.plazo.fr, espace pro, mails, SMS et pushs (en français).
+référence : un nouveau texte s'ajoute dans les neuf fichiers. **Fait aussi : le site voyageurs (13/11/2026)** : toutes les pages
+sous `app/[lang]/` (layout racine), le français à la racine (`proxy.ts` sert `/contact` depuis `/fr/contact`, renvoie `/fr/…` en 308
+vers l'adresse sans préfixe et passe la langue aux actions serveur dans l'en-tête `x-plazo-locale`), les autres sous `/en`, `/de`…
+(`lib/i18n/locales.ts` : `LOCALES`, `localizedPath`, `splitLocale`) ; textes : `lib/fr-dict.ts` (le français, référence, type
+`Dict`, avec `dates`, `money`, `units` propres à chaque langue) et `lib/i18n/dicts/<code>.ts` (même forme, test `locales.test.ts`) ;
+`fr` de `lib/fr.ts` lit la langue en cours partout (`lib/i18n/runtime.ts` : composants serveur par `React.cache` posé par
+`enterLocale` en tête de chaque layout, page et `generateMetadata` ; navigateur : une langue par document, `LocaleProvider` ;
+rendu serveur des composants client : contexte lu par `use`) ; une constante de module passe par `lazy(() => fr.x)` ; liens par
+`@/components/Link` (préfixe la langue, jamais `/pro` ni `/api`), `lp()` pour un `redirect` ou un `<a>` ; le navigateur ne
+télécharge que sa langue (morceau à part) ; dates et prix à la main par langue (« €1,234.56 », « 1.234,56 € ») ; cookie de la
+clé d'une réservation limité à l'adresse dans la langue du lien ; `hreflang` (`alternatesFor` de `seo.ts`, plan du site), `<html
+lang>`, `og:locale` ; pastille « 🌐 EN ▾ » de l'en-tête et liste des langues en pied de page (`LanguagePicker`). Pas encore traduits
+sur le site : les guides (le guide de la page Lyon et ses questions sont cachés, les trois pages de guide renvoient au français),
+les textes légaux (affichés en français), pro.plazo.fr et `/loueurs` (renvoyés au français). **Reste** : réglage « Langue » de
+Plazo Pro, textes iOS des autorisations, guides, textes légaux, pro.plazo.fr, espace pro, mails, SMS et pushs (en français).
 
 ## Sécurité (12/11/2026, « blinde la sécurité de l'app pour éviter les intrusions »)
 

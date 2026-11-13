@@ -34,6 +34,8 @@ export function HoldCountdown({ secondsLeft }: { secondsLeft: number }) {
     return () => clearInterval(timer);
   }, [secondsLeft, router]);
 
+  // The timer sits where the language puts it.
+  const [holdBefore = "", holdAfter = ""] = fr.pay.holdLeft("\u0000").split("\u0000");
   return (
     <p className="flex items-center gap-2.5 rounded-field bg-warn-bg px-3.5 py-3 text-[14.5px] font-semibold text-warn">
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
@@ -41,10 +43,11 @@ export function HoldCountdown({ secondsLeft }: { secondsLeft: number }) {
         <path d="M12 7v5l3 2" />
       </svg>
       <span>
-        {fr.pay.holdLeft("")}
+        {holdBefore}
         <span role="timer" className="font-hour text-[15.5px] text-ink">
           {formatCountdown(left)}
         </span>
+        {holdAfter}
       </span>
     </p>
   );

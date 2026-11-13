@@ -1,6 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { AirportGuide } from "./AirportGuide";
+import { currentLocale } from "@/lib/i18n/runtime";
 import { AirportLiveProvider } from "./AirportLive";
 import { HomeHero } from "./HomeHero";
 import { DemoBadge } from "./DemoBadge";
@@ -48,7 +49,8 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
     preview = null;
   }
   // C-A: the airport's guide and its questions, in figures only from the real partners' live offers.
-  const guide = airportGuide(airport.slug, guideFacts(listings, preview));
+  // The guide is written in French only for now (13/11/2026): the other languages show neither it nor its questions.
+  const guide = currentLocale() === "fr" ? airportGuide(airport.slug, guideFacts(listings, preview)) : null;
   const faq = [...t.home.faq, ...(guide?.faq ?? [])];
 
   // One poll of the airport's live shuttles for the page (14/10/2026): the hero's map and the partners' live rails share it.
