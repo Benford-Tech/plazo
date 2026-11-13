@@ -2980,5 +2980,36 @@
       "not_offered": "Ce supplément n'est plus proposé : rechargez la fiche.",
       "reservation_closed": "Réservation annulée ou non venue : pas de supplément."
     }
+  },
+  "write_traveller": {
+    "button": "Écrire depuis Plazo",
+    "title": "Écrire au client",
+    "from_plazo": "Envoyé depuis le numéro Plazo : la réponse du client arrive dans « Messages WhatsApp ».",
+    "whatsapp": "WhatsApp",
+    "sms": "SMS du parking",
+    "placeholder": "Votre message…",
+    "hint_free": "Le client vous a écrit : texte libre jusqu'au {} (règle de Meta).",
+    "hint_template": "Hors des 24 h de Meta, votre message part dans le modèle validé, entre ces deux lignes.",
+    "hint_sms": "Envoyé par le canal SMS du parking ; la réponse du client n'arrive pas dans Plazo.",
+    "hint_fallback": "Si WhatsApp ne passe pas, le SMS du parking part à la place.",
+    "send_whatsapp": "Envoyer par WhatsApp",
+    "send_sms": "Envoyer par SMS",
+    "sent_whatsapp": "Message envoyé par WhatsApp.",
+    "sent_sms": "SMS envoyé.",
+    "sent_sms_fallback": "WhatsApp n'est pas passé : SMS envoyé à la place.",
+    "open": "Voir",
+    "refusal": {
+      "no_phone": "Pas de numéro de téléphone sur cette réservation.",
+      "no_channel": "Ni WhatsApp ni SMS ne sont branchés pour ce parking.",
+      "anonymized": "Réservation anonymisée."
+    },
+    "errors": {
+      "whatsapp_unavailable": "WhatsApp n'est pas disponible pour ce parking.",
+      "sms_failed": "Le SMS n'est pas parti.",
+      "sms_unavailable": "WhatsApp a refusé le message et aucun SMS n'est branché.",
+      "no_phone": "Pas de numéro de téléphone sur cette réservation.",
+      "demo_read_only": "Démo : le message n'est pas envoyé.",
+      "generic": "Le message n'est pas parti. Réessayez."
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parking_app/src/features/pro_whatsapp/data/whatsapp_inbox_data_source.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/pro_whatsapp_conversation_page.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/pro_whatsapp_inbox_page.dart';
+import 'package:parking_app/src/features/pro_whatsapp/presentation/write_to_traveller_sheet.dart';
 
 import '../../helpers/pump_app.dart';
 
@@ -116,6 +117,27 @@ class FakeInbox implements WhatsappInboxDataSource {
 
   @override
   Future<int> unreadCount() async => 1;
+
+  final written = <String>[];
+  bool freeWindow = false;
+
+  @override
+  Future<WriteStatus> writeStatus(String reservationId) async => WriteStatus(
+    whatsapp: true,
+    sms: true,
+    freeUntil: freeWindow ? _now.add(const Duration(hours: 5)) : null,
+    frameBefore: 'Message de APL Parking pour votre réservation R7KQ2M :',
+    frameAfter: "Merci d'avoir choisi votre parking avec Plazo.",
+    canWrite: true,
+    refusal: null,
+    maxLength: 900,
+  );
+
+  @override
+  Future<WriteResult> write(String reservationId, String text, String channel) async {
+    written.add('$channel:$text');
+    return WriteResult(channel: channel, fallback: false, conversationId: 'c1');
+  }
 }
 
 void main() {
@@ -188,5 +210,37 @@ void main() {
     await tester.tap(find.byKey(const Key('wa-send')));
     await tester.pumpAndSettle();
     expect(inbox.replies, ['Oui.']);
+  });
+
+  testWidgets('« Écrire au client » : hors des 24 h dans le modèle validé, WhatsApp ou SMS du parking', (tester) async {
+    final inbox = FakeInbox();
+    WriteToTravellerSheet.debugSource = inbox;
+    addTearDown(() => WriteToTravellerSheet.debugSource = null);
+    await pumpLocalized(tester, const Scaffold(body: WriteToTravellerSheet(reservationId: 'r1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Message de APL Parking pour votre réservation R7KQ2M :'), findsOneWidget);
+    expect(find.byKey(const Key('write-channel-sms')), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byKey(const Key('write-send'))).onPressed, isNull);
+    await tester.enterText(find.byKey(const Key('write-text')), 'La navette part à 8h.');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('write-send')));
+    await tester.pumpAndSettle();
+    expect(inbox.written, ['whatsapp:La navette part à 8h.']);
+  });
+
+  testWidgets('« Écrire au client » : dans les 24 h, texte libre ; par SMS si choisi', (tester) async {
+    final inbox = FakeInbox()..freeWindow = true;
+    WriteToTravellerSheet.debugSource = inbox;
+    addTearDown(() => WriteToTravellerSheet.debugSource = null);
+    await pumpLocalized(tester, const Scaffold(body: WriteToTravellerSheet(reservationId: 'r1')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('write-frame-before')), findsNothing);
+    expect(find.textContaining('texte libre jusqu'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('write-channel-sms')));
+    await tester.enterText(find.byKey(const Key('write-text')), 'Bonjour');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('write-send')));
+    await tester.pumpAndSettle();
+    expect(inbox.written, ['sms:Bonjour']);
   });
 }

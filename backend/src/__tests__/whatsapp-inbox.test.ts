@@ -4,7 +4,8 @@ import prisma from '@/database';
 import { manageToken } from '@/domain/booking';
 import { appConversationPhone, inboundMessagesOf, previewOf, replyChannelOf, replyUntil } from '@/domain/whatsapp-inbox';
 import { WhatsappService } from '@/services/whatsapp.service';
-import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
+import { NotificationService } from '@/services/notification.service';
+import { addStaff, api, resetDatabase, setupOperator, useBrevoSms } from './utils/helpers';
 
 // « Une boîte de réception des messages envoyés par WhatsApp » (12/11/2026, direction A). fetch is mocked: no network.
 
@@ -361,5 +362,56 @@ describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
     expect((await api().post(`/api/public/bookings/${res.reference}/messages`).set(tok).send({ text: 'Bonjour' })).status).toBe(201);
     const list = await api().get('/api/internal/whatsapp/inbox').set(auth(op.token));
     expect(list.body.data[0]).toMatchObject({ phone: '', replyBy: 'app', replyUntil: null, name: 'Camille Martin' });
+  });
+});
+
+describe('« Écrire au client » depuis Plazo Pro (13/11/2026)', () => {
+  const bodies = () => fetchMock.mock.calls.filter(([u]) => GRAPH.test(String(u))).map(([, init]) => JSON.parse(init.body));
+
+  it('hors des 24 h dans le modèle validé, puis en texte libre après une réponse, et dans la même conversation', async () => {
+    const op = await setupOperator();
+    const res = await booking(op.operator.id, op.parking.id);
+    const status = await api().get(`/api/internal/reservations/${res.id}/write`).set(auth(op.token));
+    expect(status.status).toBe(200);
+    expect(status.body).toMatchObject({ canWrite: true, refusal: null, whatsapp: { available: true, freeUntil: null }, sms: { available: false } });
+    expect(status.body.whatsapp.frame.before).toContain(res.reference);
+
+    const first = await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(op.token)).send({ text: 'Bonjour, la navette part à 8h.' });
+    expect(first.status).toBe(201);
+    expect(first.body).toMatchObject({ channel: 'whatsapp', via: 'template', fallback: false });
+    expect(bodies().at(-1)).toMatchObject({ to: '33612345678', type: 'template' });
+    expect(JSON.stringify(bodies().at(-1))).toContain('Bonjour, la navette part à 8h.');
+
+    // The traveller answers on WhatsApp: same conversation, now a free text.
+    await postWebhook(incoming('wamid.in.50', '33612345678', 'Merci, à demain'));
+    expect(await prisma.whatsappConversation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+    const second = await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(op.token)).send({ text: 'Avec plaisir.' });
+    expect(second.body).toMatchObject({ via: 'text', conversationId: first.body.conversationId });
+    expect(bodies().at(-1)).toMatchObject({ type: 'text', text: { body: 'Avec plaisir.' } });
+    const open = await api().get(`/api/internal/whatsapp/inbox/${first.body.conversationId}`).set(auth(op.token));
+    // Meta dates a message to the second: compare without the order.
+    expect(open.body.messages.map((m: any) => `${m.direction}:${m.text}`).sort()).toEqual(
+      ['in:Merci, à demain', 'out:Avec plaisir.', 'out:Bonjour, la navette part à 8h.'].sort(),
+    );
+    expect((await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(op.token)).send({ text: ' ' })).status).toBe(400);
+    const other = await setupOperator('Autre');
+    expect((await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(other.token)).send({ text: 'x' })).status).toBe(404);
+  });
+
+  it('WhatsApp refusé : le SMS du parking part à la place', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const res = await booking(op.operator.id, op.parking.id);
+    fetchMock.mockImplementation(async () => json({ error: { code: 131026 } }, 400));
+    const sms = jest.spyOn(Container.get(NotificationService), 'smsViaBrevo').mockResolvedValue(true);
+    try {
+      const sent = await api().post(`/api/internal/reservations/${res.id}/write`).set(auth(op.token)).send({ text: 'La navette arrive.' });
+      expect(sent.status).toBe(201);
+      expect(sent.body).toMatchObject({ channel: 'sms', fallback: true });
+      expect(sms).toHaveBeenCalledWith('+33612345678', 'staff_message', expect.any(String), 'La navette arrive.');
+      expect(await prisma.smsOutbox.count({ where: { reservationId: res.id, kind: 'staff_message' } })).toBe(1);
+    } finally {
+      sms.mockRestore();
+    }
   });
 });

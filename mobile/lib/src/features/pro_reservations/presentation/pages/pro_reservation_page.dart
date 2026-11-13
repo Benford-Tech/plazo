@@ -23,6 +23,7 @@ import '../../../extras/presentation/widgets/staff_extras_card.dart';
 import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
 import '../../../pro_keys/presentation/keys_control.dart';
 import '../../../pro_surcharges/presentation/surcharges_card.dart';
+import '../../../pro_whatsapp/presentation/write_to_traveller_sheet.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
@@ -76,7 +77,9 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
           if (context.router.canPop()) {
             context.router.pop(r);
           } else {
-            context.router.replaceAll([const ProShellRoute(children: [ProReservationsRoute()])]);
+            context.router.replaceAll([
+              const ProShellRoute(children: [ProReservationsRoute()]),
+            ]);
           }
         }
 
@@ -213,7 +216,13 @@ class _Sheet extends StatelessWidget {
             ('res.channel_label'.tr(), [channel, ?r.channelDetail, if (isDirectBooking(r.channel)) 'res.direct.badge'.tr()].join(' · ')),
             if (r.externalReference != null) ('res.external_reference'.tr(), r.externalReference!),
             if (r.priceCents != null)
-              ('res.price'.tr(), ['${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €', if (r.paymentMethod != null) 'res.payment.${r.paymentMethod}'.tr()].join(' · ')),
+              (
+                'res.price'.tr(),
+                [
+                  '${(r.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €',
+                  if (r.paymentMethod != null) 'res.payment.${r.paymentMethod}'.tr(),
+                ].join(' · '),
+              ),
           ],
         ),
         _Section(
@@ -227,6 +236,14 @@ class _Sheet extends StatelessWidget {
                 icon: const Icon(Icons.call_rounded, color: AppColors.accent),
                 onPressed: () => links.open(Uri(scheme: 'tel', path: r.customerPhone.replaceAll(RegExp(r'[\s.()-]'), ''))),
               ),
+              // « Écrire au client » (13/11/2026): from Plazo's WhatsApp number, the parking's SMS as the fallback.
+              if (can(role, 'reservations:manage'))
+                IconButton(
+                  key: const Key('res-write'),
+                  tooltip: 'write_traveller.button'.tr(),
+                  icon: const Icon(Icons.chat_rounded, color: AppColors.accent),
+                  onPressed: () => showWriteToTraveller(context, reservationId: r.id),
+                ),
               IconButton(
                 key: const Key('res-sms'),
                 tooltip: 'res.sms'.tr(),
@@ -239,9 +256,15 @@ class _Sheet extends StatelessWidget {
         _Section(
           title: 'res.vehicle'.tr(),
           rows: [
-            if (r.vehicleModel != null || r.vehicleColour != null) ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
+            if (r.vehicleModel != null || r.vehicleColour != null)
+              ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
             if (r.file != null)
-              ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
+              (
+                'res.file'.tr(),
+                r.filePosition == null
+                    ? r.file!.code
+                    : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}',
+              )
             else
               (
                 'res.spot'.tr(),
@@ -406,12 +429,19 @@ class _NextStep extends StatelessWidget {
               },
               itemBuilder: (_) => [
                 if (board)
-                  PopupMenuItem(key: const Key('status-board'), value: 'board', child: Text('res.action.board'.tr(), style: AppText.body(size: 14))),
+                  PopupMenuItem(
+                    key: const Key('status-board'),
+                    value: 'board',
+                    child: Text('res.action.board'.tr(), style: AppText.body(size: 14)),
+                  ),
                 for (final s in others)
                   PopupMenuItem(
                     key: Key('status-$s'),
                     value: s,
-                    child: Text('res.action.$s'.tr(), style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink)),
+                    child: Text(
+                      'res.action.$s'.tr(),
+                      style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink),
+                    ),
                   ),
                 if (canDelete) ...[
                   if (others.isNotEmpty || board) const PopupMenuDivider(),
@@ -422,7 +452,9 @@ class _NextStep extends StatelessWidget {
                       children: [
                         const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
                         const SizedBox(width: 8),
-                        Flexible(child: Text('res.trash.action'.tr(), style: AppText.body(size: 14, color: AppColors.danger))),
+                        Flexible(
+                          child: Text('res.trash.action'.tr(), style: AppText.body(size: 14, color: AppColors.danger)),
+                        ),
                       ],
                     ),
                   ),
@@ -494,9 +526,7 @@ class _NextStep extends StatelessWidget {
       await trash.delete(id, reason: reason);
     } on DioException catch (e) {
       final code = e.errorCode;
-      messenger.showSnackBar(
-        SnackBar(content: Text(code == 'plazo_booking' || code == 'vehicle_on_site' ? 'res.trash.$code'.tr() : e.errorMessage)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(code == 'plazo_booking' || code == 'vehicle_on_site' ? 'res.trash.$code'.tr() : e.errorMessage)));
       return;
     }
     // Forced (the page's PopScope would hand the deleted booking back to the list); the list syncs itself.
@@ -625,53 +655,55 @@ class _HandoverSheetState extends State<_HandoverSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Text('res.handover.title'.tr(), style: AppText.title(size: 20)),
-          const SizedBox(height: 4),
-          Text(
-            [
-              r.customerName,
-              r.plate,
-              if (r.spot != null) '${'res.spot'.tr()} ${r.spot!.code}',
-              if (r.keyHook != null) '${'occupation.key_hook'.tr()} ${r.keyHook}',
-            ].where((s) => s.trim().isNotEmpty).join(' · '),
-            style: AppText.muted(),
-          ),
-          const SizedBox(height: 10),
-          SwitchListTile(
-            key: const Key('handover-keys'),
-            contentPadding: EdgeInsets.zero,
-            value: _keys,
-            title: Text('res.handover.keys'.tr(), style: AppText.strong()),
-            subtitle: Text(_tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(), style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted()),
-            activeThumbColor: AppColors.accent,
-            onChanged: (v) => setState(() => _keys = v),
-          ),
-          TextField(
-            key: const Key('handover-note'),
-            controller: _note,
-            maxLines: 3,
-            minLines: 1,
-            maxLength: 500,
-            decoration: InputDecoration(labelText: 'res.handover.note'.tr(), helperText: 'res.handover.note_hint'.tr()),
-          ),
-          const SizedBox(height: 10),
-          // 12/11/2026: the supplements to collect before the car goes (the same block as the booking's sheet).
-          SurchargesCard(reservationId: r.id, compact: true),
-          GradientButton(
-            key: const Key('handover-confirm'),
-            icon: Icons.check_rounded,
-            label: 'res.handover.confirm'.tr(),
-            onPressed: () {
-              if (!_keys) return setState(() => _tried = true);
-              Navigator.of(context).pop(_note.text.trim());
-            },
-          ),
+            Text('res.handover.title'.tr(), style: AppText.title(size: 20)),
+            const SizedBox(height: 4),
+            Text(
+              [
+                r.customerName,
+                r.plate,
+                if (r.spot != null) '${'res.spot'.tr()} ${r.spot!.code}',
+                if (r.keyHook != null) '${'occupation.key_hook'.tr()} ${r.keyHook}',
+              ].where((s) => s.trim().isNotEmpty).join(' · '),
+              style: AppText.muted(),
+            ),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              key: const Key('handover-keys'),
+              contentPadding: EdgeInsets.zero,
+              value: _keys,
+              title: Text('res.handover.keys'.tr(), style: AppText.strong()),
+              subtitle: Text(
+                _tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(),
+                style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted(),
+              ),
+              activeThumbColor: AppColors.accent,
+              onChanged: (v) => setState(() => _keys = v),
+            ),
+            TextField(
+              key: const Key('handover-note'),
+              controller: _note,
+              maxLines: 3,
+              minLines: 1,
+              maxLength: 500,
+              decoration: InputDecoration(labelText: 'res.handover.note'.tr(), helperText: 'res.handover.note_hint'.tr()),
+            ),
+            const SizedBox(height: 10),
+            // 12/11/2026: the supplements to collect before the car goes (the same block as the booking's sheet).
+            SurchargesCard(reservationId: r.id, compact: true),
+            GradientButton(
+              key: const Key('handover-confirm'),
+              icon: Icons.check_rounded,
+              label: 'res.handover.confirm'.tr(),
+              onPressed: () {
+                if (!_keys) return setState(() => _tried = true);
+                Navigator.of(context).pop(_note.text.trim());
+              },
+            ),
           ],
         ),
       ),
     );
   }
-
 }
 
 class _Section extends StatelessWidget {
@@ -715,7 +747,12 @@ class _Section extends StatelessWidget {
                 ],
               ),
             ),
-          if (child != null) ...[const SizedBox(height: 8), Text('keys.title'.tr().toUpperCase(), style: AppText.label(size: 11)), const SizedBox(height: 6), child!],
+          if (child != null) ...[
+            const SizedBox(height: 8),
+            Text('keys.title'.tr().toUpperCase(), style: AppText.label(size: 11)),
+            const SizedBox(height: 6),
+            child!,
+          ],
         ],
       ),
     );

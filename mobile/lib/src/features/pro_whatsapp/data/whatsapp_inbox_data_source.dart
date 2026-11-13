@@ -205,6 +205,58 @@ class WaThread {
   final List<WaSent> sent;
 }
 
+/// « Écrire au client » (13/11/2026): what the sheet can do for a booking.
+class WriteStatus {
+  const WriteStatus({
+    required this.whatsapp,
+    required this.sms,
+    required this.freeUntil,
+    required this.frameBefore,
+    required this.frameAfter,
+    required this.canWrite,
+    required this.refusal,
+    required this.maxLength,
+  });
+
+  factory WriteStatus.fromJson(Map<String, dynamic> json) {
+    final wa = Map<String, dynamic>.from((json['whatsapp'] as Map?) ?? const {});
+    final frame = Map<String, dynamic>.from((wa['frame'] as Map?) ?? const {});
+    return WriteStatus(
+      whatsapp: wa['available'] == true,
+      sms: (json['sms'] as Map?)?['available'] == true,
+      freeUntil: _date(wa['freeUntil']),
+      frameBefore: frame['before'] as String? ?? '',
+      frameAfter: frame['after'] as String? ?? '',
+      canWrite: json['canWrite'] == true,
+      refusal: json['refusal'] as String?,
+      maxLength: json['maxLength'] as int? ?? 900,
+    );
+  }
+
+  /// Plazo's WhatsApp number can write to this traveller.
+  final bool whatsapp;
+
+  /// The parking's SMS channel can (and takes over when WhatsApp refuses).
+  final bool sms;
+
+  /// Within Meta's 24 hours: a free text; otherwise the approved template between [frameBefore] and [frameAfter].
+  final DateTime? freeUntil;
+  final String frameBefore;
+  final String frameAfter;
+  final bool canWrite;
+  final String? refusal;
+  final int maxLength;
+}
+
+class WriteResult {
+  const WriteResult({required this.channel, required this.fallback, required this.conversationId});
+  factory WriteResult.fromJson(Map<String, dynamic> json) =>
+      WriteResult(channel: json['channel'] as String? ?? 'whatsapp', fallback: json['fallback'] == true, conversationId: json['conversationId'] as String?);
+  final String channel;
+  final bool fallback;
+  final String? conversationId;
+}
+
 DateTime? _date(Object? value) => value is String ? DateTime.tryParse(value)?.toLocal() : null;
 
 abstract class WhatsappInboxDataSource {
@@ -217,6 +269,10 @@ abstract class WhatsappInboxDataSource {
 
   /// Unread messages, for the badge of Plus (`/internal/nav/counts`).
   Future<int> unreadCount();
+
+  /// « Écrire au client » (13/11/2026) of a booking.
+  Future<WriteStatus> writeStatus(String reservationId);
+  Future<WriteResult> write(String reservationId, String text, String channel);
 }
 
 class WhatsappInboxDataSourceImpl implements WhatsappInboxDataSource {
@@ -270,5 +326,17 @@ class WhatsappInboxDataSourceImpl implements WhatsappInboxDataSource {
   Future<int> unreadCount() async {
     final res = await _dio.get<Map<String, dynamic>>('internal/nav/counts');
     return res.data?['whatsapp'] as int? ?? 0;
+  }
+
+  @override
+  Future<WriteStatus> writeStatus(String reservationId) async {
+    final res = await _dio.get<Map<String, dynamic>>('internal/reservations/$reservationId/write');
+    return WriteStatus.fromJson(res.data ?? const {});
+  }
+
+  @override
+  Future<WriteResult> write(String reservationId, String text, String channel) async {
+    final res = await _dio.post<Map<String, dynamic>>('internal/reservations/$reservationId/write', data: {'text': text, 'channel': channel});
+    return WriteResult.fromJson(res.data ?? const {});
   }
 }

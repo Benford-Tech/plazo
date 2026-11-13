@@ -1,6 +1,6 @@
 Plazo Pro, pour les équipes des parkings d'aéroport.
-• Messages WhatsApp : lire et répondre aux clients, voir les envois.
-• Planning : états en couleur, prochains départs, retards ; prévisionnel 3 mois.
+• WhatsApp : écrivez au client depuis le numéro Plazo, lisez et répondez.
+• Planning : prochains départs, retards, prévisionnel.
 • Réservations de tous canaux.
 • Plan du parking, files, clés en un toucher.
 • Navette : Aller et Retour, sièges auto.

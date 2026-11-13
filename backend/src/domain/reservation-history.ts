@@ -147,7 +147,15 @@ export function changesOf(details: unknown, timeZone: string): HistoryChange[] {
 function groupOf(action: string): HistoryGroup {
   if (action === 'reservation.status_changed') return 'status';
   if (action === 'reservation.updated' || action.startsWith('reservation.created') || action === 'reservation.imported') return 'change';
-  if (action.startsWith('arrival.') || action.startsWith('return.') || action === 'contract.code_sent' || action.startsWith('sms.')) return 'message';
+  if (
+    action.startsWith('arrival.') ||
+    action.startsWith('return.') ||
+    action === 'contract.code_sent' ||
+    action.startsWith('sms.') ||
+    action === 'traveller.message_sent' ||
+    action === 'whatsapp.reply'
+  )
+    return 'message';
   return 'other';
 }
 
