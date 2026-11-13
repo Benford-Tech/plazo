@@ -4,6 +4,7 @@ import prisma from '@/database';
 import { manageToken } from '@/domain/booking';
 import { appConversationPhone, inboundMessagesOf, previewOf, replyChannelOf, replyUntil } from '@/domain/whatsapp-inbox';
 import { WhatsappService } from '@/services/whatsapp.service';
+import { maskBookingLinks } from '@/services/whatsapp-inbox.service';
 import { NotificationService } from '@/services/notification.service';
 import { addStaff, api, resetDatabase, setupOperator, useBrevoSms } from './utils/helpers';
 
@@ -310,13 +311,13 @@ describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
     expect(appConversationPhone('', 'r1')).toBe('app:r1');
   });
 
-  it('le message du voyageur arrive dans la conversation WhatsApp, la réponse repart dans l’app', async () => {
+  it('le message du voyageur a sa conversation, à part de WhatsApp ; la réponse repart dans l’app', async () => {
     const op = await setupOperator();
     await withListing(op.token);
     const res = await booking(op.operator.id, op.parking.id);
     const row = await prisma.reservation.findUniqueOrThrow({ where: { id: res.id } });
     const tok = { 'x-booking-token': manageToken(res.id, process.env.SECRET_KEY!, row.manageTokenVersion) };
-    // He first wrote on WhatsApp: the app message joins the same conversation.
+    // He first wrote on WhatsApp: since the security pass of 13/11/2026, the app message keeps its own conversation.
     await postWebhook(incoming('wamid.in.20', '33612345678', 'Bonjour'));
 
     expect((await api().post(`/api/public/bookings/${res.reference}/messages`).send({ text: 'x' })).status).toBe(404);
@@ -326,11 +327,12 @@ describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
     expect((await api().post(`/api/public/bookings/${res.reference}/messages`).set(tok).send({ text: '  ' })).status).toBe(400);
 
     const list = await api().get('/api/internal/whatsapp/inbox?view=unread').set(auth(op.token));
-    expect(list.body.data).toHaveLength(1);
-    expect(list.body.data[0]).toMatchObject({ unread: 2, replyBy: 'app' });
-    const conv = list.body.data[0].id;
+    expect(list.body.data).toHaveLength(2);
+    const appConv = list.body.data.find((c: any) => c.replyBy === 'app');
+    expect(appConv).toMatchObject({ unread: 1, phone: '' });
+    const conv = appConv.id;
     const open = await api().get(`/api/internal/whatsapp/inbox/${conv}`).set(auth(op.token));
-    expect(open.body.messages.map((m: any) => m.channel)).toEqual(['whatsapp', 'app']);
+    expect(open.body.messages.map((m: any) => m.channel)).toEqual(['app']);
 
     const calls = fetchMock.mock.calls.length;
     const reply = await api().post(`/api/internal/whatsapp/inbox/${conv}/reply`).set(auth(op.token)).send({ text: 'Oui, à demain.' });
@@ -341,19 +343,49 @@ describe('« Écrire au parking » depuis l’app Plazo (12/11/2026)', () => {
 
     const thread = await api().get(`/api/public/bookings/${res.reference}/messages`).set(tok);
     expect(thread.body.canWrite).toBe(true);
-    // The whole conversation: his WhatsApp « Bonjour », the app message, the reply, and what Plazo sent the booking.
+    // The app messages, the reply and what Plazo sent the booking; never the number's WhatsApp traffic (security pass).
     await prisma.whatsappMessage.create({
       data: { operatorId: op.operator.id, reservationId: res.id, kind: 'booking_reminder', to: '+33612345678', status: 'read', body: 'À demain 8h.' },
     });
     const all = await api().get(`/api/public/bookings/${res.reference}/messages`).set(tok);
     expect(all.body.messages.map((m: any) => [m.from, m.channel, m.text])).toEqual([
-      ['me', 'whatsapp', 'Bonjour'],
       ['me', 'app', 'On arrive à 8h, c’est bon ?'],
       ['parking', 'app', 'Oui, à demain.'],
       ['plazo', 'whatsapp', 'À demain 8h.'],
     ]);
-    expect(all.body.messages[2].by).toBe('Gérant');
-    expect(all.body.messages[3].kind).toBe('booking_reminder');
+    expect(all.body.messages[1].by).toBe('Gérant');
+    expect(all.body.messages[2].kind).toBe('booking_reminder');
+  });
+
+  it('une réservation faite avec le numéro d’un autre ne lit ni ne rejoint sa conversation', async () => {
+    const op = await setupOperator();
+    await withListing(op.token);
+    // The real holder of the number talks with the parking on WhatsApp, and the team answers.
+    await booking(op.operator.id, op.parking.id);
+    await postWebhook(incoming('wamid.in.70', '33612345678', 'Mon code portail ?'));
+    const victim = await prisma.whatsappConversation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    await prisma.whatsappConversation.update({ where: { id: victim.id }, data: { lastInboundAt: new Date() } });
+    await api().post(`/api/internal/whatsapp/inbox/${victim.id}/reply`).set(auth(op.token)).send({ text: 'Le code est 4321.' });
+    // Someone books with that number.
+    const other = await booking(op.operator.id, op.parking.id);
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id: other.id } });
+    const tok = { 'x-booking-token': manageToken(other.id, process.env.SECRET_KEY!, row.manageTokenVersion) };
+    const read = await api().get(`/api/public/bookings/${other.reference}/messages`).set(tok);
+    expect(JSON.stringify(read.body.messages)).not.toContain('4321');
+    expect(JSON.stringify(read.body.messages)).not.toContain('portail');
+    await api().post(`/api/public/bookings/${other.reference}/messages`).set(tok).send({ text: 'Bonjour' });
+    const after = await prisma.whatsappConversation.findUniqueOrThrow({ where: { id: victim.id } });
+    expect(after.reservationId).toBe(victim.reservationId);
+    expect(await prisma.whatsappInboxMessage.count({ where: { conversationId: victim.id, channel: 'app' } })).toBe(0);
+  });
+
+  it('le lien de la réservation n’est jamais montré à l’équipe dans ce que Plazo a envoyé', async () => {
+    expect(maskBookingLinks('Votre réservation : https://www.plazo.fr/a/R7KQ2M-abcd1234 à demain')).toBe(
+      'Votre réservation : [lien de la réservation] à demain',
+    );
+    expect(maskBookingLinks('https://www.plazo.fr/ma-reservation/R7KQ2M?cle=xyz')).toBe('[lien de la réservation]');
+    expect(maskBookingLinks('Rendez-vous https://maps.google.com/?q=45,5')).toBe('Rendez-vous https://maps.google.com/?q=45,5');
+    expect(maskBookingLinks(null)).toBeNull();
   });
 
   it('sans numéro utilisable, une conversation par réservation', async () => {

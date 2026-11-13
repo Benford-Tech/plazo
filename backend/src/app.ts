@@ -6,6 +6,7 @@ import express from 'express';
 import helmet from 'helmet';
 import hpp from 'hpp';
 import morgan from 'morgan';
+import { redactUrl } from '@/domain/log-url';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { API_PREFIX, CLIENT_URLS, NODE_ENV, PORT, PRODUCT_NAME } from './config';
@@ -72,7 +73,13 @@ export class App {
   }
 
   private initializeMiddlewares() {
-    if (this.env !== 'test') this.app.use(morgan('common', { stream }));
+    if (this.env !== 'test') {
+      // The common format, with the secrets a URL may carry hidden (security pass of 13/11/2026).
+      morgan.token('safe-url', req => redactUrl((req as { originalUrl?: string; url?: string }).originalUrl ?? req.url ?? ''));
+      this.app.use(
+        morgan(':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length]', { stream }),
+      );
+    }
     // Bearer tokens only (no cookies), so CORS only needs the known front-end origins.
     this.app.use(cors({ origin: CLIENT_URLS.length ? CLIENT_URLS : false }));
     this.app.use(hpp());

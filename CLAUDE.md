@@ -1431,7 +1431,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      numéro d'une de leurs réservations (référence Plazo ou du comparateur) : sinon « Numéro inconnu » pour la plateforme (`place`). Réponse de l'équipe : `replyBy` de la vue (`replyChannelOf` : l'app quand le dernier
      message du client vient de l'app ou que les 24 h de Meta sont passées après un message de l'app, sinon WhatsApp dans les 24 h, sinon
      un appel) ; dans l'app, rien chez Meta, push « Message de <parking> » (`type: 'parking_message'`, ouvre Ma réservation). Web et Plazo
-     Pro : pastille « App Plazo » sur ces messages, barre de réponse « Le client vous a écrit depuis l'app Plazo… ». Le site n'a pas la
+     Pro : depuis la passe de sécurité du 13/11/2026, le fil de l'app ne montre plus le WhatsApp du numéro et un message de l'app a sa propre
+     conversation `app:<réservation>` (voir « Sécurité ») ; pastille « App Plazo » sur ces messages, barre de réponse « Le client vous a écrit depuis l'app Plazo… ». Le site n'a pas la
      carte. Tests `whatsapp-inbox.test.ts`, `WhatsappInboxPage.test.tsx`, `parking_messages_card_test.dart`, `whatsapp_inbox_test.dart`.
      **« Écrire au client » depuis Plazo Pro (13/11/2026, « Ajoute l'envoi par WhatsApp et par le numéro Plazo dans l'App pro », choix
      « Écrire depuis Plazo »)** : bouton bulle `res-write` du bloc Contact de la fiche réservation (`reservations:manage`, à côté d'Appeler et
@@ -2399,6 +2400,23 @@ réservation et passe par `POST /public/bookings/lookup` ; la passerelle SMS pri
 `geolocation=(self)` (« Prévenir de mon arrivée » était bloqué). **Reste à décider** : les annulations et modifications appliquées
 d'après le seul texte d'un mail (ParkVia, Onepark, Allopark) peuvent être imitées par qui connaît l'adresse de réception du parking ;
 piste : exiger une signature DKIM du comparateur avant d'appliquer, sinon « À traiter ».
+
+**Deuxième passe (13/11/2026, « Refais une passe sur la sécurité »)**, trois relectures (messagerie WhatsApp, routes de l'équipe,
+routes publiques et site) ; corrigé : le fil « Écrire au parking » de l'app Plazo ne montre plus que les messages de l'app de cette
+réservation, les réponses de l'équipe et ce que Plazo lui a envoyé, plus le trafic WhatsApp du numéro (un numéro de réservation est
+tapé par qui réserve : réserver avec le numéro d'un autre donnait sa conversation avec le parking), et un message de l'app ouvre
+toujours la conversation `app:<réservation>`, jamais celle du numéro (`travellerThread`, `travellerWrite`) ; le lien de la réservation
+(lien court `/a/…`, `?cle=`) est masqué dans ce que la boîte montre à l'équipe des messages envoyés par Plazo (`maskBookingLinks`,
+« [lien de la réservation] » : le chauffeur, qui lit la boîte, ne peut plus ouvrir la réservation comme le voyageur) ; « Écrire au
+client » limité à 30 messages par 15 min et par membre (`staffMessageLimiter`) ; `PUT /internal/parkings/:id/files` n'accepte que
+les ids des files du parking (un id d'un autre loueur renommait sa file) ; « Rédiger avec Claude » et « Proposer les zones avec
+Claude » refusés dans la démo et limités à 20 par heure et par loueur (`aiLimiter`) ; le journal des accès cache les secrets portés
+par une adresse (code du lien court, chemin du webhook de la passerelle SMS, jetons de désinscription et de démo, `cle=`,
+`hub.verify_token` ; `domain/log-url.ts`) ; le jeton de vérification de Meta est comparé à temps constant ; la passerelle SMS privée
+n'est appelée que si son nom résout vers des adresses publiques (`resolvesToPublic`). Tests `security-pass.test.ts`,
+`whatsapp-inbox.test.ts`, `files.test.ts`. **Reste à décider** : la signature DKIM des comparateurs (ci-dessus) ; des limites de
+débit partagées entre les instances de Vercel (aujourd'hui par instance) ; le chauffeur et le voiturier peuvent refuser un service
+payé en ligne (remboursement Stripe) et ajouter un supplément de n'importe quel montant.
 
 ## Personnel
 

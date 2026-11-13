@@ -7,7 +7,8 @@ import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { aiLimiter } from '@/middlewares/rateLimiter';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -185,6 +186,8 @@ export class ParkingRoute implements Routes {
     this.router.post(
       '/internal/parkings/:id/plan/suggest-zones',
       StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      aiLimiter,
       ValidationMiddleware(SuggestZonesDto),
       this.parking.suggestZones,
     );

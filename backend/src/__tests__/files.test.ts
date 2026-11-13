@@ -71,6 +71,18 @@ describe('files (S-C, 07/10/2026)', () => {
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: first.id } })).keyHook).toBe('9');
   });
 
+  it('13/11/2026 (sécurité) : l’id d’une file d’un autre parking ne touche jamais cette file', async () => {
+    const a = await setupOperator();
+    const b = await setupOperator('Autre');
+    const theirs = (await api().put(`/api/internal/parkings/${b.parking.id}/files`).set(auth(b.token)).send({ files })).body.data[0];
+    const put = await api()
+      .put(`/api/internal/parkings/${a.parking.id}/files`)
+      .set(auth(a.token))
+      .send({ files: [{ id: theirs.id, code: 'X1', capacity: 2 }] });
+    expect(put.status).toBe(200);
+    expect(await prisma.parkingFile.findUniqueOrThrow({ where: { id: theirs.id } })).toMatchObject({ code: 'F01', parkingId: b.parking.id });
+  });
+
   it('saves the files of the plan, refuses a duplicate code and keeps a file that holds cars', async () => {
     const { token, parking } = await setupOperator();
     const put = await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files });
