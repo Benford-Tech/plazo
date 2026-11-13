@@ -5,6 +5,10 @@
 /// exactly the same strings. Prices are never computed here: the API gives them.
 library;
 
+import 'package:intl/intl.dart';
+
+import 'formatters.dart';
+
 const _weekdays = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
 const _months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const _weekdayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -12,6 +16,12 @@ const _monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'jui
 
 /// Longest stay the API accepts.
 const maxStayDays = 90;
+
+// French keeps the site's hand-built labels; the other languages take intl's names (13/11/2026).
+String _wd(DateTime d) => isFrench ? _weekdays[d.weekday % 7] : DateFormat.E(appLocale).format(d);
+String _mo(DateTime d) => isFrench ? _months[d.month - 1] : DateFormat.MMM(appLocale).format(d);
+String _wdLong(DateTime d) => isFrench ? _weekdayNames[d.weekday % 7] : DateFormat.EEEE(appLocale).format(d);
+String _moLong(DateTime d) => isFrench ? _monthNames[d.month - 1] : DateFormat.MMMM(appLocale).format(d);
 
 final _localRe = RegExp(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$');
 final _dateRe = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$');
@@ -92,32 +102,32 @@ String todayLocal(DateTime now) => fromInstant(now).substring(0, 10);
 /// "2026-10-04" -> "dim. 4 oct."
 String formatDay(String date) {
   final d = _utcDate(date);
-  return '${_weekdays[d.weekday % 7]} ${d.day} ${_months[d.month - 1]}';
+  return '${_wd(d)} ${d.day} ${_mo(d)}';
 }
 
 /// "2026-10-10" -> "samedi 10 octobre 2026" (spoken labels of the calendar's days).
 String formatDayLong(String date) {
   final d = _utcDate(date);
-  return '${_weekdayNames[d.weekday % 7]} ${d.day} ${_monthNames[d.month - 1]} ${d.year}';
+  return '${_wdLong(d)} ${d.day} ${_moLong(d)} ${d.year}';
 }
 
 /// "octobre 2026" (title of a calendar month).
-String monthTitle(int year, int month) => '${_monthNames[month - 1]} $year';
+String monthTitle(int year, int month) => '${_moLong(DateTime.utc(year, month, 15))} $year';
 
 /// Short dates of a stay for the single "Vos dates" pill: the return drops its month when it is
 /// the drop-off's ("sam. 3 oct." → "sam. 10"), and shows its year when that differs.
 ({String start, String end}) formatStayDates(String start, String end) {
   final a = _utcDate(start), b = _utcDate(end);
   final sameYear = a.year == b.year;
-  if (sameYear && a.month == b.month) return (start: formatDay(start), end: '${_weekdays[b.weekday % 7]} ${b.day}');
+  if (sameYear && a.month == b.month) return (start: formatDay(start), end: '${_wd(b)} ${b.day}');
   return (start: formatDay(start), end: sameYear ? formatDay(end) : '${formatDay(end)} ${b.year}');
 }
 
 /// "3 → 10 oct." (results header, booking bar).
 String shortRange(String start, String end) {
   final a = _utcDate(start), b = _utcDate(end);
-  if (a.year == b.year && a.month == b.month) return '${a.day} → ${b.day} ${_months[b.month - 1]}';
-  return '${a.day} ${_months[a.month - 1]} → ${b.day} ${_months[b.month - 1]}';
+  if (a.year == b.year && a.month == b.month) return '${a.day} → ${b.day} ${_mo(b)}';
+  return '${a.day} ${_mo(a)} → ${b.day} ${_mo(b)}';
 }
 
 /// "2026-10-04T06:30" -> "dim. 4 oct. · 06:30"

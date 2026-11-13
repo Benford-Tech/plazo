@@ -1,4 +1,5 @@
 Plazo Pro, pour les équipes des parkings d'aéroport.
+• En 9 langues : celle du téléphone.
 • Messages WhatsApp : lire et répondre aux clients, voir les envois.
 • Planning : états en couleur, prochains départs, retards ; prévisionnel 3 mois.
 • Réservations de tous canaux.
@@ -6,4 +7,4 @@ Plazo Pro, pour les équipes des parkings d'aéroport.
 • Navette : Aller et Retour, sièges auto.
 • Voiturier : courses au terminal, services.
 • Contrat, état des lieux, factures, suppléments.
-• Cloche des notifications, menu par rôle, photo, logo.
+• Cloche, menu par rôle, photo, logo.

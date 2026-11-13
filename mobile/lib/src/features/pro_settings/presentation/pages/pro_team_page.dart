@@ -251,7 +251,7 @@ class _MemberTileState extends State<_MemberTile> {
           Text(
             m.lastLoginAt == null
                 ? 'team.never_logged'.tr()
-                : 'team.last_login'.tr(args: ['${DateFormat('EEE d MMM', 'fr_FR').format(m.lastLoginAt!.toLocal())} ${hhmm(m.lastLoginAt!)}']),
+                : 'team.last_login'.tr(args: ['${DateFormat('EEE d MMM', appLocale).format(m.lastLoginAt!.toLocal())} ${hhmm(m.lastLoginAt!)}']),
             style: AppText.muted(size: 12),
           ),
           const SizedBox(height: 8),

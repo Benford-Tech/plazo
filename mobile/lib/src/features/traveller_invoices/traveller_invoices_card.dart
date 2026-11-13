@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
@@ -19,7 +20,7 @@ String _euros(int cents) {
   return '${cents < 0 ? '-' : ''}$whole,${(abs % 100).toString().padLeft(2, '0')} €';
 }
 
-String _day(DateTime at) => DateFormat('d MMMM yyyy', 'fr_FR').format(at.toLocal());
+String _day(DateTime at) => DateFormat('d MMMM yyyy', appLocale).format(at.toLocal());
 
 /// « Facture » on Ma réservation (07/11/2026, « Le client peut retrouver ses factures dans Plazo », A + C): the invoices
 /// the parking issued for this stay, read in the app and shared from the phone's sheet, or « Demander la facture »

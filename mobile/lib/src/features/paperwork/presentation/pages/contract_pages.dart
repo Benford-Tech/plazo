@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -284,7 +285,7 @@ class _Signed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final at = DateFormat("d MMMM y 'à' HH:mm", 'fr').format(signed.signedAt.toLocal());
+    final at = DateFormat(withTime('d MMMM y'), appLocale).format(signed.signedAt.toLocal());
     final how = signed.method == 'sms_code' ? 'paperwork.signed_by_code'.tr(args: [signed.phoneMasked ?? '']) : 'paperwork.signed_by_hand'.tr();
     return AppCard(
       key: const Key('contract-signed'),

@@ -332,7 +332,7 @@ class _NotYet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final key = kind == ArrivalKind.outbound ? 'arrival.not_yet_outbound' : 'arrival.not_yet_return';
-    final when = '${DateFormat('EEE d MMM', 'fr_FR').format(opensAt.toLocal())} ${hhmm(opensAt)}';
+    final when = '${DateFormat('EEE d MMM', appLocale).format(opensAt.toLocal())} ${hhmm(opensAt)}';
     return AppCard(
       color: AppColors.canvas,
       child: Row(

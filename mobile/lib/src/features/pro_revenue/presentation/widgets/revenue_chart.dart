@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/helpers/money.dart';
@@ -58,7 +59,7 @@ class _RevenueChartState extends State<RevenueChart> {
     if (i != _selected) setState(() => _selected = i);
   }
 
-  static String _dayName(String date) => DateFormat('EEE d MMM', 'fr_FR').format(parseDay(date));
+  static String _dayName(String date) => DateFormat('EEE d MMM', appLocale).format(parseDay(date));
 
   String _line(RevenueDayModel day) => 'revenue.chart_day'.tr(
     args: [
@@ -185,7 +186,7 @@ class _Axis extends StatelessWidget {
           for (final d in days)
             Expanded(
               child: Text(
-                '${DateFormat('EEE', 'fr_FR').format(parseDay(d.date))}\n${parseDay(d.date).day}',
+                '${DateFormat('EEE', appLocale).format(parseDay(d.date))}\n${parseDay(d.date).day}',
                 textAlign: TextAlign.center,
                 style: d.date == today ? todayStyle : style,
               ),

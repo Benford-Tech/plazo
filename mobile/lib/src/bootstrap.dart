@@ -24,6 +24,19 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
+/// The app's languages; their texts are assets/l10n/<code>.json (French is the reference).
+const supportedAppLocales = [
+  Locale('fr', 'FR'),
+  Locale('en', 'GB'),
+  Locale('de', 'DE'),
+  Locale('es', 'ES'),
+  Locale('pt', 'PT'),
+  Locale('pl', 'PL'),
+  Locale('ro', 'RO'),
+  Locale('ru', 'RU'),
+  Locale('uk', 'UA'),
+];
+
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   // Web: real paths (/ma-reservation/REF?cle=...), the same as the site's links, not #/ ones.
   usePathUrlStrategy();
@@ -38,7 +51,8 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   Bloc.observer = const AppBlocObserver();
 
   await EasyLocalization.ensureInitialized();
-  await initializeDateFormatting('fr_FR');
+  // Every language's month and day names: the app follows the phone's language (13/11/2026).
+  await initializeDateFormatting();
   await initLocator();
 
   final push = locator<PushService>();
@@ -47,9 +61,10 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
   runApp(
     EasyLocalization(
-      // French only (the interface is in French, see CLAUDE.md).
-      supportedLocales: const [Locale('fr', 'FR')],
-      startLocale: const Locale('fr', 'FR'),
+      // The phone's language when the app has it (13/11/2026, « traduit en anglais, allemand, espagnol, portugais et
+      // quelques grandes langues des pays de l'Est »), French otherwise. No startLocale: easy_localization picks the
+      // device's, matched on the language alone when the country differs (de-AT reads de-DE).
+      supportedLocales: supportedAppLocales,
       fallbackLocale: const Locale('fr', 'FR'),
       useOnlyLangCode: false,
       path: 'assets/l10n',

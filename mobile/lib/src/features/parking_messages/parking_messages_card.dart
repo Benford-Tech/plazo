@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/utils/error_message_handler.dart';
@@ -162,7 +163,7 @@ class _Bubble extends StatelessWidget {
     final m = message;
     final now = DateTime.now();
     final today = m.at.year == now.year && m.at.month == now.month && m.at.day == now.day;
-    final when = today ? DateFormat('HH:mm').format(m.at) : DateFormat('d MMM HH:mm', 'fr_FR').format(m.at);
+    final when = today ? DateFormat('HH:mm').format(m.at) : DateFormat('d MMM HH:mm', appLocale).format(m.at);
     return Align(
       alignment: m.mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(

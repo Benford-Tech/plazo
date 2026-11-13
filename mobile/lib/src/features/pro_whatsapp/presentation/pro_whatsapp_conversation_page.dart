@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/router/app_router.dart';
@@ -191,7 +192,7 @@ class _Header extends StatelessWidget {
     final booking = c.reservation;
     final dates = booking?.arrivalAt == null
         ? ''
-        : ' · ${DateFormat('d MMM', 'fr_FR').format(booking!.arrivalAt!)}${booking.returnAt == null ? '' : ' → ${DateFormat('d MMM', 'fr_FR').format(booking.returnAt!)}'}';
+        : ' · ${DateFormat('d MMM', appLocale).format(booking!.arrivalAt!)}${booking.returnAt == null ? '' : ' → ${DateFormat('d MMM', appLocale).format(booking.returnAt!)}'}';
     return Container(
       color: AppColors.surface,
       padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
@@ -247,7 +248,7 @@ class _DaySeparator extends StatelessWidget {
         ? 'whatsapp_inbox.today'.tr()
         : day == today.subtract(const Duration(days: 1))
         ? 'whatsapp_inbox.yesterday'.tr()
-        : DateFormat('EEEE d MMMM', 'fr_FR').format(day);
+        : DateFormat('EEEE d MMMM', appLocale).format(day);
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),

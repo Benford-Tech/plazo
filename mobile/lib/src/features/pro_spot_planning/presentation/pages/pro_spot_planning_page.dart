@@ -315,7 +315,7 @@ class _DayHead extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(d == null ? '' : DateFormat('EEE d', 'fr_FR').format(d), style: AppText.label(size: 9, color: isToday ? AppColors.accent : AppColors.muted)),
+        Text(d == null ? '' : DateFormat('EEE d', appLocale).format(d), style: AppText.label(size: 9, color: isToday ? AppColors.accent : AppColors.muted)),
         Text(
           '$need/$cap',
           key: Key('load-${load?.date}'),

@@ -2367,6 +2367,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `ProAuthLogoChanged`) ; section « Logo du parking » en tête de Plus › Réglages du parking (`ParkingLogoSection` : galerie, réduite à
   512 px, retirer, aperçu). Tests `operator-logo.test.ts`, `ParkingLogoCard.test.tsx`, `parking_logo_test.dart`.
 
+## Langues (13/11/2026, « traduit en anglais, allemand, espagnol, portugais et quelques grandes langues des pays de l'Est »)
+
+Choix de Joanny : tout est traduit (site, app Plazo, pro.plazo.fr, espace pro et Plazo Pro) en anglais, allemand, espagnol,
+portugais, polonais, roumain, russe et ukrainien ; site et pro.plazo.fr avec une adresse par langue (`/en/…`, le français à la
+racine), pastille « 🌐 FR ▾ » dans l'en-tête et liste en pied de page ; espace pro et Plazo Pro : langue du navigateur ou du
+téléphone, et une ligne « Langue » dans Mon compte gardée sur le compte ; textes légaux traduits avec « la version française
+fait foi ». **Fait : les deux apps** : `assets/l10n/<fr-FR|en-GB|de-DE|es-ES|pt-PT|pl-PL|ro-RO|ru-RU|uk-UA>.json` (les clés
+du français, pluriels `few`/`many` ajoutés en polonais, roumain, russe, ukrainien ; test `l10n_test.dart`), langue du téléphone
+(`supportedAppLocales` de `bootstrap.dart`, `CFBundleLocalizations` de l'Info.plist), dates et montants dans la langue
+(`appLocale`, `withTime` de `formatters.dart`, « €12.50 » en anglais, noms de jours de `stay.dart`). Le français reste la
+référence : un nouveau texte s'ajoute dans les neuf fichiers. **Reste** : réglage « Langue » de Plazo Pro, textes iOS des
+autorisations, site, pro.plazo.fr, espace pro, mails, SMS et pushs (en français).
+
 ## Sécurité (12/11/2026, « blinde la sécurité de l'app pour éviter les intrusions »)
 
 Audit en trois volets (connexion et cloisonnement des loueurs, routes publiques et webhooks, navigateur et déploiement) ; corrigé :

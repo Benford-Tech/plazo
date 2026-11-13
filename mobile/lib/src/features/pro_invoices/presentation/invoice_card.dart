@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/utils/error_message_handler.dart';
@@ -15,7 +16,7 @@ String _euros(int cents) {
   return '${cents < 0 ? '-' : ''}$whole,${(abs % 100).toString().padLeft(2, '0')} €';
 }
 
-String _when(DateTime at) => DateFormat('d MMM yyyy HH:mm', 'fr_FR').format(at.toLocal());
+String _when(DateTime at) => DateFormat('d MMM yyyy HH:mm', appLocale).format(at.toLocal());
 
 /// Plazo Pro, on a booking's sheet: « Facture » (06/11/2026, « une facture au nom du parking avec son logo », direction
 /// A): issue the invoice in the parking's name, read it, send it by e-mail, or cancel it by a credit note. The invoicing

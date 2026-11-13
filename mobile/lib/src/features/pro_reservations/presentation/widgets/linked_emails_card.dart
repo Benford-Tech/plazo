@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../di/locator.dart';
@@ -6,7 +7,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../data/datasources/linked_emails_data_source.dart';
 
-String _when(DateTime at) => DateFormat('d MMM HH:mm', 'fr_FR').format(at.toLocal());
+String _when(DateTime at) => DateFormat('d MMM HH:mm', appLocale).format(at.toLocal());
 
 /// A changed value as the staff read it: a price in euros, a local date « 2026-12-13 20:30 », « — » for nothing.
 String _changeValue(String field, String? value) {

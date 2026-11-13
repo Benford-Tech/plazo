@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/helpers/formatters.dart';
 import '../core/constants/product.g.dart';
 import '../core/router/app_router.dart';
 import '../di/locator.dart';
@@ -52,6 +53,9 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
+    // Dates and amounts follow the app's language (formatters.dart, money.dart).
+    appLocale = context.locale.toString();
+    Intl.defaultLocale = appLocale;
     return BlocProvider.value(
       value: locator<ProAuthBloc>(),
       child: MaterialApp.router(

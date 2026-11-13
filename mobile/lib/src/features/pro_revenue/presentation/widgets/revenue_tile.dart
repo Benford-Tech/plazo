@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,7 +24,7 @@ class RevenueTile extends StatelessWidget {
       builder: (context, state) {
         final d = state.data;
         if (d == null) return const SizedBox.shrink();
-        final month = DateFormat('MMMM', 'fr_FR').format(parseDay(d.month.from));
+        final month = DateFormat('MMMM', appLocale).format(parseDay(d.month.from));
         final title = 'revenue.tile_title'.tr(args: [month]).toUpperCase();
         Widget figure(String label, int cents) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
