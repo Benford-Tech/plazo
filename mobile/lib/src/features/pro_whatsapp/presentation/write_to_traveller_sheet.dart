@@ -10,18 +10,22 @@ import '../data/whatsapp_inbox_data_source.dart';
 
 /// « Écrire au client » (13/11/2026, « Ajoute l'envoi par WhatsApp et par le numéro Plazo dans l'app pro », choix « Écrire
 /// depuis Plazo »): the team writes to the booking's traveller from Plazo's WhatsApp number (the parking's SMS as the
-/// fallback); the answer lands in « Messages WhatsApp ».
-Future<void> showWriteToTraveller(BuildContext context, {required String reservationId}) => showModalBottomSheet<void>(
+/// fallback); the answer lands in « Messages WhatsApp ». The driver and the valet write too (« Le chauffeur doit pouvoir le
+/// faire aussi ») but have no inbox: [canOpenInbox] hides « Voir ».
+Future<void> showWriteToTraveller(BuildContext context, {required String reservationId, bool canOpenInbox = true}) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
   backgroundColor: AppColors.surface,
-  builder: (_) => WriteToTravellerSheet(reservationId: reservationId),
+  builder: (_) => WriteToTravellerSheet(reservationId: reservationId, canOpenInbox: canOpenInbox),
 );
 
 class WriteToTravellerSheet extends StatefulWidget {
-  const WriteToTravellerSheet({super.key, required this.reservationId});
+  const WriteToTravellerSheet({super.key, required this.reservationId, this.canOpenInbox = true});
   final String reservationId;
+
+  /// Whether « Voir » may open the conversation in « Messages WhatsApp » (reservations:manage).
+  final bool canOpenInbox;
 
   /// The tests' data source; the locator's otherwise.
   @visibleForTesting
@@ -83,7 +87,7 @@ class _WriteToTravellerSheetState extends State<WriteToTravellerSheet> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(notice.tr()),
-          action: router != null && result.channel == 'whatsapp' && result.conversationId != null
+          action: router != null && widget.canOpenInbox && result.channel == 'whatsapp' && result.conversationId != null
               ? SnackBarAction(
                   label: 'write_traveller.open'.tr(),
                   onPressed: () => router!.push(ProWhatsappConversationRoute(id: result.conversationId!)),

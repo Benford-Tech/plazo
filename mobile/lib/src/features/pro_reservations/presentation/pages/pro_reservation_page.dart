@@ -237,12 +237,12 @@ class _Sheet extends StatelessWidget {
                 onPressed: () => links.open(Uri(scheme: 'tel', path: r.customerPhone.replaceAll(RegExp(r'[\s.()-]'), ''))),
               ),
               // « Écrire au client » (13/11/2026): from Plazo's WhatsApp number, the parking's SMS as the fallback.
-              if (can(role, 'reservations:manage'))
+              if (can(role, 'reservations:status'))
                 IconButton(
                   key: const Key('res-write'),
                   tooltip: 'write_traveller.button'.tr(),
                   icon: const Icon(Icons.chat_rounded, color: AppColors.accent),
-                  onPressed: () => showWriteToTraveller(context, reservationId: r.id),
+                  onPressed: () => showWriteToTraveller(context, reservationId: r.id, canOpenInbox: can(role, 'reservations:manage')),
                 ),
               IconButton(
                 key: const Key('res-sms'),
