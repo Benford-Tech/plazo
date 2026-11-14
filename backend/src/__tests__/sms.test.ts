@@ -515,6 +515,9 @@ describe('envoi par le téléphone du parking', () => {
     );
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await prisma.smsOutbox.count()).toBe(0);
+    // 14/11/2026 (« Je ne reçois plus les sms ») : the member's own test still leaves.
+    expect(await sms.sendTravellerSms(test.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'Test' })).toBe('sent');
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
   });
 
   it('« Pas de SMS » : rien ne part, rien n’est enregistré ; Brevo : l’ancien chemin, tracé dans la boîte d’envoi', async () => {
