@@ -159,3 +159,15 @@
     opacity: 0.35;
   }
 }
+
+/* 14/11/2026: « Véhicules sur le parking » goes on one line per car only when the table itself is wide enough
+   (beside the map it is not: the departure pill covered the keys). Narrower, the stacked layout. */
+.vehicles-table { container-type: inline-size; }
+.vehicles-grid { grid-template-columns: minmax(0, 1fr) auto; }
+.vehicles-head { display: none; }
+.vehicles-who { grid-column: span 2 / span 2; }
+@container (min-width: 860px) {
+  .vehicles-grid { grid-template-columns: minmax(150px, 1fr) auto auto auto auto; }
+  .vehicles-head { display: grid; }
+  .vehicles-who { grid-column: auto; }
+}

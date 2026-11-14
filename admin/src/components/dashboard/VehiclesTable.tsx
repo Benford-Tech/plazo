@@ -17,9 +17,12 @@ const t = fr.dashboard.vehicles;
 /** Direction A (26/10/2026, « améliore l'ergonomie d'affichage des véhicules sur le parking »): one aligned row per car. */
 const SHOWN = 8;
 
-/** Plate + name, place, keys, return, state: the name column takes what the fixed ones leave. */
-const COLS =
-  "grid items-center gap-x-3 gap-y-1.5 md:grid-cols-[minmax(150px,1fr)_auto_auto_auto_auto]";
+/**
+ * Plate + name, place, keys, return, state: the name column takes what the fixed ones leave. On one line only when the
+ * table itself is wide enough (container query `vehicles-grid` in index.css, 14/11/2026: beside the map the departure pill
+ * covered the keys); narrower, the stacked layout of the phone.
+ */
+const COLS = "vehicles-grid grid items-center gap-x-3 gap-y-1.5";
 
 type Filter =
   | "all"
@@ -167,9 +170,9 @@ export function VehiclesTable({ vehicles }: { vehicles: DashboardVehicle[] }) {
       {rows.length === 0 ? (
         <p className="text-[13px] text-muted-foreground">{t.noMatch}</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-panel-line">
+        <div className="vehicles-table overflow-hidden rounded-xl border border-panel-line">
           <div
-            className={cn(COLS, "hidden bg-panel-2 px-3 py-2 md:grid")}
+            className={cn(COLS, "vehicles-head bg-panel-2 px-3 py-2")}
             aria-hidden="true"
           >
             {(["plate", "place", "keys", "return", "state"] as const).map(
@@ -229,11 +232,11 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
       data-testid="vehicle-row"
       className={cn(
         COLS,
-        "grid-cols-[minmax(0,1fr)_auto] border-t border-panel-line px-3 py-2 first:border-t-0 hover:bg-panel-2/60",
+        "border-t border-panel-line px-3 py-2 first:border-t-0 hover:bg-panel-2/60",
       )}
     >
       {/* Plate above the name (26/10/2026, « les noms ne sont pas assez visibles »): the name gets a full line. */}
-      <span className="flex min-w-0 flex-col items-start gap-1 max-md:col-span-2">
+      <span className="vehicles-who flex min-w-0 flex-col items-start gap-1">
         <button type="button" onClick={open} className="text-left">
           <Plate value={v.plate} size="sm" />
         </button>
@@ -267,7 +270,7 @@ function VehicleLine({ v }: { v: DashboardVehicle }) {
           <span className="font-mono text-[12px] text-info-text">{ret}</span>
         )}
       </span>
-      <span className="flex flex-wrap items-center justify-end gap-1 md:justify-end">
+      <span className="flex flex-wrap items-center justify-end gap-1">
         {vehicleBadges(v).map((b) => (
           <Badge key={b.text} tone={b.tone}>
             {b.text}
