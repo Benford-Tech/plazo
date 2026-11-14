@@ -611,7 +611,7 @@ export class ReminderService {
   public async sendTest(
     actor: AuthenticatedStaff,
     parkingId: string,
-    input: { to?: string; template?: string },
+    input: { to?: string; template?: string; channel?: 'whatsapp' | 'sms' },
   ): Promise<{ outcome: SendOutcome; to: string }> {
     const board = await this.board(actor, parkingId);
     const template = input.template?.trim() || board.settings.template;
@@ -619,13 +619,20 @@ export class ReminderService {
     const to = smsRecipient(input.to ?? actor.phone ?? '');
     if (!to) throw new ValidationException({ to: input.to ? 'invalid_phone' : 'required' });
     if (board.channel.mode === 'none') throw new HttpException(httpStatus.CONFLICT, 'SMS not configured', 'sms_not_configured');
-    const outcome = await this.sms.sendTravellerSms(actor.operatorId, {
+    const sms = {
       reservationId: null,
-      kind: 'reminder_test',
+      kind: 'reminder_test' as const,
       to,
       text: board.meta ? renderMetaReminder(board.sample.values, board.meta.text) : renderTemplate(template, board.sample.values),
-      whatsapp: board.meta ? await this.sms.reminderTestWhatsapp(parkingId, board.sample.values) : null,
-    });
+    };
+    // 14/11/2026 (« Pouvoir envoyer le test du message de la veille par sms »): the SMS fallback alone, as a traveller would get it.
+    const outcome =
+      input.channel === 'sms'
+        ? await this.sms.sendSmsOnly(actor.operatorId, { ...sms, whatsapp: null })
+        : await this.sms.sendTravellerSms(actor.operatorId, {
+            ...sms,
+            whatsapp: board.meta ? await this.sms.reminderTestWhatsapp(parkingId, board.sample.values) : null,
+          });
     if (outcome === 'failed') throw new HttpException(httpStatus.BAD_GATEWAY, 'Test SMS failed', 'sms_gateway_error');
     return { outcome, to };
   }

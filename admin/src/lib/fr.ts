@@ -4738,6 +4738,8 @@ export const remindersFr = {
     label: "Numéro qui reçoit le test",
     placeholder: "06 12 34 56 78 (le vôtre si vide)",
     send: "Envoyer le test",
+    byWhatsapp: "Test WhatsApp",
+    bySms: "Test SMS",
     sent: (to: string) => `Test envoyé au ${to}.`,
     queued: (to: string) => `Test confié au téléphone d’envoi pour le ${to}.`,
     required: "Indiquez le numéro qui doit recevoir le test.",

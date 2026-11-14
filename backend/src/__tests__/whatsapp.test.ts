@@ -402,6 +402,21 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(row.status).toBe('sent');
   });
 
+  it('le test du message de la veille part en SMS seul quand on le demande (14/11/2026)', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    const res = await api()
+      .post(`/api/internal/parkings/${op.parking.id}/reminders/test`)
+      .set(auth(op.token))
+      .send({ to: '+33612345678', channel: 'sms' });
+    expect(res.status).toBe(200);
+    expect(calls(GRAPH)).toHaveLength(0);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+    expect(JSON.parse(calls(BREVO_SMS_URL)[0][1].body).content.startsWith('Bonsoir')).toBe(true);
+    const bad = await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ channel: 'fax' });
+    expect(bad.status).toBe(400);
+  });
+
   it('lit le texte du modèle de la veille chez Meta, la copie de Plazo sinon (11/11/2026)', async () => {
     const TEMPLATES = /\/v21\.0\/WABA-1\/message_templates\?name=plazo_veille/;
     let templates = () =>

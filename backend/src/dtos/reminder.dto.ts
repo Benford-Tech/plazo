@@ -40,6 +40,11 @@ export class TestReminderDto {
   @IsString({ message: 'invalid' })
   @MaxLength(TEMPLATE_MAX_LENGTH, { message: 'too_long' })
   public template?: string;
+
+  /** 14/11/2026: « sms » sends the SMS fallback alone, even when WhatsApp is on; else WhatsApp first, like the real one. */
+  @IsOptional()
+  @IsIn(['whatsapp', 'sms'], { message: 'invalid' })
+  public channel?: 'whatsapp' | 'sms';
 }
 
 /** PUT /internal/reservations/:id/reminder: "Ne pas envoyer" / "Rétablir". */
