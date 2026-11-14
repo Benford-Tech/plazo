@@ -2896,8 +2896,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Сообщения WhatsApp",
-    "menu": "Сообщения WhatsApp",
+    "title": "Сообщения",
+    "menu": "Сообщения",
     "intro": "Ответы ваших клиентов на номер WhatsApp Plazo, по бронированиям.",
     "views": {
       "unread": "Непрочитанные · {}",
@@ -3023,7 +3023,7 @@
   "write_traveller": {
     "button": "Написать из Plazo",
     "title": "Написать клиенту",
-    "from_plazo": "Отправлено с номера Plazo: ответ клиента придёт в «Сообщения WhatsApp».",
+    "from_plazo": "Отправлено с номера Plazo: ответ клиента придёт в «Сообщения».",
     "whatsapp": "WhatsApp",
     "sms": "SMS парковки",
     "placeholder": "Ваше сообщение…",
