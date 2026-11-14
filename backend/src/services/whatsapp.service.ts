@@ -26,6 +26,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { WhatsappNumberService, WhatsappNumberView } from './whatsapp-number.service';
 import type { SendOutcome, TravellerSms } from './sms.service';
 
 export interface WhatsappSettingsView {
@@ -35,6 +36,8 @@ export interface WhatsappSettingsView {
   /** The parking has an SMS channel: a message WhatsApp cannot deliver goes by SMS. */
   smsFallback: boolean;
   month: { whatsapp: number; read: number; fallbacks: number; failed: number };
+  /** 14/11/2026: the parking's own WhatsApp number (null: none asked, messages leave from Plazo's number). */
+  number: WhatsappNumberView | null;
 }
 
 type SendResult = { ok: true; id: string } | { ok: false; code: string };
@@ -59,6 +62,7 @@ export class WhatsappService {
   /** Read from the environment on each use; tests override it. */
   public config = whatsappConfig;
   public timeoutMs = 5000;
+  public numbers = Container.get(WhatsappNumberService);
 
   public available(): boolean {
     const { token, phoneNumberId } = this.config();
@@ -189,10 +193,12 @@ export class WhatsappService {
   public async sendTemplate(
     e164: string,
     params: string[],
-    options: { name?: string; language?: string | null; image?: string | null } = {},
+    options: { name?: string; language?: string | null; image?: string | null; from?: string | null } = {},
   ): Promise<SendResult> {
-    const { token, phoneNumberId, template, language, graphVersion } = this.config();
-    if (!token || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
+    const { token, template, language, graphVersion } = this.config();
+    // 14/11/2026: a parking's own number when it has an active one, else Plazo's.
+    const phoneNumberId = options.from || this.config().phoneNumberId;
+    if (!token || !this.config().phoneNumberId || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
     const components: unknown[] = [];
     if (options.image) components.push({ type: 'header', parameters: [{ type: 'image', image: { link: options.image } }] });
     components.push({ type: 'body', parameters: params.map(text => ({ type: 'text', text })) });
@@ -226,9 +232,11 @@ export class WhatsappService {
    * 12/11/2026 (boîte de réception WhatsApp): a free text reply, allowed by Meta within 24 hours of the traveller's last
    * message. Never throws.
    */
-  public async sendText(e164: string, body: string): Promise<SendResult> {
-    const { token, phoneNumberId, graphVersion } = this.config();
-    if (!token || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
+  public async sendText(e164: string, body: string, from: string | null = null): Promise<SendResult> {
+    const { token, graphVersion } = this.config();
+    // 14/11/2026: a free reply leaves from the number the traveller wrote to (a parking's own, else Plazo's).
+    const phoneNumberId = from || this.config().phoneNumberId;
+    if (!token || !this.config().phoneNumberId || !phoneNumberId) return { ok: false, code: 'whatsapp_unavailable' };
     try {
       const res = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(phoneNumberId)}/messages`, {
         method: 'POST',
@@ -303,6 +311,7 @@ export class WhatsappService {
     ]);
     const parkingName = whatsappParam(operator?.name ?? 'Votre parking', 80);
     const rule = operator ? templateRuleFor(parseTemplateRules(this.config().templates), operator, sms.kind) : null;
+    const from = await this.numbers.senderFor(operatorId);
     let result: SendResult;
     if (rule && booking) {
       const timeZone = booking.parking?.timezone ?? 'Europe/Paris';
@@ -318,14 +327,14 @@ export class WhatsappService {
       result = await this.sendTemplate(
         recipient,
         rule.params.map(p => value[p]),
-        rule,
+        { ...rule, from },
       );
     } else if (this.config().reminderTemplate && sms.whatsapp) {
       // 09/11/2026: the common day-before template (its 16 values and the meeting point's photo), when it is set and no
       // rule of the parking's own takes the message.
-      result = await this.sendTemplate(recipient, sms.whatsapp.params, { name: this.config().reminderTemplate, image: sms.whatsapp.image });
+      result = await this.sendTemplate(recipient, sms.whatsapp.params, { name: this.config().reminderTemplate, image: sms.whatsapp.image, from });
     } else {
-      result = await this.sendTemplate(recipient, [parkingName, booking?.reference ?? '-', whatsappParam(sms.text)]);
+      result = await this.sendTemplate(recipient, [parkingName, booking?.reference ?? '-', whatsappParam(sms.text)], { from });
     }
     await prisma.whatsappMessage.create({
       data: {
@@ -339,6 +348,7 @@ export class WhatsappService {
         fallbackText: result.ok && smsFallback ? sms.text : null,
         body: sms.text.slice(0, 4096) || null,
         smsOutcome: null,
+        fromPhoneNumberId: from,
       },
     });
     if (result.ok) logger.info(`[WhatsApp] ${sms.kind} handed to Meta for ${about}`);
@@ -474,6 +484,7 @@ export class WhatsappService {
         fallbacks: count('fallback'),
         failed: count('failed'),
       },
+      number: await this.numbers.viewFor(actor.operatorId),
     };
   }
 
@@ -499,6 +510,7 @@ export class WhatsappService {
       'Ceci est un message de test : vos voyageurs recevront ici leur confirmation, le rappel de la veille et le rendez-vous de la navette.';
     // A parking with its own day-before template gets that one, as a traveller would (tomorrow 06:30, the tester's name).
     const rule = operator ? templateRuleFor(parseTemplateRules(this.config().templates), operator, 'booking_reminder') : null;
+    const from = await this.numbers.senderFor(actor.operatorId);
     let result: SendResult;
     if (rule) {
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -513,10 +525,10 @@ export class WhatsappService {
       result = await this.sendTemplate(
         recipient,
         rule.params.map(p => value[p]),
-        rule,
+        { ...rule, from },
       );
     } else {
-      result = await this.sendTemplate(recipient, [parkingName, 'TEST', testText]);
+      result = await this.sendTemplate(recipient, [parkingName, 'TEST', testText], { from });
     }
     if (!result.ok) {
       logger.warn(`[WhatsApp] Test refused for operator ${actor.operatorId}: ${result.code}`);

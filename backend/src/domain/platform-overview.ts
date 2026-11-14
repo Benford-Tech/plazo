@@ -15,7 +15,7 @@ export function operatorKind(o: { name: string; isDemo: boolean; prospectDemo: b
 
 /** One line of « À traiter »: what is waiting, for which operator, and where it is handled. */
 export interface PlatformTodo {
-  kind: 'listing_review' | 'stripe_missing' | 'contract_missing' | 'contract_pending' | 'invitation_expired' | 'payout_failed';
+  kind: 'listing_review' | 'whatsapp_requested' | 'stripe_missing' | 'contract_missing' | 'contract_pending' | 'invitation_expired' | 'payout_failed';
   operatorId: string;
   operatorName: string;
   /** listing_review: the listing; payout_failed: how many transfers failed. */
@@ -39,9 +39,15 @@ export interface TodoOperator {
  * real active operator its failed transfers, a Stripe account not linked, no Plazo contract or one not yet signed, and an
  * invitation that expired before it was accepted.
  */
-export function platformTodos(operators: TodoOperator[], failedPayouts: Map<string, number>): PlatformTodo[] {
+export function platformTodos(
+  operators: TodoOperator[],
+  failedPayouts: Map<string, number>,
+  /** 14/11/2026: parkings that asked for their own WhatsApp number (« Demander mon numéro WhatsApp »). */
+  whatsappRequested: Set<string> = new Set(),
+): PlatformTodo[] {
   const order: PlatformTodo['kind'][] = [
     'listing_review',
+    'whatsapp_requested',
     'payout_failed',
     'stripe_missing',
     'invitation_expired',
@@ -52,6 +58,7 @@ export function platformTodos(operators: TodoOperator[], failedPayouts: Map<stri
   for (const o of operators) {
     const base = { operatorId: o.id, operatorName: o.name };
     if (o.kind !== 'demo' && o.listing?.status === 'pending_review') todos.push({ kind: 'listing_review', listingId: o.listing.id, ...base });
+    if (o.kind !== 'demo' && whatsappRequested.has(o.id)) todos.push({ kind: 'whatsapp_requested', ...base });
     if (o.kind !== 'real') continue;
     if (o.invitation?.expired) {
       todos.push({ kind: 'invitation_expired', ...base });

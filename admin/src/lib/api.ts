@@ -54,6 +54,8 @@ import type {
   PhoneHistory,
   PlatformSeo,
   WhatsappSettings,
+  WhatsappNumber,
+  PlatformWhatsappNumber,
   TravellerMessage,
   WhatsappInboxView,
   WhatsappSentMessage,
@@ -1449,6 +1451,20 @@ export const adminApi = {
       method: "POST",
       body: json({ to }),
     }),
+  // 14/11/2026: a parking's own WhatsApp number.
+  requestWhatsappNumber: () =>
+    apiRequest<WhatsappNumber>("/internal/whatsapp/number/request", { method: "POST" }),
+  getPlatformWhatsappNumber: (operatorId: string) =>
+    apiRequest<PlatformWhatsappNumber>(`/internal/platform/operators/${encodeURIComponent(operatorId)}/whatsapp-number`),
+  platformWhatsappNumber: (
+    operatorId: string,
+    action: "add" | "link" | "code" | "verify" | "check" | "pause" | "resume" | "remove",
+    body: Record<string, string> = {},
+  ) => {
+    const base = `/internal/platform/operators/${encodeURIComponent(operatorId)}/whatsapp-number`;
+    if (action === "remove") return apiRequest<WhatsappNumber | { removed: true }>(base, { method: "DELETE" });
+    return apiRequest<WhatsappNumber | { removed: true }>(action === "add" ? base : `${base}/${action}`, { method: "POST", body: json(body) });
+  },
 
   getPlatformPayments: () =>
     apiRequest<PlatformPayments>("/internal/platform/payments"),

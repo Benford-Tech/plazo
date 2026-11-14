@@ -92,6 +92,7 @@ model Operator {
   smsPhoneChecks        SmsPhoneCheck[]
   whatsappMessages      WhatsappMessage[]
   whatsappConversations WhatsappConversation[]
+  whatsappNumber        OperatorWhatsappNumber?
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
@@ -1591,6 +1592,8 @@ model WhatsappMessage {
   body          String?
   // Outcome of the fallback SMS (sent, queued, failed, skipped).
   smsOutcome    String?
+  /// 14/11/2026 (un numéro WhatsApp par parking): the parking's own number it left from; null = Plazo's number.
+  fromPhoneNumberId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @default(now()) @updatedAt
 
@@ -2261,6 +2264,8 @@ model WhatsappConversation {
   lastInboundAt DateTime?
   /// 12/11/2026: the traveller's last message written in the Plazo app (« Écrire au parking »); a reply then goes there.
   lastAppAt     DateTime?
+  /// 14/11/2026: the parking's own number the traveller last wrote to (a free reply leaves from it); null = Plazo's number.
+  phoneNumberId String?
   unread        Int       @default(0)
   handledAt     DateTime?
   createdAt     DateTime  @default(now())
@@ -2306,4 +2311,37 @@ model WhatsappInboxMessage {
   @@index([reservationId, createdAt])
   @@index([createdAt])
   @@map("whatsapp_inbox_messages")
+}
+
+/// 14/11/2026 (« Un compte WhatsApp Business par parking », chemin 1 : « regrouper tous les frais sous Benford Tech », « le
+/// nom affiché est toujours Plazo »): a parking's own WhatsApp number, added by the platform to Benford Tech's WhatsApp
+/// Business account (display name « Plazo », Meta bills Benford Tech). Travellers' messages leave from it once `status`
+/// is `active`; until then, and when it is paused, Plazo's number as before. Replies to it go to this parking only.
+model OperatorWhatsappNumber {
+  id            String    @id @default(cuid())
+  operatorId    String    @unique
+  /// requested (the parking asked) · added (at Meta, code to send) · code_sent · registered (verified, waiting for Meta's
+  /// approval of the display name) · active · paused.
+  status        String    @default("requested")
+  /// E.164 « +33639981240 »; null while only requested.
+  phone         String?
+  /// Meta's phone number id.
+  phoneNumberId String?   @unique
+  /// Meta's view, read on each check: name_status (APPROVED…), status (CONNECTED…), quality_rating (GREEN…).
+  nameStatus    String?
+  metaStatus    String?
+  quality       String?
+  requestedAt   DateTime?
+  codeSentAt    DateTime?
+  registeredAt  DateTime?
+  activeAt      DateTime?
+  checkedAt     DateTime?
+  /// Meta's last error code (no personal data).
+  lastError     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_whatsapp_numbers")
 }

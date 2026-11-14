@@ -1068,6 +1068,7 @@ export type OperatorKind = "real" | "test" | "demo" | "platform";
 export interface PlatformTodo {
   kind:
     | "listing_review"
+    | "whatsapp_requested"
     | "stripe_missing"
     | "contract_missing"
     | "contract_pending"
@@ -1303,6 +1304,33 @@ export interface WhatsappSettings {
   enabled: boolean;
   smsFallback: boolean;
   month: { whatsapp: number; read: number; fallbacks: number; failed: number };
+  /** 14/11/2026: the parking's own WhatsApp number (absent from older APIs, null: none asked). */
+  number?: WhatsappNumber | null;
+}
+
+/** 14/11/2026 (un numéro WhatsApp par parking, sur le compte de Benford Tech, nom affiché « Plazo »). */
+export type WhatsappNumberStatus = "requested" | "added" | "code_sent" | "registered" | "active" | "paused";
+export interface WhatsappNumber {
+  status: WhatsappNumberStatus;
+  phone: string | null;
+  phoneNumberId: string | null;
+  displayName: string;
+  nameStatus: string | null;
+  metaStatus: string | null;
+  quality: string | null;
+  requestedAt: string | null;
+  codeSentAt: string | null;
+  registeredAt: string | null;
+  activeAt: string | null;
+  checkedAt: string | null;
+  lastError: string | null;
+  sending: boolean;
+}
+/** GET /internal/platform/operators/:id/whatsapp-number */
+export interface PlatformWhatsappNumber {
+  number: WhatsappNumber | null;
+  displayName: string;
+  available: boolean;
 }
 
 /** GET /internal/sms/status */

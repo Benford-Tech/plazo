@@ -203,7 +203,7 @@ describe('le fil de messages du voyageur (B)', () => {
       morning: expect.any(Object),
       extras: { refunded: 0, failed: 0, expired: 0 },
       valet: { announced: 0 },
-      whatsapp: { fallbacks: 0, forgotten: 0, webhook: 'skipped' },
+      whatsapp: { fallbacks: 0, forgotten: 0, webhook: 'skipped', numbers: { checked: 0, activated: 0 } },
       phone: { checked: 0, offline: 0, alerted: 0 },
       // 09/11/2026: the inbound emails' watch (its morning report depends on the hour of the run).
       inbound: expect.objectContaining({ alerted: 0, operators: 0 }),

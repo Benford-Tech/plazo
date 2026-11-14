@@ -24,6 +24,7 @@ import { AuditService } from './audit.service';
 import { PushService } from './push.service';
 import { lookupNumber } from './public-booking.service';
 import { WhatsappService } from './whatsapp.service';
+import { WhatsappNumberService } from './whatsapp-number.service';
 
 export type InboxView = 'unread' | 'all' | 'handled' | 'unknown';
 export const INBOX_VIEWS: InboxView[] = ['unread', 'all', 'handled', 'unknown'];
@@ -85,6 +86,7 @@ export class WhatsappInboxService {
   public audit = Container.get(AuditService);
   public push = Container.get(PushService);
   public whatsapp = Container.get(WhatsappService);
+  public numbers = Container.get(WhatsappNumberService);
 
   // ---- Receiving (webhook) -----------------------------------------------------------------------
 
@@ -103,7 +105,10 @@ export class WhatsappInboxService {
 
   private async store(message: InboundWhatsapp, now: Date): Promise<boolean> {
     if (await prisma.whatsappInboxMessage.findUnique({ where: { waMessageId: message.id }, select: { id: true } })) return false;
-    const place = await this.place(message.from, message.text, now);
+    // 14/11/2026: a message to a parking's own number belongs to that parking, whatever else the number booked.
+    const ownerOfNumber = await this.numbers.operatorOf(message.toPhoneNumberId);
+    const place = ownerOfNumber ? await this.placeIn(ownerOfNumber, message.from, now) : await this.place(message.from, message.text, now);
+    const phoneNumberId = ownerOfNumber ? message.toPhoneNumberId : null;
     const existing = await prisma.whatsappConversation.findFirst({ where: { operatorId: place.operatorId, phone: message.from } });
     const conversation = existing
       ? await prisma.whatsappConversation.update({
@@ -111,6 +116,7 @@ export class WhatsappInboxService {
           data: {
             ...(place.reservationId ? { reservationId: place.reservationId } : {}),
             ...(message.profileName ? { profileName: message.profileName } : {}),
+            ...(!existing.lastInboundAt || message.at >= existing.lastInboundAt ? { phoneNumberId } : {}),
             lastMessageAt: message.at > existing.lastMessageAt ? message.at : existing.lastMessageAt,
             lastInboundAt: !existing.lastInboundAt || message.at > existing.lastInboundAt ? message.at : existing.lastInboundAt,
             unread: { increment: 1 },
@@ -123,6 +129,7 @@ export class WhatsappInboxService {
             reservationId: place.reservationId,
             phone: message.from,
             profileName: message.profileName,
+            phoneNumberId,
             lastMessageAt: message.at,
             lastInboundAt: message.at,
             unread: 1,
@@ -205,6 +212,28 @@ export class WhatsappInboxService {
       return { operatorId, reservationId: running?.id ?? rows[0]?.id ?? sent.reservationId };
     }
     return { operatorId, reservationId: rows[0]?.id ?? null };
+  }
+
+  /** The booking of the number that writes, within one parking (its own WhatsApp number was written to). */
+  private async placeIn(operatorId: string, phone: string, now: Date): Promise<{ operatorId: string; reservationId: string | null }> {
+    const tail = phoneTail(phone);
+    if (tail.length < 9) return { operatorId, reservationId: null };
+    const [sent, rows] = await Promise.all([
+      prisma.whatsappMessage.findFirst({
+        where: { operatorId, to: { endsWith: tail }, reservationId: { not: null }, createdAt: { gte: new Date(now.getTime() - 45 * 86400000) } },
+        orderBy: { createdAt: 'desc' },
+        select: { reservationId: true },
+      }),
+      prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM reservations
+        WHERE "operatorId" = ${operatorId} AND "deletedAt" IS NULL AND "anonymizedAt" IS NULL
+          AND status NOT IN ('cancelled', 'no_show', 'pending_payment')
+          AND "returnAt" >= ${new Date(now.getTime() - 30 * 86400000)}
+          AND right(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 9) = ${tail}
+        ORDER BY abs(extract(epoch FROM ("arrivalAt" - ${now}::timestamp))) ASC
+        LIMIT 1`,
+    ]);
+    return { operatorId, reservationId: rows[0]?.id ?? sent?.reservationId ?? null };
   }
 
   private async notify(operatorId: string, conversationId: string, message: InboundWhatsapp, reservationId: string | null) {
@@ -421,7 +450,7 @@ export class WhatsappInboxService {
     } else {
       if (channel !== 'whatsapp') throw new HttpException(httpStatus.CONFLICT, 'Meta allows a free reply only within 24 hours', 'window_closed');
       if (!this.whatsapp.available()) throw new HttpException(httpStatus.CONFLICT, 'WhatsApp is not configured', 'whatsapp_unavailable');
-      const result = await this.whatsapp.sendText(row.phone, text);
+      const result = await this.whatsapp.sendText(row.phone, text, row.phoneNumberId);
       if (!result.ok) {
         logger.warn(`[WhatsApp inbox] reply refused for conversation ${id}: ${result.code}`);
         throw new HttpException(httpStatus.BAD_GATEWAY, 'WhatsApp refused the reply', result.code);

@@ -8,6 +8,7 @@ import { can } from "@/lib/roles";
 import { toE164 } from "@/lib/sms";
 import type { WhatsappSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { WhatsappNumberCard } from "./WhatsappNumberCard";
 
 /**
  * « WhatsApp aux voyageurs » (03/11/2026, « Plazo envoie par WhatsApp », SMS en repli): Parking › Réglages, above the SMS
@@ -138,6 +139,7 @@ export function WhatsappCard() {
           )
         )}
       </div>
+      {s.available && s.number !== undefined && <WhatsappNumberCard number={s.number} readOnly={readOnly} />}
     </section>
   );
 }

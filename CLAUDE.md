@@ -1461,6 +1461,29 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      l'entrée de Plus › Chauffeur dans Plazo Pro et la notification `whatsapp` (cloche du chauffeur d'office) passent à
      `reservations:status`. Le web n'a pas encore le bouton. Tests
      `whatsapp-inbox.test.ts`, `whatsapp_inbox_test.dart`.
+     **Un numéro WhatsApp par parking, chemin 1 (14/11/2026, « Un compte WhatsApp Business par parking », « regrouper tous les
+     frais sous Benford Tech », « le nom affiché est toujours Plazo », « ne casse pas l'existant jusqu'à ce que ce soit
+     fonctionnel », maquettes https://claude.ai/artifact/Je3eFB8AcgzoAocy9q2xz4)** : la plateforme ajoute le numéro d'un parking au
+     compte WhatsApp Business de Benford Tech (`WHATSAPP_BUSINESS_ACCOUNT_ID`, nom affiché « Plazo », Meta facture tout à Benford
+     Tech), table `operator_whatsapp_numbers` (`OperatorWhatsappNumber`, migration `whatsapp_numbers` : `status` requested · added ·
+     code_sent · registered · active · paused, `phoneNumberId` unique, `nameStatus` / `metaStatus` / `quality` lus chez Meta) ;
+     `WhatsappNumberService` (`domain/whatsapp-number.ts` : `splitPhone` → cc et numéro national, `registrationPin` = PIN à deux
+     étapes dérivé de `SECRET_KEY`, jamais gardé, `statusAfterCheck` : registered → active quand le nom est APPROVED et le numéro
+     CONNECTED). **Seul un numéro `active` sert à envoyer** (`senderFor` ; `sendTemplate(…, { from })`, `sendText(…, from)`) ; tout
+     autre état, une erreur ou aucune ligne : le numéro de Plazo comme avant (`WhatsappMessage.fromPhoneNumberId` nul). Un message
+     reçu sur le numéro d'un parking (`metadata.phone_number_id`, `InboundWhatsapp.toPhoneNumberId`) va à ce parking seul
+     (`placeIn`), jamais en « Numéro inconnu » ; `WhatsappConversation.phoneNumberId` = le numéro écrit par le voyageur, d'où part
+     la réponse libre (boîte « Messages » et « Écrire au client » ; le modèle part du numéro actif du parking). Parking :
+     `GET /internal/whatsapp/settings` › `number`, `POST /internal/whatsapp/number/request` (« Demander mon numéro WhatsApp »,
+     `RefuseInDemo`) → ligne « À traiter » `whatsapp_requested` de la plateforme ; carte `WhatsappNumberCard` sous « WhatsApp aux
+     voyageurs ». Plateforme (`PlatformAdminMiddleware`) : `GET|POST|DELETE /internal/platform/operators/:id/whatsapp-number`
+     (`{ phone }` → `POST /{WABA}/phone_numbers` avec `verified_name: "Plazo"`), `…/link` (`{ phoneNumberId }` d'un numéro ajouté
+     dans WhatsApp Manager), `…/code` (`{ method: SMS | VOICE }`), `…/verify` (`{ code }` → `verify_code` puis `register`), `…/check`,
+     `…/pause`, `…/resume` ; onglet « WhatsApp » de la page du loueur (`OperatorWhatsappPanel`) ; « Retirer » oublie le numéro (il reste
+     chez Meta). Le passage de 15 minutes relit les numéros enregistrés ou actifs (`checkAll`, `numbers` dans la réponse `whatsapp`
+     de `remind-tomorrow`). Erreurs 409 `number_exists` · `number_taken` · `number_not_waiting` · `number_not_active` ·
+     `number_not_paused`, 404 `no_number` · `number_not_in_account`, 502 avec le code de Meta. Reste à décider : frais compris dans
+     l'abonnement ou refacturés. Tests `whatsapp-numbers.test.ts`, `WhatsappNumberCard.test.tsx`, `OperatorWhatsappPanel.test.tsx`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

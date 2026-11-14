@@ -27,6 +27,7 @@ const dayLabel = (date: string) => {
 function todoTarget(todo: PlatformTodo): string {
   if (todo.kind === "listing_review") return "/plateforme/annonces";
   if (todo.kind === "payout_failed") return "/plateforme/paiements";
+  if (todo.kind === "whatsapp_requested") return `${operatorPath(todo.operatorId)}?onglet=whatsapp`;
   if (todo.kind === "invitation_expired") return "/plateforme/loueurs";
   if (todo.kind === "contract_missing" || todo.kind === "contract_pending")
     return `${operatorPath(todo.operatorId)}?onglet=contrat`;

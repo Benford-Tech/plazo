@@ -54,7 +54,7 @@ export class StaffMessageService {
       ? await prisma.whatsappConversation.findFirst({
           where: { operatorId: actor.operatorId, phone: { endsWith: phoneTail(phone) } },
           orderBy: { lastMessageAt: 'desc' },
-          select: { id: true, lastInboundAt: true },
+          select: { id: true, lastInboundAt: true, phoneNumberId: true },
         })
       : null;
     const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } });
@@ -65,6 +65,8 @@ export class StaffMessageService {
       whatsappOn,
       smsOn,
       conversationId: conversation?.id ?? null,
+      /** 14/11/2026: the number the traveller last wrote to (a free reply leaves from it). */
+      replyFrom: conversation?.phoneNumberId ?? null,
       replyUntil: conversation ? replyUntil(conversation.lastInboundAt, now) : null,
     };
   }
@@ -98,8 +100,10 @@ export class StaffMessageService {
     if (asked === 'whatsapp' && c.whatsappOn) {
       const free = !!c.replyUntil;
       const result = free
-        ? await this.whatsapp.sendText(c.phone, text.slice(0, REPLY_MAX_LENGTH))
-        : await this.whatsapp.sendTemplate(c.phone, [whatsappParam(r.operator.name, 80), r.reference, whatsappParam(text)]);
+        ? await this.whatsapp.sendText(c.phone, text.slice(0, REPLY_MAX_LENGTH), c.replyFrom)
+        : await this.whatsapp.sendTemplate(c.phone, [whatsappParam(r.operator.name, 80), r.reference, whatsappParam(text)], {
+            from: await this.whatsapp.numbers.senderFor(actor.operatorId),
+          });
       if (result.ok) {
         const conversationId = await this.store(actor, r.id, c.phone, c.conversationId, text, result.id, now);
         await this.record(actor, r.id, { channel: 'whatsapp', via: free ? 'text' : 'template' });

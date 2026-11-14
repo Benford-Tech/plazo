@@ -28,6 +28,8 @@ export interface InboundWhatsapp {
   mediaMime: string | null;
   /** The sender's WhatsApp profile name, when Meta gives it. */
   profileName: string | null;
+  /** 14/11/2026: Meta's id of the business number that received it (Plazo's, or a parking's own). */
+  toPhoneNumberId: string | null;
 }
 
 const clean = (value: unknown, max: number): string | null => {
@@ -44,6 +46,7 @@ export function inboundMessagesOf(payload: unknown, now = new Date()): InboundWh
   for (const entry of entries) {
     for (const change of Array.isArray(entry?.changes) ? entry.changes : []) {
       const value = change?.value;
+      const toPhoneNumberId = typeof value?.metadata?.phone_number_id === 'string' ? value.metadata.phone_number_id : null;
       const names = new Map<string, string>();
       for (const contact of Array.isArray(value?.contacts) ? value.contacts : []) {
         const name = clean(contact?.profile?.name, 80);
@@ -83,6 +86,7 @@ export function inboundMessagesOf(payload: unknown, now = new Date()): InboundWh
           mediaId: typeof media?.id === 'string' ? media.id : null,
           mediaMime: typeof media?.mime_type === 'string' ? media.mime_type.slice(0, 100) : null,
           profileName: names.get(m.from) ?? null,
+          toPhoneNumberId,
         });
       }
     }
