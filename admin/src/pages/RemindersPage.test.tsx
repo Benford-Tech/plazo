@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { renderTemplate, smsLength, toGsm7, unknownVariables } from "@/lib/sms";
@@ -203,6 +203,17 @@ describe("RemindersPage (S-A + S-B)", () => {
     expect(screen.getByTestId("reminder-meta-source")).toHaveTextContent("Texte lu chez Meta");
     expect(screen.queryByLabelText("Texte du SMS")).not.toBeInTheDocument();
     expect(screen.getByTestId("reminder-preview")).toHaveTextContent("Bonsoir Sophie,");
+  });
+
+  it("avec WhatsApp, le test part au choix par WhatsApp ou par SMS (14/11/2026)", async () => {
+    api.getReminders.mockResolvedValue(
+      board({ meta: { name: "plazo_rappel_veille", text: "Bonsoir {prénom},", source: "meta" } }),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByTestId("reminder-test-sms"));
+    await waitFor(() => expect(api.testReminder).toHaveBeenCalledWith("p1", { channel: "sms" }));
+    fireEvent.click(screen.getByTestId("reminder-test-whatsapp"));
+    await waitFor(() => expect(api.testReminder).toHaveBeenLastCalledWith("p1", { channel: "whatsapp" }));
   });
 
   it("un chauffeur voit tout sans pouvoir rien changer", async () => {

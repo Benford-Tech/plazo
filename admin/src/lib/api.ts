@@ -897,7 +897,7 @@ export const adminApi = {
     ),
   testReminder: (
     parkingId: string,
-    input: { to?: string; template?: string },
+    input: { to?: string; template?: string; channel?: "whatsapp" | "sms" },
   ) =>
     apiRequest<{ outcome: string; to: string }>(
       `/internal/parkings/${parkingId}/reminders/test`,
