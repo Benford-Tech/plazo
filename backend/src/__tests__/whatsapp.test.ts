@@ -407,6 +407,7 @@ describe('WhatsApp : envoi et repli SMS', () => {
     whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
     const op = await operatorWithWhatsapp();
     await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    await prisma.parking.update({ where: { id: op.parking.id }, data: { travellerConditions: 'Retard de plus de 30 min : 10 €' } });
     const res = await api()
       .post(`/api/internal/parkings/${op.parking.id}/reminders/test`)
       .set(auth(op.token))
@@ -418,6 +419,8 @@ describe('WhatsApp : envoi et repli SMS', () => {
     const content: string = JSON.parse(calls(BREVO_SMS_URL)[0][1].body).content;
     expect(content.startsWith('Bonsoir')).toBe(true);
     expect(content).not.toContain('photos.example');
+    // « Ajoute les pénalités dans le sms »: the parking's conditions close the SMS.
+    expect(content.endsWith('\nÀ savoir : Retard de plus de 30 min : 10 €')).toBe(true);
     const bad = await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ channel: 'fax' });
     expect(bad.status).toBe(400);
   });

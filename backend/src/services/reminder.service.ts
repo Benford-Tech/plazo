@@ -38,7 +38,7 @@ import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { PhoneNow, SmsPhoneService } from './sms-phone.service';
-import { renderMetaReminder, SendOutcome, SmsService, SMS_RETRY_WINDOW_MS } from './sms.service';
+import { renderMetaReminder, SendOutcome, SmsService, SMS_RETRY_WINDOW_MS, withConditions } from './sms.service';
 import { loadParkingValues } from './parking-values';
 
 /** What happens to one booking's day-before SMS, as the pro space shows it. */
@@ -623,7 +623,10 @@ export class ReminderService {
       reservationId: null,
       kind: 'reminder_test' as const,
       to,
-      text: board.meta ? renderMetaReminder(board.sample.values, board.meta.text) : renderTemplate(template, board.sample.values),
+      text: withConditions(
+        board.meta ? renderMetaReminder(board.sample.values, board.meta.text) : renderTemplate(template, board.sample.values),
+        board.sample.values.conditions,
+      ),
     };
     // 14/11/2026 (« Pouvoir envoyer le test du message de la veille par sms »): the SMS fallback alone, as a traveller would get it.
     const outcome =

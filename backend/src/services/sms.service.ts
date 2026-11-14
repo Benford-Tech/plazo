@@ -587,7 +587,8 @@ export class SmsService {
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      const values = valuesOf(booking, booking.parking.timezone, link, parking);
+      return withConditions(renderMetaReminder(values, (await this.metaReminder()).text), values.conditions);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -595,7 +596,8 @@ export class SmsService {
     ]);
     const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
     const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, parking));
+    const values = valuesOf(booking, booking.parking.timezone, link, parking);
+    return withConditions(renderTemplate(template, values), values.conditions);
   }
 
   private testText(): string {
@@ -798,6 +800,16 @@ export class SmsService {
       lastErrorAt: settings?.lastErrorAt?.toISOString() ?? null,
     };
   }
+}
+
+/**
+ * 14/11/2026 (« Ajoute les pénalités dans le sms »): the day-before SMS ends with the parking's supplements and conditions
+ * (« Suppléments et conditions », {conditions}) when it has some and the text does not say them already.
+ */
+export function withConditions(text: string, conditions: string | null | undefined): string {
+  const said = conditions?.trim();
+  if (!said || text.includes(said)) return text;
+  return `${text.trimEnd()}\nÀ savoir : ${said}`;
 }
 
 /** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */
