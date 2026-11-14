@@ -1725,7 +1725,7 @@
     "role": "Role",
     "inactive": "Disabled",
     "post_today": "Today's post: {}",
-    "last_login": "Last signed in {}",
+    "last_login": "Last active {}",
     "never_logged": "Never signed in",
     "password": "Temporary password",
     "password_help": "At least 10 characters. Give it to the person, who will change it in “My account”.",

@@ -2577,6 +2577,10 @@ la réservation). Test `sms.test.ts`.
   `{nom}` du SMS de la veille et « C. Martin » d'après les champs, anonymisation « Client » / « anonymisé ». Personnel : noms nettoyés avant
   contrôle (un nom fait d'espaces est refusé), invitation qui exige prénom et nom du gérant, `PATCH /internal/staff/me` (« Votre nom » de
   Mon compte, web et app) et prénom / nom dans `PATCH /internal/staff/:id` (« Modifier le nom » d'Équipe), gérant démo « Gérant Démo ».
+- **Dernière activité (14/11/2026, « l'heure de dernière connexion doit être l'heure de dernière activité »)** : `Staff.lastActiveAt`
+  (migration `staff_last_active`, reprise de `lastLoginAt`), écrit par la stratégie JWT (`touchActivity` de `config/passport.ts`) à
+  chaque requête avec une session, au plus toutes les 5 minutes, jamais en consultation ; page Équipe (web) et Équipe de Plazo Pro :
+  « Dernière activité » (`lastActiveAt`, sinon `lastLoginAt`), dans les neuf langues. Test `staff-activity.test.ts`.
 - **Invitation d'un membre (26/10/2026, « Nawfel et Pascal n'ont pas reçu le mail afin de créer leur compte »)** : jusque-là, créer un
   membre n'envoyait rien (le gérant choisissait le mot de passe et devait le transmettre). Désormais `StaffService.create` envoie à
   chaque membre créé (web ou Plazo Pro) le mail `teamInvitationEmail` (`account-messages.ts` : « Bienvenue dans l'équipe de … »,

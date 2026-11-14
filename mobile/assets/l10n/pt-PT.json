@@ -1726,7 +1726,7 @@
     "role": "Função",
     "inactive": "Desativado",
     "post_today": "Posto do dia: {}",
-    "last_login": "Último início de sessão {}",
+    "last_login": "Última atividade {}",
     "never_logged": "Nunca iniciou sessão",
     "password": "Palavra-passe provisória",
     "password_help": "Pelo menos 10 caracteres. Comunique-a à pessoa, que a mudará em «A minha conta».",

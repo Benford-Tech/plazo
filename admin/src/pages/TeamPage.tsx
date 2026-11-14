@@ -447,8 +447,8 @@ export default function TeamPage() {
                       )}
                       <span>
                         {t.lastLogin} :{" "}
-                        {m.lastLoginAt
-                          ? dateTime.format(new Date(m.lastLoginAt))
+                        {(m.lastActiveAt ?? m.lastLoginAt)
+                          ? dateTime.format(new Date((m.lastActiveAt ?? m.lastLoginAt)!))
                           : fr.common.never}
                       </span>
                     </div>

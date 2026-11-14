@@ -1727,7 +1727,7 @@
     "role": "Rola",
     "inactive": "Wyłączony",
     "post_today": "Stanowisko na dziś: {}",
-    "last_login": "Ostatnie logowanie {}",
+    "last_login": "Ostatnia aktywność {}",
     "never_logged": "Nigdy niezalogowany",
     "password": "Hasło tymczasowe",
     "password_help": "Co najmniej 10 znaków. Przekaż je tej osobie, która zmieni je w „Moje konto”.",

@@ -16,9 +16,10 @@ _TeamMemberModel _$TeamMemberModelFromJson(Map<String, dynamic> json) =>
       phone: json['phone'] as String?,
       role: json['role'] as String,
       isActive: json['isActive'] as bool? ?? true,
-      lastLoginAt: json['lastLoginAt'] == null
+      // 14/11/2026: the last activity, else the last sign-in (older APIs).
+      lastLoginAt: (json['lastActiveAt'] ?? json['lastLoginAt']) == null
           ? null
-          : DateTime.parse(json['lastLoginAt'] as String),
+          : DateTime.parse((json['lastActiveAt'] ?? json['lastLoginAt']) as String),
       post: json['post'] as String?,
       postSetAt: json['postSetAt'] == null
           ? null

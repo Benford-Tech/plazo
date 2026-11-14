@@ -1726,7 +1726,7 @@
     "role": "Rol",
     "inactive": "Desactivado",
     "post_today": "Puesto del día: {}",
-    "last_login": "Última conexión {}",
+    "last_login": "Última actividad {}",
     "never_logged": "Nunca se ha conectado",
     "password": "Contraseña provisional",
     "password_help": "Al menos 10 caracteres. Dásela a la persona, que la cambiará en «Mi cuenta».",

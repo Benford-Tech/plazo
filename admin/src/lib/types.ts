@@ -27,6 +27,8 @@ export interface Staff {
   role: StaffRole;
   isActive: boolean;
   lastLoginAt: string | null;
+  /** 14/11/2026: the last request made with a session (absent from older APIs). */
+  lastActiveAt?: string | null;
   /** The post held today (R-C, chosen in the app); null until chosen. */
   post?: StaffRole | null;
   postSetAt?: string | null;
