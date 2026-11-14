@@ -17,19 +17,23 @@ const posts = ['manager', 'agent', 'driver', 'valet'];
 
 /// The tabs of each post: the pages of the day's work first, "Plus" keeps the rest.
 ///
-/// - driver: the shuttle, then the day's planning (30/10/2026: one tab instead of « Arrivées » and « Retours »);
+/// - driver: the shuttle, then the day's planning (30/10/2026: one tab instead of « Arrivées » and « Retours »), the messages;
 /// - valet: the parking (arrivals to place, keys), the terminal runs, the services to do before the returns, the day
 ///   (five tabs; the spot planning is in Plus › Voiturier);
-/// - agent and manager: the day, the bookings, the parking.
+/// - agent and manager: the day, the bookings, the messages, the parking.
+/// The valet keeps the messages in Plus (five tabs already).
 List<ProTab> tabsFor(String post) {
   const more = ProTab(route: ProMoreTabRoute(), icon: Icons.more_horiz_rounded, label: 'more', key: 'ptab-more');
   const today = ProTab(route: ProTodayRoute(), icon: Icons.today_rounded, label: 'today', key: 'ptab-today');
   final parking = ProTab(route: ProOccupationRoute(), icon: Icons.local_parking_rounded, label: 'parking', key: 'ptab-parking');
+  // « Messages » (14/11/2026, « toujours pas de message sur la barre menu »): the WhatsApp and app conversations, as on the web.
+  const messages = ProTab(route: ProWhatsappInboxRoute(), icon: Icons.forum_rounded, label: 'messages', key: 'ptab-messages');
   switch (post) {
     case 'driver':
       return [
         ProTab(route: ProShuttleRoute(), icon: Icons.directions_bus_rounded, label: 'shuttle', key: 'ptab-shuttle'),
         const ProTab(route: ProDriverPlanningRoute(), icon: Icons.schedule_rounded, label: 'planning', key: 'ptab-planning'),
+        messages,
         more,
       ];
     case 'valet':
@@ -46,6 +50,7 @@ List<ProTab> tabsFor(String post) {
       return [
         today,
         const ProTab(route: ProReservationsRoute(), icon: Icons.list_alt_rounded, label: 'reservations', key: 'ptab-reservations'),
+        messages,
         parking,
         more,
       ];

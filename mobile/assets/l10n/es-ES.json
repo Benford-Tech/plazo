@@ -1180,7 +1180,16 @@
     "contact": "Contacto",
     "version": "Versión {}",
     "travellers": "Viajeros",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "notifications": "Notificaciones",
+    "notif_booking": "Mi reserva",
+    "notif_booking_text": "lanzadera, recordatorio, aterrizaje",
+    "notif_booking_on": "Siempre",
+    "offers": "Ofertas y ventajas",
+    "offers_text": "Ideas de viaje y novedades de Plazo, dos por semana como máximo.",
+    "offers_settings": "Activa las notificaciones de Plazo en los ajustes del teléfono.",
+    "offers_web": "Las notificaciones solo están disponibles en la aplicación instalada.",
+    "offers_failed": "No se ha podido guardar tu elección. Inténtalo de nuevo."
   },
   "return_day": {
     "title": "Tu vuelta hoy",
@@ -1604,6 +1613,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Mensajes",
     "today": "Hoy",
     "reservations": "Reservas",
     "parking": "Aparcamiento",
@@ -2883,8 +2893,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Mensajes de WhatsApp",
-    "menu": "Mensajes de WhatsApp",
+    "title": "Mensajes",
+    "menu": "Mensajes",
     "intro": "Lo que tus clientes responden al número de WhatsApp de Plazo, ordenado por reserva.",
     "views": {
       "unread": "No leídos · {}",
@@ -2945,6 +2955,7 @@
     "unhandle": "Volver a pendiente",
     "handled": "Conversación marcada como tramitada.",
     "call": "Llamar al {}",
+    "sms": "Enviar un SMS al {}",
     "errors": {
       "window_closed": "Ya no es posible responder libremente: el último mensaje del cliente tiene más de 24 h.",
       "whatsapp_unavailable": "WhatsApp no está configurado para Plazo.",
@@ -3009,7 +3020,7 @@
   "write_traveller": {
     "button": "Escribir desde Plazo",
     "title": "Escribir al cliente",
-    "from_plazo": "Enviado desde el número de Plazo: la respuesta del cliente llega a «Mensajes de WhatsApp».",
+    "from_plazo": "Enviado desde el número de Plazo: la respuesta del cliente llega a «Mensajes».",
     "whatsapp": "WhatsApp",
     "sms": "SMS del aparcamiento",
     "placeholder": "Tu mensaje…",

@@ -2,11 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parking_app/src/di/locator.dart';
 import 'package:parking_app/src/features/pro_whatsapp/data/whatsapp_inbox_data_source.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/pro_whatsapp_conversation_page.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/pro_whatsapp_inbox_page.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/write_to_traveller_sheet.dart';
+import 'package:parking_app/src/services/link_service.dart';
 
+import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
 
 // « Messages WhatsApp » in Plazo Pro (12/11/2026, direction A of the web on a phone).
@@ -185,6 +188,20 @@ void main() {
     expect(inbox.replies, ['Oui, à demain 8h.']);
     expect(find.byKey(const Key('wa-out')), findsOneWidget);
     expect(find.textContaining('Joanny ·'), findsOneWidget);
+  });
+
+  testWidgets('SMS et appel avec son propre téléphone, depuis l’en-tête (choix A du 13/11/2026)', (tester) async {
+    final links = FakeLinks();
+    locator.registerSingleton<LinkService>(links);
+    addTearDown(() => locator.unregister<LinkService>());
+    ProWhatsappConversationPage.debugSource = FakeInbox(open: true);
+    addTearDown(() => ProWhatsappConversationPage.debugSource = null);
+    await pumpLocalized(tester, const ProWhatsappConversationPage(id: 'c1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wa-sms')));
+    await tester.tap(find.byKey(const Key('wa-call')));
+    await tester.pump();
+    expect(links.opened, [Uri.parse('sms:0612345678'), Uri.parse('tel:0612345678')]);
   });
 
   testWidgets('après 24 h : plus de champ, « Appeler le … »', (tester) async {

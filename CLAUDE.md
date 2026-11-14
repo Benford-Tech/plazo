@@ -1454,7 +1454,23 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      no_phone · no_channel · anonymized) et `POST …/write { text, channel }` (`RefuseInDemo` ; 400 `text`, 409 `no_phone` ·
      `whatsapp_unavailable` · `anonymized`, 502 `sms_failed` / code de Meta) → `{ channel, via: text · template · sms, conversationId,
      fallback }` ; tracé `traveller.message_sent` (« a écrit au client » dans l'Historique, groupe Messages ; `whatsapp.reply` aussi).
-     **Le chauffeur aussi (13/11/2026, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
+     **SMS et appel avec son propre téléphone, choix A (13/11/2026, « pouvoir depuis la conversation WhatsApp basculer sur l'envoi
+     d'un SMS ou un appel avec son propre téléphone », maquettes https://claude.ai/artifact/7H1jYTP1vR68z8u2W1Qevj)** : en tête de la
+     conversation, une icône SMS (`wa-sms`, `sms:` : l'appli SMS du téléphone sur ce numéro) à côté de l'appel (`wa-call`, `tel:`) ;
+     Plazo Pro `ProWhatsappConversationPage` (`_sms`, `whatsapp_inbox.sms` dans les neuf langues), web `OwnPhoneActions` de
+     `WhatsappInboxPage` (numéro, SMS, appel et « Copier le numéro » pour un ordinateur) ; rien pour une conversation de l'app sans
+     numéro ; le SMS part du téléphone du membre, sa réponse n'arrive pas dans Plazo. Tests `whatsapp_inbox_test.dart`,
+     `WhatsappInboxPage.test.tsx`.
+     **Barre des messages, choix A (13/11/2026, « sur le web mets une barre latérale de message comme Facebook », maquettes
+     https://claude.ai/artifact/LiooeN3fnHrkGLSfHPCMpo)** : sur un écran large (dès `xl`, 1 280 px), une barre à droite de chaque page
+     de l'espace pro (`components/messages/MessagesSidebar.tsx`, `lib/messages-bar.ts`, montée dans `AdminLayout`, `reservations:status`,
+     absente de la page Messages) liste les conversations de « À traiter » (non lues d'abord, `sortForBar` ; initiales, point vert quand
+     le client a écrit depuis moins de 24 h, `wroteRecently` ; recherche sans accents par nom, numéro ou référence ; relue toutes les
+     15 s) ; un clic ouvre une fenêtre en bas de l'écran (`Thread` de `WhatsappInboxPage` avec `docked` : appeler, ouvrir la
+     réservation, « Réduire », « Fermer », réponse et « Marquer comme traité » comme sur la page), deux au plus (`MAX_OPEN`), les
+     autres réduites en onglets (4 au plus) ; « Replier » la ramène à une colonne de pastilles avec le nombre de non lus (gardé dans
+     le navigateur, `plazo:messages-bar-collapsed`). Téléphone : l'onglet « Messages » comme avant. Test `MessagesSidebar.test.tsx`.
+, « Le chauffeur doit pouvoir le faire aussi »)** : les deux routes `…/write` demandent
      `reservations:status` (chauffeurs et voituriers compris) et le bouton de la fiche suit. **La boîte aussi (13/11/2026,
      « Le chauffeur y a droit »)** : les routes de « Messages WhatsApp » (liste, Envoyés, conversation, médias, réponse,
      traité ; le rattachement d'un numéro inconnu reste à l'accueil et aux gérants), `nav/counts` › `whatsapp`, la page web,
@@ -1790,7 +1806,25 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`. Notifications de la plateforme
   (choix E-A + C-A du 05/10/2026) : `/pro/plateforme/notifications`, table `platform_notifications`, routes
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
-  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
+  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Promotions aux voyageurs, choix A « Message
+  promo » (13/11/2026, « l'admin de la plateforme peut envoyer des notif, des promo de réservation aux utilisateurs Plazo client », maquettes
+  https://claude.ai/artifact/QVEjFhRHjcKpbf5gt8RcpX)** : genre « Promotion » de Plateforme › Notifications (audience `promotion`, migration
+  `traveller_offers`) : un push aux seuls téléphones de l'app Plazo qui ont allumé « Offres et bons plans » (Plus › Notifications de l'app,
+  éteint d'office ; table `traveller_app_devices` : identifiant OneSignal, plateforme, `offers`, `offersAt`, `lastSeenAt`, sans donnée
+  personnelle ; `PUT /public/app-devices/:subscriptionId { offers?, platform? }` au lancement et à l'interrupteur, `DELETE` ; `appDeviceLimiter`
+  30 par 15 min ; effacés 13 mois après la dernière ouverture, `purge-expired-tokens` › `appDevicesPurged`), réservation ou non ; filtres
+  « Ont déjà réservé à <aéroport> » et « Sans réservation à venir » (`TravellerAppDeviceService.offerIds`, par `traveller_devices`) ; lien
+  `{ kind: search | parking, airport, parking?, arrival?, return? }` (`domain/promotion.ts`, `promotionLinkErrors`, 400 `link.*` /
+  `filters.airport`) : le push porte `data { type: 'promotion', path }` et l'app ouvre la recherche ou la fiche à ces dates
+  (`/lyon-saint-exupery/recherche?arrivee=…&retour=…`) ; aucun prix ne change ; deux promotions par 7 jours au plus (429 `weekly_limit`,
+  `nextPromotionAt` du compte) ; `PlatformNotification.link/filters`. Politique de confidentialité (consentement, durée). Pas encore : B (codes
+  promo), C (campagnes, mail, statistiques). Espace pro : « Genre · Information | Promotion » de la page (`PromotionForm` :
+  filtres, « Ouvre dans l'app » Accueil · Recherche · Fiche d'un parking avec dates, nombre de téléphones, aperçu, « Prochaine promotion
+  possible le … » ; `lib/promotion.ts`). App Plazo : section « Notifications » de Plus (« Ma réservation · Toujours » et l'interrupteur
+  `offers-switch`, `features/offers` : `OffersSwitch`, `OffersDataSource` par Dio, choix gardé `offers.enabled` ; allumer demande la
+  permission des notifications), `AppDevicePing` au lancement (sans demander la permission, `PushService.currentId`), et un push
+  `promotion` ouvre son chemin (`pushPath`, sinon Rechercher). Tests `promotions.test.ts`, `NotificationsPage.test.tsx`,
+  `offers_switch_test.dart`. **Changer de parking, direction A (10/11/2026, « Je veux pouvoir naviguer entre les parkings en tant que super admin », maquettes
   https://claude.ai/artifact/YNc1gxT1wvRA9L1hw8MbPK)** : pour le super admin, le nom du parking dans la barre haute (et sur téléphone
   en haut du rail) ouvre `ParkingSwitcher` (`components/platform/ParkingSwitcher.tsx`, `lib/parking-switcher.ts`), qui remplace le menu
   « Changer de vue » (aussi dans la barre de la Plateforme) : recherche sans accents (les archivés en plus quand on cherche), « Récents »
@@ -2309,8 +2343,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **Messages en évidence (13/11/2026, « mets les messages sur le menu en bas », « plus en évidence sur le web »)** : « Messages »
   (`/reservations/whatsapp`, `reservations:status`, chauffeur compris) devient une entrée à part du rail, sous Tableau de bord, avec le
   nombre de non lus (`NavItem.counter`), et n'est plus une page de Réservations (`NavItem.exclude`) ; sur téléphone, un onglet à lui entre
-  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
-  la cloche (`header-messages`, citron avec le nombre quand il y a des non lus). Plazo Pro garde Plus › « Messages WhatsApp ».
+  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; **renommée « Messages » (14/11/2026, « Renomme Messages WhatsApp en Messages »)** : titre de la page et entrée de Plus, web et Plazo Pro, dans les neuf langues ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
+  la cloche (`header-messages`, citron avec le nombre quand il y a des non lus). **Plazo Pro aussi (14/11/2026, « toujours pas de message
+  sur la barre menu »)** : onglet « Messages » (`ptab-messages`, `ProWhatsappInboxRoute` enfant de la coquille, chemin `/pro/messages`) entre
+  Réservations et Parking pour l'accueil et le gérant, après Planning pour le chauffeur ; le nombre de non lus sur l'icône
+  (`MessagesTabIcon`) ; le voiturier, qui a déjà cinq onglets, le garde dans Plus.
   **Menu du web, direction A, et photo de profil (30/10/2026, « Réorganise le menu sur le web. Pouvoir mettre sa photo »,
   maquettes https://claude.ai/artifact/8XWAMJ28UwJFmvFBxuv66i)** : le rail de l'espace pro (`AdminLayout.tsx`, 236 px) a quatre
   groupes par usage, Aujourd'hui (Tableau de bord, Planning › Jour · Prévisionnel, Navettes), Réservations (Toutes, Boîte de
@@ -2806,5 +2843,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - Code et commentaires en anglais, interface et documentation utilisateur en français.
 - **Mise en production (08/10/2026)** : la liste « Avant d'ouvrir aux vrais clients » du README est l'état de référence
   (décisions de Joanny, tableaux de bord, ce qui est fait) ; la tenir à jour à chaque point réglé.
+- **Auteur des commits (13/11/2026, « Benford Tech doit être l'auteur des commits »)** : avant le premier commit d'une session,
+  `git config user.name "Benford Tech"` et `git config user.email` avec l'adresse des commits « Benford Tech » déjà dans
+  l'historique (`git log --format='%an <%ae>' | grep "Benford Tech" | head -1`) ; jamais « Claude » en auteur. **Aucune
+  mention de Claude (13/11/2026, « Retire la mention by claude »)** : ni ligne `Co-Authored-By`, ni lien de session dans les
+  messages de commit, ni « Generated with Claude Code » ni lien de session dans les descriptions de PR.
 - **Livraison (07/10/2026)** : une fois le travail vérifié (lint, tests, build) et poussé sur la branche, ouvrir
   automatiquement la PR vers `main` puis la fusionner, sans attendre de demande.

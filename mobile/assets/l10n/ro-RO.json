@@ -1180,7 +1180,16 @@
     "contact": "Contactați-ne",
     "version": "Versiunea {}",
     "travellers": "Călători",
-    "about": "Despre"
+    "about": "Despre",
+    "notifications": "Notificări",
+    "notif_booking": "Rezervarea mea",
+    "notif_booking_text": "navetă, memento, aterizare",
+    "notif_booking_on": "Mereu",
+    "offers": "Oferte și reduceri",
+    "offers_text": "Idei de călătorie și noutăți Plazo, cel mult două pe săptămână.",
+    "offers_settings": "Activați notificările Plazo din setările telefonului.",
+    "offers_web": "Notificările sunt disponibile doar în aplicația instalată.",
+    "offers_failed": "Alegerea nu a putut fi salvată. Încercați din nou."
   },
   "return_day": {
     "title": "Întoarcerea dvs. de azi",
@@ -1604,6 +1613,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Mesaje",
     "today": "Azi",
     "reservations": "Rezervări",
     "parking": "Parcare",
@@ -2883,8 +2893,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Mesaje WhatsApp",
-    "menu": "Mesaje WhatsApp",
+    "title": "Mesaje",
+    "menu": "Mesaje",
     "intro": "Ce răspund clienții dvs. la numărul WhatsApp al Plazo, ordonat pe rezervări.",
     "views": {
       "unread": "Necitite · {}",
@@ -2945,6 +2955,7 @@
     "unhandle": "Puneți din nou de rezolvat",
     "handled": "Conversație marcată ca rezolvată.",
     "call": "Sunați la {}",
+    "sms": "Trimiteți SMS la {}",
     "errors": {
       "window_closed": "Nu mai este posibil un răspuns liber: ultimul mesaj al clientului are peste 24 h.",
       "whatsapp_unavailable": "WhatsApp nu este configurat pentru Plazo.",
@@ -3009,7 +3020,7 @@
   "write_traveller": {
     "button": "Scrieți din Plazo",
     "title": "Scrieți clientului",
-    "from_plazo": "Trimis de pe numărul Plazo: răspunsul clientului ajunge în „Mesaje WhatsApp”.",
+    "from_plazo": "Trimis de pe numărul Plazo: răspunsul clientului ajunge în „Mesaje”.",
     "whatsapp": "WhatsApp",
     "sms": "SMS-ul parcării",
     "placeholder": "Mesajul dvs.…",

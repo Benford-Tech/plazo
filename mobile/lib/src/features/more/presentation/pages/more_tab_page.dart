@@ -9,6 +9,7 @@ import '../../../../services/link_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/tutorials/tutorials_page.dart';
+import '../../../offers/offers_switch.dart';
 
 /// "Plus": the site's FAQ and legal pages, contact and the app's version. The staff's space lives in
 /// Plazo Pro only (decision of 04/10/2026).
@@ -36,6 +37,19 @@ class MoreTabPage extends StatelessWidget {
             external: true,
             onTap: () => links.open(Uri(scheme: 'mailto', path: Product.supportEmail)),
           ),
+          const SizedBox(height: 14),
+          // « Offres et bons plans » (13/11/2026, direction A): the booking's pushes always, the promotions on request.
+          _title('more.notifications'.tr()),
+          ListTile(
+            key: const Key('more-notif-booking'),
+            minTileHeight: 52,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            leading: const Icon(Icons.notifications_active_outlined, color: AppColors.accent),
+            title: Text('more.notif_booking'.tr(), style: AppText.body(size: 15.5, weight: 500)),
+            subtitle: Text('more.notif_booking_text'.tr(), style: AppText.muted(size: 13)),
+            trailing: Text('more.notif_booking_on'.tr(), style: AppText.muted(size: 13)),
+          ),
+          const OffersSwitch(),
           const SizedBox(height: 14),
           _title('more.about'.tr()),
           _Tile(key: const Key('more-terms'), icon: Icons.description_outlined, label: 'more.terms'.tr(), external: true, onTap: () => site('/conditions')),

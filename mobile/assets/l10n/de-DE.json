@@ -1179,7 +1179,16 @@
     "contact": "Kontakt",
     "version": "Version {}",
     "travellers": "Reisende",
-    "about": "Über uns"
+    "about": "Über uns",
+    "notifications": "Benachrichtigungen",
+    "notif_booking": "Meine Buchung",
+    "notif_booking_text": "Shuttle, Erinnerung, Landung",
+    "notif_booking_on": "Immer",
+    "offers": "Angebote und Tipps",
+    "offers_text": "Reiseideen und Neuigkeiten von Plazo, höchstens zwei pro Woche.",
+    "offers_settings": "Aktivieren Sie die Benachrichtigungen von Plazo in den Einstellungen Ihres Telefons.",
+    "offers_web": "Benachrichtigungen gibt es nur in der installierten App.",
+    "offers_failed": "Ihre Auswahl konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
   },
   "return_day": {
     "title": "Ihre Rückkehr heute",
@@ -1603,6 +1612,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Nachrichten",
     "today": "Heute",
     "reservations": "Buchungen",
     "parking": "Parkplatz",
@@ -2880,8 +2890,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "WhatsApp-Nachrichten",
-    "menu": "WhatsApp-Nachrichten",
+    "title": "Nachrichten",
+    "menu": "Nachrichten",
     "intro": "Was Ihre Kunden an die WhatsApp-Nummer von Plazo schreiben, nach Buchung sortiert.",
     "views": {
       "unread": "Ungelesen · {}",
@@ -2942,6 +2952,7 @@
     "unhandle": "Wieder auf „zu bearbeiten“ setzen",
     "handled": "Unterhaltung als erledigt markiert.",
     "call": "{} anrufen",
+    "sms": "SMS an {}",
     "errors": {
       "window_closed": "Keine freie Antwort mehr möglich: Die letzte Nachricht des Kunden ist älter als 24 Std.",
       "whatsapp_unavailable": "WhatsApp ist für Plazo nicht eingerichtet.",
@@ -3006,7 +3017,7 @@
   "write_traveller": {
     "button": "Über Plazo schreiben",
     "title": "Dem Kunden schreiben",
-    "from_plazo": "Von der Plazo-Nummer gesendet: Die Antwort des Kunden kommt unter „WhatsApp-Nachrichten“ an.",
+    "from_plazo": "Von der Plazo-Nummer gesendet: Die Antwort des Kunden kommt unter „Nachrichten“ an.",
     "whatsapp": "WhatsApp",
     "sms": "SMS des Parkplatzes",
     "placeholder": "Ihre Nachricht…",

@@ -1179,7 +1179,16 @@
     "contact": "Contact us",
     "version": "Version {}",
     "travellers": "Travellers",
-    "about": "About"
+    "about": "About",
+    "notifications": "Notifications",
+    "notif_booking": "My booking",
+    "notif_booking_text": "shuttle, reminder, landing",
+    "notif_booking_on": "Always",
+    "offers": "Offers and deals",
+    "offers_text": "Trip ideas and what's new at Plazo, two a week at most.",
+    "offers_settings": "Turn on Plazo's notifications in your phone's settings.",
+    "offers_web": "Notifications are only available in the installed app.",
+    "offers_failed": "Your choice couldn't be saved. Please try again."
   },
   "return_day": {
     "title": "Your return today",
@@ -1603,6 +1612,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Messages",
     "today": "Today",
     "reservations": "Bookings",
     "parking": "Car park",
@@ -2880,8 +2890,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "WhatsApp messages",
-    "menu": "WhatsApp messages",
+    "title": "Messages",
+    "menu": "Messages",
     "intro": "What your customers reply to Plazo's WhatsApp number, sorted by booking.",
     "views": {
       "unread": "Unread · {}",
@@ -2942,6 +2952,7 @@
     "unhandle": "Set back to handle",
     "handled": "Conversation marked as handled.",
     "call": "Call {}",
+    "sms": "Text {}",
     "errors": {
       "window_closed": "No more free replies possible: the customer's last message is more than 24 h old.",
       "whatsapp_unavailable": "WhatsApp isn't set up for Plazo.",
@@ -3006,7 +3017,7 @@
   "write_traveller": {
     "button": "Write from Plazo",
     "title": "Write to the customer",
-    "from_plazo": "Sent from the Plazo number: the customer's reply arrives in “WhatsApp messages”.",
+    "from_plazo": "Sent from the Plazo number: the customer's reply arrives in “Messages”.",
     "whatsapp": "WhatsApp",
     "sms": "Car park text",
     "placeholder": "Your message…",

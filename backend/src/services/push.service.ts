@@ -136,6 +136,11 @@ export class PushService {
     return oneSignalSettings() !== null;
   }
 
+  /** The traveller app's OneSignal (its own, else the staff's). */
+  public travellerEnabled(): boolean {
+    return oneSignalTravellerSettings() !== null;
+  }
+
   /**
    * "Nouvelle réservation" to the team members on `immediate` (06/10/2026): bookings made on the site or imported, never
    * the one a colleague just typed. Those on `hourly` hear of it in the digest (BookingDigestService).

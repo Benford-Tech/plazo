@@ -115,6 +115,9 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
 
   Future<void> _call(String phone) => locator<LinkService>().open(Uri.parse('tel:${phone.replaceAll(RegExp(r'[^\d+]'), '')}'));
 
+  /// 13/11/2026 (choix A, « basculer sur l'envoi d'un SMS avec son propre téléphone ») : the phone's own SMS app on this number.
+  Future<void> _sms(String phone) => locator<LinkService>().open(Uri.parse('sms:${phone.replaceAll(RegExp(r'[^\d+]'), '')}'));
+
   @override
   Widget build(BuildContext context) {
     final thread = _thread;
@@ -139,6 +142,7 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
                       handling: _handling,
                       onBooking: c.reservation == null ? null : () => context.router.push(ProReservationRoute(id: c.reservation!.id)),
                       onCall: () => _call(c.phone),
+                      onSms: () => _sms(c.phone),
                       onHandle: () => _toggleHandled(c),
                     ),
                     Expanded(
@@ -179,11 +183,19 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
 const _threadBg = _threadColour;
 
 class _Header extends StatelessWidget {
-  const _Header({required this.conversation, required this.handling, required this.onBooking, required this.onCall, required this.onHandle});
+  const _Header({
+    required this.conversation,
+    required this.handling,
+    required this.onBooking,
+    required this.onCall,
+    required this.onSms,
+    required this.onHandle,
+  });
   final WaConversation conversation;
   final bool handling;
   final VoidCallback? onBooking;
   final VoidCallback onCall;
+  final VoidCallback onSms;
   final VoidCallback onHandle;
 
   @override
@@ -207,6 +219,13 @@ class _Header extends StatelessWidget {
                   style: AppText.body(size: 13.5, weight: 600),
                 ),
               ),
+              if (c.phone.isNotEmpty)
+                IconButton(
+                  key: const Key('wa-sms'),
+                  tooltip: 'whatsapp_inbox.sms'.tr(args: [c.phone]),
+                  onPressed: onSms,
+                  icon: const Icon(Icons.sms_rounded, color: AppColors.accent),
+                ),
               if (c.phone.isNotEmpty)
                 IconButton(
                   key: const Key('wa-call'),

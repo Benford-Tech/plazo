@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:parking_app/src/features/pro_bell/presentation/bell_button.dart';
 import 'package:parking_app/src/features/pro_whatsapp/presentation/whatsapp_unread_badge.dart';
 import 'package:parking_app/src/features/parking_messages/parking_messages_card.dart';
+import 'package:parking_app/src/features/offers/offers_data_source.dart';
 
 /// Loads the French texts once, without network (no map tiles) nor endless animations.
 Future<void> setUpLocalizedTests() async {
@@ -32,6 +33,8 @@ Future<void> setUpLocalizedTests() async {
   BellButton.enabled = false;
   WhatsappUnreadBadge.enabled = false;
   ParkingMessagesCard.pollingEnabled = false;
+  // The start-up ping of the phone (« Offres et bons plans ») talks to the API.
+  AppDevicePing.enabled = false;
 }
 
 /// The app's own fonts instead of the test font (whose glyphs are all one em wide), for the tests that check whether

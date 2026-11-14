@@ -1180,7 +1180,16 @@
     "contact": "Contacte-nos",
     "version": "Versão {}",
     "travellers": "Viajantes",
-    "about": "Sobre"
+    "about": "Sobre",
+    "notifications": "Notificações",
+    "notif_booking": "A minha reserva",
+    "notif_booking_text": "vaivém, lembrete, aterragem",
+    "notif_booking_on": "Sempre",
+    "offers": "Ofertas e promoções",
+    "offers_text": "Ideias de viagem e novidades da Plazo, no máximo duas por semana.",
+    "offers_settings": "Ative as notificações da Plazo nas definições do telemóvel.",
+    "offers_web": "As notificações só estão disponíveis na aplicação instalada.",
+    "offers_failed": "Não foi possível guardar a sua escolha. Tente novamente."
   },
   "return_day": {
     "title": "O seu regresso hoje",
@@ -1604,6 +1613,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Mensagens",
     "today": "Hoje",
     "reservations": "Reservas",
     "parking": "Parque",
@@ -2883,8 +2893,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Mensagens WhatsApp",
-    "menu": "Mensagens WhatsApp",
+    "title": "Mensagens",
+    "menu": "Mensagens",
     "intro": "O que os seus clientes respondem ao número WhatsApp da Plazo, organizado por reserva.",
     "views": {
       "unread": "Não lidas · {}",
@@ -2945,6 +2955,7 @@
     "unhandle": "Voltar a pôr a tratar",
     "handled": "Conversa marcada como tratada.",
     "call": "Ligar para o {}",
+    "sms": "Enviar SMS para o {}",
     "errors": {
       "window_closed": "Já não é possível responder livremente: a última mensagem do cliente tem mais de 24 h.",
       "whatsapp_unavailable": "O WhatsApp não está configurado para a Plazo.",
@@ -3009,7 +3020,7 @@
   "write_traveller": {
     "button": "Escrever a partir do Plazo",
     "title": "Escrever ao cliente",
-    "from_plazo": "Enviado a partir do número Plazo: a resposta do cliente chega a «Mensagens WhatsApp».",
+    "from_plazo": "Enviado a partir do número Plazo: a resposta do cliente chega a «Mensagens».",
     "whatsapp": "WhatsApp",
     "sms": "SMS do parque",
     "placeholder": "A sua mensagem…",

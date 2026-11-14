@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MapPin, Mic, Paperclip, Phone } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, MapPin, MessageSquare, Mic, Minus, Paperclip, Phone, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -274,14 +274,20 @@ function AttachForm({ id, onDone }: { id: string; onDone: () => void }) {
   );
 }
 
-function Thread({
+/**
+ * One conversation. `docked` (13/11/2026, barre des messages, choix A): the small window at the bottom of the screen, with
+ * « Réduire » and « Fermer » in its header and its messages scrolled inside it.
+ */
+export function Thread({
   id,
   onBack,
   onChanged,
+  docked,
 }: {
   id: string;
   onBack: () => void;
   onChanged: () => void;
+  docked?: { onMinimize: () => void; onClose: () => void };
 }) {
   const queryClient = useQueryClient();
   const query = useQuery({
@@ -343,7 +349,31 @@ function Thread({
   };
   let lastDay = "";
   return (
-    <div className="flex min-w-0 flex-col" data-testid="wa-thread">
+    <div className={cn("flex min-w-0 flex-col", docked && "h-full")} data-testid="wa-thread">
+      {docked ? (
+        <div className="flex items-center gap-1.5 border-b border-panel-line px-3 py-2">
+          <b className="min-w-0 flex-1 truncate text-sm">
+            {c.name ?? c.phone}
+            {r && <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">{r.externalReference ?? r.reference}</span>}
+          </b>
+          {c.phone && (
+            <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} aria-label={t.call(c.phone)} title={t.call(c.phone)} className={dockIcon}>
+              <Phone className="h-3.5 w-3.5" />
+            </a>
+          )}
+          {r && (
+            <Link to={`/reservations/${r.id}`} aria-label={t.openBooking} title={t.openBooking} className={dockIcon}>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          )}
+          <button type="button" onClick={docked.onMinimize} aria-label={t.dock.minimize} title={t.dock.minimize} data-testid="dock-minimize" className={dockIcon}>
+            <Minus className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={docked.onClose} aria-label={t.dock.close} title={t.dock.close} data-testid="dock-close" className={dockIcon}>
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-panel-line px-4 py-3">
         <button
           type="button"
@@ -360,13 +390,7 @@ function Thread({
           </span>
         )}
         {r && <StatusPill status={r.status} />}
-        <a
-          href={`tel:${c.phone.replace(/\s/g, "")}`}
-          className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"
-        >
-          <Phone className="h-3.5 w-3.5" />
-          {c.phone}
-        </a>
+        {c.phone && <OwnPhoneActions phone={c.phone} />}
         {r && (
           <Link
             to={`/reservations/${r.id}`}
@@ -376,7 +400,13 @@ function Thread({
           </Link>
         )}
       </div>
-      <div className="flex min-h-[320px] flex-col gap-2 bg-[#EFEAE2] p-4">
+      )}
+      <div
+        className={cn(
+          "flex flex-col gap-2 bg-[#EFEAE2]",
+          docked ? "min-h-0 flex-1 overflow-y-auto p-3" : "min-h-[320px] p-4",
+        )}
+      >
         {items.map((item) => {
           const day = dayOf(item.at);
           const separator = day !== lastDay;
@@ -401,7 +431,7 @@ function Thread({
       {/* « Écrire au parking » (12/11/2026): the reply goes to the Plazo app when the traveller wrote from it. */}
       <form
         onSubmit={submit}
-        className="flex flex-col gap-2 border-t border-panel-line px-4 py-3"
+        className={cn("flex flex-col gap-2 border-t border-panel-line", docked ? "px-3 py-2" : "px-4 py-3")}
       >
         {replyBy === "app" ? (
           <span
@@ -437,7 +467,7 @@ function Thread({
               }
             }}
             disabled={!replyBy}
-            rows={2}
+            rows={docked ? 1 : 2}
             maxLength={4096}
             placeholder={t.placeholder}
             className="min-w-0 flex-1 resize-y rounded-lg border border-panel-line bg-white px-3 py-2 text-sm disabled:bg-panel-2"
@@ -461,12 +491,15 @@ function Thread({
             )
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className={cn("flex flex-wrap gap-2", docked && "justify-end")}>
           <button
             type="button"
             onClick={() => handle.mutate(!c.handledAt)}
             disabled={handle.isPending}
-            className="rounded-full border border-panel-line px-3 py-1.5 text-sm font-semibold hover:bg-accent"
+            className={cn(
+              "rounded-full border border-panel-line font-semibold hover:bg-accent",
+              docked ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm",
+            )}
           >
             {c.handledAt ? t.unhandle : t.handle}
           </button>
@@ -475,6 +508,9 @@ function Thread({
     </div>
   );
 }
+
+const dockIcon =
+  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-panel-line text-lime-deep hover:bg-accent";
 
 /** « Numéro inconnu » (platform admins): attach to a booking by its reference. */
 function UnknownAttach({ id, onDone }: { id: string; onDone: () => void }) {
@@ -729,5 +765,40 @@ export default function WhatsappInboxPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * The traveller's number with the team member's own phone (13/11/2026, choix A, « basculer sur l'envoi d'un SMS ou un appel avec son
+ * propre téléphone ») : call, SMS from the phone's own app, and « Copier » for a computer, which often has neither.
+ */
+function OwnPhoneActions({ phone }: { phone: string }) {
+  const digits = phone.replace(/[^\d+]/g, "");
+  const iconLink = "inline-flex h-8 w-8 items-center justify-center rounded-full border border-panel-line text-lime-deep hover:bg-accent";
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="font-mono text-xs text-muted-foreground">{phone}</span>
+      <a href={`sms:${digits}`} aria-label={t.sms(phone)} title={t.sms(phone)} data-testid="wa-sms" className={iconLink}>
+        <MessageSquare className="h-4 w-4" />
+      </a>
+      <a href={`tel:${digits}`} aria-label={t.call(phone)} title={t.call(phone)} data-testid="wa-call" className={iconLink}>
+        <Phone className="h-4 w-4" />
+      </a>
+      <button
+        type="button"
+        aria-label={t.copyNumber}
+        title={t.copyNumber}
+        data-testid="wa-copy-number"
+        className={iconLink}
+        onClick={() => {
+          void navigator.clipboard
+            ?.writeText(phone)
+            .then(() => toast.success(t.numberCopied))
+            .catch(() => undefined);
+        }}
+      >
+        <Copy className="h-4 w-4" />
+      </button>
+    </span>
   );
 }

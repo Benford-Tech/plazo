@@ -1181,7 +1181,16 @@
     "contact": "Kontakt",
     "version": "Wersja {}",
     "travellers": "Podróżni",
-    "about": "O nas"
+    "about": "O nas",
+    "notifications": "Powiadomienia",
+    "notif_booking": "Moja rezerwacja",
+    "notif_booking_text": "transfer, przypomnienie, lądowanie",
+    "notif_booking_on": "Zawsze",
+    "offers": "Oferty i okazje",
+    "offers_text": "Pomysły na podróż i nowości Plazo, najwyżej dwa razy w tygodniu.",
+    "offers_settings": "Włącz powiadomienia Plazo w ustawieniach telefonu.",
+    "offers_web": "Powiadomienia są dostępne tylko w zainstalowanej aplikacji.",
+    "offers_failed": "Nie udało się zapisać wyboru. Spróbuj ponownie."
   },
   "return_day": {
     "title": "Twój powrót dziś",
@@ -1605,6 +1614,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Wiadomości",
     "today": "Dziś",
     "reservations": "Rezerwacje",
     "parking": "Parking",
@@ -2886,8 +2896,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Wiadomości WhatsApp",
-    "menu": "Wiadomości WhatsApp",
+    "title": "Wiadomości",
+    "menu": "Wiadomości",
     "intro": "Odpowiedzi Twoich klientów na numer WhatsApp Plazo, pogrupowane według rezerwacji.",
     "views": {
       "unread": "Nieprzeczytane · {}",
@@ -2948,6 +2958,7 @@
     "unhandle": "Przywróć do obsłużenia",
     "handled": "Rozmowa oznaczona jako obsłużona.",
     "call": "Zadzwoń pod {}",
+    "sms": "Wyślij SMS pod {}",
     "errors": {
       "window_closed": "Dowolna odpowiedź niemożliwa: ostatnia wiadomość klienta ma ponad 24 h.",
       "whatsapp_unavailable": "WhatsApp nie jest skonfigurowany dla Plazo.",
@@ -3012,7 +3023,7 @@
   "write_traveller": {
     "button": "Napisz z Plazo",
     "title": "Napisz do klienta",
-    "from_plazo": "Wysłane z numeru Plazo: odpowiedź klienta trafi do „Wiadomości WhatsApp”.",
+    "from_plazo": "Wysłane z numeru Plazo: odpowiedź klienta trafi do „Wiadomości”.",
     "whatsapp": "WhatsApp",
     "sms": "SMS parkingu",
     "placeholder": "Twoja wiadomość…",
