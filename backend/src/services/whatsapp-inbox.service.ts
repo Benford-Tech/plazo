@@ -183,10 +183,8 @@ export class WhatsappInboxService {
         orderBy: { lastMessageAt: 'desc' },
       }),
     ]);
-    if (!place.reservationId && !existing) {
-      logger.info(`[SMS inbox] SMS from a number with no booking ignored for operator ${operatorId}`);
-      return false;
-    }
+    // 14/11/2026 (« Les sms envoyés au numéro de service doivent arriver dans la messagerie »): the phone is the parking's
+    // own, so every SMS written to it reaches its messaging, with its booking when the number has one, else without.
     const conversation = existing
       ? await prisma.whatsappConversation.update({
           where: { id: existing.id },

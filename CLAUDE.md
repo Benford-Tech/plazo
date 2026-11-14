@@ -1516,8 +1516,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      migration `inbox_sms` : `phoneWebhooksSetAt` remis à nul pour réinscrire au passage de 15 minutes) ; `SmsService.handleGatewayWebhook`
      passe un SMS reçu à `WhatsappInboxService.receiveSms` : rangé une fois par message de la passerelle (`waMessageId` `sms:<loueur>:<id>`),
      dans la conversation du loueur et de ce numéro (WhatsApp compris) avec sa réservation, `channel` `sms`, `lastSmsAt`, non lu, push et
-     cloche « SMS · <client> » ; seulement les clients du parking (réservation en cours ou des 30 derniers jours, ou conversation déjà
-     ouverte), les autres SMS du téléphone sont ignorés. Réponse : `replyChannelOf` rend `sms` quand le SMS est le dernier message du
+     cloche « SMS · <client> » ; **tout SMS écrit au téléphone y arrive depuis le 14/11/2026** (« Les sms envoyés au numéro de service
+     doivent arriver dans la messagerie » : un numéro sans réservation ouvre une conversation sans réservation ; jusque-là ignoré), sauf
+     les expéditeurs sans vrai numéro (codes courts, noms). Réponse : `replyChannelOf` rend `sms` quand le SMS est le dernier message du
      client (ou que rien d'autre n'est ouvert) ; `reply` l'envoie par `sendSmsOnly` (genre `staff_message`) depuis ce téléphone (409
      `sms_unavailable` sans téléphone relié, 502 `sms_failed`). Web et Plazo Pro : pastille « SMS » sur ces messages, « Le client a écrit
      au téléphone du parking : votre réponse part par SMS depuis ce téléphone. ». Le fil de l'app Plazo ne les montre pas. Le message de
