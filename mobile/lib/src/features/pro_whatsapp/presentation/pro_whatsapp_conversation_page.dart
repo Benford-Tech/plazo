@@ -308,6 +308,14 @@ class _Bubble extends StatelessWidget {
                 decoration: const BoxDecoration(color: AppColors.tint, borderRadius: AppRadius.pill),
                 child: Text('whatsapp_inbox.app_badge'.tr(), style: AppText.strong(size: 10.5, color: AppColors.accent)),
               ),
+            if (m.sms)
+              Container(
+                key: const Key('wa-sms-badge'),
+                margin: const EdgeInsets.only(bottom: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: const BoxDecoration(color: AppStatus.infoSoft, borderRadius: AppRadius.pill),
+                child: Text('whatsapp_inbox.sms_badge'.tr(), style: AppText.strong(size: 10.5, color: AppStatus.info)),
+              ),
             if (m.hasMedia) _Media(message: m, source: source),
             if (m.type == 'location') Text('whatsapp_inbox.location'.tr(), style: AppText.label(size: 11)),
             if (m.text != null) SelectableText(m.text!, style: AppText.body(size: 14.5)),
@@ -434,6 +442,8 @@ class _ReplyBar extends StatelessWidget {
         children: [
           if (by == 'app')
             Text('whatsapp_inbox.reply_in_app'.tr(), key: const Key('wa-window-app'), style: AppText.muted(size: 12))
+          else if (by == 'sms')
+            Text('whatsapp_inbox.reply_by_sms'.tr(), key: const Key('wa-window-sms'), style: AppText.muted(size: 12))
           else if (until != null)
             Text(
               'whatsapp_inbox.reply_until'.tr(args: ['${waWhen(until)}${waWhen(until).contains(':') ? '' : ' ${DateFormat('HH:mm').format(until)}'}']),

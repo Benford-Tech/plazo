@@ -6052,6 +6052,8 @@ export const whatsappInboxFr = {
   replyUntil: (when: string) => `Réponse libre possible jusqu'à ${when} (24 h après son dernier message, règle de Meta).`,
   replyInApp: "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
   appBadge: "App Plazo",
+  smsBadge: "SMS",
+  replyBySms: "Le client a écrit au téléphone du parking : votre réponse part par SMS depuis ce téléphone.",
   windowClosed: "Plus de réponse libre : Meta n'autorise qu'un modèle validé 24 h après le dernier message du client. Appelez-le plutôt.",
   placeholder: "Écrire au client…",
   send: "Envoyer",
@@ -6071,6 +6073,8 @@ export const whatsappInboxFr = {
   errors: {
     window_closed: "Plus de réponse libre possible : le dernier message du client date de plus de 24 h.",
     whatsapp_unavailable: "WhatsApp n'est pas configuré pour Plazo.",
+    sms_unavailable: "Le téléphone SMS du parking n'est plus relié : reliez-le dans Parking › Réglages.",
+    sms_failed: "Le SMS n'est pas parti. Vérifiez que le téléphone d'envoi est allumé.",
     not_found: "Cette conversation n'existe plus.",
   } as Record<string, string>,
   fieldErrors: { required: "Écrivez la référence.", not_found: "Aucune réservation avec cette référence." } as Record<string, string>,

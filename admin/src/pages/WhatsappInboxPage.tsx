@@ -192,6 +192,14 @@ function Bubble({ item }: { item: ChatItem }) {
           {t.appBadge}
         </span>
       )}
+      {m.channel === "sms" && (
+        <span
+          data-testid="wa-sms-badge"
+          className="mb-0.5 inline-block rounded-full bg-[#E0E7FF] px-1.5 text-[10px] font-semibold text-[#4F46E5]"
+        >
+          {t.smsBadge}
+        </span>
+      )}
       {m.type === "location" && (
         <span className="flex items-center gap-1 text-xs font-semibold">
           <MapPin className="h-3.5 w-3.5" />
@@ -439,6 +447,13 @@ export function Thread({
             data-testid="wa-window-app"
           >
             {t.replyInApp}
+          </span>
+        ) : replyBy === "sms" ? (
+          <span
+            className="text-xs font-semibold text-lime-deep"
+            data-testid="wa-window-sms"
+          >
+            {t.replyBySms}
           </span>
         ) : c.replyUntil ? (
           <span

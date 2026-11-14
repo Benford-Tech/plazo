@@ -1500,6 +1500,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de `remind-tomorrow`). Erreurs 409 `number_exists` · `number_taken` · `number_not_waiting` · `number_not_active` ·
      `number_not_paused`, 404 `no_number` · `number_not_in_account`, 502 avec le code de Meta. Reste à décider : frais compris dans
      l'abonnement ou refacturés. Tests `whatsapp-numbers.test.ts`, `WhatsappNumberCard.test.tsx`, `OperatorWhatsappPanel.test.tsx`.
+     **SMS écrits au téléphone du parking (14/11/2026, « faudrait que les sms écrits au numéro du parking arrivent sur la
+     messagerie de Plazo aussi »)** : pour un parking qui envoie ses SMS par son propre téléphone (appli SMS, mode `gateway`), Plazo
+     inscrit aussi le webhook `sms:received` (`plazo-received`, `SMS_REGISTERED_EVENTS` de `domain/sms-webhook.ts`, `parseReceivedSms` ;
+     migration `inbox_sms` : `phoneWebhooksSetAt` remis à nul pour réinscrire au passage de 15 minutes) ; `SmsService.handleGatewayWebhook`
+     passe un SMS reçu à `WhatsappInboxService.receiveSms` : rangé une fois par message de la passerelle (`waMessageId` `sms:<loueur>:<id>`),
+     dans la conversation du loueur et de ce numéro (WhatsApp compris) avec sa réservation, `channel` `sms`, `lastSmsAt`, non lu, push et
+     cloche « SMS · <client> » ; seulement les clients du parking (réservation en cours ou des 30 derniers jours, ou conversation déjà
+     ouverte), les autres SMS du téléphone sont ignorés. Réponse : `replyChannelOf` rend `sms` quand le SMS est le dernier message du
+     client (ou que rien d'autre n'est ouvert) ; `reply` l'envoie par `sendSmsOnly` (genre `staff_message`) depuis ce téléphone (409
+     `sms_unavailable` sans téléphone relié, 502 `sms_failed`). Web et Plazo Pro : pastille « SMS » sur ces messages, « Le client a écrit
+     au téléphone du parking : votre réponse part par SMS depuis ce téléphone. ». Le fil de l'app Plazo ne les montre pas. Le message de
+     la veille part déjà du numéro du parking : WhatsApp de son numéro une fois actif, SMS de repli par son téléphone. Politique de
+     confidentialité (SMS écrits au parking, 30 jours). Tests `sms.test.ts`, `WhatsappInboxPage.test.tsx`, `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la

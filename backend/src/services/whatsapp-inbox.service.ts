@@ -4,7 +4,9 @@ import { isVerifiedPlatformAdmin } from '@/config';
 import prisma, { Prisma } from '@/database';
 import { displayPhone } from '@/domain/phone';
 import { nextWhatsappStatus, WhatsappStatus, WhatsappStatusUpdate } from '@/domain/whatsapp';
+import { ReceivedSms } from '@/domain/sms-webhook';
 import {
+  appConversationPhone,
   INBOX_RETENTION_DAYS,
   inboundMessagesOf,
   InboundWhatsapp,
@@ -60,7 +62,7 @@ export interface ConversationView {
   preview: { direction: string; text: string } | null;
   replyUntil: Date | null;
   /** 12/11/2026: where a reply goes (the Plazo app, WhatsApp within Meta's 24 hours), null: only a call. */
-  replyBy: 'app' | 'whatsapp' | null;
+  replyBy: 'app' | 'whatsapp' | 'sms' | null;
   /** No parking found for this number: the platform's « Numéro inconnu ». */
   unknown: boolean;
 }
@@ -158,6 +160,81 @@ export class WhatsappInboxService {
     }
     logger.info(`[WhatsApp inbox] ${message.type} received for ${place.operatorId ? `operator ${place.operatorId}` : 'an unknown number'}`);
     if (place.operatorId) await this.notify(place.operatorId, conversation.id, message, place.reservationId);
+    return true;
+  }
+
+  /**
+   * 14/11/2026 (« faudrait que les sms écrits au numéro du parking arrivent sur la messagerie de Plazo aussi »): an SMS the
+   * parking's own phone received (the SMS app's `sms:received`). It joins the parking's conversation with that number
+   * (WhatsApp included), placed on its booking; a reply then leaves by SMS from the same phone. Only the parking's clients:
+   * a number with a booking running or of the last 30 days, or already in a conversation; the phone's other SMS (its
+   * operator, a bank, a friend) never reach Plazo. Stored once per gateway message. True when it was stored.
+   */
+  public async receiveSms(operatorId: string, sms: ReceivedSms): Promise<boolean> {
+    const phone = appConversationPhone(sms.from, '');
+    if (phone.startsWith('app:') || phoneTail(phone).length < 9) return false;
+    const key = `sms:${operatorId}:${sms.messageId}`;
+    if (await prisma.whatsappInboxMessage.findUnique({ where: { waMessageId: key }, select: { id: true } })) return false;
+    const tail = phoneTail(phone);
+    const [place, existing] = await Promise.all([
+      this.placeIn(operatorId, phone, sms.at),
+      prisma.whatsappConversation.findFirst({
+        where: { operatorId, phone: { endsWith: tail }, NOT: { phone: { startsWith: 'app:' } } },
+        orderBy: { lastMessageAt: 'desc' },
+      }),
+    ]);
+    if (!place.reservationId && !existing) {
+      logger.info(`[SMS inbox] SMS from a number with no booking ignored for operator ${operatorId}`);
+      return false;
+    }
+    const conversation = existing
+      ? await prisma.whatsappConversation.update({
+          where: { id: existing.id },
+          data: {
+            ...(place.reservationId ? { reservationId: place.reservationId } : {}),
+            lastMessageAt: sms.at > existing.lastMessageAt ? sms.at : existing.lastMessageAt,
+            lastSmsAt: !existing.lastSmsAt || sms.at > existing.lastSmsAt ? sms.at : existing.lastSmsAt,
+            unread: { increment: 1 },
+            handledAt: null,
+          },
+        })
+      : await prisma.whatsappConversation.create({
+          data: { operatorId, reservationId: place.reservationId, phone, lastMessageAt: sms.at, lastSmsAt: sms.at, unread: 1 },
+        });
+    try {
+      await prisma.whatsappInboxMessage.create({
+        data: {
+          conversationId: conversation.id,
+          direction: 'in',
+          type: 'text',
+          text: sms.text,
+          waMessageId: key,
+          channel: 'sms',
+          reservationId: place.reservationId,
+          createdAt: sms.at,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        await prisma.whatsappConversation.update({ where: { id: conversation.id }, data: { unread: { decrement: 1 } } }).catch(() => undefined);
+        return false;
+      }
+      throw error;
+    }
+    const reservation = place.reservationId
+      ? await prisma.reservation.findUnique({ where: { id: place.reservationId }, select: { customerName: true, reference: true } })
+      : null;
+    const said = sms.text.replace(/\s+/g, ' ');
+    await this.push.notifyStaff(
+      operatorId,
+      'whatsapp',
+      {
+        title: `SMS · ${reservation?.customerName || conversation.profileName || displayPhone(phone)}`,
+        body: [reservation?.reference, `« ${said.length > 110 ? `${said.slice(0, 109)}…` : said} »`].filter(Boolean).join(' · '),
+      },
+      { data: { type: 'whatsapp', conversationId: conversation.id }, collapseId: `whatsapp-${conversation.id}`, ttl: 6 * 3600 },
+    );
+    logger.info(`[SMS inbox] SMS received for operator ${operatorId}`);
     return true;
   }
 
@@ -447,6 +524,34 @@ export class WhatsappInboxService {
           { data: { type: 'parking_message', reference: parking?.reference ?? '' }, collapseId: `parking-message-${reservationId}`, ttl: 24 * 3600 },
         );
       }
+    } else if (channel === 'sms') {
+      // 14/11/2026: the traveller wrote to the parking's phone: the reply leaves by SMS from that phone (the SMS app).
+      if (!row.operatorId) throw new HttpException(httpStatus.CONFLICT, 'No parking for this number', 'sms_unavailable');
+      const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId: row.operatorId }, select: { mode: true } });
+      if (settings?.mode !== 'gateway') throw new HttpException(httpStatus.CONFLICT, 'The parking has no SMS phone', 'sms_unavailable');
+      const { SmsService } = await import('./sms.service');
+      const outcome = await Container.get(SmsService).sendSmsOnly(row.operatorId, {
+        reservationId: row.reservationId,
+        kind: 'staff_message',
+        to: row.phone,
+        text,
+      });
+      if (outcome === 'failed' || outcome === 'skipped') {
+        logger.warn(`[SMS inbox] reply ${outcome} for conversation ${id}`);
+        throw new HttpException(httpStatus.BAD_GATEWAY, 'The SMS did not leave', 'sms_failed');
+      }
+      message = await prisma.whatsappInboxMessage.create({
+        data: {
+          conversationId: id,
+          direction: 'out',
+          type: 'text',
+          text,
+          status: 'sent',
+          staffId: actor.id,
+          channel: 'sms',
+          reservationId: row.reservationId,
+        },
+      });
     } else {
       if (channel !== 'whatsapp') throw new HttpException(httpStatus.CONFLICT, 'Meta allows a free reply only within 24 hours', 'window_closed');
       if (!this.whatsapp.available()) throw new HttpException(httpStatus.CONFLICT, 'WhatsApp is not configured', 'whatsapp_unavailable');
