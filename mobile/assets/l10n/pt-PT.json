@@ -2893,8 +2893,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Mensagens WhatsApp",
-    "menu": "Mensagens WhatsApp",
+    "title": "Mensagens",
+    "menu": "Mensagens",
     "intro": "O que os seus clientes respondem ao número WhatsApp da Plazo, organizado por reserva.",
     "views": {
       "unread": "Não lidas · {}",
@@ -3020,7 +3020,7 @@
   "write_traveller": {
     "button": "Escrever a partir do Plazo",
     "title": "Escrever ao cliente",
-    "from_plazo": "Enviado a partir do número Plazo: a resposta do cliente chega a «Mensagens WhatsApp».",
+    "from_plazo": "Enviado a partir do número Plazo: a resposta do cliente chega a «Mensagens».",
     "whatsapp": "WhatsApp",
     "sms": "SMS do parque",
     "placeholder": "A sua mensagem…",

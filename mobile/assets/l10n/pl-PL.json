@@ -2896,8 +2896,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Wiadomości WhatsApp",
-    "menu": "Wiadomości WhatsApp",
+    "title": "Wiadomości",
+    "menu": "Wiadomości",
     "intro": "Odpowiedzi Twoich klientów na numer WhatsApp Plazo, pogrupowane według rezerwacji.",
     "views": {
       "unread": "Nieprzeczytane · {}",
@@ -3023,7 +3023,7 @@
   "write_traveller": {
     "button": "Napisz z Plazo",
     "title": "Napisz do klienta",
-    "from_plazo": "Wysłane z numeru Plazo: odpowiedź klienta trafi do „Wiadomości WhatsApp”.",
+    "from_plazo": "Wysłane z numeru Plazo: odpowiedź klienta trafi do „Wiadomości”.",
     "whatsapp": "WhatsApp",
     "sms": "SMS parkingu",
     "placeholder": "Twoja wiadomość…",

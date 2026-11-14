@@ -2893,8 +2893,8 @@
     }
   },
   "whatsapp_inbox": {
-    "title": "Mesaje WhatsApp",
-    "menu": "Mesaje WhatsApp",
+    "title": "Mesaje",
+    "menu": "Mesaje",
     "intro": "Ce răspund clienții dvs. la numărul WhatsApp al Plazo, ordonat pe rezervări.",
     "views": {
       "unread": "Necitite · {}",
@@ -3020,7 +3020,7 @@
   "write_traveller": {
     "button": "Scrieți din Plazo",
     "title": "Scrieți clientului",
-    "from_plazo": "Trimis de pe numărul Plazo: răspunsul clientului ajunge în „Mesaje WhatsApp”.",
+    "from_plazo": "Trimis de pe numărul Plazo: răspunsul clientului ajunge în „Mesaje”.",
     "whatsapp": "WhatsApp",
     "sms": "SMS-ul parcării",
     "placeholder": "Mesajul dvs.…",

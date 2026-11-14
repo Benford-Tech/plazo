@@ -2320,7 +2320,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **Messages en évidence (13/11/2026, « mets les messages sur le menu en bas », « plus en évidence sur le web »)** : « Messages »
   (`/reservations/whatsapp`, `reservations:status`, chauffeur compris) devient une entrée à part du rail, sous Tableau de bord, avec le
   nombre de non lus (`NavItem.counter`), et n'est plus une page de Réservations (`NavItem.exclude`) ; sur téléphone, un onglet à lui entre
-  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
+  Réservations et Parking (`ownTab`, `tab-messages`, sans pilules) ; **renommée « Messages » (14/11/2026, « Renomme Messages WhatsApp en Messages »)** : titre de la page et entrée de Plus, web et Plazo Pro, dans les neuf langues ; sur ordinateur, un bouton « Messages » dans la barre haute à côté de
   la cloche (`header-messages`, citron avec le nombre quand il y a des non lus). **Plazo Pro aussi (14/11/2026, « toujours pas de message
   sur la barre menu »)** : onglet « Messages » (`ptab-messages`, `ProWhatsappInboxRoute` enfant de la coquille, chemin `/pro/messages`) entre
   Réservations et Parking pour l'accueil et le gérant, après Planning pour le chauffeur ; le nombre de non lus sur l'icône

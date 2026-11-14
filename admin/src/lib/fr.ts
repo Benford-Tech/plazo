@@ -586,7 +586,7 @@ export const fr = {
       forecast: "Prévisionnel",
       allReservations: "Toutes",
       inbox: "Boîte de réception",
-      whatsapp: "Messages WhatsApp",
+      whatsapp: "Messages",
       extras: "Services à faire",
       reminders: "Message de la veille",
       importFile: "Importer un fichier",
@@ -5941,7 +5941,7 @@ export const whatsappInboxFr = {
     recent: "A écrit il y a moins de 24 h",
     label: "Barre des messages",
   },
-  title: "Messages WhatsApp",
+  title: "Messages",
   intro: "Ce que vos clients répondent au numéro WhatsApp de Plazo, rangé par réservation.",
   views: { unread: "Non lus", all: "À traiter", handled: "Traités", sent: "Envoyés", unknown: "Numéro inconnu" } as Record<string, string>,
   empty: {
