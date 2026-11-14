@@ -6,11 +6,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/helpers/posts.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../pro_whatsapp/presentation/whatsapp_unread_badge.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_service.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
 
-/// Plazo Pro (N-A, 04/10/2026): four tabs. Since R-C (04/10/2026) they follow the post held for the
+/// Plazo Pro (N-A, 04/10/2026): four tabs (a « Messages » tab since 14/11/2026). Since R-C (04/10/2026) they follow the post held for the
 /// day (driver: Navette · Arrivées · Retours · Plus; valet: Parking · Aujourd'hui · Places · Plus;
 /// agent and manager: Aujourd'hui · Réservations · Parking · Plus). The pages still hide the actions
 /// a role lacks: the post changes the layout, the role keeps the permissions.
@@ -63,7 +64,14 @@ class ProShellPage extends StatelessWidget {
                 child: NavigationBar(
                   selectedIndex: router.activeIndex,
                   onDestinationSelected: router.setActiveIndex,
-                  destinations: [for (final t in tabs) NavigationDestination(key: Key(t.key), icon: Icon(t.icon), label: 'pro_tabs.${t.label}'.tr())],
+                  destinations: [
+                    for (final t in tabs)
+                      NavigationDestination(
+                        key: Key(t.key),
+                        icon: t.key == 'ptab-messages' ? MessagesTabIcon(icon: t.icon) : Icon(t.icon),
+                        label: 'pro_tabs.${t.label}'.tr(),
+                      ),
+                  ],
                 ),
               ),
             ),
