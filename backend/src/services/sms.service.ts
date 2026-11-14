@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { isPublicHttpsUrl } from '@/domain/public-url';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { isSilentOperator } from './demo-guard';
+import { isProspectDemoOperator, isSilentOperator } from './demo-guard';
 import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
@@ -124,7 +124,7 @@ export class SmsService {
     if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);
-        if (recipient && !(await isSilentOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
+        if (recipient && !(await this.silentFor(operatorId, sms.kind)) && (await this.whatsapp.enabledFor(operatorId))) {
           const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
           if (await this.whatsapp.trySend(operatorId, sms, recipient, (settings?.mode ?? 'none') !== 'none')) return 'sent';
         }
@@ -135,12 +135,23 @@ export class SmsService {
     return this.sendSmsOnly(operatorId, sms);
   }
 
+  /**
+   * Whether this message must not leave (21/10 and 13/11/2026). 14/11/2026 (« Je ne reçois plus les sms ») : on the test
+   * parking, the tests a member sends to their own phone (« M'envoyer un test ») still leave; only messages to its
+   * (fictional) travellers are held. The prospects' demo sends nothing at all.
+   */
+  private async silentFor(operatorId: string, kind: string): Promise<boolean> {
+    if (!(await isSilentOperator(operatorId))) return false;
+    if (kind === 'test' || kind === 'reminder_test') return isProspectDemoOperator(operatorId);
+    return true;
+  }
+
   /** The SMS alone, through the parking's channel: also the fallback of a WhatsApp message that was not delivered. */
   public async sendSmsOnly(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
       // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.
-      if (await isSilentOperator(operatorId)) {
+      if (await this.silentFor(operatorId, sms.kind)) {
         logger.info(`[SMS] Demo operator: ${sms.kind} simulated for ${about}`);
         return 'skipped';
       }

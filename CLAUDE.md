@@ -2585,7 +2585,8 @@ de test de la plateforme (« … (tests) », `isTestOperatorName`) n'envoie rien
 `sendSmsOnly` → `skipped`), ni code de signature, ni mail de réservation (confirmation, veille, clôture, annulation : `isSilentBooking`
 dans `NotificationService.sendEmail`), ni copie du contrat signé ; « Écrire au client » n'y propose pas WhatsApp. `isSilentOperator` de
 `services/demo-guard.ts` (gardé par instance). L'équipe y travaille comme avant ; les pushs de l'app restent (téléphones qui ont ouvert
-la réservation). Test `sms.test.ts`.
+la réservation). **Les tests partent (14/11/2026, « Je ne reçois plus les sms »)** : « M'envoyer un test » (`test`, `reminder_test`) part au
+téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo des prospects n'envoie toujours rien. Test `sms.test.ts`.
 
 ## Personnel
 
