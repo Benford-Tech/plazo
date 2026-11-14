@@ -56,6 +56,7 @@ void main() {
           children: [
             page(ProTodayRoute.name, 'aujourdhui', (_, _) => label('Aujourd\'hui')),
             page(ProReservationsRoute.name, 'reservations', (_, _) => label('Réservations')),
+            page(ProWhatsappInboxRoute.name, 'messages', (_, _) => label('Messages')),
             page(ProOccupationRoute.name, 'parking', (_, _) => label('Parking')),
             page(ProMoreTabRoute.name, 'plus', (_, _) => const ProMoreTabPage()),
           ],
