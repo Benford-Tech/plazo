@@ -374,8 +374,9 @@ describe('WhatsApp : envoi et repli SMS', () => {
 
     // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
     const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
-    // 14/11/2026 (« En début de message »): the photo's address, then the Meta template's text.
-    expect(fallback.startsWith('https://photos.example/entree.jpg\nBonsoir Camille,')).toBe(true);
+    // 14/11/2026 (« En début de message », « La photo du point de rendez-vous »): the meeting point's photo, then the text,
+    // even when the WhatsApp header carries the parking's photo.
+    expect(fallback.startsWith('https://photos.example/p0.jpg\nBonsoir Camille,')).toBe(true);
     expect(fallback).toContain('Point de rendez-vous : Gare Saint-Exupéry TGV');
     expect(fallback).toContain('(vol -)');
     const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));

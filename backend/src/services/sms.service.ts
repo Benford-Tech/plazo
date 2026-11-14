@@ -9,7 +9,7 @@ import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, TemplateValues, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { loadParkingValues } from './parking-values';
-import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
+import { reminderImage, reminderTemplateParams, reminderTemplateText, whatsappImage } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import {
@@ -569,13 +569,10 @@ export class SmsService {
     return { params: reminderTemplateParams(values, this.whatsapp.config().reminderTemplate), image };
   }
 
-  /** The photo the day-before WhatsApp carries (the parking's, else the return meeting point's), or null. */
+  /** The photo of the return meeting point, at an https address, that the day-before SMS starts with; or null. */
   public async reminderPhoto(parkingId: string): Promise<string | null> {
-    const parking = await prisma.parking.findUnique({
-      where: { id: parkingId },
-      select: { returnMeetingPhotoUrl: true, listing: { select: { photos: true } } },
-    });
-    return reminderImage(parking?.listing?.photos, parking?.returnMeetingPhotoUrl ?? null);
+    const parking = await prisma.parking.findUnique({ where: { id: parkingId }, select: { returnMeetingPhotoUrl: true } });
+    return whatsappImage(parking?.returnMeetingPhotoUrl);
   }
 
   /**
@@ -597,7 +594,7 @@ export class SmsService {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
       const text = renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
-      return withPhotoLink(reminderImage(booking.parking.listing?.photos, booking.parking.returnMeetingPhotoUrl), text);
+      return withPhotoLink(whatsappImage(booking.parking.returnMeetingPhotoUrl), text);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -812,7 +809,8 @@ export class SmsService {
 
 /**
  * 14/11/2026 (« Il n'y a pas la photo dans le sms » → « En début de message »): an SMS cannot carry the photo, so the SMS of
- * the day-before message starts with its address; most messaging apps show it as a preview.
+ * the day-before message starts with its address; most messaging apps show it as a preview. « La photo du point de
+ * rendez-vous »: the return meeting point's photo, whatever photo the WhatsApp header carries.
  */
 export function withPhotoLink(image: string | null, text: string): string {
   return image ? `${image}\n${text}` : text;
