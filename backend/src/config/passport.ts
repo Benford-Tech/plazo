@@ -10,6 +10,18 @@ export const staffPassport = new Passport();
 /** Metadata of a view-as session (see TokenService.generateViewAsToken). */
 export type ViewAsMetadata = { actingAs?: string };
 
+/** 14/11/2026: « Dernière activité » of the team page, written at most every 5 minutes; never fails a request. */
+export const ACTIVITY_EVERY_MS = 5 * 60 * 1000;
+async function touchActivity(staffId: string, lastActiveAt: Date | null, now = new Date()) {
+  if (lastActiveAt && now.getTime() - lastActiveAt.getTime() < ACTIVITY_EVERY_MS) return;
+  await prisma.staff
+    .updateMany({
+      where: { id: staffId, OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: new Date(now.getTime() - ACTIVITY_EVERY_MS) } }] },
+      data: { lastActiveAt: now },
+    })
+    .catch(() => undefined);
+}
+
 // Tokens are stateful: a JWT is only accepted while its row exists in staff_tokens.
 export const staffJwtStrategy = new JwtStrategy(
   { secretOrKey: SECRET_KEY as string, jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken() },
@@ -52,6 +64,7 @@ export const staffJwtStrategy = new JwtStrategy(
       }
 
       if (operator.status !== 'active') return done(null, false, { code: 'account_suspended' });
+      await touchActivity(staff.id, staff.lastActiveAt);
       done(
         null,
         { ...staff, operatorName: operator.name, operatorLogoUpdatedAt: operator.logoUpdatedAt, ...(operator.prospectDemo ? { demo: true } : {}) },

@@ -1725,7 +1725,7 @@
     "role": "Rôle",
     "inactive": "Désactivé",
     "post_today": "Poste du jour : {}",
-    "last_login": "Dernière connexion {}",
+    "last_login": "Dernière activité {}",
     "never_logged": "Jamais connecté",
     "password": "Mot de passe provisoire",
     "password_help": "Au moins 10 caractères. À communiquer à la personne, qui le changera dans « Mon compte ».",

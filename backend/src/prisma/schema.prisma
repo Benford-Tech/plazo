@@ -159,6 +159,9 @@ model Staff {
   password           String
   isActive           Boolean                @default(true)
   lastLoginAt        DateTime?
+  /// 14/11/2026 (« l'heure de dernière connexion doit être l'heure de dernière activité »): the last request the person made
+  /// with a session (written at most every 5 minutes by the JWT strategy); null before the first one.
+  lastActiveAt       DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
   emailVerifiedAt    DateTime?

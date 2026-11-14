@@ -1325,7 +1325,7 @@ export const fr = {
     role: "Rôle",
     active: "Actif",
     inactive: "Désactivé",
-    lastLogin: "Dernière connexion",
+    lastLogin: "Dernière activité",
     password: "Mot de passe provisoire",
     passwordHelp:
       "À communiquer à la personne, qui le changera dans « Mon compte ».",

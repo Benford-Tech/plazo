@@ -1726,7 +1726,7 @@
     "role": "Rol",
     "inactive": "Dezactivat",
     "post_today": "Postul de azi: {}",
-    "last_login": "Ultima conectare {}",
+    "last_login": "Ultima activitate {}",
     "never_logged": "Niciodată conectat",
     "password": "Parolă provizorie",
     "password_help": "Cel puțin 10 caractere. De comunicat persoanei, care o va schimba în „Contul meu”.",

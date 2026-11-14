@@ -1725,7 +1725,7 @@
     "role": "Rolle",
     "inactive": "Deaktiviert",
     "post_today": "Posten heute: {}",
-    "last_login": "Letzte Anmeldung {}",
+    "last_login": "Zuletzt aktiv {}",
     "never_logged": "Nie angemeldet",
     "password": "Vorläufiges Passwort",
     "password_help": "Mindestens 10 Zeichen. Teilen Sie es der Person mit, die es unter „Mein Konto“ ändert.",
