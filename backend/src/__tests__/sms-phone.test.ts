@@ -169,14 +169,36 @@ describe('the phone checks', () => {
     const op = await linked();
     const t0 = new Date();
     lastSeen = new Date(t0.getTime() - minutes(40)).toISOString();
+    // An SMS waits at the gateway for 20 minutes, untouched: the phone does not answer.
+    const waiting = await prisma.smsOutbox.create({
+      data: {
+        operatorId: op.operator.id,
+        kind: 'reminder',
+        to: '+33600000000',
+        bodyHash: 'h',
+        provider: 'gateway',
+        providerMessageId: 'gw-w',
+        status: 'queued',
+        createdAt: new Date(t0.getTime() - minutes(20)),
+      },
+    });
     expect(await phone.checkAll(t0)).toEqual({ checked: 1, offline: 1, alerted: 1 });
     expect(pushMock).toHaveBeenCalledWith(op.operator.id, 'team', expect.objectContaining({ title: 'Téléphone SMS hors ligne' }), expect.anything());
     expect((await phone.checkAll(new Date(t0.getTime() + minutes(15)))).alerted).toBe(0);
     lastSeen = new Date(t0.getTime() + minutes(29)).toISOString();
     expect((await phone.checkAll(new Date(t0.getTime() + minutes(30)))).offline).toBe(0);
     lastSeen = new Date(t0.getTime() + minutes(29)).toISOString();
+    await prisma.smsOutbox.update({ where: { id: waiting.id }, data: { createdAt: new Date(t0.getTime() + minutes(50)) } });
     expect((await phone.checkAll(new Date(t0.getTime() + minutes(75)))).alerted).toBe(1);
     expect(pushMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('an idle phone with nothing to send is not offline, however long the gateway has not seen it (14/11/2026)', async () => {
+    const t0 = new Date();
+    await linked();
+    lastSeen = new Date(t0.getTime() - minutes(300)).toISOString();
+    expect(await phone.checkAll(t0)).toEqual({ checked: 1, offline: 0, alerted: 0 });
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it('a phone seen late by the gateway is still online: 20 minutes is no outage, and its own calls count (14/11/2026)', async () => {

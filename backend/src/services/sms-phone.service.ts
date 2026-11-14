@@ -18,6 +18,7 @@ import {
   PhoneEvent,
   PhoneState,
   phoneStateOf,
+  phoneStateWith,
   RibbonSegment,
   stateChanges,
 } from '@/domain/sms-phone';
@@ -114,7 +115,10 @@ export class SmsPhoneService {
       const credentials = this.sms.credentials(settings);
       const devices = await this.gateway.devices(credentials);
       lastSeenAt = latestSign(...devices.map(d => d.lastSeen), settings.phoneSignalAt);
-      state = devices.length || settings.phoneSignalAt ? phoneStateOf(lastSeenAt, now) : 'offline';
+      state =
+        devices.length || settings.phoneSignalAt
+          ? phoneStateWith({ lastSeen: lastSeenAt, oldestWaiting: await this.oldestWaiting(settings.operatorId, now), now })
+          : 'offline';
       if (!settings.phonePingSetAt) await this.ensurePing(settings, credentials, now);
       if (!settings.phoneSpacingSetAt) await this.ensureSpacing(settings, credentials, now);
       if (!settings.phoneWebhooksSetAt) await this.sms.ensureWebhooks(settings, now);
@@ -146,6 +150,22 @@ export class SmsPhoneService {
       alerted = true;
     }
     return { state, alerted };
+  }
+
+  /** The oldest SMS still waiting at the gateway (handed over within the last 2 hours), if any. */
+  private async oldestWaiting(operatorId: string, now: Date): Promise<Date | null> {
+    const row = await prisma.smsOutbox.findFirst({
+      where: {
+        operatorId,
+        provider: 'gateway',
+        status: 'queued',
+        providerMessageId: { not: null },
+        createdAt: { gte: new Date(now.getTime() - SMS_RETRY_WINDOW_MS) },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+    return row?.createdAt ?? null;
   }
 
   /** Asks the app to ping every 5 minutes when it pings less often (once per linked login). */
