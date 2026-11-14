@@ -34,6 +34,9 @@ class ResultCard extends StatelessWidget {
     this.airportCode,
   });
 
+  /// The photo's height (direction A, 14/11/2026: 180, about 16:9 on a phone; 92 before).
+  static const double photoHeight = 180;
+
   final SearchResultModel result;
   final VoidCallback onTap;
   final bool highlighted;
@@ -96,9 +99,10 @@ class ResultCard extends StatelessWidget {
                 if (!compact)
                   Stack(
                     children: [
-                      ParkingPhoto(url: result.photo, height: 92),
-                      if (badges.isNotEmpty) Positioned(top: 8, right: 8, child: ResultBadges(badges: badges, alignEnd: true)),
-                      if (result.liveShuttle) const Positioned(left: 8, bottom: 8, child: LiveShuttleTag()),
+                      // Direction A (14/11/2026, « la photo pas assez visible »): a taller photo, its badges smaller, in the corners.
+                      ParkingPhoto(url: result.photo, height: photoHeight),
+                      if (badges.isNotEmpty) Positioned(top: 8, right: 8, child: ResultBadges(badges: badges, alignEnd: true, small: true)),
+                      if (result.liveShuttle) const Positioned(left: 8, bottom: 8, child: LiveShuttleTag(small: true)),
                     ],
                   ),
                 Padding(
@@ -177,12 +181,15 @@ class ResultCard extends StatelessWidget {
 
 /// I-C (07/10/2026): "EN DIRECT" on a parking whose shuttles are followed live — the dot, the word and the minibus.
 class LiveShuttleTag extends StatelessWidget {
-  const LiveShuttleTag({super.key});
+  const LiveShuttleTag({super.key, this.small = false});
+
+  /// Over a result's photo: a smaller pill, so the photo shows.
+  final bool small;
 
   @override
   Widget build(BuildContext context) => Container(
     key: const Key('live-shuttle'),
-    padding: const EdgeInsets.fromLTRB(8, 4, 9, 4),
+    padding: small ? const EdgeInsets.fromLTRB(7, 3, 8, 3) : const EdgeInsets.fromLTRB(8, 4, 9, 4),
     decoration: const BoxDecoration(
       color: Colors.white,
       borderRadius: AppRadius.pill,
@@ -191,11 +198,11 @@ class LiveShuttleTag extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const LiveDot(size: 7),
-        const SizedBox(width: 5),
-        Text('results.live'.tr().toUpperCase(), style: AppText.label(size: 10.5, color: AppColors.ink)),
+        LiveDot(size: small ? 6 : 7),
+        SizedBox(width: small ? 4 : 5),
+        Text('results.live'.tr().toUpperCase(), style: AppText.label(size: small ? 9.5 : 10.5, color: AppColors.ink)),
         const SizedBox(width: 4),
-        const ShuttleIcon(size: 14),
+        ShuttleIcon(size: small ? 12 : 14),
       ],
     ),
   );
