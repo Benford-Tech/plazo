@@ -384,7 +384,7 @@ export class PlatformService {
    */
   public async overview() {
     const since = monthStart();
-    const [{ operators, counts, defaultCommissionBps }, failed, commission] = await Promise.all([
+    const [{ operators, counts, defaultCommissionBps }, failed, commission, whatsappRequested] = await Promise.all([
       this.operators(),
       prisma.reservation.groupBy({ by: ['operatorId'], where: { payoutStatus: 'failed' }, _count: { _all: true } }),
       prisma.reservation.groupBy({
@@ -393,6 +393,7 @@ export class PlatformService {
         _sum: { commissionCents: true },
         _count: { _all: true },
       }),
+      prisma.operatorWhatsappNumber.findMany({ where: { status: 'requested' }, select: { operatorId: true } }),
     ]);
     const real = operators.filter(o => o.kind === 'real');
     const realIds = new Set(real.map(o => o.id));
@@ -413,7 +414,7 @@ export class PlatformService {
         bookings: paid.reduce((total, c) => total + c._count._all, 0),
         commissionCents: paid.reduce((total, c) => total + (c._sum.commissionCents ?? 0), 0),
       },
-      todos: platformTodos(operators, new Map(failed.map(f => [f.operatorId, f._count._all]))),
+      todos: platformTodos(operators, new Map(failed.map(f => [f.operatorId, f._count._all])), new Set(whatsappRequested.map(w => w.operatorId))),
       operatorsList: operators,
     };
   }

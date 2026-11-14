@@ -35,6 +35,7 @@ import { ReservationRoute } from './reservation.route';
 import { ReturnRoute } from './return.route';
 import { RevenueRoute } from './revenue.route';
 import { SmsRoute } from './sms.route';
+import { WhatsappNumberRoute } from './whatsapp-number.route';
 import { WhatsappRoute } from './whatsapp.route';
 import { StaffRoute } from './staff.route';
 import { TestFeedRoute } from './test-feed.route';
@@ -76,6 +77,7 @@ const AppRoutes = [
   new PaymentRoute(),
   new SmsRoute(),
   new WhatsappRoute(),
+  new WhatsappNumberRoute(),
   new InboundEmailRoute(),
   new ReminderRoute(),
   new TestFeedRoute(),

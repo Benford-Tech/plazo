@@ -25,6 +25,7 @@ import {
   RowActions,
 } from "./OperatorsPage";
 import { KindPill, OperatorStatePill } from "./operator-bits";
+import { OperatorWhatsappPanel } from "@/components/platform/OperatorWhatsappPanel";
 
 const t = fr.platform.operatorPage;
 const TABS = [
@@ -32,6 +33,7 @@ const TABS = [
   "annonce",
   "paiements",
   "contrat",
+  "whatsapp",
   "equipe",
   "journal",
 ] as const;
@@ -41,6 +43,7 @@ const TAB_LABEL: Record<Tab, string> = {
   annonce: t.tabs.listing,
   paiements: t.tabs.payments,
   contrat: t.tabs.contract,
+  whatsapp: t.tabs.whatsapp,
   equipe: t.tabs.team,
   journal: t.tabs.journal,
 };
@@ -110,7 +113,7 @@ function Journal({
 
 /**
  * 11/11/2026 (« A avec la page loueur de C », direction C): one operator's page. A green band with its state and « Ouvrir
- * son espace », tabs (Vue d'ensemble · Annonce · Paiements · Contrat · Équipe · Journal, `?onglet=`), the health tiles, the
+ * son espace », tabs (Vue d'ensemble · Annonce · Paiements · Contrat · WhatsApp · Équipe · Journal, `?onglet=`), the health tiles, the
  * month's activity, the platform's last actions on it, and the sensitive actions apart at the foot.
  */
 export default function PlatformOperatorPage() {
@@ -403,6 +406,8 @@ export default function PlatformOperatorPage() {
       )}
 
       {tab === "contrat" && <OperatorContractPanel operator={o} />}
+
+      {tab === "whatsapp" && <OperatorWhatsappPanel operatorId={o.id} />}
 
       {tab === "equipe" && (
         <section className={cn(card, "px-5 py-4")}>
