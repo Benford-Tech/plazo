@@ -9,7 +9,7 @@ import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { defaultTemplate, renderTemplate, TemplateValues, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { loadParkingValues } from './parking-values';
-import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
+import { reminderImage, reminderTemplateParams, reminderTemplateText, whatsappImage } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import {
@@ -569,6 +569,12 @@ export class SmsService {
     return { params: reminderTemplateParams(values, this.whatsapp.config().reminderTemplate), image };
   }
 
+  /** The photo of the return meeting point, at an https address, that the day-before SMS starts with; or null. */
+  public async reminderPhoto(parkingId: string): Promise<string | null> {
+    const parking = await prisma.parking.findUnique({ where: { id: parkingId }, select: { returnMeetingPhotoUrl: true } });
+    return whatsappImage(parking?.returnMeetingPhotoUrl);
+  }
+
   /**
    * 11/11/2026 (choice B): the day-before message follows the template approved by Meta when WhatsApp carries it (the
    * template is set and the parking has WhatsApp on); the parking's own text otherwise.
@@ -587,7 +593,8 @@ export class SmsService {
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      const text = renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      return withPhotoLink(whatsappImage(booking.parking.returnMeetingPhotoUrl), text);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -798,6 +805,15 @@ export class SmsService {
       lastErrorAt: settings?.lastErrorAt?.toISOString() ?? null,
     };
   }
+}
+
+/**
+ * 14/11/2026 (« Il n'y a pas la photo dans le sms » → « En début de message »): an SMS cannot carry the photo, so the SMS of
+ * the day-before message starts with its address; most messaging apps show it as a preview. « La photo du point de
+ * rendez-vous »: the return meeting point's photo, whatever photo the WhatsApp header carries.
+ */
+export function withPhotoLink(image: string | null, text: string): string {
+  return image ? `${image}\n${text}` : text;
 }
 
 /** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */

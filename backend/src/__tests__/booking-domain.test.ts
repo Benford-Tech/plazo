@@ -142,13 +142,18 @@ describe('numéro pour les SMS', () => {
     expect(smsRecipient('06 12 34 56 78')).toBe('+33612345678');
   });
 
-  it('n’envoie de SMS qu’aux mobiles français (ni fixes, ni numéros étrangers : pas de SMS pumping)', () => {
+  it('envoie aux mobiles français et aux numéros étrangers avec leur indicatif, jamais aux fixes français ni aux numéros surtaxés (14/11/2026)', () => {
     expect(smsRecipient('04 72 22 72 21')).toBeNull();
     expect(smsRecipient('+33 4 72 22 72 21')).toBeNull();
     expect(smsRecipient('+33 8 99 12 34 56')).toBeNull();
-    expect(smsRecipient('+44 7911 123456')).toBeNull();
-    expect(smsRecipient('0044 7911 123456')).toBeNull();
+    expect(smsRecipient('+44 7911 123456')).toBe('+447911123456');
+    expect(smsRecipient('0044 7911 123456')).toBe('+447911123456');
+    expect(smsRecipient('+32 470 12 34 56')).toBe('+32470123456');
+    expect(smsRecipient('+41 (0)79 123 45 67')).toBe('+41791234567');
     expect(smsRecipient('+882 1234 5678')).toBeNull();
+    expect(smsRecipient('+979 1234 5678')).toBeNull();
+    expect(smsRecipient('+44 12')).toBeNull();
+    expect(smsRecipient('470 12 34 56')).toBeNull();
     expect(smsRecipient('0033 7 12 34 56 78')).toBe('+33712345678');
     expect(smsRecipient('12345')).toBeNull();
   });

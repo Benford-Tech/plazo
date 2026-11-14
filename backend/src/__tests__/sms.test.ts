@@ -479,15 +479,19 @@ describe('envoi par le téléphone du parking', () => {
         reservationId: booking.id,
       });
 
-      // A number with no booking at this parking (a bank, a friend of the phone's owner) never reaches Plazo.
+      // 14/11/2026: a number with no booking at this parking reaches the messaging too, without a booking.
       expect(
         (
           await api()
             .post(path)
-            .send(received('in-2', '+33799999999', 'Votre code : 123456'))
+            .send(received('in-2', '+33799999999', 'Bonjour, vous avez de la place samedi ?'))
         ).body,
-      ).toEqual({ ok: true, applied: false });
-      expect(await prisma.whatsappConversation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+      ).toMatchObject({ ok: true });
+      const stranger = await prisma.whatsappConversation.findFirstOrThrow({
+        where: { operatorId: op.operator.id, phone: { endsWith: '799999999' } },
+      });
+      expect(stranger).toMatchObject({ reservationId: null, unread: 1 });
+      expect(await prisma.whatsappConversation.count({ where: { operatorId: op.operator.id } })).toBe(2);
     } finally {
       sms.siteUrl = '';
     }
@@ -525,11 +529,11 @@ describe('envoi par le téléphone du parking', () => {
     expect(await sms.sendTravellerSms(none.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'x' })).toBe('skipped');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await prisma.smsOutbox.count()).toBe(0);
-    // A number that is not a French mobile gets no SMS either (any mode).
+    // A French landline or a premium range gets no SMS (any mode).
     const brevo = await setupOperator('Brevo');
     await useBrevoSms(brevo.operator.id);
     notifications.settings.apiKey = 'brevo-key';
-    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+41791234567', text: 'x' })).toBe(
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+882 1234 5678', text: 'x' })).toBe(
       'skipped',
     );
     expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Bonjour' })).toBe(

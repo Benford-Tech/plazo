@@ -374,7 +374,9 @@ describe('WhatsApp : envoi et repli SMS', () => {
 
     // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
     const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
-    expect(fallback.startsWith('Bonsoir Camille,')).toBe(true);
+    // 14/11/2026 (« En début de message », « La photo du point de rendez-vous »): the meeting point's photo, then the text,
+    // even when the WhatsApp header carries the parking's photo.
+    expect(fallback.startsWith('https://photos.example/p0.jpg\nBonsoir Camille,')).toBe(true);
     expect(fallback).toContain('Point de rendez-vous : Gare Saint-Exupéry TGV');
     expect(fallback).toContain('(vol -)');
     const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
@@ -402,9 +404,10 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(row.status).toBe('sent');
   });
 
-  it('le test du message de la veille part en SMS seul quand on le demande (14/11/2026)', async () => {
+  it('le test du message de la veille part en SMS seul, la photo en tête (14/11/2026)', async () => {
     whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
     const op = await operatorWithWhatsapp();
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
     const res = await api()
       .post(`/api/internal/parkings/${op.parking.id}/reminders/test`)
       .set(auth(op.token))
@@ -412,7 +415,10 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(res.status).toBe(200);
     expect(calls(GRAPH)).toHaveLength(0);
     expect(calls(BREVO_SMS_URL)).toHaveLength(1);
-    expect(JSON.parse(calls(BREVO_SMS_URL)[0][1].body).content.startsWith('Bonsoir')).toBe(true);
+    // « En début de message »: the photo's address first, then the template's text.
+    const content: string = JSON.parse(calls(BREVO_SMS_URL)[0][1].body).content;
+    expect(content.split('\n')[0]).toBe('https://photos.example/p0.jpg');
+    expect(content.split('\n')[1].startsWith('Bonsoir')).toBe(true);
     const bad = await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ channel: 'fax' });
     expect(bad.status).toBe(400);
   });
