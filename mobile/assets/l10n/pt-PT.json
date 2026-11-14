@@ -2961,13 +2961,17 @@
       "whatsapp_unavailable": "O WhatsApp não está configurado para a Plazo.",
       "not_found": "Esta conversa já não existe.",
       "demo_read_only": "Demo: a resposta não é enviada.",
-      "generic": "A mensagem não foi enviada. Tente novamente."
+      "generic": "A mensagem não foi enviada. Tente novamente.",
+      "sms_unavailable": "O telefone de SMS do parque já não está ligado: ligue-o nas definições do parque.",
+      "sms_failed": "O SMS não foi enviado. Verifique se o telefone de envio está ligado."
     },
     "sent_no_text": "Texto não guardado (enviado antes de 12/11/2026).",
     "sent_sms_fallback": "SMS também enviado",
     "open_conversation": "Ver a conversa ›",
     "reply_in_app": "O cliente escreveu-lhe a partir da app Plazo: a sua resposta aparece na reserva dele, com uma notificação.",
-    "app_badge": "App Plazo"
+    "app_badge": "App Plazo",
+    "sms_badge": "SMS",
+    "reply_by_sms": "O cliente escreveu para o telefone do parque: a sua resposta sai por SMS desse telefone."
   },
   "parking_messages": {
     "title": "Escrever ao parque",

@@ -12,7 +12,14 @@ import { loadParkingValues } from './parking-values';
 import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
-import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
+import {
+  operatorOfSmsWebhookToken,
+  parseReceivedSms,
+  parseSmsWebhook,
+  SMS_REGISTERED_EVENTS,
+  smsWebhookId,
+  smsWebhookToken,
+} from '@/domain/sms-webhook';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -418,7 +425,7 @@ export class SmsService {
     if (!url) return false;
     try {
       const credentials = this.credentials(settings);
-      for (const event of SMS_WEBHOOK_EVENTS) await this.gateway.registerWebhook(credentials, smsWebhookId(event), url, event);
+      for (const event of SMS_REGISTERED_EVENTS) await this.gateway.registerWebhook(credentials, smsWebhookId(event), url, event);
       await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { phoneWebhooksSetAt: now } });
       logger.info(`[SMS] webhooks registered at the gateway for operator ${settings.operatorId}`);
       return true;
@@ -436,6 +443,14 @@ export class SmsService {
   public async handleGatewayWebhook(token: string, body: unknown): Promise<{ ok: true; applied: boolean }> {
     const operatorId = operatorOfSmsWebhookToken(token, process.env.SECRET_KEY || '');
     if (!operatorId) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
+    // 14/11/2026: an SMS the parking's phone received goes to its « Messages » (loaded here: the inbox sends by SMS).
+    const received = parseReceivedSms(body);
+    if (received) {
+      const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
+      if (settings?.mode !== 'gateway') return { ok: true, applied: false };
+      const { WhatsappInboxService } = await import('./whatsapp-inbox.service');
+      return { ok: true, applied: await Container.get(WhatsappInboxService).receiveSms(operatorId, received) };
+    }
     const delivery = parseSmsWebhook(body);
     if (!delivery) return { ok: true, applied: false };
     const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId } });

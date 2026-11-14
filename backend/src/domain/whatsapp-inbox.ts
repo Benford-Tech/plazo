@@ -131,14 +131,22 @@ export function previewOf(message: { type: string; text: string | null }): strin
  * 12/11/2026 (« Écrire au parking » from the Plazo app): where a reply of the team goes. The app when the traveller's
  * last message came from it, or when Meta's 24 hours are over and they once wrote from the app; else WhatsApp within
  * the 24 hours; null: only a call.
+ *
+ * 14/11/2026: an SMS to the parking's phone (`lastSmsAt`) is answered by SMS from that phone when it is the traveller's
+ * latest message, or when nothing else is open (no WhatsApp window, never wrote from the app).
  */
 export function replyChannelOf(
-  row: { phone: string; lastInboundAt: Date | null; lastAppAt: Date | null },
+  row: { phone: string; lastInboundAt: Date | null; lastAppAt: Date | null; lastSmsAt?: Date | null },
   now = new Date(),
-): 'app' | 'whatsapp' | null {
+): 'app' | 'whatsapp' | 'sms' | null {
   const whatsappOpen = !row.phone.startsWith('app:') && replyUntil(row.lastInboundAt, now) !== null;
-  if (row.lastAppAt && (!whatsappOpen || !row.lastInboundAt || row.lastAppAt >= row.lastInboundAt)) return 'app';
-  return whatsappOpen ? 'whatsapp' : null;
+  const sms = row.phone.startsWith('app:') ? null : (row.lastSmsAt ?? null);
+  const app = row.lastAppAt;
+  const whatsapp = whatsappOpen ? row.lastInboundAt : null;
+  if (sms && (!app || sms >= app) && (!whatsapp || sms >= whatsapp)) return 'sms';
+  if (app && (!whatsappOpen || !row.lastInboundAt || app >= row.lastInboundAt)) return 'app';
+  if (whatsappOpen) return 'whatsapp';
+  return sms ? 'sms' : null;
 }
 
 /** The conversation key of a traveller writing from the app: their phone in E.164, else one key per booking. */

@@ -111,6 +111,7 @@ class WaMessage {
     required this.at,
     required this.by,
     this.app = false,
+    this.sms = false,
   });
 
   factory WaMessage.fromJson(Map<String, dynamic> json) => WaMessage(
@@ -123,6 +124,7 @@ class WaMessage {
     at: _date(json['at']) ?? DateTime.now(),
     by: json['by'] is Map ? (json['by'] as Map)['firstName'] as String? : null,
     app: json['channel'] == 'app',
+    sms: json['channel'] == 'sms',
   );
 
   final String id;
@@ -138,6 +140,9 @@ class WaMessage {
 
   /// Written or answered in the Plazo app (« Écrire au parking », 12/11/2026).
   final bool app;
+
+  /// Written to, or answered from, the parking's own phone by SMS (14/11/2026).
+  final bool sms;
 }
 
 /// What Plazo itself sent the booking by WhatsApp (confirmation, day before…), shown between the messages.

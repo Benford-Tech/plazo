@@ -32,9 +32,10 @@ WaConversation _conv({DateTime? replyUntil, int unread = 2}) => WaConversation(
 );
 
 class FakeInbox implements WhatsappInboxDataSource {
-  FakeInbox({this.open = true, this.app = false});
+  FakeInbox({this.open = true, this.app = false, this.sms = false});
   final bool open;
   final bool app;
+  final bool sms;
   final views = <String>[];
   final replies = <String>[];
   final handled = <bool>[];
@@ -69,7 +70,7 @@ class FakeInbox implements WhatsappInboxDataSource {
 
   @override
   Future<WaThread> get(String id) async => WaThread(
-    conversation: app
+    conversation: app || sms
         ? WaConversation(
             id: 'c1',
             phone: '06 12 34 56 78',
@@ -82,7 +83,7 @@ class FakeInbox implements WhatsappInboxDataSource {
             previewOut: false,
             replyUntil: null,
             unknown: false,
-            replyBy: 'app',
+            replyBy: sms ? 'sms' : 'app',
           )
         : _conv(replyUntil: open ? _now.add(const Duration(hours: 23)) : null, unread: 0),
     messages: [
@@ -96,6 +97,7 @@ class FakeInbox implements WhatsappInboxDataSource {
         at: _now.subtract(const Duration(minutes: 2)),
         by: null,
         app: app,
+        sms: sms,
       ),
       WaMessage(id: 'm2', out: false, type: 'image', text: null, hasMedia: true, status: null, at: _now.subtract(const Duration(minutes: 1)), by: null),
       for (final (i, r) in replies.indexed) WaMessage(id: 'r$i', out: true, type: 'text', text: r, hasMedia: false, status: 'sent', at: _now, by: 'Joanny'),
@@ -227,6 +229,20 @@ void main() {
     await tester.tap(find.byKey(const Key('wa-send')));
     await tester.pumpAndSettle();
     expect(inbox.replies, ['Oui.']);
+  });
+
+  testWidgets('SMS écrit au téléphone du parking : pastille SMS, et la réponse part par SMS (14/11/2026)', (tester) async {
+    final inbox = FakeInbox(open: false, sms: true);
+    ProWhatsappConversationPage.debugSource = inbox;
+    addTearDown(() => ProWhatsappConversationPage.debugSource = null);
+    await pumpLocalized(tester, const ProWhatsappConversationPage(id: 'c1'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('wa-sms-badge')), findsOneWidget);
+    expect(find.byKey(const Key('wa-window-sms')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('wa-reply')), 'Bien noté.');
+    await tester.tap(find.byKey(const Key('wa-send')));
+    await tester.pumpAndSettle();
+    expect(inbox.replies, ['Bien noté.']);
   });
 
   testWidgets('« Écrire au client » : hors des 24 h dans le modèle validé, WhatsApp ou SMS du parking', (tester) async {

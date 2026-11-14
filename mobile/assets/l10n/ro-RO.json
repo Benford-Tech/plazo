@@ -2961,13 +2961,17 @@
       "whatsapp_unavailable": "WhatsApp nu este configurat pentru Plazo.",
       "not_found": "Această conversație nu mai există.",
       "demo_read_only": "Demo: răspunsul nu este trimis.",
-      "generic": "Mesajul nu a plecat. Reîncercați."
+      "generic": "Mesajul nu a plecat. Reîncercați.",
+      "sms_unavailable": "Telefonul SMS al parcării nu mai este conectat: conectați-l în setările parcării.",
+      "sms_failed": "SMS-ul nu a plecat. Verificați dacă telefonul de trimitere este pornit."
     },
     "sent_no_text": "Text nepăstrat (trimis înainte de 12.11.2026).",
     "sent_sms_fallback": "S-a trimis și SMS",
     "open_conversation": "Vedeți conversația ›",
     "reply_in_app": "Clientul v-a scris din aplicația Plazo: răspunsul dvs. apare în rezervarea sa, cu o notificare.",
-    "app_badge": "Aplicația Plazo"
+    "app_badge": "Aplicația Plazo",
+    "sms_badge": "SMS",
+    "reply_by_sms": "Clientul a scris pe telefonul parcării: răspunsul pleacă prin SMS de pe acest telefon."
   },
   "parking_messages": {
     "title": "Scrieți parcării",
