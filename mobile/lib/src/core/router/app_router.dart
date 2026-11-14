@@ -108,6 +108,8 @@ class AppRouter extends RootStackRouter {
           AutoRoute(page: ProValetRoute.page, path: 'terminal'),
           // « Services à faire » (29/10/2026, direction C): the valet's services before the returns.
           AutoRoute(page: ProExtrasRoute.page, path: 'services'),
+          // « Messages » in the tab bar (14/11/2026).
+          AutoRoute(page: ProWhatsappInboxRoute.page, path: 'messages'),
         ],
       ),
       AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),

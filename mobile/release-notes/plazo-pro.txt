@@ -1,6 +1,6 @@
 Plazo Pro, pour les équipes des parkings d'aéroport.
 • En 9 langues : celle du téléphone.
-• WhatsApp : répondez au client, ou passez au SMS ou à l'appel de votre téléphone.
+• Messages dans la barre du bas : WhatsApp, SMS ou appel.
 • Planning : prochains départs, retards, prévisionnel.
 • Réservations de tous canaux.
 • Plan du parking, files, clés en un toucher.

@@ -48,3 +48,42 @@ class _WhatsappUnreadBadgeState extends State<WhatsappUnreadBadge> {
           ),
   );
 }
+
+/// The « Messages » tab of the bar (14/11/2026): its icon with the number of unread messages, read again on a live change.
+class MessagesTabIcon extends StatefulWidget {
+  const MessagesTabIcon({super.key, required this.icon});
+  final IconData icon;
+
+  @override
+  State<MessagesTabIcon> createState() => _MessagesTabIconState();
+}
+
+class _MessagesTabIconState extends State<MessagesTabIcon> {
+  int _count = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (!WhatsappUnreadBadge.enabled || !locator.isRegistered<WhatsappInboxDataSource>()) return;
+    try {
+      final count = await locator<WhatsappInboxDataSource>().unreadCount();
+      if (mounted) setState(() => _count = count);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => LiveSyncListener(
+    onChange: _load,
+    child: Badge(
+      key: const Key('ptab-messages-count'),
+      isLabelVisible: _count > 0,
+      backgroundColor: AppStatus.warn,
+      label: Text('$_count'),
+      child: Icon(widget.icon),
+    ),
+  );
+}

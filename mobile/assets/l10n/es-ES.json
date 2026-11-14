@@ -1613,6 +1613,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Mensajes",
     "today": "Hoy",
     "reservations": "Reservas",
     "parking": "Aparcamiento",

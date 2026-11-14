@@ -1612,6 +1612,7 @@
     }
   },
   "pro_tabs": {
+    "messages": "Messages",
     "today": "Today",
     "reservations": "Bookings",
     "parking": "Car park",
