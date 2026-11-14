@@ -5,6 +5,7 @@ import { DEFAULT_SEND_TIME } from '@/domain/day-before-sms';
 import { can } from '@/domain/roles';
 import {
   daySegments,
+  latestSign,
   failureEvents,
   offlineAlert,
   PHONE_CHECK_MIN_GAP_MS,
@@ -17,6 +18,7 @@ import {
   PhoneEvent,
   PhoneState,
   phoneStateOf,
+  phoneStateWith,
   RibbonSegment,
   stateChanges,
 } from '@/domain/sms-phone';
@@ -112,14 +114,21 @@ export class SmsPhoneService {
     try {
       const credentials = this.sms.credentials(settings);
       const devices = await this.gateway.devices(credentials);
-      const seen = devices.map(d => d.lastSeen).filter((d): d is Date => !!d);
-      lastSeenAt = seen.length ? new Date(Math.max(...seen.map(d => d.getTime()))) : null;
-      state = devices.length ? phoneStateOf(lastSeenAt, now) : 'offline';
+      lastSeenAt = latestSign(...devices.map(d => d.lastSeen), settings.phoneSignalAt);
+      state =
+        devices.length || settings.phoneSignalAt
+          ? phoneStateWith({ lastSeen: lastSeenAt, oldestWaiting: await this.oldestWaiting(settings.operatorId, now), now })
+          : 'offline';
       if (!settings.phonePingSetAt) await this.ensurePing(settings, credentials, now);
       if (!settings.phoneSpacingSetAt) await this.ensureSpacing(settings, credentials, now);
       if (!settings.phoneWebhooksSetAt) await this.sms.ensureWebhooks(settings, now);
     } catch (error) {
       errorCode = error instanceof GatewayError ? error.code : error instanceof HttpException && error.code ? error.code : 'sms_gateway_error';
+      // The app's server did not answer, but the phone itself called Plazo recently: it is online.
+      if (settings.phoneSignalAt && phoneStateOf(settings.phoneSignalAt, now) === 'online') {
+        state = 'online';
+        lastSeenAt = settings.phoneSignalAt;
+      }
     }
     await prisma.smsPhoneCheck.create({ data: { operatorId: settings.operatorId, checkedAt: now, state, lastSeenAt, errorCode } });
 
@@ -141,6 +150,22 @@ export class SmsPhoneService {
       alerted = true;
     }
     return { state, alerted };
+  }
+
+  /** The oldest SMS still waiting at the gateway (handed over within the last 2 hours), if any. */
+  private async oldestWaiting(operatorId: string, now: Date): Promise<Date | null> {
+    const row = await prisma.smsOutbox.findFirst({
+      where: {
+        operatorId,
+        provider: 'gateway',
+        status: 'queued',
+        providerMessageId: { not: null },
+        createdAt: { gte: new Date(now.getTime() - SMS_RETRY_WINDOW_MS) },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+    return row?.createdAt ?? null;
   }
 
   /** Asks the app to ping every 5 minutes when it pings less often (once per linked login). */

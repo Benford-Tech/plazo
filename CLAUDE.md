@@ -259,6 +259,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      la passerelle (l'état de l'appel seulement si elle ne répond pas) et appliqué une fois (`settle`, mise à jour conditionnelle :
      webhook et passage ensemble ne comptent qu'une fois) ; adresse inconnue 404, ping et autres événements ignorés. Sans
      `PUBLIC_SITE_URL`, rien n'est inscrit et les passages de 15 minutes restent seuls. Test `sms.test.ts`.
+     **Moins de faux « hors ligne » (14/11/2026, « souvent le téléphone est marqué comme hors ligne alors que non »)** : Android
+     ne fait tourner le « Ping » de l'appli qu'au mieux toutes les 15 minutes, plus tard quand le téléphone dort : `offline`
+     seulement après 35 minutes sans nouvelles (`PHONE_OFFLINE_AFTER_MS`) ; chaque appel du téléphone à Plazo (webhook `system:ping`
+     inscrit en plus, `plazo-ping`, et tout SMS envoyé, remis, en échec ou reçu) est noté (`OperatorSmsSettings.phoneSignalAt`,
+     migration `sms_phone_signal`, qui réinscrit les webhooks ; remis à nul quand l'identifiant change) et compte comme signe de vie
+     avec le `lastSeen` de la passerelle (`latestSign`), même quand la passerelle ne répond pas. **Le silence n'est plus une panne
+     (même jour, capture du ruban rouge toute la journée, vert seulement au SMS de la veille)** : un téléphone au repos dort et la
+     passerelle ne le voit que quand il travaille (elle le réveille par une notification quand un SMS arrive) ; `offline` seulement
+     quand un SMS remis à la passerelle attend depuis 15 minutes (`PHONE_STUCK_AFTER_MS`, `phoneStateWith`, `oldestWaiting` : SMS
+     `queued` des 2 dernières heures) sans signe de vie depuis ; sinon `online`. Test `sms-phone.test.ts`.
      **Alerte** : au premier relevé hors ligne, push « Téléphone SMS hors ligne » aux gérants (audience `team`, cloche comprise,
      `data.type: 'sms_phone'` → `/parking/reglages#sms`), « Plus de nouvelles depuis 17:40. Le SMS de la veille part à 18:00 : ouvrez
      l'appli SMS. » quand il part dans les 6 h (`offlineAlert` de `domain/sms-phone.ts`), une fois par coupure (`phoneOfflineAlertedAt`,

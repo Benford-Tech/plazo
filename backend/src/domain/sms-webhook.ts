@@ -16,13 +16,24 @@ export type SmsWebhookEvent = (typeof SMS_WEBHOOK_EVENTS)[number];
  * tells Plazo of each SMS it receives, which lands in the parking's « Messages ».
  */
 export const SMS_RECEIVED_EVENT = 'sms:received';
+/**
+ * 14/11/2026 (« souvent le téléphone est marqué comme hors ligne alors que non »): the app's own ping, sent by the phone
+ * every 5 minutes, also reaches Plazo, so that a phone the gateway saw late is still known to be alive.
+ */
+export const SMS_PING_EVENT = 'system:ping';
 /** Every event Plazo registers at the gateway. */
-export const SMS_REGISTERED_EVENTS = [...SMS_WEBHOOK_EVENTS, SMS_RECEIVED_EVENT] as const;
+export const SMS_REGISTERED_EVENTS = [...SMS_WEBHOOK_EVENTS, SMS_RECEIVED_EVENT, SMS_PING_EVENT] as const;
 export type SmsRegisteredEvent = (typeof SMS_REGISTERED_EVENTS)[number];
 
 /** Our webhook ids at the gateway (a POST with the same id replaces it): one per event, at most 36 characters. */
 export function smsWebhookId(event: SmsRegisteredEvent): string {
-  return `plazo-${event.replace('sms:', '')}`;
+  return `plazo-${event.replace(/^(sms|system):/, '')}`;
+}
+
+/** A call of the phone for one of our events (a sign of life, whatever the event). */
+export function isGatewayEvent(body: unknown): boolean {
+  if (!body || typeof body !== 'object') return false;
+  return (SMS_REGISTERED_EVENTS as readonly string[]).includes((body as Record<string, unknown>).event as string);
 }
 
 const CHECK_LENGTH = 24;

@@ -371,8 +371,8 @@ describe('envoi par le téléphone du parking', () => {
     try {
       const op = await linkedOperator();
       const hooks = calls(`${SMS_GATEWAY_CLOUD_URL}/webhooks`).map(([, init]) => JSON.parse(init.body));
-      expect(hooks.map(h => h.event)).toEqual(['sms:sent', 'sms:delivered', 'sms:failed', 'sms:received']);
-      expect(hooks.map(h => h.id)).toEqual(['plazo-sent', 'plazo-delivered', 'plazo-failed', 'plazo-received']);
+      expect(hooks.map(h => h.event)).toEqual(['sms:sent', 'sms:delivered', 'sms:failed', 'sms:received', 'system:ping']);
+      expect(hooks.map(h => h.id)).toEqual(['plazo-sent', 'plazo-delivered', 'plazo-failed', 'plazo-received', 'plazo-ping']);
       const url: string = hooks[0].url;
       expect(url.startsWith(`https://www.plazo.test/api/public/sms-gateway/webhook/${op.operator.id}.`)).toBe(true);
       expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).phoneWebhooksSetAt).not.toBeNull();

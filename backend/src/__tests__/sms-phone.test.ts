@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { daySegments, failureEvents, offlineAlert, PhoneCheck, stateChanges } from '@/domain/sms-phone';
+import { smsWebhookToken } from '@/domain/sms-webhook';
 import { PushService } from '@/services/push.service';
 import { SMS_GATEWAY_CLOUD_URL } from '@/services/sms-gateway.service';
 import { SmsPhoneService } from '@/services/sms-phone.service';
@@ -167,15 +168,64 @@ describe('the phone checks', () => {
   it('tells the managers once per outage, and again after the phone came back', async () => {
     const op = await linked();
     const t0 = new Date();
-    lastSeen = new Date(t0.getTime() - minutes(30)).toISOString();
+    lastSeen = new Date(t0.getTime() - minutes(40)).toISOString();
+    // An SMS waits at the gateway for 20 minutes, untouched: the phone does not answer.
+    const waiting = await prisma.smsOutbox.create({
+      data: {
+        operatorId: op.operator.id,
+        kind: 'reminder',
+        to: '+33600000000',
+        bodyHash: 'h',
+        provider: 'gateway',
+        providerMessageId: 'gw-w',
+        status: 'queued',
+        createdAt: new Date(t0.getTime() - minutes(20)),
+      },
+    });
     expect(await phone.checkAll(t0)).toEqual({ checked: 1, offline: 1, alerted: 1 });
     expect(pushMock).toHaveBeenCalledWith(op.operator.id, 'team', expect.objectContaining({ title: 'Téléphone SMS hors ligne' }), expect.anything());
     expect((await phone.checkAll(new Date(t0.getTime() + minutes(15)))).alerted).toBe(0);
     lastSeen = new Date(t0.getTime() + minutes(29)).toISOString();
     expect((await phone.checkAll(new Date(t0.getTime() + minutes(30)))).offline).toBe(0);
     lastSeen = new Date(t0.getTime() + minutes(29)).toISOString();
-    expect((await phone.checkAll(new Date(t0.getTime() + minutes(60)))).alerted).toBe(1);
+    await prisma.smsOutbox.update({ where: { id: waiting.id }, data: { createdAt: new Date(t0.getTime() + minutes(50)) } });
+    expect((await phone.checkAll(new Date(t0.getTime() + minutes(75)))).alerted).toBe(1);
     expect(pushMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('an idle phone with nothing to send is not offline, however long the gateway has not seen it (14/11/2026)', async () => {
+    const t0 = new Date();
+    await linked();
+    lastSeen = new Date(t0.getTime() - minutes(300)).toISOString();
+    expect(await phone.checkAll(t0)).toEqual({ checked: 1, offline: 0, alerted: 0 });
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('a phone seen late by the gateway is still online: 20 minutes is no outage, and its own calls count (14/11/2026)', async () => {
+    const op = await linked();
+    const t0 = new Date();
+    // Android ran the ping late: the gateway saw it 20 minutes ago.
+    lastSeen = new Date(t0.getTime() - minutes(20)).toISOString();
+    expect(await phone.checkAll(t0)).toEqual({ checked: 1, offline: 0, alerted: 0 });
+
+    // The gateway's lastSeen is old, but the phone called Plazo (its ping webhook) 5 minutes ago.
+    lastSeen = new Date(t0.getTime() - minutes(60)).toISOString();
+    const settings = await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } });
+    const token = smsWebhookToken(op.operator.id, process.env.SECRET_KEY || '');
+    await api()
+      .post(`/api/public/sms-gateway/webhook/${token}`)
+      .send({ event: 'system:ping', deviceId: 'dev-1', id: 'p-1', webhookId: 'plazo-ping', payload: {} })
+      .expect(200);
+    const signal = (await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { id: settings.id } })).phoneSignalAt!;
+    expect(signal).not.toBeNull();
+    expect(await phone.checkAll(new Date(signal.getTime() + minutes(15)))).toEqual({ checked: 1, offline: 0, alerted: 0 });
+
+    // The app's server down: the phone's own recent call still says online.
+    fetchMock.mockImplementation(async () => json({ message: 'down' }, 500));
+    await phone.checkAll(new Date(signal.getTime() + minutes(30)));
+    const last = await prisma.smsPhoneCheck.findFirst({ orderBy: { checkedAt: 'desc' } });
+    expect(last).toMatchObject({ state: 'online', errorCode: 'sms_gateway_error' });
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it('no alert when the manager turned it off; the app’s server down is « unknown », never an alert', async () => {
