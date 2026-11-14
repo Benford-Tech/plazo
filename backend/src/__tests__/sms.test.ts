@@ -525,11 +525,11 @@ describe('envoi par le téléphone du parking', () => {
     expect(await sms.sendTravellerSms(none.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'x' })).toBe('skipped');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await prisma.smsOutbox.count()).toBe(0);
-    // A number that is not a French mobile gets no SMS either (any mode).
+    // A French landline or a premium range gets no SMS (any mode).
     const brevo = await setupOperator('Brevo');
     await useBrevoSms(brevo.operator.id);
     notifications.settings.apiKey = 'brevo-key';
-    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+41791234567', text: 'x' })).toBe(
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+882 1234 5678', text: 'x' })).toBe(
       'skipped',
     );
     expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Bonjour' })).toBe(

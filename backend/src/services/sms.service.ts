@@ -569,6 +569,15 @@ export class SmsService {
     return { params: reminderTemplateParams(values, this.whatsapp.config().reminderTemplate), image };
   }
 
+  /** The photo the day-before WhatsApp carries (the parking's, else the return meeting point's), or null. */
+  public async reminderPhoto(parkingId: string): Promise<string | null> {
+    const parking = await prisma.parking.findUnique({
+      where: { id: parkingId },
+      select: { returnMeetingPhotoUrl: true, listing: { select: { photos: true } } },
+    });
+    return reminderImage(parking?.listing?.photos, parking?.returnMeetingPhotoUrl ?? null);
+  }
+
   /**
    * 11/11/2026 (choice B): the day-before message follows the template approved by Meta when WhatsApp carries it (the
    * template is set and the parking has WhatsApp on); the parking's own text otherwise.
@@ -587,7 +596,8 @@ export class SmsService {
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      const text = renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      return withPhotoLink(reminderImage(booking.parking.listing?.photos, booking.parking.returnMeetingPhotoUrl), text);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -798,6 +808,14 @@ export class SmsService {
       lastErrorAt: settings?.lastErrorAt?.toISOString() ?? null,
     };
   }
+}
+
+/**
+ * 14/11/2026 (« Il n'y a pas la photo dans le sms » → « En début de message »): an SMS cannot carry the photo, so the SMS of
+ * the day-before message starts with its address; most messaging apps show it as a preview.
+ */
+export function withPhotoLink(image: string | null, text: string): string {
+  return image ? `${image}\n${text}` : text;
 }
 
 /** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */

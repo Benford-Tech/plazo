@@ -205,11 +205,11 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(board.body.evening).toMatchObject({ date: E, departuresDate: D, when: 'future', sendTime: '18:00', paused: false });
     expect(board.body.evening.counts).toEqual({
       departures: 3,
-      planned: 1,
+      planned: 2,
       sent: 0,
       waiting: 0,
       failed: 0,
-      withoutSms: 2,
+      withoutSms: 1,
       confirmed: 0,
       unconfirmed: 0,
     });
@@ -217,7 +217,8 @@ describe('le SMS de la veille dans l’espace pro', () => {
       [
         ['Camille Martin', 'planned', `${E}T18:00`],
         ['Julie Roux', 'no_mobile', null],
-        ['Lou Peeters', 'foreign', null],
+        // 14/11/2026: a foreign number with its country code gets its SMS too.
+        ['Lou Peeters', 'planned', `${E}T18:00`],
       ],
     );
     expect(board.body.sample).toMatchObject({ customerName: 'Camille Martin', values: { prénom: 'Camille', heure: '08:30' } });
