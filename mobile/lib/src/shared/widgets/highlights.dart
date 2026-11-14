@@ -75,12 +75,15 @@ class FactChips extends StatelessWidget {
 
 /// Badges of a result, stacked: "Le moins cher" (violet), "Navette la plus rapide" (peach).
 class ResultBadges extends StatelessWidget {
-  const ResultBadges({super.key, required this.badges, this.alignEnd = false});
+  const ResultBadges({super.key, required this.badges, this.alignEnd = false, this.small = false});
 
   final List<ResultBadge> badges;
 
   /// Over a photo: stuck to its top-right corner.
   final bool alignEnd;
+
+  /// Over a result's photo (direction A, 14/11/2026): smaller pills, so the photo shows.
+  final bool small;
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +97,9 @@ class ResultBadges extends StatelessWidget {
             padding: EdgeInsets.only(top: i == 0 ? 0 : 4),
             child: Container(
               key: Key('badge-${badge.name}'),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: small ? const EdgeInsets.symmetric(horizontal: 7, vertical: 2) : const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(color: badge == ResultBadge.cheapest ? AppColors.accent : AppColors.peach, borderRadius: BorderRadius.circular(12)),
-              child: Text(badgeLabel(badge), style: AppText.strong(size: 11.5, color: Colors.white)),
+              child: Text(badgeLabel(badge), style: AppText.strong(size: small ? 10.5 : 11.5, color: Colors.white)),
             ),
           ),
       ],
