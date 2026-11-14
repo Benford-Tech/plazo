@@ -1537,6 +1537,9 @@ model OperatorSmsSettings {
   // 09/11/2026 (« faudrait communiquer avec sms gateway »): when Plazo asked the app to call it back on sms:sent,
   // sms:delivered and sms:failed (/public/sms-gateway/webhook/<token>); null again when the login changes.
   phoneWebhooksSetAt    DateTime?
+  // 14/11/2026 (« souvent le téléphone est marqué comme hors ligne alors que non »): the last call of the phone to Plazo
+  // (its ping or an SMS event), counted as a sign of life with the gateway's lastSeen; null again when the login changes.
+  phoneSignalAt         DateTime?
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 

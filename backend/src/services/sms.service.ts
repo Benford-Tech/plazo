@@ -15,6 +15,7 @@ import { landedSms } from '@/domain/return-messages';
 import {
   operatorOfSmsWebhookToken,
   parseReceivedSms,
+  isGatewayEvent,
   parseSmsWebhook,
   SMS_REGISTERED_EVENTS,
   smsWebhookId,
@@ -443,6 +444,10 @@ export class SmsService {
   public async handleGatewayWebhook(token: string, body: unknown): Promise<{ ok: true; applied: boolean }> {
     const operatorId = operatorOfSmsWebhookToken(token, process.env.SECRET_KEY || '');
     if (!operatorId) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
+    // 14/11/2026 (« souvent le téléphone est marqué comme hors ligne alors que non »): any call from the phone (a ping,
+    // an SMS sent, delivered, failed or received) proves it is alive, whatever the gateway's lastSeen says.
+    if (isGatewayEvent(body))
+      await prisma.operatorSmsSettings.updateMany({ where: { operatorId, mode: 'gateway' }, data: { phoneSignalAt: new Date() } });
     // 14/11/2026: an SMS the parking's phone received goes to its « Messages » (loaded here: the inbox sends by SMS).
     const received = parseReceivedSms(body);
     if (received) {
@@ -704,7 +709,7 @@ export class SmsService {
         linkedAt: existing?.mode === 'gateway' && existing.linkedAt ? existing.linkedAt : new Date(),
         // 06/11/2026: another login is another app, whose ping Plazo sets again.
         ...(existing?.gatewayLogin !== login || existing?.gatewayBaseUrl !== (baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl)
-          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneWebhooksSetAt: null, phoneOfflineAlertedAt: null }
+          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneWebhooksSetAt: null, phoneOfflineAlertedAt: null, phoneSignalAt: null }
           : {}),
         lastError: null,
         lastErrorAt: null,
@@ -723,6 +728,7 @@ export class SmsService {
         phonePingSetAt: null,
         phoneSpacingSetAt: null,
         phoneWebhooksSetAt: null,
+        phoneSignalAt: null,
         phoneOfflineAlertedAt: null,
         lastError: null,
         lastErrorAt: null,

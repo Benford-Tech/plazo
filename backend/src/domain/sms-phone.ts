@@ -9,8 +9,12 @@ export type PhoneState = 'online' | 'offline' | 'unknown';
 /** The ribbon also has the time nobody knows about: before the first check, a missed check, the rest of today. */
 export type RibbonState = PhoneState | 'none';
 
-/** Not seen for longer than this: offline (the app pings every 5 minutes, PHONE_PING_SECONDS). */
-export const PHONE_OFFLINE_AFTER_MS = 15 * 60 * 1000;
+/**
+ * Not seen for longer than this: offline. The app asks to ping every 5 minutes (PHONE_PING_SECONDS), but Android runs
+ * background work at most every 15 minutes and later when the phone dozes: 15 minutes marked a working phone offline
+ * (14/11/2026, « souvent le téléphone est marqué comme hors ligne alors que non »).
+ */
+export const PHONE_OFFLINE_AFTER_MS = 35 * 60 * 1000;
 /** The crons call every 15 minutes; two calls closer than this check once. */
 export const PHONE_CHECK_MIN_GAP_MS = 10 * 60 * 1000;
 /** A check stands for the time until the next one, 20 minutes at most: beyond, nothing is known. */
@@ -33,6 +37,12 @@ export interface PhoneCheck {
   checkedAt: Date;
   state: PhoneState;
   lastSeenAt: Date | null;
+}
+
+/** The latest sign of life: the gateway's lastSeen or a call of the phone to Plazo (its webhooks). */
+export function latestSign(...dates: (Date | null | undefined)[]): Date | null {
+  const known = dates.filter((d): d is Date => !!d);
+  return known.length ? new Date(Math.max(...known.map(d => d.getTime()))) : null;
 }
 
 export function phoneStateOf(lastSeen: Date | null, now: Date): Exclude<PhoneState, 'unknown'> {

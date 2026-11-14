@@ -2072,7 +2072,7 @@ export const fr = {
         test: "SMS de test",
         other: "SMS",
       } as Record<string, string>,
-      alerts: "Prévenir les gérants quand le téléphone ne répond plus (15 min)",
+      alerts: "Prévenir les gérants quand le téléphone ne répond plus (35 min)",
       alertsOn: "Les gérants seront prévenus.",
       alertsOff: "Alerte coupée.",
     },
