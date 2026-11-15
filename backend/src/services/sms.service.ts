@@ -71,6 +71,10 @@ export interface TravellerSms {
 
 export type SendOutcome = 'sent' | 'queued' | 'failed' | 'skipped';
 
+/** Per parking and rolling 24 hours, SMS sent through Plazo's Brevo account (security pass of 15/11/2026). */
+export const OPERATOR_BREVO_SMS_PER_DAY = 150;
+export const OPERATOR_BREVO_TESTS_PER_DAY = 20;
+
 export interface SmsSettingsView {
   mode: SmsMode;
   /** The "Plazo envoie pour moi" channel exists only while Brevo is configured server-side. */
@@ -212,6 +216,10 @@ export class SmsService {
 
   private async sendViaBrevo(operatorId: string, sms: TravellerSms, recipient: string, about: string): Promise<SendOutcome> {
     if ((sms.kind === 'booking_confirmed' || sms.kind === 'booking_reminder') && !(await this.brevoBudgetLeft(about))) return 'skipped';
+    if (!(await this.operatorBrevoBudgetLeft(operatorId, sms.kind))) {
+      logger.warn(`[SMS] Brevo budget of operator ${operatorId} spent: ${sms.kind} not sent for ${about}`);
+      return 'skipped';
+    }
     const ok = await this.notifications.smsViaBrevo(recipient, sms.kind, about, sms.text);
     await prisma.smsOutbox.create({
       data: {
@@ -232,6 +240,23 @@ export class SmsService {
       ok ? { lastSentAt: new Date() } : { lastError: 'brevo_failed', lastErrorAt: new Date() },
     );
     return ok ? 'sent' : 'failed';
+  }
+
+  /**
+   * Security pass of 15/11/2026 (SMS pumping): Plazo pays every SMS sent through its Brevo account, and any parking that
+   * signs up may choose it. Per parking and rolling 24 hours: 20 test SMS (« M'envoyer un test ») and 150 SMS in all, so
+   * no parking can run up the bill nor spend the shared budget of the others.
+   */
+  private async operatorBrevoBudgetLeft(operatorId: string, kind: SmsKind): Promise<boolean> {
+    const since = new Date(Date.now() - 86400000);
+    if (kind === 'test' || kind === 'reminder_test') {
+      const tests = await prisma.smsOutbox.count({
+        where: { operatorId, provider: 'brevo', kind: { in: ['test', 'reminder_test'] }, createdAt: { gt: since } },
+      });
+      if (tests >= OPERATOR_BREVO_TESTS_PER_DAY) return false;
+    }
+    const all = await prisma.smsOutbox.count({ where: { operatorId, provider: 'brevo', createdAt: { gt: since } } });
+    return all < OPERATOR_BREVO_SMS_PER_DAY;
   }
 
   /** Confirmation SMS through Brevo per rolling 24 hours at most (bookings are free to make: a cap on the bill). */

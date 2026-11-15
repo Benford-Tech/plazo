@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { StaffNotificationController } from '@/controllers/staff-notification.controller';
 import { Routes } from '@/interfaces/routes.interface';
+import { pushLimiter } from '@/middlewares/rateLimiter';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
@@ -44,8 +45,8 @@ export class StaffNotificationRoute implements Routes {
     this.router.post('/internal/notifications/read', StaffAuthMiddleware(), this.bell.read);
     this.router.get('/internal/notifications/channels', StaffAuthMiddleware(), this.bell.channels);
     this.router.put('/internal/notifications/channels', StaffAuthMiddleware(), RefuseInViewAs(), this.bell.setChannels);
-    this.router.post('/internal/notifications/browsers', StaffAuthMiddleware(), RefuseInViewAs(), this.bell.subscribe);
+    this.router.post('/internal/notifications/browsers', StaffAuthMiddleware(), RefuseInViewAs(), pushLimiter, this.bell.subscribe);
     this.router.post('/internal/notifications/browsers/remove', StaffAuthMiddleware(), RefuseInViewAs(), this.bell.unsubscribe);
-    this.router.post('/internal/notifications/test', StaffAuthMiddleware(), RefuseInViewAs(), this.bell.test);
+    this.router.post('/internal/notifications/test', StaffAuthMiddleware(), RefuseInViewAs(), pushLimiter, this.bell.test);
   }
 }

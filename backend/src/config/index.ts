@@ -67,7 +67,8 @@ export const EMAIL_FROM = process.env.EMAIL_FROM || '';
 export const SMS_SENDER = process.env.SMS_SENDER || '';
 // Confirmation SMS sent per rolling 24 hours at most (bookings on the site are free to make: a cap
 // on the SMS bill). Above it, travellers still get the email.
-const rawSmsLimit = Number(process.env.SMS_DAILY_LIMIT);
+// 15/11/2026: an empty SMS_DAILY_LIMIT means the default, never 0 (Number('') is 0: every Brevo confirmation was held).
+const rawSmsLimit = process.env.SMS_DAILY_LIMIT?.trim() ? Number(process.env.SMS_DAILY_LIMIT) : NaN;
 export const SMS_DAILY_LIMIT = Number.isInteger(rawSmsLimit) && rawSmsLimit >= 0 ? rawSmsLimit : 300;
 // Public base URL of the traveller site, for the links in emails and SMS. On Vercel it defaults to
 // the project's production domain (the site, the API and the pro space share it).

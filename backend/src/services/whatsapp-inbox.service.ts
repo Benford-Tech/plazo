@@ -175,11 +175,12 @@ export class WhatsappInboxService {
     if (phone.startsWith('app:') || phoneTail(phone).length < 9) return false;
     const key = `sms:${operatorId}:${sms.messageId}`;
     if (await prisma.whatsappInboxMessage.findUnique({ where: { waMessageId: key }, select: { id: true } })) return false;
-    const tail = phoneTail(phone);
     const [place, existing] = await Promise.all([
       this.placeIn(operatorId, phone, sms.at),
       prisma.whatsappConversation.findFirst({
-        where: { operatorId, phone: { endsWith: tail }, NOT: { phone: { startsWith: 'app:' } } },
+        // Security pass of 15/11/2026: the whole number, never its last 9 digits (another country's number would join, and
+        // the reply go to the other person).
+        where: { operatorId, phone },
         orderBy: { lastMessageAt: 'desc' },
       }),
     ]);
@@ -652,11 +653,23 @@ export class WhatsappInboxService {
 
   /** POST /public/bookings/:ref/messages { text }: lands in the parking's conversation of that traveller, the team told. */
   public async travellerWrite(
-    reservation: { id: string; operatorId: string; customerPhone: string; customerName: string; reference: string; anonymizedAt?: Date | null },
+    reservation: {
+      id: string;
+      operatorId: string;
+      customerPhone: string;
+      customerName: string;
+      reference: string;
+      status: string;
+      anonymizedAt?: Date | null;
+    },
     raw: unknown,
     now = new Date(),
   ) {
     if (reservation.anonymizedAt) throw new HttpException(httpStatus.CONFLICT, 'Booking anonymized', 'anonymized');
+    // Security pass of 15/11/2026: an unpaid hold (free to make) or a cancelled booking never writes to the parking: its
+    // name and text would reach every member's phone as a push.
+    if (reservation.status === 'pending_payment' || reservation.status === 'cancelled')
+      throw new HttpException(httpStatus.CONFLICT, 'Messages are closed for this booking', 'messages_closed');
     const text = typeof raw === 'string' ? raw.replace(/\r\n?/g, '\n').trim() : '';
     if (!text) throw new ValidationException({ text: 'required' });
     if (text.length > APP_MESSAGE_MAX_LENGTH) throw new ValidationException({ text: 'too_long' });

@@ -595,7 +595,8 @@ export class InvoiceService {
 
   private travellerRefusal(booking: BookingForInvoice, invoices: { kind: string; creditedBy: string | null }[]): TravellerInvoiceRefusal | null {
     if (booking.anonymizedAt) return 'anonymized';
-    if (booking.status === 'cancelled') return 'reservation_cancelled';
+    // Security pass of 15/11/2026: an unpaid hold is not a booking yet (and costs nothing to make).
+    if (booking.status === 'cancelled' || booking.status === 'pending_payment') return 'reservation_cancelled';
     if (invoices.some(i => i.kind === 'invoice' && !i.creditedBy)) return 'invoice_exists';
     if (booking.priceCents == null || booking.priceCents <= 0) return 'no_price';
     if (booking.invoiceRequestedAt) return 'already_requested';
