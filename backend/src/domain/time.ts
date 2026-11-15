@@ -3,17 +3,46 @@
  * timezone (Europe/Paris for the MVP) defines local dates, times and "nights".
  */
 
+/**
+ * 15/11/2026 (load test): building an Intl.DateTimeFormat costs far more than using one, and these helpers run thousands
+ * of times per request (dashboard, planning, forecast, revenue): one formatter per kind and time zone, built once.
+ */
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+function formatter(kind: 'offset' | 'date' | 'dateTime', timeZone: string): Intl.DateTimeFormat {
+  const key = `${kind}|${timeZone}`;
+  let f = formatters.get(key);
+  if (!f) {
+    f =
+      kind === 'offset'
+        ? new Intl.DateTimeFormat('en-US', {
+            timeZone,
+            hourCycle: 'h23',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+        : kind === 'date'
+          ? new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' })
+          : new Intl.DateTimeFormat('en-CA', {
+              timeZone,
+              hourCycle: 'h23',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+    formatters.set(key, f);
+  }
+  return f;
+}
+
 function offsetMinutes(utc: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(utc);
+  const parts = formatter('offset', timeZone).formatToParts(utc);
   const get = (type: string) => Number(parts.find(p => p.type === type)?.value);
   const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
   return Math.round((asUtc - utc.getTime()) / 60000);
@@ -53,7 +82,7 @@ export function parseInstant(value: string, timeZone: string): Date | null {
 
 /** Local calendar date (YYYY-MM-DD) of an instant in `timeZone`. */
 export function localDate(instant: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant);
+  return formatter('date', timeZone).format(instant);
 }
 
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,15 +100,7 @@ export function dayBounds(date: string, timeZone: string): { start: Date; end: D
 
 /** Local wall-clock time of an instant in `timeZone`, as "YYYY-MM-DDTHH:mm" (the API's local format). */
 export function localDateTime(instant: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).formatToParts(instant);
+  const parts = formatter('dateTime', timeZone).formatToParts(instant);
   const get = (type: string) => parts.find(p => p.type === type)?.value;
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
 }

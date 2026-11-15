@@ -2681,6 +2681,26 @@ téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo
 démo des prospects ; les réservations fictives du flux continu ont des numéros 06 39 98 que `smsRecipient` refuse), et un code qui ne part
 pas est un 409 `sms_failed` (plus un 502 dont Cloudflare remplaçait le corps). Test `sms.test.ts`.
 
+## Performances (15/11/2026, « Fait un test de charge pour améliorer les performances »)
+
+Test de charge en local (jamais en production) : base `plazo_load` avec les loueurs de démo et 50 000 réservations fictives d'un
+parking (80 par jour sur 18 mois et 3 mois à venir), 150 000 lignes d'historique et 33 000 mails ; `autocannon`, 10 connexions,
+pool Prisma de 10. Corrigé : **`domain/time.ts`** garde un `Intl.DateTimeFormat` par genre et par fuseau (`formatter`) au lieu
+d'en construire un à chaque conversion d'heure (`localDate`, `localDateTime`, `parseInstant` : des milliers par requête) ;
+**`CapacityService.nights`** ne lit plus que les séjours qui touchent la fenêtre (filtre sur `arrivalAt` / `returnAt` UTC, deux
+jours de marge pour tout fuseau, servi par les index `(parkingId, arrivalAt)` et `(parkingId, returnAt)`) au lieu de toutes les
+réservations du parking contre chaque nuit, et **`parkedNights`** écarte les séjours finis plus de deux jours avant la fenêtre
+(sauf voitures sur place et réservations attendues) ; les deux en CTE `MATERIALIZED`, sur une série d'entiers
+`generate_series(0, n)` (`spanDays`) : avec une série de dates, Postgres comptait 1 000 jours, jugeait la jointure coûteuse et
+passait 400 ms à la compiler (JIT). Mêmes chiffres qu'avant (0 écart sur 205 nuits, deux calculs, trois fenêtres). Bug trouvé en chemin : Plateforme › Applications
+comptait les installations et les réservations de l'app par jour avec `"createdAt" AT TIME ZONE 'Europe/Paris'`, qui lit une heure
+UTC comme une heure de Paris (entre minuit et 1 h, les installations du jour manquaient) : `AT TIME ZONE 'UTC'` d'abord, comme partout. Mesures, une
+requête puis 10 en parallèle : prévisionnel 1,5 s → 0,1 s (0,8 → 30 req/s), planning du jour 0,57 → 0,04 s (5 → 50 req/s), tableau
+de bord 0,88 → 0,17 s (3 → 12 req/s), résumé du chiffre d'affaires 1 s → 0,1 s (bloqué → 20 req/s). **Reste à voir** : le tableau de
+bord fait ~110 requêtes SQL l'une après l'autre (chacune paie l'aller-retour vers Neon) ; le planning renvoie la ligne entière de
+chaque réservation (~3 Ko, 465 Ko pour un jour chargé) ; la recherche par nom lit toute la table du loueur (~0,2 s à 50 000
+réservations, un index trigramme `pg_trgm` la servirait).
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,
