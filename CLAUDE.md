@@ -1617,7 +1617,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    texte entier signé gardé avec son SHA-256 et une empreinte de preuve (`proofOf` : texte, signataire, moyen, heure, tracé) ; signé
    une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`), **au comptoir seulement (20/10/2026, « A au comptoir »)** : sur
    le téléphone du parking avec un code à 6 chiffres reçu par SMS par le voyageur (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
-   heure, toujours par le Brevo de Plazo quel que soit le canal SMS du loueur : `SmsService.sendSignatureCode`, sortie `signature_code`),
+   heure, par le Brevo de Plazo : `SmsService.sendSignatureCode`, sortie `signature_code` ; **depuis le 15/11/2026 par le téléphone du parking quand il envoie ses SMS** (« Je ne reçois pas le code » : Brevo acceptait les codes sans qu'ils arrivent ; « fais partir le code par le téléphone du parking ») : mode `gateway`, texte jamais gardé ni renvoyé par la file (`renderBody` → abandonné), Brevo en repli si le téléphone refuse ; test `sms.test.ts`),
    ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; **et dans l'app Plazo depuis le 13/11/2026** (« Impossible de signer »,
    choix « les deux » et M1) : « Signer le contrat » de Ma réservation, case « J'ai lu et j'accepte », code reçu par SMS au mobile de
    la réservation puis signature au doigt, les deux exigés (`POST /public/bookings/:ref/contract/code`, `…/sign { code, strokes }`,
