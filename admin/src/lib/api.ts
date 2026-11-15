@@ -52,6 +52,7 @@ import type {
   SmsSettingsInput,
   SmsStatus,
   PhoneHistory,
+  PlatformApps,
   PlatformSeo,
   WhatsappSettings,
   WhatsappNumber,
@@ -1473,6 +1474,7 @@ export const adminApi = {
   // E-A: the platform's broadcasts.
   // 06/11/2026 (SEO local, A + M2).
   getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
+  getPlatformApps: (days: number) => apiRequest<PlatformApps>(`/internal/platform/apps?days=${days}`),
   getPlatformNotifications: () =>
     apiRequest<{ data: PlatformNotification[] }>(
       "/internal/platform/notifications",

@@ -1,7 +1,8 @@
-import { Service } from 'typedi';
+import Container, { Service } from 'typedi';
 import prisma, { Prisma } from '@/database';
 import { PromotionFilters } from '@/domain/promotion';
 import { ValidationException } from '@/middlewares/validation.middleware';
+import { AppUsageService } from '@/services/app-usage.service';
 
 /** A phone not heard of for 13 months is forgotten (its consent with it). */
 const FORGOTTEN_AFTER_MS = 400 * 86400_000;
@@ -36,6 +37,8 @@ export class TravellerAppDeviceService {
         ...(changed ? { offers: data.offers, offersAt: now } : {}),
       },
     });
+    // 15/11/2026 (Plateforme › Applications): this phone used the app today.
+    await Container.get(AppUsageService).recordPlazo(row.id, row.platform);
     return { offers: row.offers, offersAt: row.offersAt?.toISOString() ?? null };
   }
 

@@ -1456,6 +1456,20 @@ model TravellerAppDevice {
   @@map("traveller_app_devices")
 }
 
+/// One row per day, app and phone (Plazo) or member (Plazo Pro) seen that day (15/11/2026, « Suivre le nombre de
+/// téléchargements et d'utilisation de plazo », choix « Mesuré par Plazo »): daily, weekly and monthly active users
+/// are counted from it. `subject` is a traveller_app_devices id or a staff id, nothing else; kept 400 days.
+model AppActivityDay {
+  day      DateTime @db.Date
+  app      String // plazo | pro
+  subject  String
+  platform String? // ios | android | web (Plazo only)
+
+  @@id([day, app, subject])
+  @@index([app, day])
+  @@map("app_activity_days")
+}
+
 /// Who a platform broadcast goes to (E-A, 05/10/2026).
 enum PlatformAudience {
   staff // every operator's active staff (notifyPlatform)
