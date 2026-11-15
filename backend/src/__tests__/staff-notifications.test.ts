@@ -109,6 +109,29 @@ describe('the bell', () => {
     expect(manager.body.data.map((n: { title: string }) => n.title)).toEqual(['Nouvelle réservation']);
   });
 
+  // 15/11/2026 (« pouvoir nettoyer les notifications », choix C).
+  it('erases one, the read ones or all of the member’s own, never another’s', async () => {
+    const op = await setupOperator();
+    const other = await setupOperator('Autre parking');
+    const note = (staffId: string, operatorId: string, title: string, readAt: Date | null = null) =>
+      prisma.staffNotification.create({ data: { staffId, operatorId, event: 'team', title, body: 'z', readAt } });
+    const a = await note(op.manager.id, op.operator.id, 'A');
+    await note(op.manager.id, op.operator.id, 'B', new Date());
+    await note(op.manager.id, op.operator.id, 'C');
+    const theirs = await note(other.manager.id, other.operator.id, 'D');
+
+    expect((await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({})).status).toBe(400);
+    let res = await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({ ids: [a.id, theirs.id] });
+    expect(res.body).toEqual({ cleared: 1, unread: 1 });
+    res = await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({ read: true });
+    expect(res.body).toEqual({ cleared: 1, unread: 1 });
+    const left = (await api().get('/api/internal/notifications').set(auth(op.token))).body.data.map((n: { title: string }) => n.title);
+    expect(left).toEqual(['C']);
+    res = await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({ all: true });
+    expect(res.body).toEqual({ cleared: 1, unread: 0 });
+    expect(await prisma.staffNotification.count({ where: { id: theirs.id } })).toBe(1);
+  });
+
   it('forgets after 30 days', async () => {
     const op = await setupOperator();
     await Container.get(PushService).notifyStaff(op.operator.id, 'team', { title: 'Demande', body: 'z' });

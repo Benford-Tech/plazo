@@ -2804,7 +2804,18 @@
       "bookings": "Rezerwacje",
       "shuttle": "Bus",
       "team": "Zespół"
-    }
+    },
+    "menu": "Więcej działań",
+    "clear_read": "Usuń przeczytane",
+    "clear_all": "Usuń wszystko…",
+    "clear_one": "Usuń",
+    "clear_all_title": "Usunąć wszystkie powiadomienia?",
+    "clear_all_body": "Znikną z Twojego dzwonka, w Plazo Pro i w sieci. Współpracownicy zachowają swoje.",
+    "clear_all_confirm": "Usuń wszystko",
+    "cancel": "Anuluj",
+    "cleared": "Usunięto powiadomienia: {}.",
+    "cleared_none": "Nie ma nic do usunięcia.",
+    "clear_failed": "Nie udało się usunąć powiadomień."
   },
   "notif_channels": {
     "title": "Gdzie trafia każde powiadomienie",

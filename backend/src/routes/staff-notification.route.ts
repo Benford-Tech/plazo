@@ -20,6 +20,9 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /internal/notifications/read:
  *   post:
  *     summary: Marks { ids } read (all without ids); returns { unread }
+ * /internal/notifications/clear:
+ *   post:
+ *     summary: Erases { ids }, the read ones { read true } or all { all true } of the member's notifications; { cleared, unread }
  * /internal/notifications/channels:
  *   get:
  *     summary: Per event, { phone, browser, bell }; the member's phones and browsers; the browsers' public key
@@ -43,6 +46,7 @@ export class StaffNotificationRoute implements Routes {
     this.router.get('/internal/notifications', StaffAuthMiddleware(), this.bell.list);
     this.router.get('/internal/notifications/count', StaffAuthMiddleware(), this.bell.count);
     this.router.post('/internal/notifications/read', StaffAuthMiddleware(), this.bell.read);
+    this.router.post('/internal/notifications/clear', StaffAuthMiddleware(), this.bell.clear);
     this.router.get('/internal/notifications/channels', StaffAuthMiddleware(), this.bell.channels);
     this.router.put('/internal/notifications/channels', StaffAuthMiddleware(), RefuseInViewAs(), this.bell.setChannels);
     this.router.post('/internal/notifications/browsers', StaffAuthMiddleware(), RefuseInViewAs(), pushLimiter, this.bell.subscribe);

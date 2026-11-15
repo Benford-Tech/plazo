@@ -1,7 +1,9 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AtSign, Bell, MessageCircle, CalendarPlus, KeyRound, PlaneLanding, RefreshCcw, Sparkles, UserPlus, Users, Bus } from "lucide-react";
-import { useState } from "react";
+import { AtSign, Bell, MessageCircle, CalendarPlus, KeyRound, MoreHorizontal, PlaneLanding, RefreshCcw, Sparkles, UserPlus, Users, Bus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { adminApi } from "@/lib/api";
 import { fr } from "@/lib/fr";
 import type { BellFilter, BellNotification, NotificationEvent } from "@/lib/types";
@@ -52,6 +54,31 @@ export function BellList({ onNavigate, pageSize = "popover" }: { onNavigate?: ()
     mutationFn: (ids?: string[]) => adminApi.markBellRead(ids),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: BELL_KEY }),
   });
+  // 15/11/2026 (« pouvoir nettoyer les notifications », choix C): one by one, the read ones, or all.
+  const confirm = useConfirm();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
+  const clear = useMutation({
+    mutationFn: (scope: { ids: string[] } | { read: true } | { all: true }) => adminApi.clearBell(scope),
+    onSuccess: (res, scope) => {
+      if (!("ids" in scope)) toast.success(t.cleared(res.cleared));
+      return queryClient.invalidateQueries({ queryKey: BELL_KEY });
+    },
+    onError: () => toast.error(t.clearFailed),
+  });
+  const clearAll = async () => {
+    setMenuOpen(false);
+    const ok = await confirm(t.clearAllBody, { title: t.clearAllTitle, confirmLabel: t.clearAllConfirm, destructive: true });
+    if (ok) clear.mutate({ all: true });
+  };
   const items = query.data?.pages.flatMap((p) => p.data) ?? [];
   const unread = query.data?.pages[0]?.unread ?? 0;
   const shown = pageSize === "popover" ? items.slice(0, 8) : items;
@@ -78,6 +105,44 @@ export function BellList({ onNavigate, pageSize = "popover" }: { onNavigate?: ()
         >
           {t.markAll}
         </button>
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            aria-label={t.menu}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            data-testid="bell-menu"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-panel-2"
+          >
+            <MoreHorizontal className="size-4" aria-hidden="true" />
+          </button>
+          {menuOpen && (
+            <div role="menu" className="absolute right-0 top-9 z-20 min-w-[180px] rounded-lg border border-panel-line bg-panel py-1 shadow-lg">
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="bell-clear-read"
+                onClick={() => {
+                  setMenuOpen(false);
+                  clear.mutate({ read: true });
+                }}
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-panel-2"
+              >
+                {t.clearRead}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="bell-clear-all"
+                onClick={clearAll}
+                className="block w-full px-3 py-2 text-left text-sm text-bad hover:bg-panel-2"
+              >
+                {t.clearAll}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <div role="group" aria-label="Filtrer" className="flex flex-wrap gap-1.5 px-4 py-2.5">
         {(Object.keys(t.filters) as BellFilter[]).map((f) => (
@@ -104,7 +169,7 @@ export function BellList({ onNavigate, pageSize = "popover" }: { onNavigate?: ()
           lastDay = day;
           const { icon: Icon, tone } = ICONS[n.event] ?? ICONS.platform;
           return (
-            <li key={n.id}>
+            <li key={n.id} className="group relative">
               {header && <p className="px-4 pb-1 pt-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{header}</p>}
               <button
                 type="button"
@@ -112,7 +177,7 @@ export function BellList({ onNavigate, pageSize = "popover" }: { onNavigate?: ()
                 data-testid={`bell-item-${n.id}`}
                 data-unread={n.readAt ? undefined : "true"}
                 className={cn(
-                  "flex w-full gap-3 border-l-[3px] px-4 py-3 text-left hover:bg-panel-2",
+                  "flex w-full gap-3 border-l-[3px] py-3 pl-4 pr-11 text-left hover:bg-panel-2",
                   n.readAt ? "border-transparent" : "border-lime bg-lime/10",
                 )}
               >
@@ -124,6 +189,16 @@ export function BellList({ onNavigate, pageSize = "popover" }: { onNavigate?: ()
                   <span className="block text-[13px] text-muted-foreground">{n.body}</span>
                 </span>
                 <span className="tabular shrink-0 font-mono text-xs text-muted-foreground">{time(n.createdAt)}</span>
+              </button>
+              <button
+                type="button"
+                aria-label={t.clearOne}
+                title={t.clearOne}
+                data-testid={`bell-clear-${n.id}`}
+                onClick={() => clear.mutate({ ids: [n.id] })}
+                className="absolute right-2 top-2.5 flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-panel-line hover:text-foreground lg:opacity-0 lg:focus:opacity-100 lg:group-hover:opacity-100"
+              >
+                <X className="size-4" aria-hidden="true" />
               </button>
             </li>
           );

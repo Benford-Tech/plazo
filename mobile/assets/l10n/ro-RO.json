@@ -2801,7 +2801,18 @@
       "bookings": "Rezervări",
       "shuttle": "Navetă",
       "team": "Echipă"
-    }
+    },
+    "menu": "Mai multe acțiuni",
+    "clear_read": "Șterge cele citite",
+    "clear_all": "Șterge tot…",
+    "clear_one": "Șterge",
+    "clear_all_title": "Ștergeți toate notificările?",
+    "clear_all_body": "Dispar din clopoțelul dvs., în Plazo Pro și pe web. Colegii le păstrează pe ale lor.",
+    "clear_all_confirm": "Șterge tot",
+    "cancel": "Anulează",
+    "cleared": "{} notificare(i) ștearsă(e).",
+    "cleared_none": "Nimic de șters.",
+    "clear_failed": "Notificările nu au putut fi șterse."
   },
   "notif_channels": {
     "title": "Unde ajunge fiecare notificare",

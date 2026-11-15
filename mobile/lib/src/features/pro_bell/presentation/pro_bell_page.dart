@@ -84,6 +84,51 @@ class _ProBellPageState extends State<ProBellPage> {
     } catch (_) {}
   }
 
+  /// 15/11/2026 (choix C): swiped away, the row leaves at once; it comes back if the server refuses.
+  Future<void> _clearOne(BellNotification n) async {
+    final before = _items;
+    setState(() => (_items = [for (final x in _items) if (x.id != n.id) x], _unread = n.unread && _unread > 0 ? _unread - 1 : _unread));
+    try {
+      final (_, unread) = await _source.clear(ids: [n.id]);
+      if (mounted) setState(() => _unread = unread);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _items = before);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('bell.clear_failed'.tr())));
+    }
+  }
+
+  Future<void> _clearMany({required bool all}) async {
+    if (all) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('bell.clear_all_title'.tr()),
+          content: Text('bell.clear_all_body'.tr()),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text('bell.cancel'.tr())),
+            TextButton(
+              key: const Key('bell-clear-all-confirm'),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('bell.clear_all_confirm'.tr(), style: AppText.strong(size: 14, color: AppColors.danger)),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    try {
+      final (cleared, unread) = all ? await _source.clear(all: true) : await _source.clear(read: true);
+      if (!mounted) return;
+      setState(() => (_items = all ? const [] : [for (final x in _items) if (x.unread) x], _unread = unread));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(cleared > 0 ? 'bell.cleared'.tr(args: ['$cleared']) : 'bell.cleared_none'.tr())),
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('bell.clear_failed'.tr())));
+    }
+  }
+
   Future<void> _open(BellNotification n) async {
     if (n.unread) {
       setState(() => (_items = [for (final x in _items) x.id == n.id ? x.read() : x], _unread = _unread > 0 ? _unread - 1 : 0));
@@ -127,7 +172,27 @@ class _ProBellPageState extends State<ProBellPage> {
         );
         lastDay = day;
       }
-      rows.add(_Row(notification: n, onTap: () => _open(n)));
+      rows.add(
+        Dismissible(
+          key: Key('bell-dismiss-${n.id}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            color: AppColors.danger,
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.delete_outline_rounded, color: AppColors.surface, size: 20),
+                const SizedBox(width: 6),
+                Text('bell.clear_one'.tr(), style: AppText.strong(size: 14, color: AppColors.surface)),
+              ],
+            ),
+          ),
+          onDismissed: (_) => _clearOne(n),
+          child: _Row(notification: n, onTap: () => _open(n)),
+        ),
+      );
     }
     return Scaffold(
       appBar: BrandAppBar(
@@ -138,6 +203,20 @@ class _ProBellPageState extends State<ProBellPage> {
             key: const Key('bell-mark-all'),
             onPressed: _unread == 0 ? null : _markAll,
             child: Text('bell.mark_all'.tr(), style: AppText.strong(size: 14, color: _unread == 0 ? AppColors.muted : AppColors.accent)),
+          ),
+          PopupMenuButton<String>(
+            key: const Key('bell-menu'),
+            tooltip: 'bell.menu'.tr(),
+            icon: const Icon(Icons.more_horiz_rounded),
+            onSelected: (v) => _clearMany(all: v == 'all'),
+            itemBuilder: (_) => [
+              PopupMenuItem(key: const Key('bell-clear-read'), value: 'read', child: Text('bell.clear_read'.tr())),
+              PopupMenuItem(
+                key: const Key('bell-clear-all'),
+                value: 'all',
+                child: Text('bell.clear_all'.tr(), style: AppText.body(size: 14, color: AppColors.danger)),
+              ),
+            ],
           ),
         ],
       ),

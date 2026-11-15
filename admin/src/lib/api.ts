@@ -1307,6 +1307,9 @@ export const adminApi = {
   bellCount: () => apiRequest<{ unread: number }>("/internal/notifications/count"),
   markBellRead: (ids?: string[]) =>
     apiRequest<{ unread: number }>("/internal/notifications/read", { method: "POST", body: JSON.stringify(ids ? { ids } : {}) }),
+  /** 15/11/2026: erases some of the member's notifications, the read ones or all of them. */
+  clearBell: (scope: { ids: string[] } | { read: true } | { all: true }) =>
+    apiRequest<{ cleared: number; unread: number }>("/internal/notifications/clear", { method: "POST", body: JSON.stringify(scope) }),
   notificationChannels: () => apiRequest<NotificationChannels>("/internal/notifications/channels"),
   setNotificationChannels: (channels: Partial<Record<NotificationEvent, Partial<ChannelSet>>>) =>
     apiRequest<NotificationChannels>("/internal/notifications/channels", { method: "PUT", body: JSON.stringify({ channels }) }),

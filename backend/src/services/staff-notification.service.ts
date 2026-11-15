@@ -214,6 +214,16 @@ export class StaffNotificationService {
     return { unread: await this.unreadCount(actor) };
   }
 
+  /**
+   * 15/11/2026 (« pouvoir nettoyer les notifications », choix C): the member erases some of their notifications, the read
+   * ones or all of them. Never another member's.
+   */
+  public async clear(actor: AuthenticatedStaff, scope: { ids: string[] } | 'read' | 'all') {
+    const which = scope === 'all' ? {} : scope === 'read' ? { readAt: { not: null } } : { id: { in: scope.ids } };
+    const { count } = await prisma.staffNotification.deleteMany({ where: { staffId: actor.id, ...which } });
+    return { cleared: count, unread: await this.unreadCount(actor) };
+  }
+
   /** Nightly: the bell forgets after 30 days. */
   public async purge(now = new Date()): Promise<number> {
     const { count } = await prisma.staffNotification.deleteMany({

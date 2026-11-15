@@ -2585,6 +2585,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `VAPID_SUBJECT` facultatif (`mailto:contact@plazo.fr`) ; `WEB_PUSH=off` coupe les notifications du navigateur (colonne grisée,
   `POST …/browsers` 409 `web_push_unavailable`). Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
   `bell_test.dart`.
+  **Nettoyer la cloche, choix C (15/11/2026, « pouvoir nettoyer les notifications »)** : `POST /internal/notifications/clear`
+  `{ ids }` · `{ read: true }` · `{ all: true }` (les siennes seulement, 400 `ids` sans portée, → `{ cleared, unread }`,
+  `StaffNotificationService.clear`) ; web : croix sur chaque notification (au survol dès `lg`, toujours sur téléphone ;
+  `bell-clear-<id>`) et menu « ⋯ » (`bell-menu`) avec « Effacer les lues » et « Tout effacer… » confirmé (`BellList`) ; Plazo Pro :
+  glisser une ligne vers la gauche (« Effacer », la ligne revient si le serveur refuse) et le même menu en tête (`ProBellPage`,
+  `BellDataSource.clear`), textes dans les neuf langues.
 
 - **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
   puis « B » des maquettes https://claude.ai/artifact/U5yH8L745Z13325mqadks1)** : `Operator.logoKey` / `logoUpdatedAt` (migration

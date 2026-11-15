@@ -1515,6 +1515,16 @@ export const fr = {
     pageTitle: "Notifications",
     pageIntro: "Les 30 derniers jours. Un clic ouvre ce dont parle la notification.",
     failed: "Les notifications n'ont pas pu être lues.",
+    // 15/11/2026 (« pouvoir nettoyer les notifications », choix C).
+    menu: "Plus d'actions",
+    clearRead: "Effacer les lues",
+    clearAll: "Tout effacer…",
+    clearOne: "Effacer cette notification",
+    clearAllTitle: "Effacer toutes vos notifications ?",
+    clearAllBody: "Elles disparaissent de votre cloche, sur le web et dans Plazo Pro. Vos collègues gardent les leurs.",
+    clearAllConfirm: "Tout effacer",
+    cleared: (n: number) => (n ? `${n} notification${n > 1 ? "s" : ""} effacée${n > 1 ? "s" : ""}.` : "Rien à effacer."),
+    clearFailed: "Les notifications n'ont pas pu être effacées.",
   },
   notifChannels: {
     title: "Mes notifications",
