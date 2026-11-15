@@ -10,7 +10,15 @@ import {
   validateProspect,
   validateTranslations,
 } from '@/domain/prospecting';
-import { parseLanguage, parseRegion, prospectLanguage, regionLanguage, regionOfAirport, sortedRegions } from '@/domain/prospect-regions';
+import {
+  parseLanguage,
+  PROSPECT_LANGUAGES,
+  parseRegion,
+  prospectLanguage,
+  regionLanguage,
+  regionOfAirport,
+  sortedRegions,
+} from '@/domain/prospect-regions';
 
 /** 13/11/2026 (« fais les 3 »): the European prospects (countries, mails in German and English, email optional). */
 
@@ -62,21 +70,29 @@ describe('prospects européens : langue des mails', () => {
     expect(regionLanguage('belgique', 'CRL')).toBe('fr');
     expect(regionLanguage('suisse', 'ZRH')).toBe('de');
     expect(regionLanguage('suisse', 'GVA')).toBe('fr');
-    expect(regionLanguage('suisse', 'LUG')).toBe('en');
-    expect(regionLanguage('espagne', 'MAD')).toBe('en');
+    // 15/11/2026 (« Les mails sont à envoyer dans la langue du pays »): each country's own language.
+    expect(regionLanguage('suisse', 'LUG')).toBe('it');
+    expect(regionLanguage('espagne', 'MAD')).toBe('es');
+    expect(regionLanguage('royaume-uni', 'LHR')).toBe('en');
+    expect(regionLanguage('irlande', 'DUB')).toBe('en');
+    expect(regionLanguage('norvege', 'OSL')).toBe('nb');
+    expect(regionLanguage('grece', 'ATH')).toBe('el');
     expect(prospectLanguage({ language: null, region: null, airportCode: 'HAM' })).toBe('de');
     expect(prospectLanguage({ language: 'en', region: null, airportCode: 'HAM' })).toBe('en');
-    expect(prospectLanguage({ language: null, region: 'pologne', airportCode: 'LYS' })).toBe('en');
+    expect(prospectLanguage({ language: null, region: 'pologne', airportCode: 'LYS' })).toBe('pl');
     expect(parseLanguage('Allemand')).toBe('de');
     expect(parseLanguage('English')).toBe('en');
+    expect(parseLanguage('Espagnol')).toBe('es');
+    expect(parseLanguage('Tchèque')).toBe('cs');
     expect(parseLanguage('klingon')).toBeNull();
   });
 
   it('les textes allemands et anglais ne connaissent que les variables de Plazo, et gardent les délais du français', () => {
-    for (const language of ['de', 'en'] as const) {
+    for (const language of PROSPECT_LANGUAGES) {
       for (const step of defaultSteps('Plazo', language)) {
         expect(unknownVariables(`${step.subject}\n${step.body}`)).toEqual([]);
         expect(step.body).toContain('{lien_demo}');
+        expect(step.body).not.toContain('undefined');
       }
     }
     const fr = defaultSteps('Plazo').map(s => ({ ...s, delayDays: s.step === 1 ? 0 : s.step === 2 ? 5 : 12 }));
@@ -92,6 +108,13 @@ describe('prospects européens : langue des mails', () => {
     expect(saved.en[1]).toMatchObject({ subject: 'Subject 2', body: 'Hello {prénom}, 2', delayDays: 5 });
     // A damaged translation: Plazo's own texts.
     expect(sequencesOf(fr, { de: 'x' }, 'Plazo').de[0].subject).toBe(sequences.de[0].subject);
+    expect(sequences.es.map(s => [s.delayDays, s.enabled])).toEqual([
+      [0, true],
+      [5, true],
+      [12, false],
+    ]);
+    expect(sequences.es[0].subject).toBe('{parking}: sus reservas, sin volver a teclearlas');
+    expect(sequences.pl[0].body).toMatch(/^Dzień dobry \{prénom\},\n\n/);
   });
 
   it('les traductions enregistrées : objet et texte requis, variables connues', () => {

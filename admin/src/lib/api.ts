@@ -150,6 +150,7 @@ import type {
   BillingSettings,
   BillingSettingsInput,
   ReservationInvoices,
+  ProspectLanguage,
 } from "./types";
 
 import type {
@@ -1552,7 +1553,7 @@ export const adminApi = {
     prospectId?: string | null;
     subject?: string;
     body?: string;
-    language?: "fr" | "de" | "en";
+    language?: ProspectLanguage;
   }) =>
     apiRequest<{ sentTo: string }>("/internal/platform/prospects/test", {
       method: "POST",
@@ -1565,8 +1566,8 @@ export const adminApi = {
   updateProspectingSettings: (input: {
     steps: ProspectingStep[];
     dailyCap: number;
-    /** 13/11/2026: the German and English subjects and texts; absent: kept. */
-    translations?: Partial<Record<"de" | "en", { subject: string; body: string }[]>>;
+    /** 13/11/2026: the subjects and texts of the other languages (every European one since 15/11/2026); absent: kept. */
+    translations?: Partial<Record<Exclude<ProspectLanguage, "fr">, { subject: string; body: string }[]>>;
   }) =>
     apiRequest<{ data: ProspectingSettings }>(
       "/internal/platform/prospects/settings",

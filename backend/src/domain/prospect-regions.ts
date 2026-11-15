@@ -309,28 +309,51 @@ export function sortedRegions(): { key: RegionKey; label: string; country: boole
 
 // ---- Langue des mails (13/11/2026, « fais les 3 ») -----------------------------------------------------------------
 
-export const PROSPECT_LANGUAGES = ['fr', 'de', 'en'] as const;
+// 15/11/2026 (« Les mails sont à envoyer dans la langue du pays »): each country's own language, not English.
+export const PROSPECT_LANGUAGES = ['fr', 'de', 'en', 'es', 'it', 'pt', 'nl', 'pl', 'ro', 'sv', 'da', 'nb', 'fi', 'hu', 'cs', 'et', 'el'] as const;
 export type ProspectLanguage = (typeof PROSPECT_LANGUAGES)[number];
 export const isProspectLanguage = (value: unknown): value is ProspectLanguage =>
   typeof value === 'string' && (PROSPECT_LANGUAGES as readonly string[]).includes(value);
 
-/** German-speaking Swiss airports; the others (Geneva, Sion) get French, Lugano English. */
+/** German-speaking Swiss airports; the others (Geneva, Sion) get French, Lugano Italian. */
 const SWISS_GERMAN = new Set(['ZRH', 'BRN']);
 
+/** The language of each country (15/11/2026): its own, French in Belgium and Luxembourg, English in Ireland and the UK. */
+const COUNTRY_LANGUAGES: Partial<Record<RegionKey, ProspectLanguage>> = {
+  allemagne: 'de',
+  autriche: 'de',
+  belgique: 'fr',
+  luxembourg: 'fr',
+  danemark: 'da',
+  espagne: 'es',
+  estonie: 'et',
+  finlande: 'fi',
+  grece: 'el',
+  hongrie: 'hu',
+  irlande: 'en',
+  italie: 'it',
+  norvege: 'nb',
+  'pays-bas': 'nl',
+  pologne: 'pl',
+  portugal: 'pt',
+  'republique-tcheque': 'cs',
+  roumanie: 'ro',
+  'royaume-uni': 'en',
+  suede: 'sv',
+};
+
 /**
- * The language of a prospect's mails when none was chosen by hand: French in France, Belgium and Luxembourg, German in
- * Germany and Austria, by the airport in Switzerland, English anywhere else in Europe; French without a region.
+ * The language of a prospect's mails when none was chosen by hand: the country's own (15/11/2026), by the airport in
+ * Switzerland, English for a country without one; French in France and without a region.
  */
 export function regionLanguage(region: RegionKey | null, airportCode: string | null): ProspectLanguage {
   if (!region || !isCountry(region)) return 'fr';
-  if (region === 'allemagne' || region === 'autriche') return 'de';
-  if (region === 'belgique' || region === 'luxembourg') return 'fr';
   if (region === 'suisse') {
     const code = airportCode?.toUpperCase() ?? '';
     if (SWISS_GERMAN.has(code)) return 'de';
-    return code === 'LUG' ? 'en' : 'fr';
+    return code === 'LUG' ? 'it' : 'fr';
   }
-  return 'en';
+  return COUNTRY_LANGUAGES[region] ?? 'en';
 }
 
 /** The chosen language, else the region's. */
@@ -350,6 +373,65 @@ const LANGUAGE_NAMES: Record<string, ProspectLanguage> = {
   en: 'en',
   anglais: 'en',
   english: 'en',
+  es: 'es',
+  espagnol: 'es',
+  spanish: 'es',
+  espanol: 'es',
+  castellano: 'es',
+  it: 'it',
+  italien: 'it',
+  italian: 'it',
+  italiano: 'it',
+  pt: 'pt',
+  portugais: 'pt',
+  portuguese: 'pt',
+  portugues: 'pt',
+  nl: 'nl',
+  neerlandais: 'nl',
+  hollandais: 'nl',
+  flamand: 'nl',
+  dutch: 'nl',
+  nederlands: 'nl',
+  pl: 'pl',
+  polonais: 'pl',
+  polish: 'pl',
+  polski: 'pl',
+  ro: 'ro',
+  roumain: 'ro',
+  romanian: 'ro',
+  romana: 'ro',
+  sv: 'sv',
+  suedois: 'sv',
+  swedish: 'sv',
+  svenska: 'sv',
+  da: 'da',
+  danois: 'da',
+  danish: 'da',
+  dansk: 'da',
+  nb: 'nb',
+  no: 'nb',
+  norvegien: 'nb',
+  norwegian: 'nb',
+  norsk: 'nb',
+  fi: 'fi',
+  finnois: 'fi',
+  finnish: 'fi',
+  suomi: 'fi',
+  hu: 'hu',
+  hongrois: 'hu',
+  hungarian: 'hu',
+  magyar: 'hu',
+  cs: 'cs',
+  tcheque: 'cs',
+  czech: 'cs',
+  cestina: 'cs',
+  et: 'et',
+  estonien: 'et',
+  estonian: 'et',
+  eesti: 'et',
+  el: 'el',
+  grec: 'el',
+  greek: 'el',
 };
 
 /** A language typed in a CSV or the form (« Allemand », « de », « English »). Null when it is not one. */

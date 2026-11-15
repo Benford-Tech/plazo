@@ -2032,6 +2032,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `sendOne`) ; doublon d'un prospect sans adresse = même nom sans accents, forme juridique ni parenthèses, au même aéroport ou sans aéroport d'un côté (`companyKey`, `sameCompany`, import
   et formulaire, 409 `prospect_exists`) ; `Prospect.website` (colonne « site », `normalizeWebsite`, 400 `invalid_website`).
   Tests `prospects-europe.test.ts`, `prospecting.test.ts`, `ProspectingPage.test.tsx`.
+  **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
+  espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
+  estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de
+  `domain/prospect-regions.ts` ; anglais en Irlande et au Royaume-Uni, français en Belgique et au Luxembourg, Lugano en
+  italien) ; les trois mails et les mots autour (raison, éditeur, désinscription, applications, légendes) de chaque langue dans
+  `domain/prospecting-languages.ts` (`LANGUAGE_PACKS`, `packTexts`), sur les délais et étapes actives du français ; migration
+  `prospect_languages` (CHECK de `prospects.language`) ; « Modifier les mails » et le formulaire proposent toutes les langues,
+  pastille « ES », « PL »… Traductions faites par Claude, non relues par un natif.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
   réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
   classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,

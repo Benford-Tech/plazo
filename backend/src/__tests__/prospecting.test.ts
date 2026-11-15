@@ -564,7 +564,7 @@ describe('Plateforme › Prospection : prospects européens (13/11/2026, « fais
       language: 'de',
       languageOverride: null,
     });
-    expect(byName['Lot Park Fictif']).toMatchObject({ region: { key: 'pologne', manual: true }, language: 'en' });
+    expect(byName['Lot Park Fictif']).toMatchObject({ region: { key: 'pologne', manual: true }, language: 'pl' });
     expect((await api().get(P).query({ region: 'allemagne' }).set(auth(admin.token))).body.data).toHaveLength(3);
 
     const ids = list.body.data.map((p: any) => p.id);
