@@ -623,7 +623,7 @@ export default function ProspectingPage() {
                                     title={t.languageOf(t.languages[p.language])}
                                     className="mt-0.5 inline-block rounded-full bg-info-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-info-text"
                                   >
-                                    {t.languageShort[p.language]}
+                                    {t.languageShort(p.language)}
                                   </span>
                                 )}
                               </td>

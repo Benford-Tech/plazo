@@ -2052,7 +2052,9 @@ export type ProspectStatus =
   | "unsubscribed";
 
 /** 13/11/2026 (« fais les 3 »): the language of a prospect's mails. */
-export type ProspectLanguage = "fr" | "de" | "en";
+// 15/11/2026 (« Les mails sont à envoyer dans la langue du pays »): each European country's own language.
+export const PROSPECT_LANGUAGES = ["fr", "de", "en", "es", "it", "pt", "nl", "pl", "ro", "sv", "da", "nb", "fi", "hu", "cs", "et", "el"] as const;
+export type ProspectLanguage = (typeof PROSPECT_LANGUAGES)[number];
 
 export interface Prospect {
   id: string;

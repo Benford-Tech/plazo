@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
-import type { Prospect, ProspectInput } from "@/lib/types";
+import { PROSPECT_LANGUAGES, type Prospect, type ProspectInput } from "@/lib/types";
 import { Modal } from "./Modal";
 
 const t = fr.platform.prospecting;
 type Key = Exclude<keyof ProspectInput, "region" | "language">;
 type Form = Record<Key, string>;
 const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "website", "notes"];
-const LANGUAGES = ["fr", "de", "en"] as const;
+const LANGUAGES = PROSPECT_LANGUAGES;
 
 const formOf = (p: Prospect | null): Form =>
   Object.fromEntries(KEYS.map(k => [k, (p?.[k] as string | null) ?? ""])) as Form;

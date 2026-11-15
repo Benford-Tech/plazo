@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { APPLE_REVIEW_NOTE, proStoreBadges, storeBadgesHtml, travellerStoreBadges } from './account-messages';
 import { EmailMessage } from './booking-messages';
 import { parseLanguage, parseRegion, PROSPECT_LANGUAGES, ProspectLanguage, RegionKey } from './prospect-regions';
+import { Chrome, LANGUAGE_PACKS, PackLanguage, packTexts } from './prospecting-languages';
 export type { ProspectLanguage } from './prospect-regions';
 export { displayPhone } from '@/domain/phone';
 import { displayPhone } from '@/domain/phone';
@@ -53,6 +54,15 @@ export type TemplateValues = Record<VariableName, string>;
 export function defaultSteps(productName: string, language: ProspectLanguage = 'fr'): SequenceStep[] {
   if (language === 'de') return germanSteps(productName);
   if (language === 'en') return englishSteps(productName);
+  if (language !== 'fr') {
+    // 15/11/2026: the other European languages, on the French sequence's delays and switches.
+    const texts = packTexts(LANGUAGE_PACKS[language], productName);
+    return frenchSteps(productName).map((s, i) => ({ ...s, subject: texts[i].subject, body: texts[i].body }));
+  }
+  return frenchSteps(productName);
+}
+
+function frenchSteps(productName: string): SequenceStep[] {
   // 08/11/2026 (« un mail concis avec les liens store et le lien de démo, une liste des fonctionnalités de Plazo Pro et
   // l'avantage pour leurs utilisateurs ; dis qu'une dizaine de parkings l'utilisent déjà »): short mails, the features as a
   // list, what the parking's customers gain, {lien_demo} (the button) in each; the store badges are added by prospectEmail.
@@ -317,24 +327,7 @@ function linkify(escaped: string): string {
   return escaped.replace(/https?:\/\/[^\s<]+?(?=[.,;:!?)]*(?:\s|$))/g, url => `<a href="${url}" style="color:#1E5E2E">${url}</a>`);
 }
 
-/** The words around the text, in the prospect's language (13/11/2026). */
-interface Chrome {
-  why: (parking: string, product: string) => string;
-  who: (product: string, publisher: string) => string;
-  stop: (product: string) => string;
-  demo: (product: string) => string;
-  teamApp: (product: string) => string;
-  travellerApp: (product: string) => string;
-  proPlay: (product: string) => string;
-  proApple: (product: string) => string;
-  appPlay: (product: string) => string;
-  appApple: (product: string) => string;
-  appleSoon: string;
-  screens: [string, string, string];
-  bannerAlt: string;
-  unsubscribeSubject: string;
-}
-
+/** The words around the text, in the prospect's language (13/11/2026; every European language since 15/11/2026). */
 const CHROME: Record<ProspectLanguage, Chrome> = {
   fr: {
     why: (parking, product) =>
@@ -387,6 +380,7 @@ const CHROME: Record<ProspectLanguage, Chrome> = {
     bannerAlt: 'Plazo Pro, the software for airport car parks: live shuttles, comparison-site bookings, every car in its space',
     unsubscribeSubject: 'Stop receiving messages',
   },
+  ...(Object.fromEntries(Object.entries(LANGUAGE_PACKS).map(([code, pack]) => [code, pack.chrome])) as Record<PackLanguage, Chrome>),
 };
 
 /** The subject of the mailto of List-Unsubscribe, in the prospect's language. */
@@ -793,11 +787,11 @@ export function sequencesOf(storedSteps: unknown, storedTranslations: unknown, p
   const fr = stepsOf(storedSteps, productName);
   const checked = validateTranslations(storedTranslations);
   const saved = checked.ok ? checked.value : {};
-  const translate = (language: 'de' | 'en'): SequenceStep[] => {
+  const translate = (language: Exclude<ProspectLanguage, 'fr'>): SequenceStep[] => {
     const texts = saved[language] ?? defaultSteps(productName, language);
     return fr.map((s, i) => ({ ...s, subject: texts[i].subject, body: texts[i].body }));
   };
-  return { fr, de: translate('de'), en: translate('en') };
+  return Object.fromEntries(PROSPECT_LANGUAGES.map(l => [l, l === 'fr' ? fr : translate(l)])) as Sequences;
 }
 
 /** The steps saved in the database, or Plazo's texts when the value is missing or damaged. */

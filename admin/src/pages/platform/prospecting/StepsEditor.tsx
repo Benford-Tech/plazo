@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { VARIABLES } from "@/lib/prospecting";
-import type { ProspectLanguage, ProspectingSettings, ProspectingStep } from "@/lib/types";
+import { PROSPECT_LANGUAGES, type ProspectLanguage, type ProspectingSettings, type ProspectingStep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Modal } from "./Modal";
 
 const t = fr.platform.prospecting;
-const LANGUAGES: ProspectLanguage[] = ["fr", "de", "en"];
+type Other = Exclude<ProspectLanguage, "fr">;
+const OTHERS = PROSPECT_LANGUAGES.filter((l): l is Other => l !== "fr");
 type Texts = { subject: string; body: string }[];
 
 /**
@@ -23,16 +24,18 @@ type Texts = { subject: string; body: string }[];
 export function StepsEditor({ settings, onClose }: { settings: ProspectingSettings; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [steps, setSteps] = useState<ProspectingStep[]>(() => settings.steps.map(s => ({ ...s })));
-  const [texts, setTexts] = useState<Record<"de" | "en", Texts>>(() => ({
-    de: (settings.sequences?.de ?? settings.steps).map(s => ({ subject: s.subject, body: s.body })),
-    en: (settings.sequences?.en ?? settings.steps).map(s => ({ subject: s.subject, body: s.body })),
-  }));
-  const [touched, setTouched] = useState<Set<"de" | "en">>(new Set());
+  const [texts, setTexts] = useState<Record<Other, Texts>>(
+    () =>
+      Object.fromEntries(
+        OTHERS.map(l => [l, (settings.sequences?.[l] ?? settings.steps).map(s => ({ subject: s.subject, body: s.body }))]),
+      ) as Record<Other, Texts>,
+  );
+  const [touched, setTouched] = useState<Set<Other>>(new Set());
   const [language, setLanguage] = useState<ProspectLanguage>("fr");
   const [cap, setCap] = useState(String(settings.dailyCap));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const change = (n: number, patch: Partial<ProspectingStep>) => setSteps(list => list.map(s => (s.step === n ? { ...s, ...patch } : s)));
-  const changeText = (lang: "de" | "en", n: number, patch: Partial<Texts[number]>) => {
+  const changeText = (lang: Other, n: number, patch: Partial<Texts[number]>) => {
     setTexts(all => ({ ...all, [lang]: all[lang].map((s, i) => (i === n - 1 ? { ...s, ...patch } : s)) }));
     setTouched(set => new Set(set).add(lang));
   };
@@ -72,7 +75,7 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
         {t.editorHelp} {t.variables} {VARIABLES.join(" ")}
       </p>
       <div role="group" aria-label={t.editorLanguage} className="flex flex-wrap gap-2">
-        {LANGUAGES.map(l => (
+        {PROSPECT_LANGUAGES.map(l => (
           <button
             key={l}
             type="button"
