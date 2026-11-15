@@ -207,6 +207,8 @@ describe('le fil de messages du voyageur (B)', () => {
       phone: { checked: 0, offline: 0, alerted: 0 },
       // 09/11/2026: the inbound emails' watch (its morning report depends on the hour of the run).
       inbound: expect.objectContaining({ alerted: 0, operators: 0 }),
+      // 15/11/2026: the welcome email to the travellers of the other channels (none here: a booking made on Plazo).
+      welcome: { sent: 0, skipped: 0, failed: 0 },
     });
   });
 

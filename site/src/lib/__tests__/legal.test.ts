@@ -118,7 +118,12 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("15 novembre 2026"); // sent SMS text in « Messages » (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("15 novembre 2026"); // the welcome email and the sent SMS text in « Messages » (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+  });
+
+  it("tells about the welcome email to the travellers of the other channels and its opt-out (15/11/2026)", () => {
+    expect(all).toContain("par un seul e-mail par parking et par an");
+    expect(all).toContain("le lien « Ne plus recevoir ces messages » de cet e-mail y met fin pour de bon");
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {

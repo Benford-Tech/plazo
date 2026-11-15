@@ -182,6 +182,7 @@ export class NotificationService {
     about: string,
     message: EmailMessage,
     attachments: { name: string; content: Buffer }[] = [],
+    headers: Record<string, string> = {},
   ): Promise<boolean> {
     if (!this.canSendEmail()) {
       logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
@@ -194,6 +195,7 @@ export class NotificationService {
       htmlContent: message.html,
       textContent: message.text,
       tags: [tag],
+      ...(Object.keys(headers).length ? { headers } : {}),
       // The signed contract as a PDF (26/10/2026); Brevo takes base64.
       ...(attachments.length ? { attachment: attachments.map(a => ({ name: a.name, content: a.content.toString('base64') })) } : {}),
     });
