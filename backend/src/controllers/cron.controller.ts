@@ -2,6 +2,7 @@ import { ReservationTrashService } from '@/services/reservation-trash.service';
 import { ProspectDemoService } from '@/services/prospect-demo.service';
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
+import { InvitationTrackingService } from '@/services/invitation-tracking.service';
 import { AppLinkService } from '@/services/app-link.service';
 import { ArrivalService } from '@/services/arrival.service';
 import { BookingDigestService } from '@/services/booking-digest.service';
@@ -261,6 +262,7 @@ export class CronController {
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const appDevicesPurged = await Container.get(TravellerAppDeviceService).purge();
+    const invitationTrackingsPurged = await Container.get(InvitationTrackingService).purge();
     const appActivityPurged = await Container.get(AppUsageService).purge();
     const carLocationsPurged = await this.returns.purgeCarLocations();
     // Forwarded confirmation emails: text after 30 days, rows after 90 (M-A).
@@ -308,6 +310,7 @@ export class CronController {
       whatsappPurged,
       travellerDevicesPurged,
       appDevicesPurged,
+      invitationTrackingsPurged,
       appActivityPurged,
       carLocationsPurged,
       inboundEmails,

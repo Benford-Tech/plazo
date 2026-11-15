@@ -11,6 +11,7 @@ import {
 } from '@/config';
 import prisma from '@/database';
 import { existingAccountEmail, invitationEmail, verificationEmail } from '@/domain/account-messages';
+import { withOpenPixel } from '@/domain/invitation-tracking';
 import { AcceptInvitationDto, SignupDto } from '@/dtos/auth.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -19,6 +20,7 @@ import { logger } from '@/utils/logger';
 import { AccountTokenService } from './account-token.service';
 import { AuditService } from './audit.service';
 import { normalizeEmail } from './auth.service';
+import { InvitationTrackingService, SignInClient } from './invitation-tracking.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
 import { StaffService } from './staff.service';
@@ -49,6 +51,7 @@ export class AccountService {
   public notifications = Container.get(NotificationService);
   public tokens = Container.get(TokenService);
   public audit = Container.get(AuditService);
+  public tracking = Container.get(InvitationTrackingService);
 
   // ---- Sign-up ----------------------------------------------------------------------------------
 
@@ -164,25 +167,31 @@ export class AccountService {
   public async sendInvitation(staff: { id: string; email: string; name: string }, operatorName: string) {
     const { token, expiresAt } = await this.accountTokens.issue(staff.id, 'invitation', INVITATION_TTL_MS);
     const url = this.notifications.proUrl(`/invitation#${token}`);
-    const sent = await this.notifications.emailStaff(
-      staff,
-      'invitation',
-      `staff ${staff.id}`,
-      invitationEmail(PRODUCT_NAME, {
-        operatorName,
-        url,
-        days: INVITATION_TTL_DAYS,
-        demoUrl: this.notifications.siteUrl('/pro/demo'),
-        playStoreUrl: PLAZO_PRO_PLAY_STORE_URL,
-        appStoreUrl: PLAZO_PRO_APP_STORE_URL,
-        badgesBase: this.notifications.siteUrl(''),
-      }),
-    );
+    // 15/11/2026: Plateforme › Invitations follows what each email led to (open, clicks, password, Plazo Pro).
+    const { operatorId } = await prisma.staff.findUniqueOrThrow({ where: { id: staff.id }, select: { operatorId: true } });
+    const tracking = await this.tracking.start(staff.id, operatorId, 'operator');
+    const email = invitationEmail(PRODUCT_NAME, {
+      operatorName,
+      url,
+      days: INVITATION_TTL_DAYS,
+      demoUrl: tracking.demoUrl,
+      playStoreUrl: tracking.playStoreUrl,
+      appStoreUrl: tracking.appStoreUrl,
+      badgesBase: this.notifications.siteUrl(''),
+    });
+    const sent = await this.notifications.emailStaff(staff, 'invitation', `staff ${staff.id}`, {
+      ...email,
+      html: withOpenPixel(email.html, tracking.pixelUrl),
+    });
+    await this.tracking.sent(tracking.id, sent);
     return { emailSent: sent, expiresAt, ...(sent ? {} : { inviteUrl: url }) };
   }
 
   /** What the invitation page shows before the password is chosen. */
-  public async invitation(token: string): Promise<{
+  public async invitation(
+    token: string,
+    userAgent: string | null = null,
+  ): Promise<{
     email: string;
     operatorName: string;
     role: string;
@@ -191,6 +200,7 @@ export class AccountService {
     const row = await this.accountTokens.find(token, 'invitation');
     if (!row) throw invalidLink();
     const staff = await prisma.staff.findUniqueOrThrow({ where: { id: row.staffId }, include: { operator: true } });
+    await this.tracking.pageOpened(staff.id, userAgent);
     // 26/10/2026: a team member (not a manager) is sent to Plazo Pro once the password is chosen.
     return {
       email: staff.email,
@@ -201,7 +211,7 @@ export class AccountService {
   }
 
   /** Sets the invited manager's password (which also proves the email) and opens a session. */
-  public async acceptInvitation(data: AcceptInvitationDto, metadata: { userAgent: string | null }) {
+  public async acceptInvitation(data: AcceptInvitationDto, metadata: SignInClient) {
     const password = await hash(data.password, BCRYPT_ROUNDS);
     const staffId = await prisma.$transaction(async tx => {
       const id = await this.accountTokens.consume(data.token, 'invitation', tx);
@@ -210,6 +220,8 @@ export class AccountService {
       return id;
     });
     if (!staffId) throw invalidLink();
+    await this.tracking.passwordSet(staffId);
+    await this.tracking.signedIn(staffId, metadata);
     const staff = await prisma.staff.findUniqueOrThrow({ where: { id: staffId }, include: { operator: true } });
     await this.tokens.revokeAll(staff.id);
     await this.audit.record(
@@ -222,7 +234,7 @@ export class AccountService {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { operator, ...rest } = staff;
     return {
-      tokenData: await this.tokens.generateAuthTokens(staff.id, metadata),
+      tokenData: await this.tokens.generateAuthTokens(staff.id, { userAgent: metadata.userAgent }),
       user: await Container.get(StaffService).sessionUser({ ...rest, operatorName: operator.name }),
     };
   }

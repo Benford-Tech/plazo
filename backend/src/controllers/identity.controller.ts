@@ -5,6 +5,7 @@ import { AppleSignInDto, DeleteIdentityDto, GoogleSignInDto, JoinParkingDto } fr
 import { RequestWithIdentity } from '@/middlewares/identity-auth.middleware';
 import { rateLimitKey } from '@/middlewares/rateLimiter';
 import { OnboardingService } from '@/services/onboarding.service';
+import { signInClient } from '@/utils/sign-in-client';
 import catchAsync from '@/utils/catchAsync';
 
 /** Plazo Pro sign-in with Apple / Google and « Rejoindre un parking » (13/10/2026). */
@@ -19,13 +20,13 @@ export class IdentityController {
   /** POST /internal/auth/apple */
   public apple = catchAsync(async (req: Request, res: Response) => {
     const data: AppleSignInDto = req.body;
-    res.json(await this.onboarding.signInWithApple(data, { userAgent: req.get('user-agent') ?? null }));
+    res.json(await this.onboarding.signInWithApple(data, signInClient(req)));
   });
 
   /** POST /internal/auth/google */
   public google = catchAsync(async (req: Request, res: Response) => {
     const data: GoogleSignInDto = req.body;
-    res.json(await this.onboarding.signInWithGoogle(data, { userAgent: req.get('user-agent') ?? null }));
+    res.json(await this.onboarding.signInWithGoogle(data, signInClient(req)));
   });
 
   /** GET /internal/auth/onboarding */
@@ -41,7 +42,7 @@ export class IdentityController {
 
   /** POST /internal/auth/onboarding/session */
   public session = catchAsync(async (req: Request, res: Response) => {
-    res.json(await this.onboarding.session((req as RequestWithIdentity).identity, { userAgent: req.get('user-agent') ?? null }));
+    res.json(await this.onboarding.session((req as RequestWithIdentity).identity, signInClient(req)));
   });
 
   /** DELETE /internal/auth/onboarding/request */

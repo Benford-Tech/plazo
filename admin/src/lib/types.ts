@@ -2732,6 +2732,27 @@ export interface DeletedReservation {
 }
 
 /** Plateforme › Référencement (06/11/2026, SEO local A + M2). */
+/** Plateforme › Invitations (15/11/2026): the last invitation of each invited person and what followed. */
+export interface PlatformInvitation {
+  id: string;
+  kind: "operator" | "team";
+  operator: { id: string; name: string };
+  staff: { id: string; name: string; email: string; role: string; isActive: boolean };
+  sends: number;
+  sentAt: string;
+  emailSent: boolean;
+  opened: { at: string; lastAt: string | null; count: number; device: string | null } | null;
+  clicked: { at: string; device: string | null } | null;
+  store: { at: string; store: string | null } | null;
+  demoAt: string | null;
+  passwordSetAt: string | null;
+  app: { at: string; platform: string | null } | null;
+  web: { at: string; device: string | null } | null;
+}
+export interface PlatformInvitations {
+  data: PlatformInvitation[];
+  counts: { all: number; not_opened: number; not_clicked: number; no_app: number };
+}
 export interface PlatformApps {
   days: number;
   from: string;
