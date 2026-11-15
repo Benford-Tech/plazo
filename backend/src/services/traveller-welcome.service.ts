@@ -53,6 +53,13 @@ export class TravellerWelcomeService {
         customerEmail: { not: null },
         parking: { listing: { isNot: null } },
         operator: { suspendedAt: null, archivedAt: null, isDemo: false, prospectDemo: false },
+        // Never a traveller who booked through Allopark (« ne pas envoyer le mail d'invitation quand c'est un mail
+        // Allopark », 15/11/2026): neither its name on the booking nor its AL-… number. Written to keep the rows
+        // whose name or number is empty (a NOT over a null column would drop them).
+        AND: [
+          { OR: [{ channelDetail: null }, { NOT: { channelDetail: { equals: 'Allopark', mode: 'insensitive' } } }] },
+          { OR: [{ externalReference: null }, { NOT: { externalReference: { startsWith: 'AL-', mode: 'insensitive' } } }] },
+        ],
       },
       // The id breaks a tie (two bookings of the same instant): the first booked of a traveller gets the mail, every time.
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -168,7 +175,7 @@ export class TravellerWelcomeService {
 
   /**
    * 15/11/2026 (« mets-le à dispo sur Plazo, je ferai le test d'envoi », Plateforme › Notifications): the welcome email of an
-   * example booking (in 5 days, 7 nights, an Allopark number) for the operator chosen, sent to the admin who asks. Nothing is
+   * example booking (in 5 days, 7 nights, a Onepark number) for the operator chosen, sent to the admin who asks. Nothing is
    * recorded on any booking; the links go to the site's « Ma réservation » page.
    */
   public async sendTest(to: { email: string; firstName: string }, operatorId: string | null, now: Date = new Date()) {
@@ -190,7 +197,7 @@ export class TravellerWelcomeService {
       parkingName: parking?.listing?.title || parking?.name || 'Parking des Cèdres',
       arrivalLocal: `${day}T06:30`,
       returnLocal: `${back}T21:40`,
-      reference: 'AL-884880719',
+      reference: '#5908369',
       link,
       unsubscribeUrl: link,
     });
