@@ -20,6 +20,10 @@ on:
         description: "Importer pour de bon (sinon un aperçu seulement)"
         type: boolean
         default: false
+      completer:
+        description: "Compléter les prospects déjà présents (cases vides seulement : site, outil, notes ajoutées)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -42,4 +46,5 @@ jobs:
           PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
           CSV_GZ_B64: ${{ inputs.csv_gz_b64 }}
           APPLY: ${{ inputs.appliquer }}
+          COMPLETE: ${{ inputs.completer }}
         run: python3 .github/scripts/import_prospects.py

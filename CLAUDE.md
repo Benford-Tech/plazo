@@ -2078,6 +2078,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `sendOne`) ; doublon d'un prospect sans adresse = même nom sans accents, forme juridique ni parenthèses, au même aéroport ou sans aéroport d'un côté (`companyKey`, `sameCompany`, import
   et formulaire, 409 `prospect_exists`) ; `Prospect.website` (colonne « site », `normalizeWebsite`, 400 `invalid_website`).
   Tests `prospects-europe.test.ts`, `prospecting.test.ts`, `ProspectingPage.test.tsx`.
+  **Outil détecté et prospects complétés (15/11/2026, « je ne vois plus les colonnes Détail outil, Outil détecté, Site web »)** :
+  `Prospect.tool` (80) et `toolDetail` (200) (migration `prospect_tool`, CHECK), colonnes CSV « outil » / « outil détecté » et
+  « détail outil », champs « Outil détecté » / « Détail de l'outil » du formulaire, colonne « Outil » du tableau (`ToolCell` :
+  pastille verte pour « Pas d'outil… », le détail dessous) ; `POST …/prospects/import` › `complete` : une ligne d'un prospect déjà
+  présent (même e-mail, sinon même nom au même aéroport) remplit ses cases vides (contact, e-mail libre, ville, aéroport,
+  téléphone, site, outil), jamais une case remplie, et ajoute ses notes sous les siennes (`completionOf` de
+  `domain/prospecting.ts`) : issue `completed` avec les champs remplis, `counts.completed`, `updated` ; option « completer » du
+  workflow « Import de prospects ». La page n'envoie pas `complete`. Test `prospecting.test.ts`.
   **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
   espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
   estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de

@@ -56,7 +56,7 @@ export class ProspectingController {
   /** POST /internal/platform/prospects/import */
   public import = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const body = req.body ?? {};
-    res.json(await this.prospecting.importRows(req.staff, body.rows, body.dryRun === true));
+    res.json(await this.prospecting.importRows(req.staff, body.rows, body.dryRun === true, body.complete === true));
   });
 
   /** POST /internal/platform/prospects/:id/status */

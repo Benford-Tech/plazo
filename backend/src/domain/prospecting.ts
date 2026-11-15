@@ -542,6 +542,9 @@ export interface ProspectInput {
   website?: unknown;
   /** 13/11/2026: fr, de or en (or « Allemand », « English »…); null or empty: the region's language. */
   language?: unknown;
+  /** 15/11/2026: the software the parking was seen using (« Pas d'outil visible », « Parkingo »…) and what was seen. */
+  tool?: unknown;
+  toolDetail?: unknown;
   notes?: unknown;
 }
 
@@ -557,6 +560,8 @@ export interface ProspectFields {
   phone: string | null;
   website: string | null;
   language: ProspectLanguage | null;
+  tool: string | null;
+  toolDetail: string | null;
   notes: string | null;
 }
 
@@ -570,6 +575,8 @@ const LIMITS: Record<TextField, number> = {
   airportCode: 10,
   phone: 30,
   website: 300,
+  tool: 80,
+  toolDetail: 200,
   notes: 1000,
 };
 
@@ -612,6 +619,38 @@ export function companyKey(name: string): string {
 export function sameCompany(a: { companyName: string; airportCode: string | null }, b: { companyName: string; airportCode: string | null }): boolean {
   if (companyKey(a.companyName) !== companyKey(b.companyName)) return false;
   return !a.airportCode || !b.airportCode || a.airportCode.toUpperCase() === b.airportCode.toUpperCase();
+}
+
+/**
+ * What a CSV row brings to a prospect already listed (15/11/2026): each empty field it fills (contact, email, town,
+ * airport, phone, site, tool and its detail), never one already set; its notes are added under the prospect's own when
+ * they are not there yet and still fit. An email already taken by another prospect is left out.
+ */
+export function completionOf(
+  prospect: Pick<
+    ProspectFields,
+    'contactFirstName' | 'contactLastName' | 'email' | 'town' | 'airportCode' | 'phone' | 'website' | 'tool' | 'toolDetail' | 'notes'
+  >,
+  row: Partial<ProspectFields>,
+  takenEmails: ReadonlySet<string> = new Set(),
+): Partial<ProspectFields> {
+  const patch: Partial<ProspectFields> = {};
+  const keys = ['contactFirstName', 'contactLastName', 'town', 'airportCode', 'phone', 'website', 'tool', 'toolDetail'] as const;
+  for (const key of keys) {
+    const value = row[key];
+    if (value && !prospect[key]) patch[key] = value;
+  }
+  if (row.email && !prospect.email && !takenEmails.has(row.email)) patch.email = row.email;
+  const notes = row.notes?.trim();
+  if (notes) {
+    const current = prospect.notes?.trim() ?? '';
+    if (!current) patch.notes = notes;
+    else if (!current.includes(notes)) {
+      const joined = `${current}\n${notes}`;
+      if (joined.length <= LIMITS.notes) patch.notes = joined;
+    }
+  }
+  return patch;
 }
 
 /** sha256 of the lower-cased address: the opt-out list keeps no address in clear. */
@@ -658,6 +697,8 @@ export function validateProspect(
   text('airportCode', false);
   text('phone', false);
   text('website', false);
+  text('tool', false);
+  text('toolDetail', false);
   text('notes', false);
   const language = input.language;
   if (!(language === undefined && partial)) {
