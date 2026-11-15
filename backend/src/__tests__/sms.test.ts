@@ -264,7 +264,8 @@ describe('envoi par le téléphone du parking', () => {
       attempts: 1,
       bodyHash: sha256(text),
     });
-    expect(JSON.stringify(row)).not.toContain('atterri');
+    // 15/11/2026: the text is kept 30 days for « Messages » (never a signature code: a CHECK of the table refuses it).
+    expect(row.body).toBe(text);
   });
 
   it('utilise le serveur privé du loueur quand il en a un', async () => {
@@ -483,6 +484,21 @@ describe('envoi par le téléphone du parking', () => {
       const refused = await api().post(`/api/internal/whatsapp/inbox/${conversation.id}/reply`).set(auth(op.token)).send({ text: 'Encore là ?' });
       expect(refused.status).toBe(409);
       expect(refused.body.code).toBe('sms_failed');
+
+      // 15/11/2026: the SMS Plazo sent the traveller show in the conversation and in « Envoyés », with their text.
+      fetchMock.mockImplementation(async () => json({ id: 'gw-rem', state: 'Pending' }, 202));
+      await sms.sendSmsOnly(op.operator.id, {
+        reservationId: booking.id,
+        kind: 'booking_reminder',
+        to: '06 12 34 56 78',
+        text: 'Bonsoir Camille, à demain 08:30.',
+      });
+      const again = await api().get(`/api/internal/whatsapp/inbox/${conversation.id}`).set(auth(op.token));
+      expect(again.body.sent).toEqual([
+        expect.objectContaining({ channel: 'sms', kind: 'booking_reminder', text: 'Bonsoir Camille, à demain 08:30.' }),
+      ]);
+      const sentList = await api().get('/api/internal/whatsapp/sent').set(auth(op.token));
+      expect(sentList.body.data).toEqual([expect.objectContaining({ channel: 'sms', kind: 'booking_reminder', conversationId: conversation.id })]);
 
       // 14/11/2026: a number with no booking at this parking reaches the messaging too, without a booking.
       expect(

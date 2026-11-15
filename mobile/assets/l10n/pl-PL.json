@@ -2974,7 +2974,15 @@
     "reply_in_app": "Klient napisał do Ciebie z aplikacji Plazo: Twoja odpowiedź pojawi się w jego rezerwacji, z powiadomieniem.",
     "app_badge": "Aplikacja Plazo",
     "sms_badge": "SMS",
-    "reply_by_sms": "Klient napisał na telefon parkingu: odpowiedź zostanie wysłana SMS-em z tego telefonu."
+    "reply_by_sms": "Klient napisał na telefon parkingu: odpowiedź zostanie wysłana SMS-em z tego telefonu.",
+    "sms_sent_status": {
+      "queued": "oczekuje",
+      "sent": "wysłany",
+      "delivered": "doręczony ✓✓",
+      "failed": "nie wysłano",
+      "abandoned": "nie wysłano"
+    },
+    "sms_no_text": "Tekst nie zapisany (wysłany przed 15.11.2026)."
   },
   "parking_messages": {
     "title": "Napisz do parkingu",

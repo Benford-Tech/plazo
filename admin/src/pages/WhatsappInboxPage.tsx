@@ -59,6 +59,12 @@ type ChatItem =
       text: string | null;
     };
 
+/** 15/11/2026: « SMS · remis ✓✓ » for an SMS Plazo sent, the WhatsApp state otherwise. */
+function sentStatusLabel(channel: "whatsapp" | "sms" | undefined, status: string): string {
+  if (channel === "sms") return `${t.smsBadge} · ${t.smsSentStatus[status] ?? status}`;
+  return t.sentStatus[status] ?? status;
+}
+
 function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
   const items: ChatItem[] = [
     ...detail.messages.map((message) => ({
@@ -73,7 +79,7 @@ function chatItems(detail: WhatsappConversationDetail): ChatItem[] {
       label: t.sentByPlazo(
         travellerMessagesFr.kind[s.kind] ?? travellerMessagesFr.otherKind,
       ),
-      status: t.sentStatus[s.status] ?? s.status,
+      status: sentStatusLabel(s.channel, s.status),
       text: s.text ?? null,
     })),
   ];
@@ -612,9 +618,13 @@ function SentCard({
         </span>
       </div>
       <div className="max-w-2xl whitespace-pre-wrap break-words rounded-xl bg-[#DCF8C6] px-3 py-2 text-sm text-[#0B3B19]">
-        {m.text ?? <span className="italic opacity-80">{t.sentNoText}</span>}
+        {m.text ?? (
+          <span className="italic opacity-80">
+            {m.channel === "sms" ? t.smsNoText : t.sentNoText}
+          </span>
+        )}
         <span className="tabular mt-0.5 block text-right font-mono text-[11px] text-[#3F6B4A]">
-          {t.sentStatus[m.status] ?? m.status}
+          {sentStatusLabel(m.channel, m.status)}
           {m.smsFallback && m.status !== "fallback"
             ? ` · ${t.sentSmsFallback}`
             : ""}

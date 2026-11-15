@@ -1580,6 +1580,8 @@ model SmsOutbox {
   kind              String
   to                String
   bodyHash          String
+  /// 15/11/2026: the text the traveller read (« Messages »), 30 days with the row; never for a signature code.
+  body              String?
   provider          String
   providerMessageId String?
   status            SmsOutboxStatus @default(queued)

@@ -2971,7 +2971,15 @@
     "reply_in_app": "Clientul v-a scris din aplicația Plazo: răspunsul dvs. apare în rezervarea sa, cu o notificare.",
     "app_badge": "Aplicația Plazo",
     "sms_badge": "SMS",
-    "reply_by_sms": "Clientul a scris pe telefonul parcării: răspunsul pleacă prin SMS de pe acest telefon."
+    "reply_by_sms": "Clientul a scris pe telefonul parcării: răspunsul pleacă prin SMS de pe acest telefon.",
+    "sms_sent_status": {
+      "queued": "în așteptare",
+      "sent": "trimis",
+      "delivered": "livrat ✓✓",
+      "failed": "netrimis",
+      "abandoned": "netrimis"
+    },
+    "sms_no_text": "Text nepăstrat (trimis înainte de 15.11.2026)."
   },
   "parking_messages": {
     "title": "Scrieți parcării",
