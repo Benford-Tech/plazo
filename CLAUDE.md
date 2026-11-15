@@ -1281,7 +1281,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      /internal/reservations` acceptent `childSeats` (`ChildSeatsDto`, PATCH : absent = inchangé) ; le voyageur change les siens
      par `PUT /public/bookings/:ref/child-seats` tant que la réservation est « Attendu » (409 `child_seats_locked`, tracé
      `reservation.updated` `by: 'traveller'`) ; mail de confirmation : ligne « Sièges auto : 1 siège bébé, 1 réhausseur (installés
-     dans la navette, aller et retour) ». Gratuit, sans réglage du parking ; aucun import ne le lit. Site et app Plazo : carte
+     dans la navette, aller et retour) ». Gratuit, sans réglage du parking ; aucun import ne le lit. **Le voyageur n'est plus bloqué (15/11/2026, « La demande d'équipement bloque » : une réservation d'un passager ne pouvait pas demander de siège bébé)** : `PUT …/child-seats` ajoute les enfants aux passagers quand il le faut (`passengers` = max(passagers, sièges + 1), 9 au plus, tracé dans `reservation.updated`) ; site (`ChildSeatsCard`) et app (`ChildSeatsSheet`) ne contrôlent plus que les nombres. Site et app Plazo : carte
      « Des enfants à bord ? » (interrupteur, trois compteurs) sous Passagers, récapitulatif, bloc « Sièges auto » de Ma réservation
      avec « Modifier » ; espace pro web et Plazo Pro : bloc du formulaire, ligne de la fiche, pastilles « Siège bébé · Siège 1 à
      4 ans · Réhausseur » et « dont N enfants » sur les lignes Aller / Retour / En route du chauffeur, bandeau « À charger avant de

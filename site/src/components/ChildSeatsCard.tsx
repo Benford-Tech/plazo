@@ -13,7 +13,7 @@ import type { ChildSeats } from "@/lib/types";
  * « Sièges auto » on Ma réservation (24/10/2026, direction B « par âge »): the seats asked for the shuttle, and
  * « Modifier » while the booking is « Attendu » (the same three steppers, saved by PUT …/child-seats).
  */
-export function ChildSeatsCard({ reference, token, seats: initial, passengers, editable }: { reference: string; token: string; seats: ChildSeats | null | undefined; passengers: number; editable: boolean }) {
+export function ChildSeatsCard({ reference, token, seats: initial, editable }: { reference: string; token: string; seats: ChildSeats | null | undefined; passengers: number; editable: boolean }) {
   const t = fr.manage.childSeats;
   const router = useRouter();
   const [seats, setSeats] = useState<ChildSeats>(initial ?? NO_CHILD_SEATS);
@@ -23,7 +23,8 @@ export function ChildSeatsCard({ reference, token, seats: initial, passengers, e
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const problem = editing ? childSeatsProblem(draft, passengers) : null;
+  // 15/11/2026 (« La demande d'équipement bloque ») : the API adds the children to the passengers (9 at most).
+  const problem = editing ? childSeatsProblem(draft, 9) : null;
 
   const open = () => {
     setDraft(seats);
