@@ -201,10 +201,12 @@ export class SmsService {
    * security code is Plazo's, and must leave at once). The outbox keeps the recipient and the text's hash, never the code
    * in clear. Returns whether Brevo accepted it.
    */
-  public async sendSignatureCode(operatorId: string, reservationId: string, recipient: string, text: string): Promise<boolean> {
+  public async sendSignatureCode(operatorId: string, reservationId: string | null, recipient: string, text: string): Promise<boolean> {
     const about = `reservation ${reservationId}`;
-    // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.(the code cannot be typed: the signature waits).
-    if (await isSilentOperator(operatorId)) return false;
+    // 21/10/2026: the prospects' demo never sends anything (the code cannot be typed: the signature waits). The test parking
+    // does (15/11/2026, « La demande de code ne fonctionne pas »): a code is asked for by the person who signs, on a booking
+    // typed for a trial; the fictional bookings of the continuous feed carry 06 39 98 numbers, which smsRecipient refuses.
+    if (await isProspectDemoOperator(operatorId)) return false;
     const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
     await prisma.smsOutbox.create({
       data: {
