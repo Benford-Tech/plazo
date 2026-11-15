@@ -668,6 +668,20 @@ describe('services commandés après la réservation, même après le dépôt', 
     expect((await order(held.reference, held.manageToken, 'interior_wash')).body.code).toBe('not_online');
     expect((await order(held.reference, 'mauvais', 'interior_wash')).status).toBe(404);
   });
+
+  it('une réservation d’un comparateur commande et paie son service à part (15/11/2026)', async () => {
+    await parkingWithExtras();
+    const held = (await book()).body;
+    await prisma.reservation.update({
+      where: { reference: held.reference },
+      data: { channel: 'aggregator', channelDetail: 'Allopark', status: 'upcoming', paymentStatus: null, stripePaymentIntentId: null },
+    });
+    const view = (await extrasOf(held.reference, held.manageToken)).body;
+    expect(view.canOrder).toBe(true);
+    expect(view.offers.every((o: any) => o.available)).toBe(true);
+    const extraId = await orderAndPay(held.reference, held.manageToken, 'interior_wash');
+    expect(await prisma.reservationExtra.findUniqueOrThrow({ where: { id: extraId } })).toMatchObject({ status: 'ordered', withBooking: false });
+  });
 });
 
 describe('« Services à faire » et le voyageur prévenu (29/10/2026)', () => {
