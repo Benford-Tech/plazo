@@ -10,6 +10,7 @@ import '../../../shared/theme/theme.dart';
 import '../../../shared/widgets/brand_header.dart';
 import '../../../shared/widgets/segmented.dart';
 import '../data/whatsapp_inbox_data_source.dart';
+import 'sent_status.dart';
 
 const _views = ['unread', 'all', 'handled', 'sent'];
 
@@ -221,8 +222,8 @@ class _SentCard extends StatelessWidget {
     final m = message;
     final kindKey = 'whatsapp_inbox.sent_kind.${m.sent.kind}';
     final kind = kindKey.tr() == kindKey ? 'whatsapp_inbox.sent_kind.other'.tr() : kindKey.tr();
-    final statusKey = 'whatsapp_inbox.sent_status.${m.sent.status}';
-    final status = statusKey.tr() == statusKey ? m.sent.status : statusKey.tr();
+    final label = sentStatusLabel(m.sent);
+    final status = label.isEmpty ? m.sent.status : label;
     final fallback = m.smsFallback && m.sent.status != 'fallback' ? ' · ${'whatsapp_inbox.sent_sms_fallback'.tr()}' : '';
     final at = m.sent.at;
     final when = waWhen(at).contains(':') ? waWhen(at) : '${waWhen(at)} ${DateFormat('HH:mm').format(at)}';
@@ -264,7 +265,7 @@ class _SentCard extends StatelessWidget {
                       if (m.sent.text != null)
                         Text(m.sent.text!, style: AppText.body(size: 14))
                       else
-                        Text('whatsapp_inbox.sent_no_text'.tr(), style: AppText.muted(size: 13)),
+                        Text((m.sent.sms ? 'whatsapp_inbox.sms_no_text' : 'whatsapp_inbox.sent_no_text').tr(), style: AppText.muted(size: 13)),
                       const SizedBox(height: 2),
                       Align(
                         alignment: Alignment.centerRight,

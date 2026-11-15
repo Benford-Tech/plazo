@@ -13,6 +13,7 @@ import '../../../shared/live_sync/live_sync.dart';
 import '../../../shared/theme/theme.dart';
 import '../../../shared/widgets/brand_header.dart';
 import '../data/whatsapp_inbox_data_source.dart';
+import 'sent_status.dart';
 import 'pro_whatsapp_inbox_page.dart';
 
 const _bubbleIn = Color(0xFFFFFFFF);
@@ -391,8 +392,8 @@ class _SentByPlazo extends StatelessWidget {
   Widget build(BuildContext context) {
     final kindKey = 'whatsapp_inbox.sent_kind.${sent.kind}';
     final kind = kindKey.tr() == kindKey ? 'whatsapp_inbox.sent_kind.other'.tr() : kindKey.tr();
-    final statusKey = 'whatsapp_inbox.sent_status.${sent.status}';
-    final status = statusKey.tr() == statusKey ? '' : ' · ${statusKey.tr()}';
+    final label = sentStatusLabel(sent);
+    final status = label.isEmpty ? '' : ' · $label';
     return Align(
       alignment: Alignment.centerRight,
       child: Container(

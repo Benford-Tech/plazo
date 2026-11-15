@@ -2968,7 +2968,15 @@
     "reply_in_app": "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
     "app_badge": "App Plazo",
     "sms_badge": "SMS",
-    "reply_by_sms": "Le client a écrit au téléphone du parking : votre réponse part par SMS depuis ce téléphone."
+    "reply_by_sms": "Le client a écrit au téléphone du parking : votre réponse part par SMS depuis ce téléphone.",
+    "sms_sent_status": {
+      "queued": "en attente",
+      "sent": "envoyé",
+      "delivered": "remis ✓✓",
+      "failed": "non parti",
+      "abandoned": "non parti"
+    },
+    "sms_no_text": "Texte non gardé (envoyé avant le 15/11/2026)."
   },
   "parking_messages": {
     "title": "Écrire au parking",

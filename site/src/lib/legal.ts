@@ -408,7 +408,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "Téléphones de l’application et leur choix « Offres et bons plans » : effacés 13 mois après la dernière ouverture de l’application.",
-            "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
+            "File d’envoi des SMS (numéro du destinataire et texte du message, montré à l’équipe du parking dans sa messagerie ; jamais un code de signature) : 30 jours.",
             "Messages WhatsApp, SMS écrits au téléphone du parking et messages écrits depuis l’app Plazo (numéro, texte des messages envoyés par Plazo, messages que vous écrivez et réponses de l’équipe, état de remise) : 30 jours ; les photos et messages vocaux restent chez WhatsApp et ne sont que relus à la demande de l’équipe.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,

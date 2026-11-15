@@ -1528,6 +1528,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de « Messages » à quelqu'un qui a écrit au téléphone part aussi du parking de test (`TravellerSms.answersSender`, son silence
      ne vaut que pour ses voyageurs fictifs ; la démo des prospects n'envoie toujours rien) ; un SMS qui ne part pas est un 409
      `sms_failed` (réponse et « Écrire au client »), plus un 502 dont Cloudflare remplaçait le corps.
+     **Les SMS envoyés aussi (15/11/2026, « les SMS reçus ou envoyés sont dans la messagerie de Plazo », choix « Oui, partout »)** :
+     `SmsOutbox.body` (texte lu par le voyageur, gardé 30 jours avec la ligne ; migration `sms_outbox_body`, CHECK 4 096 et jamais pour
+     un `signature_code` ; `keptBody`) ; la conversation (`sent`) et « Envoyés » (`GET /internal/whatsapp/sent`, `counts.sent`) montrent
+     aussi les SMS que Plazo a envoyés au voyageur (`sentSmsWhere` : pas les messages de l'équipe, déjà dans leur conversation, ni les
+     tests ni les codes ; `channel: 'sms'`, état du SMS) ; web « SMS · remis ✓✓ » (`sentStatusLabel`, `smsSentStatus`), Plazo Pro
+     (`WaSent.sms`, `presentation/sent_status.dart`, `whatsapp_inbox.sms_sent_status` dans les neuf langues) ; politique de
+     confidentialité (file d'envoi des SMS : numéro et texte, 30 jours). Tests `sms.test.ts`, `WhatsappInboxPage.test.tsx`,
+     `whatsapp_inbox_test.dart`.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
@@ -2634,7 +2642,10 @@ de test de la plateforme (« … (tests) », `isTestOperatorName`) n'envoie rien
 dans `NotificationService.sendEmail`), ni copie du contrat signé ; « Écrire au client » n'y propose pas WhatsApp. `isSilentOperator` de
 `services/demo-guard.ts` (gardé par instance). L'équipe y travaille comme avant ; les pushs de l'app restent (téléphones qui ont ouvert
 la réservation). **Les tests partent (14/11/2026, « Je ne reçois plus les sms »)** : « M'envoyer un test » (`test`, `reminder_test`) part au
-téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo des prospects n'envoie toujours rien. Test `sms.test.ts`.
+téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo des prospects n'envoie toujours rien. **Le code de signature aussi
+(15/11/2026, « La demande de code ne fonctionne pas »)** : il part par Brevo sur le parking de test (`sendSignatureCode` ne se tait que pour la
+démo des prospects ; les réservations fictives du flux continu ont des numéros 06 39 98 que `smsRecipient` refuse), et un code qui ne part
+pas est un 409 `sms_failed` (plus un 502 dont Cloudflare remplaçait le corps). Test `sms.test.ts`.
 
 ## Personnel
 

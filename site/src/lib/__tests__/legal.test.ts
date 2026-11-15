@@ -101,7 +101,7 @@ describe("privacy policy", () => {
     expect(all).toContain("au plus tard 2 heures après le début"); // SIGNAL_MAX_MINUTES
     expect(all).toContain("Position GPS de la voiture : effacée 2 jours après le retour."); // purgeCarLocations
     expect(all).toContain("supprimés 2 jours après le retour"); // purgeDevices
-    expect(all).toContain("File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
+    expect(all).toContain("File d’envoi des SMS (numéro du destinataire et texte du message, montré à l’équipe du parking dans sa messagerie ; jamais un code de signature) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
     expect(all).toContain("12 mois après la date de retour"); // RESERVATION_RETENTION_MONTHS (backend/src/domain/retention.ts)
     expect(all).toContain("anonymisée automatiquement");
     expect(all).toContain("texte effacé après 30 jours, trace de réception supprimée après 90 jours"); // inbound emails (M-A)
@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("15 novembre 2026"); // the welcome email (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("15 novembre 2026"); // the welcome email and the sent SMS text in « Messages » (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
   });
 
   it("tells about the welcome email to the travellers of the other channels and its opt-out (15/11/2026)", () => {

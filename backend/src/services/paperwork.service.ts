@@ -361,7 +361,8 @@ export class PaperworkService {
     const sent = await this.sms.sendSignatureCode(r.operatorId, r.id, recipient, codeSms(PRODUCT_NAME, code));
     if (!sent) {
       await prisma.signatureCode.update({ where: { id }, data: { consumedAt: new Date() } });
-      throw new HttpException(httpStatus.BAD_GATEWAY, 'The SMS could not be sent', 'sms_failed');
+      // 409, not 502: Cloudflare replaces the body of a 502 and the app could not say why (15/11/2026).
+      throw conflict('sms_failed', 'The SMS could not be sent');
     }
     await this.audit.record(
       { id: actor?.id ?? null, operatorId: r.operatorId, actingAs: actor?.actingAs },

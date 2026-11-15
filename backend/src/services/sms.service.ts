@@ -179,7 +179,15 @@ export class SmsService {
       }
       if (mode === 'brevo') return this.sendViaBrevo(operatorId, sms, recipient, about);
       const row = await prisma.smsOutbox.create({
-        data: { operatorId, reservationId: sms.reservationId, kind: sms.kind, to: recipient, bodyHash: hash(sms.text), provider: 'gateway' },
+        data: {
+          operatorId,
+          reservationId: sms.reservationId,
+          kind: sms.kind,
+          to: recipient,
+          bodyHash: hash(sms.text),
+          body: keptBody(sms.text),
+          provider: 'gateway',
+        },
       });
       return this.attemptGateway(settings!, row, sms.text);
     } catch (error) {
@@ -193,10 +201,12 @@ export class SmsService {
    * security code is Plazo's, and must leave at once). The outbox keeps the recipient and the text's hash, never the code
    * in clear. Returns whether Brevo accepted it.
    */
-  public async sendSignatureCode(operatorId: string, reservationId: string, recipient: string, text: string): Promise<boolean> {
+  public async sendSignatureCode(operatorId: string, reservationId: string | null, recipient: string, text: string): Promise<boolean> {
     const about = `reservation ${reservationId}`;
-    // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.(the code cannot be typed: the signature waits).
-    if (await isSilentOperator(operatorId)) return false;
+    // 21/10/2026: the prospects' demo never sends anything (the code cannot be typed: the signature waits). The test parking
+    // does (15/11/2026, « La demande de code ne fonctionne pas »): a code is asked for by the person who signs, on a booking
+    // typed for a trial; the fictional bookings of the continuous feed carry 06 39 98 numbers, which smsRecipient refuses.
+    if (await isProspectDemoOperator(operatorId)) return false;
     const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
     await prisma.smsOutbox.create({
       data: {
@@ -228,6 +238,7 @@ export class SmsService {
         kind: sms.kind,
         to: recipient,
         bodyHash: hash(sms.text),
+        body: keptBody(sms.text),
         provider: 'brevo',
         status: ok ? 'sent' : 'failed',
         attempts: 1,
@@ -838,6 +849,11 @@ export class SmsService {
  * 14/11/2026 (« Ajoute les pénalités dans le sms »): the day-before SMS ends with the parking's supplements and conditions
  * (« Suppléments et conditions », {conditions}) when it has some and the text does not say them already.
  */
+/** 15/11/2026: the text kept for « Messages » (30 days with the row), cut to the column's 4 096 characters. */
+export function keptBody(text: string): string {
+  return text.slice(0, 4096);
+}
+
 export function withConditions(text: string, conditions: string | null | undefined): string {
   const said = conditions?.trim();
   if (!said || text.includes(said)) return text;

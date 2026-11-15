@@ -147,9 +147,10 @@ class WaMessage {
 
 /// What Plazo itself sent the booking by WhatsApp (confirmation, day before…), shown between the messages.
 class WaSent {
-  const WaSent({required this.id, required this.kind, required this.status, required this.at, this.text});
+  const WaSent({required this.id, required this.kind, required this.status, required this.at, this.text, this.sms = false});
   factory WaSent.fromJson(Map<String, dynamic> json) => WaSent(
     id: json['id'] as String,
+    sms: json['channel'] == 'sms',
     kind: json['kind'] as String? ?? '',
     status: json['status'] as String? ?? '',
     at: _date(json['at']) ?? DateTime.now(),
@@ -162,6 +163,9 @@ class WaSent {
 
   /// The text the traveller read (kept since 12/11/2026; null before).
   final String? text;
+
+  /// 15/11/2026: an SMS Plazo sent (the parking's phone or Plazo's provider), with the SMS states.
+  final bool sms;
 }
 
 /// « Envoyés » (12/11/2026, « Affiche aussi les messages envoyés »): one WhatsApp Plazo sent a traveller (30 days).

@@ -264,7 +264,8 @@ describe('envoi par le téléphone du parking', () => {
       attempts: 1,
       bodyHash: sha256(text),
     });
-    expect(JSON.stringify(row)).not.toContain('atterri');
+    // 15/11/2026: the text is kept 30 days for « Messages » (never a signature code: a CHECK of the table refuses it).
+    expect(row.body).toBe(text);
   });
 
   it('utilise le serveur privé du loueur quand il en a un', async () => {
@@ -484,6 +485,21 @@ describe('envoi par le téléphone du parking', () => {
       expect(refused.status).toBe(409);
       expect(refused.body.code).toBe('sms_failed');
 
+      // 15/11/2026: the SMS Plazo sent the traveller show in the conversation and in « Envoyés », with their text.
+      fetchMock.mockImplementation(async () => json({ id: 'gw-rem', state: 'Pending' }, 202));
+      await sms.sendSmsOnly(op.operator.id, {
+        reservationId: booking.id,
+        kind: 'booking_reminder',
+        to: '06 12 34 56 78',
+        text: 'Bonsoir Camille, à demain 08:30.',
+      });
+      const again = await api().get(`/api/internal/whatsapp/inbox/${conversation.id}`).set(auth(op.token));
+      expect(again.body.sent).toEqual([
+        expect.objectContaining({ channel: 'sms', kind: 'booking_reminder', text: 'Bonsoir Camille, à demain 08:30.' }),
+      ]);
+      const sentList = await api().get('/api/internal/whatsapp/sent').set(auth(op.token));
+      expect(sentList.body.data).toEqual([expect.objectContaining({ channel: 'sms', kind: 'booking_reminder', conversationId: conversation.id })]);
+
       // 14/11/2026: a number with no booking at this parking reaches the messaging too, without a booking.
       expect(
         (
@@ -539,6 +555,9 @@ describe('envoi par le téléphone du parking', () => {
     ).toBe('sent');
     expect(calls(BREVO_SMS_URL)).toHaveLength(2);
     expect(await sms.sendSmsOnly(test.operator.id, { reservationId: null, kind: 'staff_message', to: '0612345678', text: 'Écrit' })).toBe('skipped');
+    // 15/11/2026 (« La demande de code ne fonctionne pas ») : the contract's signature code leaves too, asked for by whoever signs.
+    expect(await sms.sendSignatureCode(test.operator.id, null, '+33612345678', 'Votre code Plazo : 123456')).toBe(true);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(3);
   });
 
   it('« Pas de SMS » : rien ne part, rien n’est enregistré ; Brevo : l’ancien chemin, tracé dans la boîte d’envoi', async () => {
