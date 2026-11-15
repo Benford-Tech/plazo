@@ -627,6 +627,8 @@ Mise en place, une fois pour toute la plateforme :
    de la desserte de la réservation (gare, hôtel) quand elle en a une. En production depuis le 10/11/2026 :
    `WHATSAPP_REMINDER_TEMPLATE=apl_rappel_veille`. Une valeur
    absente part en « - » (Meta refuse une variable vide).
+   **Depuis le 15/11/2026, le message de la veille part par SMS seulement** (le texte de ce modèle, rempli) : poser
+   `WHATSAPP_REMINDER=on` pour le renvoyer d'abord par WhatsApp. La confirmation et l'atterrissage restent par WhatsApp.
 
 **Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple
 `apl_rappel_veille`, le rappel de la veille d'APL Parking Lyon avec la photo de son entrée en en-tête). Le créer chez Meta

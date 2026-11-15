@@ -17,6 +17,7 @@ import {
   missedEvening,
   NotDueReason,
   reminderDueAt,
+  sameDayWording,
   renderTemplate,
   SEND_TIMES,
   shortTemplate,
@@ -163,6 +164,8 @@ export interface ReminderBoard {
    * with the variables' names; null while the parking's own text is used.
    */
   meta: { name: string; text: string; source: 'meta' | 'copy' } | null;
+  /** 15/11/2026: whether the day-before message tries WhatsApp first (false: SMS only). */
+  whatsapp: boolean;
   /**
    * 11/11/2026 (direction A): Meta has confirmed none of the parking's WhatsApp messages of the last 24 hours (the status
    * webhook does not reach Plazo): the page says so, and why the messages stay « sans confirmation ».
@@ -217,7 +220,9 @@ export class ReminderService {
     let failed = 0;
     for (const parking of parkings) {
       const usual = parking.reminderSettings ?? USUAL;
-      if (!usual.enabled || inQuietHours(now, parking.timezone)) continue;
+      if (!usual.enabled) continue;
+      // 15/11/2026: a booking made on the drop-off day gets its message right away, quiet hours or not.
+      const quiet = inQuietHours(now, parking.timezone);
       const today = localDate(now, parking.timezone);
       const rows = await prisma.reservation.findMany({
         where: {
@@ -234,8 +239,8 @@ export class ReminderService {
       for (const row of rows) {
         checked += 1;
         const due = reminderDueAt({ ...row, timeZone: parking.timezone, evening: rules.get(eveningOf(row.arrivalAt, parking.timezone))! });
-        if (!('at' in due) || now < due.at || missedEvening(due.at, row.arrivalAt, now, parking.timezone)) continue;
-        const outcome = await this.send(row.id, now);
+        if (!('at' in due) || now < due.at || (quiet && !due.sameDay) || missedEvening(due.at, row.arrivalAt, now, parking.timezone)) continue;
+        const outcome = await this.send(row.id, now, undefined, due.sameDay);
         if (outcome === 'sent') sent += 1;
         else if (outcome === 'failed') failed += 1;
       }
@@ -244,10 +249,42 @@ export class ReminderService {
   }
 
   /**
+   * 15/11/2026 (« quand c'est réservé le jour même envoi juste après la réservation »): right after a booking is made for
+   * today, its message leaves at once instead of waiting for the next 15-minute pass. Never throws.
+   */
+  public async sendSameDayNow(reservationId: string, now = new Date()): Promise<void> {
+    try {
+      const row = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        select: {
+          id: true,
+          status: true,
+          arrivalAt: true,
+          createdAt: true,
+          reminderSentAt: true,
+          reminderExcludedAt: true,
+          parkingId: true,
+          parking: { select: { timezone: true, reminderSettings: true, operator: { select: { archivedAt: true } } } },
+        },
+      });
+      if (!row || row.status !== 'upcoming' || row.reminderSentAt || row.reminderExcludedAt || row.parking.operator.archivedAt) return;
+      const usual = row.parking.reminderSettings ?? USUAL;
+      if (!usual.enabled) return;
+      const evening = eveningOf(row.arrivalAt, row.parking.timezone);
+      const rules = await this.rules(row.parkingId, usual, [evening]);
+      const due = reminderDueAt({ ...row, timeZone: row.parking.timezone, evening: rules.get(evening)! });
+      if (!('at' in due) || !due.sameDay || now < due.at) return;
+      await this.send(row.id, now, undefined, true);
+    } catch (error) {
+      logger.warn(`[Reminders] Same-day message failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  /**
    * One booking's reminder: claimed first, so it never leaves twice. A failure never fails the caller, but it is
    * reported ('failed'), so that the cron can answer 500 when nothing left at all (08/10/2026: cron-job.org alerts).
    */
-  private async send(id: string, now: Date, manual?: { resend: boolean }): Promise<'sent' | 'failed' | 'taken'> {
+  private async send(id: string, now: Date, manual?: { resend: boolean }, sameDay = false): Promise<'sent' | 'failed' | 'taken'> {
     // By hand (30/10/2026), the staff's choice wins over « Ne pas envoyer »; a resend claims a reminder that left at
     // least RESEND_AFTER_MS ago, so that two clicks never send it twice.
     const claim = manual
@@ -272,6 +309,18 @@ export class ReminderService {
           to: record.customerPhone,
           text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
           whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
+        });
+        return outcome === 'failed' ? 'failed' : 'sent';
+      }
+      // 15/11/2026: booked for today, the SMS alone, worded for the same day (« À tout à l'heure »): the mail and the
+      // push say « À demain ».
+      if (sameDay) {
+        const outcome = await this.sms.sendTravellerSms(record.operatorId, {
+          reservationId: record.id,
+          kind: 'booking_reminder',
+          to: record.customerPhone,
+          text: sameDayWording(await this.sms.reminderText(record, this.sms.bookingLink(record))),
+          whatsapp: null,
         });
         return outcome === 'failed' ? 'failed' : 'sent';
       }
@@ -330,7 +379,7 @@ export class ReminderService {
       prisma.reminderSettings.findUnique({ where: { parkingId: r.parkingId } }),
       prisma.operatorSmsSettings.findUnique({ where: { operatorId: actor.operatorId }, select: { mode: true } }),
       this.latestOutbox([r.id]),
-      this.sms.whatsapp.enabledFor(actor.operatorId),
+      this.sms.whatsapp.config().reminderByWhatsapp && this.sms.whatsapp.enabledFor(actor.operatorId),
       this.deliveries([r.id], tz),
     ]);
     const usual = usualRow ?? USUAL;
@@ -554,6 +603,8 @@ export class ReminderService {
         now,
       ),
       meta: (await this.sms.usesMetaReminder(actor.operatorId)) ? await this.sms.metaReminder() : null,
+      // 15/11/2026: false: the day-before message leaves by SMS only.
+      whatsapp: this.sms.whatsapp.config().reminderByWhatsapp,
     };
   }
 
@@ -630,7 +681,7 @@ export class ReminderService {
     };
     // 14/11/2026 (« Pouvoir envoyer le test du message de la veille par sms »): the SMS fallback alone, as a traveller would get it.
     const outcome =
-      input.channel === 'sms'
+      input.channel === 'sms' || !this.sms.whatsapp.config().reminderByWhatsapp
         ? await this.sms.sendSmsOnly(actor.operatorId, { ...sms, whatsapp: null })
         : await this.sms.sendTravellerSms(actor.operatorId, {
             ...sms,

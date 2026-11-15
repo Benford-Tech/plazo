@@ -216,6 +216,19 @@ describe("RemindersPage (S-A + S-B)", () => {
     await waitFor(() => expect(api.testReminder).toHaveBeenLastCalledWith("p1", { channel: "whatsapp" }));
   });
 
+  it("par SMS seulement (15/11/2026) : le texte du modèle, sans WhatsApp ni photo, test par SMS", async () => {
+    api.getReminders.mockResolvedValue(
+      board({ meta: { name: "plazo_rappel_veille", text: "Bonsoir {prénom},", source: "meta" }, whatsapp: false }),
+    );
+    renderPage();
+    expect(await screen.findByTestId("reminder-meta")).toHaveTextContent("envoyé par SMS");
+    expect(screen.queryByTestId("reminder-channel")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("reminder-test-whatsapp")).not.toBeInTheDocument();
+    expect(screen.queryByText("Photo du parking")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "M’envoyer un test" }));
+    await waitFor(() => expect(api.testReminder).toHaveBeenCalledWith("p1", { channel: "sms" }));
+  });
+
   it("un chauffeur voit tout sans pouvoir rien changer", async () => {
     api.getReminders.mockResolvedValue(board({ can: { edit: false, manage: false } }));
     renderPage();

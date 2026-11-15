@@ -35,6 +35,7 @@ beforeEach(async () => {
     graphVersion: 'v21.0',
     templates: '',
     reminderTemplate: '',
+    reminderByWhatsapp: true,
     businessAccountId: 'WABA-1',
   });
   whatsapp.config = config;

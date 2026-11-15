@@ -6,6 +6,7 @@ import {
   defaultTemplate,
   outOfQuietHours,
   reminderDueAt,
+  sameDayWording,
   renderTemplate,
   shortTemplate,
   smsLength,
@@ -160,7 +161,12 @@ describe('les règles du SMS de la veille', () => {
     expect(due(at('2027-06-14T20:12'))).toEqual({ at: at('2027-06-14T20:12') });
     expect(due(at('2027-06-14T23:00'))).toEqual({ at: at('2027-06-15T07:00') });
     expect(due(at('2027-06-14T23:00'), evening, at('2027-06-15T06:30'))).toEqual({ reason: 'too_late' });
-    expect(due(at('2027-06-15T00:30'))).toEqual({ reason: 'same_day' });
+    // 15/11/2026 (« quand c'est réservé le jour même envoi juste après la réservation »): right away, quiet hours or not.
+    expect(due(at('2027-06-15T00:30'))).toEqual({ at: at('2027-06-15T00:30'), sameDay: true });
+    expect(due(at('2027-06-15T10:30'))).toEqual({ reason: 'too_late' });
+    expect(sameDayWording('Bonsoir Léa,\nÀ demain,\nParking : à demain 09:00 !')).toBe(
+      "Bonjour Léa,\nÀ tout à l'heure,\nParking : à tout à l'heure 09:00 !",
+    );
     expect(due(at('2027-06-01T12:00'), { sendTime: '18:00', paused: true })).toEqual({ reason: 'paused' });
     expect(outOfQuietHours(at('2027-06-14T21:59'), TZ)).toEqual(at('2027-06-14T21:59'));
     expect(outOfQuietHours(at('2027-06-15T06:59'), TZ)).toEqual(at('2027-06-15T07:00'));
@@ -394,6 +400,24 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(await reminders.dispatchDue(at('2027-06-15T07:05'))).toEqual({ checked: 2, sent: 1, failed: 0 });
     expect(smsSent()).toHaveLength(1);
     expect(smsSent()[0].content).toContain('Dépôt le 15/06/2027 à 10:00');
+  });
+
+  // 15/11/2026 (« quand c'est réservé le jour même envoi juste après la réservation »).
+  it('réservée le jour même : le SMS part juste après, même la nuit, une seule fois, avec « à tout à l’heure »', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const morning = await booking(op, '2027-06-15T18:00', { createdAt: at('2027-06-15T08:00') });
+    const night = await booking(op, '2027-06-15T23:50', { name: 'Pierre Lefèvre', createdAt: at('2027-06-15T23:00') });
+    const reminders = Container.get(ReminderService);
+    await reminders.sendSameDayNow(morning.id, at('2027-06-15T08:00'));
+    expect(smsSent()).toHaveLength(1);
+    expect(smsSent()[0].content).toContain("à tout à l'heure");
+    expect(smsSent()[0].content).not.toMatch(/à demain/i);
+    // The 15-minute pass does not send it again; the night booking leaves even in the quiet hours.
+    expect(await reminders.dispatchDue(at('2027-06-15T23:05'))).toEqual({ checked: 1, sent: 1, failed: 0 });
+    expect(smsSent()).toHaveLength(2);
+    await reminders.sendSameDayNow(night.id, at('2027-06-15T23:06'));
+    expect(smsSent()).toHaveLength(2);
   });
 
   it('un envoi de la veille manqué (planificateur arrêté) ne part pas le jour du dépôt', async () => {

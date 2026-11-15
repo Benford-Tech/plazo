@@ -172,19 +172,22 @@ export type NotDueReason = 'paused' | 'same_day' | 'too_late';
 
 /**
  * When a booking's reminder leaves: at its evening's time, or as soon as it is booked when that is
- * later (out of the quiet hours); never for a booking made on the day of the drop-off, nor when that
- * moment is not before the drop-off.
+ * later (out of the quiet hours); never when that moment is not before the drop-off. 15/11/2026 (« quand c'est réservé
+ * le jour même envoi juste après la réservation »): a booking made on the day of the drop-off gets it right away, at any
+ * hour (`sameDay`), worded for the same day (`sameDayWording`).
  */
 export function reminderDueAt(input: {
   arrivalAt: Date;
   createdAt: Date;
   timeZone: string;
   evening: EveningRule;
-}): { at: Date } | { reason: NotDueReason } {
+}): { at: Date; sameDay?: true } | { reason: NotDueReason } {
   const { arrivalAt, createdAt, timeZone, evening } = input;
   const day = localDate(arrivalAt, timeZone);
-  if (createdAt >= dayBounds(day, timeZone).start) return { reason: 'same_day' };
   if (evening.paused) return { reason: 'paused' };
+  if (createdAt >= dayBounds(day, timeZone).start) {
+    return createdAt < arrivalAt ? { at: createdAt, sameDay: true } : { reason: 'too_late' };
+  }
   const planned = parseInstant(`${addDays(day, -1)}T${evening.sendTime}`, timeZone)!;
   const at = outOfQuietHours(createdAt > planned ? createdAt : planned, timeZone);
   if (at >= arrivalAt) return { reason: 'too_late' };
@@ -404,6 +407,18 @@ export function valuesOf(
     conditions: parking.conditions ?? '',
     chauffeur: parking.driverPhone ?? '',
   };
+}
+
+/**
+ * 15/11/2026: the day-before text sent on the day itself: « À demain » becomes « À tout à l'heure », « Bonsoir »
+ * « Bonjour » (the parking's own text and the template approved by Meta both say them).
+ */
+export function sameDayWording(text: string): string {
+  const word = (w: string) => new RegExp(`(?<![\\p{L}])${w}(?![\\p{L}])`, 'gu');
+  return text
+    .replace(word('([àÀAa]) demain'), (_, a: string) => `${a} tout à l'heure`)
+    .replace(word('Bonsoir'), 'Bonjour')
+    .replace(word('bonsoir'), 'bonjour');
 }
 
 /**
