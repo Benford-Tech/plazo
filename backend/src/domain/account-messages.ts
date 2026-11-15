@@ -54,8 +54,12 @@ function links(items: Link[]): string {
 
 /** The store badges side by side (23/10/2026, « mets les liens derrière des icônes officielles des stores »). */
 export function storeBadgesHtml(items: StoreBadge[]): string {
+  // 15/11/2026 (« il y a un décalage entre les icônes Play Store et App Store »): Google's file keeps its own margin, so each
+  // badge is pushed down to the middle of the tallest one; the cells stay top-aligned for a note under a badge.
+  const tallest = Math.max(0, ...items.map(b => b.height));
   const cells = items.map(b => {
-    const img = `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.label)}" width="${b.width}" height="${b.height}" style="display:block;width:${b.width}px;height:${b.height}px;border:0">`;
+    const shift = Math.round((tallest - b.height) / 2);
+    const img = `<img src="${escapeHtml(b.imageUrl)}" alt="${escapeHtml(b.label)}" width="${b.width}" height="${b.height}" style="display:block;width:${b.width}px;height:${b.height}px;border:0${shift ? `;margin-top:${shift}px` : ''}">`;
     const note = b.note ? `<div style="margin-top:6px;font-size:12px;color:${COLORS.soft};line-height:1.4">${escapeHtml(b.note)}</div>` : '';
     return `<td valign="top" style="padding:0 16px 8px 0">${b.url ? `<a href="${escapeHtml(b.url)}" style="display:inline-block">${img}</a>` : img}${note}</td>`;
   });
