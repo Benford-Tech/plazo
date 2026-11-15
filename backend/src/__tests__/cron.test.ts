@@ -38,6 +38,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       // « Rejoindre un parking » (13/10/2026).
       identityTokensDeleted: 0,
       joinRequestsExpired: 0,
+      invitationTrackingsPurged: 0,
       joinAttemptsDeleted: 0,
       identitiesDeleted: 0,
       usedIdentityTokensDeleted: 0,
