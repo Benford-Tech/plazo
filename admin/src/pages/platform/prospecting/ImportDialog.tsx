@@ -15,6 +15,7 @@ const PREVIEW_ROWS = 200;
 const TONE: Record<ProspectImportOutcome, string> = {
   new: "bg-ok-soft text-ok-text",
   duplicate: "bg-panel-2 text-muted-foreground",
+  completed: "bg-info-soft text-info-text",
   suppressed: "bg-bad-soft text-bad-text",
   invalid: "bg-warn-soft text-warn-text",
 };

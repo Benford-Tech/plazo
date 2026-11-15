@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import { Container, Service } from 'typedi';
+import { ReminderService } from './reminder.service';
 import {
   isLiveStripeKey,
   PLATFORM_COMMISSION_BPS,
@@ -621,6 +622,8 @@ export class PaymentService {
     await this.notifications.bookingConfirmed(booking, link);
     // The team hears of it (06/10/2026): nobody typed this booking.
     await this.push.notifyNewBooking(record, record.parking.timezone);
+    // 15/11/2026: booked for today, the day-before message leaves now.
+    await Container.get(ReminderService).sendSameDayNow(record.id);
     // The SMS goes through the operator's own channel (their phone, Brevo, or none).
     await this.sms.sendTravellerSms(record.operatorId, {
       reservationId: record.id,

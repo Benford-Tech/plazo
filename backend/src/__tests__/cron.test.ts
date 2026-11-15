@@ -34,11 +34,11 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       inboundEmails: { textsCleared: 0, rowsDeleted: 0 },
       reservationsAnonymized: 0,
       inspectionPhotosErased: 0,
-      invitationTrackingsPurged: 0,
       signatureCodesDeleted: 0,
       // « Rejoindre un parking » (13/10/2026).
       identityTokensDeleted: 0,
       joinRequestsExpired: 0,
+      invitationTrackingsPurged: 0,
       joinAttemptsDeleted: 0,
       identitiesDeleted: 0,
       usedIdentityTokensDeleted: 0,

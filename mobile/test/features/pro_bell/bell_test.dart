@@ -34,6 +34,14 @@ class FakeBell implements BellDataSource {
     return 0;
   }
 
+  final cleared = <String>[];
+
+  @override
+  Future<(int, int)> clear({List<String>? ids, bool read = false, bool all = false}) async {
+    cleared.add(ids != null ? ids.join(',') : (all ? 'all' : 'read'));
+    return (ids?.length ?? 1, 0);
+  }
+
   @override
   Future<NotificationChannels> channels() async => const NotificationChannels(
     role: 'manager',
@@ -64,6 +72,35 @@ class FakeBell implements BellDataSource {
 
 void main() {
   setUpAll(setUpLocalizedTests);
+
+  // 15/11/2026 (« pouvoir nettoyer les notifications », choix C).
+  testWidgets('glisser efface une notification, le menu efface les lues ou tout après confirmation', (tester) async {
+    final bell = FakeBell();
+    ProBellPage.debugSource = bell;
+    addTearDown(() => ProBellPage.debugSource = null);
+    await pumpLocalized(tester, const ProBellPage());
+    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const Key('bell-item-n2')), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(bell.cleared, ['n2']);
+    expect(find.text('Navette de retour'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('bell-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bell-clear-read')));
+    await tester.pumpAndSettle();
+    expect(bell.cleared.last, 'read');
+
+    await tester.tap(find.byKey(const Key('bell-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bell-clear-all')));
+    await tester.pumpAndSettle();
+    expect(find.text('Effacer toutes vos notifications ?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('bell-clear-all-confirm')));
+    await tester.pumpAndSettle();
+    expect(bell.cleared.last, 'all');
+    expect(find.text('Client atterri · TO 3627'), findsNothing);
+  });
 
   testWidgets('la cloche (02/11/2026) : non lues marquées, un toucher la lit, filtres et « Tout lu »', (tester) async {
     final bell = FakeBell();

@@ -140,7 +140,7 @@ describe('Plateforme › Prospection : accès et prospects', () => {
     ];
     const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
     expect(preview.status).toBe(200);
-    expect(preview.body.counts).toEqual({ new: 2, duplicate: 2, suppressed: 1, invalid: 1 });
+    expect(preview.body.counts).toEqual({ new: 2, duplicate: 2, completed: 0, suppressed: 1, invalid: 1 });
     expect(preview.body.results.map((r: any) => r.outcome)).toEqual(['duplicate', 'new', 'duplicate', 'suppressed', 'invalid', 'new']);
     expect(preview.body.results[4].fields).toEqual({ companyName: 'required' });
     expect(await prisma.prospect.count()).toBe(1);
@@ -151,6 +151,50 @@ describe('Plateforme › Prospection : accès et prospects', () => {
     // A suppressed address can neither be imported nor typed again.
     expect((await api().post(P).set(auth(admin.token)).send(prospect(3))).body.code).toBe('suppressed');
     expect((await api().post(`${P}/import`).set(auth(admin.token)).send({ rows: [] })).body.fields).toEqual({ rows: 'required' });
+  });
+});
+
+describe('Plateforme › Prospection : compléter les prospects déjà présents (15/11/2026)', () => {
+  it('« complete » remplit les cases vides (site, outil, notes ajoutées) sans rien écraser ; sans lui, un doublon reste tel quel', async () => {
+    const withMail = await create(1, { website: 'https://deja.example', notes: 'SI 1/4' });
+    await api().post(P).set(auth(admin.token)).send({ companyName: 'Parken zum Fliegen GmbH', email: '', airportCode: 'STR' });
+    const rows = [
+      prospect(1, { website: 'autre.example', tool: "Pas d'outil visible", toolDetail: 'Site minimal', notes: 'Présent sur Allopark' }),
+      {
+        companyName: 'Parken zum Fliegen',
+        email: 'info@parken-zum-fliegen.example',
+        airportCode: 'STR',
+        website: 'parken-zum-fliegen.example',
+        tool: "Pas d'outil",
+      },
+      prospect(1),
+    ];
+    const plain = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
+    expect(plain.body.counts).toMatchObject({ duplicate: 2, completed: 0, new: 1 });
+
+    const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true, complete: true });
+    expect(preview.body.results.map((r: any) => r.outcome)).toEqual(['completed', 'completed', 'duplicate']);
+    expect(preview.body.results[0].completed).toEqual(['tool', 'toolDetail', 'notes']);
+    expect(await prisma.prospect.count({ where: { tool: { not: null } } })).toBe(0);
+
+    const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, complete: true });
+    expect(done.body).toMatchObject({ created: 0, updated: 2 });
+    expect(await prisma.prospect.findUniqueOrThrow({ where: { id: withMail.id } })).toMatchObject({
+      website: 'https://deja.example',
+      tool: "Pas d'outil visible",
+      toolDetail: 'Site minimal',
+      notes: 'SI 1/4\nPrésent sur Allopark',
+    });
+    expect(await prisma.prospect.findFirstOrThrow({ where: { companyName: 'Parken zum Fliegen GmbH' } })).toMatchObject({
+      email: 'info@parken-zum-fliegen.example',
+      website: 'https://parken-zum-fliegen.example',
+      tool: "Pas d'outil",
+    });
+    const list = await api().get(P).set(auth(admin.token));
+    expect(list.body.data.find((p: any) => p.id === withMail.id)).toMatchObject({ tool: "Pas d'outil visible", toolDetail: 'Site minimal' });
+    // Run again: nothing left to fill, the notes are not added twice.
+    const again = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, complete: true });
+    expect(again.body).toMatchObject({ updated: 0, counts: { completed: 0, duplicate: 3 } });
   });
 });
 
@@ -232,7 +276,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
       prospect(4, { region: '' }),
     ];
     const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
-    expect(preview.body.counts).toEqual({ new: 3, duplicate: 0, suppressed: 0, invalid: 1 });
+    expect(preview.body.counts).toEqual({ new: 3, duplicate: 0, completed: 0, suppressed: 0, invalid: 1 });
     expect(preview.body.results[2]).toMatchObject({ row: 3, outcome: 'invalid', fields: { region: 'invalid_region' } });
     const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows });
     expect(done.body.created).toBe(3);
@@ -546,7 +590,7 @@ describe('Plateforme › Prospection : prospects européens (13/11/2026, « fais
     ];
     const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
     expect(preview.status).toBe(200);
-    expect(preview.body.counts).toEqual({ new: 4, duplicate: 1, suppressed: 0, invalid: 0 });
+    expect(preview.body.counts).toEqual({ new: 4, duplicate: 1, completed: 0, suppressed: 0, invalid: 0 });
     const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: false });
     expect(done.body.created).toBe(4);
     // Imported again: every row is a duplicate (by its name, or its address).

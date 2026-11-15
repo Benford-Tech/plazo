@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { NotificationBell } from "./NotificationBell";
 
-const api = vi.hoisted(() => ({ bellCount: vi.fn(), bell: vi.fn(), markBellRead: vi.fn() }));
+const api = vi.hoisted(() => ({ bellCount: vi.fn(), bell: vi.fn(), markBellRead: vi.fn(), clearBell: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
@@ -38,6 +38,7 @@ describe("NotificationBell (02/11/2026)", () => {
     api.bellCount.mockResolvedValue({ unread: 1 });
     api.bell.mockResolvedValue(page);
     api.markBellRead.mockResolvedValue({ unread: 0 });
+    api.clearBell.mockResolvedValue({ cleared: 1, unread: 0 });
   });
 
   it("montre le nombre de non lues, la liste, et un clic ouvre la fiche en la marquant lue", async () => {
@@ -61,5 +62,22 @@ describe("NotificationBell (02/11/2026)", () => {
     await waitFor(() => expect(api.bell).toHaveBeenLastCalledWith("shuttle", undefined));
     await userEvent.click(screen.getByRole("button", { name: "Tout marquer lu" }));
     expect(api.markBellRead).toHaveBeenCalledWith(undefined);
+  });
+
+  // 15/11/2026 (« pouvoir nettoyer les notifications », choix C).
+  it("efface une notification, les lues, ou tout après confirmation", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderBell();
+    await userEvent.click(await screen.findByTestId("bell"));
+    await screen.findByText("Navette partie");
+    await userEvent.click(screen.getByTestId("bell-clear-n2"));
+    expect(api.clearBell).toHaveBeenCalledWith({ ids: ["n2"] });
+    expect(api.markBellRead).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByTestId("bell-menu"));
+    await userEvent.click(screen.getByTestId("bell-clear-read"));
+    expect(api.clearBell).toHaveBeenLastCalledWith({ read: true });
+    await userEvent.click(screen.getByTestId("bell-menu"));
+    await userEvent.click(screen.getByTestId("bell-clear-all"));
+    await waitFor(() => expect(api.clearBell).toHaveBeenLastCalledWith({ all: true }));
   });
 });

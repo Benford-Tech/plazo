@@ -33,6 +33,7 @@ beforeEach(async () => {
     graphVersion: 'v21.0',
     templates: '',
     reminderTemplate: '',
+    reminderByWhatsapp: true,
     businessAccountId: '',
   });
   fetchMock = jest

@@ -2798,7 +2798,18 @@
       "bookings": "Buchungen",
       "shuttle": "Shuttle",
       "team": "Team"
-    }
+    },
+    "menu": "Weitere Aktionen",
+    "clear_read": "Gelesene löschen",
+    "clear_all": "Alle löschen…",
+    "clear_one": "Löschen",
+    "clear_all_title": "Alle Benachrichtigungen löschen?",
+    "clear_all_body": "Sie verschwinden aus Ihrer Glocke, in Plazo Pro und im Web. Ihre Kollegen behalten ihre.",
+    "clear_all_confirm": "Alle löschen",
+    "cancel": "Abbrechen",
+    "cleared": "{} Benachrichtigung(en) gelöscht.",
+    "cleared_none": "Nichts zu löschen.",
+    "clear_failed": "Die Benachrichtigungen konnten nicht gelöscht werden."
   },
   "notif_channels": {
     "title": "Wo jede Benachrichtigung ankommt",

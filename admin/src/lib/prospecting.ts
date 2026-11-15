@@ -49,6 +49,13 @@ const HEADERS: Record<string, Column> = {
   telephone: "phone",
   tel: "phone",
   phone: "phone",
+  // 15/11/2026: the software seen at the parking and what was seen.
+  outil: "tool",
+  outildetecte: "tool",
+  tool: "tool",
+  detailoutil: "toolDetail",
+  detailsoutil: "toolDetail",
+  tooldetail: "toolDetail",
   notes: "notes",
   note: "notes",
   commentaire: "notes",

@@ -26,6 +26,8 @@ API = (os.environ.get("PLAZO_API", "").strip() or "https://www.plazo.fr/api").rs
 EMAIL = os.environ.get("PLAZO_ADMIN_EMAIL", "").strip()
 PASSWORD = os.environ.get("PLAZO_ADMIN_PASSWORD", "")
 APPLY = os.environ.get("APPLY", "").strip().lower() == "true"
+# 15/11/2026: a row of a prospect already listed fills its empty fields (site, tool, notes added), never overwrites.
+COMPLETE = os.environ.get("COMPLETE", "").strip().lower() == "true"
 MAX_ROWS = 2000  # MAX_IMPORT_ROWS of backend/src/domain/prospecting.ts
 
 # The headers the page knows (HEADERS of admin/src/lib/prospecting.ts), keyed as headerKey() does.
@@ -41,6 +43,8 @@ HEADERS = {
     "site": "website", "siteweb": "website", "siteinternet": "website", "website": "website", "web": "website", "url": "website",
     "langue": "language", "language": "language",
     "telephone": "phone", "tel": "phone", "phone": "phone",
+    "outil": "tool", "outildetecte": "tool", "tool": "tool",
+    "detailoutil": "toolDetail", "detailsoutil": "toolDetail", "tooldetail": "toolDetail",
     "notes": "notes", "note": "notes", "commentaire": "notes", "commentaires": "notes", "remarques": "notes",
 }
 
@@ -143,7 +147,7 @@ def logout():
     token = None
 
 
-OUTCOMES = {"new": "à ajouter", "duplicate": "déjà dans la liste", "suppressed": "désinscrit", "invalid": "erreur"}
+OUTCOMES = {"new": "à ajouter", "duplicate": "déjà dans la liste", "completed": "complété", "suppressed": "désinscrit", "invalid": "erreur"}
 
 
 def report(rows, answer):
@@ -155,15 +159,17 @@ def report(rows, answer):
         outcome = OUTCOMES.get(result["outcome"], result["outcome"])
         fields = result.get("fields")
         extra = f" ({', '.join(f'{k}: {v}' for k, v in fields.items())})" if fields else ""
+        if result.get("completed"):
+            extra = f" ({', '.join(result['completed'])})"
         lines.append(f"| {result['row']} | {name} | {airport} | {outcome}{extra} |")
     counts = answer.get("counts", {})
     title = "Import fait" if APPLY else "Aperçu (rien n'est écrit)"
     summary = [
         f"## {title}",
         "",
-        f"{counts.get('new', 0)} à ajouter · {counts.get('duplicate', 0)} déjà dans la liste · "
+        f"{counts.get('new', 0)} à ajouter · {counts.get('completed', 0)} complétés · {counts.get('duplicate', 0)} déjà dans la liste · "
         f"{counts.get('suppressed', 0)} désinscrits · {counts.get('invalid', 0)} en erreur"
-        + (f" · **{answer.get('created', 0)} créés**" if APPLY else ""),
+        + (f" · **{answer.get('created', 0)} créés, {answer.get('updated', 0)} complétés**" if APPLY else ""),
         "",
         "| Ligne | Parking | Aéroport | Résultat |",
         "|---|---|---|---|",
@@ -183,7 +189,7 @@ def main():
     print(f"{len(rows)} rows read; {'import' if APPLY else 'preview only'}")
     try:
         login()
-        answer = call("POST", "/internal/platform/prospects/import", {"rows": rows, "dryRun": not APPLY})
+        answer = call("POST", "/internal/platform/prospects/import", {"rows": rows, "dryRun": not APPLY, "complete": COMPLETE})
         report(rows, answer)
     finally:
         logout()

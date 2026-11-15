@@ -54,6 +54,19 @@ export class StaffNotificationController {
     res.json(await this.bell.markRead(req.staff, ids as string[] | undefined));
   });
 
+  /**
+   * POST /internal/notifications/clear { ids } | { read: true } | { all: true } (15/11/2026, « pouvoir nettoyer les
+   * notifications », choix C): erases the member's own notifications; returns { cleared, unread }.
+   */
+  public clear = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const body = (req.body ?? {}) as { ids?: unknown; read?: unknown; all?: unknown };
+    const { ids } = body;
+    if (ids !== undefined && (!Array.isArray(ids) || !ids.length || ids.length > 200 || ids.some(id => typeof id !== 'string'))) throw invalid('ids');
+    const scope = ids ? { ids: ids as string[] } : body.all === true ? 'all' : body.read === true ? 'read' : null;
+    if (!scope) throw invalid('ids');
+    res.json(await this.bell.clear(req.staff, scope));
+  });
+
   /** GET /internal/notifications/channels */
   public channels = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.bell.channels(req.staff));

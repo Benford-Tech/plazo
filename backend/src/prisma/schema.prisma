@@ -1744,6 +1744,9 @@ model Prospect {
   website          String?
   // Language of the mails chosen by hand (fr, de, en); null: the region's (domain/prospect-regions.ts).
   language         String?
+  // 15/11/2026: the software seen at the parking (« Pas d'outil visible », a product name) and what was seen.
+  tool             String?
+  toolDetail       String?
   notes            String?
   source           ProspectSource @default(manual)
   status           ProspectStatus @default(to_contact)

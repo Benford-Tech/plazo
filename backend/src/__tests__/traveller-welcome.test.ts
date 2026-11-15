@@ -30,8 +30,8 @@ async function booking(op: Op, data: Record<string, unknown> = {}) {
       operatorId: op.operator.id,
       parkingId: op.parking.id,
       channel: 'aggregator',
-      channelDetail: 'Allopark',
-      externalReference: `AL-88488${n}`,
+      channelDetail: 'Onepark',
+      externalReference: `#59083${n}`,
       status: 'upcoming',
       arrivalAt: new Date('2026-11-20T05:30:00Z'),
       returnAt: new Date('2026-11-27T20:40:00Z'),
@@ -122,6 +122,17 @@ describe('l’envoi', () => {
 
     // A second pass sends nothing more.
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+  });
+
+  it('jamais pour une réservation Allopark, par son nom ou son numéro AL-…', async () => {
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'allo@example.org' });
+    await booking(op, { channelDetail: 'allopark', externalReference: null, customerEmail: 'allo2@example.org' });
+    await booking(op, { channelDetail: null, externalReference: 'AL-884880720', customerEmail: 'allo3@example.org' });
+    await booking(op, { channel: 'phone', channelDetail: null, externalReference: null, customerEmail: 'tel@example.org' });
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect(emails().map(m => m.to[0].email)).toEqual(['tel@example.org']);
   });
 
   it('rien sans fiche Plazo, ni depuis le parking de test', async () => {
