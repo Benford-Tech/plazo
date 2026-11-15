@@ -3567,6 +3567,22 @@ export const fr = {
       sent: (n: number) => `Envoyé à ${n} téléphone${n > 1 ? "s" : ""}.`,
       history: "Envois précédents",
       historyEmpty: "Aucun envoi pour le moment.",
+      // 15/11/2026: « M'envoyer un test » du mail d'accueil aux voyageurs.
+      welcome: {
+        title: "Mail d'accueil aux voyageurs",
+        intro:
+          "Envoyé une fois à chaque client qui réserve hors Plazo (comparateur, téléphone, comptoir) pour lui faire installer l'application. Le test prend une réservation d'exemple au nom du parking choisi.",
+        parking: "Parking",
+        parkingExample: "Parking d'exemple",
+        send: "M'envoyer un test",
+        sending: "Envoi…",
+        sent: (to: string, from: string | null) => (from ? `Test envoyé à ${to} depuis ${from}.` : `Test envoyé à ${to}.`),
+        errors: {
+          email_unavailable: "L'envoi des e-mails n'est pas configuré (Brevo).",
+          email_failed: "Brevo n'a pas pu envoyer le mail. Réessayez dans un instant.",
+          not_found: "Ce loueur n'existe plus.",
+        } as Record<string, string>,
+      },
       colWhen: "Date",
       colAudience: "Destinataires",
       colMessage: "Message",

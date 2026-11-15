@@ -1573,6 +1573,12 @@ export const adminApi = {
       "/internal/platform/prospects/settings",
       { method: "PUT", body: json(input) },
     ),
+  /** 15/11/2026: the welcome email to travellers, for an example booking, sent to the admin. */
+  sendTravellerWelcomeTest: (operatorId: string | null) =>
+    apiRequest<{ to: string; from: string | null; subject: string }>("/internal/platform/traveller-welcome/test", {
+      method: "POST",
+      body: json({ operatorId }),
+    }),
   sendPlatformNotification: (input: PlatformNotificationInput) =>
     apiRequest<{ data: PlatformNotification }>(
       "/internal/platform/notifications",

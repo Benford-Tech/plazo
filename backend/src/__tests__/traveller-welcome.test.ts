@@ -160,3 +160,35 @@ describe('l’envoi', () => {
     expect(later).toEqual({ sent: 0, skipped: 1, failed: 0 });
   });
 });
+
+describe('le test depuis Plateforme › Notifications', () => {
+  afterEach(() => {
+    delete process.env.PLATFORM_ADMIN_EMAILS;
+  });
+
+  it('part vers l’administrateur, depuis l’adresse du service client, au nom du parking choisi', async () => {
+    const admin = await setupOperator('Plazo (tests)');
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const res = await api()
+      .post('/api/internal/platform/traveller-welcome/test')
+      .set('Authorization', `Bearer ${admin.token}`)
+      .send({ operatorId: op.operator.id });
+    expect(res.status).toBe(200);
+    expect(res.body.to).toBe(admin.manager.email);
+    const sent = fetchMock.mock.calls
+      .filter(([u]) => String(u) === BREVO_EMAIL)
+      .map(([, init]) => JSON.parse((init as RequestInit).body as string) as Record<string, any>)
+      .filter(m => (m.tags ?? []).includes('traveller_welcome_test'));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to[0].email).toBe(admin.manager.email);
+    expect(sent[0].sender.email).toBe('contact@plazo.fr');
+    expect(sent[0].subject).toMatch(/^\[Test\] Gérant, installez Plazo/);
+    expect(sent[0].htmlContent).toContain('Parking des Cèdres');
+    // Nothing recorded, and a loueur cannot use it.
+    expect(await prisma.reservation.count()).toBe(0);
+    const refused = await api().post('/api/internal/platform/traveller-welcome/test').set('Authorization', `Bearer ${op.token}`).send({});
+    expect(refused.status).toBe(403);
+  });
+});

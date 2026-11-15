@@ -8,6 +8,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { CapacityStudyService } from '@/services/capacity-study.service';
 import { GeoService, MAX_BBOX_SPAN } from '@/services/geo.service';
 import { PlatformService } from '@/services/platform.service';
+import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
 import catchAsync from '@/utils/catchAsync';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : undefined);
@@ -61,6 +62,14 @@ export class PlatformController {
   public sendNotification = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: PlatformNotificationDto = req.body;
     res.status(httpStatus.CREATED).json({ data: await this.platform.sendNotification(req.staff, data) });
+  });
+
+  /** POST /internal/platform/traveller-welcome/test { operatorId? } */
+  public travellerWelcomeTest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const operatorId = str(req.body?.operatorId)?.trim() || null;
+    if (operatorId && operatorId.length > 40) throw new ValidationException({ operatorId: 'invalid' });
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerWelcomeService).sendTest({ email: req.staff.email, firstName: req.staff.firstName ?? '' }, operatorId));
   });
 
   /** GET /internal/platform/operators[?view=archived] */

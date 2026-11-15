@@ -138,6 +138,19 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               url: { type: string, nullable: true }
  *     responses:
  *       201: { description: "{ data }" }
+ * /internal/platform/traveller-welcome/test:
+ *   post:
+ *     summary: 15/11/2026 — the welcome email to travellers, for an example booking of the operator chosen (operatorId, else an example parking), sent to the admin from the service client's address
+ *     tags: [Platform]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema: { type: object, properties: { operatorId: { type: string, nullable: true } } }
+ *     responses:
+ *       200: { description: "{ to, from, subject }" }
+ *       404: { description: Unknown operator (code not_found) }
+ *       409: { description: Email not configured (code email_unavailable) }
+ *       502: { description: Brevo refused (code email_failed) }
  * /internal/platform/notifications/audience:
  *   get:
  *     summary: E-A — how many phones a broadcast would reach ({ devices, configured })
@@ -342,6 +355,7 @@ export class PlatformRoute implements Routes {
       ValidationMiddleware(PlatformNotificationDto),
       this.platform.sendNotification,
     );
+    this.router.post(`${base}/traveller-welcome/test`, PlatformAdminMiddleware(), this.platform.travellerWelcomeTest);
     this.router.get(`${base}/operators`, PlatformAdminMiddleware(), this.platform.operators);
     this.router.get(`${base}/overview`, PlatformAdminMiddleware(), this.platform.overview);
     this.router.patch(
