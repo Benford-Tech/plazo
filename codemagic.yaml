@@ -40,6 +40,8 @@
 #                     Android half of mobile-release (same steps, through the anchors below), without Apple:
 #                     no iOS signing nor App Store Connect integration, so it runs before the Apple profiles
 #                     exist, and when only Google Play needs a new version.
+#   mobile-release-submit → by hand (15/11/2026): both apps to Google Play (production), and Plazo alone to the
+#                     App Store, submitted for App Review; Plazo Pro is not built for iOS (its review is left alone).
 # The store uploads are done by the Codemagic CLI tools (google-play, app-store-connect) from scripts, not by a
 # `publishing:` block: a block publishes the artifacts of one app only, and would upload twice if kept.
 #
@@ -623,3 +625,122 @@ workflows:
       - build/app/outputs/bundle/*/*.aab
       - build/app/outputs/flutter-apk/*.apk
       - build/app/outputs/mapping/*/mapping.txt
+
+  mobile-release-submit:
+    name: Plazo + Plazo Pro → Google Play, Plazo → App Store (soumis à la revue) ; Plazo Pro pas sur l'App Store
+    # 15/11/2026 (« un pipeline qui deploy et soumet tout sauf Plazo Pro sur l'Apple Store »): the Android half of
+    # mobile-release for both apps (production track, release notes), then Plazo alone on iOS: built, uploaded to TestFlight
+    # and submitted for App Review (released once approved). Plazo Pro is neither built nor uploaded for iOS, so its
+    # App Store version under review is never touched. By hand only (Start new build › this workflow).
+    instance_type: mac_mini_m2
+    # Two Android apps (~12 min each), one iOS app (~20 min), up to 20 min of Apple processing before the submission.
+    max_build_duration: 120
+    working_directory: mobile
+    integrations:
+      app_store_connect: lovenest-asc
+    environment:
+      <<: *env_versions
+      ios_signing:
+        # Only Plazo's App Store profile: Plazo Pro is not built for iOS here.
+        certificates:
+          - thempo-distribution
+        provisioning_profiles:
+          - plazo_app_store
+      groups:
+        - mobile_secrets
+        - plazo_android_signing
+      vars:
+        <<: *android_vars
+        IOS_BUNDLE_ID_PLAZO: com.benfordtech.plazo
+        # Both Apple ids are read by the version step, so the build number stays above every listing (Plazo Pro included).
+        APP_STORE_APP_ID_PLAZO: "6821635235"
+        APP_STORE_APP_ID_PLAZO_PRO: "6821635650"
+        APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
+    scripts:
+      - *android_key_properties
+      - *release_version
+      - *flutter_packages
+      - *release_checks
+      - *android_build
+      - name: Apple Pay (Plazo) selon son profil App Store
+        # Same rule as the GitHub workflow (31/10/2026): Apple Pay only when Plazo's App Store profile carries a merchant id;
+        # the entitlement is added for this build only and the IPA gets that merchant id.
+        script: |
+          set -e
+          ENTITLEMENTS="ios/Runner/Runner.entitlements"
+          MERCHANTS=""
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO")
+                I=0
+                while M=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.in-app-payments:$I" "$DECODED" 2>/dev/null); do
+                  MERCHANTS="$MERCHANTS $M"; I=$((I + 1))
+                done
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          MERCHANTS=$(echo "$MERCHANTS" | tr ' ' '\n' | sed '/^$/d' | sort -u | tr '\n' ' ')
+          if [ -z "$MERCHANTS" ]; then
+            echo "ATTENTION: le profil App Store de Plazo n'a pas la capacité Apple Pay (Merchant ID) : Plazo est construit sans Apple Pay"
+            exit 0
+          fi
+          CHOSEN=""
+          for M in $MERCHANTS; do [ "$M" = "${STRIPE_MERCHANT_ID:-}" ] && CHOSEN="$M"; done
+          [ -n "$CHOSEN" ] || CHOSEN=$(echo $MERCHANTS | awk '{print $1}')
+          /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.in-app-payments" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+          /usr/libexec/PlistBuddy -c "Add :com.apple.developer.in-app-payments array" -c "Add :com.apple.developer.in-app-payments:0 string $CHOSEN" "$ENTITLEMENTS"
+          echo "APPLE_PAY_DEFINE=--dart-define=STRIPE_MERCHANT_ID=$CHOSEN" >> "$CM_ENV"
+          echo "Apple Pay : capacité présente ($CHOSEN)"
+      - name: Profil de signature de Plazo dans le projet Xcode
+        script: |
+          set -e
+          xcode-project use-profiles
+          PLIST="$HOME/export_options.plist"
+          /usr/libexec/PlistBuddy -c "Print :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO" "$PLIST" >/dev/null 2>&1 \
+            || { echo "ERREUR: aucun profil App Store pour $IOS_BUNDLE_ID_PLAZO (plazo_app_store dans Code signing identities)"; exit 1; }
+      - name: iOS — IPA de Plazo (release, signé, versionné)
+        script: |
+          set -e
+          mkdir -p build/ios/dsym
+          # STRIPE_MERCHANT_ID of COMMON_DEFINES is replaced by the one the profile allows (previous step), when there is one.
+          DEFINES="--dart-define=APP_FLAVOR=traveller --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID_PLAZO $COMMON_DEFINES ${APPLE_PAY_DEFINE:-}"
+          echo "── plazo (iOS, $VERSION_NAME+$NEXT)"
+          flutter build ipa --release --flavor traveller --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES \
+            --export-options-plist="$HOME/export_options.plist"
+          for IPA in build/ios/ipa/*.ipa; do mv "$IPA" "build/ios/ipa/plazo-v$VERSION_NAME-$NEXT.ipa"; done
+          cp -R build/ios/archive/*.xcarchive/dSYMs "build/ios/dsym/plazo-v$VERSION_NAME-$NEXT"
+          ls -1 build/ios/ipa/*.ipa
+      - *play_upload
+      - name: App Store Connect — Plazo sur TestFlight puis soumis à la revue (notes de version)
+        ignore_failure: true
+        script: |
+          IPA="build/ios/ipa/plazo-v$VERSION_NAME-$NEXT.ipa"
+          NAME=$(basename "$IPA" .ipa)
+          if ! app-store-connect publish --path "$IPA" --max-build-processing-wait 0; then
+            echo "KO  TestFlight   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            exit 0
+          fi
+          # Apple may take minutes to cancel an older submission of Plazo still waiting: tried twice, 3 min apart.
+          submit() {
+            app-store-connect publish --path "$IPA" --skip-package-upload --max-build-processing-wait 20 \
+              --app-store --platform IOS --version-string "$VERSION_NAME" --release-type "$APP_STORE_RELEASE_TYPE" \
+              --cancel-previous-submissions --locale fr-FR --whats-new "@file:$CM_BUILD_DIR/release-notes-plazo.txt"
+          }
+          if submit || { echo "Nouvel essai de soumission dans 3 min"; sleep 180; submit; }; then
+            echo "OK  App Store    $NAME (soumis à la revue)" >> "$CM_BUILD_DIR/publish-status.txt"
+          else
+            echo "KO  App Store    $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+          fi
+      - *publish_summary
+    artifacts:
+      - build/app/outputs/bundle/*/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/mapping/*/mapping.txt
+      - build/ios/ipa/*.ipa
+      - build/ios/dsym/*/*.dSYM
