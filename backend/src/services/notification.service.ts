@@ -183,13 +183,15 @@ export class NotificationService {
     message: EmailMessage,
     attachments: { name: string; content: Buffer }[] = [],
     headers: Record<string, string> = {},
+    /** Another sender than EMAIL_FROM ("Plazo <contact@plazo.fr>": the welcome email, 15/11/2026). */
+    from?: string,
   ): Promise<boolean> {
     if (!this.canSendEmail()) {
       logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
       return false;
     }
     return this.post('email', tag, about, '/smtp/email', {
-      sender: parseSender(this.settings.emailFrom, PRODUCT_NAME),
+      sender: parseSender(from || this.settings.emailFrom, PRODUCT_NAME),
       to: [{ email: to.email, name: to.name }],
       subject: message.subject,
       htmlContent: message.html,

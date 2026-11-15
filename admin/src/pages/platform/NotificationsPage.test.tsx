@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
   sendPlatformNotification: vi.fn(),
   getPlatformOperators: vi.fn(),
   getAirports: vi.fn(),
+  sendTravellerWelcomeTest: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
@@ -185,5 +186,17 @@ describe("Notifications de la plateforme (E-A, C-A)", () => {
       await user.type(screen.getByLabelText("Message"), "Texte.");
       expect(screen.getByRole("button", { name: "Envoyer la promotion" })).toBeDisabled();
     });
+  });
+
+  it("envoie le test du mail d'accueil au nom du parking choisi", async () => {
+    const user = userEvent.setup();
+    api.sendTravellerWelcomeTest.mockResolvedValue({ to: "joanny@example.com", from: "contact@plazo.fr", subject: "x" });
+    renderIn();
+    const card = await screen.findByTestId("welcome-test");
+    await waitFor(() => expect(within(card).getByRole("option", { name: "Parking Soleil" })).toBeInTheDocument());
+    await user.selectOptions(within(card).getByLabelText("Parking"), "o1");
+    await user.click(within(card).getByTestId("welcome-test-send"));
+    await waitFor(() => expect(api.sendTravellerWelcomeTest).toHaveBeenCalledWith("o1"));
+    expect(toast.success).toHaveBeenCalledWith("Test envoyé à joanny@example.com depuis contact@plazo.fr.");
   });
 });

@@ -1559,7 +1559,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      migration `traveller_welcome`, qui marque les réservations d'avant). « Ne plus recevoir ces messages » :
      `GET|POST /public/traveller-emails/unsubscribe/:jeton` (id de la réservation + HMAC de `SECRET_KEY`, page avec un bouton,
      un clic RFC 8058, `List-Unsubscribe`) → `traveller_email_optouts` (sha256 de l'adresse). Politique de confidentialité
-     (article 3). Test `traveller-welcome.test.ts`.
+     (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Allopark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). Test `traveller-welcome.test.ts`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

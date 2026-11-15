@@ -12,6 +12,7 @@ import type { PlatformAudience, PlatformNotification } from "@/lib/types";
 import { promotionFiltersSummary, promotionLinkSummary } from "@/lib/promotion";
 import { cn } from "@/lib/utils";
 import PromotionForm from "./notifications/PromotionForm";
+import WelcomeTestCard from "./notifications/WelcomeTestCard";
 
 const t = fr.platform.notifications;
 const TITLE_MAX = 50;
@@ -185,6 +186,7 @@ export default function NotificationsPage() {
           </div>
         </div>
       )}
+      <WelcomeTestCard />
       <section className="space-y-2">
         <h2 className="text-xl font-semibold uppercase tracking-wide">{t.history}</h2>
         {history.isLoading ? (

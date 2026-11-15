@@ -1,12 +1,14 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Container, Service } from 'typedi';
-import { PLAZO_APP_STORE_URL, PLAZO_PLAY_STORE_URL, PRODUCT_COMPANY, PRODUCT_NAME } from '@/config';
+import { PLAZO_APP_STORE_URL, PLAZO_PLAY_STORE_URL, PRODUCT_COMPANY, PRODUCT_NAME, SUPPORT_EMAIL } from '@/config';
 import prisma from '@/database';
 import { travellerStoreBadges } from '@/domain/account-messages';
 import { publisherLine } from '@/domain/prospecting';
 import { localDateTime } from '@/domain/time';
 import { travellerEmail } from '@/domain/traveller-email';
+import { EmailMessage } from '@/domain/booking-messages';
 import { welcomeEmail, welcomeEmailHash } from '@/domain/traveller-welcome';
+import { HttpException } from '@/utils/httpException';
 import { isSilentOperator } from '@/services/demo-guard';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
@@ -113,22 +115,14 @@ export class TravellerWelcomeService {
     const link = this.notifications.appLinkUrl(r);
     const unsubscribeUrl = this.notifications.siteUrl(`/api/public/traveller-emails/unsubscribe/${this.unsubscribeToken(r.id)}`);
     if (!link || !unsubscribeUrl) return 'failed';
-    const imagesBase = this.notifications.siteUrl('');
-    const parkingName = r.parking.listing?.title || r.parking.name;
-    const message = welcomeEmail({
-      productName: PRODUCT_NAME,
+    const message = this.compose({
       firstName: (r.customerFirstName ?? '').trim(),
-      parkingName,
+      parkingName: r.parking.listing?.title || r.parking.name,
       arrivalLocal: localDateTime(r.arrivalAt, r.parking.timezone),
       returnLocal: localDateTime(r.returnAt, r.parking.timezone),
       reference: r.externalReference || r.reference,
       link,
-      imagesBase,
-      badges: imagesBase
-        ? travellerStoreBadges(PRODUCT_NAME, { badgesBase: imagesBase, playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL })
-        : [],
       unsubscribeUrl,
-      publisher: publisherLine(PRODUCT_COMPANY) || PRODUCT_NAME,
     });
     const ok = await this.notifications.emailTraveller(
       { email, name: (r.customerFirstName ?? '').trim() || email },
@@ -140,8 +134,76 @@ export class TravellerWelcomeService {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
+      this.sender(),
     );
     return ok ? 'sent' : 'failed';
+  }
+
+  /** The service client's address sends it (« passe par contact@plazo.fr », 15/11/2026); else EMAIL_FROM. */
+  private sender(): string | undefined {
+    return SUPPORT_EMAIL ? `${PRODUCT_NAME} <${SUPPORT_EMAIL}>` : undefined;
+  }
+
+  private compose(fields: {
+    firstName: string;
+    parkingName: string;
+    arrivalLocal: string;
+    returnLocal: string;
+    reference: string;
+    link: string;
+    unsubscribeUrl: string;
+  }): EmailMessage {
+    const imagesBase = this.notifications.siteUrl('');
+    return welcomeEmail({
+      productName: PRODUCT_NAME,
+      ...fields,
+      imagesBase,
+      badges: imagesBase
+        ? travellerStoreBadges(PRODUCT_NAME, { badgesBase: imagesBase, playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL })
+        : [],
+      publisher: publisherLine(PRODUCT_COMPANY) || PRODUCT_NAME,
+    });
+  }
+
+  /**
+   * 15/11/2026 (« mets-le à dispo sur Plazo, je ferai le test d'envoi », Plateforme › Notifications): the welcome email of an
+   * example booking (in 5 days, 7 nights, an Allopark number) for the operator chosen, sent to the admin who asks. Nothing is
+   * recorded on any booking; the links go to the site's « Ma réservation » page.
+   */
+  public async sendTest(to: { email: string; firstName: string }, operatorId: string | null, now: Date = new Date()) {
+    if (!this.notifications.canSendEmail()) throw new HttpException(409, 'Email is not configured', 'email_unavailable');
+    const parking = operatorId
+      ? await prisma.parking.findFirst({
+          where: { operatorId },
+          orderBy: { createdAt: 'asc' },
+          select: { name: true, timezone: true, listing: { select: { title: true } } },
+        })
+      : null;
+    if (operatorId && !parking) throw new HttpException(404, 'Operator not found', 'not_found');
+    const timezone = parking?.timezone ?? 'Europe/Paris';
+    const day = localDateTime(new Date(now.getTime() + 5 * 86400_000), timezone).slice(0, 10);
+    const back = localDateTime(new Date(now.getTime() + 12 * 86400_000), timezone).slice(0, 10);
+    const link = this.notifications.siteUrl('/ma-reservation') || 'https://www.plazo.fr/ma-reservation';
+    const message = this.compose({
+      firstName: to.firstName,
+      parkingName: parking?.listing?.title || parking?.name || 'Parking des Cèdres',
+      arrivalLocal: `${day}T06:30`,
+      returnLocal: `${back}T21:40`,
+      reference: 'AL-884880719',
+      link,
+      unsubscribeUrl: link,
+    });
+    const ok = await this.notifications.emailTraveller(
+      { email: to.email, name: to.firstName || to.email },
+      'traveller_welcome_test',
+      operatorId ?? 'platform',
+      { ...message, subject: `[Test] ${message.subject}` },
+      [],
+      {},
+      this.sender(),
+    );
+    if (!ok) throw new HttpException(502, 'The email could not be sent', 'email_failed');
+    return { to: to.email, from: SUPPORT_EMAIL || null, subject: message.subject };
   }
 
   // ---- « Ne plus recevoir ces messages » ----------------------------------------------------------------------------
