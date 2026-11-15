@@ -153,7 +153,9 @@ function groupOf(action: string): HistoryGroup {
     action === 'contract.code_sent' ||
     action.startsWith('sms.') ||
     action === 'traveller.message_sent' ||
-    action === 'whatsapp.reply'
+    action === 'whatsapp.reply' ||
+    action === 'whatsapp.conversation_deleted' ||
+    action === 'whatsapp.message_deleted'
   )
     return 'message';
   return 'other';

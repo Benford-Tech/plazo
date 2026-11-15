@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Copy, ExternalLink, MapPin, MessageSquare, Mic, Minus, Paperclip, Phone, X } from "lucide-react";
+import { ArrowLeft, Copy, ExternalLink, MapPin, MessageSquare, Mic, Minus, MoreHorizontal, Paperclip, Phone, Trash2, X } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { StatusPill } from "@/components/StatusPill";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError, adminApi } from "@/lib/api";
 import { PARKING_TZ, dateTimeShort, timeOf, todayLocal } from "@/lib/datetime";
+import { can } from "@/lib/roles";
 import {
   describeError,
   travellerMessagesFr,
@@ -155,7 +157,8 @@ function MediaButton({ message }: { message: WhatsappInboxMessage }) {
   );
 }
 
-function Bubble({ item }: { item: ChatItem }) {
+function Bubble({ item, onDelete }: { item: ChatItem; onDelete?: () => void }) {
+  const [menu, setMenu] = useState(false);
   if (item.kind === "sent")
     return (
       <div
@@ -177,12 +180,16 @@ function Bubble({ item }: { item: ChatItem }) {
   const out = m.direction === "out";
   return (
     <div
+      className={cn(
+        "group flex max-w-[78%] items-start gap-1",
+        out ? "flex-row-reverse self-end" : "self-start",
+      )}
+    >
+    <div
       data-testid={out ? "wa-out" : "wa-in"}
       className={cn(
-        "max-w-[78%] whitespace-pre-wrap break-words rounded-xl px-3 py-1.5 text-sm",
-        out
-          ? "self-end bg-[#DCF8C6] text-[#0B3B19]"
-          : "self-start bg-white text-foreground",
+        "min-w-0 whitespace-pre-wrap break-words rounded-xl px-3 py-1.5 text-sm",
+        out ? "bg-[#DCF8C6] text-[#0B3B19]" : "bg-white text-foreground",
       )}
     >
       {out && m.by && (
@@ -234,6 +241,40 @@ function Bubble({ item }: { item: ChatItem }) {
         {timeOf(m.at)}
         {out && m.status ? ` · ${t.replyStatus[m.status] ?? m.status}` : ""}
       </span>
+    </div>
+      {/* 15/11/2026 (« Pouvoir supprimer les SMS »): « ⋯ › Supprimer » on each message, managers and reception. */}
+      {onDelete && (
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            aria-label={t.remove.menu}
+            title={t.remove.menu}
+            aria-expanded={menu}
+            data-testid="wa-msg-menu"
+            onClick={() => setMenu((v) => !v)}
+            className="rounded-full p-1 text-muted-foreground opacity-60 hover:bg-white hover:opacity-100 focus:opacity-100 group-hover:opacity-100"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+          {menu && (
+            <button
+              type="button"
+              data-testid="wa-msg-delete"
+              onClick={() => {
+                setMenu(false);
+                onDelete();
+              }}
+              className={cn(
+                "absolute top-7 z-10 flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-panel-line bg-white px-3 py-1.5 text-sm font-semibold text-destructive shadow-md hover:bg-accent",
+                out ? "right-0" : "left-0",
+              )}
+            >
+              <Trash2 className="h-4 w-4" />
+              {t.remove.message}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -331,6 +372,54 @@ export function Thread({
     },
     onError: (err) => toast.error(describeError(err, t.errors)),
   });
+  const { user } = useAuth();
+  const confirm = useConfirm();
+  const mayDelete = can(user?.role, "reservations:manage") && !user?.demo;
+  const gone = () => {
+    queryClient.removeQueries({ queryKey: ["whatsapp-conversation", id] });
+    onChanged();
+    if (docked) docked.onClose();
+    else onBack();
+  };
+  const removeConversation = useMutation({
+    mutationFn: () => adminApi.deleteWhatsappConversation(id),
+    onSuccess: () => {
+      toast.success(t.remove.conversationDone);
+      gone();
+    },
+    onError: (err) => toast.error(describeError(err, t.errors)),
+  });
+  const removeMessage = useMutation({
+    mutationFn: (messageId: string) => adminApi.deleteWhatsappMessage(id, messageId),
+    onSuccess: (out) => {
+      if (out.conversationDeleted) {
+        toast.success(t.remove.conversationDone);
+        gone();
+        return;
+      }
+      toast.success(t.remove.messageDone);
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-conversation", id] });
+      onChanged();
+    },
+    onError: (err) => toast.error(describeError(err, t.errors)),
+  });
+  const askRemoveConversation = async () => {
+    const count = detail?.messages.length ?? 0;
+    const yes = await confirm(t.remove.conversationText(count), {
+      title: t.remove.conversationTitle,
+      confirmLabel: t.remove.confirm,
+      destructive: true,
+    });
+    if (yes) removeConversation.mutate();
+  };
+  const askRemoveMessage = async (messageId: string) => {
+    const yes = await confirm(t.remove.messageText, {
+      title: t.remove.messageTitle,
+      confirmLabel: t.remove.confirm,
+      destructive: true,
+    });
+    if (yes) removeMessage.mutate(messageId);
+  };
   const handle = useMutation({
     mutationFn: (handled: boolean) => adminApi.handleWhatsapp(id, handled),
     onSuccess: (conv) => {
@@ -380,6 +469,11 @@ export function Thread({
               <ExternalLink className="h-3.5 w-3.5" />
             </Link>
           )}
+          {mayDelete && (
+            <button type="button" onClick={askRemoveConversation} aria-label={t.remove.conversation} title={t.remove.conversation} data-testid="wa-delete-conversation" className={dockIcon}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button type="button" onClick={docked.onMinimize} aria-label={t.dock.minimize} title={t.dock.minimize} data-testid="dock-minimize" className={dockIcon}>
             <Minus className="h-3.5 w-3.5" />
           </button>
@@ -405,6 +499,19 @@ export function Thread({
         )}
         {r && <StatusPill status={r.status} />}
         {c.phone && <OwnPhoneActions phone={c.phone} />}
+        {mayDelete && (
+          <button
+            type="button"
+            onClick={askRemoveConversation}
+            disabled={removeConversation.isPending}
+            aria-label={t.remove.conversation}
+            title={t.remove.conversation}
+            data-testid="wa-delete-conversation"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-panel-line text-destructive hover:bg-accent"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
         {r && (
           <Link
             to={`/reservations/${r.id}`}
@@ -435,7 +542,14 @@ export function Thread({
                   {dayLabel(item.at)}
                 </span>
               )}
-              <Bubble item={item} />
+              <Bubble
+                item={item}
+                onDelete={
+                  mayDelete && item.kind === "message"
+                    ? () => askRemoveMessage(item.message.id)
+                    : undefined
+                }
+              />
             </div>
           );
         })}

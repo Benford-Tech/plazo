@@ -5774,6 +5774,8 @@ export const historyFr = {
     "sms.reminder_sent": "a envoyé le message de la veille",
     "traveller.message_sent": "a écrit au client",
     "whatsapp.reply": "a répondu au client sur WhatsApp",
+    "whatsapp.conversation_deleted": "a supprimé la conversation avec le client",
+    "whatsapp.message_deleted": "a supprimé un message de la conversation",
   } as Record<string, string>,
   other: "a fait une action",
   inspectionKind: { dropoff: "au dépôt", return: "au retour" } as Record<string, string>,
@@ -6102,6 +6104,20 @@ export const whatsappInboxFr = {
   handle: "Marquer comme traité",
   unhandle: "Remettre à traiter",
   handled: "Conversation marquée comme traitée.",
+  /** 15/11/2026 (« Pouvoir supprimer les SMS »): only in Plazo, never on the phone or for the client. */
+  remove: {
+    conversation: "Supprimer la conversation",
+    conversationTitle: "Supprimer cette conversation ?",
+    conversationText: (n: number) =>
+      `${n > 1 ? `Les ${n} messages disparaissent` : "Le message disparaît"} de Plazo pour toute l'équipe. Ils restent sur le téléphone du parking et chez le client.`,
+    conversationDone: "Conversation supprimée.",
+    menu: "Plus d'actions sur ce message",
+    message: "Supprimer",
+    messageTitle: "Supprimer ce message ?",
+    messageText: "Il disparaît de Plazo pour toute l'équipe. Il reste sur le téléphone du parking et chez le client.",
+    messageDone: "Message supprimé.",
+    confirm: "Supprimer",
+  },
   call: (phone: string) => `Appeler le ${phone}`,
   sms: (phone: string) => `Envoyer un SMS au ${phone}`,
   copyNumber: "Copier le numéro",
@@ -6117,6 +6133,8 @@ export const whatsappInboxFr = {
     sms_unavailable: "Le téléphone SMS du parking n'est plus relié : reliez-le dans Parking › Réglages.",
     sms_failed: "Le SMS n'est pas parti. Vérifiez que le téléphone d'envoi est allumé.",
     not_found: "Cette conversation n'existe plus.",
+    message_not_found: "Ce message n'existe plus.",
+    demo_read_only: "Démo : rien n'est supprimé.",
   } as Record<string, string>,
   fieldErrors: { required: "Écrivez la référence.", not_found: "Aucune réservation avec cette référence." } as Record<string, string>,
 };

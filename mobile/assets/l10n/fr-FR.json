@@ -2960,7 +2960,8 @@
       "demo_read_only": "Démo : la réponse n'est pas envoyée.",
       "generic": "Le message n'est pas parti. Réessayez.",
       "sms_unavailable": "Le téléphone SMS du parking n'est plus relié : reliez-le dans les réglages du parking.",
-      "sms_failed": "Le SMS n'est pas parti. Vérifiez que le téléphone d'envoi est allumé."
+      "sms_failed": "Le SMS n'est pas parti. Vérifiez que le téléphone d'envoi est allumé.",
+      "message_not_found": "Ce message n'existe plus."
     },
     "sent_no_text": "Texte non gardé (envoyé avant le 12/11/2026).",
     "sent_sms_fallback": "SMS envoyé aussi",
@@ -2976,7 +2977,21 @@
       "failed": "non parti",
       "abandoned": "non parti"
     },
-    "sms_no_text": "Texte non gardé (envoyé avant le 15/11/2026)."
+    "sms_no_text": "Texte non gardé (envoyé avant le 15/11/2026).",
+    "delete": {
+      "conversation": "Supprimer la conversation",
+      "conversation_title": "Supprimer cette conversation ?",
+      "conversation_text_one": "Le message disparaît de Plazo pour toute l'équipe. Il reste sur le téléphone du parking et chez le client.",
+      "conversation_text_many": "Les {} messages disparaissent de Plazo pour toute l'équipe. Ils restent sur le téléphone du parking et chez le client.",
+      "conversation_done": "Conversation supprimée.",
+      "message": "Supprimer",
+      "message_title": "Supprimer ce message ?",
+      "message_text": "Il disparaît de Plazo pour toute l'équipe. Il reste sur le téléphone du parking et chez le client.",
+      "message_done": "Message supprimé.",
+      "confirm": "Supprimer",
+      "cancel": "Annuler",
+      "menu": "Plus d'actions sur ce message"
+    }
   },
   "parking_messages": {
     "title": "Écrire au parking",

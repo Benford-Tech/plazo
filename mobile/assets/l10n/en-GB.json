@@ -2960,7 +2960,8 @@
       "demo_read_only": "Demo: the reply isn't sent.",
       "generic": "The message wasn't sent. Try again.",
       "sms_unavailable": "The parking's SMS phone is no longer linked: link it again in the parking settings.",
-      "sms_failed": "The SMS did not leave. Check that the sending phone is on."
+      "sms_failed": "The SMS did not leave. Check that the sending phone is on.",
+      "message_not_found": "This message no longer exists."
     },
     "sent_no_text": "Text not kept (sent before 12/11/2026).",
     "sent_sms_fallback": "Text message also sent",
@@ -2976,7 +2977,21 @@
       "failed": "not sent",
       "abandoned": "not sent"
     },
-    "sms_no_text": "Text not kept (sent before 15/11/2026)."
+    "sms_no_text": "Text not kept (sent before 15/11/2026).",
+    "delete": {
+      "conversation": "Delete conversation",
+      "conversation_title": "Delete this conversation?",
+      "conversation_text_one": "The message disappears from Plazo for the whole team. It stays on the parking's phone and with the customer.",
+      "conversation_text_many": "The {} messages disappear from Plazo for the whole team. They stay on the parking's phone and with the customer.",
+      "conversation_done": "Conversation deleted.",
+      "message": "Delete",
+      "message_title": "Delete this message?",
+      "message_text": "It disappears from Plazo for the whole team. It stays on the parking's phone and with the customer.",
+      "message_done": "Message deleted.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "menu": "More actions on this message"
+    }
   },
   "parking_messages": {
     "title": "Message the car park",

@@ -130,6 +130,17 @@ class FakeInbox implements WhatsappInboxDataSource {
   @override
   Future<Uint8List> media(String messageId) async => Uint8List(0);
 
+  final deleted = <String>[];
+
+  @override
+  Future<void> deleteConversation(String id) async => deleted.add('conversation:$id');
+
+  @override
+  Future<bool> deleteMessage(String id, String messageId) async {
+    deleted.add('message:$messageId');
+    return false;
+  }
+
   @override
   Future<int> unreadCount() async => 1;
 
@@ -216,6 +227,52 @@ void main() {
     await tester.tap(find.byKey(const Key('wa-call')));
     await tester.pump();
     expect(links.opened, [Uri.parse('sms:0612345678'), Uri.parse('tel:0612345678')]);
+  });
+
+  testWidgets('supprimer un message (« ⋯ ») puis la conversation, gérants et accueil (15/11/2026)', (tester) async {
+    final inbox = FakeInbox();
+    ProWhatsappConversationPage.debugSource = inbox;
+    ProWhatsappConversationPage.debugCanDelete = true;
+    addTearDown(() {
+      ProWhatsappConversationPage.debugSource = null;
+      ProWhatsappConversationPage.debugCanDelete = null;
+    });
+    await pumpLocalized(tester, const ProWhatsappConversationPage(id: 'c1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wa-msg-menu-m1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wa-msg-delete')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('reste sur le téléphone du parking'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('wa-delete-confirm')));
+    await tester.pumpAndSettle();
+    expect(inbox.deleted, ['message:m1']);
+    expect(find.text('Message supprimé.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('wa-delete-conversation')));
+    await tester.pumpAndSettle();
+    expect(find.text('Supprimer cette conversation ?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('wa-delete-cancel')));
+    await tester.pumpAndSettle();
+    expect(inbox.deleted, ['message:m1']);
+    await tester.tap(find.byKey(const Key('wa-delete-conversation')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wa-delete-confirm')));
+    await tester.pumpAndSettle();
+    expect(inbox.deleted, ['message:m1', 'conversation:c1']);
+  });
+
+  testWidgets('le chauffeur ne voit pas de quoi supprimer', (tester) async {
+    ProWhatsappConversationPage.debugSource = FakeInbox();
+    ProWhatsappConversationPage.debugCanDelete = false;
+    addTearDown(() {
+      ProWhatsappConversationPage.debugSource = null;
+      ProWhatsappConversationPage.debugCanDelete = null;
+    });
+    await pumpLocalized(tester, const ProWhatsappConversationPage(id: 'c1'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('wa-delete-conversation')), findsNothing);
+    expect(find.byKey(const Key('wa-msg-menu-m1')), findsNothing);
   });
 
   testWidgets('après 24 h : plus de champ, « Appeler le … »', (tester) async {

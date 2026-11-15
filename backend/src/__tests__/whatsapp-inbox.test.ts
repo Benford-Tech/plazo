@@ -465,3 +465,51 @@ describe('« Écrire au client » depuis Plazo Pro (13/11/2026)', () => {
     }
   });
 });
+
+describe('Supprimer des messages (15/11/2026, « Pouvoir supprimer les SMS »)', () => {
+  it('un message à la fois, puis la conversation entière ; le chauffeur ne supprime pas, un autre parking non plus', async () => {
+    const op = await setupOperator();
+    const res = await booking(op.operator.id, op.parking.id);
+    await postWebhook(incoming('wamid.in.d1', '33612345678', 'Bonjour'));
+    await postWebhook(incoming('wamid.in.d2', '33612345678', 'PUB -50% sur tout'));
+    const conv = (await api().get('/api/internal/whatsapp/inbox').set(auth(op.token))).body.data[0];
+    const open = await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(op.token));
+    const spam = open.body.messages.find((m: any) => m.text.startsWith('PUB'));
+
+    const driver = await addStaff(op.token, 'driver');
+    expect((await api().delete(`/api/internal/whatsapp/inbox/${conv.id}/messages/${spam.id}`).set(auth(driver.token))).status).toBe(403);
+    const other = await setupOperator();
+    expect((await api().delete(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(other.token))).status).toBe(404);
+
+    const one = await api().delete(`/api/internal/whatsapp/inbox/${conv.id}/messages/${spam.id}`).set(auth(op.token));
+    expect(one.status).toBe(200);
+    expect(one.body).toMatchObject({ deleted: true, conversationDeleted: false });
+    const after = await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(op.token));
+    expect(after.body.messages.map((m: any) => m.text)).toEqual(['Bonjour']);
+    expect(after.body.conversation.preview.text).toBe('Bonjour');
+    expect((await api().delete(`/api/internal/whatsapp/inbox/${conv.id}/messages/${spam.id}`).set(auth(op.token))).status).toBe(404);
+
+    const all = await api().delete(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(op.token));
+    expect(all.body).toMatchObject({ deleted: true, messages: 1 });
+    expect(await prisma.whatsappInboxMessage.count()).toBe(0);
+    expect((await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(op.token))).status).toBe(404);
+    const audit = await prisma.auditLog.findMany({ where: { entityId: res.id, action: { startsWith: 'whatsapp.' } } });
+    expect(audit.map(a => a.action).sort()).toEqual(['whatsapp.conversation_deleted', 'whatsapp.message_deleted']);
+    expect(JSON.stringify(audit)).not.toContain('PUB');
+
+    // A new message opens a new conversation.
+    await postWebhook(incoming('wamid.in.d3', '33612345678', 'Encore moi'));
+    expect((await api().get('/api/internal/whatsapp/inbox').set(auth(op.token))).body.data).toHaveLength(1);
+  });
+
+  it('le dernier message supprimé emporte la conversation', async () => {
+    const op = await setupOperator();
+    await booking(op.operator.id, op.parking.id);
+    await postWebhook(incoming('wamid.in.e1', '33612345678', 'Seul message'));
+    const conv = (await api().get('/api/internal/whatsapp/inbox').set(auth(op.token))).body.data[0];
+    const msg = (await api().get(`/api/internal/whatsapp/inbox/${conv.id}`).set(auth(op.token))).body.messages[0];
+    const out = await api().delete(`/api/internal/whatsapp/inbox/${conv.id}/messages/${msg.id}`).set(auth(op.token));
+    expect(out.body.conversationDeleted).toBe(true);
+    expect(await prisma.whatsappConversation.count()).toBe(0);
+  });
+});

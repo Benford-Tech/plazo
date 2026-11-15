@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { WhatsappConversation, WhatsappConversationDetail } from "@/lib/types";
 import WhatsappInboxPage from "./WhatsappInboxPage";
 
-const api = vi.hoisted(() => ({ whatsappSent: vi.fn(), whatsappInbox: vi.fn(), whatsappConversation: vi.fn(), replyWhatsapp: vi.fn(), handleWhatsapp: vi.fn(), whatsappMedia: vi.fn() }));
+const api = vi.hoisted(() => ({ whatsappSent: vi.fn(), whatsappInbox: vi.fn(), whatsappConversation: vi.fn(), replyWhatsapp: vi.fn(), handleWhatsapp: vi.fn(), whatsappMedia: vi.fn(), deleteWhatsappConversation: vi.fn(), deleteWhatsappMessage: vi.fn() }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { role: "manager" } }) }));
@@ -70,6 +70,25 @@ beforeEach(() => {
 });
 
 describe("Messages WhatsApp (12/11/2026)", () => {
+  it("supprime un message par « ⋯ › Supprimer », puis toute la conversation (15/11/2026)", async () => {
+    const ask = vi.spyOn(window, "confirm").mockReturnValue(true);
+    api.deleteWhatsappMessage.mockResolvedValue({ id: "m1", deleted: true, conversationDeleted: false });
+    api.deleteWhatsappConversation.mockResolvedValue({ id: "c1", deleted: true, messages: 1 });
+    renderAt("/reservations/whatsapp?vue=all&c=c1");
+    await screen.findByTestId("wa-thread");
+    expect(screen.queryByTestId("wa-msg-delete")).toBeNull();
+    await userEvent.click(screen.getAllByTestId("wa-msg-menu")[0]);
+    await userEvent.click(screen.getByTestId("wa-msg-delete"));
+    expect(ask).toHaveBeenCalledWith(expect.stringContaining("reste sur le téléphone du parking"));
+    await waitFor(() => expect(api.deleteWhatsappMessage).toHaveBeenCalledWith("c1", "m1"));
+    expect(toast.success).toHaveBeenCalledWith("Message supprimé.");
+    await userEvent.click(screen.getByTestId("wa-delete-conversation"));
+    await waitFor(() => expect(api.deleteWhatsappConversation).toHaveBeenCalledWith("c1"));
+    expect(toast.success).toHaveBeenCalledWith("Conversation supprimée.");
+    // The Plazo message (« Veille du dépôt envoyé par Plazo ») has no « ⋯ ».
+    ask.mockRestore();
+  });
+
   it("liste les conversations, ouvre la conversation avec le message de Plazo, et répond", async () => {
     renderAt("/reservations/whatsapp");
     await waitFor(() => expect(screen.getByTestId("wa-view-unread")).toHaveTextContent("Non lus · 1"));
