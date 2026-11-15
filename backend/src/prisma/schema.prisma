@@ -80,6 +80,7 @@ model Operator {
   updatedAt              DateTime       @default(now()) @updatedAt
 
   staff                 Staff[]
+  invitationTrackings   InvitationTracking[]
   parkings              Parking[]
   auditLogs             AuditLog[]
   reservations          Reservation[]
@@ -208,6 +209,7 @@ model Staff {
   operator             Operator                   @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens               StaffToken[]
   accountTokens        AccountToken[]
+  invitationTrackings  InvitationTracking[]
   auditLogs            AuditLog[]
   createdReservations  Reservation[]
   reservationImports   ReservationImport[]
@@ -2388,4 +2390,36 @@ model OperatorWhatsappNumber {
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
   @@map("operator_whatsapp_numbers")
+}
+
+/// 15/11/2026 (« je veux traquer les ouvertures de mail d'invitation, par qui, sur quel support, s'ils téléchargent l'app »):
+/// one row per invitation email sent (a manager invited by the platform, a team member by a manager), and what followed.
+/// The open is approximate (Apple Mail and Gmail load images themselves); « installed the app » = signed in to Plazo Pro.
+model InvitationTracking {
+  id            String    @id @default(cuid())
+  staffId       String
+  operatorId    String
+  kind          String // operator · team
+  emailSent     Boolean
+  sentAt        DateTime  @default(now())
+  openedAt      DateTime?
+  lastOpenedAt  DateTime?
+  openCount     Int       @default(0)
+  openDevice    String?
+  clickedAt     DateTime?
+  clickDevice   String?
+  storeClickAt  DateTime?
+  storeClick    String? // play · app_store
+  demoClickAt   DateTime?
+  passwordSetAt DateTime?
+  appSignInAt   DateTime?
+  appPlatform   String? // ios · android · app
+  webSignInAt   DateTime?
+  webDevice     String?
+  staff         Staff     @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  operator      Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, sentAt])
+  @@index([sentAt])
+  @@map("invitation_trackings")
 }

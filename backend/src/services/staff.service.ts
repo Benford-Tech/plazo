@@ -2,15 +2,7 @@ import { nextDemoReset } from '@/domain/prospect-demo';
 import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import {
-  BCRYPT_ROUNDS,
-  INVITATION_TTL_DAYS,
-  isPlatformAdmin,
-  isVerifiedPlatformAdmin,
-  PLAZO_PRO_APP_STORE_URL,
-  PLAZO_PRO_PLAY_STORE_URL,
-  PRODUCT_NAME,
-} from '@/config';
+import { BCRYPT_ROUNDS, INVITATION_TTL_DAYS, isPlatformAdmin, isVerifiedPlatformAdmin, PRODUCT_NAME } from '@/config';
 import prisma, { IdentityProvider, Staff, StaffRole } from '@/database';
 import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
@@ -21,8 +13,10 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { fullName, namesOf } from '@/domain/staff-name';
 import { teamInvitationEmail } from '@/domain/account-messages';
+import { withOpenPixel } from '@/domain/invitation-tracking';
 import { AccountTokenService } from './account-token.service';
 import { AuditService } from './audit.service';
+import { InvitationTrackingService } from './invitation-tracking.service';
 import { NotificationService } from './notification.service';
 import { operatorTimezone } from './operator-timezone';
 import { checkPasswordAttempt } from './password-attempts';
@@ -275,22 +269,27 @@ export class StaffService {
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: staff.operatorId }, select: { name: true } });
     const { token } = await Container.get(AccountTokenService).issue(staff.id, 'invitation', INVITATION_TTL_DAYS * 24 * 3600 * 1000);
     const notifications = Container.get(NotificationService);
+    // 15/11/2026: Plateforme › Invitations follows what each email led to (open, clicks, password, Plazo Pro).
+    const tracking = Container.get(InvitationTrackingService);
+    const tracked = await tracking.start(staff.id, staff.operatorId, 'team');
+    const email = teamInvitationEmail(PRODUCT_NAME, {
+      operatorName: operator.name,
+      // In consultation the platform resends the operator's invitation: the email names Plazo, not the admin.
+      inviterName: actor.actingAs ? PRODUCT_NAME : fullName(actor.firstName, actor.lastName),
+      role: staff.role,
+      url: notifications.proUrl(`/invitation#${token}`),
+      days: INVITATION_TTL_DAYS,
+      playStoreUrl: tracked.playStoreUrl,
+      appStoreUrl: tracked.appStoreUrl,
+      badgesBase: notifications.siteUrl(''),
+    });
     const emailSent = await notifications.emailStaff(
       { email: staff.email, name: fullName(staff.firstName, staff.lastName) },
       'team_invitation',
       `staff ${staff.id}`,
-      teamInvitationEmail(PRODUCT_NAME, {
-        operatorName: operator.name,
-        // In consultation the platform resends the operator's invitation: the email names Plazo, not the admin.
-        inviterName: actor.actingAs ? PRODUCT_NAME : fullName(actor.firstName, actor.lastName),
-        role: staff.role,
-        url: notifications.proUrl(`/invitation#${token}`),
-        days: INVITATION_TTL_DAYS,
-        playStoreUrl: PLAZO_PRO_PLAY_STORE_URL,
-        appStoreUrl: PLAZO_PRO_APP_STORE_URL,
-        badgesBase: notifications.siteUrl(''),
-      }),
+      { ...email, html: withOpenPixel(email.html, tracked.pixelUrl) },
     );
+    await tracking.sent(tracked.id, emailSent);
     await this.audit.record(actor, { action: 'staff.invited', entityType: 'staff', entityId: staff.id, details: { emailSent } });
     return { emailSent };
   }

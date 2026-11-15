@@ -2697,6 +2697,22 @@ pas est un 409 `sms_failed` (plus un 502 dont Cloudflare remplaçait le corps). 
   `AcceptInvitationPage.test.tsx`. Plazo Pro n'a pas encore le bouton « Renvoyer ». **Mise en forme (26/10/2026, « mets en forme le
   mail plazo »)** : les deux étapes sont deux cartes teintées numérotées (`stepCard` de `account-messages.ts` : disque citron avec le
   numéro, titre vert foncé, texte, puis le bouton ou les badges).
+- **Suivi des invitations, Plateforme › Invitations (15/11/2026, « traquer les ouvertures de mail d'invitation, par qui, sur quel
+  support, s'ils téléchargent l'app », choix « Plateforme » et ouverture « approx. »)** : table `invitation_trackings` (migration
+  `invitation_tracking`, une ligne par mail envoyé, `kind` operator · team, purgée 13 mois après, `invitationTrackingsPurged`) ;
+  `InvitationTrackingService.start` avant l'envoi (gérant invité par `AccountService.sendInvitation`, membre par
+  `StaffService.sendInvitation`) : image invisible `GET /public/invitations/:clé/open.gif` (`withOpenPixel`, ouverture approximative :
+  Apple Mail et Gmail chargent les images eux-mêmes, `mail_proxy`), badges des stores et démo par `GET /public/invitations/:clé/go/play|app_store|demo`
+  (302 vers une adresse fixe, jamais une adresse du lien) ; clé = id + HMAC de `SECRET_KEY` (`domain/invitation-tracking.ts`,
+  `trackingKey`), cachée du journal des accès ; le lien du mot de passe n'est pas réécrit (son secret reste dans le fragment) : son
+  clic est noté quand la page d'invitation appelle `POST /internal/auth/invitation` ; mot de passe choisi à l'acceptation ; première
+  connexion (mot de passe, Apple, Google) dans Plazo Pro (`X-Plazo-Client: pro-ios | pro-android` envoyé par l'app, `_clientHeader` de
+  `external_locator.dart` ; une ancienne version = « App » par son User-Agent Dart) ou sur le web, dans les 60 jours ; appareil d'après le
+  navigateur (`deviceOf` : iPhone, iPad, Android, ordinateur), sans adresse IP. `GET /internal/platform/invitations?view=all|not_opened|not_clicked|no_app`
+  (`PlatformAdminMiddleware`) : la dernière invitation de chaque personne, `sends`, chaque étape. Web : page `/pro/plateforme/invitations`
+  (`InvitationsPage`, groupe Pilotage) : une ligne par personne, Envoyé · Ouvert (approx.) · Lien (appareil, store, démo) · Mot de passe ·
+  Plazo Pro (iPhone / Android, ou Web). « A installé l'app » = s'est connecté dans Plazo Pro : les stores ne disent pas qui télécharge.
+  Politique de confidentialité (section 10). Tests `invitation-tracking.test.ts`, `InvitationsPage.test.tsx`.
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
   https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et

@@ -7,6 +7,7 @@ import prisma, { StaffTokenType } from '@/database';
 import { LoginDto } from '@/dtos/auth.dto';
 import { TokenData } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
+import { InvitationTrackingService, SignInClient } from './invitation-tracking.service';
 import { TokenService } from './token.service';
 import { StaffService } from './staff.service';
 
@@ -23,7 +24,7 @@ export function normalizeEmail(email: string): string {
 export class AuthService {
   public tokenService = Container.get(TokenService);
 
-  public async login(data: LoginDto, metadata: { userAgent: string | null }) {
+  public async login(data: LoginDto, metadata: SignInClient) {
     const email = normalizeEmail(data.email);
     const since = dayjs().subtract(LOGIN_WINDOW_MINUTES, 'minutes').toDate();
     const failures = await prisma.loginAttempt.count({ where: { email, success: false, createdAt: { gt: since } } });
@@ -41,7 +42,8 @@ export class AuthService {
     if (staff.operator.status !== 'active') throw suspended();
 
     await prisma.staff.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } });
-    const tokenData = await this.tokenService.generateAuthTokens(staff.id, metadata);
+    await Container.get(InvitationTrackingService).signedIn(staff.id, metadata);
+    const tokenData = await this.tokenService.generateAuthTokens(staff.id, { userAgent: metadata.userAgent });
     return {
       tokenData,
       user: await Container.get(StaffService).sessionUser({ ...withoutOperator(staff), operatorName: staff.operator.name }),

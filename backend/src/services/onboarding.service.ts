@@ -15,6 +15,7 @@ import { anonymiseMember, formerMembersOf, unusablePassword } from './member-era
 import { DEFAULT_TIMEZONE } from './operator-timezone';
 import { PushService } from './push.service';
 import { StaffService } from './staff.service';
+import { InvitationTrackingService, SignInClient } from './invitation-tracking.service';
 import { TokenService } from './token.service';
 
 /** The person signed in with Apple or Google, as the onboarding screens show them. */
@@ -95,12 +96,12 @@ export class OnboardingService {
   }
 
   /** Each identity token works once (401 identity_invalid when it comes again). */
-  public async signInWithApple(data: AppleSignInDto, metadata: { userAgent: string | null }) {
+  public async signInWithApple(data: AppleSignInDto, metadata: SignInClient) {
     const verified = await this.verification.verifyAppleOnce(data.identityToken, data.rawNonce);
     return this.signIn(verified, { firstName: data.givenName, lastName: data.familyName }, metadata);
   }
 
-  public async signInWithGoogle(data: GoogleSignInDto, metadata: { userAgent: string | null }) {
+  public async signInWithGoogle(data: GoogleSignInDto, metadata: SignInClient) {
     const verified = await this.verification.verifyGoogleOnce(data.idToken);
     return this.signIn(verified, { firstName: verified.firstName, lastName: verified.lastName }, metadata);
   }
@@ -119,11 +120,7 @@ export class OnboardingService {
     });
   }
 
-  private async signIn(
-    verified: VerifiedIdentity,
-    given: { firstName?: string | null; lastName?: string | null },
-    metadata: { userAgent: string | null },
-  ) {
+  private async signIn(verified: VerifiedIdentity, given: { firstName?: string | null; lastName?: string | null }, metadata: SignInClient) {
     const identity = await this.upsertIdentity(verified, given);
     if (identity.staffId) {
       const member = await this.openStaffSession(identity, metadata);
@@ -144,14 +141,15 @@ export class OnboardingService {
   }
 
   /** The staff session of the member an identity is linked to (null when the member row is gone). */
-  private async openStaffSession(identity: StaffIdentity, metadata: { userAgent: string | null }) {
+  private async openStaffSession(identity: StaffIdentity, metadata: SignInClient) {
     if (!identity.staffId) return null;
     const staff = await prisma.staff.findUnique({ where: { id: identity.staffId }, include: { operator: true } });
     if (!staff) return null;
     if (staff.operator.status !== 'active') throw suspended();
     if (!staff.isActive) throw disabled();
     await prisma.staff.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } });
-    const tokenData = await this.tokens.generateAuthTokens(staff.id, metadata);
+    await Container.get(InvitationTrackingService).signedIn(staff.id, metadata);
+    const tokenData = await this.tokens.generateAuthTokens(staff.id, { userAgent: metadata.userAgent });
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { operator, ...rest } = staff;
     return { tokenData, user: await Container.get(StaffService).sessionUser({ ...rest, operatorName: operator.name }) };
@@ -299,7 +297,7 @@ export class OnboardingService {
   }
 
   /** POST /internal/auth/onboarding/session: the staff session, once a manager accepted the request. */
-  public async session(identity: StaffIdentity, metadata: { userAgent: string | null }) {
+  public async session(identity: StaffIdentity, metadata: SignInClient) {
     const member = await this.openStaffSession(identity, metadata);
     if (member) {
       // The onboarding is over: its tokens go (the app keeps the staff session only).

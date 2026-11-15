@@ -24,6 +24,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       },
       { to: "/plateforme/reservations", label: fr.platform.tabs.reservations },
       { to: "/plateforme/paiements", label: fr.platform.tabs.payments },
+      { to: "/plateforme/invitations", label: fr.platform.tabs.invitations },
     ],
   },
   {

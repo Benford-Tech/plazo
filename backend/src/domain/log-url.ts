@@ -8,6 +8,7 @@ const SECRET_PATHS = [
   /(\/unsubscribe\/)[^/?#]+/g,
   /(\/public\/demo\/links\/)[^/?#]+/g,
   /(\/a\/)[^/?#]+/g,
+  /(\/public\/invitations\/)[^/?#]+/g,
 ];
 const SECRET_QUERY = /([?&](?:cle|token|key|code|challenge|hub\.verify_token|hub\.challenge)=)[^&#]*/gi;
 
