@@ -346,6 +346,8 @@ describe("Plateforme › Prospection", () => {
         email: null,
         phone: "+39 02 000000",
         website: "https://www.avio.example",
+        tool: "🟢 Pas d'outil visible",
+        toolDetail: "Site minimal / vide",
         region: { key: "italie", label: "Italie", manual: true },
         language: "en",
       },
@@ -366,6 +368,9 @@ describe("Plateforme › Prospection", () => {
     expect(within(avio).getByText("+39 02 000000")).toBeInTheDocument();
     expect(within(avio).getByRole("link", { name: "Site · avio.example" })).toHaveAttribute("href", "https://www.avio.example");
     expect(within(avio).getByText("EN")).toBeInTheDocument();
+    // 15/11/2026: the software seen at the parking and its detail.
+    expect(within(avio).getByTestId("prospect-tool")).toHaveTextContent("Pas d'outil visibleSite minimal / vide");
+    expect(within(screen.getByText("Parken Fictif").closest("tr")!).getByTestId("prospect-tool")).toHaveTextContent("—");
     expect(within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Europe" })).toBeInTheDocument();
 

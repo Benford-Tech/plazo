@@ -531,6 +531,7 @@ export default function ProspectingPage() {
                     <th className="px-2 py-3 font-semibold">{t.colParking}</th>
                     <th className="px-2 py-3 font-semibold">{t.colContact}</th>
                     <th className="px-2 py-3 font-semibold">{t.colAirport}</th>
+                    <th className="px-2 py-3 font-semibold">{t.colTool}</th>
                     <th className="px-2 py-3 font-semibold">{t.colState}</th>
                     <th className="px-2 py-3 font-semibold">{t.colNext}</th>
                     <th className="px-2 py-3 font-semibold">{t.colDemo}</th>
@@ -546,7 +547,7 @@ export default function ProspectingPage() {
                   return (
                     <tbody key={group.key} data-testid={`region-${group.key}`}>
                       <tr className="border-b border-panel-line bg-panel-2">
-                        <td colSpan={8} className="px-2 py-1">
+                        <td colSpan={9} className="px-2 py-1">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <button
                               type="button"
@@ -627,6 +628,9 @@ export default function ProspectingPage() {
                                   </span>
                                 )}
                               </td>
+                              <td className="max-w-[200px] px-2 py-2" data-testid="prospect-tool">
+                                <ToolCell prospect={p} />
+                              </td>
                               <td className="px-2 py-2">
                                 <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-semibold", state.tone)}>{state.text}</span>
                                 {p.failedAttempts > 0 && <span className="mt-1 block text-xs text-destructive">{t.failed(p.failedAttempts)}</span>}
@@ -664,5 +668,26 @@ export default function ProspectingPage() {
       {dialog?.kind === "import" && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog?.kind === "steps" && settings.data && <StepsEditor settings={settings.data.data} onClose={() => setDialog(null)} />}
     </>
+  );
+}
+
+/** 15/11/2026: the software seen at the parking, its detail beneath (whole text in the tooltip). */
+function ToolCell({ prospect }: { prospect: Prospect }) {
+  if (!prospect.tool && !prospect.toolDetail) return <span className="text-muted-foreground">—</span>;
+  const tool = (prospect.tool ?? "").replace(/^[^\p{L}\p{N}]+/u, "");
+  return (
+    <span title={[tool, prospect.toolDetail].filter(Boolean).join(" · ")} className="block">
+      {tool && (
+        <span
+          className={cn(
+            "inline-block max-w-full truncate rounded-full px-2.5 py-0.5 text-xs font-semibold",
+            t.noTool(tool) ? "bg-ok-soft text-ok-text" : "bg-panel-2 text-[#4B5563]",
+          )}
+        >
+          {tool}
+        </span>
+      )}
+      {prospect.toolDetail && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{prospect.toolDetail}</span>}
+    </span>
   );
 }

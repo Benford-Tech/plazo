@@ -12,7 +12,7 @@ import { Modal } from "./Modal";
 const t = fr.platform.prospecting;
 type Key = Exclude<keyof ProspectInput, "region" | "language">;
 type Form = Record<Key, string>;
-const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "website", "notes"];
+const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "website", "tool", "toolDetail", "notes"];
 const LANGUAGES = PROSPECT_LANGUAGES;
 
 const formOf = (p: Prospect | null): Form =>
@@ -157,6 +157,10 @@ export function ProspectForm({
         <div className="grid gap-3 sm:grid-cols-2">
           {field("phone", { type: "tel", maxLength: 30 })}
           {field("website", { maxLength: 300, inputMode: "url", placeholder: "www.exemple.de" })}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {field("tool", { maxLength: 80, placeholder: t.toolPlaceholder })}
+          {field("toolDetail", { maxLength: 200 })}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="prospect-notes">{t.fields.notes}</Label>

@@ -2082,6 +2082,9 @@ export interface Prospect {
   phone: string | null;
   /** 13/11/2026: the parking's site (https). */
   website: string | null;
+  /** 15/11/2026: the software seen at the parking (« Pas d'outil visible », a product name) and what was seen. */
+  tool?: string | null;
+  toolDetail?: string | null;
   /** The language of its mails (chosen by hand, else its region's) and the one chosen by hand. */
   language: ProspectLanguage;
   languageOverride: ProspectLanguage | null;
@@ -2130,6 +2133,8 @@ export interface ProspectInput {
   region?: string | null;
   phone: string | null;
   website?: string | null;
+  tool?: string | null;
+  toolDetail?: string | null;
   /** fr, de, en (form) or a name (CSV column « langue »); null: the region's. */
   language?: string | null;
   notes: string | null;
@@ -2177,6 +2182,7 @@ export interface ProspectingSettings {
 export type ProspectImportOutcome =
   | "new"
   | "duplicate"
+  | "completed"
   | "suppressed"
   | "invalid";
 

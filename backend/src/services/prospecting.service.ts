@@ -31,6 +31,7 @@ import {
   retentionCutoff,
   RETRY_AFTER_MINUTES,
   sameCompany,
+  completionOf,
   SequenceStep,
   Sequences,
   sequencesOf,
@@ -263,6 +264,8 @@ export class ProspectingService {
       regionOverride: p.region,
       phone: p.phone,
       website: p.website,
+      tool: p.tool,
+      toolDetail: p.toolDetail,
       // 13/11/2026: the language of its mails (chosen by hand, else its region's) and the one chosen by hand (the form).
       language: prospectLanguage(p),
       languageOverride: isProspectLanguage(p.language) ? p.language : null,
@@ -431,31 +434,50 @@ export class ProspectingService {
    * « Importer un CSV »: the rows the page read from the file. `dryRun` answers what would happen (the preview) without
    * writing. Each row: new, duplicate (already listed, or twice in the file), suppressed (opted out) or invalid. A row
    * without an email (13/11/2026) is a duplicate of a prospect of the same name at the same airport (`sameCompany`), with
-   * or without an email.
+   * or without an email. `complete` (15/11/2026, « je ne vois plus les colonnes Détail outil, Outil détecté, Site web »):
+   * a row of a prospect already listed fills its empty fields (`completionOf`: never overwrites, notes added at the end),
+   * outcome `completed` with the fields it filled; nothing to fill stays a duplicate.
    */
-  public async importRows(actor: AuthenticatedStaff, rows: unknown, dryRun: boolean) {
+  public async importRows(actor: AuthenticatedStaff, rows: unknown, dryRun: boolean, complete = false) {
     if (!Array.isArray(rows) || rows.length === 0) throw new ValidationException({ rows: 'required' });
     if (rows.length > MAX_IMPORT_ROWS) throw new ValidationException({ rows: 'too_many_rows' });
     const checked = rows.map(row => validateProspect((row && typeof row === 'object' ? row : {}) as ProspectInput));
     const emails = checked.flatMap(c => (c.ok && c.value.email ? [c.value.email] : []));
-    const [existing, suppressed, names] = await Promise.all([
-      prisma.prospect.findMany({ where: { email: { in: emails } }, select: { email: true } }),
+    const needsAll = complete || checked.some(c => c.ok && !c.value.email);
+    const [existing, suppressed, all] = await Promise.all([
+      prisma.prospect.findMany({ where: { email: { in: emails } } }),
       prisma.prospectSuppression.findMany({ where: { emailHash: { in: emails.map(suppressionHash) } }, select: { emailHash: true } }),
-      checked.some(c => c.ok && !c.value.email)
-        ? prisma.prospect.findMany({ select: { companyName: true, airportCode: true } })
-        : Promise.resolve([]),
+      needsAll ? prisma.prospect.findMany() : Promise.resolve([] as Prospect[]),
     ]);
-    const listed = new Set(existing.map(e => e.email));
+    const listed = new Map(existing.map(e => [e.email!, e]));
     const optedOut = new Set(suppressed.map(s => s.emailHash));
     const seen = new Set<string>();
     const seenCompanies: { companyName: string; airportCode: string | null }[] = [];
     const toCreate: Prisma.ProspectCreateManyInput[] = [];
+    const patches = new Map<string, Prisma.ProspectUpdateInput>();
+    // An email already taken by another prospect is never given to the one being completed.
+    const takenEmails = new Set(all.flatMap(p => (p.email ? [p.email] : [])));
     const results = checked.map((c, index) => {
       if (!c.ok) return { row: index + 1, outcome: 'invalid' as const, fields: c.fields };
       const email = c.value.email ?? null;
       const company = { companyName: c.value.companyName!, airportCode: c.value.airportCode ?? null };
       if (email && optedOut.has(suppressionHash(email))) return { row: index + 1, outcome: 'suppressed' as const, email };
-      if (email ? listed.has(email) || seen.has(email) : [...names, ...seenCompanies].some(n => sameCompany(n, company))) {
+      const listedOne = email ? listed.get(email) : undefined;
+      const sameName = !listedOne && complete ? all.find(p => sameCompany(p, company)) : undefined;
+      const duplicate = email
+        ? Boolean(listedOne) || seen.has(email) || (complete && Boolean(sameName))
+        : [...all, ...seenCompanies].some(n => sameCompany(n, company));
+      if (duplicate) {
+        const target = listedOne ?? (complete ? (sameName ?? all.find(p => sameCompany(p, company))) : undefined);
+        if (complete && target && !patches.has(target.id)) {
+          const patch = completionOf(target, c.value, takenEmails);
+          const filled = Object.keys(patch);
+          if (filled.length) {
+            patches.set(target.id, patch);
+            if (typeof patch.email === 'string') takenEmails.add(patch.email);
+            return { row: index + 1, outcome: 'completed' as const, email, completed: filled };
+          }
+        }
         return { row: index + 1, outcome: 'duplicate' as const, email };
       }
       if (email) seen.add(email);
@@ -464,17 +486,29 @@ export class ProspectingService {
       return { row: index + 1, outcome: 'new' as const, email };
     });
     let created = 0;
-    if (!dryRun && toCreate.length) {
-      created = (await prisma.prospect.createMany({ data: toCreate, skipDuplicates: true })).count;
-      await this.record(actor, 'prospect.imported', 'prospect', undefined, { rows: rows.length, created });
-      logger.info(`[Prospecting] import: ${rows.length} rows, ${created} prospects created`);
+    let updated = 0;
+    if (!dryRun && (toCreate.length || patches.size)) {
+      if (toCreate.length) created = (await prisma.prospect.createMany({ data: toCreate, skipDuplicates: true })).count;
+      for (const [id, data] of patches) {
+        await prisma.prospect.update({ where: { id }, data });
+        updated += 1;
+      }
+      await this.record(actor, 'prospect.imported', 'prospect', undefined, { rows: rows.length, created, completed: updated });
+      logger.info(`[Prospecting] import: ${rows.length} rows, ${created} prospects created, ${updated} completed`);
     }
     const count = (outcome: string) => results.filter(r => r.outcome === outcome).length;
     return {
       dryRun,
       results,
-      counts: { new: count('new'), duplicate: count('duplicate'), suppressed: count('suppressed'), invalid: count('invalid') },
+      counts: {
+        new: count('new'),
+        duplicate: count('duplicate'),
+        completed: count('completed'),
+        suppressed: count('suppressed'),
+        invalid: count('invalid'),
+      },
       created,
+      updated,
     };
   }
 
