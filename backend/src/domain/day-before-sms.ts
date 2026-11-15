@@ -135,6 +135,29 @@ export function defaultTemplate(ctx: TemplateContext): string {
   );
 }
 
+/**
+ * 15/11/2026 (« voici le message à envoyer pour les réservations de type voiturier », APL Parking): the text a parking starts
+ * from for its valet bookings (« Voiturier au terminal »). Nothing leaves with it until the parking saves its own: without a
+ * valet text, a valet booking gets the usual message.
+ */
+export function valetSuggestedTemplate(ctx: TemplateContext, meetingPoint: string): string {
+  return [
+    'Bonjour {prénom},',
+    'Nous vous confirmons votre service voiturier prévu le {date} à {heure}.',
+    'Merci de nous prévenir 10 minutes avant votre arrivée.',
+    `Point de rendez-vous : ${meetingPoint}. Une fois sur place, le voiturier vous contactera directement.`,
+    "Au retour, envoyez-nous un message à votre atterrissage, puis une fois sorti de l'aéroport.",
+    ctx.repliesReachParking
+      ? 'Pour toute modification, répondez directement à ce SMS.'
+      : ctx.phone
+        ? `Pour toute modification : ${ctx.phone}.`
+        : null,
+    `Cordialement,\n${ctx.parkingName}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
 /** The short text the editor offers when the parking's own is too long: the practical details stay behind the link. */
 export function shortTemplate(ctx: TemplateContext): string {
   const contact = ctx.repliesReachParking ? ' Une modification ? Répondez à ce SMS.' : ctx.phone ? ` Une question ? ${ctx.phone}.` : '';

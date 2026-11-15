@@ -71,7 +71,7 @@ let seq = 0;
 async function booking(
   op: Awaited<ReturnType<typeof setupOperator>>,
   arrivalLocal: string,
-  extra: { phone?: string; name?: string; createdAt?: Date } = {},
+  extra: { phone?: string; name?: string; createdAt?: Date; valet?: boolean } = {},
 ) {
   seq += 1;
   const arrivalAt = at(arrivalLocal);
@@ -90,6 +90,7 @@ async function booking(
       plate: 'AB-123-CD',
       plateKey: 'AB123CD',
       ...(extra.createdAt ? { createdAt: extra.createdAt } : {}),
+      ...(extra.valet ? { handover: 'valet' as const } : {}),
     },
   });
 }
@@ -312,6 +313,55 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     await prisma.operator.update({ where: { id: op.operator.id }, data: { status: 'active', suspendedAt: null, archivedAt: null } });
     expect((await reminders.dispatchDue(at('2027-06-15T19:05'))).sent).toBe(1);
+  });
+
+  it('le texte voiturier (15/11/2026) : seulement pour les réservations voiturier, par SMS seul, tel quel', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.body.valet.template).toBeNull();
+    expect(board.body.valet.suggested).toContain('Nous vous confirmons votre service voiturier prévu le {date} à {heure}.');
+    const bad = await api()
+      .put(`/api/internal/parkings/${op.parking.id}/reminders`)
+      .set(auth(op.token))
+      .send({ valetTemplate: 'Bonjour {inconnue}' });
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toEqual({ valetTemplate: 'unknown_variable' });
+
+    // Without a valet text, a valet booking gets the usual message.
+    const early = await booking(op, '2027-06-15T07:00', { name: 'Paul Roux', valet: true });
+    const reminders = Container.get(ReminderService);
+    await reminders.dispatchDue(at('2027-06-14T18:05'));
+    expect(smsSent()[0].content).toContain('à demain');
+    fetchMock.mockClear();
+
+    const saved = await api()
+      .put(`/api/internal/parkings/${op.parking.id}/reminders`)
+      .set(auth(op.token))
+      .send({ valetTemplate: '🚨 Bonjour {prénom}, voiturier le {date} à {heure}.\nCordialement' });
+    expect(saved.body.valet.template).toBe('🚨 Bonjour {prénom}, voiturier le {date} à {heure}.\nCordialement');
+    await booking(op, '2027-06-16T08:30', { name: 'Camille Martin', valet: true });
+    await booking(op, '2027-06-16T09:00', { name: 'Nadia Haddad', phone: '06 11 22 33 44' });
+    expect(await reminders.dispatchDue(at('2027-06-15T18:05'))).toMatchObject({ sent: 2 });
+    const contents = smsSent().map(s => s.content);
+    expect(contents).toContain('🚨 Bonjour Camille, voiturier le 16/06/2027 à 08:30.\nCordialement');
+    expect(contents.find(c => c.includes('Nadia') || c.includes('à demain'))).toContain('à demain');
+    const rows = (await api().get(`/api/internal/parkings/${op.parking.id}/reminders?evening=2027-06-15`).set(auth(op.token))).body.evening.rows;
+    expect(rows.map((r: { valet: boolean }) => r.valet)).toEqual([true, false]);
+    expect(early.id).toBeTruthy();
+
+    // The test: the valet text with the example's values, by SMS.
+    fetchMock.mockClear();
+    const test = await api()
+      .post(`/api/internal/parkings/${op.parking.id}/reminders/test`)
+      .set(auth(op.token))
+      .send({ valet: true, to: '+33612345678' });
+    expect(test.status).toBe(200);
+    expect(smsSent().map(s => [s.tag, s.content.startsWith('🚨 Bonjour')])).toEqual([['reminder_test', true]]);
+
+    // Emptied: back to the usual message.
+    const cleared = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ valetTemplate: '' });
+    expect(cleared.body.valet.template).toBeNull();
   });
 
   it('les variables du parking (09/11/2026) : un même texte pour tous les parkings, un détail absent reste vide', async () => {

@@ -1674,6 +1674,8 @@ model ReminderSettings {
   sendTime    String   @default("18:00")
   // The parking's own text with its variables ({prénom}, {date}…); null: Plazo's text.
   template    String?
+  // 15/11/2026: the text of the valet bookings (« Voiturier au terminal »), sent by SMS alone; null: the usual message.
+  valetTemplate String?
   updatedById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt

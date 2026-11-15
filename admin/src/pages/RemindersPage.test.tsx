@@ -229,6 +229,34 @@ describe("RemindersPage (S-A + S-B)", () => {
     await waitFor(() => expect(api.testReminder).toHaveBeenCalledWith("p1", { channel: "sms" }));
   });
 
+  it("l'onglet Voiturier : partir du texte proposé, enregistrer, tester par SMS (15/11/2026)", async () => {
+    const valet = { template: null, suggested: "Bonjour {prénom},\nNous vous confirmons votre service voiturier prévu le {date} à {heure}.", updatedAt: null };
+    api.getReminders.mockResolvedValue(
+      board({ valet, evening: { ...board().evening, rows: [row({ valet: true })] } }),
+    );
+    const savedBoard = board({ valet: { ...valet, template: valet.suggested, updatedAt: "2026-10-06T10:00:00Z" } });
+    api.updateReminders.mockImplementation(async () => {
+      api.getReminders.mockResolvedValue(savedBoard);
+      return savedBoard;
+    });
+    renderPage();
+    const [first] = await screen.findAllByTestId("reminder-row");
+    expect(within(first).getByText("Voiturier")).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("reminder-kind-valet"));
+    expect(screen.getByTestId("reminder-valet")).toHaveTextContent("ces réservations reçoivent le message habituel");
+    await userEvent.click(screen.getByTestId("reminder-valet-suggested"));
+    expect(screen.getByLabelText("Texte du SMS voiturier")).toHaveValue(valet.suggested);
+    expect(screen.getByTestId("reminder-valet-preview")).toHaveTextContent("service voiturier prévu le 07/10/2026 à 05:45");
+    await userEvent.click(screen.getByTestId("reminder-valet-save"));
+    await waitFor(() => expect(api.updateReminders).toHaveBeenCalledWith("p1", { valetTemplate: valet.suggested }));
+    await userEvent.click(screen.getByLabelText("Texte du SMS voiturier"));
+    await userEvent.type(screen.getByLabelText("Texte du SMS voiturier"), " Merci");
+    await userEvent.click(within(screen.getByTestId("reminder-valet")).getByRole("button", { name: "M’envoyer un test" }));
+    await waitFor(() => expect(api.testReminder).toHaveBeenCalledWith("p1", { template: `${valet.suggested} Merci`, valet: true }));
+    await userEvent.click(screen.getByTestId("reminder-kind-shuttle"));
+    expect(screen.getByLabelText("Texte du SMS")).toBeInTheDocument();
+  });
+
   it("un chauffeur voit tout sans pouvoir rien changer", async () => {
     api.getReminders.mockResolvedValue(board({ can: { edit: false, manage: false } }));
     renderPage();

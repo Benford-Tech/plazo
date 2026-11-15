@@ -4928,6 +4928,29 @@ export const remindersFr = {
     same_day: "Réservé le jour même",
     too_late: "Trop tard",
   },
+  // 15/11/2026 (« voici le message à envoyer pour les réservations de type voiturier »): one text per kind of booking.
+  kinds: {
+    label: "Type de réservation",
+    shuttle: "Navette",
+    valet: "Voiturier",
+  },
+  valet: {
+    title: "Le message des réservations voiturier",
+    intro:
+      "Envoyé la veille, à la même heure, aux réservations « Voiturier au terminal », à la place du message habituel. Il part par SMS, depuis le téléphone du parking : la réponse du client arrive dans Messages.",
+    none: "Pas encore de texte voiturier : ces réservations reçoivent le message habituel.",
+    useSuggested: "Partir du texte proposé",
+    label: "Texte du SMS voiturier",
+    save: "Enregistrer",
+    saved: "Texte voiturier enregistré.",
+    remove: "Retirer le texte voiturier",
+    removeConfirm: "Les réservations voiturier recevront de nouveau le message habituel.",
+    removed: "Texte voiturier retiré : les réservations voiturier reçoivent le message habituel.",
+    updated: (when: string) => `Enregistré le ${when}`,
+    perClient: (characters: number) => `par client · ${characters.toLocaleString("fr-FR")} caractères · SMS seul, sans WhatsApp`,
+    rowPill: "Voiturier",
+    smsOnly: "SMS seul",
+  },
   message: {
     title: "Le message",
     // 11/11/2026 (choice B): with WhatsApp on, the template approved by Meta.

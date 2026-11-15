@@ -16,6 +16,12 @@ export class UpdateReminderSettingsDto {
   @IsString({ message: 'invalid' })
   @MaxLength(TEMPLATE_MAX_LENGTH, { message: 'too_long' })
   public template?: string | null;
+
+  /** 15/11/2026: the valet bookings' text; null or empty: none (they get the usual message). */
+  @IsOptional()
+  @IsString({ message: 'invalid' })
+  @MaxLength(TEMPLATE_MAX_LENGTH, { message: 'too_long' })
+  public valetTemplate?: string | null;
 }
 
 /** PUT /internal/parkings/:id/reminders/evenings/:date. A sendTime of null goes back to the usual time. */
@@ -45,6 +51,11 @@ export class TestReminderDto {
   @IsOptional()
   @IsIn(['whatsapp', 'sms'], { message: 'invalid' })
   public channel?: 'whatsapp' | 'sms';
+
+  /** 15/11/2026: the valet text, by SMS alone. */
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public valet?: boolean;
 }
 
 /** PUT /internal/reservations/:id/reminder: "Ne pas envoyer" / "Rétablir". */
