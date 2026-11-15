@@ -5,6 +5,7 @@ import { travellerEmail } from '@/domain/traveller-email';
 import { INBOUND_EMAIL_DOMAIN } from '@/config';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
+import { ReminderService } from './reminder.service';
 import prisma, { Handover, Parking, Prisma, Reservation, ReservationStatus } from '@/database';
 import { valetStatuses } from '@/domain/valet';
 import { can } from '@/domain/roles';
@@ -266,6 +267,8 @@ export class ReservationService {
       .then(async reservation => {
         // Colleagues hear of it (06/10/2026); the creator is left out.
         await this.push.notifyNewBooking({ ...reservation, createdById: actor.id }, parking.timezone);
+        // 15/11/2026: booked for today, the day-before message leaves now.
+        await Container.get(ReminderService).sendSameDayNow(reservation.id);
         return reservation;
       });
   }
@@ -338,7 +341,10 @@ export class ReservationService {
       );
       return { reservation, duplicate: false };
     });
-    if (!created.duplicate) await this.push.notifyNewBooking(created.reservation, parking.timezone);
+    if (!created.duplicate) {
+      await this.push.notifyNewBooking(created.reservation, parking.timezone);
+      await Container.get(ReminderService).sendSameDayNow(created.reservation.id);
+    }
     return created;
   }
 

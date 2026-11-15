@@ -1881,6 +1881,8 @@ export interface ReminderBoard {
   phone?: PhoneNow | null;
   /** 11/11/2026 (choice B): the Meta template the message follows (WhatsApp and the fallback SMS), null for the parking's text. */
   meta?: { name: string; text: string; source?: "meta" | "copy" } | null;
+  /** 15/11/2026: false: the day-before message leaves by SMS only (the template's text, no WhatsApp). */
+  whatsapp?: boolean;
   /** 11/11/2026 (direction A): Meta confirmed none of the parking's WhatsApp messages of the last 24 hours. */
   metaSilent?: boolean;
 }

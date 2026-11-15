@@ -11,6 +11,7 @@ const config = () => ({
   language: 'fr',
   graphVersion: 'v21.0',
   reminderTemplate: '',
+  reminderByWhatsapp: true,
   templates: '',
   businessAccountId: 'waba',
 });

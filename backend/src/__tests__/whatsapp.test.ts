@@ -43,6 +43,7 @@ const configured = () => ({
   graphVersion: 'v21.0',
   templates: '',
   reminderTemplate: '',
+  reminderByWhatsapp: true,
   businessAccountId: '',
 });
 
@@ -229,6 +230,19 @@ describe('WhatsApp : réglages', () => {
 });
 
 describe('WhatsApp : envoi et repli SMS', () => {
+  // 15/11/2026 (« utilise l'envoi sms maintenant pour les sms de la veille »): WHATSAPP_REMINDER off, as in production.
+  it('le message de la veille part par SMS seulement, la confirmation reste par WhatsApp', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderByWhatsapp: false });
+    const op = await operatorWithWhatsapp();
+    expect(await sms.sendTravellerSms(op.operator.id, reminder())).toBe('sent');
+    expect(calls(GRAPH)).toHaveLength(0);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+    expect(await sms.sendTravellerSms(op.operator.id, { ...reminder(), kind: 'booking_confirmed' })).toBe('sent');
+    expect(calls(GRAPH)).toHaveLength(1);
+    const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
+    expect(board.body.whatsapp).toBe(false);
+  });
+
   it('passe par WhatsApp quand il est allumé, sans SMS ; le SMS reste pour les tests', async () => {
     const op = await operatorWithWhatsapp();
     expect(await sms.sendTravellerSms(op.operator.id, reminder())).toBe('sent');

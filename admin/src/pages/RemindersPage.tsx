@@ -128,6 +128,11 @@ export default function RemindersPage() {
   );
 }
 
+/** 15/11/2026 (« utilise l'envoi sms maintenant pour les sms de la veille »): WhatsApp first only when the server says so. */
+function byWhatsapp(board: ReminderBoard): boolean {
+  return !!board.meta && board.whatsapp !== false;
+}
+
 function Header({ board, draft }: { board: ReminderBoard | undefined; draft: string | null }) {
   const [testing, setTesting] = useState(false);
   return (
@@ -170,7 +175,7 @@ function TestForm({
   valet?: boolean;
 }) {
   const [phone, setPhone] = useState("");
-  const whatsapp = !!board.meta && !valet;
+  const whatsapp = byWhatsapp(board) && !valet;
   const test = useMutation({
     mutationFn: (channel?: "whatsapp" | "sms") =>
       adminApi.testReminder(board.parkingId, {
@@ -194,7 +199,7 @@ function TestForm({
       className={compact ? "flex flex-wrap items-end gap-2 border-t border-panel-line pt-3" : cn(CARD, "flex flex-wrap items-end gap-3")}
       onSubmit={e => {
         e.preventDefault();
-        test.mutate(whatsapp ? "whatsapp" : undefined);
+        test.mutate(whatsapp ? "whatsapp" : board.meta && !valet ? "sms" : undefined);
       }}
     >
       <div className={cn("flex flex-1 flex-col gap-1", compact ? "min-w-[180px]" : "min-w-[240px]")}>
@@ -285,7 +290,7 @@ function SettingsTiles({ board, onSaved }: { board: ReminderBoard; onSaved: (b: 
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-xs text-muted-foreground">{s.from}</p>
-        {board.meta ? (
+        {byWhatsapp(board) ? (
           <p data-testid="reminder-channel" className="flex flex-wrap items-center gap-2 text-sm font-semibold">
             <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-[#166534]">
               <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -737,14 +742,16 @@ function MetaMessageSection({ board, meta }: { board: ReminderBoard; meta: NonNu
         <span className="rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-xs font-semibold text-[#166534]">{m.meta.badge}</span>
       </div>
       <p className="text-[13px] text-muted-foreground">{t.preview.for(board.sample.customerName, board.sample.values.date, board.sample.values.heure)}</p>
-      {/* A WhatsApp bubble: the parking's photo on top, then the text with the sample's values. */}
+      {/* A WhatsApp bubble: the parking's photo on top, then the text with the sample's values (15/11/2026: by SMS, no photo). */}
       <div className="flex flex-col gap-2 rounded-2xl bg-[#EFEAE2] p-3">
         <span className="self-center rounded-full bg-white/80 px-2 py-0.5 text-[11px] text-muted-foreground">{t.preview.sentAt(sendDay, board.evening.sendTime)}</span>
         <div className="max-w-[92%] overflow-hidden rounded-xl rounded-tl-sm bg-white shadow-sm">
-          <div className="flex h-24 items-center justify-center gap-1.5 bg-panel-2 text-xs text-muted-foreground">
-            <ImageIcon className="h-4 w-4" aria-hidden="true" />
-            {m.meta.photoSlot}
-          </div>
+          {byWhatsapp(board) && (
+            <div className="flex h-24 items-center justify-center gap-1.5 bg-panel-2 text-xs text-muted-foreground">
+              <ImageIcon className="h-4 w-4" aria-hidden="true" />
+              {m.meta.photoSlot}
+            </div>
+          )}
           <div data-testid="reminder-preview" className="max-h-[420px] overflow-auto whitespace-pre-line break-words px-3 py-2.5 text-sm leading-snug">
             {preview}
           </div>
@@ -759,7 +766,7 @@ function MetaMessageSection({ board, meta }: { board: ReminderBoard; meta: NonNu
         <span data-testid="reminder-segments" className="font-mono font-semibold text-foreground">
           {m.count(length.segments)}
         </span>{" "}
-        {m.meta.fallback(length.characters)}
+        {byWhatsapp(board) ? m.meta.fallback(length.characters) : m.meta.bySms(length.characters)}
       </p>
       <details className="rounded-lg border border-panel-line bg-panel-2 px-3 py-2 text-sm">
         <summary className="cursor-pointer font-semibold">{m.meta.showTemplate(meta.name)}</summary>

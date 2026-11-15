@@ -130,6 +130,10 @@ export class SmsService {
   public async sendTravellerSms(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     // 11/11/2026 (« je ne reçois pas le message WhatsApp ») : the test of the day-before message goes by WhatsApp too, with
     // the template's values, like the real one.
+    // 15/11/2026 (« utilise l'envoi sms maintenant pour les sms de la veille »): the day-before message by SMS only, unless
+    // WHATSAPP_REMINDER=on (reminderByWhatsapp).
+    const reminder = sms.kind === 'booking_reminder' || sms.kind === 'reminder_test';
+    if (reminder && !this.whatsapp.config().reminderByWhatsapp) return this.sendSmsOnly(operatorId, sms);
     if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);

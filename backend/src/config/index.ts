@@ -381,6 +381,9 @@ export const whatsappConfig = () => ({
   // plazo_veille), with the meeting point's photo as its image header and 16 numbered body variables
   // (domain/whatsapp.ts, REMINDER_TEMPLATE_VARIABLES). Empty: the day-before message uses `template` like the others.
   reminderTemplate: process.env.WHATSAPP_REMINDER_TEMPLATE?.trim() || '',
+  // 15/11/2026 (« utilise l'envoi sms maintenant pour les sms de la veille »): the day-before message leaves by SMS only;
+  // WHATSAPP_REMINDER=on sends it by WhatsApp first again (the template above, its text kept for the SMS either way).
+  reminderByWhatsapp: process.env.WHATSAPP_REMINDER?.trim() === 'on',
   // A parking's own templates (JSON array, see parseTemplateRules); empty: every message uses `template`.
   templates: process.env.WHATSAPP_TEMPLATES || '',
   // 11/11/2026 (« importe le modèle dans Plazo »): the WhatsApp Business Account whose approved templates Plazo reads (the
