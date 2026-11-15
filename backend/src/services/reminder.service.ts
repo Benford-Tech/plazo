@@ -24,8 +24,10 @@ import {
   templateContextOf,
   TemplateValues,
   unknownVariables,
+  valetSuggestedTemplate,
   valuesOf,
 } from '@/domain/day-before-sms';
+import { valetMeetingPointOf } from '@/domain/valet';
 import { greetingName } from '@/domain/customer-name';
 import { smsRecipient } from '@/domain/phone';
 import { can } from '@/domain/roles';
@@ -107,6 +109,8 @@ export interface ReminderRow {
   excludedReason: 'import_time' | null;
   /** 10/11/2026: by WhatsApp or by SMS, once it left. */
   delivery: ReminderDelivery | null;
+  /** 15/11/2026: a « Voiturier au terminal » booking (it gets the valet text when the parking has one). */
+  valet: boolean;
 }
 
 export interface EveningView {
@@ -146,6 +150,11 @@ export interface ReminderBoard {
     updatedBy: string | null;
   };
   defaults: { template: string; short: string };
+  /**
+   * 15/11/2026 (« voici le message à envoyer pour les réservations de type voiturier »): the valet bookings' own text, sent
+   * by SMS alone (never WhatsApp); `template` null while the parking has none (they get the usual message).
+   */
+  valet: { template: string | null; suggested: string; updatedAt: string | null };
   sendTimes: readonly string[];
   variables: readonly string[];
   channel: { mode: SmsMode; repliesReachParking: boolean };
@@ -174,6 +183,8 @@ export interface UpdateReminderSettingsInput {
   enabled?: boolean;
   sendTime?: string;
   template?: string | null;
+  /** 15/11/2026: the valet text; null or empty: none (valet bookings get the usual message). */
+  valetTemplate?: string | null;
 }
 
 export interface UpdateEveningInput {
@@ -186,8 +197,8 @@ const HIDDEN_STATUSES = ['pending_payment', 'cancelled'] as const;
 /** How far ahead an evening may be changed. */
 const EVENING_HORIZON_DAYS = 60;
 
-type Usual = Pick<ReminderSettings, 'enabled' | 'sendTime' | 'template'>;
-const USUAL: Usual = { enabled: true, sendTime: DEFAULT_SEND_TIME, template: null };
+type Usual = Pick<ReminderSettings, 'enabled' | 'sendTime' | 'template' | 'valetTemplate'>;
+const USUAL: Usual = { enabled: true, sendTime: DEFAULT_SEND_TIME, template: null, valetTemplate: null };
 
 /**
  * The day-before SMS (« SMS de la veille », S-A + S-B, 06/10/2026). Each parking chooses the usual
@@ -264,25 +275,32 @@ export class ReminderService {
     const firstName = greetingName(record);
     const parkingName = record.parking.listing?.title ?? record.parking.name;
     try {
+      // 15/11/2026: a valet booking with its parking's valet text gets that text, by SMS alone (from the parking's phone).
+      const valet = await this.sms.valetReminderText(record, this.sms.bookingLink(record));
+      const sendSms = () =>
+        valet !== null
+          ? this.sms.sendSmsOnly(record.operatorId, {
+              reservationId: record.id,
+              kind: 'booking_reminder',
+              to: record.customerPhone,
+              text: valet,
+              whatsapp: null,
+            })
+          : (async () =>
+              this.sms.sendTravellerSms(record.operatorId, {
+                reservationId: record.id,
+                kind: 'booking_reminder',
+                to: record.customerPhone,
+                text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
+                whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
+              }))();
       // A resend is the SMS alone: the mail and the push already left with the first one.
       if (manual?.resend) {
-        const outcome = await this.sms.sendTravellerSms(record.operatorId, {
-          reservationId: record.id,
-          kind: 'booking_reminder',
-          to: record.customerPhone,
-          text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
-          whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
-        });
+        const outcome = await sendSms();
         return outcome === 'failed' ? 'failed' : 'sent';
       }
       if (record.parking.listing) await this.notifications.bookingReminder(toPublicBooking(record, now), this.sms.bookingLink(record));
-      await this.sms.sendTravellerSms(record.operatorId, {
-        reservationId: record.id,
-        kind: 'booking_reminder',
-        to: record.customerPhone,
-        text: await this.sms.reminderText(record, this.sms.bookingLink(record)),
-        whatsapp: await this.sms.reminderWhatsapp(record, this.sms.bookingLink(record)),
-      });
+      await sendSms();
       await this.push.notifyTravellers(
         [record.id],
         {
@@ -354,7 +372,8 @@ export class ReminderService {
       resend: !!r.reminderSentAt,
       canSend: !refusal,
       refusal,
-      whatsapp,
+      // 15/11/2026: a valet booking with the parking's valet text leaves by SMS alone.
+      whatsapp: whatsapp && !(r.handover === 'valet' && !!usualRow?.valetTemplate),
       delivery: deliveries.get(r.id) ?? null,
       excludedReason: status === 'excluded' && awaitsImportedTime(r) ? 'import_time' : null,
       timezone: tz,
@@ -462,6 +481,7 @@ export class ReminderService {
         excludedBy: r.reminderExcludedById ? (excluders.get(r.reminderExcludedById) ?? null) : null,
         excludedReason: status === 'excluded' && awaitsImportedTime(r) ? 'import_time' : null,
         delivery: deliveries.get(r.id) ?? null,
+        valet: r.handover === 'valet',
       };
       rowsByEvening.set(date, [...(rowsByEvening.get(date) ?? []), row]);
     }
@@ -537,6 +557,11 @@ export class ReminderService {
         updatedBy,
       },
       defaults,
+      valet: {
+        template: usual.valetTemplate,
+        suggested: valetSuggestedTemplate(context, valetMeetingPointOf(parking, parking.listing?.airport?.code ?? null)),
+        updatedAt: usualRow?.valetTemplate ? usualRow.updatedAt.toISOString() : null,
+      },
       sendTimes: SEND_TIMES,
       variables: TEMPLATE_VARIABLES,
       channel: { mode, repliesReachParking: mode === 'gateway' },
@@ -569,6 +594,11 @@ export class ReminderService {
       const plazoText = defaultTemplate(templateContextOf(PRODUCT_NAME, parking, sms?.mode === 'gateway'));
       // Plazo's text, or nothing: back to Plazo's (it follows the parking's details).
       data.template = !template || template === plazoText ? null : template;
+    }
+    if (input.valetTemplate !== undefined) {
+      const valet = input.valetTemplate?.trim() ?? '';
+      if (valet && unknownVariables(valet).length) throw new ValidationException({ valetTemplate: 'unknown_variable' });
+      data.valetTemplate = valet || null;
     }
     await prisma.reminderSettings.upsert({
       where: { parkingId },
@@ -607,13 +637,36 @@ export class ReminderService {
     return { excluded };
   }
 
+  /** 15/11/2026: the valet text (being written, else saved, else suggested), by SMS alone, as a valet booking gets it. */
+  private async sendValetTest(
+    actor: AuthenticatedStaff,
+    board: ReminderBoard,
+    input: { to?: string; template?: string },
+  ): Promise<{ outcome: SendOutcome; to: string }> {
+    const template = input.template?.trim() || board.valet.template || board.valet.suggested;
+    if (unknownVariables(template).length) throw new ValidationException({ template: 'unknown_variable' });
+    const to = smsRecipient(input.to ?? actor.phone ?? '');
+    if (!to) throw new ValidationException({ to: input.to ? 'invalid_phone' : 'required' });
+    if (board.channel.mode === 'none') throw new HttpException(httpStatus.CONFLICT, 'SMS not configured', 'sms_not_configured');
+    const outcome = await this.sms.sendSmsOnly(actor.operatorId, {
+      reservationId: null,
+      kind: 'reminder_test',
+      to,
+      text: renderTemplate(template, board.sample.values),
+      whatsapp: null,
+    });
+    if (outcome === 'failed') throw new HttpException(httpStatus.BAD_GATEWAY, 'Test SMS failed', 'sms_gateway_error');
+    return { outcome, to };
+  }
+
   /** "M'envoyer un test": the text (saved, or being written) with the preview's values, to the staff member's phone. */
   public async sendTest(
     actor: AuthenticatedStaff,
     parkingId: string,
-    input: { to?: string; template?: string; channel?: 'whatsapp' | 'sms' },
+    input: { to?: string; template?: string; channel?: 'whatsapp' | 'sms'; valet?: boolean },
   ): Promise<{ outcome: SendOutcome; to: string }> {
     const board = await this.board(actor, parkingId);
+    if (input.valet) return this.sendValetTest(actor, board, input);
     const template = input.template?.trim() || board.settings.template;
     if (!board.meta && unknownVariables(template).length) throw new ValidationException({ template: 'unknown_variable' });
     const to = smsRecipient(input.to ?? actor.phone ?? '');
@@ -770,7 +823,7 @@ export class ReminderService {
   private async parkingOf(actor: AuthenticatedStaff, parkingId: string) {
     const parking = await prisma.parking.findFirst({
       where: { id: parkingId, operatorId: actor.operatorId },
-      include: { listing: { select: { title: true, contactPhone: true, shuttleMinutes: true } } },
+      include: { listing: { select: { title: true, contactPhone: true, shuttleMinutes: true, airport: { select: { code: true } } } } },
     });
     if (!parking) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
     return parking;

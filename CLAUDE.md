@@ -732,6 +732,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      additionnels actifs et leurs prix, « Lavage intérieur : 50 €, Recharge hybride : 15 € ») ; un détail absent reste vide
      (`TEMPLATE_VARIABLES`, `ParkingValues`, `parkingValuesOf` de `domain/day-before-sms.ts`, `services/parking-values.ts`) ; un
      même texte sert à tous les parkings ; `{{prénom}}` vaut `{prénom}` (doubles accolades acceptées, `TOKEN_RE`). Test `reminders.test.ts`.
+     **Message des réservations voiturier (15/11/2026, « voici le message à envoyer pour les réservations de type voiturier », APL
+     Parking ; choix « Le message de la veille », « SMS du téléphone du parking », « onglet Voiturier »)** : `ReminderSettings.valetTemplate`
+     (migration `valet_reminder`, CHECK 2 000, texte d'APL posé pour les loueurs « APL Parking… ») ; une réservation `handover = 'valet'`
+     d'un parking qui a ce texte reçoit, à l'heure de sa soirée, ce texte rempli des mêmes variables, par SMS seul (`sendSmsOnly`, jamais
+     WhatsApp ni le modèle de Meta, rien d'ajouté : ni « À savoir »), mail et push inchangés (`SmsService.valetReminderText`, aussi pour un
+     renvoi et la file d'attente) ; sans texte, le message habituel. `PUT …/reminders` `valetTemplate` (vide = retiré, 400 `unknown_variable`),
+     `POST …/reminders/test` `{ valet: true }` (SMS seul), board `valet { template, suggested, updatedAt }`, `rows[].valet`. Web : pilules
+     « Navette · Voiturier » au-dessus du message (`KindTabs`, `ValetMessageSection` : « Partir du texte proposé », variables, compte de
+     SMS, aperçu, enregistrer, retirer, test), pastille « Voiturier » sur les départs. Tests `reminders.test.ts`, `RemindersPage.test.tsx`.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec

@@ -640,7 +640,21 @@ export class SmsService {
     return { name, text: reminderTemplateText(body, name), source: body ? 'meta' : 'copy' };
   }
 
+  /**
+   * 15/11/2026 (APL Parking): a valet booking's day-before text, when its parking has written one; null otherwise (the usual
+   * message). Sent by SMS alone, as written: its own conditions, nothing added.
+   */
+  public async valetReminderText(booking: BookingRecord, link: string | null): Promise<string | null> {
+    if (booking.handover !== 'valet') return null;
+    const settings = await prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { valetTemplate: true } });
+    if (!settings?.valetTemplate) return null;
+    const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
+    return renderTemplate(settings.valetTemplate, valuesOf(booking, booking.parking.timezone, link, parking));
+  }
+
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
+    const valet = await this.valetReminderText(booking, link);
+    if (valet !== null) return valet;
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
       const values = valuesOf(booking, booking.parking.timezone, link, parking);

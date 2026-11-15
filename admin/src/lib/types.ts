@@ -1830,6 +1830,8 @@ export interface ReminderRow {
   /** 13/11/2026: left out by the file import, which gave no arrival time (nobody's choice). */
   excludedReason?: "import_time" | null;
   delivery?: ReminderDelivery | null;
+  /** 15/11/2026: a « Voiturier au terminal » booking. */
+  valet?: boolean;
 }
 export interface ReminderEvening {
   date: string;
@@ -1863,6 +1865,8 @@ export interface ReminderBoard {
     updatedBy: string | null;
   };
   defaults: { template: string; short: string };
+  /** 15/11/2026: the valet bookings' text, by SMS alone; null while the parking has none (the usual message). */
+  valet?: { template: string | null; suggested: string; updatedAt: string | null };
   sendTimes: string[];
   variables: TemplateVariable[];
   channel: { mode: SmsMode; repliesReachParking: boolean };
@@ -1882,6 +1886,7 @@ export interface ReminderSettingsInput {
   enabled?: boolean;
   sendTime?: string;
   template?: string | null;
+  valetTemplate?: string | null;
 }
 
 /** CA-B + CA-A (09/10/2026): the revenue of the bookings, managers only. */
