@@ -210,6 +210,7 @@ model Staff {
   tokens               StaffToken[]
   accountTokens        AccountToken[]
   invitationTrackings  InvitationTracking[]
+  travellerCampaigns   TravellerCampaign[]
   auditLogs            AuditLog[]
   createdReservations  Reservation[]
   reservationImports   ReservationImport[]
@@ -702,6 +703,54 @@ model TravellerEmailOptout {
   createdAt DateTime @default(now())
 
   @@map("traveller_email_optouts")
+}
+
+/// 15/11/2026 (« Mail de promotion à Plazo… pensez à Plazo pour la prochaine location de parking », direction C « La saison
+/// des départs », campagne à la main): an email sent by the platform to the travellers. The parkings shown with their prices
+/// are a snapshot taken when the campaign starts (`offers`): every recipient reads the same prices.
+model TravellerCampaign {
+  id          String    @id @default(cuid())
+  subject     String
+  title       String
+  body        String
+  airportSlug String
+  arrival     String?
+  return      String?
+  /// [{ title, slug, priceCents, days, shuttleMinutes, valet }] read at the start, at most 3.
+  offers      Json      @default("[]")
+  createdById String?
+  recipients  Int       @default(0)
+  sent        Int       @default(0)
+  failed      Int       @default(0)
+  skipped     Int       @default(0)
+  createdAt   DateTime  @default(now())
+  finishedAt  DateTime?
+
+  createdBy Staff?                       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  targets   TravellerCampaignRecipient[]
+
+  @@index([createdAt])
+  @@map("traveller_campaigns")
+}
+
+/// One address of a campaign (once per address, whatever its bookings). The address is erased once its email is sent.
+model TravellerCampaignRecipient {
+  id            String    @id @default(cuid())
+  campaignId    String
+  emailHash     String
+  email         String?
+  firstName     String?
+  /// The booking whose signed link gives « Ne plus recevoir ces messages » (the welcome email's opt-out list).
+  reservationId String
+  status        String    @default("pending")
+  sendingAt     DateTime?
+  sentAt        DateTime?
+
+  campaign TravellerCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, emailHash])
+  @@index([status, campaignId])
+  @@map("traveller_campaign_recipients")
 }
 
 model InboundWatchReport {

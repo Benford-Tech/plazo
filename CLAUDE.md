@@ -1590,6 +1590,24 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET|POST /public/traveller-emails/unsubscribe/:jeton` (id de la réservation + HMAC de `SECRET_KEY`, page avec un bouton,
      un clic RFC 8058, `List-Unsubscribe`) → `traveller_email_optouts` (sha256 de l'adresse). Politique de confidentialité
      (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Onepark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). Test `traveller-welcome.test.ts`.
+   - **Mail « Pensez à Plazo », direction C « La saison des départs » (15/11/2026, « Mail de promotion à Plazo pour dire de penser à
+     Plazo pour la prochaine location de parking avec lien de téléchargement », maquettes https://claude.ai/artifact/4ZYD6KgTYbUFkYMLeMrKHK,
+     choix « Tous les voyageurs » et « Campagne à la main », le risque d'écrire sans accord aux clients des comparateurs ayant été dit)** :
+     carte « Mail aux voyageurs » de Plateforme › Notifications (`CampaignCard` : objet, titre, texte, aéroport, dates facultatives,
+     « N voyageurs recevront ce mail », aperçu en `iframe` sandbox, « M'envoyer un test », « Envoyer à N voyageurs » confirmé, campagnes
+     précédentes « 12 / 30 envoyés ») ; le mail (`domain/traveller-campaign.ts`, `campaignEmail`) : bandeau orange avec le titre et les badges
+     des stores de Plazo, « Bonjour <prénom>, », le texte, jusqu'à 3 parkings en ligne de l'aéroport avec leur vrai prix (total du séjour avec
+     des dates, sinon « dès … pour N jours » de la grille ; lus au lancement et gardés dans `offers`), « Voir les parkings pour mes dates »
+     vers la recherche, « Ne plus recevoir ces messages » (le lien et la liste `traveller_email_optouts` du mail d'accueil, `List-Unsubscribe`
+     en un clic) ; expéditeur `contact@plazo.fr`. Audience (`TravellerCampaignService.audience`) : une fois par adresse (sa dernière
+     réservation donne le prénom et le lien), toutes les réservations de tous les canaux dont le retour date de moins de 3 ans ou est à
+     venir, jamais une adresse désinscrite, de comparateur ou de robot (`travellerEmail`), une réservation anonymisée, supprimée ou en
+     attente de paiement, ni les loueurs de démo et de test. Une campagne par semaine (429 `campaign_too_soon`, `nextAt`) ; tables
+     `traveller_campaigns` et `traveller_campaign_recipients` (migration `traveller_campaigns`, l'adresse effacée de la ligne une fois
+     envoyée) ; envoi par lots de 120 au lancement puis par le passage de 15 minutes (`remind-tomorrow` › `campaigns`, chaque adresse
+     réservée par `FOR UPDATE SKIP LOCKED`). Routes (`PlatformAdminMiddleware`) : `GET /internal/platform/traveller-campaigns`, `POST …`
+     (400 par champ, 409 `no_audience` · `email_unavailable`), `POST …/preview`, `POST …/test` ; tracé `traveller_campaign.started`.
+     Politique de confidentialité (article des finalités). Tests `traveller-campaign.test.ts`, `CampaignCard.test.tsx`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

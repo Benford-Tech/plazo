@@ -9,6 +9,7 @@ import { CapacityStudyService } from '@/services/capacity-study.service';
 import { GeoService, MAX_BBOX_SPAN } from '@/services/geo.service';
 import { PlatformService } from '@/services/platform.service';
 import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
+import { TravellerCampaignService } from '@/services/traveller-campaign.service';
 import catchAsync from '@/utils/catchAsync';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : undefined);
@@ -70,6 +71,30 @@ export class PlatformController {
     if (operatorId && operatorId.length > 40) throw new ValidationException({ operatorId: 'invalid' });
     res.set('Cache-Control', 'no-store');
     res.json(await Container.get(TravellerWelcomeService).sendTest({ email: req.staff.email, firstName: req.staff.firstName ?? '' }, operatorId));
+  });
+
+  /** GET /internal/platform/traveller-campaigns (15/11/2026: the emails to the travellers, « Pensez à Plazo ») */
+  public travellerCampaigns = catchAsync(async (_req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerCampaignService).overview());
+  });
+
+  /** POST /internal/platform/traveller-campaigns/preview */
+  public travellerCampaignPreview = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerCampaignService).preview(req.body, req.staff.firstName || 'Camille'));
+  });
+
+  /** POST /internal/platform/traveller-campaigns/test */
+  public travellerCampaignTest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await Container.get(TravellerCampaignService).sendTest(req.body, { email: req.staff.email, firstName: req.staff.firstName ?? '' }));
+  });
+
+  /** POST /internal/platform/traveller-campaigns */
+  public startTravellerCampaign = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const staff = req.staff;
+    const operatorId = staff.actingAs?.realOperatorId ?? staff.operatorId;
+    res.status(201).json(await Container.get(TravellerCampaignService).start(req.body, staff.id, operatorId));
   });
 
   /** GET /internal/platform/operators[?view=archived] */
