@@ -225,6 +225,8 @@ export interface Reservation {
   handover?: Handover;
   /** 29/10/2026 (« Payé par »): null when not said, always null on a Plazo booking (paid online). */
   paymentMethod?: PaymentMethod | null;
+  /** 15/11/2026: when the parking contract was signed (planning, list and detail), null while it is not. */
+  contractSignedAt?: string | null;
   /** 29/10/2026: the file it was imported from (detail only). */
   import?: { id: string; fileName: string; createdAt: string; undoneAt: string | null } | null;
   /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */

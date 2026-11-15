@@ -1602,6 +1602,11 @@ export const fr = {
     restoreHelp:
       "Restaurer remet la réservation telle qu'elle était, avec son état, sans sa place ; si ses nuits sont devenues complètes entre-temps, Plazo prévient mais restaure quand même.",
   },
+  // 15/11/2026 (« avoir une indication des contrats déjà signés », choix C): the small icon beside the name.
+  contractSigned: {
+    label: "Contrat signé",
+    title: (at: string) => `Contrat signé le ${at}`,
+  },
   direct: {
     badge: "En direct",
     title: "Réservée en direct auprès du parking, sans intermédiaire ni commission",

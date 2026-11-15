@@ -52,6 +52,9 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       keysLeftAt: json['keysLeftAt'] == null
           ? null
           : DateTime.parse(json['keysLeftAt'] as String),
+      contractSignedAt: json['contractSignedAt'] == null
+          ? null
+          : DateTime.parse(json['contractSignedAt'] as String),
       stopId: json['stopId'] as String?,
       carLat: (json['carLat'] as num?)?.toDouble(),
       carLng: (json['carLng'] as num?)?.toDouble(),
@@ -127,6 +130,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'spotId': instance.spotId,
       'keyHook': instance.keyHook,
       'keysLeftAt': instance.keysLeftAt?.toIso8601String(),
+      'contractSignedAt': instance.contractSignedAt?.toIso8601String(),
       'stopId': instance.stopId,
       'carLat': instance.carLat,
       'carLng': instance.carLng,

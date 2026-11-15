@@ -11,6 +11,7 @@ import '../../../../shared/widgets/valet_icon.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../data/models/planning_model.dart';
 import '../../data/models/staff_signal_model.dart';
+import '../../../../shared/widgets/contract_signed_icon.dart';
 import '../bloc/pro_today_bloc.dart';
 
 /// A row of the staff's day. A traveller sharing their position gets the highlighted card (peach
@@ -116,14 +117,12 @@ class TodayRowTile extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (b.handover == 'valet' || (!isReturn && b.contractSignedAt != null)) ...[
+            if (b.handover == 'valet') ...[
               Wrap(
                 spacing: 6,
                 runSpacing: 4,
                 children: [
                   if (b.handover == 'valet') ValetPill(label: 'res.care_valet'.tr()),
-                  // M1 (13/11/2026): the contract is already signed, nothing to sign at the counter.
-                  if (!isReturn && b.contractSignedAt != null) _ContractSignedPill(key: Key('contract-signed-${b.id}')),
                 ],
               ),
               const SizedBox(height: 6),
@@ -144,6 +143,11 @@ class TodayRowTile extends StatelessWidget {
                     style: AppText.body(size: 14.5),
                   ),
                 ),
+                // 15/11/2026 (choix C): the contract is already signed (M1: nothing to sign at the counter).
+                if (b.contractSignedAt != null) ...[
+                  const SizedBox(width: 6),
+                  ContractSignedIcon(key: Key('contract-signed-${b.id}'), signedAt: b.contractSignedAt),
+                ],
                 if (actionLabel != null && onAction != null) ...[
                   const SizedBox(width: 8),
                   FilledButton(
@@ -186,24 +190,6 @@ class TodayRowTile extends StatelessWidget {
           ],
         );
   }
-}
-
-class _ContractSignedPill extends StatelessWidget {
-  const _ContractSignedPill({super.key});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: const BoxDecoration(color: AppStatus.okSoft, borderRadius: AppRadius.small),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.verified_rounded, size: 14, color: AppStatus.ok),
-        const SizedBox(width: 4),
-        Text('pro.contract_signed'.tr(), style: AppText.label(size: 11, color: AppColors.accent).copyWith(fontWeight: FontWeight.w700)),
-      ],
-    ),
-  );
 }
 
 class _StatusLabel extends StatelessWidget {
