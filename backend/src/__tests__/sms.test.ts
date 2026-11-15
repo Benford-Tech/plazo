@@ -566,6 +566,24 @@ describe('envoi par le téléphone du parking', () => {
     });
     expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: brevo.operator.id } })).monthSent).toBe(1);
   });
+
+  it('Brevo : 20 tests et 150 SMS par parking et par 24 h au plus (15/11/2026)', async () => {
+    const brevo = await setupOperator('Brevo');
+    await useBrevoSms(brevo.operator.id);
+    notifications.settings.apiKey = 'brevo-key';
+    const row = (kind: string) =>
+      ({ operatorId: brevo.operator.id, kind, to: '+33612345678', bodyHash: 'x', provider: 'brevo', status: 'sent' }) as const;
+    await prisma.smsOutbox.createMany({ data: Array.from({ length: 20 }, () => row('test')) });
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'Test' })).toBe('skipped');
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Atterri' })).toBe(
+      'sent',
+    );
+    await prisma.smsOutbox.createMany({ data: Array.from({ length: 129 }, () => row('flight_landed')) });
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Atterri' })).toBe(
+      'skipped',
+    );
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+  });
 });
 
 describe('SMS de test', () => {

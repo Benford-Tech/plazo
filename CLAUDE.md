@@ -2585,6 +2585,24 @@ n'est appelée que si son nom résout vers des adresses publiques (`resolvesToPu
 débit partagées entre les instances de Vercel (aujourd'hui par instance) ; le chauffeur et le voiturier peuvent refuser un service
 payé en ligne (remboursement Stripe) et ajouter un supplément de n'importe quel montant.
 
+**Troisième passe (15/11/2026, « Essaie de hacker Plazo pour trouver des vulnérabilités et corrige »)**, trois relectures (SMS et
+WhatsApp, routes publiques, droits de l'équipe) ; corrigé : **envois SMS facturés** (n'importe qui pouvait inscrire un faux parking,
+choisir « Plazo envoie pour moi » et boucler sur « M'envoyer un test » vers un numéro surtaxé) : un SMS à l'étranger ne part plus que
+vers l'Europe, l'outre-mer français et le Maghreb (`SMS_COUNTRY_CODES` de `domain/phone.ts`, préfixes sans ambiguïté ; plus d'Amérique
+du Nord ni du reste du monde), et par parking et par 24 h au plus 20 tests et 150 SMS en tout par le Brevo de Plazo
+(`OPERATOR_BREVO_SMS_PER_DAY`, `OPERATOR_BREVO_TESTS_PER_DAY`, `operatorBrevoBudgetLeft`), plus 10 tests par 15 min et par membre
+(`testSendLimiter` : `/internal/sms/test`, `/internal/whatsapp/test`, `…/reminders/test`) ; **notifications du navigateur** : une
+adresse d'abonnement n'est acceptée que chez les services des navigateurs (`isPushServiceEndpoint` : Google, Mozilla, Apple, Windows ;
+le serveur y poste des messages signés : plus d'appels vers un hôte choisi), 5 navigateurs au plus par membre, jamais celui d'un
+collègue (409 `browser_taken`), 20 par 15 min (`pushLimiter`) ; **« Écrire au parking »** fermé à une réservation non payée (gratuite à
+créer) ou annulée (409 `messages_closed`), et pas de demande de facture sur une réservation non payée ; le numéro WhatsApp partagé de
+Plazo n'est jamais celui d'un parking (409 `number_shared`) ; un SMS reçu rejoint la conversation du numéro entier, plus de ses 9
+derniers chiffres ; `SMS_DAILY_LIMIT` vide vaut 300, plus 0 (qui bloquait toutes les confirmations par Brevo ; la production ne la pose
+pas). Test `security-pass-3.test.ts`, `sms.test.ts`, `staff-notifications.test.ts`. **Reste à décider** : la correspondance du lien
+court « par l'adresse » rend encore la référence, le parking et les dates (même Wi-Fi d'aéroport) ; l'adresse secrète du webhook de
+l'appli SMS ne change pas quand l'identifiant change ; tout SMS reçu par le téléphone d'envoi est lu par l'équipe (chauffeurs compris) ;
+deux codes de signature presque simultanés peuvent partir pour une même réservation.
+
 **SMS aux numéros étrangers (14/11/2026, « Envoie le sms même si le numéro est étranger »)** : `smsRecipient` (`domain/phone.ts`) accepte un numéro étranger écrit avec son indicatif (+32 470…, 0044 7911…), 8 à 15 chiffres, jamais un indicatif partagé, satellite ou surtaxé (`NON_COUNTRY_CODES` : +800, +808, +870, +878, +881 à +883, +888, +979, +991) ; un fixe français et un numéro sans indicatif qui n'est pas un mobile français restent sans SMS (« Numéro hors France » ne reste que pour les indicatifs refusés). Tests `booking-domain.test.ts`, `reminders.test.ts`, `sms.test.ts`.
 
 **Rien ne part du parking de test (13/11/2026, « pas d'envoi sur le parkin de test »)** : comme la démo des prospects, le loueur

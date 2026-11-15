@@ -4,7 +4,7 @@ import { TestSmsDto, UpdateWhatsappSettingsDto } from '@/dtos/sms.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
-import { staffMessageLimiter } from '@/middlewares/rateLimiter';
+import { staffMessageLimiter, testSendLimiter } from '@/middlewares/rateLimiter';
 
 /**
  * @swagger
@@ -49,6 +49,7 @@ export class WhatsappRoute implements Routes {
       '/internal/whatsapp/test',
       StaffAuthMiddleware('parking:manage'),
       RefuseInDemo(),
+      testSendLimiter,
       ValidationMiddleware(TestSmsDto),
       this.whatsapp.test,
     );

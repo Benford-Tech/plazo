@@ -229,3 +229,33 @@ export const aiLimiter = rateLimit({
 
 /** 13/11/2026: a Plazo app phone telling whether it accepts the offers (at start-up and on the switch): 30 per 15 minutes. */
 export const appDeviceLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });
+
+/**
+ * Security pass of 15/11/2026: registering a browser and « M'envoyer une notification de test » make Plazo's server
+ * send signed messages: 20 per 15 minutes per staff member.
+ */
+export const pushLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  skip,
+  keyGenerator: (req: Request) => {
+    const staffId = (req as Request & { staff?: { id?: string } }).staff?.id;
+    return staffId ? `push:${staffId}` : rateLimitKey(req);
+  },
+  message: tooMany('too_many_requests'),
+});
+
+/**
+ * Security pass of 15/11/2026: « M'envoyer un test » (SMS through Plazo's Brevo, WhatsApp billed by Meta) goes to any
+ * number the member types: 10 per 15 minutes per staff member, on top of the per-parking Brevo budget.
+ */
+export const testSendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skip,
+  keyGenerator: (req: Request) => {
+    const staffId = (req as Request & { staff?: { id?: string } }).staff?.id;
+    return staffId ? `test-send:${staffId}` : rateLimitKey(req);
+  },
+  message: tooMany('too_many_requests'),
+});

@@ -280,6 +280,9 @@ export class WhatsappNumberService {
   }
 
   private async saveLinked(admin: AuthenticatedStaff, operatorId: string, phoneNumberId: string, e164: string, action: string) {
+    // Security pass of 15/11/2026: Plazo's shared number is never one parking's (every traveller's WhatsApp would go to it).
+    if (phoneNumberId === whatsappConfig().phoneNumberId)
+      throw new HttpException(httpStatus.CONFLICT, "Plazo's shared number is not a parking's", 'number_shared');
     const taken = await prisma.operatorWhatsappNumber.findUnique({ where: { phoneNumberId }, select: { operatorId: true } });
     if (taken && taken.operatorId !== operatorId)
       throw new HttpException(httpStatus.CONFLICT, 'The number belongs to another parking', 'number_taken');
