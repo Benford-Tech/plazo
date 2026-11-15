@@ -36,7 +36,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "13 novembre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "14 novembre 2026";
+export const PRIVACY_VERSION = "15 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -352,6 +352,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Faire signer le contrat de stationnement, établir l’état du véhicule au dépôt et au retour et traiter un éventuel dommage : exécution du contrat.",
             "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, WhatsApp, SMS ou notification : exécution du contrat.",
             "Suivre vos vols pour caler la navette : exécution du contrat.",
+            `Quand vous réservez chez un parking qui utilise ${p} sans passer par ${p} (comparateur, téléphone, site du parking), vous présenter l’application ${p} et comment y retrouver votre réservation, par un seul e-mail par parking et par an : intérêt légitime du parking et de ${p} à vous donner les outils de votre séjour ; le lien « Ne plus recevoir ces messages » de cet e-mail y met fin pour de bon (${p} garde alors une empreinte de votre adresse, jamais l’adresse elle-même).`,
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
             `Recevoir les offres et bons plans de ${p} par notification dans l’application (deux par semaine au plus) : votre consentement, donné en allumant « Offres et bons plans » dans Plus › Notifications (éteint par défaut), et retiré en l’éteignant ; ${p} garde l’identifiant de notification du téléphone, ce choix et sa date.`,
             `Sécuriser le service, prévenir la fraude et les abus, garder la trace des modifications des réservations, traiter vos réclamations et défendre nos droits : intérêt légitime de ${p} et du parking.`,

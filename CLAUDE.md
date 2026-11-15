@@ -1537,6 +1537,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      caché sans message : date, Confirmation · Veille du dépôt · Atterrissage · Code de signature, pastille WhatsApp ou SMS, « ✓✓ Lu à
      14:20 », « Envoyé à 21:44 », « WhatsApp non remis · SMS envoyé à la place »). Pas les mails ni les pushs (non journalisés), ni
      Plazo Pro. Tests `traveller-message-log.test.ts`, `whatsapp.test.ts`, `TravellerMessages.test.tsx`.
+   - **Mail d'accueil aux voyageurs, direction B « l'installation en vedette » (15/11/2026, « Mail d'intro de plazo au client avec
+     message pour installer l'App », « Le B avec plus d'argument et d'illustration », « L'installation en star », maquettes
+     https://claude.ai/artifact/EWkYJ4E7Z4YsnLSdLto5Gx)** : à la création d'une réservation qui ne vient pas de Plazo (comparateur,
+     téléphone, comptoir, site du parking, mail importé), le passage de 15 minutes (`remind-tomorrow`, `welcome` dans sa réponse,
+     `TravellerWelcomeService.run`, 40 par passage) envoie au voyageur « Camille, installez Plazo avant votre départ du 20 novembre »
+     (`domain/traveller-welcome.ts`, `welcomeEmail`) : bandeau orange avec les badges des stores et « Déjà installée ? Ouvrir ma
+     réservation », trois écrans de l'app (`site/public/mail/plazo-depot|atterrissage|ma-voiture.jpg`), « Et aussi », puis ouvrir sa
+     réservation par le lien court (`/a/…`) ou le numéro (celui du comparateur) et l'e-mail. Seulement : statut « Attendu », créée
+     depuis moins de 48 h, dépôt dans plus de 3 h, avec un e-mail du voyageur (`travellerEmail`), hors import de fichier, parking avec
+     une fiche, loueur ni suspendu, archivé, de démo ni de test (`isSilentOperator`) ; une fois par adresse et par loueur sur 12 mois
+     (`Reservation.welcomeEmailAt` réservé avant l'envoi, `welcomeEmailOutcome` sent · repeat · opted_out · no_email · failed ;
+     migration `traveller_welcome`, qui marque les réservations d'avant). « Ne plus recevoir ces messages » :
+     `GET|POST /public/traveller-emails/unsubscribe/:jeton` (id de la réservation + HMAC de `SECRET_KEY`, page avec un bouton,
+     un clic RFC 8058, `List-Unsubscribe`) → `traveller_email_optouts` (sha256 de l'adresse). Politique de confidentialité
+     (article 3). Test `traveller-welcome.test.ts`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

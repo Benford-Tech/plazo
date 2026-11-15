@@ -21,6 +21,7 @@ import { PaymentService } from '@/services/payment.service';
 import { MorningEmailService } from '@/services/morning-email.service';
 import { InboundWatchService } from '@/services/inbound-watch.service';
 import { ProspectingService } from '@/services/prospecting.service';
+import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
 import { ValetService } from '@/services/valet.service';
 import { ExtraService } from '@/services/extra.service';
 import { ReminderService } from '@/services/reminder.service';
@@ -54,6 +55,7 @@ export class CronController {
   public identityVerification = Container.get(IdentityVerificationService);
   public prospecting = Container.get(ProspectingService);
   public morning = Container.get(MorningEmailService);
+  public welcome = Container.get(TravellerWelcomeService);
   public inboundWatch = Container.get(InboundWatchService);
   public valet = Container.get(ValetService);
   public demo = Container.get(ProspectDemoService);
@@ -132,6 +134,16 @@ export class CronController {
     }
   }
 
+  /** 15/11/2026: the welcome email to the travellers of the other channels. Never throws. */
+  private async welcomePass(): Promise<Awaited<ReturnType<TravellerWelcomeService['run']>> | { error: true }> {
+    try {
+      return await this.welcome.run();
+    } catch (error) {
+      logger.error(`[Cron] Traveller welcome pass failed: ${(error as Error).message}`);
+      return { error: true };
+    }
+  }
+
   private async morningPass(): Promise<Awaited<ReturnType<MorningEmailService['run']>> | { error: true }> {
     try {
       return await this.morning.run();
@@ -201,12 +213,13 @@ export class CronController {
     const whatsapp = await this.whatsappPass();
     const phone = await this.phonePass();
     const inbound = await this.inboundWatchPass();
+    const welcome = await this.welcomePass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; SMS phone: ${JSON.stringify(phone)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}; inbound: ${JSON.stringify(inbound)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; SMS phone: ${JSON.stringify(phone)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}; inbound: ${JSON.stringify(inbound)}; welcome: ${JSON.stringify(welcome)}`,
     );
     res
       .status(statusOf(result.sent + result.failed, result.failed))
-      .json({ ...result, sms, prospecting, morning, extras, valet, whatsapp, phone, inbound });
+      .json({ ...result, sms, prospecting, morning, extras, valet, whatsapp, phone, inbound, welcome });
   });
 
   /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */

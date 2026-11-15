@@ -694,6 +694,14 @@ model InboundEmail {
 
 /// 09/11/2026 (« un job qui parcourt les mails en continu »): the platform's morning report of the inbound emails, one
 /// row per Paris day it was sent (the row is taken before the email leaves: never twice the same day).
+/// 15/11/2026: a traveller who clicked « Ne plus recevoir ces messages » under the welcome email (sha256 of the address).
+model TravellerEmailOptout {
+  emailHash String   @id
+  createdAt DateTime @default(now())
+
+  @@map("traveller_email_optouts")
+}
+
 model InboundWatchReport {
   day    String   @id
   sentAt DateTime @default(now())
@@ -941,6 +949,11 @@ model Reservation {
   reminderExcludedById     String?
   parkedNotifiedAt         DateTime?
   closingSentAt            DateTime?
+  /// 15/11/2026 (« Mail d'intro de Plazo au client avec message pour installer l'App », direction B): the welcome email to a
+  /// traveller of another channel, claimed at that time; its outcome: sent, repeat (one in 12 months already), opted_out,
+  /// no_email, failed.
+  welcomeEmailAt           DateTime?
+  welcomeEmailOutcome      String?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
   /// 03/11/2026: deleted by a manager (an input error, a duplicate, a test): hidden everywhere, restorable 45 days

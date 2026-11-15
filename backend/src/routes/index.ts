@@ -1,6 +1,7 @@
 import { BookingImportRoute } from './booking-import.route';
 import { DemoRoute } from './demo.route';
 import { MorningEmailRoute } from './morning-email.route';
+import { TravellerWelcomeRoute } from './traveller-welcome.route';
 import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
 import { SeoRoute } from './seo.route';
@@ -66,6 +67,7 @@ const AppRoutes = [
   new ProspectingRoute(),
   new DemoRoute(),
   new MorningEmailRoute(),
+  new TravellerWelcomeRoute(),
   new PublicRoute(),
   new PublicBookingRoute(),
   new AppLinkRoute(),
