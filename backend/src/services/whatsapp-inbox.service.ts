@@ -533,10 +533,12 @@ export class WhatsappInboxService {
         kind: 'staff_message',
         to: row.phone,
         text,
+        answersSender: true,
       });
       if (outcome === 'failed' || outcome === 'skipped') {
         logger.warn(`[SMS inbox] reply ${outcome} for conversation ${id}`);
-        throw new HttpException(httpStatus.BAD_GATEWAY, 'The SMS did not leave', 'sms_failed');
+        // 15/11/2026: 409, not 502: a 502 body is replaced on the way (Cloudflare) and the page read « no answer in time ».
+        throw new HttpException(httpStatus.CONFLICT, 'The SMS did not leave', 'sms_failed');
       }
       message = await prisma.whatsappInboxMessage.create({
         data: {
