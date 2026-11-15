@@ -54,7 +54,8 @@ export class TravellerWelcomeService {
         parking: { listing: { isNot: null } },
         operator: { suspendedAt: null, archivedAt: null, isDemo: false, prospectDemo: false },
       },
-      orderBy: { createdAt: 'asc' },
+      // The id breaks a tie (two bookings of the same instant): the first booked of a traveller gets the mail, every time.
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: PER_PASS,
       select: {
         id: true,
