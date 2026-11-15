@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ImageIcon, MessageCircle, MessageSquareText } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
@@ -13,6 +13,8 @@ import { describeError, errorMessage, fr, remindersFr as t, bookingReminderFr } 
 import { renderTemplate, smsLength, toE164, toGsm7, unicodeCharacters, unknownVariables } from "@/lib/sms";
 import type { ReminderBoard, ReminderEvening, ReminderRow, ReminderRowStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ValetPill } from "@/lib/valet-icon";
+import { useConfirm } from "@/components/ui/confirm-context";
 
 const CARD = "rounded-xl border border-panel-line bg-panel p-4 sm:p-5";
 const BUTTON = "flex h-10 items-center justify-center rounded-lg border border-panel-line bg-panel px-3.5 text-sm font-medium hover:bg-panel-2 disabled:opacity-50";
@@ -64,6 +66,8 @@ export default function RemindersPage() {
   const [evening, setEvening] = useState<string | undefined>(undefined);
   // The text being written; null while it is the saved one. The test sends it before it is saved.
   const [draft, setDraft] = useState<string | null>(null);
+  // 15/11/2026: which message the right-hand side shows, the usual one (« Navette ») or the valet bookings' one.
+  const [kind, setKind] = useState<"shuttle" | "valet">("shuttle");
   const board = useQuery({
     queryKey: ["reminders", parkingId, evening ?? "tonight"],
     queryFn: () => adminApi.getReminders(parkingId!, evening),
@@ -98,12 +102,24 @@ export default function RemindersPage() {
             // 11/11/2026 (choice A): the evening's departures and, beside them, the message they get.
             <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
               <EveningCard board={board.data} onSaved={apply} />
-              <MetaMessageSection board={board.data} meta={board.data.meta} />
+              <KindTabs board={board.data} kind={kind} setKind={setKind}>
+                {kind === "valet" && board.data.valet ? (
+                  <ValetMessageSection board={board.data} onSaved={apply} compact />
+                ) : (
+                  <MetaMessageSection board={board.data} meta={board.data.meta} />
+                )}
+              </KindTabs>
             </div>
           ) : (
             <>
               <EveningCard board={board.data} onSaved={apply} />
-              <MessageSection board={board.data} draft={draft} setDraft={setDraft} onSaved={apply} />
+              <KindTabs board={board.data} kind={kind} setKind={setKind}>
+                {kind === "valet" && board.data.valet ? (
+                  <ValetMessageSection board={board.data} onSaved={apply} />
+                ) : (
+                  <MessageSection board={board.data} draft={draft} setDraft={setDraft} onSaved={apply} />
+                )}
+              </KindTabs>
             </>
           )}
         </>
@@ -140,14 +156,28 @@ function Header({ board, draft }: { board: ReminderBoard | undefined; draft: str
   );
 }
 
-function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBoard; draft: string | null; onDone: () => void; compact?: boolean }) {
+function TestForm({
+  board,
+  draft,
+  onDone,
+  compact = false,
+  valet = false,
+}: {
+  board: ReminderBoard;
+  draft: string | null;
+  onDone: () => void;
+  compact?: boolean;
+  valet?: boolean;
+}) {
   const [phone, setPhone] = useState("");
+  const whatsapp = !!board.meta && !valet;
   const test = useMutation({
     mutationFn: (channel?: "whatsapp" | "sms") =>
       adminApi.testReminder(board.parkingId, {
         ...(phone.trim() ? { to: toE164(phone) } : {}),
         ...(draft?.trim() ? { template: draft } : {}),
         ...(channel ? { channel } : {}),
+        ...(valet ? { valet: true } : {}),
       }),
     onSuccess: res => {
       toast.success(res.outcome === "sent" ? t.test.sent(res.to) : t.test.queued(res.to));
@@ -164,7 +194,7 @@ function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBo
       className={compact ? "flex flex-wrap items-end gap-2 border-t border-panel-line pt-3" : cn(CARD, "flex flex-wrap items-end gap-3")}
       onSubmit={e => {
         e.preventDefault();
-        test.mutate(board.meta ? "whatsapp" : undefined);
+        test.mutate(whatsapp ? "whatsapp" : undefined);
       }}
     >
       <div className={cn("flex flex-1 flex-col gap-1", compact ? "min-w-[180px]" : "min-w-[240px]")}>
@@ -181,7 +211,7 @@ function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBo
           className="h-10 rounded-lg border border-panel-line bg-panel px-3 font-mono"
         />
       </div>
-      {board.meta ? (
+      {whatsapp ? (
         // 14/11/2026 (« Pouvoir envoyer le test du message de la veille par sms »): WhatsApp like the real one, or the SMS fallback alone.
         <div className="flex gap-2">
           <button type="submit" disabled={test.isPending} className={ACTION} data-testid="reminder-test-whatsapp">
@@ -430,6 +460,7 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
                       <button type="button" onClick={() => quickCard.open(row.reservationId)} className="text-left font-semibold hover:underline">
                         {row.customerName}
                       </button>
+                      {row.valet && <ValetPill label={t.valet.rowPill} className="ml-1.5 align-middle" />}
                       <p className="text-[13px] text-muted-foreground">
                         <span>{row.channelDetail || fr.channels[row.channel]}</span>
                         {row.customerPhone && <span className="whitespace-nowrap font-mono"> · {row.customerPhone}</span>}
@@ -471,6 +502,198 @@ function EveningCard({ board, onSaved }: { board: ReminderBoard; onSaved: (b: Re
         </div>
       )}
       <p className="rounded-lg bg-panel-2 px-3 py-2.5 text-[13px] text-muted-foreground">{ev.late}</p>
+    </section>
+  );
+}
+
+/** 15/11/2026: « Navette · Voiturier » above the message: the usual text, or the valet bookings' own. */
+function KindTabs({
+  board,
+  kind,
+  setKind,
+  children,
+}: {
+  board: ReminderBoard;
+  kind: "shuttle" | "valet";
+  setKind: (kind: "shuttle" | "valet") => void;
+  children: ReactNode;
+}) {
+  if (!board.valet) return <>{children}</>;
+  const pill = (value: "shuttle" | "valet", label: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={kind === value}
+      data-testid={`reminder-kind-${value}`}
+      onClick={() => setKind(value)}
+      className={cn(
+        "flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold",
+        kind === value ? "bg-primary text-primary-foreground" : "border border-panel-line bg-panel text-muted-foreground hover:bg-panel-2",
+      )}
+    >
+      {label}
+      {value === "valet" && !board.valet?.template && <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden="true" />}
+    </button>
+  );
+  return (
+    <div className="flex min-w-0 flex-col gap-3">
+      <div role="tablist" aria-label={t.kinds.label} className="flex gap-2">
+        {pill("shuttle", t.kinds.shuttle)}
+        {pill("valet", t.kinds.valet)}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * 15/11/2026 (« voici le message à envoyer pour les réservations de type voiturier », APL Parking): the valet bookings'
+ * own text, sent by SMS alone from the parking's phone, at the evening's time. Without one, they get the usual message.
+ */
+function ValetMessageSection({ board, onSaved, compact = false }: { board: ReminderBoard; onSaved: (b: ReminderBoard) => void; compact?: boolean }) {
+  const v = t.valet;
+  const m = t.message;
+  const valet = board.valet!;
+  const confirm = useConfirm();
+  const saved = valet.template ?? "";
+  const [typed, setTyped] = useState<string | null>(null);
+  const draft = typed ?? saved;
+  const values = board.sample.values;
+  const preview = useMemo(() => renderTemplate(draft, values), [draft, values]);
+  const length = smsLength(preview);
+  const unknown = unknownVariables(draft);
+  const dirty = draft.trim() !== saved.trim();
+  const textarea = useRef<HTMLTextAreaElement>(null);
+
+  const save = useMutation({
+    mutationFn: (valetTemplate: string | null) => adminApi.updateReminders(board.parkingId, { valetTemplate }),
+    onSuccess: (next, valetTemplate) => {
+      onSaved(next);
+      setTyped(null);
+      toast.success(valetTemplate ? v.saved : v.removed);
+    },
+    onError: (err: Error) =>
+      toast.error(err instanceof ApiError && err.fields?.valetTemplate ? errorMessage(err.fields.valetTemplate) : describeError(err)),
+  });
+
+  const insert = (token: string) => {
+    const el = textarea.current;
+    if (!el) return setTyped(`${draft}${token}`);
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    setTyped(`${draft.slice(0, start)}${token}${draft.slice(end)}`);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
+  return (
+    <section aria-labelledby="reminder-valet" data-testid="reminder-valet" className={cn(CARD, "flex min-w-0 flex-col gap-3")}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id="reminder-valet" className="text-lg font-semibold">
+          {v.title}
+        </h2>
+        <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{v.smsOnly}</span>
+      </div>
+      <p className="text-[13px] text-muted-foreground">{v.intro}</p>
+      {!valet.template && !typed && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#F5D08A] bg-[#FFFBEB] px-3 py-2.5 text-sm text-[#78350F]">
+          <span>{v.none}</span>
+          {board.can.edit && (
+            <button type="button" data-testid="reminder-valet-suggested" onClick={() => setTyped(valet.suggested)} className={cn(BUTTON, "h-9")}>
+              {v.useSuggested}
+            </button>
+          )}
+        </div>
+      )}
+      {valet.template && valet.updatedAt && (
+        <p className="text-[13px] text-muted-foreground">
+          {v.updated(new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(valet.updatedAt)))}
+        </p>
+      )}
+      <div className={cn("grid gap-3", !compact && "lg:grid-cols-2")}>
+        <div className="flex min-w-0 flex-col gap-2">
+          <label htmlFor="reminder-valet-template" className="text-sm text-muted-foreground">
+            {v.label}
+          </label>
+          <textarea
+            id="reminder-valet-template"
+            ref={textarea}
+            rows={compact ? 10 : 16}
+            value={draft}
+            readOnly={!board.can.edit}
+            onChange={e => setTyped(e.target.value === saved ? null : e.target.value)}
+            className="w-full resize-y rounded-lg border border-panel-line bg-panel p-3 text-sm leading-relaxed"
+          />
+          {board.can.edit ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[13px] text-muted-foreground">{m.insert}</span>
+              {board.variables.map(variable => (
+                <button
+                  key={variable}
+                  type="button"
+                  title={m.variableHint[variable]}
+                  onClick={() => insert(`{${variable}}`)}
+                  className="h-8 rounded-full border border-lime-deep bg-[#F3FBE6] px-2.5 font-mono text-[12px] font-semibold text-lime-deep hover:brightness-95"
+                >
+                  {`{${variable}}`}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">{m.readOnly}</p>
+          )}
+          {unknown.length > 0 && <p className="rounded-lg border border-bad bg-bad-soft px-3 py-2 text-sm text-bad-text">{m.unknown(unknown.join(", "))}</p>}
+          <p className="flex flex-wrap items-baseline gap-2.5">
+            <span data-testid="reminder-valet-segments" className="font-mono text-lg font-semibold text-lime-deep">
+              {m.count(length.segments)}
+            </span>
+            <span className="text-sm text-muted-foreground">{v.perClient(length.characters)}</span>
+          </p>
+          {board.can.edit && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                data-testid="reminder-valet-save"
+                disabled={!dirty || unknown.length > 0 || !draft.trim() || save.isPending}
+                onClick={() => save.mutate(draft)}
+                className={ACTION}
+              >
+                {v.save}
+              </button>
+              {dirty && (
+                <button type="button" onClick={() => setTyped(null)} className={BUTTON}>
+                  {m.discard}
+                </button>
+              )}
+              {valet.template && (
+                <button
+                  type="button"
+                  disabled={save.isPending}
+                  onClick={async () => {
+                    if (await confirm(v.removeConfirm, { title: v.remove, confirmLabel: v.remove, destructive: true })) save.mutate(null);
+                  }}
+                  className="h-10 px-2 text-sm text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  {v.remove}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+        {draft.trim() && (
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="text-[13px] text-muted-foreground">{t.preview.for(board.sample.customerName, values.date, values.heure)}</p>
+            <div className="rounded-2xl bg-panel-2 p-3">
+              <div data-testid="reminder-valet-preview" className="max-h-[480px] overflow-auto whitespace-pre-line break-words rounded-2xl rounded-bl-md border border-panel-line bg-panel px-3.5 py-3 text-sm leading-snug">
+                {preview}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {board.can.edit && draft.trim() && <TestForm board={board} draft={draft} onDone={() => undefined} compact valet />}
     </section>
   );
 }
