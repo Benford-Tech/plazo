@@ -644,9 +644,13 @@ describe('sièges auto (24/10/2026)', () => {
     const { body } = await book({ passengers: 3 });
     expect(body.booking.childSeats).toEqual({ infant: 0, toddler: 0, booster: 0 });
     expect((await seats(body.reference, body.manageToken, { toddler: 2 })).body.childSeats).toEqual({ infant: 0, toddler: 2, booster: 0 });
-    expect((await seats(body.reference, body.manageToken, { toddler: 3 })).body.code).toBe('child_seats_exceed_passengers');
+    // 15/11/2026 (« La demande d'équipement bloque ») : more children than room are added to the passengers.
+    const more = await seats(body.reference, body.manageToken, { toddler: 3 });
+    expect(more.body.childSeats).toEqual({ infant: 0, toddler: 3, booster: 0 });
+    expect(more.body.passengers).toBe(4);
+    expect((await seats(body.reference, body.manageToken, { infant: 4, toddler: 4, booster: 1 })).body.code).toBe('child_seats_exceed_passengers');
     expect((await seats(body.reference, 'x'.repeat(32), { toddler: 1 })).status).toBe(404);
-    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', staffId: null } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', staffId: null } })).toBe(2);
 
     await prisma.reservation.update({ where: { reference: body.reference }, data: { status: 'arrived' } });
     const locked = await seats(body.reference, body.manageToken, { toddler: 1 });

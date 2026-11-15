@@ -6,7 +6,10 @@ import { SECRET_KEY } from '@/config';
 import prisma, { Prisma, ReservationStatus } from '@/database';
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { BookingRecord, bookingPolicy, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { childSeatColumns, childSeatsOf, childSeatsRefusal, NO_CHILD_SEATS } from '@/domain/child-seats';
+import { childSeatColumns, childSeatsOf, childSeatsRefusal, childSeatsTotal, NO_CHILD_SEATS } from '@/domain/child-seats';
+
+/** The passengers of a booking (CHECK reservations_passengers_range). */
+const MAX_BOOKING_PASSENGERS = 9;
 import { customerNamesOf } from '@/domain/customer-name';
 import { nightSnapshot } from '@/domain/night-fees';
 import { formatPlate, HOLDING_STATUSES, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
@@ -316,14 +319,20 @@ export class PublicBookingService {
   public async updateChildSeats(reference: string, token: string | undefined, seats: ChildSeatsDto | null): Promise<PublicBooking> {
     const before = await this.load(reference, token);
     const next = { ...NO_CHILD_SEATS, ...(seats ?? {}) };
-    const refusal = childSeatsRefusal(next, before.passengers);
+    // 15/11/2026 (« La demande d'équipement bloque ») : the traveller cannot change the passengers from « Ma réservation »,
+    // so children asked for beyond them are added to them (one adult at least, 9 passengers at most).
+    const passengers = Math.max(before.passengers, childSeatsTotal(next) + 1);
+    const refusal = childSeatsRefusal(next, Math.min(passengers, MAX_BOOKING_PASSENGERS));
     if (refusal) throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid child seats', refusal);
     const locked = () => new HttpException(httpStatus.CONFLICT, 'The child seats can no longer be changed', 'child_seats_locked');
     if (before.status !== 'upcoming') throw locked();
     const current = childSeatsOf(before);
     if (current.infant === next.infant && current.toddler === next.toddler && current.booster === next.booster) return toPublicBooking(before);
     const after = await prisma.$transaction(async tx => {
-      const { count } = await tx.reservation.updateMany({ where: { id: before.id, status: 'upcoming' }, data: childSeatColumns(next) });
+      const { count } = await tx.reservation.updateMany({
+        where: { id: before.id, status: 'upcoming' },
+        data: { ...childSeatColumns(next), passengers },
+      });
       if (!count) throw locked();
       await this.audit.record(
         { id: null, operatorId: before.operatorId },
@@ -331,7 +340,11 @@ export class PublicBookingService {
           action: 'reservation.updated',
           entityType: 'reservation',
           entityId: before.id,
-          details: { childSeats: { from: { ...current }, to: { ...next } }, by: 'traveller' } as Prisma.InputJsonValue,
+          details: {
+            childSeats: { from: { ...current }, to: { ...next } },
+            ...(passengers !== before.passengers ? { passengers: { from: before.passengers, to: passengers } } : {}),
+            by: 'traveller',
+          } as Prisma.InputJsonValue,
         },
         tx,
       );

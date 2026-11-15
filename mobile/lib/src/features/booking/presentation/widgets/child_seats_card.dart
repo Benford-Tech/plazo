@@ -93,8 +93,9 @@ class _ChildSeatsSheetState extends State<ChildSeatsSheet> {
   String? _errorCode;
 
   Future<void> _save() async {
-    // The same rule as the API's: the children count in the passengers.
-    final refusal = _seats.refusal(widget.booking.passengers);
+    // 15/11/2026 (« La demande d'équipement bloque ») : the traveller cannot change the passengers here, so the API adds the
+    // children to them (an adult and up to 8 children, the 9 passengers of a booking); only the counts themselves are checked.
+    final refusal = _seats.refusal(9);
     if (refusal != null) {
       setState(() => _errorCode = refusal);
       return;

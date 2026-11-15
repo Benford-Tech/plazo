@@ -34,17 +34,15 @@ describe("ChildSeatsCard (« Sièges auto » on Ma réservation)", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it("holds back more seats than passengers, before any call", async () => {
+  it("lets a one-passenger booking ask for a baby seat: the API adds the child to the passengers", async () => {
+    // 15/11/2026 (« La demande d'équipement bloque »).
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     render(<ChildSeatsCard reference="R7KQ2M" token="tok" seats={{ infant: 0, toddler: 0, booster: 0 }} passengers={1} editable />);
     fireEvent.click(screen.getByRole("button", { name: "Modifier" }));
     fireEvent.click(screen.getByRole("button", { name: "Un bébé de plus" }));
-    expect(screen.getByText("Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeDisabled();
-    expect(fetchMock).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Annuler" }));
-    expect(screen.getByText("Aucun siège demandé")).toBeInTheDocument();
+    expect(screen.queryByText("Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
   });
 
   it("the booking is no longer « Attendu » (409): the seats stay, « Modifier » goes", async () => {

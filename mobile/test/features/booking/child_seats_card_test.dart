@@ -42,7 +42,7 @@ void main() {
     expect(find.text('Sièges auto enregistrés.'), findsOneWidget);
   });
 
-  testWidgets('deux sièges pour deux passagers : refusé sur place, rien n’est envoyé', (tester) async {
+  testWidgets('deux sièges pour deux passagers : envoyé, l’API ajoute les enfants aux passagers (15/11/2026)', (tester) async {
     await pump(tester, booking());
     await tester.tap(find.byKey(const Key('booking-child-seats-edit')));
     await tester.pumpAndSettle();
@@ -52,8 +52,8 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(const Key('child-seats-save')));
     await tester.pumpAndSettle();
-    expect(find.text('Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.'), findsOneWidget);
-    expect(api.calls, isNot(contains('childSeats')));
+    expect(find.text('Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.'), findsNothing);
+    expect(api.calls, contains('childSeats'));
   });
 
   testWidgets('refus de l’API (déjà au parking) : le texte en français', (tester) async {
