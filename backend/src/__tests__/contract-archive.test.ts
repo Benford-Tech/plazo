@@ -40,6 +40,25 @@ describe('archiver un contrat signé', () => {
   beforeEach(resetDatabase);
   afterAll(() => prisma.$disconnect());
 
+  // 15/11/2026 (« avoir une indication des contrats déjà signés », choix C): the fiche and the list say when it was signed.
+  it('dit sur la fiche et dans la liste que le contrat est signé', async () => {
+    const op = await setupOperator();
+    const first = await booking(op.token, '2026-11-01T08:00', '2026-11-05T18:00', 'ab123cd');
+    const second = await booking(op.token, '2026-11-02T08:00', '2026-11-20T18:00', 'ef456gh');
+    const contract = await signed(first);
+
+    const one = await api().get(`/api/internal/reservations/${first}`).set(auth(op.token));
+    expect(one.body.contractSignedAt).toBe(contract.signedAt.toISOString());
+    const other = await api().get(`/api/internal/reservations/${second}`).set(auth(op.token));
+    expect(other.body.contractSignedAt).toBeNull();
+
+    const list = await api().get('/api/internal/reservations?q=Laurent').set(auth(op.token));
+    const byId = Object.fromEntries(list.body.docs.map((d: { id: string; contractSignedAt: string | null }) => [d.id, d.contractSignedAt]));
+    expect(byId[first]).toBe(contract.signedAt.toISOString());
+    expect(byId[second]).toBeNull();
+    expect(list.body.docs[0]).not.toHaveProperty('contract');
+  });
+
   it('archive, désarchive, compte et trace dans l’historique', async () => {
     const op = await setupOperator();
     const first = await booking(op.token, '2026-11-01T08:00', '2026-11-05T18:00', 'ab123cd');

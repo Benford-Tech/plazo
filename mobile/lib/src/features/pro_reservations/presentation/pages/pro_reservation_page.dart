@@ -35,6 +35,7 @@ import '../../../pro_invoices/presentation/invoice_card.dart';
 import '../widgets/linked_emails_card.dart';
 import '../widgets/reservation_tile.dart';
 import '../../../../shared/live_sync/live_sync.dart';
+import '../../../../shared/widgets/contract_signed_icon.dart';
 import '../../../../shared/widgets/direct_badge.dart';
 
 /// One booking: the sheet, the contact, the stay, the vehicle's spot, and the status buttons.
@@ -185,7 +186,12 @@ class _Sheet extends StatelessWidget {
           children: [
             FrenchPlate(r.plate, size: 15),
             const SizedBox(width: 10),
-            Expanded(child: Text(r.customerName, style: AppText.strong(size: 17))),
+            Flexible(child: Text(r.customerName, style: AppText.strong(size: 17))),
+            if (r.contractSignedAt != null) ...[
+              const SizedBox(width: 6),
+              ContractSignedIcon(key: const Key('res-contract-signed'), signedAt: r.contractSignedAt, size: 20),
+            ],
+            const Spacer(),
             proStatusBadge(r.status, key: const Key('res-status'), large: true),
           ],
         ),

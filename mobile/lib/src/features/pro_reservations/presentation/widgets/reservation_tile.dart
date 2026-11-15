@@ -7,6 +7,7 @@ import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/movement_kind.dart';
 import '../../../../shared/widgets/pro_status_pill.dart';
 import '../../data/models/reservation_models.dart';
+import '../../../../shared/widgets/contract_signed_icon.dart';
 import '../../../../shared/widgets/direct_badge.dart';
 
 /// "sam. 4 oct. 06:30" from an instant, in the phone's time (the parking's, in practice).
@@ -59,6 +60,8 @@ class ReservationTile extends StatelessWidget {
                         Row(
                           children: [
                             Flexible(child: Text(r.customerName, style: AppText.strong(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            if (r.contractSignedAt != null)
+                              Padding(padding: const EdgeInsets.only(left: 6), child: ContractSignedIcon(key: Key('contract-signed-${r.id}'), signedAt: r.contractSignedAt)),
                             if (isDirectBooking(r.channel)) const Padding(padding: EdgeInsets.only(left: 6), child: DirectBadge(compact: true)),
                           ],
                         ),

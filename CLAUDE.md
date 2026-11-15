@@ -1642,8 +1642,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    la réservation puis signature au doigt, les deux exigés (`POST /public/bookings/:ref/contract/code`, `…/sign { code, strokes }`,
    400 par champ ; `travellerCanSign` de la vue, `atCounter` gardé pour les anciennes versions ; sans mobile ni SMS : 409
    `contract_at_counter`, au comptoir) ; méthode `sms_code`, appareil `traveller_app`, tracé de la signature sur le PDF ; push et
-   cloche « Contrat signé » à l'équipe (audience `bookingChanges`) ; pastille « Contrat signé » sur la ligne d'arrivée du planning de
-   Plazo Pro (`contractSignedAt` de `GET /internal/planning`) ; copie
+   cloche « Contrat signé » à l'équipe (audience `bookingChanges`) ; **icône « contrat signé », choix C (15/11/2026, « avoir une indication
+   des contrats déjà signés sur la réservation et sur le planning »)** : document coché vert à côté du nom, « Contrat signé le … » au survol
+   ou à l'appui long, rien tant qu'il n'est pas signé (`contractSignedAt` de `GET /internal/planning`, de la liste et de la fiche
+   `GET /internal/reservations[/:id]`) : planning du jour (arrivées et départs, cartes « Prochaine »), liste Réservations, en-tête de la fiche
+   et fiche rapide sur le web (`ContractSignedIcon`) ; planning, liste et fiche de Plazo Pro (`shared/widgets/contract_signed_icon.dart`, à
+   la place de la pastille du 13/11) ; tests `contract-archive.test.ts`, `ContractSignedIcon.test.tsx`, `contract_signed_icon_test.dart` ; copie
    envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
    **États des lieux** (`VehicleInspection`
    `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : quatre photos guidées facultatives (avant, droite, arrière, gauche depuis le 30/10/2026,

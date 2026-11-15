@@ -1,3 +1,4 @@
+import { ContractSignedIcon } from "@/components/ContractSignedIcon";
 import { StatusPill } from "@/components/StatusPill";
 import { useQuery } from "@tanstack/react-query";
 import { MovementPill } from "@/components/MovementPill";
@@ -157,8 +158,9 @@ export function QuickCardBody({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Plate value={r.plate} />
-        <span className="min-w-0 flex-1 truncate text-[17px] font-semibold">
-          {r.customerName}
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[17px] font-semibold">
+          <span className="truncate">{r.customerName}</span>
+          <ContractSignedIcon signedAt={r.contractSignedAt} />
         </span>
 <StatusPill status={r.status} />
       </div>

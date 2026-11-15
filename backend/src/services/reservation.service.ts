@@ -1194,10 +1194,11 @@ export class ReservationService {
         shuttleTrips: DROPOFF_TRIPS_INCLUDE,
         // 29/10/2026: the file a booking was imported from, and whether the import was removed since.
         import: { select: { id: true, fileName: true, createdAt: true, undoneAt: true } },
+        contract: { select: { signedAt: true } },
       },
     });
     if (!found) throw notFound();
-    const { boardingTrip, shuttleTrips, ...reservation } = found;
+    const { boardingTrip, shuttleTrips, contract, ...reservation } = found;
     // 12/11/2026: no place yet, traveller gone in the shuttle: « À garer » instead of « Sans place ».
     const toParkAt = toParkSince(
       reservation,
@@ -1223,6 +1224,8 @@ export class ReservationService {
       boardingCheckIn: boardingCheckInOf({ ...reservation, boardingTrip }),
       toPark: toParkAt ? { since: toParkAt.toISOString() } : null,
       nextStatuses: this.nextStatuses(actor, reservation),
+      // 15/11/2026 (« avoir une indication des contrats déjà signés », choix C): the small signed-contract icon.
+      contractSignedAt: contract?.signedAt.toISOString() ?? null,
     };
   }
 
@@ -1313,10 +1316,22 @@ export class ReservationService {
     // « Supprimées · 4 » (03/11/2026): for the managers only, who may delete and restore.
     const deletedCount = can(actor.role, 'parking:manage') ? await Container.get(ReservationTrashService).count(actor.operatorId) : null;
     const { skip, take, ...pages } = chronologicalPage(totalDocs, before, limit, query.page);
-    const rows = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
+    const found = await prisma.reservation.findMany({
+      where,
+      orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }],
+      skip,
+      take,
+      include: { contract: { select: { signedAt: true } } },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const rows = found.map(({ contract, ...r }) => r);
     // What each comparator takes (19/10/2026): the managers see what they keep under each price.
     const commissions = can(actor.role, 'revenue:view') ? await Container.get(CommissionService).of(actor.operatorId, timezone, rows) : [];
-    const docs = rows.map((r, i) => ({ ...r, commission: commissions[i] ?? null }));
+    const docs = rows.map((r, i) => ({
+      ...r,
+      commission: commissions[i] ?? null,
+      contractSignedAt: found[i].contract?.signedAt.toISOString() ?? null,
+    }));
     return { docs, totalDocs, limit, ...pages, noPriceCount, deletedCount };
   }
 

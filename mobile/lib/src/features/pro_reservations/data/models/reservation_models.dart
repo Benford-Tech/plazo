@@ -60,6 +60,9 @@ abstract class ReservationModel with _$ReservationModel {
     /// 26/10/2026: when the keys were left (« Clés laissées »), a hook or not; null: « Clés ? ».
     DateTime? keysLeftAt,
 
+    /// 15/11/2026: when the parking contract was signed; null while it is not.
+    DateTime? contractSignedAt,
+
     /// The stop serving the traveller (D-A); null: the airport.
     String? stopId,
     double? carLat,
