@@ -197,8 +197,8 @@ export class SmsService {
   }
 
   /**
-   * A one-time signature code (19/10/2026): always through Plazo's Brevo account, whatever the parking's SMS channel (a
-   * security code is Plazo's, and must leave at once). The outbox keeps the recipient and the text's hash, never the code
+   * A one-time signature code (19/10/2026): through the parking's own phone when it sends its SMS (15/11/2026), else
+   * Plazo's Brevo account. The outbox keeps the recipient and the text's hash, never the code
    * in clear. Returns whether Brevo accepted it.
    */
   public async sendSignatureCode(operatorId: string, reservationId: string | null, recipient: string, text: string): Promise<boolean> {
@@ -207,6 +207,18 @@ export class SmsService {
     // does (15/11/2026, « La demande de code ne fonctionne pas »): a code is asked for by the person who signs, on a booking
     // typed for a trial; the fictional bookings of the continuous feed carry 06 39 98 numbers, which smsRecipient refuses.
     if (await isProspectDemoOperator(operatorId)) return false;
+    // 15/11/2026 (« Je ne reçois pas le code », « fais partir le code par le téléphone du parking ») : Brevo accepted the
+    // codes but they never reached the phone; a parking whose own phone sends its SMS sends the code from it. The outbox
+    // keeps the hash only (never retried: the text is not stored, and a code lasts 10 minutes). Brevo otherwise.
+    const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId } });
+    if (settings?.mode === 'gateway') {
+      const row = await prisma.smsOutbox.create({
+        data: { operatorId, reservationId, kind: 'signature_code', to: recipient, bodyHash: hash(text), provider: 'gateway' },
+      });
+      const outcome = await this.attemptGateway(settings, row, text);
+      if (outcome === 'sent' || outcome === 'queued') return true;
+      logger.warn(`[SMS] signature_code: the parking's phone failed for ${about}, sent by Brevo`);
+    }
     const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
     await prisma.smsOutbox.create({
       data: {
@@ -555,6 +567,7 @@ export class SmsService {
   /** The text of an SMS to retry, rebuilt from the booking (texts are never stored). Null when it cannot be. */
   private async renderBody(row: SmsOutbox): Promise<string | null> {
     if (row.kind === 'test') return this.testText();
+    if (row.kind === 'signature_code') return null; // never stored, never resent: a new code is asked for instead
     if (!row.reservationId) return null;
     const booking = await prisma.reservation.findUnique({ where: { id: row.reservationId }, include: WITH_LISTING });
     if (!booking || booking.status === 'cancelled') return null;

@@ -644,6 +644,28 @@ describe('SMS de test', () => {
   });
 });
 
+describe('code de signature', () => {
+  it('part du téléphone du parking quand il est relié, sans texte gardé ; Brevo en repli si le téléphone refuse', async () => {
+    // 15/11/2026 (« Je ne reçois pas le code », « fais partir le code par le téléphone du parking »).
+    const op = await linkedOperator();
+    notifications.settings.apiKey = 'brevo-key';
+    expect(await sms.sendSignatureCode(op.operator.id, null, '+33612345678', 'Votre code Plazo : 123456')).toBe(true);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(0);
+    const [row] = await prisma.smsOutbox.findMany({ where: { operatorId: op.operator.id } });
+    expect(row).toMatchObject({ kind: 'signature_code', provider: 'gateway', body: null });
+
+    // The phone refuses: the code leaves by Brevo instead.
+    fetchMock.mockImplementation(async url => (String(url) === BREVO_SMS_URL ? json({ messageId: 1 }, 201) : json({ message: 'unavailable' }, 503)));
+    expect(await sms.sendSignatureCode(op.operator.id, null, '+33612345678', 'Votre code Plazo : 654321')).toBe(true);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+
+    // A failed code is never resent from the queue (its text is not kept).
+    await prisma.operatorSmsSettings.update({ where: { operatorId: op.operator.id }, data: { queueCheckedAt: null } });
+    await sms.refreshQueue(op.operator.id, { force: true });
+    expect(await prisma.smsOutbox.count({ where: { operatorId: op.operator.id, kind: 'signature_code', status: 'abandoned' } })).toBe(1);
+  });
+});
+
 describe('état, planning et rétention', () => {
   it('GET /internal/sms/status : compteurs du mois, SMS en attente, dernier code d’erreur', async () => {
     const op = await linkedOperator();
