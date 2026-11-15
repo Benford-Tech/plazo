@@ -1582,13 +1582,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`domain/traveller-welcome.ts`, `welcomeEmail`) : bandeau orange avec les badges des stores et « Déjà installée ? Ouvrir ma
      réservation », trois écrans de l'app (`site/public/mail/plazo-depot|atterrissage|ma-voiture.jpg`), « Et aussi », puis ouvrir sa
      réservation par le lien court (`/a/…`) ou le numéro (celui du comparateur) et l'e-mail. Seulement : statut « Attendu », créée
-     depuis moins de 48 h, dépôt dans plus de 3 h, avec un e-mail du voyageur (`travellerEmail`), hors import de fichier, parking avec
-     une fiche, loueur ni suspendu, archivé, de démo ni de test (`isSilentOperator`) ; une fois par adresse et par loueur sur 12 mois
+     depuis moins de 48 h, dépôt dans plus de 3 h, avec un e-mail du voyageur (`travellerEmail`), hors import de fichier, **jamais une réservation
+     Allopark** (15/11/2026, « ne pas envoyer le mail d'invitation quand c'est un mail allopark » : comparateur Allopark ou numéro
+     `AL-…`), parking avec une fiche, loueur ni suspendu, archivé, de démo ni de test (`isSilentOperator`) ; une fois par adresse et par loueur sur 12 mois
      (`Reservation.welcomeEmailAt` réservé avant l'envoi, `welcomeEmailOutcome` sent · repeat · opted_out · no_email · failed ;
      migration `traveller_welcome`, qui marque les réservations d'avant). « Ne plus recevoir ces messages » :
      `GET|POST /public/traveller-emails/unsubscribe/:jeton` (id de la réservation + HMAC de `SECRET_KEY`, page avec un bouton,
      un clic RFC 8058, `List-Unsubscribe`) → `traveller_email_optouts` (sha256 de l'adresse). Politique de confidentialité
-     (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Allopark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). Test `traveller-welcome.test.ts`.
+     (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Onepark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). Test `traveller-welcome.test.ts`.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la
@@ -2593,6 +2594,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `VAPID_SUBJECT` facultatif (`mailto:contact@plazo.fr`) ; `WEB_PUSH=off` coupe les notifications du navigateur (colonne grisée,
   `POST …/browsers` 409 `web_push_unavailable`). Tests `staff-notifications.test.ts`, `NotificationBell.test.tsx`, `NotificationChannelsCard.test.tsx`,
   `bell_test.dart`.
+  **Nettoyer la cloche, choix C (15/11/2026, « pouvoir nettoyer les notifications »)** : `POST /internal/notifications/clear`
+  `{ ids }` · `{ read: true }` · `{ all: true }` (les siennes seulement, 400 `ids` sans portée, → `{ cleared, unread }`,
+  `StaffNotificationService.clear`) ; web : croix sur chaque notification (au survol dès `lg`, toujours sur téléphone ;
+  `bell-clear-<id>`) et menu « ⋯ » (`bell-menu`) avec « Effacer les lues » et « Tout effacer… » confirmé (`BellList`) ; Plazo Pro :
+  glisser une ligne vers la gauche (« Effacer », la ligne revient si le serveur refuse) et le même menu en tête (`ProBellPage`,
+  `BellDataSource.clear`), textes dans les neuf langues.
 
 - **Logo du parking, direction B (02/11/2026, « pouvoir personnaliser Plazo avec l'icône du parking », choix « Plazo Pro (équipe) »
   puis « B » des maquettes https://claude.ai/artifact/U5yH8L745Z13325mqadks1)** : `Operator.logoKey` / `logoUpdatedAt` (migration

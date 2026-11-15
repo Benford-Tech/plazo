@@ -2801,7 +2801,18 @@
       "bookings": "Reservas",
       "shuttle": "Shuttle",
       "team": "Equipa"
-    }
+    },
+    "menu": "Mais ações",
+    "clear_read": "Apagar as lidas",
+    "clear_all": "Apagar tudo…",
+    "clear_one": "Apagar",
+    "clear_all_title": "Apagar todas as suas notificações?",
+    "clear_all_body": "Desaparecem do seu sino, no Plazo Pro e na web. Os seus colegas mantêm as deles.",
+    "clear_all_confirm": "Apagar tudo",
+    "cancel": "Cancelar",
+    "cleared": "{} notificação(ões) apagada(s).",
+    "cleared_none": "Nada para apagar.",
+    "clear_failed": "Não foi possível apagar as notificações."
   },
   "notif_channels": {
     "title": "Onde chega cada notificação",

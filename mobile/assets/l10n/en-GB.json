@@ -2798,7 +2798,18 @@
       "bookings": "Bookings",
       "shuttle": "Shuttle",
       "team": "Team"
-    }
+    },
+    "menu": "More actions",
+    "clear_read": "Clear read",
+    "clear_all": "Clear all…",
+    "clear_one": "Clear",
+    "clear_all_title": "Clear all your notifications?",
+    "clear_all_body": "They disappear from your bell, in Plazo Pro and on the web. Your colleagues keep theirs.",
+    "clear_all_confirm": "Clear all",
+    "cancel": "Cancel",
+    "cleared": "{} notification(s) cleared.",
+    "cleared_none": "Nothing to clear.",
+    "clear_failed": "The notifications could not be cleared."
   },
   "notif_channels": {
     "title": "Where each notification goes",

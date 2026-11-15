@@ -2798,7 +2798,18 @@
       "bookings": "Réservations",
       "shuttle": "Navette",
       "team": "Équipe"
-    }
+    },
+    "menu": "Plus d'actions",
+    "clear_read": "Effacer les lues",
+    "clear_all": "Tout effacer…",
+    "clear_one": "Effacer",
+    "clear_all_title": "Effacer toutes vos notifications ?",
+    "clear_all_body": "Elles disparaissent de votre cloche, dans Plazo Pro et sur le web. Vos collègues gardent les leurs.",
+    "clear_all_confirm": "Tout effacer",
+    "cancel": "Annuler",
+    "cleared": "{} notification(s) effacée(s).",
+    "cleared_none": "Rien à effacer.",
+    "clear_failed": "Les notifications n'ont pas pu être effacées."
   },
   "notif_channels": {
     "title": "Où arrive chaque notification",

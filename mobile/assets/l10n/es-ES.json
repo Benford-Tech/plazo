@@ -2801,7 +2801,18 @@
       "bookings": "Reservas",
       "shuttle": "Lanzadera",
       "team": "Equipo"
-    }
+    },
+    "menu": "Más acciones",
+    "clear_read": "Borrar las leídas",
+    "clear_all": "Borrar todo…",
+    "clear_one": "Borrar",
+    "clear_all_title": "¿Borrar todas sus notificaciones?",
+    "clear_all_body": "Desaparecen de su campana, en Plazo Pro y en la web. Sus compañeros conservan las suyas.",
+    "clear_all_confirm": "Borrar todo",
+    "cancel": "Cancelar",
+    "cleared": "{} notificación(es) borrada(s).",
+    "cleared_none": "Nada que borrar.",
+    "clear_failed": "No se han podido borrar las notificaciones."
   },
   "notif_channels": {
     "title": "Dónde llega cada notificación",

@@ -79,6 +79,9 @@ abstract class BellDataSource {
   Future<BellPage> list({String filter = 'all', DateTime? before});
   Future<int> count();
   Future<int> markRead([List<String>? ids]);
+
+  /// 15/11/2026 (« pouvoir nettoyer les notifications », choix C): erases [ids], the read ones or all; (cleared, unread).
+  Future<(int, int)> clear({List<String>? ids, bool read = false, bool all = false});
   Future<NotificationChannels> channels();
   Future<NotificationChannels> setChannel(String event, String channel, bool value);
   Future<NotificationTest> test();
@@ -123,6 +126,17 @@ class BellDataSourceImpl implements BellDataSource {
     final unread = res.data?['unread'] as int? ?? 0;
     _unread.add(unread);
     return unread;
+  }
+
+  @override
+  Future<(int, int)> clear({List<String>? ids, bool read = false, bool all = false}) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      'internal/notifications/clear',
+      data: ids != null ? {'ids': ids} : (all ? {'all': true} : {'read': true}),
+    );
+    final unread = res.data?['unread'] as int? ?? 0;
+    _unread.add(unread);
+    return (res.data?['cleared'] as int? ?? 0, unread);
   }
 
   @override
