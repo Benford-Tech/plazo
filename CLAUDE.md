@@ -2627,7 +2627,10 @@ de test de la plateforme (« … (tests) », `isTestOperatorName`) n'envoie rien
 dans `NotificationService.sendEmail`), ni copie du contrat signé ; « Écrire au client » n'y propose pas WhatsApp. `isSilentOperator` de
 `services/demo-guard.ts` (gardé par instance). L'équipe y travaille comme avant ; les pushs de l'app restent (téléphones qui ont ouvert
 la réservation). **Les tests partent (14/11/2026, « Je ne reçois plus les sms »)** : « M'envoyer un test » (`test`, `reminder_test`) part au
-téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo des prospects n'envoie toujours rien. Test `sms.test.ts`.
+téléphone du membre sur le parking de test (`SmsService.silentFor`) ; la démo des prospects n'envoie toujours rien. **Le code de signature aussi
+(15/11/2026, « La demande de code ne fonctionne pas »)** : il part par Brevo sur le parking de test (`sendSignatureCode` ne se tait que pour la
+démo des prospects ; les réservations fictives du flux continu ont des numéros 06 39 98 que `smsRecipient` refuse), et un code qui ne part
+pas est un 409 `sms_failed` (plus un 502 dont Cloudflare remplaçait le corps). Test `sms.test.ts`.
 
 ## Personnel
 
