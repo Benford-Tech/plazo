@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { isPublicHttpsUrl } from '@/domain/public-url';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { isSilentOperator } from './demo-guard';
+import { isProspectDemoOperator, isSilentOperator } from './demo-guard';
 import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
@@ -12,7 +12,15 @@ import { loadParkingValues } from './parking-values';
 import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
-import { operatorOfSmsWebhookToken, parseSmsWebhook, SMS_WEBHOOK_EVENTS, smsWebhookId, smsWebhookToken } from '@/domain/sms-webhook';
+import {
+  operatorOfSmsWebhookToken,
+  parseReceivedSms,
+  isGatewayEvent,
+  parseSmsWebhook,
+  SMS_REGISTERED_EVENTS,
+  smsWebhookId,
+  smsWebhookToken,
+} from '@/domain/sms-webhook';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -54,9 +62,18 @@ export interface TravellerSms {
    * WHATSAPP_REMINDER_TEMPLATE is set; `text` stays the SMS of the fallback.
    */
   whatsapp?: { params: string[]; image: string } | null;
+  /**
+   * 15/11/2026: a reply to someone who wrote to the parking's phone (the « Messages » inbox). It leaves even from the
+   * test parking, whose silence is for its fictional travellers: this person is real, they wrote first.
+   */
+  answersSender?: boolean;
 }
 
 export type SendOutcome = 'sent' | 'queued' | 'failed' | 'skipped';
+
+/** Per parking and rolling 24 hours, SMS sent through Plazo's Brevo account (security pass of 15/11/2026). */
+export const OPERATOR_BREVO_SMS_PER_DAY = 150;
+export const OPERATOR_BREVO_TESTS_PER_DAY = 20;
 
 export interface SmsSettingsView {
   mode: SmsMode;
@@ -116,7 +133,7 @@ export class SmsService {
     if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);
-        if (recipient && !(await isSilentOperator(operatorId)) && (await this.whatsapp.enabledFor(operatorId))) {
+        if (recipient && !(await this.silentFor(operatorId, sms)) && (await this.whatsapp.enabledFor(operatorId))) {
           const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
           if (await this.whatsapp.trySend(operatorId, sms, recipient, (settings?.mode ?? 'none') !== 'none')) return 'sent';
         }
@@ -127,12 +144,25 @@ export class SmsService {
     return this.sendSmsOnly(operatorId, sms);
   }
 
+  /**
+   * Whether this message must not leave (21/10 and 13/11/2026). 14/11/2026 (« Je ne reçois plus les sms ») : on the test
+   * parking, the tests a member sends to their own phone (« M'envoyer un test ») still leave; only messages to its
+   * (fictional) travellers are held. The prospects' demo sends nothing at all.
+   */
+  private async silentFor(operatorId: string, sms: Pick<TravellerSms, 'kind' | 'answersSender'>): Promise<boolean> {
+    if (!(await isSilentOperator(operatorId))) return false;
+    const { kind } = sms;
+    if (sms.answersSender) return isProspectDemoOperator(operatorId);
+    if (kind === 'test' || kind === 'reminder_test') return isProspectDemoOperator(operatorId);
+    return true;
+  }
+
   /** The SMS alone, through the parking's channel: also the fallback of a WhatsApp message that was not delivered. */
   public async sendSmsOnly(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
       // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.
-      if (await isSilentOperator(operatorId)) {
+      if (await this.silentFor(operatorId, sms)) {
         logger.info(`[SMS] Demo operator: ${sms.kind} simulated for ${about}`);
         return 'skipped';
       }
@@ -186,6 +216,10 @@ export class SmsService {
 
   private async sendViaBrevo(operatorId: string, sms: TravellerSms, recipient: string, about: string): Promise<SendOutcome> {
     if ((sms.kind === 'booking_confirmed' || sms.kind === 'booking_reminder') && !(await this.brevoBudgetLeft(about))) return 'skipped';
+    if (!(await this.operatorBrevoBudgetLeft(operatorId, sms.kind))) {
+      logger.warn(`[SMS] Brevo budget of operator ${operatorId} spent: ${sms.kind} not sent for ${about}`);
+      return 'skipped';
+    }
     const ok = await this.notifications.smsViaBrevo(recipient, sms.kind, about, sms.text);
     await prisma.smsOutbox.create({
       data: {
@@ -206,6 +240,23 @@ export class SmsService {
       ok ? { lastSentAt: new Date() } : { lastError: 'brevo_failed', lastErrorAt: new Date() },
     );
     return ok ? 'sent' : 'failed';
+  }
+
+  /**
+   * Security pass of 15/11/2026 (SMS pumping): Plazo pays every SMS sent through its Brevo account, and any parking that
+   * signs up may choose it. Per parking and rolling 24 hours: 20 test SMS (« M'envoyer un test ») and 150 SMS in all, so
+   * no parking can run up the bill nor spend the shared budget of the others.
+   */
+  private async operatorBrevoBudgetLeft(operatorId: string, kind: SmsKind): Promise<boolean> {
+    const since = new Date(Date.now() - 86400000);
+    if (kind === 'test' || kind === 'reminder_test') {
+      const tests = await prisma.smsOutbox.count({
+        where: { operatorId, provider: 'brevo', kind: { in: ['test', 'reminder_test'] }, createdAt: { gt: since } },
+      });
+      if (tests >= OPERATOR_BREVO_TESTS_PER_DAY) return false;
+    }
+    const all = await prisma.smsOutbox.count({ where: { operatorId, provider: 'brevo', createdAt: { gt: since } } });
+    return all < OPERATOR_BREVO_SMS_PER_DAY;
   }
 
   /** Confirmation SMS through Brevo per rolling 24 hours at most (bookings are free to make: a cap on the bill). */
@@ -418,7 +469,7 @@ export class SmsService {
     if (!url) return false;
     try {
       const credentials = this.credentials(settings);
-      for (const event of SMS_WEBHOOK_EVENTS) await this.gateway.registerWebhook(credentials, smsWebhookId(event), url, event);
+      for (const event of SMS_REGISTERED_EVENTS) await this.gateway.registerWebhook(credentials, smsWebhookId(event), url, event);
       await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { phoneWebhooksSetAt: now } });
       logger.info(`[SMS] webhooks registered at the gateway for operator ${settings.operatorId}`);
       return true;
@@ -436,6 +487,18 @@ export class SmsService {
   public async handleGatewayWebhook(token: string, body: unknown): Promise<{ ok: true; applied: boolean }> {
     const operatorId = operatorOfSmsWebhookToken(token, process.env.SECRET_KEY || '');
     if (!operatorId) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
+    // 14/11/2026 (« souvent le téléphone est marqué comme hors ligne alors que non »): any call from the phone (a ping,
+    // an SMS sent, delivered, failed or received) proves it is alive, whatever the gateway's lastSeen says.
+    if (isGatewayEvent(body))
+      await prisma.operatorSmsSettings.updateMany({ where: { operatorId, mode: 'gateway' }, data: { phoneSignalAt: new Date() } });
+    // 14/11/2026: an SMS the parking's phone received goes to its « Messages » (loaded here: the inbox sends by SMS).
+    const received = parseReceivedSms(body);
+    if (received) {
+      const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
+      if (settings?.mode !== 'gateway') return { ok: true, applied: false };
+      const { WhatsappInboxService } = await import('./whatsapp-inbox.service');
+      return { ok: true, applied: await Container.get(WhatsappInboxService).receiveSms(operatorId, received) };
+    }
     const delivery = parseSmsWebhook(body);
     if (!delivery) return { ok: true, applied: false };
     const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId } });
@@ -556,7 +619,8 @@ export class SmsService {
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
     if (await this.usesMetaReminder(booking.operatorId)) {
       const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-      return renderMetaReminder(valuesOf(booking, booking.parking.timezone, link, parking), (await this.metaReminder()).text);
+      const values = valuesOf(booking, booking.parking.timezone, link, parking);
+      return withConditions(renderMetaReminder(values, (await this.metaReminder()).text), values.conditions);
     }
     const [settings, sms] = await Promise.all([
       prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
@@ -564,7 +628,8 @@ export class SmsService {
     ]);
     const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
     const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, parking));
+    const values = valuesOf(booking, booking.parking.timezone, link, parking);
+    return withConditions(renderTemplate(template, values), values.conditions);
   }
 
   private testText(): string {
@@ -689,7 +754,7 @@ export class SmsService {
         linkedAt: existing?.mode === 'gateway' && existing.linkedAt ? existing.linkedAt : new Date(),
         // 06/11/2026: another login is another app, whose ping Plazo sets again.
         ...(existing?.gatewayLogin !== login || existing?.gatewayBaseUrl !== (baseUrl === SMS_GATEWAY_CLOUD_URL ? null : baseUrl)
-          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneWebhooksSetAt: null, phoneOfflineAlertedAt: null }
+          ? { phonePingSetAt: null, phoneSpacingSetAt: null, phoneWebhooksSetAt: null, phoneOfflineAlertedAt: null, phoneSignalAt: null }
           : {}),
         lastError: null,
         lastErrorAt: null,
@@ -708,6 +773,7 @@ export class SmsService {
         phonePingSetAt: null,
         phoneSpacingSetAt: null,
         phoneWebhooksSetAt: null,
+        phoneSignalAt: null,
         phoneOfflineAlertedAt: null,
         lastError: null,
         lastErrorAt: null,
@@ -766,6 +832,16 @@ export class SmsService {
       lastErrorAt: settings?.lastErrorAt?.toISOString() ?? null,
     };
   }
+}
+
+/**
+ * 14/11/2026 (« Ajoute les pénalités dans le sms »): the day-before SMS ends with the parking's supplements and conditions
+ * (« Suppléments et conditions », {conditions}) when it has some and the text does not say them already.
+ */
+export function withConditions(text: string, conditions: string | null | undefined): string {
+  const said = conditions?.trim();
+  if (!said || text.includes(said)) return text;
+  return `${text.trimEnd()}\nÀ savoir : ${said}`;
 }
 
 /** The Meta template's text with a booking's values; an empty value reads « - » as in WhatsApp (« (vol -) »). */

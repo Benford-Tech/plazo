@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { SmsController } from '@/controllers/sms.controller';
 import { SmsPhoneAlertsDto, TestSmsDto, UpdateSmsSettingsDto } from '@/dtos/sms.dto';
 import { Routes } from '@/interfaces/routes.interface';
+import { testSendLimiter } from '@/middlewares/rateLimiter';
 import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
@@ -126,7 +127,14 @@ export class SmsRoute implements Routes {
       ValidationMiddleware(UpdateSmsSettingsDto),
       this.sms.updateSettings,
     );
-    this.router.post('/internal/sms/test', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), ValidationMiddleware(TestSmsDto), this.sms.test);
+    this.router.post(
+      '/internal/sms/test',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInDemo(),
+      testSendLimiter,
+      ValidationMiddleware(TestSmsDto),
+      this.sms.test,
+    );
     this.router.post('/internal/sms/disable', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.sms.disable);
     this.router.get('/internal/sms/status', StaffAuthMiddleware('parking:manage'), this.sms.status);
     this.router.get('/internal/sms/phone', StaffAuthMiddleware('parking:manage'), this.sms.phoneHistory);

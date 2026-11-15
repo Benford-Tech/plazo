@@ -125,6 +125,18 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     await waitFor(() => expect(api.replyWhatsapp).toHaveBeenCalledWith("c1", "Oui."));
   });
 
+  it("un SMS écrit au téléphone du parking : pastille SMS, et la réponse part par SMS (14/11/2026)", async () => {
+    const d = detail({ replyUntil: null, replyBy: "sms" });
+    d.messages[0] = { ...d.messages[0], channel: "sms" };
+    api.whatsappConversation.mockResolvedValue(d);
+    renderAt("/reservations/whatsapp?c=c1");
+    expect(await screen.findByTestId("wa-window-sms")).toHaveTextContent("par SMS depuis ce téléphone");
+    expect(screen.getByTestId("wa-sms-badge")).toHaveTextContent("SMS");
+    await userEvent.type(screen.getByLabelText("Écrire au client…"), "Bien noté.");
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer" }));
+    await waitFor(() => expect(api.replyWhatsapp).toHaveBeenCalledWith("c1", "Bien noté."));
+  });
+
   it("propose d'appeler quand les 24 h de Meta sont passées", async () => {
     api.whatsappConversation.mockResolvedValue(detail({ replyUntil: null }));
     renderAt("/reservations/whatsapp?c=c1");

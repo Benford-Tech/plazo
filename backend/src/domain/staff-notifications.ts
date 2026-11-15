@@ -171,3 +171,29 @@ export function notificationTarget(data: Record<string, string> | undefined): st
   if (data.type === 'sms_phone') return '/parking/reglages#sms';
   return null;
 }
+
+/**
+ * Security pass of 15/11/2026: a browser subscription's endpoint is where Plazo's server POSTs a signed message, so only
+ * the push services of the browsers (Chrome / Edge / Opera, Firefox, Safari, Windows) are accepted: never a host of
+ * the member's choosing (blind server-side requests, amplification).
+ */
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /^updates\.push\.services\.mozilla\.com$/,
+  /^([a-z0-9-]+\.)*push\.apple\.com$/,
+  /^([a-z0-9-]+\.)*notify\.windows\.com$/,
+];
+
+export function isPushServiceEndpoint(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) return false;
+  return raw.length <= 1000 && PUSH_HOSTS.some(re => re.test(url.hostname.toLowerCase()));
+}
+
+/** At most this many browsers per member: adding one more forgets the oldest. */
+export const MAX_BROWSERS_PER_STAFF = 5;

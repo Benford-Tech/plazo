@@ -164,7 +164,7 @@ describe('« Mes notifications »', () => {
     const sub = await api()
       .post('/api/internal/notifications/browsers')
       .set(auth(op.token))
-      .send({ endpoint: 'https://push.example.com/abc', keys: { p256dh: 'k', auth: 'a' } });
+      .send({ endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'k', auth: 'a' } });
     expect(sub.status).toBe(409);
     expect(sub.body.code).toBe('web_push_unavailable');
 
@@ -189,7 +189,7 @@ describe('« Mes notifications »', () => {
     const res = await api()
       .post('/api/internal/notifications/browsers')
       .set(auth(op.token))
-      .send({ endpoint: 'https://push.example.com/own', keys: { p256dh: 'k', auth: 'a' } });
+      .send({ endpoint: 'https://fcm.googleapis.com/fcm/send/own', keys: { p256dh: 'k', auth: 'a' } });
     expect(res.status).toBe(200);
   });
 
@@ -204,14 +204,44 @@ describe('« Mes notifications »', () => {
     const res = await api()
       .post('/api/internal/notifications/browsers')
       .set(auth(op.token))
-      .send({ endpoint: 'https://push.example.com/abc', keys: { p256dh: 'k', auth: 'a' }, label: 'Chrome · Mac' });
+      .send({ endpoint: 'https://fcm.googleapis.com/fcm/send/abc', keys: { p256dh: 'k', auth: 'a' }, label: 'Chrome · Mac' });
     expect(res.status).toBe(200);
     expect(res.body.webPush.publicKey).toBe(keys.publicKey);
-    expect(res.body.devices.browsers).toEqual([expect.objectContaining({ label: 'Chrome · Mac', endpoint: 'https://push.example.com/abc' })]);
+    expect(res.body.devices.browsers).toEqual([
+      expect.objectContaining({ label: 'Chrome · Mac', endpoint: 'https://fcm.googleapis.com/fcm/send/abc' }),
+    ]);
     const removed = await api()
       .post('/api/internal/notifications/browsers/remove')
       .set(auth(op.token))
-      .send({ endpoint: 'https://push.example.com/abc' });
+      .send({ endpoint: 'https://fcm.googleapis.com/fcm/send/abc' });
     expect(removed.body.devices.browsers).toEqual([]);
+  });
+
+  it("only accepts the push services of the browsers, never takes a colleague's browser, keeps 5 per member (15/11/2026)", async () => {
+    delete process.env.WEB_PUSH;
+    const webpush = await import('web-push');
+    const keys = webpush.generateVAPIDKeys();
+    process.env.VAPID_PUBLIC_KEY = keys.publicKey;
+    process.env.VAPID_PRIVATE_KEY = keys.privateKey;
+    const op = await setupOperator();
+    const driver = await addStaff(op.token, 'driver');
+    const subscribe = (token: string, endpoint: string) =>
+      api()
+        .post('/api/internal/notifications/browsers')
+        .set(auth(token))
+        .send({ endpoint, keys: { p256dh: 'k', auth: 'a' } });
+    for (const endpoint of [
+      'https://victim.example/hook',
+      'https://169.254.169.254/latest',
+      'http://fcm.googleapis.com/x',
+      'https://fcm.googleapis.com.evil.io/x',
+    ])
+      expect((await subscribe(op.token, endpoint)).status).toBe(400);
+    expect((await subscribe(op.token, 'https://web.push.apple.com/abc')).status).toBe(200);
+    const taken = await subscribe(driver.token, 'https://web.push.apple.com/abc');
+    expect(taken.status).toBe(409);
+    expect(taken.body.code).toBe('browser_taken');
+    for (let i = 0; i < 7; i++) expect((await subscribe(op.token, `https://fcm.googleapis.com/fcm/send/n${i}`)).status).toBe(200);
+    expect(await prisma.staffWebPushSubscription.count({ where: { staffId: op.manager.id } })).toBe(5);
   });
 });

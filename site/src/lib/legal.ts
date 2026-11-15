@@ -36,7 +36,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "13 novembre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "13 novembre 2026";
+export const PRIVACY_VERSION = "14 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -332,7 +332,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "la place de votre véhicule et le crochet de ses clés, notés par le parking ;",
             "la position GPS de votre voiture, si le voiturier ou vous-même l’enregistrez, avec une note facultative ;",
             "votre position, seulement si vous choisissez de la partager pour prévenir le parking de votre arrivée (dernière position uniquement), ou le délai que vous annoncez à la place ;",
-            "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…), un message WhatsApp (texte, photo, message vocal, position) envoyé au numéro de Plazo, ou un message écrit depuis l’app Plazo (« Écrire au parking »), que l’équipe du parking lit et auquel elle peut répondre ;",
+            "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…), un message WhatsApp (texte, photo, message vocal, position) envoyé au numéro de Plazo ou du parking, un SMS envoyé au téléphone du parking, ou un message écrit depuis l’app Plazo (« Écrire au parking »), que l’équipe du parking lit et auquel elle peut répondre ;",
             "le statut de la réservation et l’historique de ses modifications par l’équipe du parking ;",
             "le contrat de stationnement que vous signez (son texte ou le PDF du parking, le PDF signé et sa page de preuve, la date, le moyen de signature : code reçu par SMS, dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés, ou signature manuscrite sur le téléphone du parking, dont le tracé est gardé) ;",
             "l’état des lieux de votre véhicule au dépôt et au retour : les photos prises par le parking, s’il en prend (les quatre côtés du véhicule, gros plans des dégâts), les dégâts notés, le kilométrage, le carburant, et votre réponse (accord ou réserve, avec vos mots) ; et, si vous en prenez, vos propres photos du véhicule et le mot qui les accompagne, envoyés au parking depuis l’application.",
@@ -408,7 +408,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "Téléphones de l’application et leur choix « Offres et bons plans » : effacés 13 mois après la dernière ouverture de l’application.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
-            "Messages WhatsApp et messages écrits depuis l’app Plazo (numéro, texte des messages envoyés par Plazo, messages que vous écrivez et réponses de l’équipe, état de remise) : 30 jours ; les photos et messages vocaux restent chez WhatsApp et ne sont que relus à la demande de l’équipe.",
+            "Messages WhatsApp, SMS écrits au téléphone du parking et messages écrits depuis l’app Plazo (numéro, texte des messages envoyés par Plazo, messages que vous écrivez et réponses de l’équipe, état de remise) : 30 jours ; les photos et messages vocaux restent chez WhatsApp et ne sont que relus à la demande de l’équipe.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,
             `Lettre ${p} : votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre ; une inscription que vous ne confirmez pas n’est ajoutée à aucune liste. Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire ; vous pouvez en demander l’effacement (article 8). Pour limiter les e-mails de confirmation envoyés à une même adresse, son empreinte reste en mémoire 48 heures au plus.`,

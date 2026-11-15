@@ -2958,13 +2958,17 @@
       "whatsapp_unavailable": "WhatsApp ist für Plazo nicht eingerichtet.",
       "not_found": "Diese Unterhaltung existiert nicht mehr.",
       "demo_read_only": "Demo: Die Antwort wird nicht gesendet.",
-      "generic": "Die Nachricht wurde nicht gesendet. Versuchen Sie es erneut."
+      "generic": "Die Nachricht wurde nicht gesendet. Versuchen Sie es erneut.",
+      "sms_unavailable": "Das SMS-Telefon des Parkplatzes ist nicht mehr verbunden: Verbinden Sie es in den Parkplatz-Einstellungen.",
+      "sms_failed": "Die SMS wurde nicht gesendet. Prüfen Sie, ob das Sendetelefon eingeschaltet ist."
     },
     "sent_no_text": "Text nicht gespeichert (vor dem 12.11.2026 gesendet).",
     "sent_sms_fallback": "Auch als SMS gesendet",
     "open_conversation": "Unterhaltung ansehen ›",
     "reply_in_app": "Der Kunde hat Ihnen aus der Plazo-App geschrieben: Ihre Antwort erscheint in seiner Buchung, mit einer Benachrichtigung.",
-    "app_badge": "Plazo-App"
+    "app_badge": "Plazo-App",
+    "sms_badge": "SMS",
+    "reply_by_sms": "Der Kunde hat dem Telefon des Parkplatzes geschrieben: Ihre Antwort geht per SMS von diesem Telefon."
   },
   "parking_messages": {
     "title": "Dem Parkplatz schreiben",

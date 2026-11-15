@@ -1537,6 +1537,9 @@ model OperatorSmsSettings {
   // 09/11/2026 (« faudrait communiquer avec sms gateway »): when Plazo asked the app to call it back on sms:sent,
   // sms:delivered and sms:failed (/public/sms-gateway/webhook/<token>); null again when the login changes.
   phoneWebhooksSetAt    DateTime?
+  // 14/11/2026 (« souvent le téléphone est marqué comme hors ligne alors que non »): the last call of the phone to Plazo
+  // (its ping or an SMS event), counted as a sign of life with the gateway's lastSeen; null again when the login changes.
+  phoneSignalAt         DateTime?
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
@@ -2287,6 +2290,8 @@ model WhatsappConversation {
   lastInboundAt DateTime?
   /// 12/11/2026: the traveller's last message written in the Plazo app (« Écrire au parking »); a reply then goes there.
   lastAppAt     DateTime?
+  /// 14/11/2026: the traveller's last SMS to the parking's own phone (the SMS app); a reply then leaves by SMS from it.
+  lastSmsAt     DateTime?
   /// 14/11/2026: the parking's own number the traveller last wrote to (a free reply leaves from it); null = Plazo's number.
   phoneNumberId String?
   unread        Int       @default(0)
@@ -2320,7 +2325,8 @@ model WhatsappInboxMessage {
   status         String?
   errorCode      String?
   staffId        String?
-  /// 12/11/2026 (« Écrire au parking » de l'app Plazo): whatsapp, or app (written or answered in the Plazo app).
+  /// 12/11/2026 (« Écrire au parking » de l'app Plazo): whatsapp, or app (written or answered in the Plazo app);
+  /// 14/11/2026: sms (written to, or answered from, the parking's own phone through the SMS app).
   channel        String   @default("whatsapp")
   /// The booking an app message is about: the traveller sees only those of their booking.
   reservationId  String?

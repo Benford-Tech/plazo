@@ -6,11 +6,13 @@ import type { PushMessage } from '@/domain/arrival-messages';
 import {
   BELL_RETENTION_DAYS,
   ChannelOverrides,
+  MAX_BROWSERS_PER_STAFF,
   NotificationEvent,
   NotifiedStaff,
   channelMatrix,
   channelsOf,
   eventsFor,
+  isPushServiceEndpoint,
   mergeOverrides,
   notificationTarget,
   phoneColumn,
@@ -278,12 +280,27 @@ export class StaffNotificationService {
 
   public async subscribeBrowser(actor: AuthenticatedStaff, sub: { endpoint: string; p256dh: string; auth: string; label?: string | null }) {
     if (!(await this.webPushKeys())) throw new HttpException(409, 'Browser notifications are not configured', 'web_push_unavailable');
-    if (!/^https:\/\//.test(sub.endpoint)) throw new HttpException(400, 'Invalid endpoint', 'validation_failed', { endpoint: 'invalid' });
-    await prisma.staffWebPushSubscription.upsert({
-      where: { endpoint: sub.endpoint },
-      create: { staffId: actor.id, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth, label: sub.label ?? null },
-      update: { staffId: actor.id, p256dh: sub.p256dh, auth: sub.auth, label: sub.label ?? null },
-    });
+    if (!isPushServiceEndpoint(sub.endpoint)) throw new HttpException(400, 'Invalid endpoint', 'validation_failed', { endpoint: 'invalid' });
+    // Security pass of 15/11/2026: an endpoint registered by another member is never taken over (it would silence their browser).
+    const existing = await prisma.staffWebPushSubscription.findUnique({ where: { endpoint: sub.endpoint }, select: { staffId: true } });
+    if (existing && existing.staffId !== actor.id) throw new HttpException(409, 'This browser belongs to another member', 'browser_taken');
+    if (existing) {
+      await prisma.staffWebPushSubscription.update({
+        where: { endpoint: sub.endpoint },
+        data: { p256dh: sub.p256dh, auth: sub.auth, label: sub.label ?? null },
+      });
+    } else {
+      await prisma.staffWebPushSubscription.create({
+        data: { staffId: actor.id, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth, label: sub.label ?? null },
+      });
+      const extra = await prisma.staffWebPushSubscription.findMany({
+        where: { staffId: actor.id },
+        orderBy: { createdAt: 'desc' },
+        skip: MAX_BROWSERS_PER_STAFF,
+        select: { id: true },
+      });
+      if (extra.length) await prisma.staffWebPushSubscription.deleteMany({ where: { id: { in: extra.map(r => r.id) } } });
+    }
     return this.channels(actor);
   }
 

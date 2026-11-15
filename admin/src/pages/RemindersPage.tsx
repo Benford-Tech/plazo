@@ -143,8 +143,12 @@ function Header({ board, draft }: { board: ReminderBoard | undefined; draft: str
 function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBoard; draft: string | null; onDone: () => void; compact?: boolean }) {
   const [phone, setPhone] = useState("");
   const test = useMutation({
-    mutationFn: () =>
-      adminApi.testReminder(board.parkingId, { ...(phone.trim() ? { to: toE164(phone) } : {}), ...(draft?.trim() ? { template: draft } : {}) }),
+    mutationFn: (channel?: "whatsapp" | "sms") =>
+      adminApi.testReminder(board.parkingId, {
+        ...(phone.trim() ? { to: toE164(phone) } : {}),
+        ...(draft?.trim() ? { template: draft } : {}),
+        ...(channel ? { channel } : {}),
+      }),
     onSuccess: res => {
       toast.success(res.outcome === "sent" ? t.test.sent(res.to) : t.test.queued(res.to));
       onDone();
@@ -160,7 +164,7 @@ function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBo
       className={compact ? "flex flex-wrap items-end gap-2 border-t border-panel-line pt-3" : cn(CARD, "flex flex-wrap items-end gap-3")}
       onSubmit={e => {
         e.preventDefault();
-        test.mutate();
+        test.mutate(board.meta ? "whatsapp" : undefined);
       }}
     >
       <div className={cn("flex flex-1 flex-col gap-1", compact ? "min-w-[180px]" : "min-w-[240px]")}>
@@ -177,9 +181,21 @@ function TestForm({ board, draft, onDone, compact = false }: { board: ReminderBo
           className="h-10 rounded-lg border border-panel-line bg-panel px-3 font-mono"
         />
       </div>
-      <button type="submit" disabled={test.isPending} className={ACTION}>
-        {compact ? t.test.open : t.test.send}
-      </button>
+      {board.meta ? (
+        // 14/11/2026 (« Pouvoir envoyer le test du message de la veille par sms »): WhatsApp like the real one, or the SMS fallback alone.
+        <div className="flex gap-2">
+          <button type="submit" disabled={test.isPending} className={ACTION} data-testid="reminder-test-whatsapp">
+            {t.test.byWhatsapp}
+          </button>
+          <button type="button" disabled={test.isPending} className={BUTTON} data-testid="reminder-test-sms" onClick={() => test.mutate("sms")}>
+            {t.test.bySms}
+          </button>
+        </div>
+      ) : (
+        <button type="submit" disabled={test.isPending} className={ACTION}>
+          {compact ? t.test.open : t.test.send}
+        </button>
+      )}
     </form>
   );
 }

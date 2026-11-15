@@ -374,6 +374,7 @@ describe('WhatsApp : envoi et repli SMS', () => {
 
     // 11/11/2026 (choice B): the fallback SMS is the Meta template's text, with the same values.
     const fallback = (await prisma.whatsappMessage.findFirstOrThrow({ where: { reservationId: booking.id } })).fallbackText ?? '';
+    // 14/11/2026 (« enlève le lien de la photo dans le message »): the text alone, no photo address.
     expect(fallback.startsWith('Bonsoir Camille,')).toBe(true);
     expect(fallback).toContain('Point de rendez-vous : Gare Saint-Exupéry TGV');
     expect(fallback).toContain('(vol -)');
@@ -400,6 +401,28 @@ describe('WhatsApp : envoi et repli SMS', () => {
     expect(body.template.components[0].parameters[0].image.link).toBe('https://photos.example/p0.jpg');
     const row = await prisma.whatsappMessage.findFirstOrThrow({ where: { operatorId: op.operator.id, kind: 'reminder_test' } });
     expect(row.status).toBe('sent');
+  });
+
+  it('le test du message de la veille part en SMS seul, sans lien de photo (14/11/2026)', async () => {
+    whatsapp.config = () => ({ ...configured(), reminderTemplate: 'plazo_veille' });
+    const op = await operatorWithWhatsapp();
+    await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPhotoUrl" = 'https://photos.example/p0.jpg' WHERE id = ${op.parking.id}`;
+    await prisma.parking.update({ where: { id: op.parking.id }, data: { travellerConditions: 'Retard de plus de 30 min : 10 €' } });
+    const res = await api()
+      .post(`/api/internal/parkings/${op.parking.id}/reminders/test`)
+      .set(auth(op.token))
+      .send({ to: '+33612345678', channel: 'sms' });
+    expect(res.status).toBe(200);
+    expect(calls(GRAPH)).toHaveLength(0);
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+    // No photo address in the SMS (14/11/2026, « enlève le lien de la photo dans le message »).
+    const content: string = JSON.parse(calls(BREVO_SMS_URL)[0][1].body).content;
+    expect(content.startsWith('Bonsoir')).toBe(true);
+    expect(content).not.toContain('photos.example');
+    // « Ajoute les pénalités dans le sms »: the parking's conditions close the SMS.
+    expect(content.endsWith('\nÀ savoir : Retard de plus de 30 min : 10 €')).toBe(true);
+    const bad = await api().post(`/api/internal/parkings/${op.parking.id}/reminders/test`).set(auth(op.token)).send({ channel: 'fax' });
+    expect(bad.status).toBe(400);
   });
 
   it('lit le texte du modèle de la veille chez Meta, la copie de Plazo sinon (11/11/2026)', async () => {

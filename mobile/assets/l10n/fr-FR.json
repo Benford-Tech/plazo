@@ -2958,13 +2958,17 @@
       "whatsapp_unavailable": "WhatsApp n'est pas configuré pour Plazo.",
       "not_found": "Cette conversation n'existe plus.",
       "demo_read_only": "Démo : la réponse n'est pas envoyée.",
-      "generic": "Le message n'est pas parti. Réessayez."
+      "generic": "Le message n'est pas parti. Réessayez.",
+      "sms_unavailable": "Le téléphone SMS du parking n'est plus relié : reliez-le dans les réglages du parking.",
+      "sms_failed": "Le SMS n'est pas parti. Vérifiez que le téléphone d'envoi est allumé."
     },
     "sent_no_text": "Texte non gardé (envoyé avant le 12/11/2026).",
     "sent_sms_fallback": "SMS envoyé aussi",
     "open_conversation": "Voir la conversation ›",
     "reply_in_app": "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
-    "app_badge": "App Plazo"
+    "app_badge": "App Plazo",
+    "sms_badge": "SMS",
+    "reply_by_sms": "Le client a écrit au téléphone du parking : votre réponse part par SMS depuis ce téléphone."
   },
   "parking_messages": {
     "title": "Écrire au parking",

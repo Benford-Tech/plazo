@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ReminderController } from '@/controllers/reminder.controller';
 import { ExcludeReminderDto, TestReminderDto, UpdateReminderEveningDto, UpdateReminderSettingsDto } from '@/dtos/reminder.dto';
 import { Routes } from '@/interfaces/routes.interface';
+import { testSendLimiter } from '@/middlewares/rateLimiter';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
@@ -141,6 +142,7 @@ export class ReminderRoute implements Routes {
     this.router.post(
       '/internal/parkings/:id/reminders/test',
       StaffAuthMiddleware('parking:manage'),
+      testSendLimiter,
       ValidationMiddleware(TestReminderDto),
       this.reminders.test,
     );

@@ -371,8 +371,8 @@ describe('envoi par le téléphone du parking', () => {
     try {
       const op = await linkedOperator();
       const hooks = calls(`${SMS_GATEWAY_CLOUD_URL}/webhooks`).map(([, init]) => JSON.parse(init.body));
-      expect(hooks.map(h => h.event)).toEqual(['sms:sent', 'sms:delivered', 'sms:failed']);
-      expect(hooks.map(h => h.id)).toEqual(['plazo-sent', 'plazo-delivered', 'plazo-failed']);
+      expect(hooks.map(h => h.event)).toEqual(['sms:sent', 'sms:delivered', 'sms:failed', 'sms:received', 'system:ping']);
+      expect(hooks.map(h => h.id)).toEqual(['plazo-sent', 'plazo-delivered', 'plazo-failed', 'plazo-received', 'plazo-ping']);
       const url: string = hooks[0].url;
       expect(url.startsWith(`https://www.plazo.test/api/public/sms-gateway/webhook/${op.operator.id}.`)).toBe(true);
       expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).phoneWebhooksSetAt).not.toBeNull();
@@ -403,8 +403,100 @@ describe('envoi par le téléphone du parking', () => {
       // The same event again counts nothing; a forged address is refused.
       expect((await api().post(path).send(body)).body).toEqual({ ok: true, applied: false });
       expect((await api().post(`/api/public/sms-gateway/webhook/${op.operator.id}.nottherightcheckxxxxxxxx`).send(body)).status).toBe(404);
-      // A ping or a received SMS is ignored.
+      // A ping is ignored.
       expect((await api().post(path).send({ event: 'system:ping', payload: {} })).body).toEqual({ ok: true, applied: false });
+    } finally {
+      sms.siteUrl = '';
+    }
+  });
+
+  it('un SMS écrit au téléphone du parking arrive dans « Messages », la réponse repart par SMS (14/11/2026)', async () => {
+    sms.siteUrl = 'https://www.plazo.test';
+    try {
+      const op = await linkedOperator();
+      const url: string = calls(`${SMS_GATEWAY_CLOUD_URL}/webhooks`).map(([, init]) => JSON.parse(init.body))[0].url;
+      const path = new URL(url).pathname;
+      const arrivalAt = new Date(Date.now() + 20 * 3600000);
+      const booking = await prisma.reservation.create({
+        data: {
+          reference: 'RSMS01',
+          operatorId: op.operator.id,
+          parkingId: op.parking.id,
+          channel: 'phone',
+          status: 'upcoming',
+          arrivalAt,
+          returnAt: new Date(arrivalAt.getTime() + 3 * 86400000),
+          passengers: 2,
+          customerName: 'Camille Martin',
+          customerFirstName: 'Camille',
+          customerLastName: 'Martin',
+          customerPhone: '06 12 34 56 78',
+          plate: 'AB-123-CD',
+          plateKey: 'AB123CD',
+        },
+      });
+      const received = (id: string, from: string, message: string) => ({
+        event: 'sms:received',
+        deviceId: 'd1',
+        id: `e-${id}`,
+        webhookId: 'plazo-received',
+        payload: { messageId: id, message, phoneNumber: from, simNumber: 1, receivedAt: new Date().toISOString() },
+      });
+
+      // The parking's client writes: stored once, on the booking, the reply goes by SMS.
+      const first = await api()
+        .post(path)
+        .send(received('in-1', '+33612345678', 'Mon vol a 40 min de retard'));
+      expect(first.body).toEqual({ ok: true, applied: true });
+      expect(
+        (
+          await api()
+            .post(path)
+            .send(received('in-1', '+33612345678', 'Mon vol a 40 min de retard'))
+        ).body,
+      ).toEqual({
+        ok: true,
+        applied: false,
+      });
+      const conversation = await prisma.whatsappConversation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+      expect(conversation).toMatchObject({ reservationId: booking.id, unread: 1, phone: '+33612345678' });
+      expect(conversation.lastSmsAt).not.toBeNull();
+      const list = await api().get('/api/internal/whatsapp/inbox?view=all').set(auth(op.token));
+      expect(list.body.data[0]).toMatchObject({ id: conversation.id, replyBy: 'sms', preview: { text: 'Mon vol a 40 min de retard' } });
+      const thread = await api().get(`/api/internal/whatsapp/inbox/${conversation.id}`).set(auth(op.token));
+      expect(thread.body.messages).toMatchObject([{ direction: 'in', channel: 'sms', text: 'Mon vol a 40 min de retard' }]);
+
+      fetchMock.mockImplementation(async () => json({ id: 'gw-reply', state: 'Pending' }, 202));
+      const reply = await api()
+        .post(`/api/internal/whatsapp/inbox/${conversation.id}/reply`)
+        .set(auth(op.token))
+        .send({ text: 'Pas de souci, on vous attend.' });
+      expect(reply.status).toBe(201);
+      expect(reply.body).toMatchObject({ direction: 'out', channel: 'sms', text: 'Pas de souci, on vous attend.' });
+      expect(lastBody(GATEWAY_MESSAGES)).toMatchObject({ textMessage: { text: 'Pas de souci, on vous attend.' } });
+      expect(await prisma.smsOutbox.findFirstOrThrow({ where: { providerMessageId: 'gw-reply' } })).toMatchObject({
+        kind: 'staff_message',
+        reservationId: booking.id,
+      });
+      // 15/11/2026: an SMS that does not leave is a 409 with its code (a 502 body is replaced on the way by Cloudflare).
+      fetchMock.mockImplementation(async () => json({ message: 'bad' }, 400));
+      const refused = await api().post(`/api/internal/whatsapp/inbox/${conversation.id}/reply`).set(auth(op.token)).send({ text: 'Encore là ?' });
+      expect(refused.status).toBe(409);
+      expect(refused.body.code).toBe('sms_failed');
+
+      // 14/11/2026: a number with no booking at this parking reaches the messaging too, without a booking.
+      expect(
+        (
+          await api()
+            .post(path)
+            .send(received('in-2', '+33799999999', 'Bonjour, vous avez de la place samedi ?'))
+        ).body,
+      ).toMatchObject({ ok: true });
+      const stranger = await prisma.whatsappConversation.findFirstOrThrow({
+        where: { operatorId: op.operator.id, phone: { endsWith: '799999999' } },
+      });
+      expect(stranger).toMatchObject({ reservationId: null, unread: 1 });
+      expect(await prisma.whatsappConversation.count({ where: { operatorId: op.operator.id } })).toBe(2);
     } finally {
       sms.siteUrl = '';
     }
@@ -432,6 +524,21 @@ describe('envoi par le téléphone du parking', () => {
     );
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await prisma.smsOutbox.count()).toBe(0);
+    // 14/11/2026 (« Je ne reçois plus les sms ») : the member's own test still leaves.
+    expect(await sms.sendTravellerSms(test.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'Test' })).toBe('sent');
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+    // 15/11/2026: a reply to someone who wrote to the parking's phone leaves too (they are real, they wrote first).
+    expect(
+      await sms.sendSmsOnly(test.operator.id, {
+        reservationId: null,
+        kind: 'staff_message',
+        to: '0612345678',
+        text: 'Bien reçu',
+        answersSender: true,
+      }),
+    ).toBe('sent');
+    expect(calls(BREVO_SMS_URL)).toHaveLength(2);
+    expect(await sms.sendSmsOnly(test.operator.id, { reservationId: null, kind: 'staff_message', to: '0612345678', text: 'Écrit' })).toBe('skipped');
   });
 
   it('« Pas de SMS » : rien ne part, rien n’est enregistré ; Brevo : l’ancien chemin, tracé dans la boîte d’envoi', async () => {
@@ -439,11 +546,11 @@ describe('envoi par le téléphone du parking', () => {
     expect(await sms.sendTravellerSms(none.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'x' })).toBe('skipped');
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await prisma.smsOutbox.count()).toBe(0);
-    // A number that is not a French mobile gets no SMS either (any mode).
+    // A French landline or a premium range gets no SMS (any mode).
     const brevo = await setupOperator('Brevo');
     await useBrevoSms(brevo.operator.id);
     notifications.settings.apiKey = 'brevo-key';
-    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+41791234567', text: 'x' })).toBe(
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '+882 1234 5678', text: 'x' })).toBe(
       'skipped',
     );
     expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Bonjour' })).toBe(
@@ -458,6 +565,24 @@ describe('envoi par le téléphone du parking', () => {
       bodyHash: sha256('Bonjour'),
     });
     expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: brevo.operator.id } })).monthSent).toBe(1);
+  });
+
+  it('Brevo : 20 tests et 150 SMS par parking et par 24 h au plus (15/11/2026)', async () => {
+    const brevo = await setupOperator('Brevo');
+    await useBrevoSms(brevo.operator.id);
+    notifications.settings.apiKey = 'brevo-key';
+    const row = (kind: string) =>
+      ({ operatorId: brevo.operator.id, kind, to: '+33612345678', bodyHash: 'x', provider: 'brevo', status: 'sent' }) as const;
+    await prisma.smsOutbox.createMany({ data: Array.from({ length: 20 }, () => row('test')) });
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'Test' })).toBe('skipped');
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Atterri' })).toBe(
+      'sent',
+    );
+    await prisma.smsOutbox.createMany({ data: Array.from({ length: 129 }, () => row('flight_landed')) });
+    expect(await sms.sendTravellerSms(brevo.operator.id, { reservationId: null, kind: 'flight_landed', to: '0612345678', text: 'Atterri' })).toBe(
+      'skipped',
+    );
+    expect(calls(BREVO_SMS_URL)).toHaveLength(1);
   });
 });
 
