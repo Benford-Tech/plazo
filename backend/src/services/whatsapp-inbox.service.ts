@@ -391,12 +391,29 @@ export class WhatsappInboxService {
       prisma.whatsappConversation.count({ where: this.whereOf(actor, 'handled', now) }),
       admin ? prisma.whatsappConversation.count({ where: { operatorId: null } }) : Promise.resolve(null),
     ]);
-    const sent = await prisma.whatsappMessage.count({ where: this.sentWhere(actor, now) });
-    return { data: rows.map(row => this.view(row, now)), counts: { unread, all, handled, unknown, sent } };
+    const [sentWhatsapp, sentSms] = await Promise.all([
+      prisma.whatsappMessage.count({ where: this.sentWhere(actor, now) }),
+      prisma.smsOutbox.count({ where: this.sentSmsWhere(actor.operatorId, now) }),
+    ]);
+    return { data: rows.map(row => this.view(row, now)), counts: { unread, all, handled, unknown, sent: sentWhatsapp + sentSms } };
   }
 
   private sentWhere(actor: AuthenticatedStaff, now: Date): Prisma.WhatsappMessageWhereInput {
     return { operatorId: actor.operatorId, createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) } };
+  }
+
+  /**
+   * 15/11/2026 (« les SMS reçus ou envoyés sont dans la messagerie de Plazo »): the SMS Plazo sent a traveller of the parking
+   * these 30 days. Not the team's own messages (« Écrire au client », replies: already in their conversation), not the
+   * tests to a member, never a signature code.
+   */
+  private sentSmsWhere(operatorId: string | null, now: Date, reservationId?: string): Prisma.SmsOutboxWhereInput {
+    return {
+      operatorId: operatorId ?? '',
+      ...(reservationId ? { reservationId } : {}),
+      kind: { notIn: ['staff_message', 'test', 'reminder_test', 'signature_code'] },
+      createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) },
+    };
   }
 
   /**
@@ -405,6 +422,20 @@ export class WhatsappInboxService {
    * that number when the traveller answered.
    */
   public async sent(actor: AuthenticatedStaff, now = new Date()) {
+    const smsRows = await prisma.smsOutbox.findMany({
+      where: this.sentSmsWhere(actor.operatorId, now),
+      orderBy: { createdAt: 'desc' },
+      take: 300,
+      select: {
+        id: true,
+        kind: true,
+        to: true,
+        status: true,
+        body: true,
+        createdAt: true,
+        reservation: { select: { id: true, reference: true, externalReference: true, customerName: true } },
+      },
+    });
     const rows = await prisma.whatsappMessage.findMany({
       where: this.sentWhere(actor, now),
       orderBy: { createdAt: 'desc' },
@@ -420,7 +451,7 @@ export class WhatsappInboxService {
         reservation: { select: { id: true, reference: true, externalReference: true, customerName: true } },
       },
     });
-    const phones = [...new Set(rows.map(r => r.to))];
+    const phones = [...new Set([...rows.map(r => r.to), ...smsRows.map(r => r.to)])];
     const conversations = phones.length
       ? await prisma.whatsappConversation.findMany({
           where: { operatorId: actor.operatorId, phone: { in: phones } },
@@ -428,11 +459,12 @@ export class WhatsappInboxService {
         })
       : [];
     const byPhone = new Map(conversations.map(c => [c.phone, c.id]));
-    return {
-      data: rows.map(r => ({
+    const data = [
+      ...rows.map(r => ({
         id: r.id,
+        channel: 'whatsapp' as const,
         kind: r.kind,
-        status: r.status,
+        status: r.status as string,
         text: maskBookingLinks(r.body),
         phone: displayPhone(r.to),
         at: r.createdAt,
@@ -440,7 +472,20 @@ export class WhatsappInboxService {
         reservation: r.reservation,
         conversationId: byPhone.get(r.to) ?? null,
       })),
-    };
+      ...smsRows.map(r => ({
+        id: r.id,
+        channel: 'sms' as const,
+        kind: r.kind,
+        status: r.status as string,
+        text: maskBookingLinks(r.body),
+        phone: displayPhone(r.to),
+        at: r.createdAt,
+        smsFallback: false,
+        reservation: r.reservation,
+        conversationId: byPhone.get(r.to) ?? null,
+      })),
+    ].sort((a, b) => b.at.getTime() - a.at.getTime());
+    return { data: data.slice(0, 300) };
   }
 
   /** The conversations with something unread, for the menu's counter. */
@@ -458,7 +503,7 @@ export class WhatsappInboxService {
   /** GET /internal/whatsapp/inbox/:id: the conversation (marked read), with what Plazo sent this booking by WhatsApp. */
   public async get(actor: AuthenticatedStaff, id: string, now = new Date()) {
     const row = await this.find(actor, id);
-    const [messages, sent] = await Promise.all([
+    const [messages, sent, sentSms] = await Promise.all([
       prisma.whatsappInboxMessage.findMany({
         where: { conversationId: id },
         orderBy: { createdAt: 'asc' },
@@ -468,6 +513,14 @@ export class WhatsappInboxService {
       row.reservationId && row.operatorId
         ? prisma.whatsappMessage.findMany({
             where: { reservationId: row.reservationId, operatorId: row.operatorId },
+            orderBy: { createdAt: 'asc' },
+            take: 50,
+            select: { id: true, kind: true, status: true, body: true, createdAt: true },
+          })
+        : Promise.resolve([]),
+      row.reservationId && row.operatorId
+        ? prisma.smsOutbox.findMany({
+            where: this.sentSmsWhere(row.operatorId, now, row.reservationId),
             orderBy: { createdAt: 'asc' },
             take: 50,
             select: { id: true, kind: true, status: true, body: true, createdAt: true },
@@ -489,7 +542,24 @@ export class WhatsappInboxService {
         at: m.createdAt,
         by: m.staff ? { firstName: m.staff.firstName } : null,
       })),
-      sent: sent.map(s => ({ id: s.id, kind: s.kind, status: s.status, text: maskBookingLinks(s.body), at: s.createdAt })),
+      sent: [
+        ...sent.map(s => ({
+          id: s.id,
+          channel: 'whatsapp' as const,
+          kind: s.kind,
+          status: s.status as string,
+          text: maskBookingLinks(s.body),
+          at: s.createdAt,
+        })),
+        ...sentSms.map(s => ({
+          id: s.id,
+          channel: 'sms' as const,
+          kind: s.kind,
+          status: s.status as string,
+          text: maskBookingLinks(s.body),
+          at: s.createdAt,
+        })),
+      ].sort((a, b) => a.at.getTime() - b.at.getTime()),
     };
   }
 

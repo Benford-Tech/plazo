@@ -6035,6 +6035,9 @@ export const whatsappInboxFr = {
   sentIntro: "Ce que Plazo a envoyé à vos clients par WhatsApp ces 30 derniers jours.",
   sentNoText: "Texte non gardé (envoyé avant le 12/11/2026).",
   sentSmsFallback: "SMS envoyé aussi",
+  /** 15/11/2026: the SMS Plazo sent, with their own states (the parking's phone, or Plazo's SMS provider). */
+  smsSentStatus: { queued: "en attente", sent: "envoyé", delivered: "remis ✓✓", failed: "non parti", abandoned: "non parti" } as Record<string, string>,
+  smsNoText: "Texte non gardé (envoyé avant le 15/11/2026).",
   openConversation: "Voir la conversation ›",
   pick: "Choisissez une conversation.",
   unknownNumber: "Numéro inconnu",

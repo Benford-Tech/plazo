@@ -179,7 +179,15 @@ export class SmsService {
       }
       if (mode === 'brevo') return this.sendViaBrevo(operatorId, sms, recipient, about);
       const row = await prisma.smsOutbox.create({
-        data: { operatorId, reservationId: sms.reservationId, kind: sms.kind, to: recipient, bodyHash: hash(sms.text), provider: 'gateway' },
+        data: {
+          operatorId,
+          reservationId: sms.reservationId,
+          kind: sms.kind,
+          to: recipient,
+          bodyHash: hash(sms.text),
+          body: keptBody(sms.text),
+          provider: 'gateway',
+        },
       });
       return this.attemptGateway(settings!, row, sms.text);
     } catch (error) {
@@ -228,6 +236,7 @@ export class SmsService {
         kind: sms.kind,
         to: recipient,
         bodyHash: hash(sms.text),
+        body: keptBody(sms.text),
         provider: 'brevo',
         status: ok ? 'sent' : 'failed',
         attempts: 1,
@@ -838,6 +847,11 @@ export class SmsService {
  * 14/11/2026 (« Ajoute les pénalités dans le sms »): the day-before SMS ends with the parking's supplements and conditions
  * (« Suppléments et conditions », {conditions}) when it has some and the text does not say them already.
  */
+/** 15/11/2026: the text kept for « Messages » (30 days with the row), cut to the column's 4 096 characters. */
+export function keptBody(text: string): string {
+  return text.slice(0, 4096);
+}
+
 export function withConditions(text: string, conditions: string | null | undefined): string {
   const said = conditions?.trim();
   if (!said || text.includes(said)) return text;

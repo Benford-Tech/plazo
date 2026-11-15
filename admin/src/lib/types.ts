@@ -2871,6 +2871,8 @@ export interface WhatsappInboxList {
 /** « Envoyés » (12/11/2026): one WhatsApp Plazo sent a traveller of the parking (30 days). */
 export interface WhatsappSentMessage {
   id: string;
+  /** 15/11/2026: an SMS Plazo sent (absent from older APIs: WhatsApp). */
+  channel?: "whatsapp" | "sms";
   kind: string;
   status: string;
   /** The text the traveller read (kept since 12/11/2026). */
@@ -2900,7 +2902,7 @@ export interface WhatsappConversationDetail {
   conversation: WhatsappConversation;
   messages: WhatsappInboxMessage[];
   /** What Plazo sent this booking by WhatsApp (confirmation, day before…), shown between the messages. */
-  sent: { id: string; kind: string; status: string; text?: string | null; at: string }[];
+  sent: { id: string; channel?: "whatsapp" | "sms"; kind: string; status: string; text?: string | null; at: string }[];
 }
 
 export interface ReservationConversation {

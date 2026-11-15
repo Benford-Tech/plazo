@@ -2971,7 +2971,15 @@
     "reply_in_app": "O cliente escreveu-lhe a partir da app Plazo: a sua resposta aparece na reserva dele, com uma notificação.",
     "app_badge": "App Plazo",
     "sms_badge": "SMS",
-    "reply_by_sms": "O cliente escreveu para o telefone do parque: a sua resposta sai por SMS desse telefone."
+    "reply_by_sms": "O cliente escreveu para o telefone do parque: a sua resposta sai por SMS desse telefone.",
+    "sms_sent_status": {
+      "queued": "em espera",
+      "sent": "enviado",
+      "delivered": "entregue ✓✓",
+      "failed": "não enviado",
+      "abandoned": "não enviado"
+    },
+    "sms_no_text": "Texto não guardado (enviado antes de 15/11/2026)."
   },
   "parking_messages": {
     "title": "Escrever ao parque",

@@ -102,6 +102,8 @@ describe("Messages WhatsApp (12/11/2026)", () => {
           conversationId: "c1",
         },
         { id: "w2", kind: "booking_confirmed", status: "sent", text: null, phone: "06 99 88 77 66", at: new Date(now).toISOString(), smsFallback: false, reservation: null, conversationId: null },
+        // 15/11/2026: an SMS Plazo sent, with its own state.
+        { id: "s3", channel: "sms", kind: "flight_landed", status: "delivered", text: "Votre vol a atterri.", phone: "06 11 22 33 44", at: new Date(now - 7200000).toISOString(), smsFallback: false, reservation: null, conversationId: null },
       ],
     });
     renderAt("/reservations/whatsapp?vue=sent");
@@ -109,6 +111,8 @@ describe("Messages WhatsApp (12/11/2026)", () => {
     expect(screen.getByTestId("wa-sent-w1")).toHaveTextContent("Veille du dépôt");
     expect(screen.getByTestId("wa-sent-w1")).toHaveTextContent("lu ✓✓");
     expect(screen.getByTestId("wa-sent-w2")).toHaveTextContent("Texte non gardé");
+    expect(screen.getByTestId("wa-sent-s3")).toHaveTextContent("SMS · remis ✓✓");
+    expect(screen.getByTestId("wa-sent-s3")).toHaveTextContent("Votre vol a atterri.");
     await userEvent.click(screen.getByRole("button", { name: "Voir la conversation ›" }));
     expect(await screen.findByTestId("wa-thread")).toBeInTheDocument();
   });

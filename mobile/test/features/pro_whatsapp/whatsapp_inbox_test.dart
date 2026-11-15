@@ -66,6 +66,16 @@ class FakeInbox implements WhatsappInboxDataSource {
       reservationId: null,
       conversationId: null,
     ),
+    // 15/11/2026: an SMS Plazo sent, with the SMS states.
+    WaSentMessage(
+      sent: WaSent(id: 's3', kind: 'flight_landed', status: 'delivered', at: _now, text: 'Votre vol a atterri.', sms: true),
+      phone: '06 11 22 33 44',
+      smsFallback: false,
+      customerName: null,
+      reference: null,
+      reservationId: null,
+      conversationId: null,
+    ),
   ];
 
   @override
@@ -170,6 +180,8 @@ void main() {
     expect(find.text('Bonjour Sébastien, rendez-vous demain à 8h.'), findsOneWidget);
     expect(find.text('Veille du dépôt'), findsOneWidget);
     expect(find.text('Texte non gardé (envoyé avant le 12/11/2026).'), findsOneWidget);
+    expect(find.text('Votre vol a atterri.'), findsOneWidget);
+    expect(find.textContaining('SMS · remis ✓✓'), findsOneWidget);
     expect(find.text('Voir la conversation ›'), findsOneWidget);
   });
 
