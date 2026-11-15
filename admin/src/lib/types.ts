@@ -2751,6 +2751,32 @@ export interface PlatformInvitations {
   data: PlatformInvitation[];
   counts: { all: number; not_opened: number; not_clicked: number; no_app: number };
 }
+export interface PlatformApps {
+  days: number;
+  from: string;
+  to: string;
+  plazo: {
+    installs: number;
+    installsBefore: number;
+    activeToday: number;
+    active7: number;
+    active30: number;
+    phones: number;
+    platforms: { platform: string; count: number }[];
+    bookings: number;
+    bookingsCents: number;
+  };
+  pro: {
+    activeToday: number;
+    active7: number;
+    active30: number;
+    members: number;
+    activeOperators7: number;
+    operators: number;
+  };
+  series: { date: string; installs: number; plazoActive: number; proActive: number }[];
+  measuredSince: string | null;
+}
 
 export interface PlatformSeo {
   from: string;

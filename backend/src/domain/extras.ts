@@ -207,6 +207,11 @@ const groupRefusal = (group: string): OrderRefusal => (group === 'charge' ? 'one
  */
 export const STAFF_ADDABLE_BOOKING_STATUSES: readonly ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out'];
 
+/** A booking made on Plazo whose payment is not through yet: its services are paid with it. */
+export function awaitsPlazoPayment(booking: { channel: string; paymentStatus: string | null }): boolean {
+  return booking.channel === 'plazo' && booking.paymentStatus !== 'paid';
+}
+
 /** Why a service cannot be ordered on this booking now, or null. `active` = its active orders. */
 export function orderRefusal(
   booking: { status: ReservationStatus; returnAt: Date; channel: string; paymentStatus: string | null },
@@ -217,7 +222,9 @@ export function orderRefusal(
   if (options.byStaff) {
     if (!STAFF_ADDABLE_BOOKING_STATUSES.includes(booking.status)) return 'closed';
   } else {
-    if (booking.channel !== 'plazo' || booking.paymentStatus === null) return 'not_online';
+    // 15/11/2026 (« Impossible d'ajouter des services additionnels »): any booking the traveller can open orders and pays its
+    // service on its own; a Plazo booking still waiting for its payment pays it with the booking.
+    if (awaitsPlazoPayment(booking)) return 'not_online';
     if (!ORDERABLE_BOOKING_STATUSES.includes(booking.status)) return 'closed';
     if (options.now >= orderDeadline(booking.returnAt, offer.leadHours)) return 'too_late';
   }

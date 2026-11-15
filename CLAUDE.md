@@ -885,7 +885,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `pending_payment` → `ordered` → `done` (« Fait », push au voyageur) ou `refused` (« Pas possible », remboursé ; partiel sur le
      paiement de la réservation si `withBooking`) ; `refunded` quand la réservation est annulée et remboursée, ou par la passe de
      15 minutes (`remind-tomorrow` → `settle`) pour un service encore à faire sur une réservation rendue, annulée ou non venue ;
-     feuille abandonnée → `expired` (un paiement tardif est remboursé). Push « Service commandé » à l'équipe (audience
+     feuille abandonnée → `expired` (un paiement tardif est remboursé). **Toute réservation (15/11/2026, « Impossible d'ajouter des services additionnels » sur une réservation Allopark)** : le voyageur commande et paie son service à part sur toute réservation qu'il ouvre dans Plazo (comparateur, téléphone, import), aux mêmes délais ; seule une réservation Plazo dont le paiement n'est pas passé reste refusée (`not_online`, `awaitsPlazoPayment` de `domain/extras.ts`). Push « Service commandé » à l'équipe (audience
      `bookingChanges`), alerte `extras_due` du tableau de bord (retour dans les 36 h, « à surveiller » à 6 h). Reversement de
      la part du loueur à la date de la réservation, une fois fait (`ExtraService.runPayouts` dans `cron/payouts`). Équipe :
      `GET/PUT /internal/parkings/:id/extras` (gérants), `GET /internal/reservations/:id/extras`, `POST …/:extraId/done|refuse`.
@@ -2073,6 +2073,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `domain/prospecting-languages.ts` (`LANGUAGE_PACKS`, `packTexts`), sur les délais et étapes actives du français ; migration
   `prospect_languages` (CHECK de `prospects.language`) ; « Modifier les mails » et le formulaire proposent toutes les langues,
   pastille « ES », « PL »… Traductions faites par Claude, non relues par un natif.
+- **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
+  Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
+  (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur
+  7 et 30 jours, iPhone / Android, réservations faites dans l'app (`acquisitionSource` `app`) et leur montant ; Plazo Pro : membres
+  actifs (application et web, ni la démo des prospects ni les loueurs « … (tests) ») et parkings qui s'en sont servis sur 7 jours ;
+  barres jour par jour. Table `app_activity_days` (jour de Paris, `plazo` | `pro`, id du téléphone ou du membre, plateforme ; migration
+  `app_activity`, 400 jours, purge de nuit `appActivityPurged`) remplie par `PUT /public/app-devices` (`AppUsageService.recordPlazo`) et
+  par la session du personnel (`touchActivity`, au plus toutes les 5 min, `recordPro`) ; `GET /internal/platform/apps?days=7|30|90`.
+  Compté à partir du 15/11/2026 ; les téléchargements officiels restent dans la Play Console et App Store Connect. Politique de
+  confidentialité (400 jours). Tests `app-usage.test.ts`, `AppsPage.test.tsx`.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
   réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
   classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,
@@ -2365,6 +2375,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
   détail dans `mobile/publier-sur-les-stores.md`.
   **Soumettre sans reconstruire (29/10/2026, Plazo Pro 1.0.123 « KO App Store » : l'IPA était sur TestFlight, mais Apple annulait encore l'ancienne soumission, 409 « pre-release build could not be added »)** : workflow Codemagic `mobile-submit-app-store` (à la main, `SUBMIT_APPS` = `plazo-pro` par défaut, ou `plazo plazo-pro`) : dernier build TestFlight de chaque app soumis à la revue (`builds submit-to-app-store`, version `MAJEUR.MINEUR.<numéro>`, notes de version, trois essais à 3 min d'écart), sans rien construire ; lancé par `codemagic-build.yml` › `start`. Le numéro ne monte qu'à un nouveau build : relancer le bilan d'un build ne le change pas.
+  **Tout sauf Plazo Pro sur l'App Store (15/11/2026, « un pipeline qui deploy et soumet tout sauf plazo pro sur apple store »)** : workflow Codemagic `mobile-release-submit` (à la main, par `codemagic-build.yml` › `start`) : les AAB des deux apps sur Google Play (piste production, notes de version), puis Plazo seul sur iOS (Apple Pay selon son profil, IPA → TestFlight puis soumis à la revue, sortie dès l'accord, `--cancel-previous-submissions`, deux essais) ; Plazo Pro n'est ni construit ni envoyé pour iOS, sa version en revue n'est pas touchée ; seul le profil `plazo_app_store` est demandé.
   **Apple Pay dans Plazo (31/10/2026, « ajoute le paiement apple »)** : la feuille Stripe de l'app le gérait déjà
   (`STRIPE_MERCHANT_ID`) ; l'étape « Apple Pay (Plazo) selon son profil App Store » de `mobile-release.yml` lit les Merchant
   IDs du profil App Store de `com.benfordtech.plazo` et, s'il y en a, ajoute `com.apple.developer.in-app-payments` à

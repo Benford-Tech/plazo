@@ -1,9 +1,11 @@
 import { Passport } from 'passport';
+import Container from 'typedi';
 import { ExtractJwt, Strategy as JwtStrategy, VerifiedCallback } from 'passport-jwt';
 import { SECRET_KEY, isVerifiedPlatformAdmin, platformAdminEmails } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { AuthenticatedStaff, DataStoredInToken } from '@/interfaces/auth.interface';
 import { isTestOperatorName } from '@/domain/test-feed';
+import { AppUsageService } from '@/services/app-usage.service';
 
 export const staffPassport = new Passport();
 
@@ -14,12 +16,14 @@ export type ViewAsMetadata = { actingAs?: string };
 export const ACTIVITY_EVERY_MS = 5 * 60 * 1000;
 async function touchActivity(staffId: string, lastActiveAt: Date | null, now = new Date()) {
   if (lastActiveAt && now.getTime() - lastActiveAt.getTime() < ACTIVITY_EVERY_MS) return;
-  await prisma.staff
+  const touched = await prisma.staff
     .updateMany({
       where: { id: staffId, OR: [{ lastActiveAt: null }, { lastActiveAt: { lt: new Date(now.getTime() - ACTIVITY_EVERY_MS) } }] },
       data: { lastActiveAt: now },
     })
-    .catch(() => undefined);
+    .catch(() => ({ count: 0 }));
+  // 15/11/2026 (Plateforme › Applications): the member used Plazo Pro today (once a day is enough, at most every 5 min).
+  if (touched.count > 0) await Container.get(AppUsageService).recordPro(staffId);
 }
 
 // Tokens are stateful: a JWT is only accepted while its row exists in staff_tokens.

@@ -29,6 +29,7 @@ import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
 import { StaffNotificationService } from '@/services/staff-notification.service';
+import { AppUsageService } from '@/services/app-usage.service';
 import { TravellerAppDeviceService } from '@/services/traveller-app-device.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
@@ -262,6 +263,7 @@ export class CronController {
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const appDevicesPurged = await Container.get(TravellerAppDeviceService).purge();
     const invitationTrackingsPurged = await Container.get(InvitationTrackingService).purge();
+    const appActivityPurged = await Container.get(AppUsageService).purge();
     const carLocationsPurged = await this.returns.purgeCarLocations();
     // Forwarded confirmation emails: text after 30 days, rows after 90 (M-A).
     const inboundEmails = await this.inbound.purge();
@@ -309,6 +311,7 @@ export class CronController {
       travellerDevicesPurged,
       appDevicesPurged,
       invitationTrackingsPurged,
+      appActivityPurged,
       carLocationsPurged,
       inboundEmails,
       reservationsAnonymized,
