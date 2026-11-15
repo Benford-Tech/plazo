@@ -117,7 +117,7 @@ export class StaffMessageService {
 
     if (!c.smsOn) throw new HttpException(httpStatus.BAD_GATEWAY, 'WhatsApp refused the message', whatsappRefused ?? 'sms_unavailable');
     const outcome = await this.sms.sendSmsOnly(actor.operatorId, { reservationId: r.id, kind: 'staff_message', to: r.customerPhone, text });
-    if (outcome === 'failed' || outcome === 'skipped') throw new HttpException(httpStatus.BAD_GATEWAY, 'The SMS did not leave', 'sms_failed');
+    if (outcome === 'failed' || outcome === 'skipped') throw new HttpException(httpStatus.CONFLICT, 'The SMS did not leave', 'sms_failed');
     await this.record(actor, r.id, { channel: 'sms', ...(whatsappRefused ? { whatsappRefused } : {}) });
     return { channel: 'sms', via: 'sms', conversationId: c.conversationId, fallback: asked === 'whatsapp', queued: outcome === 'queued' };
   }

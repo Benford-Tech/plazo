@@ -62,6 +62,11 @@ export interface TravellerSms {
    * WHATSAPP_REMINDER_TEMPLATE is set; `text` stays the SMS of the fallback.
    */
   whatsapp?: { params: string[]; image: string } | null;
+  /**
+   * 15/11/2026: a reply to someone who wrote to the parking's phone (the « Messages » inbox). It leaves even from the
+   * test parking, whose silence is for its fictional travellers: this person is real, they wrote first.
+   */
+  answersSender?: boolean;
 }
 
 export type SendOutcome = 'sent' | 'queued' | 'failed' | 'skipped';
@@ -124,7 +129,7 @@ export class SmsService {
     if (isWhatsappKind(sms.kind) || (sms.kind === 'reminder_test' && sms.whatsapp)) {
       try {
         const recipient = smsRecipient(sms.to);
-        if (recipient && !(await this.silentFor(operatorId, sms.kind)) && (await this.whatsapp.enabledFor(operatorId))) {
+        if (recipient && !(await this.silentFor(operatorId, sms)) && (await this.whatsapp.enabledFor(operatorId))) {
           const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } });
           if (await this.whatsapp.trySend(operatorId, sms, recipient, (settings?.mode ?? 'none') !== 'none')) return 'sent';
         }
@@ -140,8 +145,10 @@ export class SmsService {
    * parking, the tests a member sends to their own phone (« M'envoyer un test ») still leave; only messages to its
    * (fictional) travellers are held. The prospects' demo sends nothing at all.
    */
-  private async silentFor(operatorId: string, kind: string): Promise<boolean> {
+  private async silentFor(operatorId: string, sms: Pick<TravellerSms, 'kind' | 'answersSender'>): Promise<boolean> {
     if (!(await isSilentOperator(operatorId))) return false;
+    const { kind } = sms;
+    if (sms.answersSender) return isProspectDemoOperator(operatorId);
     if (kind === 'test' || kind === 'reminder_test') return isProspectDemoOperator(operatorId);
     return true;
   }
@@ -151,7 +158,7 @@ export class SmsService {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
       // 21/10/2026: the prospects' demo never sends anything; nor the test parking since 13/11/2026.
-      if (await this.silentFor(operatorId, sms.kind)) {
+      if (await this.silentFor(operatorId, sms)) {
         logger.info(`[SMS] Demo operator: ${sms.kind} simulated for ${about}`);
         return 'skipped';
       }

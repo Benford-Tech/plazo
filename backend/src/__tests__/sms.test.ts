@@ -478,6 +478,11 @@ describe('envoi par le téléphone du parking', () => {
         kind: 'staff_message',
         reservationId: booking.id,
       });
+      // 15/11/2026: an SMS that does not leave is a 409 with its code (a 502 body is replaced on the way by Cloudflare).
+      fetchMock.mockImplementation(async () => json({ message: 'bad' }, 400));
+      const refused = await api().post(`/api/internal/whatsapp/inbox/${conversation.id}/reply`).set(auth(op.token)).send({ text: 'Encore là ?' });
+      expect(refused.status).toBe(409);
+      expect(refused.body.code).toBe('sms_failed');
 
       // 14/11/2026: a number with no booking at this parking reaches the messaging too, without a booking.
       expect(
@@ -522,6 +527,18 @@ describe('envoi par le téléphone du parking', () => {
     // 14/11/2026 (« Je ne reçois plus les sms ») : the member's own test still leaves.
     expect(await sms.sendTravellerSms(test.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'Test' })).toBe('sent');
     expect(calls(BREVO_SMS_URL)).toHaveLength(1);
+    // 15/11/2026: a reply to someone who wrote to the parking's phone leaves too (they are real, they wrote first).
+    expect(
+      await sms.sendSmsOnly(test.operator.id, {
+        reservationId: null,
+        kind: 'staff_message',
+        to: '0612345678',
+        text: 'Bien reçu',
+        answersSender: true,
+      }),
+    ).toBe('sent');
+    expect(calls(BREVO_SMS_URL)).toHaveLength(2);
+    expect(await sms.sendSmsOnly(test.operator.id, { reservationId: null, kind: 'staff_message', to: '0612345678', text: 'Écrit' })).toBe('skipped');
   });
 
   it('« Pas de SMS » : rien ne part, rien n’est enregistré ; Brevo : l’ancien chemin, tracé dans la boîte d’envoi', async () => {

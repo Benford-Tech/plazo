@@ -1524,6 +1524,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      au téléphone du parking : votre réponse part par SMS depuis ce téléphone. ». Le fil de l'app Plazo ne les montre pas. Le message de
      la veille part déjà du numéro du parking : WhatsApp de son numéro une fois actif, SMS de repli par son téléphone. Politique de
      confidentialité (SMS écrits au parking, 30 jours). Tests `sms.test.ts`, `WhatsappInboxPage.test.tsx`, `whatsapp_inbox_test.dart`.
+     **Réponse depuis le parking de test (15/11/2026, « Le serveur n'a pas répondu à temps » en répondant à un SMS)** : la réponse
+     de « Messages » à quelqu'un qui a écrit au téléphone part aussi du parking de test (`TravellerSms.answersSender`, son silence
+     ne vaut que pour ses voyageurs fictifs ; la démo des prospects n'envoie toujours rien) ; un SMS qui ne part pas est un 409
+     `sms_failed` (réponse et « Écrire au client »), plus un 502 dont Cloudflare remplaçait le corps.
      **Messages au voyageur sur la fiche (04/11/2026, « Ajoute la liste des messages sur la fiche réservation », écran « Fiche
      réservation : messages envoyés » des mêmes maquettes)** : `GET /internal/reservations/:id/messages` (`TravellerMessageLogService`,
      `reservations:view`, 404 pour un autre loueur) rend les SMS (`sms_outbox`) et les WhatsApp (`whatsapp_messages`) de la
