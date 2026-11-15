@@ -89,7 +89,7 @@ export class AppUsageService {
     const installsBetween = async (a: string, b: string): Promise<number> => {
       const [row] = await prisma.$queryRaw<{ n: bigint }[]>`
         SELECT COUNT(*) AS n FROM traveller_app_devices
-        WHERE ("createdAt" AT TIME ZONE 'Europe/Paris')::date BETWEEN ${a}::date AND ${b}::date`;
+        WHERE (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::date BETWEEN ${a}::date AND ${b}::date`;
       return Number(row.n);
     };
 
@@ -102,7 +102,7 @@ export class AppUsageService {
       SELECT COUNT(*) AS n, SUM("priceCents") AS cents FROM reservations
       WHERE "acquisitionSource" = 'app' AND "deletedAt" IS NULL
         AND status::text NOT IN ('pending_payment', 'cancelled')
-        AND ("createdAt" AT TIME ZONE 'Europe/Paris')::date BETWEEN ${from}::date AND ${to}::date`;
+        AND (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::date BETWEEN ${from}::date AND ${to}::date`;
 
     const [members] = await prisma.$queryRaw<{ n: bigint }[]>`
       SELECT COUNT(*) AS n FROM staff s JOIN operators o ON o.id = s."operatorId"
@@ -119,9 +119,9 @@ export class AppUsageService {
       WHERE "day" BETWEEN ${from}::date AND ${to}::date AND (app = 'plazo' OR subject IN (${realStaff}))
       GROUP BY "day", app`;
     const installsDaily = await prisma.$queryRaw<{ date: string; n: bigint }[]>`
-      SELECT to_char(("createdAt" AT TIME ZONE 'Europe/Paris')::date, 'YYYY-MM-DD') AS date, COUNT(*) AS n
+      SELECT to_char((("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::date, 'YYYY-MM-DD') AS date, COUNT(*) AS n
       FROM traveller_app_devices
-      WHERE ("createdAt" AT TIME ZONE 'Europe/Paris')::date BETWEEN ${from}::date AND ${to}::date
+      WHERE (("createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Paris')::date BETWEEN ${from}::date AND ${to}::date
       GROUP BY 1`;
     const [first] = await prisma.$queryRaw<{ day: string | null }[]>`
       SELECT to_char(MIN("day"), 'YYYY-MM-DD') AS day FROM app_activity_days`;

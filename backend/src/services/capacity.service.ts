@@ -69,6 +69,14 @@ export function occupiedNights(arrivalAt: Date, returnAt: Date, timeZone: string
   return nights;
 }
 
+/**
+ * 15/11/2026 (load test): days between two local dates, for an integer generate_series whose size the planner knows; with a
+ * date series it assumed 1 000 rows, judged the join costly and spent most of the query compiling it (JIT).
+ */
+function spanDays(from: string, to: string): number {
+  return Math.max(0, Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000));
+}
+
 @Service()
 export class CapacityService {
   /**
@@ -95,29 +103,38 @@ export class CapacityService {
     const now = new Date();
     // The columns are "timestamp without time zone" holding UTC: read them as UTC first, then
     // convert to the parking's local time to get the local date.
+    // 15/11/2026 (load test): the stays are first narrowed on the raw UTC columns, which the (parkingId, arrivalAt) and
+    // (parkingId, returnAt) indexes serve, two days of slack on each side covering any time zone; only those few are then
+    // converted to local dates and joined to the nights (before: every booking of the parking, ever, against every night).
     const rows = await client.$queryRaw<{ night: Date; count: number; files: number; spots: number }[]>`
       WITH plan AS (
         SELECT
           COALESCE((SELECT SUM(f.capacity) FROM parking_files f WHERE f."parkingId" = ${parking.id} AND f.active), 0)::int AS files,
           (SELECT COUNT(*) FROM parking_spots s WHERE s."parkingId" = ${parking.id} AND s.active)::int AS spots
+      ),
+      stays AS MATERIALIZED (
+        SELECT
+          ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date AS first,
+          GREATEST(
+            ((r."returnAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date,
+            ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date + 1
+          ) AS stop
+        FROM reservations r
+        WHERE r."parkingId" = ${parking.id}
+          AND r."deletedAt" IS NULL
+          AND r."arrivalAt" < (${to}::date + 2)::timestamp
+          AND r."returnAt" > (${from}::date - 2)::timestamp
+          AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
+          -- A place held for an online payment counts until its hold ends (even before the sweep).
+          AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
+          AND (${options.excludeReservationId ?? null}::text IS NULL OR r.id <> ${options.excludeReservationId ?? null})
       )
-      SELECT d::date AS night, COUNT(r.id)::int AS count, plan.files, plan.spots
-      FROM generate_series(${from}::date, ${to}::date, interval '1 day') AS d
+      SELECT days.d AS night, COUNT(s.first)::int AS count, plan.files, plan.spots
+      FROM (SELECT ${from}::date + i AS d FROM generate_series(0, ${spanDays(from, to)}::int) AS i) AS days
       CROSS JOIN plan
-      LEFT JOIN reservations r
-        ON r."parkingId" = ${parking.id}
-        AND r."deletedAt" IS NULL
-        AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
-        -- A place held for an online payment counts until its hold ends (even before the sweep).
-        AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
-        AND (${options.excludeReservationId ?? null}::text IS NULL OR r.id <> ${options.excludeReservationId ?? null})
-        AND ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date <= d::date
-        AND d::date < GREATEST(
-          ((r."returnAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date,
-          ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date + 1
-        )
-      GROUP BY d, plan.files, plan.spots
-      ORDER BY d`;
+      LEFT JOIN stays s ON s.first <= days.d AND days.d < s.stop
+      GROUP BY days.d, plan.files, plan.spots
+      ORDER BY days.d`;
     if (!rows.length) return [];
     const { bookableCapacity: bookable } = parkingCapacity(parking, { activeFilesCapacity: rows[0].files, activeSpots: rows[0].spots });
     return rows.map(row => ({
@@ -143,7 +160,7 @@ export class CapacityService {
     const local = (column: string) => Prisma.sql`((${Prisma.raw(column)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date`;
     const overdueBefore = new Date(now.getTime() - RETURN_OVERDUE_MS);
     const rows = await prisma.$queryRaw<{ night: Date; count: number }[]>`
-      WITH stays AS (
+      WITH stays AS MATERIALIZED (
         SELECT
           CASE
             WHEN r.status::text = 'upcoming' THEN GREATEST(${local('r."arrivalAt"')}, ${today}::date)
@@ -163,12 +180,20 @@ export class CapacityService {
           AND r."deletedAt" IS NULL
           AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
           AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
+          -- 15/11/2026 (load test): a stay over two days before the window counts on none of its nights: cars on site and
+          -- bookings still expected are always read (their nights reach today), the others only when one of their dates
+          -- comes near the window.
+          AND (
+            r.status::text = 'upcoming'
+            OR r.status::text = ANY(${ON_SITE_STATUSES}::text[])
+            OR GREATEST(r."returnAt", COALESCE(r."returnedAt", r."returnAt"), COALESCE(r."arrivedAt", r."arrivalAt")) > (${from}::date - 2)::timestamp
+          )
       )
-      SELECT d::date AS night, COUNT(s.first)::int AS count
-      FROM generate_series(${from}::date, ${to}::date, interval '1 day') AS d
-      LEFT JOIN stays s ON s.first <= d::date AND d::date < GREATEST(s.stop, s.first + 1)
-      GROUP BY d
-      ORDER BY d`;
+      SELECT days.d AS night, COUNT(s.first)::int AS count
+      FROM (SELECT ${from}::date + i AS d FROM generate_series(0, ${spanDays(from, to)}::int) AS i) AS days
+      LEFT JOIN stays s ON s.first <= days.d AND days.d < GREATEST(s.stop, s.first + 1)
+      GROUP BY days.d
+      ORDER BY days.d`;
     return new Map(rows.map(row => [row.night.toISOString().slice(0, 10), row.count]));
   }
 
