@@ -2063,6 +2063,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `domain/prospecting-languages.ts` (`LANGUAGE_PACKS`, `packTexts`), sur les délais et étapes actives du français ; migration
   `prospect_languages` (CHECK de `prospects.language`) ; « Modifier les mails » et le formulaire proposent toutes les langues,
   pastille « ES », « PL »… Traductions faites par Claude, non relues par un natif.
+- **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
+  Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
+  (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur
+  7 et 30 jours, iPhone / Android, réservations faites dans l'app (`acquisitionSource` `app`) et leur montant ; Plazo Pro : membres
+  actifs (application et web, ni la démo des prospects ni les loueurs « … (tests) ») et parkings qui s'en sont servis sur 7 jours ;
+  barres jour par jour. Table `app_activity_days` (jour de Paris, `plazo` | `pro`, id du téléphone ou du membre, plateforme ; migration
+  `app_activity`, 400 jours, purge de nuit `appActivityPurged`) remplie par `PUT /public/app-devices` (`AppUsageService.recordPlazo`) et
+  par la session du personnel (`touchActivity`, au plus toutes les 5 min, `recordPro`) ; `GET /internal/platform/apps?days=7|30|90`.
+  Compté à partir du 15/11/2026 ; les téléchargements officiels restent dans la Play Console et App Store Connect. Politique de
+  confidentialité (400 jours). Tests `app-usage.test.ts`, `AppsPage.test.tsx`.
 - **SEO local, mesure M1 + M2 (06/11/2026, « SEO local · pages dédiées par ville, aéroport, gare et cas d'usage · positions et
   réservations organiques », choix « A + M2 » des maquettes https://claude.ai/artifact/VjbSdoTMnjn4nGx1uNDipb)** : **M1** le site
   classe chaque visite dans le navigateur (`site/src/lib/acquisition.ts`, `classifyVisit` : `search` moteur nommé (google, bing,

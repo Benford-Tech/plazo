@@ -31,6 +31,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
     items: [
       { to: "/plateforme/prospection", label: fr.platform.tabs.prospecting },
       { to: "/plateforme/referencement", label: fr.platform.tabs.seo },
+      { to: "/plateforme/applications", label: fr.platform.tabs.apps },
       {
         to: "/plateforme/notifications",
         label: fr.platform.tabs.notifications,

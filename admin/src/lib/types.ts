@@ -2730,6 +2730,33 @@ export interface DeletedReservation {
 }
 
 /** Plateforme › Référencement (06/11/2026, SEO local A + M2). */
+export interface PlatformApps {
+  days: number;
+  from: string;
+  to: string;
+  plazo: {
+    installs: number;
+    installsBefore: number;
+    activeToday: number;
+    active7: number;
+    active30: number;
+    phones: number;
+    platforms: { platform: string; count: number }[];
+    bookings: number;
+    bookingsCents: number;
+  };
+  pro: {
+    activeToday: number;
+    active7: number;
+    active30: number;
+    members: number;
+    activeOperators7: number;
+    operators: number;
+  };
+  series: { date: string; installs: number; plazoActive: number; proActive: number }[];
+  measuredSince: string | null;
+}
+
 export interface PlatformSeo {
   from: string;
   to: string;
