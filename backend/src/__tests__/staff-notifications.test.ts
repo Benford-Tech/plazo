@@ -121,7 +121,10 @@ describe('the bell', () => {
     const theirs = await note(other.manager.id, other.operator.id, 'D');
 
     expect((await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({})).status).toBe(400);
-    let res = await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({ ids: [a.id, theirs.id] });
+    let res = await api()
+      .post('/api/internal/notifications/clear')
+      .set(auth(op.token))
+      .send({ ids: [a.id, theirs.id] });
     expect(res.body).toEqual({ cleared: 1, unread: 1 });
     res = await api().post('/api/internal/notifications/clear').set(auth(op.token)).send({ read: true });
     expect(res.body).toEqual({ cleared: 1, unread: 1 });
