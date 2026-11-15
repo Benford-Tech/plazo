@@ -1528,6 +1528,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de « Messages » à quelqu'un qui a écrit au téléphone part aussi du parking de test (`TravellerSms.answersSender`, son silence
      ne vaut que pour ses voyageurs fictifs ; la démo des prospects n'envoie toujours rien) ; un SMS qui ne part pas est un 409
      `sms_failed` (réponse et « Écrire au client »), plus un 502 dont Cloudflare remplaçait le corps.
+     **Supprimer des messages (15/11/2026, « Pouvoir supprimer les SMS », choix « Les deux » et « Gérants et accueil »)** :
+     `DELETE /internal/whatsapp/inbox/:id` (la conversation et ses messages, `{ messages }`) et `DELETE …/:id/messages/:messageId`
+     (un message, la conversation part avec son dernier : `{ conversationDeleted }`, sinon `lastMessageAt` recalculé), `reservations:manage`,
+     `RefuseInDemo`, 404 `not_found` / `message_not_found` (autre loueur compris) ; tracés `whatsapp.conversation_deleted` /
+     `whatsapp.message_deleted` sans le texte (Historique, groupe Messages) ; rien ne change sur le téléphone du parking, chez Meta ni chez le
+     client, et les messages que Plazo a envoyés à la réservation restent ; un nouveau message du numéro ouvre une nouvelle conversation.
+     Web : poubelle en tête de la conversation (`wa-delete-conversation`, aussi dans la fenêtre de la barre des messages) et « ⋯ › Supprimer »
+     sur chaque bulle (`wa-msg-menu`, `wa-msg-delete`), confirmés par `useConfirm` ; Plazo Pro : même poubelle et « ⋯ » à côté de chaque bulle
+     (`wa-msg-menu-<id>`, feuille puis confirmation), textes `whatsapp_inbox.delete.*` dans les neuf langues. Tests `whatsapp-inbox.test.ts`,
+     `WhatsappInboxPage.test.tsx`, `whatsapp_inbox_test.dart`.
      **Les SMS envoyés aussi (15/11/2026, « les SMS reçus ou envoyés sont dans la messagerie de Plazo », choix « Oui, partout »)** :
      `SmsOutbox.body` (texte lu par le voyageur, gardé 30 jours avec la ligne ; migration `sms_outbox_body`, CHECK 4 096 et jamais pour
      un `signature_code` ; `keptBody`) ; la conversation (`sent`) et « Envoyés » (`GET /internal/whatsapp/sent`, `counts.sent`) montrent

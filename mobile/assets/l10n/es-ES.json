@@ -2963,7 +2963,8 @@
       "demo_read_only": "Demo: la respuesta no se envía.",
       "generic": "El mensaje no se ha enviado. Inténtalo de nuevo.",
       "sms_unavailable": "El teléfono SMS del parking ya no está vinculado: vincúlelo en los ajustes del parking.",
-      "sms_failed": "El SMS no se ha enviado. Compruebe que el teléfono de envío está encendido."
+      "sms_failed": "El SMS no se ha enviado. Compruebe que el teléfono de envío está encendido.",
+      "message_not_found": "Este mensaje ya no existe."
     },
     "sent_no_text": "Texto no guardado (enviado antes del 12/11/2026).",
     "sent_sms_fallback": "También se envió un SMS",
@@ -2979,7 +2980,21 @@
       "failed": "no enviado",
       "abandoned": "no enviado"
     },
-    "sms_no_text": "Texto no guardado (enviado antes del 15/11/2026)."
+    "sms_no_text": "Texto no guardado (enviado antes del 15/11/2026).",
+    "delete": {
+      "conversation": "Eliminar la conversación",
+      "conversation_title": "¿Eliminar esta conversación?",
+      "conversation_text_one": "El mensaje desaparece de Plazo para todo el equipo. Se queda en el teléfono del parking y en el del cliente.",
+      "conversation_text_many": "Los {} mensajes desaparecen de Plazo para todo el equipo. Se quedan en el teléfono del parking y en el del cliente.",
+      "conversation_done": "Conversación eliminada.",
+      "message": "Eliminar",
+      "message_title": "¿Eliminar este mensaje?",
+      "message_text": "Desaparece de Plazo para todo el equipo. Se queda en el teléfono del parking y en el del cliente.",
+      "message_done": "Mensaje eliminado.",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar",
+      "menu": "Más acciones sobre este mensaje"
+    }
   },
   "parking_messages": {
     "title": "Escribir al aparcamiento",

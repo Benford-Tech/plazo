@@ -11,6 +11,14 @@ import { staffMessageLimiter, testSendLimiter } from '@/middlewares/rateLimiter'
  * tags:
  *   name: WhatsApp
  *   description: "« Plazo envoie par WhatsApp », SMS en repli (03/11/2026): the traveller messages by WhatsApp from Plazo's number"
+ * /internal/whatsapp/inbox/{id}:
+ *   delete:
+ *     tags: [WhatsApp]
+ *     summary: "Deletes the conversation and its messages from Plazo (reservations:manage); Plazo's own sent messages stay on the booking"
+ * /internal/whatsapp/inbox/{id}/messages/{messageId}:
+ *   delete:
+ *     tags: [WhatsApp]
+ *     summary: "Deletes one message of the conversation from Plazo (reservations:manage) → { conversationDeleted }"
  * /internal/whatsapp/settings:
  *   get:
  *     tags: [WhatsApp]
@@ -71,6 +79,14 @@ export class WhatsappRoute implements Routes {
     this.router.post('/internal/whatsapp/inbox/:id/handle', StaffAuthMiddleware('reservations:status'), this.whatsapp.handle);
     this.router.post('/internal/whatsapp/inbox/:id/unhandle', StaffAuthMiddleware('reservations:status'), this.whatsapp.unhandle);
     this.router.post('/internal/whatsapp/inbox/:id/attach', StaffAuthMiddleware('reservations:manage'), this.whatsapp.attach);
+    // 15/11/2026 (« Pouvoir supprimer les SMS »): a conversation or one message leaves Plazo (managers and reception).
+    this.router.delete('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:manage'), RefuseInDemo(), this.whatsapp.remove);
+    this.router.delete(
+      '/internal/whatsapp/inbox/:id/messages/:messageId',
+      StaffAuthMiddleware('reservations:manage'),
+      RefuseInDemo(),
+      this.whatsapp.removeMessage,
+    );
     this.router.get('/public/whatsapp/webhook', this.whatsapp.verify);
     this.router.post('/public/whatsapp/webhook', this.whatsapp.webhook);
   }

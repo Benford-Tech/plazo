@@ -781,6 +781,59 @@ export class WhatsappInboxService {
   }
 
   /**
+   * DELETE /internal/whatsapp/inbox/:id (15/11/2026, « Pouvoir supprimer les SMS », both choices, managers and reception):
+   * the conversation and every message in it leave Plazo for the whole team. Nothing changes on the parking's phone, at
+   * Meta or for the traveller; what Plazo itself sent the booking (confirmation, day before…) stays on the booking. A new
+   * message from that number opens a new conversation. The audit keeps who and when, never the text.
+   */
+  public async remove(actor: AuthenticatedStaff, id: string) {
+    const row = await this.find(actor, id);
+    const messages = await prisma.$transaction(async tx => {
+      const deleted = await tx.whatsappInboxMessage.deleteMany({ where: { conversationId: id } });
+      await tx.whatsappConversation.delete({ where: { id } });
+      return deleted.count;
+    });
+    await this.audit.record(actor, {
+      action: 'whatsapp.conversation_deleted',
+      entityType: row.reservationId ? 'reservation' : 'whatsapp_conversation',
+      entityId: row.reservationId ?? id,
+      details: { conversationId: id, messages },
+    });
+    return { id, deleted: true, messages };
+  }
+
+  /**
+   * DELETE /internal/whatsapp/inbox/:id/messages/:messageId: one message (the traveller's or the team's) leaves Plazo. The
+   * conversation follows when it was its last message.
+   */
+  public async removeMessage(actor: AuthenticatedStaff, id: string, messageId: string) {
+    const row = await this.find(actor, id);
+    const message = await prisma.whatsappInboxMessage.findFirst({ where: { id: messageId, conversationId: id }, select: { id: true } });
+    if (!message) throw new HttpException(httpStatus.NOT_FOUND, 'Message not found', 'message_not_found');
+    const conversationDeleted = await prisma.$transaction(async tx => {
+      await tx.whatsappInboxMessage.delete({ where: { id: messageId } });
+      const latest = await tx.whatsappInboxMessage.findFirst({
+        where: { conversationId: id },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      });
+      if (!latest) {
+        await tx.whatsappConversation.delete({ where: { id } });
+        return true;
+      }
+      await tx.whatsappConversation.update({ where: { id }, data: { lastMessageAt: latest.createdAt } });
+      return false;
+    });
+    await this.audit.record(actor, {
+      action: 'whatsapp.message_deleted',
+      entityType: row.reservationId ? 'reservation' : 'whatsapp_conversation',
+      entityId: row.reservationId ?? id,
+      details: { conversationId: id, conversationDeleted },
+    });
+    return { id: messageId, deleted: true, conversationDeleted };
+  }
+
+  /**
    * POST /internal/whatsapp/inbox/:id/attach { reference } (platform admins, « Numéro inconnu »): the conversation goes
    * to the parking of that booking (Plazo's reference or the comparator's number), merged with one it already has.
    */

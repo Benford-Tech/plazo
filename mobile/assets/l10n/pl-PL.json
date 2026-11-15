@@ -2966,7 +2966,8 @@
       "demo_read_only": "Demo: odpowiedź nie zostanie wysłana.",
       "generic": "Wiadomość nie została wysłana. Spróbuj ponownie.",
       "sms_unavailable": "Telefon SMS parkingu nie jest już połączony: połącz go w ustawieniach parkingu.",
-      "sms_failed": "SMS nie został wysłany. Sprawdź, czy telefon wysyłający jest włączony."
+      "sms_failed": "SMS nie został wysłany. Sprawdź, czy telefon wysyłający jest włączony.",
+      "message_not_found": "Ta wiadomość już nie istnieje."
     },
     "sent_no_text": "Treść niezachowana (wysłane przed 12/11/2026).",
     "sent_sms_fallback": "Wysłano też SMS",
@@ -2982,7 +2983,21 @@
       "failed": "nie wysłano",
       "abandoned": "nie wysłano"
     },
-    "sms_no_text": "Tekst nie zapisany (wysłany przed 15.11.2026)."
+    "sms_no_text": "Tekst nie zapisany (wysłany przed 15.11.2026).",
+    "delete": {
+      "conversation": "Usuń rozmowę",
+      "conversation_title": "Usunąć tę rozmowę?",
+      "conversation_text_one": "Wiadomość zniknie z Plazo dla całego zespołu. Zostanie w telefonie parkingu i u klienta.",
+      "conversation_text_many": "Wiadomości ({}) znikną z Plazo dla całego zespołu. Zostaną w telefonie parkingu i u klienta.",
+      "conversation_done": "Rozmowa usunięta.",
+      "message": "Usuń",
+      "message_title": "Usunąć tę wiadomość?",
+      "message_text": "Zniknie z Plazo dla całego zespołu. Zostanie w telefonie parkingu i u klienta.",
+      "message_done": "Wiadomość usunięta.",
+      "confirm": "Usuń",
+      "cancel": "Anuluj",
+      "menu": "Więcej działań dla tej wiadomości"
+    }
   },
   "parking_messages": {
     "title": "Napisz do parkingu",

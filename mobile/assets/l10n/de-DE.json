@@ -2960,7 +2960,8 @@
       "demo_read_only": "Demo: Die Antwort wird nicht gesendet.",
       "generic": "Die Nachricht wurde nicht gesendet. Versuchen Sie es erneut.",
       "sms_unavailable": "Das SMS-Telefon des Parkplatzes ist nicht mehr verbunden: Verbinden Sie es in den Parkplatz-Einstellungen.",
-      "sms_failed": "Die SMS wurde nicht gesendet. Prüfen Sie, ob das Sendetelefon eingeschaltet ist."
+      "sms_failed": "Die SMS wurde nicht gesendet. Prüfen Sie, ob das Sendetelefon eingeschaltet ist.",
+      "message_not_found": "Diese Nachricht existiert nicht mehr."
     },
     "sent_no_text": "Text nicht gespeichert (vor dem 12.11.2026 gesendet).",
     "sent_sms_fallback": "Auch als SMS gesendet",
@@ -2976,7 +2977,21 @@
       "failed": "nicht gesendet",
       "abandoned": "nicht gesendet"
     },
-    "sms_no_text": "Text nicht gespeichert (vor dem 15.11.2026 gesendet)."
+    "sms_no_text": "Text nicht gespeichert (vor dem 15.11.2026 gesendet).",
+    "delete": {
+      "conversation": "Unterhaltung löschen",
+      "conversation_title": "Diese Unterhaltung löschen?",
+      "conversation_text_one": "Die Nachricht verschwindet aus Plazo für das ganze Team. Sie bleibt auf dem Telefon des Parkplatzes und beim Kunden.",
+      "conversation_text_many": "Die {} Nachrichten verschwinden aus Plazo für das ganze Team. Sie bleiben auf dem Telefon des Parkplatzes und beim Kunden.",
+      "conversation_done": "Unterhaltung gelöscht.",
+      "message": "Löschen",
+      "message_title": "Diese Nachricht löschen?",
+      "message_text": "Sie verschwindet aus Plazo für das ganze Team. Sie bleibt auf dem Telefon des Parkplatzes und beim Kunden.",
+      "message_done": "Nachricht gelöscht.",
+      "confirm": "Löschen",
+      "cancel": "Abbrechen",
+      "menu": "Weitere Aktionen für diese Nachricht"
+    }
   },
   "parking_messages": {
     "title": "Dem Parkplatz schreiben",

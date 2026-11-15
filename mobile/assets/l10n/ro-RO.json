@@ -2963,7 +2963,8 @@
       "demo_read_only": "Demo: răspunsul nu este trimis.",
       "generic": "Mesajul nu a plecat. Reîncercați.",
       "sms_unavailable": "Telefonul SMS al parcării nu mai este conectat: conectați-l în setările parcării.",
-      "sms_failed": "SMS-ul nu a plecat. Verificați dacă telefonul de trimitere este pornit."
+      "sms_failed": "SMS-ul nu a plecat. Verificați dacă telefonul de trimitere este pornit.",
+      "message_not_found": "Acest mesaj nu mai există."
     },
     "sent_no_text": "Text nepăstrat (trimis înainte de 12.11.2026).",
     "sent_sms_fallback": "S-a trimis și SMS",
@@ -2979,7 +2980,21 @@
       "failed": "netrimis",
       "abandoned": "netrimis"
     },
-    "sms_no_text": "Text nepăstrat (trimis înainte de 15.11.2026)."
+    "sms_no_text": "Text nepăstrat (trimis înainte de 15.11.2026).",
+    "delete": {
+      "conversation": "Șterge conversația",
+      "conversation_title": "Ștergi această conversație?",
+      "conversation_text_one": "Mesajul dispare din Plazo pentru toată echipa. Rămâne pe telefonul parcării și la client.",
+      "conversation_text_many": "Cele {} mesaje dispar din Plazo pentru toată echipa. Rămân pe telefonul parcării și la client.",
+      "conversation_done": "Conversație ștearsă.",
+      "message": "Șterge",
+      "message_title": "Ștergi acest mesaj?",
+      "message_text": "Dispare din Plazo pentru toată echipa. Rămâne pe telefonul parcării și la client.",
+      "message_done": "Mesaj șters.",
+      "confirm": "Șterge",
+      "cancel": "Anulează",
+      "menu": "Mai multe acțiuni pentru acest mesaj"
+    }
   },
   "parking_messages": {
     "title": "Scrieți parcării",

@@ -273,6 +273,12 @@ abstract class WhatsappInboxDataSource {
   Future<WaThread> get(String id);
   Future<WaMessage> reply(String id, String text);
   Future<WaConversation> setHandled(String id, bool handled);
+
+  /// 15/11/2026 (« Pouvoir supprimer les SMS »): the conversation leaves Plazo (managers and reception).
+  Future<void> deleteConversation(String id);
+
+  /// One message leaves Plazo; true when it was the last one and the conversation went with it.
+  Future<bool> deleteMessage(String id, String messageId);
   Future<Uint8List> media(String messageId);
   Future<List<WaSentMessage>> sent();
 
@@ -317,6 +323,17 @@ class WhatsappInboxDataSourceImpl implements WhatsappInboxDataSource {
   Future<WaConversation> setHandled(String id, bool handled) async {
     final res = await _dio.post<Map<String, dynamic>>('internal/whatsapp/inbox/$id/${handled ? 'handle' : 'unhandle'}', data: const <String, dynamic>{});
     return WaConversation.fromJson(res.data ?? const {});
+  }
+
+  @override
+  Future<void> deleteConversation(String id) async {
+    await _dio.delete<Map<String, dynamic>>('internal/whatsapp/inbox/$id');
+  }
+
+  @override
+  Future<bool> deleteMessage(String id, String messageId) async {
+    final res = await _dio.delete<Map<String, dynamic>>('internal/whatsapp/inbox/$id/messages/$messageId');
+    return res.data?['conversationDeleted'] == true;
   }
 
   @override

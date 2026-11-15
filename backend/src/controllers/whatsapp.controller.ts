@@ -84,6 +84,16 @@ export class WhatsappController {
     res.json(await this.inboxService.setHandled(req.staff, req.params.id as string, false));
   });
 
+  /** DELETE /internal/whatsapp/inbox/:id (15/11/2026) */
+  public remove = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.inboxService.remove(req.staff, req.params.id as string));
+  });
+
+  /** DELETE /internal/whatsapp/inbox/:id/messages/:messageId (15/11/2026) */
+  public removeMessage = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.inboxService.removeMessage(req.staff, req.params.id as string, req.params.messageId as string));
+  });
+
   /** POST /internal/whatsapp/inbox/:id/attach { reference } (platform admins) */
   public attach = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.inboxService.attach(req.staff, req.params.id as string, req.body?.reference));

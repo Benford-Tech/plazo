@@ -1233,6 +1233,14 @@ export const adminApi = {
     apiRequest<WhatsappInboxMessage>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}/reply`, { method: "POST", body: json({ text }) }),
   handleWhatsapp: (id: string, handled: boolean) =>
     apiRequest<WhatsappConversation>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}/${handled ? "handle" : "unhandle"}`, { method: "POST" }),
+  // 15/11/2026 (« Pouvoir supprimer les SMS »): a conversation or one message leaves Plazo (managers and reception).
+  deleteWhatsappConversation: (id: string) =>
+    apiRequest<{ id: string; deleted: true; messages: number }>(`/internal/whatsapp/inbox/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  deleteWhatsappMessage: (id: string, messageId: string) =>
+    apiRequest<{ id: string; deleted: true; conversationDeleted: boolean }>(
+      `/internal/whatsapp/inbox/${encodeURIComponent(id)}/messages/${encodeURIComponent(messageId)}`,
+      { method: "DELETE" },
+    ),
   attachWhatsapp: (id: string, reference: string) =>
     apiRequest<{ id: string; reservation: { id: string; reference: string } }>(
       `/internal/whatsapp/inbox/${encodeURIComponent(id)}/attach`,

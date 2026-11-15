@@ -5,13 +5,16 @@ import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:parking_app/src/core/helpers/formatters.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/helpers/roles.dart';
 import '../../../core/router/app_router.dart';
 import '../../../di/locator.dart';
 import '../../../services/link_service.dart';
 import '../../../shared/live_sync/live_sync.dart';
 import '../../../shared/theme/theme.dart';
 import '../../../shared/widgets/brand_header.dart';
+import '../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../data/whatsapp_inbox_data_source.dart';
 import 'sent_status.dart';
 import 'pro_whatsapp_inbox_page.dart';
@@ -31,6 +34,10 @@ class ProWhatsappConversationPage extends StatefulWidget {
   /// The tests' data source; the locator's otherwise.
   @visibleForTesting
   static WhatsappInboxDataSource? debugSource;
+
+  /// The tests' answer to « may this member delete » (managers and reception); the signed-in role otherwise.
+  @visibleForTesting
+  static bool? debugCanDelete;
 
   @override
   State<ProWhatsappConversationPage> createState() => _ProWhatsappConversationPageState();
@@ -58,11 +65,11 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
     super.dispose();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool force = false}) async {
     try {
       final thread = await _source.get(widget.id);
       if (!mounted) return;
-      final grew = (_thread?.messages.length ?? -1) != thread.messages.length;
+      final grew = !force && (_thread?.messages.length ?? -1) < thread.messages.length;
       setState(() => (_thread = thread, _failed = false));
       if (grew) WidgetsBinding.instance.addPostFrameCallback((_) => _toBottom());
     } catch (_) {
@@ -114,6 +121,86 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
     }
   }
 
+  /// 15/11/2026 (« Pouvoir supprimer les SMS », both choices): managers and reception delete, only in Plazo.
+  bool _mayDelete(BuildContext context) {
+    final forced = ProWhatsappConversationPage.debugCanDelete;
+    if (forced != null) return forced;
+    try {
+      return can(context.read<ProAuthBloc>().state.staff?.role, 'reservations:manage');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _confirm(String title, String text) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(key: const Key('wa-delete-cancel'), onPressed: () => Navigator.of(context).pop(false), child: Text('whatsapp_inbox.delete.cancel'.tr())),
+          TextButton(
+            key: const Key('wa-delete-confirm'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('whatsapp_inbox.delete.confirm'.tr(), style: AppText.strong(size: 14, color: AppColors.danger)),
+          ),
+        ],
+      ),
+    );
+    return yes == true;
+  }
+
+  Future<void> _gone() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('whatsapp_inbox.delete.conversation_done'.tr())));
+    await context.router.maybePop();
+  }
+
+  Future<void> _deleteConversation() async {
+    final count = _thread?.messages.length ?? 0;
+    final ok = await _confirm(
+      'whatsapp_inbox.delete.conversation_title'.tr(),
+      (count > 1 ? 'whatsapp_inbox.delete.conversation_text_many' : 'whatsapp_inbox.delete.conversation_text_one').tr(args: ['$count']),
+    );
+    if (!ok) return;
+    try {
+      await _source.deleteConversation(widget.id);
+      await _gone();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_error(e))));
+    }
+  }
+
+  /// « ⋯ » beside a message: a sheet with « Supprimer ».
+  Future<void> _messageActions(WaMessage message) async {
+    final pick = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListTile(
+          key: const Key('wa-msg-delete'),
+          leading: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
+          title: Text('whatsapp_inbox.delete.message'.tr(), style: AppText.strong(size: 15, color: AppColors.danger)),
+          onTap: () => Navigator.of(context).pop(true),
+        ),
+      ),
+    );
+    if (pick != true || !mounted) return;
+    final ok = await _confirm('whatsapp_inbox.delete.message_title'.tr(), 'whatsapp_inbox.delete.message_text'.tr());
+    if (!ok) return;
+    try {
+      final conversationGone = await _source.deleteMessage(widget.id, message.id);
+      if (conversationGone) {
+        await _gone();
+        return;
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('whatsapp_inbox.delete.message_done'.tr())));
+      await _load(force: true);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_error(e))));
+    }
+  }
+
   Future<void> _call(String phone) => locator<LinkService>().open(Uri.parse('tel:${phone.replaceAll(RegExp(r'[^\d+]'), '')}'));
 
   /// 13/11/2026 (choix A, « basculer sur l'envoi d'un SMS avec son propre téléphone ») : the phone's own SMS app on this number.
@@ -145,6 +232,7 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
                       onCall: () => _call(c.phone),
                       onSms: () => _sms(c.phone),
                       onHandle: () => _toggleHandled(c),
+                      onDelete: _mayDelete(context) ? _deleteConversation : null,
                     ),
                     Expanded(
                       child: ListView(
@@ -164,7 +252,7 @@ class _ProWhatsappConversationPageState extends State<ProWhatsappConversationPag
 
   List<Widget> _items(WaThread thread) {
     final entries = <(DateTime, Widget)>[
-      for (final m in thread.messages) (m.at, _Bubble(message: m, source: _source)),
+      for (final m in thread.messages) (m.at, _Bubble(message: m, source: _source, onMenu: _mayDelete(context) ? () => _messageActions(m) : null)),
       for (final s in thread.sent) (s.at, _SentByPlazo(sent: s)),
     ]..sort((a, b) => a.$1.compareTo(b.$1));
     final out = <Widget>[];
@@ -191,8 +279,10 @@ class _Header extends StatelessWidget {
     required this.onCall,
     required this.onSms,
     required this.onHandle,
+    this.onDelete,
   });
   final WaConversation conversation;
+  final VoidCallback? onDelete;
   final bool handling;
   final VoidCallback? onBooking;
   final VoidCallback onCall;
@@ -233,6 +323,13 @@ class _Header extends StatelessWidget {
                   tooltip: 'whatsapp_inbox.call'.tr(args: [c.phone]),
                   onPressed: onCall,
                   icon: const Icon(Icons.call_rounded, color: AppColors.accent),
+                ),
+              if (onDelete != null)
+                IconButton(
+                  key: const Key('wa-delete-conversation'),
+                  tooltip: 'whatsapp_inbox.delete.conversation'.tr(),
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColors.danger),
                 ),
             ],
           ),
@@ -281,49 +378,69 @@ class _DaySeparator extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message, required this.source});
+  const _Bubble({required this.message, required this.source, this.onMenu});
   final WaMessage message;
   final WhatsappInboxDataSource source;
+  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
     final m = message;
     final status = m.out && m.status != null ? ' · ${'whatsapp_inbox.reply_status.${m.status}'.tr()}' : '';
     final by = m.out && m.by != null ? '${m.by} · ' : '';
+    final menu = onMenu == null
+        ? null
+        : IconButton(
+            key: Key('wa-msg-menu-${m.id}'),
+            tooltip: 'whatsapp_inbox.delete.menu'.tr(),
+            visualDensity: VisualDensity.compact,
+            onPressed: onMenu,
+            icon: const Icon(Icons.more_horiz_rounded, size: 20, color: AppColors.muted),
+          );
     return Align(
       alignment: m.out ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        key: Key(m.out ? 'wa-out' : 'wa-in'),
-        margin: const EdgeInsets.symmetric(vertical: 3),
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.8),
-        padding: const EdgeInsets.fromLTRB(10, 7, 10, 6),
-        decoration: BoxDecoration(color: m.out ? _bubbleOut : _bubbleIn, borderRadius: AppRadius.chip),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (m.app)
-              Container(
-                key: const Key('wa-app'),
-                margin: const EdgeInsets.only(bottom: 3),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: const BoxDecoration(color: AppColors.tint, borderRadius: AppRadius.pill),
-                child: Text('whatsapp_inbox.app_badge'.tr(), style: AppText.strong(size: 10.5, color: AppColors.accent)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (m.out && menu != null) menu,
+          Flexible(
+            child: Container(
+              key: Key(m.out ? 'wa-out' : 'wa-in'),
+              margin: const EdgeInsets.symmetric(vertical: 3),
+              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * (onMenu == null ? 0.8 : 0.72)),
+              padding: const EdgeInsets.fromLTRB(10, 7, 10, 6),
+              decoration: BoxDecoration(color: m.out ? _bubbleOut : _bubbleIn, borderRadius: AppRadius.chip),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (m.app)
+                    Container(
+                      key: const Key('wa-app'),
+                      margin: const EdgeInsets.only(bottom: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: const BoxDecoration(color: AppColors.tint, borderRadius: AppRadius.pill),
+                      child: Text('whatsapp_inbox.app_badge'.tr(), style: AppText.strong(size: 10.5, color: AppColors.accent)),
+                    ),
+                  if (m.sms)
+                    Container(
+                      key: const Key('wa-sms-badge'),
+                      margin: const EdgeInsets.only(bottom: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                      decoration: const BoxDecoration(color: AppStatus.infoSoft, borderRadius: AppRadius.pill),
+                      child: Text('whatsapp_inbox.sms_badge'.tr(), style: AppText.strong(size: 10.5, color: AppStatus.info)),
+                    ),
+                  if (m.hasMedia) _Media(message: m, source: source),
+                  if (m.type == 'location') Text('whatsapp_inbox.location'.tr(), style: AppText.label(size: 11)),
+                  if (m.text != null) SelectableText(m.text!, style: AppText.body(size: 14.5)),
+                  const SizedBox(height: 2),
+                  Text('$by${DateFormat('HH:mm').format(m.at)}$status', style: AppText.muted(size: 11)),
+                ],
               ),
-            if (m.sms)
-              Container(
-                key: const Key('wa-sms-badge'),
-                margin: const EdgeInsets.only(bottom: 3),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: const BoxDecoration(color: AppStatus.infoSoft, borderRadius: AppRadius.pill),
-                child: Text('whatsapp_inbox.sms_badge'.tr(), style: AppText.strong(size: 10.5, color: AppStatus.info)),
-              ),
-            if (m.hasMedia) _Media(message: m, source: source),
-            if (m.type == 'location') Text('whatsapp_inbox.location'.tr(), style: AppText.label(size: 11)),
-            if (m.text != null) SelectableText(m.text!, style: AppText.body(size: 14.5)),
-            const SizedBox(height: 2),
-            Text('$by${DateFormat('HH:mm').format(m.at)}$status', style: AppText.muted(size: 11)),
-          ],
-        ),
+            ),
+          ),
+          if (!m.out && menu != null) menu,
+        ],
       ),
     );
   }
