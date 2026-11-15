@@ -5,6 +5,7 @@ import { AcceptInvitationDto, AccountTokenDto, LoginDto, RefreshTokenDto, Signup
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AccountService } from '@/services/account.service';
 import { AuthService } from '@/services/auth.service';
+import { signInClient } from '@/utils/sign-in-client';
 import catchAsync from '@/utils/catchAsync';
 
 export class AuthController {
@@ -14,7 +15,7 @@ export class AuthController {
   /** POST /internal/auth/login */
   public login = catchAsync(async (req: Request, res: Response) => {
     const data: LoginDto = req.body;
-    const result = await this.authService.login(data, { userAgent: req.get('user-agent') ?? null });
+    const result = await this.authService.login(data, signInClient(req));
     res.status(httpStatus.OK).json(result);
   });
 
@@ -50,12 +51,12 @@ export class AuthController {
   /** POST /internal/auth/invitation */
   public invitation = catchAsync(async (req: Request, res: Response) => {
     const data: AccountTokenDto = req.body;
-    res.json(await this.accounts.invitation(data.token));
+    res.json(await this.accounts.invitation(data.token, req.get('user-agent') ?? null));
   });
 
   /** POST /internal/auth/invitation/accept */
   public acceptInvitation = catchAsync(async (req: Request, res: Response) => {
     const data: AcceptInvitationDto = req.body;
-    res.json(await this.accounts.acceptInvitation(data, { userAgent: req.get('user-agent') ?? null }));
+    res.json(await this.accounts.acceptInvitation(data, signInClient(req)));
   });
 }
