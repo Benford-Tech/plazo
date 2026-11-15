@@ -1,3 +1,4 @@
+import { ContractSignedIcon } from "@/components/ContractSignedIcon";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, BusFront, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, MessageSquareWarning, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -140,7 +141,10 @@ function Row({
         <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3.5">
           <Plate value={r.plate} />
           <span className="min-w-0 max-w-full">
-            <span className="block truncate text-lg font-semibold">{r.customerName}</span>
+            <span className="flex items-center gap-1.5 text-lg font-semibold">
+              <span className="truncate">{r.customerName}</span>
+              <ContractSignedIcon signedAt={r.contractSignedAt} />
+            </span>
             <span className="block truncate text-sm text-muted-foreground">
               {t.pax(r.passengers)}{isArrival ? ` · ${r.channelDetail ?? fr.channels[r.channel]}` : ""}
             </span>
@@ -276,7 +280,10 @@ function NextCard({
         >
           <span className="tabular font-mono text-3xl font-bold">{timeOf(atOf(row))}</span>
           <span className="min-w-0">
-            <span className="block truncate text-lg font-semibold">{row.customerName}</span>
+            <span className="flex items-center gap-1.5 text-lg font-semibold">
+              <span className="truncate">{row.customerName}</span>
+              <ContractSignedIcon signedAt={row.contractSignedAt} />
+            </span>
             <span className="block truncate text-sm text-muted-foreground">
               {[t.pax(row.passengers), travelOf(row, kind).place].filter(Boolean).join(" · ")}
             </span>

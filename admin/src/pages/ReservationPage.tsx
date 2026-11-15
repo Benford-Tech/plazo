@@ -1,3 +1,4 @@
+import { ContractSignedIcon } from "@/components/ContractSignedIcon";
 import { StatusPill } from "@/components/StatusPill";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
@@ -388,6 +389,7 @@ export default function ReservationPage() {
         </Link>
         <Plate value={r.plate} size="lg" />
         <h1 className="text-3xl font-bold">{r.customerName}</h1>
+        <ContractSignedIcon signedAt={r.contractSignedAt} className="[&_svg]:size-6" />
         <span className="tabular ml-auto font-mono text-muted-foreground">
           {r.reference}
         </span>
