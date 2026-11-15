@@ -31,6 +31,7 @@ import {
   extraOrderedPush,
   extraRefundedPush,
   orderDeadline,
+  awaitsPlazoPayment,
   orderRefusal,
   OrderRefusal,
   ParkingPaymentMethod,
@@ -476,7 +477,6 @@ export class ExtraService {
     const active = r.extras
       .filter(e => ACTIVE_EXTRA_STATUSES.includes(e.status) && !(e.status === 'pending_payment' && !e.withBooking))
       .map(e => ({ kind: e.kind, group: rows.find(row => row.kind === e.kind)?.groupKey ?? null }));
-    if (r.paymentStatus !== 'paid') return 'not_online';
     return orderRefusal(r, offer, { active, now });
   }
 
@@ -486,7 +486,7 @@ export class ExtraService {
       const refusal = this.refusalOf(r, o, rows, now);
       return { ...o, orderUntil: orderDeadline(r.returnAt, o.leadHours).toISOString(), available: refusal === null, reason: refusal };
     });
-    const closed = r.paymentStatus !== 'paid' || offerList.every(o => o.reason === 'closed' || o.reason === 'too_late' || o.reason === 'not_online');
+    const closed = awaitsPlazoPayment(r) || offerList.every(o => o.reason === 'closed' || o.reason === 'too_late' || o.reason === 'not_online');
     // One date for the apps before 27/10/2026: the latest service's (each service has its own since).
     const latestLead = offerList.length ? Math.min(...offerList.map(o => o.leadHours)) : r.parking.extrasLeadHours;
     return {

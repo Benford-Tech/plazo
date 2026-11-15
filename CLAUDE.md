@@ -885,7 +885,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `pending_payment` → `ordered` → `done` (« Fait », push au voyageur) ou `refused` (« Pas possible », remboursé ; partiel sur le
      paiement de la réservation si `withBooking`) ; `refunded` quand la réservation est annulée et remboursée, ou par la passe de
      15 minutes (`remind-tomorrow` → `settle`) pour un service encore à faire sur une réservation rendue, annulée ou non venue ;
-     feuille abandonnée → `expired` (un paiement tardif est remboursé). Push « Service commandé » à l'équipe (audience
+     feuille abandonnée → `expired` (un paiement tardif est remboursé). **Toute réservation (15/11/2026, « Impossible d'ajouter des services additionnels » sur une réservation Allopark)** : le voyageur commande et paie son service à part sur toute réservation qu'il ouvre dans Plazo (comparateur, téléphone, import), aux mêmes délais ; seule une réservation Plazo dont le paiement n'est pas passé reste refusée (`not_online`, `awaitsPlazoPayment` de `domain/extras.ts`). Push « Service commandé » à l'équipe (audience
      `bookingChanges`), alerte `extras_due` du tableau de bord (retour dans les 36 h, « à surveiller » à 6 h). Reversement de
      la part du loueur à la date de la réservation, une fois fait (`ExtraService.runPayouts` dans `cron/payouts`). Équipe :
      `GET/PUT /internal/parkings/:id/extras` (gérants), `GET /internal/reservations/:id/extras`, `POST …/:extraId/done|refuse`.
