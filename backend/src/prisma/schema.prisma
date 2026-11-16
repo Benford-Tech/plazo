@@ -1056,6 +1056,11 @@ model Reservation {
   @@index([payoutStatus, arrivalAt])
   @@index([importId])
   @@index([operatorId, deletedAt])
+  // 16/11/2026 (test de charge): the shuttle forecast reads the day's flights (« Ligne du jour »), the dashboard the last
+  // import. Two partial indexes in the migration serve the bookings without a price and the invoice requests.
+  @@index([parkingId, departureScheduledAt])
+  @@index([parkingId, flightEstimatedAt])
+  @@index([operatorId, createdAt])
   @@map("reservations")
 }
 
