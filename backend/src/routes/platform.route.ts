@@ -138,6 +138,21 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               url: { type: string, nullable: true }
  *     responses:
  *       201: { description: "{ data }" }
+ * /internal/platform/traveller-campaigns:
+ *   get:
+ *     summary: 15/11/2026 — the emails « Pensez à Plazo » to the travellers (audience, last campaigns, next possible start)
+ *     tags: [Platform]
+ *   post:
+ *     summary: Starts a campaign { subject, title, body, airport, arrival?, return? } (one a week; 429 campaign_too_soon)
+ *     tags: [Platform]
+ * /internal/platform/traveller-campaigns/preview:
+ *   post:
+ *     summary: The campaign's email as it would leave now (subject, html)
+ *     tags: [Platform]
+ * /internal/platform/traveller-campaigns/test:
+ *   post:
+ *     summary: The campaign's email sent to the admin, « [Test] » in its subject
+ *     tags: [Platform]
  * /internal/platform/traveller-welcome/test:
  *   post:
  *     summary: 15/11/2026 — the welcome email to travellers, for an example booking of the operator chosen (operatorId, else an example parking), sent to the admin from the service client's address
@@ -356,6 +371,10 @@ export class PlatformRoute implements Routes {
       this.platform.sendNotification,
     );
     this.router.post(`${base}/traveller-welcome/test`, PlatformAdminMiddleware(), this.platform.travellerWelcomeTest);
+    this.router.get(`${base}/traveller-campaigns`, PlatformAdminMiddleware(), this.platform.travellerCampaigns);
+    this.router.post(`${base}/traveller-campaigns/preview`, PlatformAdminMiddleware(), this.platform.travellerCampaignPreview);
+    this.router.post(`${base}/traveller-campaigns/test`, PlatformAdminMiddleware(), this.platform.travellerCampaignTest);
+    this.router.post(`${base}/traveller-campaigns`, PlatformAdminMiddleware(), this.platform.startTravellerCampaign);
     this.router.get(`${base}/operators`, PlatformAdminMiddleware(), this.platform.operators);
     this.router.get(`${base}/overview`, PlatformAdminMiddleware(), this.platform.overview);
     this.router.patch(

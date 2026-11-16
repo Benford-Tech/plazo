@@ -13,8 +13,8 @@ export function welcomeUnsubscribePage(kind: 'ask' | 'done' | 'invalid', action 
     kind === 'invalid'
       ? 'Ce lien n’est pas valide.'
       : kind === 'done'
-        ? `Vous ne recevrez plus de message de présentation de ${PRODUCT_NAME}. Les messages de votre réservation (rappel de la veille, point de rendez-vous) continuent.`
-        : `Confirmez pour ne plus recevoir de message de présentation de l’application ${PRODUCT_NAME}.`;
+        ? `Vous ne recevrez plus de message de présentation ni d’offre de ${PRODUCT_NAME}. Les messages de votre réservation (rappel de la veille, point de rendez-vous) continuent.`
+        : `Confirmez pour ne plus recevoir de message de présentation ni d’offre de ${PRODUCT_NAME}.`;
   const form = kind === 'ask' ? `<form method="post" action="${escapeHtml(action)}"><button type="submit">Ne plus les recevoir</button></form>` : '';
   return (
     '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
