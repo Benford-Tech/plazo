@@ -90,6 +90,15 @@ export const readingOutageCause: Record<InboundReadingOutageCause, string> = {
   other: "erreur d'Anthropic",
 };
 
+
+/** 16/11/2026 (« converti en heure minutes »): « 45 min », « 1 h 03 », « 2 h ». */
+export function minutesText(minutes: number): string {
+  const n = Math.max(0, Math.round(minutes));
+  if (n < 60) return `${n} min`;
+  const m = n % 60;
+  return `${Math.floor(n / 60)} h${m === 0 ? "" : ` ${String(m).padStart(2, "0")}`}`;
+}
+
 export const fr = {
   // « Voiturier au terminal » (27/10/2026, direction B): the dashboard's runs.
   valetRuns: {
@@ -1138,8 +1147,8 @@ export const fr = {
         dropoff: "Départs · terminal",
       } satisfies Record<ShuttleDirection, string>,
       passengers: (n: number) => `${n} pass.`,
-      toStop: (name: string, min: number) => `${name} dans ${min} min`,
-      toParking: (min: number) => `parking dans ${min} min`,
+      toStop: (name: string, min: number) => `${name} dans ${minutesText(min)}`,
+      toParking: (min: number) => `parking dans ${minutesText(min)}`,
       noPosition: "position inconnue",
       // Direction B (23/10/2026): the plates on the map.
       noPositionShort: "sans position",
@@ -1698,14 +1707,14 @@ export const fr = {
     from: (city: string) => `de ${city}`,
     // Travellers telling the parking they are coming (live position or announce).
     approaching: (eta: number | null) =>
-      eta === null ? "En route" : `En approche · ${eta} min`,
-    announced: (minutes: number) => `Prévenu · « dans ${minutes} min »`,
+      eta === null ? "En route" : `En approche · ${minutesText(eta)}`,
+    announced: (minutes: number) => `Prévenu · « dans ${minutesText(minutes)} »`,
     atReception: "À l'accueil",
     atMeetingPoint: "Au point de rendez-vous",
     positionUpdated: (seconds: number) =>
       seconds < 60
         ? `Position mise à jour il y a ${seconds} s`
-        : `Position mise à jour il y a ${Math.floor(seconds / 60)} min`,
+        : `Position mise à jour il y a ${minutesText(Math.floor(seconds / 60))}`,
     etaAround: (time: string) => `arrivée estimée ${time}`,
     distance: (meters: number) =>
       meters < 1000
@@ -1718,9 +1727,9 @@ export const fr = {
     toastApproaching: (who: string, eta: number | null, plate: string) =>
       eta === null
         ? `${who} est en route${plate.trim() ? ` — ${plate}` : ""}`
-        : `${who} arrive dans ${eta} min${plate.trim() ? ` — ${plate}` : ""}`,
+        : `${who} arrive dans ${minutesText(eta)}${plate.trim() ? ` — ${plate}` : ""}`,
     toastAnnounced: (who: string, minutes: number, plate: string) =>
-      `${who} : « J'arrive dans ${minutes} min »${plate.trim() ? ` — ${plate}` : ""}`,
+      `${who} : « J'arrive dans ${minutesText(minutes)} »${plate.trim() ? ` — ${plate}` : ""}`,
     /** E: the traveller's word, after the banner. */
     toastNote: (note: string) => ` · « ${note} »`,
     toastAtReception: (who: string, plate: string) =>
@@ -4142,8 +4151,8 @@ export const shuttleTripsFr = {
     passengers: (n: number) => `${n} pers.`,
     since: (time: string) => `partie à ${time}`,
     noPosition: "position en attente",
-    toStop: (name: string, min: number) => `${name} dans ${min} min`,
-    toParking: (min: number) => `parking dans ${min} min`,
+    toStop: (name: string, min: number) => `${name} dans ${minutesText(min)}`,
+    toParking: (min: number) => `parking dans ${minutesText(min)}`,
     end: "Terminer ce trajet",
     endConfirm: (driver: string) =>
       `Terminer le trajet de ${driver} ? Sa position ne sera plus partagée.`,

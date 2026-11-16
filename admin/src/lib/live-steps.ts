@@ -1,4 +1,5 @@
 import type { ArrivalSignal, PlanningRow, Reservation } from "./types";
+import { minutesText } from "./fr";
 
 /**
  * What the traveller did, for the planning's live panel (12/11/2026, « la réservation en direct depuis le planning »):
@@ -30,7 +31,7 @@ function withStates(steps: Draft[]): LiveStep[] {
 }
 
 const words = (s: ArrivalSignal | null): string[] =>
-  [s?.state === "announced" && s.announcedMinutes !== null ? `J'arrive dans ${s.announcedMinutes} min` : null, s?.note?.trim() || null].filter(
+  [s?.state === "announced" && s.announcedMinutes !== null ? `J'arrive dans ${minutesText(s.announcedMinutes)}` : null, s?.note?.trim() || null].filter(
     (w): w is string => !!w,
   );
 

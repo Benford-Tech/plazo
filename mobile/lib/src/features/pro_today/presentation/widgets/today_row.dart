@@ -205,10 +205,10 @@ class _StatusLabel extends StatelessWidget {
       return ProStatusPill(status);
     }
     if (s.state == ArrivalSignalState.announced) {
-      return Text('pro.announced'.tr(args: ['${s.announcedMinutes ?? s.etaMinutes ?? 0}']), style: AppText.muted(size: 13));
+      return Text('pro.announced'.tr(args: [durationLabel(Duration(minutes: s.announcedMinutes ?? s.etaMinutes ?? 0))]), style: AppText.muted(size: 13));
     }
     final text = switch (s.state) {
-      ArrivalSignalState.sharing => s.etaMinutes == null ? 'pro.on_the_way'.tr() : 'pro.approaching'.tr(args: ['${s.etaMinutes}']),
+      ArrivalSignalState.sharing => s.etaMinutes == null ? 'pro.on_the_way'.tr() : 'pro.approaching'.tr(args: [durationLabel(Duration(minutes: s.etaMinutes!))]),
       _ => isReturn ? 'pro.at_meeting_point'.tr() : 'pro.at_reception'.tr(),
     };
     return Text(
@@ -241,10 +241,10 @@ class ArrivalBanner extends StatelessWidget {
 
   static String _withPlate(StaffSignalModel s, String who) {
     return switch (s.state) {
-      ArrivalSignalState.announced => 'pro.banner_announced'.tr(args: [who, '${s.announcedMinutes ?? s.etaMinutes ?? 0}', s.plate]),
+      ArrivalSignalState.announced => 'pro.banner_announced'.tr(args: [who, durationLabel(Duration(minutes: s.announcedMinutes ?? s.etaMinutes ?? 0)), s.plate]),
       ArrivalSignalState.atMeetingPoint =>
         s.kind == ArrivalKind.returnTrip ? 'pro.banner_at_meeting_point'.tr(args: [who, s.plate]) : 'pro.banner_at_reception'.tr(args: [who, s.plate]),
-      _ => s.etaMinutes == null ? 'pro.banner_on_the_way'.tr(args: [who, s.plate]) : 'pro.banner_approaching'.tr(args: [who, '${s.etaMinutes}', s.plate]),
+      _ => s.etaMinutes == null ? 'pro.banner_on_the_way'.tr(args: [who, s.plate]) : 'pro.banner_approaching'.tr(args: [who, durationLabel(Duration(minutes: s.etaMinutes!)), s.plate]),
     };
   }
 
