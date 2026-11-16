@@ -1,3 +1,4 @@
+import { minutesText } from "./fr";
 import { timeOf } from "./datetime";
 import type { PlanningRow } from "./types";
 
@@ -18,11 +19,7 @@ export function splitAtNow(items: PlanningRow[], kind: "arrival" | "return"): { 
   return { past: items.filter(r => isDone(r, kind)), coming: items.filter(r => !isDone(r, kind)) };
 }
 
-const duration = (minutes: number) => {
-  if (minutes < 60) return `${minutes} min`;
-  const m = minutes % 60;
-  return `${Math.floor(minutes / 60)} h${m === 0 ? "" : ` ${String(m).padStart(2, "0")}`}`;
-};
+const duration = minutesText;
 
 const timeOfRow = (r: PlanningRow, kind: "arrival" | "return") => new Date(kind === "arrival" ? r.arrivalAt : r.returnAt).getTime();
 
