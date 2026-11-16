@@ -206,37 +206,112 @@ export class DashboardService {
   public files = Container.get(FileService);
   public joinRequests = Container.get(JoinRequestService);
 
+  /**
+   * The dashboard's reads that need only the parking (and, for the blocked returns, its plan): run alongside the day's
+   * planning by `get` (16/11/2026, test de charge).
+   */
+  private async sideReads(
+    actor: AuthenticatedStaff,
+    parkingId: string,
+    now: Date,
+    bounds: { start: Date; end: Date },
+    planRead: ReturnType<typeof loadPlanCapacity> extends Promise<Map<string, infer P>> ? Promise<P> : never,
+  ) {
+    const [lateArrivals, blocked, inboundToCheck, readingOutage, waiting, extrasDue, invoiceRequests, noPrice] = await Promise.all([
+      // Expected for hours, nothing placed: probably a no-show (the staff decide).
+      // 01/11/2026: looked up over 90 days, not the last 24 h only: a booking left « Attendu » counts in the forecast and the
+      // overbooking as long as nobody closes it.
+      prisma.reservation.findMany({
+        where: {
+          parkingId,
+          // A spot pre-assigned before the arrival is no placement: the car still is not there.
+          status: 'upcoming',
+          arrivalAt: {
+            gte: new Date(now.getTime() - NO_SHOW_LOOKBACK_DAYS * 24 * 3600000),
+            lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000),
+          },
+        },
+        select: { id: true, reference: true, customerName: true, plate: true, arrivalAt: true },
+        orderBy: { arrivalAt: 'asc' },
+      }),
+      // A return of the day behind a car leaving later: from the files (S-C) when the parking is stored in files, else
+      // from the spots (O-A).
+      planRead.then(async plan => ({
+        files: plan.activeFilesCapacity ? await this.files.blockedReturns(parkingId, bounds.start, bounds.end) : null,
+        spots: plan.activeSpots && !plan.activeFilesCapacity ? await this.occupation.blockedReturns(parkingId, bounds.start, bounds.end) : null,
+      })),
+      this.inbound.toCheckCount(actor.operatorId),
+      this.inbound.readingOutage(actor.operatorId, now),
+      can(actor.role, 'team:manage') ? this.joinRequests.pendingSummary(actor.operatorId, now) : null,
+      this.extras.dueFor(actor.operatorId, new Date(now.getTime() + 36 * 3600000)),
+      can(actor.role, 'reservations:manage') ? this.invoices.pendingRequests(actor.operatorId) : [],
+      this.reservations.noPrice(actor, now),
+    ]);
+    return { lateArrivals, blocked, inboundToCheck, readingOutage, waiting, extrasDue, invoiceRequests, noPrice };
+  }
+
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
     const parking = await this.parkings.getPrimary(actor);
     const now = new Date();
-    let planning = await this.reservations.planning(actor);
-    const refreshed = await this.flights.refreshBookings(planning.returns.filter(r => r.returnFlight).map(r => r.id));
-    if (refreshed) planning = await this.reservations.planning(actor);
-
-    const [onSite, trips, signals, plan, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
-      prisma.reservation.findMany({
-        where: { parkingId: parking.id, status: { in: ON_SITE } },
-        include: {
-          spot: { select: { code: true, stayClass: true } },
-          file: { select: { code: true } },
-          stop: { select: { name: true } },
-          boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
-          shuttleTrips: DROPOFF_TRIPS_INCLUDE,
-        },
-        orderBy: { returnAt: 'asc' },
-      }),
-      this.shuttle.running(actor),
-      this.arrivals.live(actor).then(l => l.signals),
-      loadPlanCapacity([parking.id]).then(m => m.get(parking.id)!),
-      prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: OPERATOR_PAYMENT_FIELDS }),
-      prisma.staffDevice.count({ where: { staff: { operatorId: actor.operatorId, isActive: true } } }),
-      prisma.reservation.findFirst({
-        where: { operatorId: actor.operatorId, channel: { in: ['import', 'aggregator'] } },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
-      }),
-      this.sms.status(actor),
-      this.forecast.day(actor),
+    const bounds = dayBounds(localDate(now, parking.timezone), parking.timezone);
+    // 16/11/2026 (test de charge): the reads that need nothing but the parking leave together, alongside the day's planning,
+    // instead of one after the other (each pays a round trip to the database). One `Promise.all` holds them all, so a
+    // failing read never leaves another one's rejection unhandled.
+    const planningRead = (async () => {
+      const first = await this.reservations.planning(actor);
+      const refreshed = await this.flights.refreshBookings(first.returns.filter(r => r.returnFlight).map(r => r.id));
+      return refreshed ? this.reservations.planning(actor) : first;
+    })();
+    const planRead = loadPlanCapacity([parking.id]).then(m => m.get(parking.id)!);
+    const [planning, [onSite, trips, signals, plan, operator, devices, lastImport, smsStatus, forecast], side] = await Promise.all([
+      planningRead,
+      Promise.all([
+        prisma.reservation.findMany({
+          where: { parkingId: parking.id, status: { in: ON_SITE } },
+          // 16/11/2026 (test de charge): only the columns the dashboard shows, not the whole booking (a busy parking has
+          // hundreds of cars on site, and decoding every column of each was most of the call).
+          select: {
+            id: true,
+            reference: true,
+            customerName: true,
+            passengers: true,
+            plate: true,
+            status: true,
+            arrivalAt: true,
+            arrivedAt: true,
+            returnAt: true,
+            spotId: true,
+            fileId: true,
+            keyHook: true,
+            keysLeftAt: true,
+            returnFlight: true,
+            flightStatus: true,
+            flightScheduledAt: true,
+            flightEstimatedAt: true,
+            flightLandedAt: true,
+            boardingTripId: true,
+            spot: { select: { code: true, stayClass: true } },
+            file: { select: { code: true } },
+            stop: { select: { name: true } },
+            boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
+            shuttleTrips: DROPOFF_TRIPS_INCLUDE,
+          },
+          orderBy: { returnAt: 'asc' },
+        }),
+        this.shuttle.running(actor),
+        this.arrivals.live(actor).then(l => l.signals),
+        planRead,
+        prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: OPERATOR_PAYMENT_FIELDS }),
+        prisma.staffDevice.count({ where: { staff: { operatorId: actor.operatorId, isActive: true } } }),
+        prisma.reservation.findFirst({
+          where: { operatorId: actor.operatorId, channel: { in: ['import', 'aggregator'] } },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true },
+        }),
+        this.sms.status(actor),
+        this.forecast.day(actor),
+      ]),
+      this.sideReads(actor, parking.id, now, bounds, planRead),
     ]);
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
@@ -277,7 +352,6 @@ export class DashboardService {
     // The plan is read once, above, and the capacity derived from it here.
     const capacity = parkingCapacity(parking, plan);
     const spotsTotal = plan.activeSpots;
-    const filesTotal = plan.activeFilesCapacity;
     const hasPlan = capacity.capacitySource !== 'declared';
     const plannedSpots = hasPlan ? capacity.effectiveCapacity : 0;
     const freeSpots = plannedSpots ? Math.max(0, plannedSpots - occupied) : null;
@@ -388,22 +462,8 @@ export class DashboardService {
         }
       }
     }
-    // Expected for hours, nothing placed: probably a no-show (the staff decide).
-    // 01/11/2026: looked up over 90 days, not the last 24 h only: a booking left « Attendu » counts in the forecast and the
-    // overbooking as long as nobody closes it.
-    const lateArrivals = await prisma.reservation.findMany({
-      where: {
-        parkingId: parking.id,
-        // A spot pre-assigned before the arrival is no placement: the car still is not there.
-        status: 'upcoming',
-        arrivalAt: {
-          gte: new Date(now.getTime() - NO_SHOW_LOOKBACK_DAYS * 24 * 3600000),
-          lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000),
-        },
-      },
-      select: { id: true, reference: true, customerName: true, plate: true, arrivalAt: true },
-      orderBy: { arrivalAt: 'asc' },
-    });
+    // Expected for hours, nothing placed: probably a no-show (read in `sideReads`).
+    const { lateArrivals, blocked, inboundToCheck, readingOutage, waiting, extrasDue, invoiceRequests, noPrice } = side;
     for (const r of lateArrivals) {
       alerts.push({
         kind: 'no_show_suspected',
@@ -428,10 +488,9 @@ export class DashboardService {
       });
     }
     // S-C (07/10/2026): on a parking stored in files, a return of the day behind a car leaving later.
-    const bounds = dayBounds(localDate(now, parking.timezone), parking.timezone);
     let movesToday = 0;
-    if (filesTotal) {
-      for (const { car, fileCode, blockers } of await this.files.blockedReturns(parking.id, bounds.start, bounds.end)) {
+    if (blocked.files) {
+      for (const { car, fileCode, blockers } of blocked.files) {
         movesToday += blockers.length;
         const front = blockers[0];
         alerts.push({
@@ -449,8 +508,8 @@ export class DashboardService {
       }
     }
     // O-A (06/10/2026): a car returning today behind one that leaves later: take the front one out first.
-    if (spotsTotal && !filesTotal) {
-      for (const { stay, blockers } of await this.occupation.blockedReturns(parking.id, bounds.start, bounds.end)) {
+    if (blocked.spots) {
+      for (const { stay, blockers } of blocked.spots) {
         const front = blockers[0];
         alerts.push({
           kind: 'blocked_return',
@@ -465,10 +524,6 @@ export class DashboardService {
         });
       }
     }
-    const [inboundToCheck, readingOutage] = await Promise.all([
-      this.inbound.toCheckCount(actor.operatorId),
-      this.inbound.readingOutage(actor.operatorId, now),
-    ]);
     if (inboundToCheck > 0) {
       alerts.push({
         kind: 'inbound_to_check',
@@ -482,9 +537,8 @@ export class DashboardService {
         minutes: null,
       });
     }
-    if (can(actor.role, 'team:manage')) {
-      const waiting = await this.joinRequests.pendingSummary(actor.operatorId, now);
-      if (waiting.count > 0 && waiting.oldest) {
+    {
+      if (waiting && waiting.count > 0 && waiting.oldest) {
         alerts.push({
           kind: 'join_request',
           severity: 'todo',
@@ -498,7 +552,6 @@ export class DashboardService {
         });
       }
     }
-    const extrasDue = await this.extras.dueFor(actor.operatorId, new Date(now.getTime() + 36 * 3600000));
     const byBooking = new Map<string, typeof extrasDue>();
     for (const e of extrasDue) byBooking.set(e.reservation.id, [...(byBooking.get(e.reservation.id) ?? []), e]);
     for (const list of [...byBooking.values()].slice(0, 10)) {
@@ -515,8 +568,8 @@ export class DashboardService {
         minutes: null,
       });
     }
-    if (can(actor.role, 'reservations:manage')) {
-      for (const r of await this.invoices.pendingRequests(actor.operatorId)) {
+    {
+      for (const r of invoiceRequests) {
         alerts.push({
           kind: 'invoice_requested',
           severity: 'todo',
@@ -530,7 +583,6 @@ export class DashboardService {
         });
       }
     }
-    const noPrice = await this.reservations.noPrice(actor, now);
     if (noPrice && noPrice.count > 0) {
       alerts.push({
         kind: 'price_missing',

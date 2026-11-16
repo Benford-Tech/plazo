@@ -2739,10 +2739,16 @@ passait 400 ms à la compiler (JIT). Mêmes chiffres qu'avant (0 écart sur 205 
 comptait les installations et les réservations de l'app par jour avec `"createdAt" AT TIME ZONE 'Europe/Paris'`, qui lit une heure
 UTC comme une heure de Paris (entre minuit et 1 h, les installations du jour manquaient) : `AT TIME ZONE 'UTC'` d'abord, comme partout. Mesures, une
 requête puis 10 en parallèle : prévisionnel 1,5 s → 0,1 s (0,8 → 30 req/s), planning du jour 0,57 → 0,04 s (5 → 50 req/s), tableau
-de bord 0,88 → 0,17 s (3 → 12 req/s), résumé du chiffre d'affaires 1 s → 0,1 s (bloqué → 20 req/s). **Reste à voir** : le tableau de
-bord fait ~110 requêtes SQL l'une après l'autre (chacune paie l'aller-retour vers Neon) ; le planning renvoie la ligne entière de
-chaque réservation (~3 Ko, 465 Ko pour un jour chargé) ; la recherche par nom lit toute la table du loueur (~0,2 s à 50 000
-réservations, un index trigramme `pg_trgm` la servirait).
+de bord 0,88 → 0,17 s (3 → 12 req/s), résumé du chiffre d'affaires 1 s → 0,1 s (bloqué → 20 req/s). **Tableau de bord (16/11/2026, « Ok »)** :
+`DashboardService.get` lance ensemble tout ce qui ne dépend que du parking (`sideReads` : non venus, retours bloqués, mails,
+demandes d'équipe, services, factures demandées, sans prix) à côté du planning du jour, au lieu de 40 requêtes en file ; les
+voitures sur place ne lisent plus que les colonnes montrées (`select`, 591 voitures sur un parking chargé) ; migration
+`dashboard_indexes` : `(parkingId, departureScheduledAt)` et `(parkingId, flightEstimatedAt)` pour la prévision des navettes
+(ses `OR` lisaient tout le parking), `(operatorId, createdAt)` pour le dernier import, et deux index partiels écrits à la main
+(`reservations_no_price_idx`, `reservations_invoice_requested_idx`) ; aucune requête au-dessus de 9 ms (30 avant) ; un appel
+0,18 → 0,07 s, sous charge 9,5 → 18 req/s. **Reste à voir** : le planning renvoie la ligne entière de chaque réservation (~3 Ko,
+465 Ko pour un jour chargé) ; la prévision des navettes (~60 ms) ; la recherche par nom lit toute la table du loueur (~0,2 s à
+50 000 réservations, un index trigramme `pg_trgm` la servirait).
 
 ## Personnel
 
