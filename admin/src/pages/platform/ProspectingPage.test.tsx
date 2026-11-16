@@ -20,7 +20,7 @@ const api = vi.hoisted(() => ({
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
-vi.mock("@/lib/api", async importOriginal => {
+vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
 });
@@ -34,7 +34,11 @@ const base: Prospect = {
   town: "Colombier-Saugnieu",
   airportCode: "LYS",
   airportName: "Lyon Saint-Exupéry",
-  region: { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes", manual: false },
+  region: {
+    key: "auvergne-rhone-alpes",
+    label: "Auvergne-Rhône-Alpes",
+    manual: false,
+  },
   regionOverride: null,
   phone: null,
   website: null,
@@ -55,7 +59,14 @@ const base: Prospect = {
 };
 const prospects: Prospect[] = [
   base,
-  { ...base, id: "p2", companyName: "Valet Bêta", email: "malik@beta.example", contactFirstName: "Malik", town: "Pusignan" },
+  {
+    ...base,
+    id: "p2",
+    companyName: "Valet Bêta",
+    email: "malik@beta.example",
+    contactFirstName: "Malik",
+    town: "Pusignan",
+  },
   {
     ...base,
     id: "p3",
@@ -66,7 +77,13 @@ const prospects: Prospect[] = [
     nextStep: 2,
     nextSendAt: "2026-10-21T08:00:00Z",
   },
-  { ...base, id: "p4", companyName: "Parking Thêta", email: "accueil@theta.example", status: "unsubscribed" },
+  {
+    ...base,
+    id: "p4",
+    companyName: "Parking Thêta",
+    email: "accueil@theta.example",
+    status: "unsubscribed",
+  },
 ];
 const regions = [
   { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes" },
@@ -74,12 +91,38 @@ const regions = [
   { key: "occitanie", label: "Occitanie" },
   { key: "provence-alpes-cote-d-azur", label: "Provence-Alpes-Côte d'Azur" },
 ];
-const counts = { all: 4, to_contact: 2, contacted: 1, replied: 0, interested: 0, not_interested: 0, unsubscribed: 1 };
+const counts = {
+  all: 4,
+  to_contact: 2,
+  contacted: 1,
+  replied: 0,
+  interested: 0,
+  not_interested: 0,
+  unsubscribed: 1,
+};
 const settings = {
   steps: [
-    { step: 1, enabled: true, delayDays: 0, subject: "{prénom}, vos réservations au même endroit", body: "Bonjour {prénom},\n\nJe vous écris au sujet de {parking}, près de {aéroport}." },
-    { step: 2, enabled: true, delayDays: 4, subject: "Re : vos réservations", body: "Relance" },
-    { step: 3, enabled: true, delayDays: 10, subject: "Une démo ?", body: "Dernier" },
+    {
+      step: 1,
+      enabled: true,
+      delayDays: 0,
+      subject: "{prénom}, vos réservations au même endroit",
+      body: "Bonjour {prénom},\n\nJe vous écris au sujet de {parking}, près de {aéroport}.",
+    },
+    {
+      step: 2,
+      enabled: true,
+      delayDays: 4,
+      subject: "Re : vos réservations",
+      body: "Relance",
+    },
+    {
+      step: 3,
+      enabled: true,
+      delayDays: 10,
+      subject: "Une démo ?",
+      body: "Dernier",
+    },
   ],
   dailyCap: 50,
   updatedAt: null,
@@ -90,7 +133,11 @@ const settings = {
 
 const renderIn = () =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
       <MemoryRouter>
         <ConfirmProvider>
           <ProspectingPage />
@@ -101,16 +148,24 @@ const renderIn = () =>
 
 describe("Plateforme › Prospection", () => {
   beforeEach(() => {
-    api.getProspects.mockImplementation(async ({ status }: { status?: string | null }) => ({
-      data: status ? prospects.filter(p => p.status === status) : prospects,
-      counts,
-      airports: [{ code: "LYS", name: "Lyon Saint-Exupéry", count: 4 }],
-      regions,
-      regionCounts: { "auvergne-rhone-alpes": 4, bretagne: 0, occitanie: 0, "provence-alpes-cote-d-azur": 0, none: 0 },
-      today: { sent: 12, cap: 50, remaining: 38 },
-      window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
-      configured: true,
-    }));
+    api.getProspects.mockImplementation(
+      async ({ status }: { status?: string | null }) => ({
+        data: status ? prospects.filter((p) => p.status === status) : prospects,
+        counts,
+        airports: [{ code: "LYS", name: "Lyon Saint-Exupéry", count: 4 }],
+        regions,
+        regionCounts: {
+          "auvergne-rhone-alpes": 4,
+          bretagne: 0,
+          occitanie: 0,
+          "provence-alpes-cote-d-azur": 0,
+          none: 0,
+        },
+        today: { sent: 12, cap: 50, remaining: 38 },
+        window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
+        configured: true,
+      }),
+    );
     api.getProspectingSettings.mockResolvedValue({ data: settings });
   });
 
@@ -119,101 +174,298 @@ describe("Plateforme › Prospection", () => {
     renderIn();
     expect(await screen.findByText("Parking Alpha")).toBeInTheDocument();
     expect(screen.getByText("12 / 50 aujourd'hui")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Tous · 4" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Tous · 4" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     const delta = screen.getByText("Navette Delta").closest("tr")!;
     expect(within(delta).getByText("Mail 1 envoyé")).toBeInTheDocument();
     expect(within(delta).getByText("Relance · 21 oct.")).toBeInTheDocument();
-    expect(within(screen.getByText("Parking Thêta").closest("tr")!).getByText("— jamais plus")).toBeInTheDocument();
+    expect(
+      within(screen.getByText("Parking Thêta").closest("tr")!).getByText(
+        "— jamais plus",
+      ),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Désinscrits · 1" }));
-    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: null, region: null }));
-    await waitFor(() => expect(screen.queryByText("Parking Alpha")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(api.getProspects).toHaveBeenLastCalledWith({
+        status: "unsubscribed",
+        airport: null,
+        region: null,
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("Parking Alpha")).not.toBeInTheDocument(),
+    );
     await user.selectOptions(screen.getByLabelText("Aéroport"), "LYS");
-    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: "LYS", region: null }));
+    await waitFor(() =>
+      expect(api.getProspects).toHaveBeenLastCalledWith({
+        status: "unsubscribed",
+        airport: "LYS",
+        region: null,
+      }),
+    );
+  });
+
+  it("filtres et tri (16/11/2026, direction A) : recherche, e-mail, tri par colonne, « Cocher les N »", async () => {
+    const user = userEvent.setup();
+    api.getProspects.mockResolvedValue({
+      data: [
+        {
+          ...base,
+          id: "a",
+          companyName: "Zeta Parken",
+          language: "de",
+          tool: "Excel",
+          email: "z@zeta.example",
+        },
+        {
+          ...base,
+          id: "b",
+          companyName: "Alpha Valet",
+          tool: "Pas d'outil visible",
+        },
+        {
+          ...base,
+          id: "c",
+          companyName: "Gamma Parking",
+          email: null,
+          phone: "+49 30 000000",
+        },
+      ],
+      counts: { ...counts, all: 3 },
+      airports: [],
+      regions,
+      regionCounts: { "auvergne-rhone-alpes": 3, none: 0 },
+      today: { sent: 0, cap: 50, remaining: 50 },
+      window: { open: true, nextOpening: null },
+      configured: true,
+    });
+    renderIn();
+    await screen.findByText("Zeta Parken");
+
+    await user.type(screen.getByLabelText("Rechercher un prospect"), "zéta");
+    expect(screen.queryByText("Alpha Valet")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prospects-filtered")).toHaveTextContent(
+      "1 prospect filtré",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Effacer les filtres" }),
+    );
+    expect(screen.getByText("Alpha Valet")).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Filtrer par outil"), "none");
+    expect(screen.getByText("Alpha Valet")).toBeInTheDocument();
+    expect(screen.queryByText("Zeta Parken")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Filtrer par outil"), "");
+
+    await user.selectOptions(screen.getByLabelText("Filtrer par e-mail"), "with");
+    expect(screen.queryByText("Gamma Parking")).not.toBeInTheDocument();
+    expect(screen.getByTestId("prospects-filtered")).toHaveTextContent(
+      "2 avec e-mail",
+    );
+    await user.click(screen.getByRole("button", { name: "Cocher les 2" }));
+    expect(screen.getByLabelText("Choisir Zeta Parken")).toBeChecked();
+    expect(screen.getByLabelText("Choisir Alpha Valet")).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Parking" }));
+    const names = () =>
+      screen
+        .getAllByRole("row")
+        .map((r) => r.textContent ?? "")
+        .filter((t) => /Parken|Valet/.test(t));
+    expect(names()[0]).toContain("Alpha Valet");
+    await user.click(screen.getByRole("button", { name: "Parking" }));
+    expect(names()[0]).toContain("Zeta Parken");
   });
 
   it("aperçu pour le premier choisi, confirmation, envoi des seuls prospects à contacter", async () => {
     const user = userEvent.setup();
-    api.sendProspects.mockResolvedValue({ enrolled: 2, sent: 2, failed: 0, queued: 0, skipped: 0, nextOpening: null });
+    api.sendProspects.mockResolvedValue({
+      enrolled: 2,
+      sent: 2,
+      failed: 0,
+      queued: 0,
+      skipped: 0,
+      nextOpening: null,
+    });
     renderIn();
     await screen.findByText("Parking Alpha");
-    expect(screen.getByRole("button", { name: "Envoyer à 0 prospect" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Envoyer à 0 prospect" }),
+    ).toBeDisabled();
     await user.click(screen.getByLabelText("Choisir Parking Alpha"));
     await user.click(screen.getByLabelText("Choisir Valet Bêta"));
     await user.click(screen.getByLabelText("Choisir Navette Delta"));
-    expect(screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré.")).toBeInTheDocument();
+    expect(
+      screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré."),
+    ).toBeInTheDocument();
     const preview = screen.getByTestId("prospect-preview");
     expect(screen.getByText("Aperçu pour Parking Alpha")).toBeInTheDocument();
-    expect(within(preview).getByText("Camille, vos réservations au même endroit")).toBeInTheDocument();
-    expect(within(preview).getByText(/Je vous écris au sujet de Parking Alpha, près de Lyon Saint-Exupéry\./)).toBeInTheDocument();
+    expect(
+      within(preview).getByText("Camille, vos réservations au même endroit"),
+    ).toBeInTheDocument();
+    expect(
+      within(preview).getByText(
+        /Je vous écris au sujet de Parking Alpha, près de Lyon Saint-Exupéry\./,
+      ),
+    ).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Envoyer à 2 prospects" }));
+    await user.click(
+      screen.getByRole("button", { name: "Envoyer à 2 prospects" }),
+    );
     const dialog = await screen.findByRole("alertdialog");
-    expect(within(dialog).getByText(/Le premier mail part maintenant pour 2 prospects/)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        /Le premier mail part maintenant pour 2 prospects/,
+      ),
+    ).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Envoyer" }));
-    await waitFor(() => expect(api.sendProspects).toHaveBeenCalledWith(["p1", "p2"]));
+    await waitFor(() =>
+      expect(api.sendProspects).toHaveBeenCalledWith(["p1", "p2"]),
+    );
     expect(toast.success).toHaveBeenCalledWith("2 mails envoyés.");
   });
 
   it("import CSV : aperçu des lignes (doublon, désinscrit, erreur) avant l'import", async () => {
     const user = userEvent.setup();
-    api.importProspects.mockImplementation(async (rows: unknown[], dryRun: boolean) =>
-      dryRun
-        ? {
-            dryRun: true,
-            created: 0,
-            counts: { new: 1, duplicate: 1, suppressed: 1, invalid: 1 },
-            results: [
-              { row: 1, outcome: "new", email: "nouveau@gamma.example" },
-              { row: 2, outcome: "duplicate", email: "contact@alpha.example" },
-              { row: 3, outcome: "suppressed", email: "accueil@theta.example" },
-              { row: 4, outcome: "invalid", fields: { email: "invalid_email" } },
-            ],
-          }
-        : { dryRun: false, created: 1, counts: { new: 1, duplicate: 1, suppressed: 1, invalid: 1 }, results: [] },
+    api.importProspects.mockImplementation(
+      async (rows: unknown[], dryRun: boolean) =>
+        dryRun
+          ? {
+              dryRun: true,
+              created: 0,
+              counts: { new: 1, duplicate: 1, suppressed: 1, invalid: 1 },
+              results: [
+                { row: 1, outcome: "new", email: "nouveau@gamma.example" },
+                {
+                  row: 2,
+                  outcome: "duplicate",
+                  email: "contact@alpha.example",
+                },
+                {
+                  row: 3,
+                  outcome: "suppressed",
+                  email: "accueil@theta.example",
+                },
+                {
+                  row: 4,
+                  outcome: "invalid",
+                  fields: { email: "invalid_email" },
+                },
+              ],
+            }
+          : {
+              dryRun: false,
+              created: 1,
+              counts: { new: 1, duplicate: 1, suppressed: 1, invalid: 1 },
+              results: [],
+            },
     );
     renderIn();
     await screen.findByText("Parking Alpha");
     await user.click(screen.getByRole("button", { name: "Importer un CSV" }));
     const csv =
       "parking;prénom;e-mail\nParc Gamma;Inès;nouveau@gamma.example\nParking Alpha;Camille;contact@alpha.example\nParking Thêta;;accueil@theta.example\nSans adresse;;pas-une-adresse\n";
-    await user.upload(screen.getByLabelText("Fichier CSV"), new File([csv], "prospects.csv", { type: "text/csv" }));
-    expect(await screen.findByText("1 à ajouter · 1 déjà dans la liste · 1 désinscrit · 1 en erreur")).toBeInTheDocument();
+    await user.upload(
+      screen.getByLabelText("Fichier CSV"),
+      new File([csv], "prospects.csv", { type: "text/csv" }),
+    );
+    expect(
+      await screen.findByText(
+        "1 à ajouter · 1 déjà dans la liste · 1 désinscrit · 1 en erreur",
+      ),
+    ).toBeInTheDocument();
     expect(api.importProspects).toHaveBeenCalledWith(
       [
-        { companyName: "Parc Gamma", contactFirstName: "Inès", email: "nouveau@gamma.example" },
-        { companyName: "Parking Alpha", contactFirstName: "Camille", email: "contact@alpha.example" },
+        {
+          companyName: "Parc Gamma",
+          contactFirstName: "Inès",
+          email: "nouveau@gamma.example",
+        },
+        {
+          companyName: "Parking Alpha",
+          contactFirstName: "Camille",
+          email: "contact@alpha.example",
+        },
         { companyName: "Parking Thêta", email: "accueil@theta.example" },
         { companyName: "Sans adresse", email: "pas-une-adresse" },
       ],
       true,
     );
-    expect(screen.getByText("E-mail : Adresse email invalide.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Importer 1 prospect" }));
-    await waitFor(() => expect(api.importProspects).toHaveBeenLastCalledWith(expect.any(Array), false));
+    expect(
+      screen.getByText("E-mail : Adresse email invalide."),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Importer 1 prospect" }),
+    );
+    await waitFor(() =>
+      expect(api.importProspects).toHaveBeenLastCalledWith(
+        expect.any(Array),
+        false,
+      ),
+    );
     expect(toast.success).toHaveBeenCalledWith("1 prospect importé.");
   });
 
   it("actions d'un prospect : « Intéressé » arrête les relances ; « Inviter sur Plazo » préremplit l'invitation", async () => {
     const user = userEvent.setup();
-    api.setProspectStatus.mockResolvedValue({ data: { ...base, status: "interested" } });
+    api.setProspectStatus.mockResolvedValue({
+      data: { ...base, status: "interested" },
+    });
     renderIn();
     await screen.findByText("Parking Alpha");
-    await user.click(screen.getByRole("button", { name: "Actions pour Parking Alpha" }));
+    await user.click(
+      screen.getByRole("button", { name: "Actions pour Parking Alpha" }),
+    );
     const invite = screen.getByRole("menuitem", { name: "Inviter sur Plazo" });
     expect(invite.getAttribute("href")).toBe(
       "/plateforme/loueurs?inviter=1&parking=Parking+Alpha&prenom=Camille&nom=Exemple&email=contact%40alpha.example",
     );
     await user.click(screen.getByRole("menuitem", { name: "Intéressé" }));
-    await waitFor(() => expect(api.setProspectStatus).toHaveBeenCalledWith("p1", "interested"));
+    await waitFor(() =>
+      expect(api.setProspectStatus).toHaveBeenCalledWith("p1", "interested"),
+    );
   });
 
   describe("classement par région (19/10/2026)", () => {
     const mixed: Prospect[] = [
-      { ...base, id: "r1", companyName: "Parking Azur", email: "a@azur.example", airportCode: "NCE", region: { key: "provence-alpes-cote-d-azur", label: "Provence-Alpes-Côte d'Azur", manual: false } },
-      { ...base, id: "r2", companyName: "Parking Rhône", email: "b@rhone.example" },
-      { ...base, id: "r3", companyName: "Parking Genève", email: "c@geneve.example", airportCode: "GVA", region: null },
-      { ...base, id: "r4", companyName: "Parking Isère", email: "d@isere.example", airportCode: "GNB", status: "contacted", step: 1 },
+      {
+        ...base,
+        id: "r1",
+        companyName: "Parking Azur",
+        email: "a@azur.example",
+        airportCode: "NCE",
+        region: {
+          key: "provence-alpes-cote-d-azur",
+          label: "Provence-Alpes-Côte d'Azur",
+          manual: false,
+        },
+      },
+      {
+        ...base,
+        id: "r2",
+        companyName: "Parking Rhône",
+        email: "b@rhone.example",
+      },
+      {
+        ...base,
+        id: "r3",
+        companyName: "Parking Genève",
+        email: "c@geneve.example",
+        airportCode: "GVA",
+        region: null,
+      },
+      {
+        ...base,
+        id: "r4",
+        companyName: "Parking Isère",
+        email: "d@isere.example",
+        airportCode: "GNB",
+        status: "contacted",
+        step: 1,
+      },
       {
         ...base,
         id: "r5",
@@ -223,32 +475,68 @@ describe("Plateforme › Prospection", () => {
         regionOverride: "occitanie",
       },
     ];
-    const regionCounts = { "auvergne-rhone-alpes": 2, bretagne: 0, occitanie: 1, "provence-alpes-cote-d-azur": 1, none: 1 };
+    const regionCounts = {
+      "auvergne-rhone-alpes": 2,
+      bretagne: 0,
+      occitanie: 1,
+      "provence-alpes-cote-d-azur": 1,
+      none: 1,
+    };
 
     beforeEach(() => {
       window.localStorage.clear();
-      api.getProspects.mockImplementation(async ({ region }: { region?: string | null }) => ({
-        data: region ? mixed.filter(p => (p.region?.key ?? "none") === region) : mixed,
-        counts: { ...counts, all: region ? mixed.filter(p => (p.region?.key ?? "none") === region).length : 5 },
-        airports: [],
-        regions,
-        regionCounts,
-        today: { sent: 0, cap: 50, remaining: 50 },
-        window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
-        configured: true,
-      }));
+      api.getProspects.mockImplementation(
+        async ({ region }: { region?: string | null }) => ({
+          data: region
+            ? mixed.filter((p) => (p.region?.key ?? "none") === region)
+            : mixed,
+          counts: {
+            ...counts,
+            all: region
+              ? mixed.filter((p) => (p.region?.key ?? "none") === region).length
+              : 5,
+          },
+          airports: [],
+          regions,
+          regionCounts,
+          today: { sent: 0, cap: 50, remaining: 50 },
+          window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
+          configured: true,
+        }),
+      );
     });
 
     it("des blocs par région, dans l'ordre alphabétique, « Sans région » en dernier, avec leur nombre", async () => {
       renderIn();
       await screen.findByText("Parking Azur");
-      const blocks = screen.getAllByRole("button", { expanded: true }).map(b => b.textContent);
-      expect(blocks).toEqual(["Auvergne-Rhône-Alpes · 2", "Occitanie · 1", "Provence-Alpes-Côte d'Azur · 1", "Sans région · 1"]);
-      expect(within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText("Parking Rhône")).toBeInTheDocument();
-      expect(within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText("Parking Isère")).toBeInTheDocument();
-      expect(within(screen.getByTestId("region-none")).getByText("Parking Genève")).toBeInTheDocument();
+      const blocks = screen
+        .getAllByRole("button", { expanded: true })
+        .map((b) => b.textContent);
+      expect(blocks).toEqual([
+        "Auvergne-Rhône-Alpes · 2",
+        "Occitanie · 1",
+        "Provence-Alpes-Côte d'Azur · 1",
+        "Sans région · 1",
+      ]);
+      expect(
+        within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText(
+          "Parking Rhône",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText(
+          "Parking Isère",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("region-none")).getByText("Parking Genève"),
+      ).toBeInTheDocument();
       // The row tells the region, and when it was chosen by hand.
-      expect(within(screen.getByTestId("region-occitanie")).getByText("Occitanie · choisie à la main")).toBeInTheDocument();
+      expect(
+        within(screen.getByTestId("region-occitanie")).getByText(
+          "Occitanie · choisie à la main",
+        ),
+      ).toBeInTheDocument();
       expect(screen.queryByTestId("region-bretagne")).not.toBeInTheDocument();
     });
 
@@ -257,11 +545,17 @@ describe("Plateforme › Prospection", () => {
       renderIn();
       await screen.findByText("Parking Rhône");
       await user.click(screen.getByLabelText("Choisir Parking Rhône"));
-      await user.click(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }));
-      expect(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" })).toHaveAttribute("aria-expanded", "false");
+      await user.click(
+        screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }),
+      );
+      expect(
+        screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }),
+      ).toHaveAttribute("aria-expanded", "false");
       expect(screen.queryByText("Parking Rhône")).not.toBeInTheDocument();
       expect(screen.getByText("1 prospect choisi")).toBeInTheDocument();
-      await user.click(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }));
+      await user.click(
+        screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }),
+      );
       expect(screen.getByLabelText("Choisir Parking Rhône")).toBeChecked();
     });
 
@@ -269,14 +563,24 @@ describe("Plateforme › Prospection", () => {
       const user = userEvent.setup();
       renderIn();
       await screen.findByText("Parking Rhône");
-      await user.click(screen.getByRole("button", { name: "Tout cocher dans la région · Auvergne-Rhône-Alpes" }));
+      await user.click(
+        screen.getByRole("button", {
+          name: "Tout cocher dans la région · Auvergne-Rhône-Alpes",
+        }),
+      );
       expect(screen.getByLabelText("Choisir Parking Rhône")).toBeChecked();
       expect(screen.getByLabelText("Choisir Parking Isère")).toBeChecked();
       expect(screen.getByLabelText("Choisir Parking Azur")).not.toBeChecked();
       expect(screen.getByText("2 prospects choisis")).toBeInTheDocument();
       // Parking Isère was already contacted: only Parking Rhône is sent the first email.
-      expect(screen.getByRole("button", { name: "Envoyer à 1 prospect" })).toBeEnabled();
-      await user.click(screen.getByRole("button", { name: "Tout décocher dans la région · Auvergne-Rhône-Alpes" }));
+      expect(
+        screen.getByRole("button", { name: "Envoyer à 1 prospect" }),
+      ).toBeEnabled();
+      await user.click(
+        screen.getByRole("button", {
+          name: "Tout décocher dans la région · Auvergne-Rhône-Alpes",
+        }),
+      );
       expect(screen.getByLabelText("Choisir Parking Rhône")).not.toBeChecked();
       expect(screen.getByText("Aucun prospect choisi")).toBeInTheDocument();
     });
@@ -286,7 +590,11 @@ describe("Plateforme › Prospection", () => {
       renderIn();
       await screen.findByText("Parking Rhône");
       const select = screen.getByLabelText("Région");
-      expect(within(select).getAllByRole("option").map(o => o.textContent)).toEqual([
+      expect(
+        within(select)
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      ).toEqual([
         "Toutes les régions",
         "Auvergne-Rhône-Alpes (2)",
         "Occitanie (1)",
@@ -294,10 +602,20 @@ describe("Plateforme › Prospection", () => {
         "Sans région (1)",
       ]);
       await user.selectOptions(select, "none");
-      await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: null, airport: null, region: "none" }));
-      await waitFor(() => expect(screen.queryByText("Parking Rhône")).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(api.getProspects).toHaveBeenLastCalledWith({
+          status: null,
+          airport: null,
+          region: "none",
+        }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByText("Parking Rhône")).not.toBeInTheDocument(),
+      );
       expect(screen.getByText("Parking Genève")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Tous · 1" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Tous · 1" }),
+      ).toBeInTheDocument();
     });
 
     it("formulaire : région automatique par défaut, ou choisie", async () => {
@@ -305,15 +623,24 @@ describe("Plateforme › Prospection", () => {
       api.createProspect.mockResolvedValue({ data: mixed[0] });
       renderIn();
       await screen.findByText("Parking Rhône");
-      await user.click(screen.getByRole("button", { name: "+ Ajouter un prospect" }));
-      const field = screen.getByLabelText("Région", { selector: "#prospect-region" });
+      await user.click(
+        screen.getByRole("button", { name: "+ Ajouter un prospect" }),
+      );
+      const field = screen.getByLabelText("Région", {
+        selector: "#prospect-region",
+      });
       expect(field).toHaveValue("");
       await user.type(screen.getByLabelText("Parking"), "Parking Nouveau");
       await user.type(screen.getByLabelText("E-mail"), "f@nouveau.example");
       await user.selectOptions(field, "bretagne");
       await user.click(screen.getByRole("button", { name: "Enregistrer" }));
       await waitFor(() =>
-        expect(api.createProspect).toHaveBeenCalledWith(expect.objectContaining({ companyName: "Parking Nouveau", region: "bretagne" })),
+        expect(api.createProspect).toHaveBeenCalledWith(
+          expect.objectContaining({
+            companyName: "Parking Nouveau",
+            region: "bretagne",
+          }),
+        ),
       );
     });
   });
@@ -321,12 +648,25 @@ describe("Plateforme › Prospection", () => {
   it("prospects européens : sans e-mail à appeler, langue des mails, aperçu et éditeur en allemand (13/11/2026)", async () => {
     const user = userEvent.setup();
     const german = (subject: string) => [
-      { step: 1, enabled: true, delayDays: 0, subject, body: "Hallo {prénom}," },
+      {
+        step: 1,
+        enabled: true,
+        delayDays: 0,
+        subject,
+        body: "Hallo {prénom},",
+      },
       { step: 2, enabled: true, delayDays: 4, subject: "Zwei", body: "B" },
       { step: 3, enabled: true, delayDays: 10, subject: "Drei", body: "C" },
     ];
     api.getProspectingSettings.mockResolvedValue({
-      data: { ...settings, sequences: { fr: settings.steps, de: german("{parking}: Ihre Buchungen"), en: german("{parking}: your bookings") } },
+      data: {
+        ...settings,
+        sequences: {
+          fr: settings.steps,
+          de: german("{parking}: Ihre Buchungen"),
+          en: german("{parking}: your bookings"),
+        },
+      },
     });
     const europe: Prospect[] = [
       {
@@ -354,9 +694,19 @@ describe("Plateforme › Prospection", () => {
     ];
     api.getProspects.mockResolvedValue({
       data: europe,
-      counts: { ...counts, all: 2, to_contact: 2, contacted: 0, unsubscribed: 0 },
+      counts: {
+        ...counts,
+        all: 2,
+        to_contact: 2,
+        contacted: 0,
+        unsubscribed: 0,
+      },
       airports: [],
-      regions: [...regions, { key: "allemagne", label: "Allemagne", country: true }, { key: "italie", label: "Italie", country: true }],
+      regions: [
+        ...regions,
+        { key: "allemagne", label: "Allemagne", country: true },
+        { key: "italie", label: "Italie", country: true },
+      ],
       regionCounts: { allemagne: 1, italie: 1, none: 0 },
       today: { sent: 0, cap: 50, remaining: 50 },
       window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
@@ -364,32 +714,56 @@ describe("Plateforme › Prospection", () => {
     });
     renderIn();
     const avio = (await screen.findByText("Avio Fictif")).closest("tr")!;
-    expect(within(avio).getByTestId("prospect-no-email")).toHaveTextContent("Pas d'e-mail · à appeler");
+    expect(within(avio).getByTestId("prospect-no-email")).toHaveTextContent(
+      "Pas d'e-mail · à appeler",
+    );
     expect(within(avio).getByText("+39 02 000000")).toBeInTheDocument();
-    expect(within(avio).getByRole("link", { name: "Site · avio.example" })).toHaveAttribute("href", "https://www.avio.example");
+    expect(
+      within(avio).getByRole("link", { name: "Site · avio.example" }),
+    ).toHaveAttribute("href", "https://www.avio.example");
     expect(within(avio).getByText("EN")).toBeInTheDocument();
     // 15/11/2026: the software seen at the parking and its detail.
-    expect(within(avio).getByTestId("prospect-tool")).toHaveTextContent("Pas d'outil visibleSite minimal / vide");
-    expect(within(screen.getByText("Parken Fictif").closest("tr")!).getByTestId("prospect-tool")).toHaveTextContent("—");
-    expect(within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE")).toBeInTheDocument();
+    expect(within(avio).getByTestId("prospect-tool")).toHaveTextContent(
+      "Pas d'outil visibleSite minimal / vide",
+    );
+    expect(
+      within(screen.getByText("Parken Fictif").closest("tr")!).getByTestId(
+        "prospect-tool",
+      ),
+    ).toHaveTextContent("—");
+    expect(
+      within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Europe" })).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Choisir Parken Fictif"));
     await user.click(screen.getByLabelText("Choisir Avio Fictif"));
-    expect(screen.getByRole("button", { name: "Envoyer à 1 prospect" })).toBeEnabled();
-    expect(screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré.")).toBeInTheDocument();
-    expect(within(screen.getByTestId("prospect-preview")).getByText("Parken Fictif: Ihre Buchungen")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Envoyer à 1 prospect" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByText("1 déjà contacté, fermé ou sans e-mail : ignoré."),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("prospect-preview")).getByText(
+        "Parken Fictif: Ihre Buchungen",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByText("· Mail en allemand")).toBeInTheDocument();
 
     api.updateProspectingSettings.mockResolvedValue({ data: settings });
-    await user.click(screen.getByRole("button", { name: "Modifier les mails" }));
+    await user.click(
+      screen.getByRole("button", { name: "Modifier les mails" }),
+    );
     await user.click(screen.getByTestId("steps-language-de"));
     const subject = screen.getAllByLabelText("Objet")[0];
     expect(subject).toHaveValue("{parking}: Ihre Buchungen");
     await user.clear(subject);
     await user.type(subject, "Neu");
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-    await waitFor(() => expect(api.updateProspectingSettings).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(api.updateProspectingSettings).toHaveBeenCalled(),
+    );
     const sent = api.updateProspectingSettings.mock.calls[0][0];
     expect(sent.translations.de[0].subject).toBe("Neu");
     // English untouched: not saved, it keeps following Plazo's own texts.

@@ -2115,6 +2115,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   téléphone, site, outil), jamais une case remplie, et ajoute ses notes sous les siennes (`completionOf` de
   `domain/prospecting.ts`) : issue `completed` avec les champs remplis, `counts.completed`, `updated` ; option « completer » du
   workflow « Import de prospects ». La page n'envoie pas `complete`. Test `prospecting.test.ts`.
+  **Filtres et tri, direction A (16/11/2026, « pouvoir faire des tris dans les prospects pour envoyer le mail », maquettes
+  https://claude.ai/artifact/N58y22Lt8KJR831xxyrmku)** : sous les pilules d'état, une barre de filtres faite par la page sur ce que
+  l'API a rendu (`filterProspects`, `sortProspects`, `nextSort`, `toolOptions` de `lib/prospecting.ts`) : recherche sans accents
+  (parking, ville, contact, e-mail, site, aéroport, notes, région), e-mail (avec · sans), langue, outil (pas d'outil · non renseigné ·
+  chaque outil avec son nombre), démo (ouverte · jamais ouverte · pas de lien), dernier mail (jamais · 7 j · 30 j · plus de 30 j),
+  chaque filtre cerclé de vert quand il filtre, « Effacer les filtres » ; bandeau vert « N prospects filtrés · X avec e-mail, Y à
+  appeler » avec « Cocher les X » et « Envoyer à X prospects » (coche et mène au panneau d'envoi, qui écarte toujours ceux qui ne
+  sont pas « À contacter ») ; titres de colonnes triables (Parking, Contact, Aéroport, Outil, État, Prochain envoi, Démo : croissant,
+  décroissant, puis l'ordre de la liste ; les vides en dernier ; trié, la liste est à plat, « Tous, triés », au lieu des blocs par
+  région) ; la sélection et « Tout choisir » ne portent que sur les prospects affichés. Tests `prospecting.test.ts`,
+  `ProspectingPage.test.tsx`.
   **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
   espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
   estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de
