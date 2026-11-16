@@ -1588,6 +1588,20 @@ export const adminApi = {
       "/internal/platform/prospects/settings",
       { method: "PUT", body: json(input) },
     ),
+  /** 15/11/2026: the emails « Pensez à Plazo » to the travellers (direction C, campagne à la main). */
+  getTravellerCampaigns: () => apiRequest<TravellerCampaignsOverview>("/internal/platform/traveller-campaigns"),
+  previewTravellerCampaign: (input: TravellerCampaignInput) =>
+    apiRequest<{ subject: string; html: string; offers: number }>("/internal/platform/traveller-campaigns/preview", {
+      method: "POST",
+      body: json(input),
+    }),
+  testTravellerCampaign: (input: TravellerCampaignInput) =>
+    apiRequest<{ to: string }>("/internal/platform/traveller-campaigns/test", { method: "POST", body: json(input) }),
+  startTravellerCampaign: (input: TravellerCampaignInput) =>
+    apiRequest<{ id: string; recipients: number; sent: number }>("/internal/platform/traveller-campaigns", {
+      method: "POST",
+      body: json(input),
+    }),
   /** 15/11/2026: the welcome email to travellers, for an example booking, sent to the admin. */
   sendTravellerWelcomeTest: (operatorId: string | null) =>
     apiRequest<{ to: string; from: string | null; subject: string }>("/internal/platform/traveller-welcome/test", {
@@ -1676,3 +1690,36 @@ export const adminApi = {
       body: json(note ? { status, note } : { status }),
     }),
 };
+
+/** 15/11/2026: an email « Pensez à Plazo » to the travellers, as the platform writes it. */
+export interface TravellerCampaignInput {
+  subject: string;
+  title: string;
+  body: string;
+  airport: string;
+  arrival: string | null;
+  return: string | null;
+}
+
+export interface TravellerCampaignRow {
+  id: string;
+  subject: string;
+  airport: string;
+  arrival: string | null;
+  return: string | null;
+  recipients: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  createdAt: string;
+  finishedAt: string | null;
+  by: string | null;
+}
+
+export interface TravellerCampaignsOverview {
+  available: boolean;
+  audience: number;
+  nextAt: string | null;
+  from: string | null;
+  campaigns: TravellerCampaignRow[];
+}

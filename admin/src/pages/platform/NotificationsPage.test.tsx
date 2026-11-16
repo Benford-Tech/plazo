@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
   getPlatformOperators: vi.fn(),
   getAirports: vi.fn(),
   sendTravellerWelcomeTest: vi.fn(),
+  getTravellerCampaigns: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
@@ -44,6 +45,7 @@ describe("Notifications de la plateforme (E-A, C-A)", () => {
     api.getPlatformNotifications.mockResolvedValue({ data: [] });
     api.getPlatformNotificationAudience.mockImplementation(async (audience: string) => ({ devices: audience === "travellers" ? 3 : 12, configured: true }));
     api.getPlatformOperators.mockResolvedValue({ defaultCommissionBps: null, operators: [{ id: "o1", name: "Parking Soleil" }] });
+    api.getTravellerCampaigns.mockResolvedValue({ available: true, audience: 0, nextAt: null, from: null, campaigns: [] });
     api.getAirports.mockResolvedValue([{ code: "LYS", name: "Lyon Saint-Exupéry", city: "Lyon", slug: "lyon-saint-exupery" }]);
   });
 

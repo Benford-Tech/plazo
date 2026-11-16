@@ -73,7 +73,10 @@ export function BookingInvoiceCard({
   const fail = (err: unknown) => toast.error(describeError(err, t.errors));
 
   const create = useMutation({
-    mutationFn: () => adminApi.createInvoice(reservationId, customer),
+    // The fields go with the call: an option set in an effect could still hold the previous render's (a click right
+    // after the prefill sent an empty company, seen in CI on 15/11/2026).
+    mutationFn: (fields: typeof customer) =>
+      adminApi.createInvoice(reservationId, fields),
     onSuccess: (data) => {
       set(data);
       setShowCustomer(false);
@@ -83,10 +86,10 @@ export function BookingInvoiceCard({
     onError: fail,
   });
   const preview = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (fields: typeof customer) => {
       const { blob, filename } = await adminApi.invoicePreview(
         reservationId,
-        customer,
+        fields,
       );
       savePdf(blob, filename ?? "Facture-apercu.pdf");
     },
@@ -314,7 +317,7 @@ export function BookingInvoiceCard({
               type="button"
               className={main}
               disabled={create.isPending}
-              onClick={() => create.mutate()}
+              onClick={() => create.mutate(customer)}
             >
               {t.create}
             </button>
@@ -322,7 +325,7 @@ export function BookingInvoiceCard({
               type="button"
               className={ghost}
               disabled={preview.isPending}
-              onClick={() => preview.mutate()}
+              onClick={() => preview.mutate(customer)}
             >
               {t.preview}
             </button>
