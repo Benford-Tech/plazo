@@ -43,6 +43,7 @@ import { lazy, Suspense } from "react";
 // The platform space is only loaded by the platform owner; the capacity estimator (maps, geometry) on demand.
 // 17/11/2026: pdf-lib and pdf.js load with this page only.
 const FlyerPage = lazy(() => import("@/pages/FlyerPage"));
+const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
 const OperatorsPage = lazy(() => import("@/pages/platform/OperatorsPage"));
 const PlatformOverviewPage = lazy(() => import("@/pages/platform/PlatformOverviewPage"));
 const PlatformOperatorPage = lazy(() => import("@/pages/platform/PlatformOperatorPage"));
@@ -320,6 +321,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="parking:manage">
                     <ContractPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/abonnement"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<SubscriptionPage />)}
                   </RequirePermission>
                 }
               />

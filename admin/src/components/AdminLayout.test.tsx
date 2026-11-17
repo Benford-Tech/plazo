@@ -99,6 +99,7 @@ describe("AdminLayout rail sections", () => {
       "/equipe",
       "/contrats",
       "/mon-contrat",
+      "/abonnement",
     ]);
   });
 

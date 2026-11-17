@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Euro,
   FileCheck,
+  CreditCard,
   FileSignature,
   Globe,
   LayoutDashboard,
@@ -132,6 +133,8 @@ export const NAV: NavItem[] = [
   // 26/10/2026 (R-A): the register of the travellers' signed contracts, managers only.
   { label: sub.signedContracts, to: "/contrats", icon: FileCheck, permission: "parking:manage", section: "manager" },
   { label: sub.plazoContract, to: "/mon-contrat", icon: FileSignature, permission: "parking:manage", section: "manager" },
+  // 17/11/2026 (direction B): the Plazo Pro subscription, paid with Stripe.
+  { label: sub.subscription, to: "/abonnement", icon: CreditCard, permission: "parking:manage", section: "manager" },
 ];
 
 /** Whether the page shown belongs to the entry (its own path, its children's, its detail pages). */

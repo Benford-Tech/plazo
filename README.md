@@ -482,6 +482,12 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      `payment_intent.succeeded`, `payment_intent.payment_failed` ; et une seconde destination,
      même adresse, pour les évènements **des comptes connectés** : `account.updated`. Mettre les deux secrets de signature
      dans `STRIPE_WEBHOOK_SECRET` (séparés par une virgule).
+   - **Abonnements Plazo Pro (17/11/2026)** : ajouter à la première destination (évènements de votre compte)
+     `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`
+     et `invoice.payment_failed` ; activer le **prélèvement SEPA** dans *Paramètres → Moyens de paiement* ; dans
+     *Paramètres → Facturation → Abonnements et e-mails*, laisser Stripe réessayer les paiements refusés (Smart Retries)
+     et envoyer les factures et reçus par e-mail. Les produits, prix (clés `plazo_pro_<formule>_<monthly|yearly>_v1`,
+     `plazo_pro_setup_v1`) et la TVA à 20 % sont créés par Plazo au premier abonnement, dans le mode des clés.
    - Tâches planifiées (Vercel Cron, `Authorization: Bearer <CRON_SECRET>`) : `/api/internal/cron/payouts` **chaque jour**
      (reversements aux loueurs) ; `/api/internal/cron/expire-payment-holds` facultative (nettoyage : une place tenue expirée
      ne compte déjà plus).

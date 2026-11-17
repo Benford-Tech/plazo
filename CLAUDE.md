@@ -2659,6 +2659,31 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   réservation payée, « Inclus partout ». Web seulement, rien n'est souscrit en ligne ; les offres de lancement (mois offert, mise
   en route offerte, prix garanti) attendent la validation de Joanny. Tests `pro-plans.test.ts`, `ContractPage.test.tsx`.
 
+- **Abonnement Plazo Pro payé par Stripe, direction B « Tout dans Plazo » (17/11/2026, « Branche stripe pour le paiement des
+  abonnements plazo pro », maquettes https://claude.ai/artifact/Ub8zXo9PRcrLy4wfZioQGK, « B avec la mise en route » ; pris par
+  défaut, à confirmer : le gérant choisit, pas d'essai, carte et SEPA, bandeau seul en cas d'impayé, TVA 20 % en plus du HT)** :
+  Gérant › « Abonnement » (`/pro/abonnement`, `SubscriptionPage`, `parking:manage`) : état (formule, pastille Actif · Paiement en
+  retard · Paiement à terminer · Résilié, prix HT et TTC, prochain prélèvement, moyen), Mensuel · Annuel −10 %, trois formules
+  (« Choisir » / « Passer à »), récapitulatif du premier paiement (formule, **mise en route 290 € HT une fois**, TVA, total, « Puis
+  chaque mois ») et le **Payment Element de Stripe dans la page** (`components/subscription/StripeForm.tsx`, `@stripe/stripe-js`
+  10.2.1, carte ou IBAN, 3D Secure, retour par `return_url` relu au chargement), changement de formule avec l'aperçu du prorata,
+  « Changer de moyen de paiement » (SetupIntent), factures (PDF de Stripe), « Résilier… » à la fin de la période payée et « Garder
+  mon abonnement » ; bandeau rouge et « Mettre à jour le moyen de paiement » quand un prélèvement échoue (rien n'est bloqué) ;
+  « Choisir cette formule » de « Mon contrat » mène à `/abonnement?formule=…&annuel=1`. Serveur : table `pro_subscriptions`
+  (migration `pro_subscriptions` : un par loueur, client et abonnement Stripe du mode des clés `live`, état copié, `setupFeeIncluded`
+  / `setupFeePaidAt`, moyen résumé sans nom) ; `domain/pro-subscription.ts` (`planPriceCents` : 99 / 199 / 399 € HT, à l'année 12 ×
+  le prix annuel arrondi ; `SETUP_FEE_CENTS`, `chargedNow` : plus cher ou autre rythme = facturé au prorata tout de suite, moins cher =
+  au prochain prélèvement) ; `ProSubscriptionService` : prix trouvés par clé (`plazo_pro_<formule>_<monthly|yearly>_v1`,
+  `plazo_pro_setup_v1`) ou créés au premier abonnement avec la TVA (taux exclusif `metadata.plazo = vat20`) ; abonnement créé
+  `default_incomplete` avec la mise en route en `add_invoice_items` tant qu'elle n'a jamais été payée, `confirmation_secret` du premier
+  avis ; webhook `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed` (`PaymentService.handleWebhook`) et `sync` ; un
+  abonnement en cours pose `Operator.proPlan` / `proPlanYearly` (le contrat d'utilisation le nomme). Routes (`parking:manage`, écritures
+  `RefuseInViewAs` 403 `view_as_payments`) : `GET|POST /internal/subscription`, `POST …/sync`, `GET …/preview`, `POST …/change`,
+  `POST …/payment-method` et `…/confirm`, `GET …/invoices`, `POST …/cancel|resume` ; 409 `subscriptions_unavailable` sans clés,
+  `test_operator` (démo ou « … (tests) » sous clés réelles), `already_subscribed`, `no_subscription`, `same_plan`, `payment_failed`,
+  `setup_not_confirmed` ; tracés `subscription.*`. Réglages Stripe à faire : README (évènements du webhook, SEPA, relances). Pas encore :
+  la vue des abonnements dans la Plateforme, les options de la page Tarifs (SMS, page de réservation), Plazo Pro. Tests
+  `pro-subscription.test.ts`, `SubscriptionPage.test.tsx`.
 - **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
   permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
   "Partez léger, revenez sans attendre." », « QR vers la page du parking »)** : Gérant › Sur Plazo › « Flyer »

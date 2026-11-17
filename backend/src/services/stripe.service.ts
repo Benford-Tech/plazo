@@ -3,7 +3,23 @@ import { Service } from 'typedi';
 import { stripeApiBase, stripeSecretKey } from '@/config';
 
 /** The parts of the Stripe SDK the platform uses (tests replace them with mocks: no network). */
-export type StripeApi = Pick<Stripe, 'checkout' | 'refunds' | 'accounts' | 'accountLinks' | 'paymentIntents' | 'transfers'>;
+export type StripeApi = Pick<
+  Stripe,
+  | 'checkout'
+  | 'refunds'
+  | 'accounts'
+  | 'accountLinks'
+  | 'paymentIntents'
+  | 'transfers'
+  | 'customers'
+  | 'subscriptions'
+  | 'prices'
+  | 'products'
+  | 'taxRates'
+  | 'invoices'
+  | 'setupIntents'
+  | 'paymentMethods'
+>;
 
 /**
  * Access to the Stripe API. The client is built from STRIPE_SECRET_KEY when first used (and again

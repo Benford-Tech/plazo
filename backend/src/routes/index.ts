@@ -28,6 +28,7 @@ import { OperatorLogoRoute } from './operator-logo.route';
 import { ValetRoute } from './valet.route';
 import { PartnerContractRoute } from './partner-contract.route';
 import { PlazoAgreementRoute } from './plazo-agreement.route';
+import { ProSubscriptionRoute } from './pro-subscription.route';
 import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
 import { ProspectingRoute } from './prospecting.route';
@@ -58,6 +59,7 @@ const AppRoutes = [
   new SurchargeRoute(),
   new PartnerContractRoute(),
   new PlazoAgreementRoute(),
+  new ProSubscriptionRoute(),
   new ContractTemplateRoute(),
   new GettingStartedRoute(),
   new LiveSyncRoute(),
