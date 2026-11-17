@@ -1807,6 +1807,8 @@ model Prospect {
   tool             String?
   toolDetail       String?
   notes            String?
+  // 17/11/2026: why it was marked (« rappeler en janvier », « a déjà un logiciel »), 300 characters.
+  statusNote       String?
   source           ProspectSource @default(manual)
   status           ProspectStatus @default(to_contact)
   // Last step of the sequence sent (0: none yet).

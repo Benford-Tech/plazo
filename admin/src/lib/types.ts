@@ -2089,6 +2089,8 @@ export interface Prospect {
   language: ProspectLanguage;
   languageOverride: ProspectLanguage | null;
   notes: string | null;
+  /** 17/11/2026: why it was marked (« rappeler en janvier »). */
+  statusNote?: string | null;
   source: "manual" | "csv";
   status: ProspectStatus;
   /** Last step sent (0: none). */

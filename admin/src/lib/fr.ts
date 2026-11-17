@@ -3855,6 +3855,25 @@ export const fr = {
       replied: "A répondu",
       interested: "Intéressé",
       notInterested: "Pas intéressé",
+      // 17/11/2026: one click on the row, several at once, back, and a note.
+      markInterested: (name: string) => `Marquer ${name} intéressé`,
+      markNotInterested: (name: string) => `Marquer ${name} pas intéressé`,
+      unmark: (name: string) => `Remettre ${name} à contacter`,
+      reopen: "Remettre à contacter",
+      reopened: "Prospect remis à contacter.",
+      bulkInterested: "Intéressés",
+      bulkNotInterested: "Pas intéressés",
+      bulkDone: (n: number, skipped: number) =>
+        `${n} prospect${n > 1 ? "s" : ""} marqué${n > 1 ? "s" : ""}` +
+        (skipped ? ` · ${skipped} désinscrit${skipped > 1 ? "s" : ""} laissé${skipped > 1 ? "s" : ""}` : "") +
+        ".",
+      addNote: "+ Note",
+      editNote: (name: string) => `Modifier la note de ${name}`,
+      notePlaceholder: "Rappeler en janvier, a déjà un logiciel…",
+      noteLabel: (name: string) => `Note sur ${name}`,
+      noteSave: "Enregistrer",
+      noteCancel: "Annuler",
+      noteTooLong: "300 caractères au plus.",
       markUnsubscribed: "Désinscrire",
       stop: "Arrêter les relances",
       invite: "Inviter sur Plazo",

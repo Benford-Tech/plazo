@@ -548,6 +548,63 @@ describe('désinscription (lien public, RFC 8058) et conservation', () => {
     expect(await service.runDue(due)).toMatchObject({ sent: 0 });
   });
 
+  // 17/11/2026 (« pouvoir marquer des prospects comme intéressés ou non »): one click, several at once, back, a note.
+  it('intéressé ou non : note, retour à « À contacter » ou « Contacté », plusieurs à la fois, désinscrits laissés', async () => {
+    const a = await create(1);
+    const b = await create(2);
+    const c = await create(3);
+    const marked = await api().post(`${P}/${a.id}/status`).set(auth(admin.token)).send({ status: 'interested', note: '  rappeler   en janvier ' });
+    expect(marked.body.data).toMatchObject({ status: 'interested', statusNote: 'rappeler en janvier' });
+    // Back: never contacted → « À contacter », sendable again; the note stays.
+    const back = await api().post(`${P}/${a.id}/status`).set(auth(admin.token)).send({ status: 'reopen' });
+    expect(back.body.data).toMatchObject({ status: 'to_contact', stoppedAt: null, statusNote: 'rappeler en janvier' });
+    // A contacted one goes back to « Contacté », its follow-ups still stopped.
+    await prisma.prospect.update({ where: { id: b.id }, data: { step: 1, status: 'contacted', firstContactedAt: new Date() } });
+    await api().post(`${P}/${b.id}/status`).set(auth(admin.token)).send({ status: 'not_interested' });
+    expect((await api().post(`${P}/${b.id}/status`).set(auth(admin.token)).send({ status: 'reopen' })).body.data).toMatchObject({
+      status: 'contacted',
+      nextSendAt: null,
+    });
+    // The note alone: set, then removed.
+    expect((await api().put(`${P}/${b.id}/note`).set(auth(admin.token)).send({ note: 'a déjà un logiciel' })).body.data.statusNote).toBe(
+      'a déjà un logiciel',
+    );
+    expect((await api().put(`${P}/${b.id}/note`).set(auth(admin.token)).send({ note: '' })).body.data.statusNote).toBeNull();
+    expect(
+      (
+        await api()
+          .put(`${P}/${b.id}/note`)
+          .set(auth(admin.token))
+          .send({ note: 'x'.repeat(301) })
+      ).body.fields,
+    ).toEqual({ note: 'too_long' });
+    // Several at once; an unsubscribed one is left alone.
+    await api().post(`${P}/${c.id}/status`).set(auth(admin.token)).send({ status: 'unsubscribed' });
+    const bulk = await api()
+      .post(`${P}/status`)
+      .set(auth(admin.token))
+      .send({ ids: [a.id, b.id, c.id], status: 'not_interested' });
+    expect(bulk.body).toEqual({ updated: 2, skipped: 1 });
+    const rows = await prisma.prospect.findMany({ orderBy: { companyName: 'asc' }, select: { status: true } });
+    expect(rows.map(r => r.status)).toEqual(['not_interested', 'not_interested', 'unsubscribed']);
+    expect(
+      (
+        await api()
+          .post(`${P}/status`)
+          .set(auth(admin.token))
+          .send({ ids: [a.id], status: 'unsubscribed' })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await api()
+          .post(`${P}/status`)
+          .set(auth(loueur.token))
+          .send({ ids: [a.id], status: 'interested' })
+      ).status,
+    ).toBe(403);
+  });
+
   it('la purge de nuit efface les prospects 3 ans après le dernier contact (ou la création), garde les désinscriptions', async () => {
     const old = await create(1);
     const recent = await create(2);

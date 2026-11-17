@@ -2126,6 +2126,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   décroissant, puis l'ordre de la liste ; les vides en dernier ; trié, la liste est à plat, « Tous, triés », au lieu des blocs par
   région) ; la sélection et « Tout choisir » ne portent que sur les prospects affichés. Tests `prospecting.test.ts`,
   `ProspectingPage.test.tsx`.
+  **Intéressé ou non en un clic, choix « les quatre » (17/11/2026, « pouvoir marquer des prospects comme intéressés ou non »)** :
+  sur chaque ligne, à côté de l'état, 👍 / 👎 (`StateMarks`, `aria-pressed`) : un clic marque « Intéressé » / « Pas intéressé », un
+  clic sur celui qui est allumé remet le prospect (`reopen` de `POST …/prospects/:id/status` : « Contacté » quand un mail est
+  parti, relances toujours arrêtées ; sinon « À contacter », de nouveau envoyable) ; « Remettre à contacter » aussi dans le menu
+  « ⋯ » ; « Intéressés » / « Pas intéressés » pour les prospects cochés (`BulkMarks`, `POST …/prospects/status { ids, status }` →
+  `{ updated, skipped }`, désinscrits laissés, tracé `prospect.statuses_changed`) ; la note du pourquoi sous l'état (« + Note »,
+  `StatusNote`, `Prospect.statusNote` 300 caractères, migration `prospect_status_note`, `PUT …/prospects/:id/note`, vide = retirée,
+  aussi `note` du changement d'état). Tests `prospecting.test.ts`, `ProspectingPage.test.tsx`.
   **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
   espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
   estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de
