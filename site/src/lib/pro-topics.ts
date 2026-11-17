@@ -1,4 +1,7 @@
 import { PRODUCT_NAME } from "./product";
+import { COMPARATOR_TOPICS } from "./pro-topics-pages/comparators";
+import { EXCEL_TOPICS } from "./pro-topics-pages/excel";
+import { FEATURE_TOPICS } from "./pro-topics-pages/features";
 import type { ProTopicSlug } from "./site";
 
 const P = PRODUCT_NAME;
@@ -26,11 +29,18 @@ export type ProTopic = {
   faq: [string, string][];
   /** The other pages worth reading next (by slug). */
   next: ProTopicSlug[];
+  /** The day the text last changed (the sitemap's lastmod, 17/11/2026: search engines only trust one that follows the content). */
+  updated: string;
 };
 
-export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
+/** The day the home page's and the pricing page's texts last changed (sitemap). */
+export const PRO_HOME_UPDATED = "2026-11-12";
+export const PRO_PRICING_UPDATED = "2026-11-13";
+
+const FIRST_TOPICS = {
   navette: {
     slug: "navette",
+    updated: "2026-10-28",
     label: "Navette",
     metaTitle: `Logiciel de navette pour parking d’aéroport · ${P} Pro`,
     metaDescription: `Gérez la navette de votre parking d’aéroport : qui emmener, qui récupérer, départ au bon moment, retards d’avion, navette en direct pour vos clients.`,
@@ -119,10 +129,11 @@ export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
       ["Peut-on desservir une gare ou un hôtel ?", "Oui. Vous ajoutez vos dessertes avec leurs consignes, et chaque réservation peut avoir la sienne. Le chauffeur voit la destination de chaque client sur sa ligne."],
       ["Et si je ne veux pas montrer la navette aux clients ?", "Vous réglez le suivi sur « Équipe seulement », ou vous le coupez. Les clients ne voient alors ni la position ni la distance de la navette."],
     ],
-    next: ["voiturier", "comparateurs"],
+    next: ["voiturier", "planning-reservations", "messages-clients"],
   },
   voiturier: {
     slug: "voiturier",
+    updated: "2026-10-28",
     label: "Voiturier",
     metaTitle: `Gestion de parking voiturier à l’aéroport · ${P} Pro`,
     metaDescription: `Logiciel de parking voiturier d’aéroport : files rangées par date de retour, clés, plan sur photo aérienne, voiturier au terminal. Démo gratuite.`,
@@ -209,10 +220,11 @@ export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
       ["Peut-on aussi rendre la voiture au terminal ?", "Oui : une réservation peut être « Voiturier au terminal ». Les courses d’arrivée et de départ apparaissent aux voituriers, qui les prennent et les terminent dans l’application."],
       ["Mes voituriers ont-ils besoin d’une formation ?", `Chacun choisit son poste du jour et ne voit que ce qu’il a à faire. Un tutoriel s’affiche la première fois, et la démo permet d’essayer avant, sans inscription.`],
     ],
-    next: ["navette", "comparateurs"],
+    next: ["navette", "plan-du-parking", "contrat-etat-des-lieux"],
   },
   comparateurs: {
     slug: "comparateurs",
+    updated: "2026-10-28",
     label: "Comparateurs",
     metaTitle: `Réservations Allopark, Onepark, ParkVia au même endroit · ${P} Pro`,
     metaDescription: `Centralisez les réservations de votre parking : Allopark, Onepark, Parclick, ParkMundo, ParkVia et Park Hit arrivent seules dans un planning.`,
@@ -297,11 +309,17 @@ export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
       ["Dois-je changer quelque chose chez mes comparateurs ?", "Non, vous gardez vos comptes. Vous donnez l’adresse de votre parking comme adresse de notification, ou vous faites suivre leurs mails depuis votre messagerie."],
       ["Et les réservations prises au téléphone ?", "Elles se saisissent dans le même planning, sur ordinateur ou dans l’application. Si le mail d’un comparateur arrive ensuite pour le même voyageur et la même arrivée, il est rattaché à la réservation au lieu d’en créer une seconde."],
       ["Une annulation est-elle appliquée toute seule ?", "Celles de ParkVia et d’Onepark, oui, tant que la voiture n’est pas arrivée. Les autres arrivent dans « À traiter », marquées « Annulation », et vous l’appliquez vous-même."],
-      ["Combien ça coûte ?", "De 99 € à 299 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
+      ["Combien ça coûte ?", "De 99 € à 399 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
     ],
-    next: ["navette", "voiturier"],
+    // 17/11/2026: the page that presents them all leads to each comparator's own page.
+    next: ["allopark", "onepark", "parkvia", "park-hit", "parclick", "parkmundo"],
   },
-};
+} satisfies Record<string, ProTopic>;
+
+/** The pages by comparator (17/11/2026), in the order of the footer. */
+export const PRO_COMPARATOR_SLUGS = ["allopark", "onepark", "parkvia", "park-hit", "parclick", "parkmundo"] as const satisfies readonly ProTopicSlug[];
+
+export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = { ...FIRST_TOPICS, ...FEATURE_TOPICS, ...COMPARATOR_TOPICS, ...EXCEL_TOPICS };
 
 export const PRO_TOPIC_LIST = Object.values(PRO_TOPICS);
 

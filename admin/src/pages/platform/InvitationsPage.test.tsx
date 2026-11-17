@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import InvitationsPage from "./InvitationsPage";
 
-const api = vi.hoisted(() => ({ getPlatformInvitations: vi.fn() }));
+const api = vi.hoisted(() => ({ getPlatformInvitations: vi.fn(), resendPlatformInvitation: vi.fn() }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
@@ -66,4 +66,45 @@ it("montre chaque étape de l'invitation et filtre", async () => {
   expect(screen.getByTestId("invitations-view-no_app")).toHaveTextContent("Pas dans l'app · 1");
   await userEvent.click(screen.getByTestId("invitations-view-no_app"));
   await waitFor(() => expect(api.getPlatformInvitations).toHaveBeenLastCalledWith("no_app"));
+});
+
+it("renvoie l'invitation d'une personne, pas d'un gérant qui a déjà son mot de passe", async () => {
+  api.getPlatformInvitations.mockResolvedValue({
+    data: [
+      {
+        ...base,
+        id: "t3",
+        sends: 1,
+        staff: { id: "s3", name: "Léa Martin", email: "lea@example.com", role: "driver", isActive: true },
+        opened: null,
+        clicked: null,
+        passwordSetAt: null,
+        app: null,
+      },
+      {
+        ...base,
+        id: "t4",
+        kind: "operator",
+        sends: 1,
+        staff: { id: "s4", name: "Marc Roy", email: "marc@example.com", role: "manager", isActive: true },
+        opened: null,
+        clicked: null,
+        passwordSetAt: "2026-11-14T08:43:00.000Z",
+        app: null,
+      },
+    ],
+    counts: { all: 2, not_opened: 2, not_clicked: 1, no_app: 2 },
+  });
+  api.resendPlatformInvitation.mockResolvedValue({ emailSent: true });
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <InvitationsPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  await userEvent.click(await screen.findByTestId("invitation-resend-s3"));
+  await waitFor(() => expect(api.resendPlatformInvitation).toHaveBeenCalledWith("s3"));
+  await waitFor(() => expect(api.getPlatformInvitations.mock.calls.length).toBeGreaterThan(1));
+  expect(screen.queryByTestId("invitation-resend-s4")).toBeNull();
 });

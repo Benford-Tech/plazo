@@ -1,9 +1,9 @@
 import { PLAZO_PLANS, savings, yearlyMonthly } from "./pro-plans";
 
 describe("formules Plazo Pro (13/11/2026)", () => {
-  it("99, 199 et 299 € par mois, −10 % à l'année", () => {
-    expect(PLAZO_PLANS.map((p) => p.monthlyEuros)).toEqual([99, 199, 299]);
-    expect(PLAZO_PLANS.map((p) => yearlyMonthly(p.monthlyEuros))).toEqual([89, 179, 269]);
+  it("99, 199 et 399 € par mois, −10 % à l'année", () => {
+    expect(PLAZO_PLANS.map((p) => p.monthlyEuros)).toEqual([99, 199, 399]);
+    expect(PLAZO_PLANS.map((p) => yearlyMonthly(p.monthlyEuros))).toEqual([89, 179, 359]);
     expect(PLAZO_PLANS.filter((p) => p.recommended).map((p) => p.id)).toEqual(["operations"]);
   });
 

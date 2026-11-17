@@ -50,7 +50,7 @@ export const PLAZO_PLANS: PlazoPlan[] = [
   {
     id: "complet",
     name: "Complet",
-    monthlyEuros: 299,
+    monthlyEuros: 399,
     pitch: "Pour piloter la marge et se protéger en cas de litige.",
     features: [
       "Tout Opérations, plus :",

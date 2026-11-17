@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   sendProspectTest: vi.fn(),
   importProspects: vi.fn(),
   setProspectStatus: vi.fn(),
+  setProspectStatuses: vi.fn(),
+  setProspectNote: vi.fn(),
   createProspect: vi.fn(),
   updateProspectingSettings: vi.fn(),
 }));
@@ -427,6 +429,44 @@ describe("Plateforme › Prospection", () => {
     await waitFor(() =>
       expect(api.setProspectStatus).toHaveBeenCalledWith("p1", "interested"),
     );
+  });
+
+  // 17/11/2026 (« pouvoir marquer des prospects comme intéressés ou non »).
+  it("👍 / 👎 sur la ligne, retour en arrière, note, et plusieurs à la fois", async () => {
+    const user = userEvent.setup();
+    api.setProspectStatus.mockResolvedValue({ data: base });
+    api.setProspectNote.mockResolvedValue({ data: base });
+    api.setProspectStatuses.mockResolvedValue({ updated: 2, skipped: 0 });
+    api.getProspects.mockImplementation(async () => ({
+      data: [{ ...base, status: "interested", statusNote: "rappeler en janvier" }, prospects[1]],
+      counts,
+      airports: [{ code: "LYS", name: "Lyon Saint-Exupéry", count: 2 }],
+      regions,
+      regionCounts: { "auvergne-rhone-alpes": 2, bretagne: 0, occitanie: 0, "provence-alpes-cote-d-azur": 0, none: 0 },
+      today: { sent: 0, cap: 50, remaining: 50 },
+      window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
+      configured: true,
+    }));
+    renderIn();
+    await screen.findByText("Parking Alpha");
+    // One click marks; a click on the lit one puts it back.
+    await user.click(screen.getByRole("button", { name: "Marquer Valet Bêta pas intéressé" }));
+    await waitFor(() => expect(api.setProspectStatus).toHaveBeenCalledWith("p2", "not_interested"));
+    const lit = screen.getByRole("button", { name: "Remettre Parking Alpha à contacter" });
+    expect(lit.getAttribute("aria-pressed")).toBe("true");
+    await user.click(lit);
+    await waitFor(() => expect(api.setProspectStatus).toHaveBeenCalledWith("p1", "reopen"));
+    // The note shows under the state and is edited in place.
+    await user.click(screen.getByRole("button", { name: "Modifier la note de Parking Alpha" }));
+    const field = screen.getByRole("textbox", { name: "Note sur Parking Alpha" });
+    await user.clear(field);
+    await user.type(field, "a déjà un logiciel{Enter}");
+    await waitFor(() => expect(api.setProspectNote).toHaveBeenCalledWith("p1", "a déjà un logiciel"));
+    // Several at once.
+    await user.click(screen.getByRole("checkbox", { name: "Choisir Parking Alpha" }));
+    await user.click(screen.getByRole("checkbox", { name: "Choisir Valet Bêta" }));
+    await user.click(screen.getByTestId("bulk-interested"));
+    await waitFor(() => expect(api.setProspectStatuses).toHaveBeenCalledWith(["p1", "p2"], "interested"));
   });
 
   describe("classement par région (19/10/2026)", () => {

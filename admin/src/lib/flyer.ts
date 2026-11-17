@@ -45,7 +45,8 @@ export function flyerQrUrl(siteUrl: string, listing: { status: string; slug: str
   url: string;
   listing: boolean;
 } {
-  const base = (siteUrl || "https://www.plazo.fr").replace(/\/+$/, "");
+  // The pro space has its own host since 17/11/2026 (pro.plazo.fr): a printed QR code goes to the travellers' site directly.
+  const base = (siteUrl || "https://www.plazo.fr").replace(/\/+$/, "").replace(/^(https?:\/\/)pro\./, "$1www.");
   if (listing?.status === "published") return { url: `${base}/${listing.airport.slug}/${listing.slug}`, listing: true };
   return { url: `${base}/ma-reservation`, listing: false };
 }

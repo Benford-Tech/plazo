@@ -214,7 +214,7 @@ export class ProspectDemoService {
   // ---------------------------------------------------------------- prospects' links (C)
 
   public linkUrl(token: string): string {
-    return this.notifications.siteUrl(`/pro/demo/${token}`) ?? `/pro/demo/${token}`;
+    return this.notifications.proUrl(`/demo/${token}`);
   }
 
   private view(link: { token: string; expiresAt: Date; opens: number; lastOpenedAt: Date | null }, now: Date): DemoLinkView {

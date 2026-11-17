@@ -115,7 +115,7 @@ describe('les contrats Plazo (API)', () => {
     // No listing sent yet: only the terms of use are asked for.
     expect(view.body).toMatchObject({ sellsOnPlazo: false, toSign: ['pro_terms'], canSign: true });
     const terms = view.body.agreements.find((a: any) => a.kind === 'pro_terms');
-    expect(terms.articles.map((a: any) => a.paragraphs.join(' ')).join(' ')).toContain("formule Complet, à l'année : 269 € HT");
+    expect(terms.articles.map((a: any) => a.paragraphs.join(' ')).join(' ')).toContain("formule Complet, à l'année : 359 € HT");
 
     await api()
       .put('/api/internal/listing')

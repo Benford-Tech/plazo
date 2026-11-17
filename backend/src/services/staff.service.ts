@@ -264,8 +264,16 @@ export class StaffService {
     return this.sendInvitation(actor, target);
   }
 
+  /**
+   * Plateforme › Invitations « Renvoyer » (17/11/2026, « pouvoir reenvoyer une invitation »): the platform resends a team
+   * member's invitation outside any consultation; the email names Plazo, not the admin.
+   */
+  public async inviteAsPlatform(actor: AuthenticatedStaff, staff: Staff): Promise<{ emailSent: boolean }> {
+    return this.sendInvitation(actor, staff, true);
+  }
+
   /** Issues the invitation link (7 days, single use, a new one cancels the previous) and emails it. */
-  private async sendInvitation(actor: AuthenticatedStaff, staff: Staff): Promise<{ emailSent: boolean }> {
+  private async sendInvitation(actor: AuthenticatedStaff, staff: Staff, asPlatform = false): Promise<{ emailSent: boolean }> {
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: staff.operatorId }, select: { name: true } });
     const { token } = await Container.get(AccountTokenService).issue(staff.id, 'invitation', INVITATION_TTL_DAYS * 24 * 3600 * 1000);
     const notifications = Container.get(NotificationService);
@@ -275,7 +283,7 @@ export class StaffService {
     const email = teamInvitationEmail(PRODUCT_NAME, {
       operatorName: operator.name,
       // In consultation the platform resends the operator's invitation: the email names Plazo, not the admin.
-      inviterName: actor.actingAs ? PRODUCT_NAME : fullName(actor.firstName, actor.lastName),
+      inviterName: actor.actingAs || asPlatform ? PRODUCT_NAME : fullName(actor.firstName, actor.lastName),
       role: staff.role,
       url: notifications.proUrl(`/invitation#${token}`),
       days: INVITATION_TTL_DAYS,

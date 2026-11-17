@@ -40,7 +40,7 @@ export class InvitationTrackingService {
       pixelUrl: url('/open.gif'),
       playStoreUrl: url('/go/play') ?? PLAZO_PRO_PLAY_STORE_URL,
       appStoreUrl: PLAZO_PRO_APP_STORE_URL ? (url('/go/app_store') ?? PLAZO_PRO_APP_STORE_URL) : null,
-      demoUrl: url('/go/demo') ?? this.notifications.siteUrl('/pro/demo'),
+      demoUrl: url('/go/demo') ?? this.notifications.proUrl('/demo'),
     };
   }
 
@@ -66,7 +66,7 @@ export class InvitationTrackingService {
         ? PLAZO_PRO_PLAY_STORE_URL
         : target === 'app_store'
           ? (PLAZO_PRO_APP_STORE_URL ?? PLAZO_PRO_PLAY_STORE_URL)
-          : (this.notifications.siteUrl('/pro/demo') ?? '/pro/demo');
+          : this.notifications.proUrl('/demo');
     const id = trackingIdOf(key, secret());
     if (!id) return destination;
     const device = deviceOf(userAgent);

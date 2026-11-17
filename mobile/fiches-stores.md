@@ -607,7 +607,7 @@ Retirer le point 3 si les paiements sont passés en clés réelles. Il faut alor
 
 Créer un **loueur de revue dédié**, avec des données fictives. Ne jamais utiliser les données du client n°1. Ne pas réactiver un loueur de démo : sa fiche reviendrait sur www.plazo.fr.
 
-1. Sur `www.plazo.fr/pro/plateforme` › Loueurs › Inviter : loueur « Parking Revue », 50 places, gérant <Prénom> <Nom>, adresse dédiée. Accepter l'invitation depuis cette boîte et choisir un mot de passe d'au moins 10 caractères ; l'e-mail est vérifié à l'acceptation. L'invitation crée le loueur sans aéroport ni fiche Plazo : rien n'apparaît sur le site. Garder le mot de passe dans le gestionnaire de mots de passe.
+1. Sur `pro.plazo.fr/pro/plateforme` › Loueurs › Inviter : loueur « Parking Revue », 50 places, gérant <Prénom> <Nom>, adresse dédiée. Accepter l'invitation depuis cette boîte et choisir un mot de passe d'au moins 10 caractères ; l'e-mail est vérifié à l'acceptation. L'invitation crée le loueur sans aéroport ni fiche Plazo : rien n'apparaît sur le site. Garder le mot de passe dans le gestionnaire de mots de passe.
    Solution de repli, depuis `backend/` contre la base de production (elle oblige à mettre l'URL de la base Neon de production sur un poste local) :
    ```text
    npm run seed:operator -- --operator "Parking Revue" --parking "Parking Revue" --capacity 50 --first-name <Prénom> --last-name <Nom> --email <adresse dédiée> --password <mot de passe d'au moins 10 caractères>
@@ -681,7 +681,7 @@ réservations et les comptes (demander à Claude). Le compte `PLAZO_TEST_EMAIL` 
 Plazo Pro is the staff app of private car parks located near airports (first market: Lyon Saint-Exupéry, France). These car parks keep the traveller's car during the trip and drive the traveller to the terminal and back by shuttle. The app is used only by their employees: managers, desk agents, shuttle drivers and valets. Travellers use our separate app "Plazo".
 Problem solved: bookings arrive from several websites and by phone, the team must know who arrives and leaves at what time, where each car and its keys are, and who to drive to the airport or pick up after landing. Today this is done on paper and by phone.
 Value: one shared real-time view of the day for the whole team (planning with the next arrival and departure, late ones, shuttle lists, car locations, bookings imported from the booking websites).
-Distribution: Plazo Pro is not made for one company. Any airport car park operator can register on https://www.plazo.fr/pro/inscription and use the same app with its own team; each operator's data is kept separate.
+Distribution: Plazo Pro is not made for one company. Any airport car park operator can register on https://pro.plazo.fr/pro/inscription and use the same app with its own team; each operator's data is kept separate.
 
 3. HOW TO TEST
 The app is in French. No in-app sign-up: accounts are created by the car park manager (e-mail invitation), or a new employee signs in with Apple/Google and enters the car park's daily code, then a manager accepts the request.

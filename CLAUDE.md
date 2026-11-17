@@ -2126,6 +2126,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   décroissant, puis l'ordre de la liste ; les vides en dernier ; trié, la liste est à plat, « Tous, triés », au lieu des blocs par
   région) ; la sélection et « Tout choisir » ne portent que sur les prospects affichés. Tests `prospecting.test.ts`,
   `ProspectingPage.test.tsx`.
+  **Intéressé ou non en un clic, choix « les quatre » (17/11/2026, « pouvoir marquer des prospects comme intéressés ou non »)** :
+  sur chaque ligne, à côté de l'état, 👍 / 👎 (`StateMarks`, `aria-pressed`) : un clic marque « Intéressé » / « Pas intéressé », un
+  clic sur celui qui est allumé remet le prospect (`reopen` de `POST …/prospects/:id/status` : « Contacté » quand un mail est
+  parti, relances toujours arrêtées ; sinon « À contacter », de nouveau envoyable) ; « Remettre à contacter » aussi dans le menu
+  « ⋯ » ; « Intéressés » / « Pas intéressés » pour les prospects cochés (`BulkMarks`, `POST …/prospects/status { ids, status }` →
+  `{ updated, skipped }`, désinscrits laissés, tracé `prospect.statuses_changed`) ; la note du pourquoi sous l'état (« + Note »,
+  `StatusNote`, `Prospect.statusNote` 300 caractères, migration `prospect_status_note`, `PUT …/prospects/:id/note`, vide = retirée,
+  aussi `note` du changement d'état). Tests `prospecting.test.ts`, `ProspectingPage.test.tsx`.
   **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
   espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
   estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de
@@ -2280,7 +2288,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
   Archivo Narrow posés par `loueurs/layout.tsx` ; l'en-tête et le pied de page des voyageurs sont cachés sous `/loueurs` par
-  `HiddenOn prefixes`) : formules Essentiel 99 €, Opérations 199 € (recommandée), Complet 299 € HT par mois (13/11/2026, « Min 99, puis 199, 299 » ; avant : 79 / 149 / 229), « Annuel −10 % »,
+  `HiddenOn prefixes`) : formules Essentiel 99 €, Opérations 199 € (recommandée), Complet 399 € HT par mois (13/11/2026, « Min 99, puis 199, 299 », puis 17/11/2026 « mets le prix du complet à 399 HT » ; avant : 79 / 149 / 229), « Annuel −10 % »,
   fiche sur Plazo à 15 % par réservation payée (exemple 60 € → 51 €), options (mise en route 290 € une fois, 1 000 SMS 49 € une fois,
   page de réservation 29 €/mois, deuxième parking « Bientôt »), récapitulatif collant avec le total (barre en bas sur téléphone),
   sélection gardée dans le navigateur (`plazo:pro-pricing`), « Essayer la démo » (`/pro/demo`), « Inscrire mon parking »,
@@ -2348,6 +2356,28 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   renvoi vers www ; sitemap de pro.plazo.fr ; menu « Logiciel · Navette · Voiturier · Comparateurs · Contrat et état des lieux ·
   Tarifs » (le pied de page garde « Vendre sur Plazo ») et liens « En savoir plus › » depuis l'accueil. Tests `pro-topics.test.ts`,
   `ProTopicView.test.tsx`, `ProHome.test.tsx`.
+  **L'espace pro sur pro.plazo.fr (17/11/2026, « https://www.plazo.fr/pro/ doit être sous pro.plazo.fr »)** : `vercel.json` renvoie
+  `www.plazo.fr/pro` et `/pro/*` en 308 vers `https://pro.plazo.fr/pro/…` (même projet, `/api` servi aussi sur pro.plazo.fr) ;
+  `PRO_SPACE_URL` (`config/index.ts` : variable, sinon `https://pro.plazo.fr` quand `PUBLIC_SITE_URL` est www.plazo.fr) : les liens
+  vers l'espace pro (`NotificationService.proUrl` : invitations, mail du matin, contrats ; démo des prospects, retour de Stripe
+  Connect, clic d'une notification du navigateur) y mènent directement ; le QR code du flyer reste sur www (`flyerQrUrl`). Une
+  session ouverte sur www ne suit pas (le navigateur garde les jetons par adresse) : se reconnecter une fois ; les notifications
+  du navigateur se réactivent ; Google demande l'origine `https://pro.plazo.fr` dans le client Web de Google Cloud. Test
+  `pro-space-url.test.ts`.
+  **Liens des langues et menu caché (17/11/2026, « ameliore le SEO plazo pro »)** : les pages françaises sont rendues depuis
+  `/fr/…` (`proxy.ts`), et le choix de langue construisait « /en/fr/contact » (404) sur chaque page française du site, 16 liens
+  cassés par page ; le menu des voyageurs restait aussi dans le HTML de pro.plazo.fr (caché par CSS seulement). `renderedPath`
+  (`lib/i18n/locales.ts`) donne le chemin public d'une page en cours de rendu, lu par `LanguagePicker` et `HiddenOn` ; le plan
+  du site de pro.plazo.fr porte la date de chaque texte (`PRO_HOME_UPDATED`, `PRO_PRICING_UPDATED`, `ProTopic.updated`).
+  **Onze pages de plus (17/11/2026, choix « Pages par fonction · Une page par comparateur · Tarifs enrichis · Plazo Pro ou
+  Excel »)** : `PRO_TOPIC_SLUGS` passe à 14 pages sur le gabarit `ProTopicView`, textes dans `lib/pro-topics-pages/` :
+  `features.ts` (`contrat-etat-des-lieux`, `planning-reservations`, `plan-du-parking`, `messages-clients`), `comparators.ts`
+  (`allopark`, `onepark`, `parkvia`, `park-hit`, `parclick`, `parkmundo` : ce que Plazo fait vraiment pour chacun, et la
+  question « … est-il partenaire de … ? » → non, `PRO_COMPARATOR_SLUGS`), `excel.ts` (`logiciel-ou-excel`, aucun concurrent
+  nommé, et `PRICING_FAQ` : six questions sous la page Tarifs, en `FAQPage`, sans durée d'engagement inventée) ; « Contrat et
+  état des lieux » du menu mène à sa page ; pied de page : les pages par fonction sous « Solutions » et une colonne
+  « Comparateurs » ; la page « Comparateurs » renvoie à chacune ; sur-titre des Tarifs « Tarifs du logiciel de parking
+  d'aéroport ». Tests `pro-topics.test.ts` (900 mots, 5 questions, aucun mot technique, chaque page reliée).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
@@ -2623,7 +2653,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **Les formules dans « Mon contrat » (13/11/2026, « integre le à plazo pro dans l'onglet "Mon contrat plazo" », d'après la proposition
   https://claude.ai/artifact/TNSUm4LKb4piLVdhwM1EEW)** : sous le contrat, section `PlazoPlans` (`components/contract/PlazoPlans.tsx`,
   `lib/pro-plans.ts`, textes `plansFr` de `fr.ts`) : bascule Mensuel · Annuel −10 %, cartes Essentiel 99 € · Opérations 199 €
-  (recommandée) · Complet 299 € HT par mois (annuel arrondi à l'euro : 89 / 179 / 269 €), « Demander cette formule » par e-mail à
+  (recommandée) · Complet 399 € HT par mois depuis le 17/11/2026 (annuel arrondi à l'euro : 89 / 179 / 359 €), « Demander cette formule » par e-mail à
   `supportEmail` (objet « Formule … · <parking> »), calcul « Ce que Plazo vous fait gagner » (réservations par mois × minutes de
   saisie + appels par jour × 30 × 2 min, au coût horaire choisi, moins la formule : `savings`), fiche sur Plazo à 15 % par
   réservation payée, « Inclus partout ». Web seulement, rien n'est souscrit en ligne ; les offres de lancement (mois offert, mise
@@ -2874,6 +2904,12 @@ voitures sur place ne lisent plus que les colonnes montrées (`select`, 591 voit
   (`PlatformAdminMiddleware`) : la dernière invitation de chaque personne, `sends`, chaque étape. Web : page `/pro/plateforme/invitations`
   (`InvitationsPage`, groupe Pilotage) : une ligne par personne, Envoyé · Ouvert (approx.) · Lien (appareil, store, démo) · Mot de passe ·
   Plazo Pro (iPhone / Android, ou Web). « A installé l'app » = s'est connecté dans Plazo Pro : les stores ne disent pas qui télécharge.
+  **Renvoyer une invitation (17/11/2026, « pouvoir reenvoyer une invitation »)** : bouton « Renvoyer » sous l'envoi de chaque ligne
+  (`ResendButton`, `invitation-resend-<id>`) → `POST /internal/platform/invitations/:staffId/resend` (`PlatformService.resendStaffInvitation`) :
+  un nouveau lien (le précédent ne marche plus) et le même mail que la première fois, d'après la dernière invitation suivie (gérant
+  invité par Plazo : `AccountService.sendInvitation`, tracé `operator.invitation_resent` ; membre : `StaffService.inviteAsPlatform`,
+  « Plazo vous a ajouté… », tracé `staff.invitation_resent`) ; 409 `staff_inactive` (désactivé, parti, supprimé), `already_accepted`
+  (gérant qui a déjà son mot de passe : bouton caché), 404 `not_found`.
   Politique de confidentialité (section 10). Tests `invitation-tracking.test.ts`, `InvitationsPage.test.tsx`.
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées

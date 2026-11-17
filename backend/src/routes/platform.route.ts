@@ -392,6 +392,7 @@ export class PlatformRoute implements Routes {
     this.router.delete(`${base}/operators/:id`, PlatformAdminMiddleware(), this.platform.deleteOperator);
     this.router.post(`${base}/operators/:id/view-as`, PlatformAdminMiddleware(), this.platform.viewAs);
     this.router.post(`${base}/operators/:id/invitation`, PlatformAdminMiddleware(), this.platform.resendInvitation);
+    this.router.post(`${base}/invitations/:staffId/resend`, PlatformAdminMiddleware(), this.platform.resendStaffInvitation);
     this.router.post(`${base}/invitations`, PlatformAdminMiddleware(), ValidationMiddleware(InviteOperatorDto), this.platform.invite);
     this.router.get(`${base}/listings`, PlatformAdminMiddleware(), this.platform.listings);
     this.router.post(`${base}/listings/:id/approve`, PlatformAdminMiddleware(), this.platform.approveListing);

@@ -104,13 +104,13 @@ describe("Mon contrat", () => {
     expect(screen.queryByText("Contrat particulier")).not.toBeInTheDocument();
   });
 
-  it("13/11/2026 : montre les formules à 99, 199 et 299 €, l'annuel et le calcul sur ses chiffres", async () => {
+  it("13/11/2026 : montre les formules à 99, 199 et 399 €, l'annuel et le calcul sur ses chiffres", async () => {
     api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: true });
     renderPage();
     const plans = await screen.findByTestId("plazo-plans");
     expect(within(plans).getByTestId("price-essentiel")).toHaveTextContent("99 €");
     expect(within(plans).getByTestId("price-operations")).toHaveTextContent("199 €");
-    expect(within(plans).getByTestId("price-complet")).toHaveTextContent("299 €");
+    expect(within(plans).getByTestId("price-complet")).toHaveTextContent("399 €");
     await userEvent.click(within(plans).getByTestId("plans-yearly"));
     expect(within(plans).getByTestId("price-operations")).toHaveTextContent("179 €");
     const ask = within(screen.getByTestId("plan-complet")).getByRole("link", { name: "Demander cette formule" });

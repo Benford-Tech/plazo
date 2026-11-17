@@ -1,6 +1,6 @@
 import { Container, Service } from 'typedi';
 import webpush from 'web-push';
-import { PUBLIC_SITE_URL, webPushDisabled, webPushSettings, webPushSubject } from '@/config';
+import { PRO_SPACE_URL, PUBLIC_SITE_URL, webPushDisabled, webPushSettings, webPushSubject } from '@/config';
 import prisma, { Prisma } from '@/database';
 import type { PushMessage } from '@/domain/arrival-messages';
 import {
@@ -133,7 +133,7 @@ export class StaffNotificationService {
       const payload = JSON.stringify({
         title: message.title,
         body: message.body,
-        url: `${PUBLIC_SITE_URL.replace(/\/$/, '')}/pro${target ?? '/'}`,
+        url: `${(PRO_SPACE_URL || PUBLIC_SITE_URL).replace(/\/$/, '')}/pro${target ?? '/'}`,
         tag,
       });
       const results = await Promise.allSettled(

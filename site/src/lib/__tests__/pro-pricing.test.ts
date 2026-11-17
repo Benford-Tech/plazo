@@ -13,9 +13,9 @@ describe("Plazo Pro pricing", () => {
 
   it("billed yearly: 10 % off every monthly price, twelve months at a time, one-off prices untouched", () => {
     const q = quote({ plan: "complet", yearly: true, marketplace: false, options: ["sms", "booking_page"] });
-    expect(q.lines[0]).toMatchObject({ cents: 26910, fullCents: 29900 });
-    expect(q.monthlyCents).toBe(26910 + 2610);
-    expect(q.periodCents).toBe((26910 + 2610) * 12);
+    expect(q.lines[0]).toMatchObject({ cents: 35910, fullCents: 39900 });
+    expect(q.monthlyCents).toBe(35910 + 2610);
+    expect(q.periodCents).toBe((35910 + 2610) * 12);
     expect(q.onceCents).toBe(4900);
     expect(q.lines.some(l => l.kind === "commission")).toBe(false);
   });
