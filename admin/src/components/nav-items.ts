@@ -125,6 +125,7 @@ export const NAV: NavItem[] = [
     children: [
       { label: sub.listing, to: "/plazo/fiche" },
       { label: sub.pricing, to: "/plazo/tarifs" },
+      { label: sub.flyer, to: "/plazo/flyer" },
     ],
   },
   { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage", section: "manager" },
