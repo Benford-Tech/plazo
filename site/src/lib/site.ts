@@ -31,7 +31,23 @@ export const PRO_HOST = PRO_SITE_URL ? new URL(PRO_SITE_URL).host : "pro.plazo.f
 export const PRO_HOME_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/` : OPERATORS_PREFIX;
 export const PRO_PRICING_PATH = PRO_SITE_URL ? `${PRO_SITE_URL}/tarifs` : `${OPERATORS_PREFIX}/tarifs`;
 /** Plazo Pro's pages by topic (28/10/2026, SEO mockups 3A): one search each, at the root of pro.plazo.fr. */
-export const PRO_TOPIC_SLUGS = ["navette", "voiturier", "comparateurs"] as const;
+export const PRO_TOPIC_SLUGS = [
+  "navette",
+  "voiturier",
+  "comparateurs",
+  // 17/11/2026 (« ameliore le SEO plazo pro »): one page per feature, per comparator, and « Plazo Pro ou Excel ».
+  "contrat-etat-des-lieux",
+  "planning-reservations",
+  "plan-du-parking",
+  "messages-clients",
+  "allopark",
+  "onepark",
+  "parkvia",
+  "park-hit",
+  "parclick",
+  "parkmundo",
+  "logiciel-ou-excel",
+] as const;
 export type ProTopicSlug = (typeof PRO_TOPIC_SLUGS)[number];
 export const proTopicPath = (slug: ProTopicSlug) => (PRO_SITE_URL ? `${PRO_SITE_URL}/${slug}` : `${OPERATORS_PREFIX}/${slug}`);
 
