@@ -437,6 +437,10 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
    voient l'espace Plateforme).
+   Veille des forums (17/11/2026) : `BRAVE_SEARCH_API_KEY` (clé de l'API Brave Search, offre gratuite sur
+   api.search.brave.com ; sans elle, rien ne se passe) et `FORUM_REPLY_MODEL` (facultatif) : chaque matin vers 8 h, les
+   nouvelles discussions de forum sur le stationnement à l'aéroport de Lyon sont envoyées par mail aux administrateurs de
+   la plateforme, avec une réponse proposée par Claude ; rien n'est posté.
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`, avec 5 essais en une minute
    environ quand la base Neon se réveille : P1001, P1002, P1017) ; la purge
    nocturne (jetons, SMS en attente abandonnés après 2 h, boîte d'envoi des SMS après 30 jours, position de la voiture et

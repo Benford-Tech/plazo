@@ -20,6 +20,7 @@ import { SmsService } from '@/services/sms.service';
 import { WhatsappService } from '@/services/whatsapp.service';
 import { PaymentService } from '@/services/payment.service';
 import { MorningEmailService } from '@/services/morning-email.service';
+import { ForumWatchService } from '@/services/forum-watch.service';
 import { InboundWatchService } from '@/services/inbound-watch.service';
 import { ProspectingService } from '@/services/prospecting.service';
 import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
@@ -61,6 +62,7 @@ export class CronController {
   public welcome = Container.get(TravellerWelcomeService);
   public campaigns = Container.get(TravellerCampaignService);
   public inboundWatch = Container.get(InboundWatchService);
+  public forumWatch = Container.get(ForumWatchService);
   public valet = Container.get(ValetService);
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
@@ -242,6 +244,16 @@ export class CronController {
     const result = await this.morning.run();
     logger.info(`[Cron] Morning email: ${JSON.stringify(result)}`);
     res.status(statusOf(result.sent + result.failed, result.failed)).json(result);
+  });
+
+  /**
+   * GET /internal/cron/forum-watch (17/11/2026): the daily mail of new forum discussions about parking at Lyon's airport,
+   * with a reply drafted by Claude, to the platform's administrators (nothing is posted). `?force=1` runs it now.
+   */
+  public forumWatchRun = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.forumWatch.run(new Date(), { force: req.query.force === '1' });
+    logger.info(`[Cron] Forum watch: ${JSON.stringify(result)}`);
+    res.status(result.status === 'not_sent' ? 500 : 200).json(result);
   });
 
   /** GET /internal/cron/prospecting: the prospecting emails due now, for a dedicated job (also run by remind-tomorrow). */
