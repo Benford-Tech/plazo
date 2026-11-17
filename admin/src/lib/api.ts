@@ -18,6 +18,9 @@ import type {
   ExtrasBoardView,
   ContractFileKind,
   MyContract,
+  Agreements,
+  AgreementKind,
+  ProPlanId,
   PartnerContract,
   Dashboard,
   ValetRuns,
@@ -1364,6 +1367,18 @@ export const adminApi = {
       method: "POST",
       body: json({ before }),
     }),
+  getAgreements: () => apiRequest<Agreements>("/internal/agreements"),
+  signAgreements: (signerName: string, kinds: AgreementKind[], read: Partial<Record<AgreementKind, string>>) =>
+    apiRequest<Agreements>("/internal/agreements/sign", { method: "POST", body: json({ signerName, kinds, read }) }),
+  agreementPreview: (kind: AgreementKind) => apiFile(`/internal/agreements/preview/${kind}`),
+  agreementFile: (id: string, kind: "signed" | "proof") => apiFile(`/internal/agreements/${id}/file?kind=${kind}`),
+  getOperatorAgreements: (operatorId: string) => apiRequest<Agreements>(`/internal/platform/operators/${operatorId}/agreements`),
+  setOperatorProPlan: (operatorId: string, plan: ProPlanId | null, yearly: boolean) =>
+    apiRequest<Agreements>(`/internal/platform/operators/${operatorId}/pro-plan`, { method: "PUT", body: json({ plan, yearly }) }),
+  operatorAgreementPreview: (operatorId: string, kind: AgreementKind) =>
+    apiFile(`/internal/platform/operators/${operatorId}/agreements/preview/${kind}`),
+  operatorAgreementFile: (operatorId: string, id: string, kind: "signed" | "proof") =>
+    apiFile(`/internal/platform/operators/${operatorId}/agreements/${id}/file?kind=${kind}`),
   getMyContract: () => apiRequest<MyContract>("/internal/contract"),
   signMyContract: (contractId: string, signerName: string) =>
     apiRequest<MyContract>(`/internal/contract/${contractId}/sign`, {

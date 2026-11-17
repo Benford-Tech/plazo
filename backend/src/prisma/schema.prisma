@@ -64,6 +64,10 @@ model Operator {
   stripeDetailsSubmitted Boolean        @default(false)
   // When the operator receives its share of the online payments (see src/domain/payout.ts).
   payoutSchedule         PayoutSchedule @default(AFTER_STAY)
+  // 17/11/2026 (two contracts, choice C): the Plazo Pro plan the platform set (essentiel | operations | complet), read by
+  // the terms of use; null: « selon le devis accepté ».
+  proPlan                String?
+  proPlanYearly          Boolean        @default(false)
   // Fictional operator created by the demo seed (scripts/seed-demo.ts): listed with a "Démo" badge
   // on the site and in the platform space, removed as a whole by the seed's --remove.
   isDemo                 Boolean        @default(false)
@@ -99,6 +103,7 @@ model Operator {
   comparatorCommissions ComparatorCommission[]
   contractTemplates     OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
+  plazoAgreements       PlazoAgreement[]
   reservationImports    ReservationImport[]
   invoices              Invoice[]
 
@@ -2091,6 +2096,35 @@ enum PartnerContractStatus {
   pending
   signed
   superseded
+}
+
+// The two contracts Plazo writes and every operator signs (17/11/2026, choice C « Un parcours, deux signatures »): the
+// terms of use of Plazo Pro and the listing contract. One row per signature, the text signed and both PDF kept as signed.
+model PlazoAgreement {
+  id              String   @id @default(cuid())
+  operatorId      String
+  operator        Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  /// pro_terms | listing
+  kind            String
+  /// The text's version (« 2026-11-17 »).
+  version         String
+  title           String
+  /// The text signed, word for word, and its SHA-256.
+  text            String
+  textSha256      String
+  signedAt        DateTime @default(now())
+  signedById      String?
+  signerName      String
+  signerEmail     String
+  signerIp        String?
+  signerUserAgent String?
+  pdf             Bytes
+  pdfSha256       String
+  proof           Bytes
+
+  @@unique([operatorId, kind, version])
+  @@index([operatorId, signedAt])
+  @@map("plazo_agreements")
 }
 
 model PartnerContract {

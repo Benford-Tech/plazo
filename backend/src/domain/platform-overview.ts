@@ -31,12 +31,14 @@ export interface TodoOperator {
   listing: { id: string; status: string } | null;
   payments: { connected: boolean };
   contract: { status: string } | null;
+  /** 17/11/2026: the terms of use of Plazo Pro (current version) are signed. Absent: not checked. */
+  agreementsSigned?: boolean;
   invitation: { expired: boolean } | null;
 }
 
 /**
  * What the platform has to do, most pressing first: a listing waiting for review (any operator but a demo), then for a
- * real active operator its failed transfers, a Stripe account not linked, no Plazo contract or one not yet signed, and an
+ * real active operator its failed transfers, a Stripe account not linked, the Plazo contracts not signed (or a contract PDF uploaded and not signed), and an
  * invitation that expired before it was accepted.
  */
 export function platformTodos(
@@ -68,8 +70,9 @@ export function platformTodos(
     const failed = failedPayouts.get(o.id) ?? 0;
     if (failed) todos.push({ kind: 'payout_failed', count: failed, ...base });
     if (!o.payments.connected) todos.push({ kind: 'stripe_missing', ...base });
-    if (!o.contract) todos.push({ kind: 'contract_missing', ...base });
-    else if (o.contract.status === 'pending') todos.push({ kind: 'contract_pending', ...base });
+    // 17/11/2026: the contracts Plazo writes replace the PDF to upload; a PDF uploaded and not signed still waits.
+    if (o.agreementsSigned === false) todos.push({ kind: 'contract_missing', ...base });
+    if (o.contract?.status === 'pending') todos.push({ kind: 'contract_pending', ...base });
   }
   return todos.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
 }

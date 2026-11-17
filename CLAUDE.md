@@ -2574,6 +2574,30 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   bruts `application/pdf`, `?fileName=&title=`, `RawBodyMiddleware`) et `/internal/contract…` ; PDF dans le magasin Blob privé des
   photos (`PhotoStorageService`), effacés avec le loueur ; `contract` dans la liste des loueurs. Politique de confidentialité, section 10.
   Valeur de preuve d'une signature simple : à confirmer avec le juriste en même temps que les CGU.
+  **Deux contrats écrits par Plazo, choix C « Un parcours, deux signatures » (17/11/2026, « Il faut un contrat pour publier des
+  annonces et un contrat d'utilisation de Plazo Pro », maquettes https://claude.ai/artifact/MS2ghFCD1L4fj9wkmS7YSB, « Je les rédige »,
+  « Rien ne bloque »)** : « Conditions d'utilisation de Plazo Pro » (`pro_terms` : 17 articles, formule et prix, facturation, fin,
+  messages aux voyageurs, lecture des mails par Claude, signature électronique simple, données du loueur, responsabilité plafonnée
+  à 12 mois, annexe article 28 du RGPD avec les sous-traitants ultérieurs) et « Contrat de diffusion des annonces » (`listing` :
+  fiche, prix et places, mandat d'encaissement par Stripe, commission sur le total payé, reversements selon `payoutSchedule`,
+  annulations, services, engagements du loueur, classement « P2B » 2019/1150, préavis de 30 jours, réclamations), rédigés d'après
+  le fonctionnement réel et remplis avec les chiffres du loueur (`domain/plazo-agreements.ts` : `agreementDocument`, `textSha256`,
+  `buildAgreementPdf` ; raison sociale, adresse, SIRET de « Informations de facturation », commission `commissionBps` sinon
+  `PLATFORM_COMMISSION_BPS` sinon 15 %, `Operator.proPlan` / `proPlanYearly`), **projets à faire relire par un juriste** ;
+  `AGREEMENT_VERSIONS` : changer la date avec le texte fait signer de nouveau. Table `plazo_agreements` (migration `plazo_agreements` :
+  texte signé mot pour mot, son SHA-256, signataire, IP, navigateur, PDF signé et preuve en base, unique par loueur, genre et
+  version) ; `PlazoAgreementService`. Routes : `GET /internal/agreements` (gérants : les deux textes, `signed`, `history`,
+  `sellsOnPlazo` = une fiche envoyée ou en ligne, `toSign` = les conditions, et le contrat de diffusion une fois la fiche envoyée,
+  `canSign`), `POST /internal/agreements/sign` `{ signerName, kinds, read: { kind: textSha256 } }` (un nom, une case par contrat ;
+  `RefuseInViewAs` ; 409 `text_changed` quand un chiffre a changé pendant la lecture, `already_signed`), `GET …/preview/:kind`,
+  `GET …/:id/file?kind=signed|proof` ; plateforme `GET /internal/platform/operators/:id/agreements`, `PUT …/pro-plan`
+  `{ plan, yearly }`, aperçu et fichiers ; tracés `plazo_agreement.signed`, `operator.pro_plan_set`. Un chiffre changé après la
+  signature ne la redemande pas (le texte signé reste). Web : en tête de « Mon contrat », `AgreementsFlow` (deux cartes, puis
+  « Les lire et les signer » : étapes Plazo Pro · Diffusion des annonces (« Je ne vends pas sur Plazo pour l'instant ») · Signature,
+  texte lisible et « Télécharger le PDF »), le PDF déposé à la main devient « Contrat particulier » ; bandeau « Vos 2 contrats Plazo
+  sont prêts à signer » (rien n'est bloqué) ; Plateforme › loueur › Contrat : `OperatorAgreementsCard` (formule et annuel, état et
+  PDF des deux contrats) ; « À traiter » : `contract_missing` = conditions pas signées. Politique de confidentialité (section 10).
+  Plazo Pro n'a pas ces écrans. Tests `plazo-agreements.test.ts`, `AgreementsFlow.test.tsx`.
   **Les formules dans « Mon contrat » (13/11/2026, « integre le à plazo pro dans l'onglet "Mon contrat plazo" », d'après la proposition
   https://claude.ai/artifact/TNSUm4LKb4piLVdhwM1EEW)** : sous le contrat, section `PlazoPlans` (`components/contract/PlazoPlans.tsx`,
   `lib/pro-plans.ts`, textes `plansFr` de `fr.ts`) : bascule Mensuel · Annuel −10 %, cartes Essentiel 99 € · Opérations 199 €

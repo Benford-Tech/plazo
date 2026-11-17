@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { toast } from "sonner";
+import { OperatorAgreementsCard } from "@/components/platform/OperatorAgreementsCard";
 import {
   OperatorContractPanel,
   ContractPill,
@@ -405,7 +406,12 @@ export default function PlatformOperatorPage() {
         </section>
       )}
 
-      {tab === "contrat" && <OperatorContractPanel operator={o} />}
+      {tab === "contrat" && (
+        <>
+          <OperatorAgreementsCard operatorId={o.id} />
+          <OperatorContractPanel operator={o} />
+        </>
+      )}
 
       {tab === "whatsapp" && <OperatorWhatsappPanel operatorId={o.id} />}
 

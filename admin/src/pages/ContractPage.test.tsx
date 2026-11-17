@@ -7,7 +7,7 @@ import ContractPage from "./ContractPage";
 
 const auth = vi.hoisted(() => ({ user: { name: "Malik Dubois", operatorName: "Parking Alpha", role: "manager" as const } }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
-const api = vi.hoisted(() => ({ getMyContract: vi.fn(), signMyContract: vi.fn(), myContractFile: vi.fn() }));
+const api = vi.hoisted(() => ({ getMyContract: vi.fn(), signMyContract: vi.fn(), myContractFile: vi.fn(), getAgreements: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
@@ -49,6 +49,8 @@ beforeEach(() => {
   globalThis.URL.revokeObjectURL = vi.fn();
   vi.spyOn(window, "confirm").mockReturnValue(true);
   api.myContractFile.mockResolvedValue({ blob: new Blob(["%PDF-1.7"]), filename: "contrat-alpha.pdf" });
+  // The two contracts Plazo writes have their own tests (AgreementsFlow.test.tsx).
+  api.getAgreements.mockReturnValue(new Promise(() => {}));
 });
 
 describe("Mon contrat", () => {
@@ -95,10 +97,11 @@ describe("Mon contrat", () => {
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
-  it("sans contrat déposé, le dit simplement", async () => {
+  it("sans PDF déposé, pas de « Contrat particulier » (17/11/2026 : les contrats Plazo sont écrits par Plazo)", async () => {
     api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: false });
     renderPage();
-    expect(await screen.findByText(/n'a pas encore déposé de contrat/)).toBeInTheDocument();
+    await waitFor(() => expect(api.getMyContract).toHaveBeenCalled());
+    expect(screen.queryByText("Contrat particulier")).not.toBeInTheDocument();
   });
 
   it("13/11/2026 : montre les formules à 99, 199 et 299 €, l'annuel et le calcul sur ses chiffres", async () => {
