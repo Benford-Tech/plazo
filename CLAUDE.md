@@ -2288,7 +2288,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
   Archivo Narrow posés par `loueurs/layout.tsx` ; l'en-tête et le pied de page des voyageurs sont cachés sous `/loueurs` par
-  `HiddenOn prefixes`) : formules Essentiel 99 €, Opérations 199 € (recommandée), Complet 399 € HT par mois (13/11/2026, « Min 99, puis 199, 299 », puis 17/11/2026 « mets le prix du complet à 399 HT » ; avant : 79 / 149 / 229), « Annuel −10 % »,
+  `HiddenOn prefixes`) : formules Essentiel 149 €, Opérations 299 € (recommandée), Complet 399 € HT par mois (13/11/2026, « Min 99, puis 199, 299 », puis 17/11/2026 « mets le prix du complet à 399 HT » et « Revois les prix de min 149, 299, 399 » ; avant : 79 / 149 / 229), « Annuel −10 % »,
   fiche sur Plazo à 15 % par réservation payée (exemple 60 € → 51 €), options (mise en route 290 € une fois, 1 000 SMS 49 € une fois,
   page de réservation 29 €/mois, deuxième parking « Bientôt »), récapitulatif collant avec le total (barre en bas sur téléphone),
   sélection gardée dans le navigateur (`plazo:pro-pricing`), « Essayer la démo » (`/pro/demo`), « Inscrire mon parking »,
@@ -2652,8 +2652,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Plazo Pro n'a pas ces écrans. Tests `plazo-agreements.test.ts`, `AgreementsFlow.test.tsx`.
   **Les formules dans « Mon contrat » (13/11/2026, « integre le à plazo pro dans l'onglet "Mon contrat plazo" », d'après la proposition
   https://claude.ai/artifact/TNSUm4LKb4piLVdhwM1EEW)** : sous le contrat, section `PlazoPlans` (`components/contract/PlazoPlans.tsx`,
-  `lib/pro-plans.ts`, textes `plansFr` de `fr.ts`) : bascule Mensuel · Annuel −10 %, cartes Essentiel 99 € · Opérations 199 €
-  (recommandée) · Complet 399 € HT par mois depuis le 17/11/2026 (annuel arrondi à l'euro : 89 / 179 / 359 €), « Demander cette formule » par e-mail à
+  `lib/pro-plans.ts`, textes `plansFr` de `fr.ts`) : bascule Mensuel · Annuel −10 %, cartes Essentiel 149 € · Opérations 299 €
+  (recommandée) · Complet 399 € HT par mois depuis le 17/11/2026 (149 / 299 / 399 € depuis le 17/11/2026 ; annuel arrondi à l'euro : 134 / 269 / 359 €), « Demander cette formule » par e-mail à
   `supportEmail` (objet « Formule … · <parking> »), calcul « Ce que Plazo vous fait gagner » (réservations par mois × minutes de
   saisie + appels par jour × 30 × 2 min, au coût horaire choisi, moins la formule : `savings`), fiche sur Plazo à 15 % par
   réservation payée, « Inclus partout ». Web seulement, rien n'est souscrit en ligne ; les offres de lancement (mois offert, mise

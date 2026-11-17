@@ -22,7 +22,7 @@ describe("Plazo Pro SEO (28/10/2026)", () => {
     };
     expect(ld["@type"]).toBe("SoftwareApplication");
     expect(ld.name).toBe("Plazo Pro");
-    expect(ld.offers.lowPrice).toBe(99);
+    expect(ld.offers.lowPrice).toBe(149);
     expect(ld.offers.highPrice).toBe(399);
     expect(ld.offers.offers).toHaveLength(3);
     expect(ld.offers.offers[0].priceSpecification.valueAddedTaxIncluded).toBe(false);

@@ -21,7 +21,7 @@ export const PLAZO_PLANS: PlazoPlan[] = [
   {
     id: "essentiel",
     name: "Essentiel",
-    monthlyEuros: 99,
+    monthlyEuros: 149,
     pitch: "Pour sortir des carnets et des mails.",
     features: [
       "Mails des comparateurs lus tout seuls, annulations comprises",
@@ -35,7 +35,7 @@ export const PLAZO_PLANS: PlazoPlan[] = [
   {
     id: "operations",
     name: "Opérations",
-    monthlyEuros: 199,
+    monthlyEuros: 299,
     recommended: true,
     pitch: "Pour les parkings avec navette et voituriers.",
     features: [
@@ -63,7 +63,7 @@ export const PLAZO_PLANS: PlazoPlan[] = [
   },
 ];
 
-/** Monthly price billed yearly, in whole euros (the discount rounded down to the euro: 99 € → 89 €). */
+/** Monthly price billed yearly, in whole euros (the discount rounded down to the euro: 149 € → 134 €). */
 export function yearlyMonthly(monthlyEuros: number): number {
   return Math.floor((monthlyEuros * (100 - YEARLY_DISCOUNT_PERCENT)) / 100);
 }

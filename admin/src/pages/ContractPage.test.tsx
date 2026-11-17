@@ -104,20 +104,20 @@ describe("Mon contrat", () => {
     expect(screen.queryByText("Contrat particulier")).not.toBeInTheDocument();
   });
 
-  it("13/11/2026 : montre les formules à 99, 199 et 399 €, l'annuel et le calcul sur ses chiffres", async () => {
+  it("13/11/2026 : montre les formules à 149, 299 et 399 €, l'annuel et le calcul sur ses chiffres", async () => {
     api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: true });
     renderPage();
     const plans = await screen.findByTestId("plazo-plans");
-    expect(within(plans).getByTestId("price-essentiel")).toHaveTextContent("99 €");
-    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("199 €");
+    expect(within(plans).getByTestId("price-essentiel")).toHaveTextContent("149 €");
+    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("299 €");
     expect(within(plans).getByTestId("price-complet")).toHaveTextContent("399 €");
     await userEvent.click(within(plans).getByTestId("plans-yearly"));
-    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("179 €");
+    expect(within(plans).getByTestId("price-operations")).toHaveTextContent("269 €");
     const ask = within(screen.getByTestId("plan-complet")).getByRole("link", { name: "Demander cette formule" });
     expect(ask.getAttribute("href")).toMatch(/^mailto:contact@plazo\.fr\?subject=Formule%20Complet/);
-    // 400 bookings × 3 min + 15 calls × 30 days × 2 min = 35 h at 18 € = 630 €, less 179 € (Opérations, yearly).
-    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 451 €");
+    // 400 bookings × 3 min + 15 calls × 30 days × 2 min = 35 h at 18 € = 630 €, less 269 € (Opérations, yearly).
+    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 361 €");
     fireEvent.change(screen.getByRole("slider", { name: /Réservations par mois/ }), { target: { value: "100" } });
-    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 181 €");
+    expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 91 €");
   });
 });
