@@ -144,7 +144,7 @@ export const es: Dict = {
     ],
     buildOffer: "Crear mi oferta",
     facts: [
-      { value: "6", label: "comparadores reconocidos" },
+      { value: "25", label: "comparadores compatibles" },
       { value: "4", label: "puestos: gerente, recepción, conductor, aparcacoches" },
       { value: "Web · iPhone · Android", label: "el mismo equipo en todas partes" },
     ],

@@ -142,7 +142,7 @@ export const de: Dict = {
     ],
     buildOffer: "Mein Angebot zusammenstellen",
     facts: [
-      { value: "6", label: "erkannte Vergleichsportale" },
+      { value: "25", label: "unterstützte Vergleichsportale" },
       { value: "4", label: "Rollen: Leitung, Empfang, Fahrer, Valet" },
       { value: "Web · iPhone · Android", label: "dasselbe Team überall" },
     ],
