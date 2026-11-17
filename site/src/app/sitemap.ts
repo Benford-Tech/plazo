@@ -6,6 +6,7 @@ import { topicFacts } from "@/lib/airport-guides";
 import { topicGuide, topicLinks } from "@/lib/guides";
 import { LOCALE_TAGS, LOCALES, localizedPath } from "@/lib/i18n/locales";
 import { isProHost } from "@/lib/pro-host";
+import { PRO_HOME_UPDATED, PRO_PRICING_UPDATED, PRO_TOPICS } from "@/lib/pro-topics";
 import { AIRPORTS, airportPath, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SITE_URL, PRO_TOPIC_SLUGS, siteUrl } from "@/lib/site";
 
 // Lists the published parkings, read from the API at request time (never at build time). Demo parkings
@@ -21,9 +22,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // pro.plazo.fr (28/10/2026, SEO audit): its sitemap lists Plazo Pro's pages only, the travellers' stay on www.
   if (PRO_SITE_URL && isProHost((await headers()).get("host"))) {
     return [
-      { url: `${PRO_SITE_URL}/`, changeFrequency: "monthly", priority: 1 },
-      { url: `${PRO_SITE_URL}/tarifs`, changeFrequency: "monthly", priority: 0.8 },
-      ...PRO_TOPIC_SLUGS.map(slug => ({ url: `${PRO_SITE_URL}/${slug}`, changeFrequency: "monthly" as const, priority: 0.7 })),
+      { url: `${PRO_SITE_URL}/`, lastModified: PRO_HOME_UPDATED, changeFrequency: "monthly", priority: 1 },
+      { url: `${PRO_SITE_URL}/tarifs`, lastModified: PRO_PRICING_UPDATED, changeFrequency: "monthly", priority: 0.8 },
+      ...PRO_TOPIC_SLUGS.map(slug => ({
+        url: `${PRO_SITE_URL}/${slug}`,
+        lastModified: PRO_TOPICS[slug].updated,
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
+      })),
     ];
   }
   const base = siteUrl();

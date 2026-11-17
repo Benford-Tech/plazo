@@ -26,11 +26,18 @@ export type ProTopic = {
   faq: [string, string][];
   /** The other pages worth reading next (by slug). */
   next: ProTopicSlug[];
+  /** The day the text last changed (the sitemap's lastmod, 17/11/2026: search engines only trust one that follows the content). */
+  updated: string;
 };
+
+/** The day the home page's and the pricing page's texts last changed (sitemap). */
+export const PRO_HOME_UPDATED = "2026-11-12";
+export const PRO_PRICING_UPDATED = "2026-11-13";
 
 export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
   navette: {
     slug: "navette",
+    updated: "2026-10-28",
     label: "Navette",
     metaTitle: `Logiciel de navette pour parking d’aéroport · ${P} Pro`,
     metaDescription: `Gérez la navette de votre parking d’aéroport : qui emmener, qui récupérer, départ au bon moment, retards d’avion, navette en direct pour vos clients.`,
@@ -123,6 +130,7 @@ export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
   },
   voiturier: {
     slug: "voiturier",
+    updated: "2026-10-28",
     label: "Voiturier",
     metaTitle: `Gestion de parking voiturier à l’aéroport · ${P} Pro`,
     metaDescription: `Logiciel de parking voiturier d’aéroport : files rangées par date de retour, clés, plan sur photo aérienne, voiturier au terminal. Démo gratuite.`,
@@ -213,6 +221,7 @@ export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = {
   },
   comparateurs: {
     slug: "comparateurs",
+    updated: "2026-10-28",
     label: "Comparateurs",
     metaTitle: `Réservations Allopark, Onepark, ParkVia au même endroit · ${P} Pro`,
     metaDescription: `Centralisez les réservations de votre parking : Allopark, Onepark, Parclick, ParkMundo, ParkVia et Park Hit arrivent seules dans un planning.`,

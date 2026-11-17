@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Dict } from "../../fr-dict";
 import { DICTS } from "../dicts";
-import { localizedPath, LOCALES, splitLocale } from "../locales";
+import { localizedPath, LOCALES, renderedPath, splitLocale } from "../locales";
 import { withLocale } from "../runtime";
 import { formatDateTimeAt, formatDay } from "../../dates";
 import { errorMessage, fr } from "../../fr";
@@ -37,6 +37,13 @@ describe("site languages (13/11/2026)", () => {
     expect(localizedPath("en", "#faq")).toBe("#faq");
     expect(splitLocale("/uk/ma-reservation")).toEqual({ locale: "uk", path: "/ma-reservation" });
     expect(splitLocale("/fr/contact")).toEqual({ locale: "fr", path: "/fr/contact" });
+    // French pages are rendered from /fr/… (17/11/2026: the picker linked to « /en/fr/contact »).
+    expect(renderedPath("/fr/contact")).toEqual({ locale: "fr", path: "/contact" });
+    expect(renderedPath("/fr")).toEqual({ locale: "fr", path: "/" });
+    expect(renderedPath("/fr/loueurs/navette")).toEqual({ locale: "fr", path: "/loueurs/navette" });
+    expect(renderedPath("/en/contact")).toEqual({ locale: "en", path: "/contact" });
+    expect(renderedPath("/france")).toEqual({ locale: "fr", path: "/france" });
+    expect(localizedPath("en", renderedPath("/fr/contact").path)).toBe("/en/contact");
   });
 
   it("prints dates, prices and messages in the language being rendered", () => {
