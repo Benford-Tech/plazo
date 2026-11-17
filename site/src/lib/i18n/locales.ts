@@ -49,6 +49,17 @@ export function splitLocale(pathname: string): { locale: Locale; path: string } 
   return { locale: DEFAULT_LOCALE, path: pathname || "/" };
 }
 
+/**
+ * The language and public path of a page as React sees it while rendering (17/11/2026): French pages are rendered from
+ * « /fr/… » (proxy.ts), so « /fr/contact » is the French page « /contact ». The language picker built « /en/fr/contact »
+ * (a 404) on every French page, and the travellers' header and footer were left in Plazo Pro's pages.
+ */
+export function renderedPath(pathname: string): { locale: Locale; path: string } {
+  if (pathname === `/${DEFAULT_LOCALE}`) return { locale: DEFAULT_LOCALE, path: "/" };
+  if (pathname.startsWith(`/${DEFAULT_LOCALE}/`)) return { locale: DEFAULT_LOCALE, path: pathname.slice(DEFAULT_LOCALE.length + 1) };
+  return splitLocale(pathname);
+}
+
 /** Paths of the other services on the same domain (pro space, API): never under a language. */
 const OTHER_SERVICES = /^\/(pro|api)(\/|\?|#|$)/;
 

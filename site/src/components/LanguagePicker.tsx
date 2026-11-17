@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation";
 import { currentLocale } from "@/lib/i18n/runtime";
-import { LANGUAGE_LABEL, LOCALE_NAMES, LOCALE_TAGS, LOCALES, localizedPath, splitLocale } from "@/lib/i18n/locales";
+import { LANGUAGE_LABEL, LOCALE_NAMES, LOCALE_TAGS, LOCALES, localizedPath, renderedPath } from "@/lib/i18n/locales";
 
 /** The same page in another language (the query is dropped: dates are typed again). */
 function useAlternates() {
-  const { path } = splitLocale(usePathname() || "/");
+  const { path } = renderedPath(usePathname() || "/");
   return LOCALES.map(locale => ({ locale, href: localizedPath(locale, path) }));
 }
 
