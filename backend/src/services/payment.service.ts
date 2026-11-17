@@ -8,6 +8,7 @@ import {
   PLATFORM_COMMISSION_BPS,
   paymentsEnabled,
   PRODUCT_NAME,
+  PRO_SPACE_URL,
   PUBLIC_SITE_URL,
   stripePublishableKey,
   stripeSecretKey,
@@ -124,7 +125,7 @@ export class PaymentService {
   public sms = Container.get(SmsService);
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
-  public settings = { siteUrl: PUBLIC_SITE_URL };
+  public settings = { siteUrl: PUBLIC_SITE_URL, proSpaceUrl: PRO_SPACE_URL };
 
   // Lazy: the services for the car (21/10/2026) use this service for their own payments.
   private get extras(): ExtraService {
@@ -988,6 +989,8 @@ export class PaymentService {
   public async onboarding(actor: AuthenticatedStaff): Promise<{ url: string; expiresAt: string }> {
     if (!this.enabled()) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Online payments are not enabled', 'payments_disabled');
     const site = this.siteUrl();
+    // The pro space's own host (pro.plazo.fr, 17/11/2026), else the site's.
+    const proSite = this.settings.proSpaceUrl.replace(/\/+$/, '') || site;
     const api = this.stripe.api();
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId } });
     const live = this.live();
@@ -1037,8 +1040,8 @@ export class PaymentService {
         account: accountId,
         type: 'account_onboarding',
         // Back to the "Sur Plazo" page, which reads ?stripe= to tell the manager what happened.
-        refresh_url: `${site}${ONBOARDING_RETURN_PATH}?stripe=relance`,
-        return_url: `${site}${ONBOARDING_RETURN_PATH}?stripe=retour`,
+        refresh_url: `${proSite}${ONBOARDING_RETURN_PATH}?stripe=relance`,
+        return_url: `${proSite}${ONBOARDING_RETURN_PATH}?stripe=retour`,
       },
       { idempotencyKey: `plazo-account-link-${randomUUID()}` },
     );

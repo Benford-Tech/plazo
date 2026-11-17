@@ -1,5 +1,5 @@
 import { Service } from 'typedi';
-import { BREVO_API_KEY, EMAIL_FROM, PRODUCT_NAME, PUBLIC_SITE_URL, SECRET_KEY, SMS_SENDER } from '@/config';
+import { BREVO_API_KEY, EMAIL_FROM, PRO_SPACE_URL, PRODUCT_NAME, PUBLIC_SITE_URL, SECRET_KEY, SMS_SENDER } from '@/config';
 import { appLinkCode } from '@/domain/app-link';
 import { cancellationEmail, closingEmail, confirmationEmail, EmailMessage, isGsm7, reminderEmail } from '@/domain/booking-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
@@ -34,6 +34,8 @@ export class NotificationService {
     emailFrom: EMAIL_FROM,
     smsSender: SMS_SENDER,
     publicSiteUrl: PUBLIC_SITE_URL,
+    /** The pro space's host (pro.plazo.fr); empty: the site's address. */
+    proSpaceUrl: PRO_SPACE_URL,
     timeoutMs: 5000,
   };
 
@@ -143,7 +145,8 @@ export class NotificationService {
    * address is known, otherwise relative to the current domain (shown in the pro space only).
    */
   public proUrl(path: string): string {
-    return `${this.siteBase()}/pro${path}`;
+    const base = this.settings.proSpaceUrl.replace(/\/+$/, '') || this.siteBase();
+    return `${base}/pro${path}`;
   }
 
   /**

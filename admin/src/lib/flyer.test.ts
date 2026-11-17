@@ -19,6 +19,8 @@ describe("flyer", () => {
       listing: false,
     });
     expect(flyerQrUrl("", null).url).toBe("https://www.plazo.fr/ma-reservation");
+    // Opened from pro.plazo.fr: the QR code still leads to the travellers' site.
+    expect(flyerQrUrl("https://pro.plazo.fr", listing).url).toBe("https://www.plazo.fr/lyon-saint-exupery/parking-des-cedres");
   });
 
   it("names the file after the parking", () => {
