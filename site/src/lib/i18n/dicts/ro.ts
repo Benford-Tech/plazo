@@ -1,4 +1,5 @@
 import type { Dict } from "../../fr-dict";
+import type { CancellationPolicy } from "../../types";
 import { PRODUCT_NAME } from "../../product";
 
 const P = PRODUCT_NAME;
@@ -1217,6 +1218,47 @@ export const ro: Dict = {
     free_24h: "Gratuită cu 24 h înainte",
     free_48h: "Gratuită cu 48 h înainte",
     non_refundable: "Nu poate fi anulată",
+  },
+  // B « fiche parking enrichie » (17/11/2026): prices, the day of departure and the return, services and conditions, questions.
+  parkingMore: {
+    prices: "Prețuri",
+    duration: "Durată",
+    total: "Preț total",
+    days: (n: number) => `${n} ${n === 1 ? "zi" : "zile"}`,
+    extraDay: "Zi suplimentară",
+    pricesNote: "Prețul total al pachetului, plătit online la rezervare. Datele dvs. dau prețul exact.",
+    waitLine: (min: number) => `Așteptare medie pentru navetă: ${min} min.`,
+    open24: "Parcarea este deschisă non-stop: predare și ridicare la orice oră.",
+    meetingPoint: (place: string) => `Punct de întâlnire: ${place}.`,
+    meetingPhotoAlt: (place: string) => `Punctul de întâlnire la întoarcere: ${place}`,
+    servicesTitle: "Servicii și condiții",
+    extras: "Servicii pentru mașina dvs.",
+    childSeats: "Scaune auto pentru copii în navetă, la cerere și gratuit.",
+    stops: (names: string) => `Naveta deservește și: ${names}.`,
+    conditions: "Bine de știut:",
+    faqTitle: (name: string) => `Întrebări despre ${name}`,
+    faq: {
+      shuttleQ: "Cât durează naveta până la terminal?",
+      shuttleA: (min: number, terminal1: boolean, wait: number | null) =>
+        `Naveta gratuită vă lasă ${terminal1 ? "la Terminalul 1" : "la aeroport"} în ${min} minute${wait !== null ? `, după o așteptare medie de ${wait} min` : ""}.`,
+      hoursQ: "Este parcarea deschisă noaptea?",
+      hoursA24: "Da, este deschisă non-stop: predați și ridicați mașina la orice oră.",
+      hoursA: (hours: string) => `Parcarea este deschisă: ${hours}.`,
+      keysQ: "Trebuie să las cheile?",
+      keysValet: "Da: un valet vă parchează mașina, îi predați cheile la sosire.",
+      keysSelf: "Nu: vă parcați singur mașina și păstrați cheile.",
+      delayQ: "Ce se întâmplă dacă zborul de întoarcere întârzie?",
+      delayA: "Dați numărul zborului la rezervare: parcarea urmărește aterizarea, iar naveta vine la punctul de întâlnire când ajungeți.",
+      cancelQ: "Pot anula rezervarea?",
+      cancelA: {
+        free_until_arrival: "Da, gratuit până la sosire, din „Rezervarea mea”.",
+        free_24h: "Da, gratuit până cu 24 de ore înainte de sosire, din „Rezervarea mea”.",
+        free_48h: "Da, gratuit până cu 48 de ore înainte de sosire, din „Rezervarea mea”.",
+        non_refundable: "Nu: această rezervare nu poate fi anulată sau rambursată.",
+      } satisfies Record<CancellationPolicy, string>,
+      payQ: "Trebuie să plătesc la parcare?",
+      payA: "Nu: totul se plătește online cu cardul la rezervare. Nimic de plătit pe loc.",
+    },
   },
   calendar: {
     dropOff: (parking: string) => `Predarea mașinii · ${parking}`,

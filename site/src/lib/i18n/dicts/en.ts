@@ -1,4 +1,5 @@
 import type { Dict } from "../../fr-dict";
+import type { CancellationPolicy } from "../../types";
 import { PRODUCT_NAME } from "../../product";
 
 const P = PRODUCT_NAME;
@@ -1140,6 +1141,47 @@ export const en: Dict = {
     free_24h: "Free up to 24 h before",
     free_48h: "Free up to 48 h before",
     non_refundable: "Non-cancellable",
+  },
+  // B « fiche parking enrichie » (17/11/2026): prices, the day of departure and the return, services and conditions, questions.
+  parkingMore: {
+    prices: "Prices",
+    duration: "Length",
+    total: "Total price",
+    days: (n: number) => `${n} day${n === 1 ? "" : "s"}`,
+    extraDay: "Extra day",
+    pricesNote: "Total price of the package, paid online when you book. Your dates give the exact price.",
+    waitLine: (min: number) => `Average shuttle wait: ${min} min.`,
+    open24: "The car park is open 24/7: drop off and pick up at any time.",
+    meetingPoint: (place: string) => `Meeting point: ${place}.`,
+    meetingPhotoAlt: (place: string) => `The return meeting point: ${place}`,
+    servicesTitle: "Services and conditions",
+    extras: "Services for your car",
+    childSeats: "Child car seats in the shuttle, on request and free of charge.",
+    stops: (names: string) => `The shuttle also serves: ${names}.`,
+    conditions: "Good to know:",
+    faqTitle: (name: string) => `Questions about ${name}`,
+    faq: {
+      shuttleQ: "How long is the shuttle ride to the terminal?",
+      shuttleA: (min: number, terminal1: boolean, wait: number | null) =>
+        `The free shuttle drops you ${terminal1 ? "at Terminal 1" : "at the airport"} in ${min} minutes${wait !== null ? `, after an average wait of ${wait} min` : ""}.`,
+      hoursQ: "Is the car park open at night?",
+      hoursA24: "Yes, it is open 24/7: you drop off and collect your car at any time.",
+      hoursA: (hours: string) => `The car park is open: ${hours}.`,
+      keysQ: "Do I have to leave my keys?",
+      keysValet: "Yes: a valet parks your car, you hand over your keys on arrival.",
+      keysSelf: "No: you park your car yourself and keep your keys.",
+      delayQ: "What if my return flight is delayed?",
+      delayA: "Give your flight number when you book: the car park tracks your landing and the shuttle comes to the meeting point when you arrive.",
+      cancelQ: "Can I cancel my booking?",
+      cancelA: {
+        free_until_arrival: "Yes, free of charge until you arrive, from “My booking”.",
+        free_24h: "Yes, free of charge up to 24 hours before you arrive, from “My booking”.",
+        free_48h: "Yes, free of charge up to 48 hours before you arrive, from “My booking”.",
+        non_refundable: "No: this booking can be neither cancelled nor refunded.",
+      } satisfies Record<CancellationPolicy, string>,
+      payQ: "Do I pay at the car park?",
+      payA: "No: everything is paid online by card when you book. Nothing to pay on site.",
+    },
   },
   calendar: {
     dropOff: (parking: string) => `Car drop-off · ${parking}`,

@@ -15,7 +15,8 @@ import { factsLine, perDayLabel, trustTiles } from "@/lib/highlights";
 import { directionsUrl, mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { airportPath, siteUrl, SLUG_RE } from "@/lib/site";
-import { breadcrumbLd, parkingLd } from "@/lib/structured-data";
+import { breadcrumbLd, faqLd, parkingLd } from "@/lib/structured-data";
+import { parkingFaq, priceRows } from "@/lib/parking-more";
 import type { ParkingResponse } from "@/lib/types";
 import { enterLocaleFrom } from "@/lib/i18n/server";
 import { lp } from "@/lib/i18n/runtime";
@@ -68,8 +69,8 @@ export default async function ParkingPage({ params, searchParams }: Props) {
     data = await loadParking(airportSlug, parkingSlug);
   }
   const { airport, parking, offer } = data;
-  // The price grid is not shown (03/10/2026): the price is computed for the dates. Only the cheapest
-  // package gives the "dès …" line while no dates are chosen.
+  // The cheapest package gives the "dès …" line while no dates are chosen; the grid itself is listed under « Tarifs »
+  // since B (17/11/2026), the price for the dates still being computed by the card.
   const cheapest = [...parking.pricing.tiers].sort((a, b) => a.priceCents - b.priceCents || a.days - b.days)[0];
   const fromPriceCents = cheapest?.priceCents ?? null;
   const shuttle = parking.services.includes("shuttle") && parking.shuttleMinutes;
@@ -88,6 +89,14 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   // « L’essentiel » (14/10/2026): shuttle (live or not, ride, declared wait), outdoor or covered, keys, opening, cancellation.
   const tiles = trustTiles(parking, airport.code);
   const facts = factsLine(parking);
+  // B « fiche parking enrichie » (17/11/2026): the price grid, the return meeting point, services and conditions, questions.
+  const more = fr.parkingMore;
+  const rows = priceRows(parking.pricing);
+  const faq = parkingFaq(data);
+  const details = data.details;
+  const extras = parking.extras?.offers ?? [];
+  const stops = details?.stops ?? [];
+  const servicesBlock = extras.length > 0 || stops.length > 0 || !!details?.conditions || !!shuttle;
 
   return (
     <main
@@ -102,6 +111,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
                 { name: airport.name, path: airportPath(airport.slug) },
                 { name: parking.title, path: `/${airport.slug}/${parking.slug}` },
               ]),
+          parking.isDemo ? null : faqLd(faq),
         ]}
       />
       <Breadcrumb
@@ -193,6 +203,43 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           </section>
         )}
 
+        {rows.length > 0 && (
+          <section className={`${section} md:col-start-1`} aria-labelledby="tarifs">
+            <h2 id="tarifs" className={sectionTitle}>
+              {more.prices}
+            </h2>
+            <div className="card overflow-x-auto">
+              <table className="w-full min-w-[320px] border-collapse text-[15px]">
+                <thead>
+                  <tr className="text-left">
+                    <th scope="col" className="eyebrow border-b border-line-soft px-4 py-2.5 font-semibold md:px-5">
+                      {more.duration}
+                    </th>
+                    <th scope="col" className="eyebrow border-b border-line-soft px-4 py-2.5 text-right font-semibold md:px-5">
+                      {more.total}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line-soft">
+                  {rows.map(row => (
+                    <tr key={row.days}>
+                      <td className="px-4 py-2.5 md:px-5">{more.days(row.days)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums md:px-5">{formatEuros(row.priceCents)}</td>
+                    </tr>
+                  ))}
+                  {parking.pricing.extraDayPriceCents !== null && (
+                    <tr>
+                      <td className="px-4 py-2.5 md:px-5">{more.extraDay}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums md:px-5">{formatEuros(parking.pricing.extraDayPriceCents)}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[13.5px] text-soft">{more.pricesNote}</p>
+          </section>
+        )}
+
         <section className={`${section} md:col-start-1`} aria-labelledby="deroulement">
           <h2 id="deroulement" className={sectionTitle}>
             {fr.parking.howItGoes}
@@ -200,14 +247,63 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           <dl className="card divide-y divide-line-soft">
             <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
               <dt className="eyebrow sm:pt-[5px]">{fr.parking.outbound}</dt>
-              <dd className="text-[15px] leading-relaxed">{fr.parking.outboundText(shuttle ? parking.shuttleMinutes : null)}</dd>
+              <dd className="flex flex-col gap-1 text-[15px] leading-relaxed">
+                <span>{fr.parking.outboundText(shuttle ? parking.shuttleMinutes : null)}</span>
+                {shuttle && parking.shuttleWaitMinutes != null && <span className="text-soft">{more.waitLine(parking.shuttleWaitMinutes)}</span>}
+                {parking.services.includes("open_24h") && <span className="text-soft">{more.open24}</span>}
+              </dd>
             </div>
             <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
               <dt className="eyebrow sm:pt-[5px]">{fr.parking.inbound}</dt>
-              <dd className="text-[15px] leading-relaxed">{fr.parking.inboundText}</dd>
+              <dd className="flex flex-col gap-2 text-[15px] leading-relaxed">
+                <span>{fr.parking.inboundText}</span>
+                {details?.meetingPoint && <span className="font-semibold">{more.meetingPoint(details.meetingPoint)}</span>}
+                {details?.meetingInstructions && <span className="whitespace-pre-line text-soft">{details.meetingInstructions}</span>}
+                {details?.meetingPhotoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={details.meetingPhotoUrl}
+                    alt={more.meetingPhotoAlt(details.meetingPoint ?? airport.name)}
+                    className="max-h-56 w-full rounded-field object-cover"
+                    loading="lazy"
+                  />
+                )}
+              </dd>
             </div>
           </dl>
         </section>
+
+        {servicesBlock && (
+          <section className={`${section} md:col-start-1`} aria-labelledby="services">
+            <h2 id="services" className={sectionTitle}>
+              {more.servicesTitle}
+            </h2>
+            <div className="card flex flex-col gap-3 p-4 text-[15px] leading-relaxed md:px-5">
+              {extras.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <p className="eyebrow">{more.extras}</p>
+                  <ul className="flex flex-col gap-1">
+                    {extras.map(extra => (
+                      <li key={extra.label} className="flex justify-between gap-3">
+                        <span>{extra.label}</span>
+                        <span className="font-semibold tabular-nums">{formatEuros(extra.priceCents)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {shuttle && <p>{more.childSeats}</p>}
+              {stops.length > 0 && <p>{more.stops(stops.map(s => s.name).join(", "))}</p>}
+              {details?.conditions && (
+                <p>
+                  <span className="font-semibold">{more.conditions} </span>
+                  {details.conditions}
+                </p>
+              )}
+              <p>{fr.cancellation[parking.cancellationPolicy]}</p>
+            </div>
+          </section>
+        )}
 
         <section className={`${section} md:col-start-1`} aria-labelledby="acces">
           <h2 id="acces" className={sectionTitle}>
@@ -222,6 +318,22 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             </a>
           </div>
         </section>
+
+        {faq.length > 0 && (
+          <section className={`${section} md:col-start-1`} aria-labelledby="questions">
+            <h2 id="questions" className={sectionTitle}>
+              {more.faqTitle(parking.title)}
+            </h2>
+            <div className="card divide-y divide-line-soft">
+              {faq.map(([question, answer], i) => (
+                <details key={question} open={i === 0} className="group p-4 md:px-5">
+                  <summary className="cursor-pointer text-[15.5px] font-semibold">{question}</summary>
+                  <p className="mt-2 text-[15px] leading-relaxed text-soft">{answer}</p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {dock && (

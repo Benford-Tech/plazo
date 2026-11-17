@@ -175,8 +175,21 @@ export interface ParkingResponse {
       /** The parking's night fees; null when it charges none (missing from an older API). */
       night?: NightRule | null;
     };
+    /** The services for the car the parking offers (missing from an older API). */
+    extras?: { offers: { label: string; priceCents: number }[] };
   };
   offer: Offer | null;
+  /**
+   * B « fiche parking enrichie » (17/11/2026): the return meeting point, the shuttle's stops and the conditions, from the
+   * parking's settings (missing from an older API).
+   */
+  details?: {
+    meetingPoint: string | null;
+    meetingInstructions: string | null;
+    meetingPhotoUrl: string | null;
+    stops: { name: string; kind: string }[];
+    conditions: string | null;
+  };
 }
 
 /**

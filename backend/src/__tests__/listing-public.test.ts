@@ -328,4 +328,31 @@ describe('API publique', () => {
     expect(res.body.parking.pricing).toEqual({ tiers: grid.tiers, extraDayPriceCents: 600, night: null });
     expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/inexistant')).status).toBe(404);
   });
+
+  it('donne le rendez-vous du retour, les dessertes et les conditions de la fiche enrichie (B, 17/11/2026)', async () => {
+    const op = await publishedOperator('Parking A', 'parking-a');
+    const empty = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-a');
+    expect(empty.body.details).toEqual({ meetingPoint: null, meetingInstructions: null, meetingPhotoUrl: null, stops: [], conditions: null });
+    await prisma.parking.update({
+      where: { id: op.parking.id },
+      data: {
+        returnMeetingLabel: 'Terminal 1 · sortie 4',
+        returnMeetingInstructions: 'Attendez devant le panneau P.',
+        returnMeetingPhotoUrl: 'javascript:alert(1)',
+        travellerConditions: 'Retard de plus de 30 min : 10 €',
+        driverPhone: '0601020304',
+      },
+    });
+    await prisma.shuttleStop.create({ data: { parkingId: op.parking.id, kind: 'station', name: 'Gare TGV', lat: 45.72, lng: 5.08 } });
+    const res = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-a');
+    expect(res.body.details).toEqual({
+      meetingPoint: 'Terminal 1 · sortie 4',
+      meetingInstructions: 'Attendez devant le panneau P.',
+      meetingPhotoUrl: null,
+      stops: [{ name: 'Gare TGV', kind: 'station' }],
+      conditions: 'Retard de plus de 30 min : 10 €',
+    });
+    // Never the driver's phone.
+    expect(JSON.stringify(res.body)).not.toContain('0601020304');
+  });
 });
