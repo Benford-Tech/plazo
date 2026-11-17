@@ -206,6 +206,7 @@ export const COMPARATOR_TOPICS = {
       { title: "Le bon numéro de téléphone", text: "« 912345678 (351) » devient « +351 912345678 » : l’équipe appelle le client du premier coup." },
       { title: "Annulations appliquées", text: "L’avis d’annulation annule la réservation et libère sa place, tant que la voiture n’est pas au parking." },
       { title: "L’équipe prévenue", text: "Une notification « Réservation annulée · ParkVia » part à l’équipe, et la fiche garde la trace de l’annulation." },
+      { title: "Retrouvée sans son numéro", text: "Une réservation saisie au téléphone sans le numéro PC… est retrouvée par le voyageur et le jour d’arrivée." },
       { title: "Ce que ParkVia vous laisse", text: "Son taux de commission posé une fois, le chiffre d’affaires se lit brut ou net." },
     ],
     screens: [
@@ -255,6 +256,7 @@ export const COMPARATOR_TOPICS = {
           "Vous donnez l’adresse de réception de votre parking à ParkVia, ou vous faites suivre ses mails depuis votre messagerie. Les notifications suivantes arrivent dans la boîte de réception, reconnues comme ParkVia. Une notification reçue ailleurs se colle avec « Coller un mail ».",
           "Le taux de commission de ParkVia se pose avec sa date d’effet. Vous lisez ensuite le chiffre d’affaires brut ou net de commissions, et la page Statistiques compare ce que chaque plateforme vous laisse par réservation.",
           "Le client ParkVia reçoit, la veille de son dépôt, votre message avec l’heure et le lieu du rendez-vous. Il retrouve sa réservation avec son numéro PC… et son e-mail ou son téléphone, et voit la navette le jour venu.",
+          "Rien n’oblige à changer vos habitudes avec ParkVia : vous gardez votre compte, vos prix et vos conditions chez lui. Ce qui change, c’est que personne ne recopie plus ses notifications, et qu’une annulation libère la place le jour même où elle arrive, au lieu d’attendre que quelqu’un la remarque.",
         ],
       },
     ],
@@ -289,6 +291,7 @@ export const COMPARATOR_TOPICS = {
       { title: "Le commentaire du client gardé", text: "Ce que le client a écrit passe dans les notes de la réservation, sous les yeux de l’équipe." },
       { title: "Un vol sans compagnie bien rangé", text: "« 7841 » n’est jamais pris pour un numéro de vol : il va dans les notes, tel qu’il est écrit." },
       { title: "Même transférée à la main", text: "La fiche est reconnue à sa mise en page, que Park Hit vous l’envoie ou qu’un collègue la fasse suivre." },
+      { title: "Pas de doublon", text: "Un client déjà saisi au téléphone pour la même arrivée : la fiche lui est rattachée, rien n’est recréé." },
       { title: "La commission de Park Hit", text: "Son taux posé une fois, vous lisez ce que vous gardez, réservation par réservation." },
     ],
     screens: [
@@ -337,6 +340,7 @@ export const COMPARATOR_TOPICS = {
           "Vous donnez l’adresse de réception de votre parking à Park Hit, ou vous faites suivre ses mails depuis votre messagerie : l’assistant de réglage connaît déjà son expéditeur. Une fiche reçue ailleurs se colle dans la boîte de réception avec « Coller un mail ».",
           "Le prix compté est le coût de la réservation donné par la fiche, et vous pouvez le corriger ensuite. Le taux de commission de Park Hit se pose avec sa date d’effet : le chiffre d’affaires se lit brut ou net, et la page Statistiques compare Park Hit à vos autres canaux, net par réservation.",
           "La veille du dépôt, votre client Park Hit reçoit votre message avec l’heure et le lieu du rendez-vous. Il retrouve sa réservation avec la référence Park Hit et son e-mail ou son téléphone.",
+          "Vous gardez votre compte Park Hit, vos prix et vos conditions. Ce qui change, c’est le temps rendu à l’accueil : la fiche arrive, la réservation est là, avec ce que le client a voulu vous dire, et votre équipe peut s’occuper des voitures et des voyageurs plutôt que des mails.",
         ],
       },
     ],
@@ -358,7 +362,7 @@ export const COMPARATOR_TOPICS = {
     metaDescription: `Mails Parclick lus seuls, bon joint compris pour le nom et le téléphone du client. Annulations et modifications signalées. Pour parkings d’aéroport.`,
     title: "Vos réservations Parclick,",
     accent: "bon compris",
-    lead: "Le mail de Parclick donne les dates et la référence, le bon joint donne le client. Plazo Pro lit les deux et range la réservation dans votre planning.",
+    lead: "Le mail de Parclick donne les dates et la référence ; quand un bon y est joint, il est lu aussi. Plazo Pro lit les deux et range la réservation dans votre planning.",
     problem: {
       title: "Ce qui coûte du temps aujourd’hui",
       paragraphs: [
@@ -367,10 +371,11 @@ export const COMPARATOR_TOPICS = {
       ],
     },
     gains: [
-      { title: "Le mail et le bon, ensemble", text: "Les dates et la référence viennent du mail, le nom et le téléphone du bon joint : une seule réservation, complète." },
+      { title: "Le mail et le bon, ensemble", text: "Les dates et la référence viennent du mail, le nom et le téléphone du bon quand il est joint. Ce qui manque attend dans « À traiter »." },
       { title: "Même transféré", text: "Le bon reste joint quand le mail est transféré : il est lu de la même façon." },
       { title: "Annulations et modifications reconnues", text: "Elles ne sont jamais prises pour une nouvelle réservation : elles attendent dans « À traiter », marquées comme telles." },
       { title: "Un mail incomplet pré-rempli", text: "Quand il manque le client, le mail attend avec ce qui a été compris ; vous complétez en un clic." },
+      { title: "Pas de doublon", text: "Un client déjà saisi par l’équipe pour la même arrivée : le mail lui est rattaché au lieu de créer une seconde réservation." },
       { title: "Sa commission, une fois", text: "Le taux de Parclick posé avec sa date, votre chiffre d’affaires se lit net de commissions." },
     ],
     screens: [
@@ -421,6 +426,7 @@ export const COMPARATOR_TOPICS = {
           "Vous donnez l’adresse de réception de votre parking à Parclick, ou vous faites suivre ses mails depuis votre messagerie, bon joint compris. Un mail reçu ailleurs se colle avec « Coller un mail ».",
           "Le prix compté est celui que paie le client, sans les frais de Parclick, et il se corrige ensuite. Posez le taux de commission de Parclick avec sa date d’effet : tant qu’il manque, il est signalé « Parclick : taux à régler » sur le tableau de bord. Ensuite, la page Statistiques montre ce que Parclick vous laisse par réservation, face à vos autres canaux.",
           "Votre client Parclick reçoit votre message la veille de son dépôt, et retrouve sa réservation avec sa référence Parclick et son e-mail ou son téléphone.",
+          "Vous gardez votre compte Parclick, vos prix et vos conditions. Ce qui change, c’est que personne n’ouvre plus deux documents pour une seule réservation, et que les annulations ne se perdent plus au milieu des confirmations.",
         ],
       },
     ],
@@ -455,6 +461,7 @@ export const COMPARATOR_TOPICS = {
       { title: "Le bon prix", text: "Le montant compté est le prix du parking, sans le coût de réservation de ParkMundo." },
       { title: "La navette informée", text: "Les vols aller et retour sont sur la réservation : la liste du chauffeur s’en sert." },
       { title: "Annulations et modifications reconnues", text: "Elles ne sont jamais importées comme une réservation : elles attendent dans « À traiter »." },
+      { title: "Pas de doublon", text: "Un voyageur déjà saisi par l’équipe pour la même arrivée : le mail lui est rattaché, rien n’est recréé." },
       { title: "Ce que ParkMundo vous laisse", text: "Son taux de commission posé une fois, le chiffre d’affaires se lit net, par canal." },
     ],
     screens: [
@@ -508,6 +515,8 @@ export const COMPARATOR_TOPICS = {
         paragraphs: [
           "Vous donnez l’adresse de réception de votre parking à ParkMundo, ou vous faites suivre ses mails depuis votre messagerie. Un mail reçu ailleurs se colle avec « Coller un mail », et il est lu de la même façon.",
           "La veille du dépôt, le client ParkMundo reçoit votre message avec l’heure et le lieu du rendez-vous. Il retrouve sa réservation avec sa référence PM… et son e-mail ou son téléphone.",
+          "Le jour du retour, le vol indiqué sur la réservation suffit : son heure d’atterrissage réelle place le client dans la liste du chauffeur, et un avion en retard ne fait pas partir la navette trop tôt. Au parking, la couleur et le modèle de la voiture sont sur la fiche, à côté de la plaque.",
+          "Vous gardez votre compte ParkMundo, vos prix et vos conditions. Ce qui change, c’est que le voyage de chaque client est déjà dans votre planning, et que le chiffre d’affaires du mois compte le bon montant.",
         ],
       },
     ],
