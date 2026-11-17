@@ -33,8 +33,8 @@ describe("ProPricing", () => {
     await userEvent.click(screen.getByLabelText(/Page de réservation à votre nom/));
     await userEvent.click(screen.getByRole("button", { name: /Annuel/ }));
     expect(within(recap()).getByText("Total annuel HT")).toBeInTheDocument();
-    // (269,10 + 26,10) × 12
-    expect(within(recap()).getByText(/^3\s542,40\s€$/)).toBeInTheDocument();
+    // (359,10 + 26,10) × 12
+    expect(within(recap()).getByText(/^4\s622,40\s€$/)).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("plazo:pro-pricing")!)).toMatchObject({ plan: "complet", yearly: true, options: ["booking_page"] });
   });
 

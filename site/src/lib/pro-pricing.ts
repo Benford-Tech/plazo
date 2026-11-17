@@ -62,7 +62,7 @@ export const PRO_PLANS: ProPlan[] = [
   {
     id: "complet",
     name: "Complet",
-    monthlyCents: 29900,
+    monthlyCents: 39900,
     pitch: "Pour piloter les marges et protéger le parking en cas de litige.",
     features: [
       "Toutes les fonctions d’Opérations",

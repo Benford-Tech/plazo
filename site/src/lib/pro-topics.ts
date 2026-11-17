@@ -309,7 +309,7 @@ const FIRST_TOPICS = {
       ["Dois-je changer quelque chose chez mes comparateurs ?", "Non, vous gardez vos comptes. Vous donnez l’adresse de votre parking comme adresse de notification, ou vous faites suivre leurs mails depuis votre messagerie."],
       ["Et les réservations prises au téléphone ?", "Elles se saisissent dans le même planning, sur ordinateur ou dans l’application. Si le mail d’un comparateur arrive ensuite pour le même voyageur et la même arrivée, il est rattaché à la réservation au lieu d’en créer une seconde."],
       ["Une annulation est-elle appliquée toute seule ?", "Celles de ParkVia et d’Onepark, oui, tant que la voiture n’est pas arrivée. Les autres arrivent dans « À traiter », marquées « Annulation », et vous l’appliquez vous-même."],
-      ["Combien ça coûte ?", "De 99 € à 299 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
+      ["Combien ça coûte ?", "De 99 € à 399 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
     ],
     // 17/11/2026: the page that presents them all leads to each comparator's own page.
     next: ["allopark", "onepark", "parkvia", "park-hit", "parclick", "parkmundo"],
