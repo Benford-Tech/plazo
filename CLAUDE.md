@@ -2000,7 +2000,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `source` manual | csv, `status` to_contact | contacted | replied | interested | not_interested | unsubscribed, `step` dernier
   mail envoyé, `nextSendAt`, `firstContactedAt` = J0, `stoppedAt`, `sendingAt` (réservation d'un passage), `failedAttempts`,
   `enrolledById` ; CHECK : rien de prévu pour un prospect fermé), `prospect_messages` (objet, id Brevo, sent | failed, code
-  d'erreur ; pas le texte), `prospecting_settings` (ligne unique `default` : étapes JSON, `dailyCap` 50, 1 à 300) et
+  d'erreur ; pas le texte), `prospecting_settings` (ligne unique `default` : étapes JSON, `dailyCap` 500 depuis le 17/11/2026, « passe le plafond par défaut à 500 », 1 à 1 000 ; migration `prospecting_cap_500` : un plafond resté à 50 passe à 500, un plafond choisi à la main reste) et
   `prospect_suppressions` (sha256 de l'adresse, gardé après la suppression du prospect : ni réimport ni envoi) ;
   `domain/prospecting.ts` (variables, échappement HTML, mail avec l'éditeur de `product.json` › `company` et le lien de
   désinscription, fenêtre du lundi au vendredi 09:00–18:00 Europe/Paris, relance N jours après J0 à la même heure remise dans la

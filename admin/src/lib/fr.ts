@@ -408,7 +408,7 @@ export const fr = {
     unsubscribed: "Ce prospect s'est désinscrit : il ne change plus d'état.",
     delay_range: "Entre 1 et 90 jours.",
     delay_order: "Le dernier message doit partir après la relance.",
-    cap_range: "Entre 1 et 300 mails par jour.",
+    cap_range: "Entre 1 et 1 000 mails par jour.",
     too_many_rows: "2 000 lignes au plus par import.",
     email_failed: "Brevo a refusé le mail. Réessayez dans un instant.",
     no_email: "Votre compte n'a pas d'adresse e-mail.",
