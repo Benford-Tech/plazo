@@ -43,6 +43,18 @@
   },
   "redirects": [
     {
+      "source": "/pro",
+      "has": [{ "type": "host", "value": "www.plazo.fr" }],
+      "destination": "https://pro.plazo.fr/pro",
+      "permanent": true
+    },
+    {
+      "source": "/pro/:path*",
+      "has": [{ "type": "host", "value": "www.plazo.fr" }],
+      "destination": "https://pro.plazo.fr/pro/:path*",
+      "permanent": true
+    },
+    {
       "source": "/((?!\\.well-known/).*)",
       "has": [{ "type": "host", "value": "plazo.fr" }],
       "destination": "https://www.plazo.fr/$1",

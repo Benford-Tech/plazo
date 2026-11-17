@@ -2337,6 +2337,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   renvoi vers www ; sitemap de pro.plazo.fr ; menu « Logiciel · Navette · Voiturier · Comparateurs · Contrat et état des lieux ·
   Tarifs » (le pied de page garde « Vendre sur Plazo ») et liens « En savoir plus › » depuis l'accueil. Tests `pro-topics.test.ts`,
   `ProTopicView.test.tsx`, `ProHome.test.tsx`.
+  **L'espace pro sur pro.plazo.fr (17/11/2026, « https://www.plazo.fr/pro/ doit être sous pro.plazo.fr »)** : `vercel.json` renvoie
+  `www.plazo.fr/pro` et `/pro/*` en 308 vers `https://pro.plazo.fr/pro/…` (même projet, `/api` servi aussi sur pro.plazo.fr) ;
+  `PRO_SPACE_URL` (`config/index.ts` : variable, sinon `https://pro.plazo.fr` quand `PUBLIC_SITE_URL` est www.plazo.fr) : les liens
+  vers l'espace pro (`NotificationService.proUrl` : invitations, mail du matin, contrats ; démo des prospects, retour de Stripe
+  Connect, clic d'une notification du navigateur) y mènent directement ; le QR code du flyer reste sur www (`flyerQrUrl`). Une
+  session ouverte sur www ne suit pas (le navigateur garde les jetons par adresse) : se reconnecter une fois ; les notifications
+  du navigateur se réactivent ; Google demande l'origine `https://pro.plazo.fr` dans le client Web de Google Cloud. Test
+  `pro-space-url.test.ts`.
   **Liens des langues et menu caché (17/11/2026, « ameliore le SEO plazo pro »)** : les pages françaises sont rendues depuis
   `/fr/…` (`proxy.ts`), et le choix de langue construisait « /en/fr/contact » (404) sur chaque page française du site, 16 liens
   cassés par page ; le menu des voyageurs restait aussi dans le HTML de pro.plazo.fr (caché par CSS seulement). `renderedPath`

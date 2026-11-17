@@ -81,7 +81,7 @@ const SAMPLE_VALUES: TemplateValues = {
   parking: 'Parking Exemple',
   aéroport: 'Lyon Saint-Exupéry',
   ville: 'Colombier-Saugnieu',
-  lien_demo: 'https://www.plazo.fr/pro/demo/AbCd2345EfGh',
+  lien_demo: 'https://pro.plazo.fr/pro/demo/AbCd2345EfGh',
 };
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Prospect not found', 'not_found');

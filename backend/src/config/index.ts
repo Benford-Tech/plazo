@@ -75,6 +75,11 @@ export const SMS_DAILY_LIMIT = Number.isInteger(rawSmsLimit) && rawSmsLimit >= 0
 export const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
 ).replace(/\/+$/, '');
+// The pro space lives on its own host (17/11/2026, « https://www.plazo.fr/pro/ doit être sous pro.plazo.fr »): www.plazo.fr/pro
+// is redirected there (vercel.json), and the links of the emails, Stripe and browser notifications point there directly.
+export const PRO_SPACE_URL = (
+  process.env.PRO_SPACE_URL || (PUBLIC_SITE_URL === 'https://www.plazo.fr' ? 'https://pro.plazo.fr' : PUBLIC_SITE_URL)
+).replace(/\/+$/, '');
 
 // Plazo Pro on the stores, for the operator's invitation email (22/10/2026). The Google Play page follows from the
 // package name; Apple's review is still running, so the App Store link is given only once Apple has published the app
@@ -115,7 +120,8 @@ export function brevoSmsAvailable(): boolean {
 
 // Default commission on online bookings, in basis points (1500 = 15 %), when an operator has none.
 // Unset: online payment stays closed until a commission is configured.
-const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
+// 17/11/2026: an empty PLATFORM_COMMISSION_BPS means « not set », never 0 % (Number('') is 0, like SMS_DAILY_LIMIT).
+const rawCommission = process.env.PLATFORM_COMMISSION_BPS?.trim() ? Number(process.env.PLATFORM_COMMISSION_BPS) : NaN;
 export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
 
 // Stripe Connect (online payment of the site's bookings). Read on every call, like the platform

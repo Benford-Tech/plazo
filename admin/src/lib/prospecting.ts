@@ -176,7 +176,7 @@ interface Values {
   lienDemo: string;
 }
 
-export const SAMPLE_DEMO_LINK = "https://www.plazo.fr/pro/demo/AbCd2345EfGh";
+export const SAMPLE_DEMO_LINK = "https://pro.plazo.fr/pro/demo/AbCd2345EfGh";
 
 export const valuesOf = (
   p: Pick<
