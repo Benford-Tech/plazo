@@ -48,6 +48,16 @@ describe('prospects européens : pays', () => {
     expect(parseRegion('Tchéquie')).toBe('republique-tcheque');
     expect(parseRegion('United Kingdom')).toBe('royaume-uni');
     expect(parseRegion('NL')).toBe('pays-bas');
+    // 17/11/2026 (« ajoute le Brésil »): the first country outside Europe, its mails in Portuguese.
+    expect(regionOfAirport('CNF')).toBe('bresil');
+    expect(regionOfAirport('gru')).toBe('bresil');
+    expect(parseRegion('Brasil')).toBe('bresil');
+    expect(parseRegion('Brazil')).toBe('bresil');
+    expect(regionLanguage('bresil', 'CNF')).toBe('pt');
+    expect(regionOfAirport('COU')).toBe('etats-unis');
+    expect(parseRegion('USA')).toBe('etats-unis');
+    expect(parseRegion('États-Unis')).toBe('etats-unis');
+    expect(regionLanguage('etats-unis', 'ATL')).toBe('en');
   });
 
   it('la France d’abord, puis les pays, chacun dans l’ordre alphabétique', () => {

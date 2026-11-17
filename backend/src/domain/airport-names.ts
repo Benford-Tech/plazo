@@ -135,6 +135,31 @@ const CITIES: Record<string, string> = {
   EWR: 'New York',
   YUL: 'Montréal',
   MRU: 'Maurice',
+  // Brazil (17/11/2026, the Brazilian prospects)
+  GRU: 'São Paulo',
+  CGH: 'São Paulo',
+  VCP: 'Campinas',
+  GIG: 'Rio de Janeiro',
+  SDU: 'Rio de Janeiro',
+  CNF: 'Belo Horizonte',
+  BSB: 'Brasília',
+  // United States (17/11/2026, the American prospects)
+  LGA: 'New York',
+  ATL: 'Atlanta',
+  LAX: 'Los Angeles',
+  ORD: 'Chicago',
+  DFW: 'Dallas',
+  DEN: 'Denver',
+  SFO: 'San Francisco',
+  SEA: 'Seattle',
+  LAS: 'Las Vegas',
+  MCO: 'Orlando',
+  MIA: 'Miami',
+  BOS: 'Boston',
+  IAD: 'Washington',
+  DCA: 'Washington',
+  PHX: 'Phoenix',
+  IAH: 'Houston',
 };
 
 /** « Lisbonne » for LIS, the code itself when unknown, null without one. */

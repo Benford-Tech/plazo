@@ -46,6 +46,9 @@ export const REGIONS = [
   { key: 'roumanie', label: 'Roumanie' },
   { key: 'royaume-uni', label: 'Royaume-Uni' },
   { key: 'suede', label: 'Suède' },
+  // 17/11/2026 (« ajoute le Brésil », « Les états unis aussi »): the first countries outside Europe.
+  { key: 'bresil', label: 'Brésil' },
+  { key: 'etats-unis', label: 'États-Unis' },
 ] as const;
 
 export type RegionKey = (typeof REGIONS)[number]['key'];
@@ -174,6 +177,13 @@ export const AIRPORT_REGIONS: Readonly<Record<string, RegionKey>> = {
   ...country('roumanie', 'OTP CLJ TSR IAS SBZ'),
   ...country('royaume-uni', 'LHR LGW STN LTN LCY SEN MAN BHX BRS EDI GLA LPL NCL EMA LBA BFS BHD ABZ CWL EXT SOU BOH NWI PIK INV'),
   ...country('suede', 'ARN GOT MMX BMA NYO'),
+  ...country('bresil', 'GRU CGH VCP GIG SDU CNF BSB SSA REC FOR POA CWB FLN BEL MAO NAT VIX GYN'),
+  ...country(
+    'etats-unis',
+    'ATL LAX ORD DFW DEN JFK LGA EWR SFO SEA LAS MCO MIA CLT PHX IAH HOU BOS MSP DTW FLL PHL BWI DCA IAD SLC SAN TPA MDW AUS BNA ' +
+      'PDX STL MSY RDU SJC OAK SMF SAT SNA MCI CLE IND CMH PIT CVG MKE JAX OGG HNL ANC BUF ABQ OMA RSW PBI CHS SAV RIC ONT BUR LGB ' +
+      'TUS ELP OKC TUL MEM SDF BDL PVD ALB SYR ROC GRR DSM ICT BOI GEG RNO CAK TVC COU MRY',
+  ),
 };
 
 function country(key: RegionKey, codes: string): Record<string, RegionKey> {
@@ -286,6 +296,14 @@ const BY_NAME = new Map<string, RegionKey>([
   ['sweden', 'suede'],
   ['sverige', 'suede'],
   ['se', 'suede'],
+  ['brazil', 'bresil'],
+  ['brasil', 'bresil'],
+  ['br', 'bresil'],
+  ['unitedstates', 'etats-unis'],
+  ['unitedstatesofamerica', 'etats-unis'],
+  ['usa', 'etats-unis'],
+  ['us', 'etats-unis'],
+  ['amerique', 'etats-unis'],
 ]);
 
 /**
@@ -340,6 +358,8 @@ const COUNTRY_LANGUAGES: Partial<Record<RegionKey, ProspectLanguage>> = {
   roumanie: 'ro',
   'royaume-uni': 'en',
   suede: 'sv',
+  bresil: 'pt',
+  'etats-unis': 'en',
 };
 
 /**

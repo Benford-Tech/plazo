@@ -2142,6 +2142,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `domain/prospecting-languages.ts` (`LANGUAGE_PACKS`, `packTexts`), sur les délais et étapes actives du français ; migration
   `prospect_languages` (CHECK de `prospects.language`) ; « Modifier les mails » et le formulaire proposent toutes les langues,
   pastille « ES », « PL »… Traductions faites par Claude, non relues par un natif.
+  **Brésil et États-Unis (17/11/2026, « ajoute le Brésil », « Les états unis aussi »)** : premiers pays hors d'Europe (`bresil`,
+  `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
+  mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
+  le groupe « Europe » des listes devient « Autres pays ».
 - **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
   Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
   (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur

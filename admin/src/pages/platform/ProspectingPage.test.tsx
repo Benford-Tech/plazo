@@ -774,7 +774,7 @@ describe("Plateforme › Prospection", () => {
     expect(
       within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Europe" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Autres pays" })).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Choisir Parken Fictif"));
     await user.click(screen.getByLabelText("Choisir Avio Fictif"));
