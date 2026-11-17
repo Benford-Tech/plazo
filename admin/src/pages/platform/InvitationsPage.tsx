@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import type { PlatformInvitation } from "@/lib/types";
@@ -27,6 +28,31 @@ function Step({ done, children, testId }: { done: boolean; children?: ReactNode;
 }
 
 const device = (d: string | null | undefined) => (d ? (t.devices[d] ?? d) : null);
+
+/** A new link for this person (17/11/2026, « pouvoir reenvoyer une invitation »); the previous one stops working. */
+function ResendButton({ i }: { i: PlatformInvitation }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => adminApi.resendPlatformInvitation(i.staff.id),
+    onSuccess: (r) => {
+      if (r.emailSent) toast.success(t.resent(i.staff.name || i.staff.email));
+      else toast.error(t.resentNoEmail);
+      void queryClient.invalidateQueries({ queryKey: ["platform", "invitations"] });
+    },
+    onError: (error) => toast.error((error instanceof ApiError && error.code && t.resendErrors[error.code]) || t.resendError),
+  });
+  return (
+    <button
+      type="button"
+      data-testid={`invitation-resend-${i.staff.id}`}
+      disabled={mutation.isPending}
+      onClick={() => mutation.mutate()}
+      className="mt-1.5 rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-semibold text-lime-deep hover:bg-accent disabled:opacity-60"
+    >
+      {mutation.isPending ? t.resending : t.resend}
+    </button>
+  );
+}
 
 function Row({ i }: { i: PlatformInvitation }) {
   return (
@@ -54,6 +80,7 @@ function Row({ i }: { i: PlatformInvitation }) {
         ) : (
           <span className="text-sm font-semibold text-warn-text">{t.notSent}</span>
         )}
+        {i.staff.isActive && !(i.kind === "operator" && i.passwordSetAt) && <ResendButton i={i} />}
       </td>
       <td className={td}>
         <Step done={!!i.opened} testId="step-opened">

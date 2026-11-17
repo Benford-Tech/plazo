@@ -2893,6 +2893,12 @@ voitures sur place ne lisent plus que les colonnes montrées (`select`, 591 voit
   (`PlatformAdminMiddleware`) : la dernière invitation de chaque personne, `sends`, chaque étape. Web : page `/pro/plateforme/invitations`
   (`InvitationsPage`, groupe Pilotage) : une ligne par personne, Envoyé · Ouvert (approx.) · Lien (appareil, store, démo) · Mot de passe ·
   Plazo Pro (iPhone / Android, ou Web). « A installé l'app » = s'est connecté dans Plazo Pro : les stores ne disent pas qui télécharge.
+  **Renvoyer une invitation (17/11/2026, « pouvoir reenvoyer une invitation »)** : bouton « Renvoyer » sous l'envoi de chaque ligne
+  (`ResendButton`, `invitation-resend-<id>`) → `POST /internal/platform/invitations/:staffId/resend` (`PlatformService.resendStaffInvitation`) :
+  un nouveau lien (le précédent ne marche plus) et le même mail que la première fois, d'après la dernière invitation suivie (gérant
+  invité par Plazo : `AccountService.sendInvitation`, tracé `operator.invitation_resent` ; membre : `StaffService.inviteAsPlatform`,
+  « Plazo vous a ajouté… », tracé `staff.invitation_resent`) ; 409 `staff_inactive` (désactivé, parti, supprimé), `already_accepted`
+  (gérant qui a déjà son mot de passe : bouton caché), 404 `not_found`.
   Politique de confidentialité (section 10). Tests `invitation-tracking.test.ts`, `InvitationsPage.test.tsx`.
 - **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
   rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées

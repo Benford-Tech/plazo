@@ -99,4 +99,37 @@ describe('suivi des invitations : du mail à Plazo Pro', () => {
     const list = await api().get('/api/internal/platform/invitations').set(auth(op.token));
     expect(list.body.data.filter((i: any) => i.staff.id === member.id)).toEqual([expect.objectContaining({ sends: 2 })]);
   });
+
+  // 17/11/2026 (« pouvoir reenvoyer une invitation »): Plateforme › Invitations « Renvoyer ».
+  it("la plateforme renvoie l'invitation d'un membre ou d'un gérant invité, jamais à un compte fermé ni accepté", async () => {
+    const op = await setupOperator();
+    const member = await addStaff(op.token, 'driver');
+    const resend = (id: string) => api().post(`/api/internal/platform/invitations/${id}/resend`).set(auth(op.token));
+    expect((await resend(member.id)).status).toBe(403);
+    process.env.PLATFORM_ADMIN_EMAILS = op.manager.email;
+
+    const team = await resend(member.id);
+    expect([team.status, team.body]).toEqual([200, { emailSent: expect.any(Boolean) }]);
+    expect(await prisma.invitationTracking.count({ where: { staffId: member.id } })).toBe(2);
+    expect(await prisma.accountToken.count({ where: { staffId: member.id, type: 'invitation', usedAt: null } })).toBeGreaterThan(0);
+    expect(await prisma.auditLog.count({ where: { action: 'staff.invitation_resent' } })).toBe(1);
+
+    const invited = await api().post('/api/internal/platform/invitations').set(auth(op.token)).send({
+      operatorName: 'Parking invité',
+      managerFirstName: 'Léon',
+      managerLastName: 'Invité',
+      managerEmail: 'invite@example.com',
+      totalCapacity: 80,
+    });
+    const manager = await prisma.staff.findFirstOrThrow({ where: { operatorId: invited.body.operator.id } });
+    expect((await resend(manager.id)).status).toBe(200);
+    expect(await prisma.invitationTracking.count({ where: { staffId: manager.id, kind: 'operator' } })).toBe(2);
+    await prisma.staff.update({ where: { id: manager.id }, data: { passwordSetAt: new Date() } });
+    expect((await resend(manager.id)).body.code).toBe('already_accepted');
+
+    await prisma.staff.update({ where: { id: member.id }, data: { isActive: false } });
+    const closed = await resend(member.id);
+    expect([closed.status, closed.body.code]).toEqual([409, 'staff_inactive']);
+    expect((await resend('cinconnu000000')).status).toBe(404);
+  });
 });

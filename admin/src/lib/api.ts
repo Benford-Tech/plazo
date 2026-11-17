@@ -1500,6 +1500,8 @@ export const adminApi = {
     apiRequest<PlatformPayments>("/internal/platform/payments"),
   // E-A: the platform's broadcasts.
   // 06/11/2026 (SEO local, A + M2).
+  resendPlatformInvitation: (staffId: string) =>
+    apiRequest<{ emailSent: boolean }>(`/internal/platform/invitations/${encodeURIComponent(staffId)}/resend`, { method: "POST" }),
   getPlatformInvitations: (view: string) => apiRequest<PlatformInvitations>(`/internal/platform/invitations?view=${encodeURIComponent(view)}`),
   getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
   getPlatformApps: (days: number) => apiRequest<PlatformApps>(`/internal/platform/apps?days=${days}`),
