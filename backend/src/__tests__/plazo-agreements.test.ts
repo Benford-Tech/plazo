@@ -34,10 +34,10 @@ describe('les contrats Plazo (domaine)', () => {
     const terms = agreementText(agreementDocument('pro_terms', facts()));
     expect(terms).toContain('APL SAS, exploitant le parking « APL Parking »');
     expect(terms).toContain('SIRET 12345678901234');
-    expect(terms).toContain('formule Opérations, au mois : 199 € HT par mois');
+    expect(terms).toContain('formule Opérations, au mois : 299 € HT par mois');
     expect(terms).toContain('article 28');
     expect(agreementText(agreementDocument('pro_terms', facts({ plan: { id: 'operations', yearly: true } })))).toContain(
-      '179 € HT par mois (remise de 10 % sur le prix mensuel de 199 € HT), soit 2 148 € HT par an',
+      '269 € HT par mois (remise de 10 % sur le prix mensuel de 299 € HT), soit 3 228 € HT par an',
     );
     expect(agreementText(agreementDocument('pro_terms', facts({ plan: null })))).toContain('ceux du devis accepté');
 
