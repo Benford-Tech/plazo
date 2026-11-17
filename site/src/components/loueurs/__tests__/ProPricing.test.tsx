@@ -24,7 +24,7 @@ describe("ProPricing", () => {
     expect(screen.getByRole("radio", { name: /^★\s*Recommandé\s*Opérations/ })).toHaveAttribute("aria-checked", "true");
     expect(within(recap()).getByText("Logiciel Opérations")).toBeInTheDocument();
     expect(within(recap()).getByText("15 % par réservation")).toBeInTheDocument();
-    expect(within(recap()).getByText(/^199\s€$/)).toBeInTheDocument();
+    expect(within(recap()).getByText(/^299\s€$/)).toBeInTheDocument();
   });
 
   it("changes plan, adds an option and bills yearly", async () => {

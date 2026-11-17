@@ -19,12 +19,16 @@ export function monthlyEquivalentCents(plan: ProPlanId, yearly: boolean): number
   return yearly ? Math.round(planPriceCents(plan, true) / 12) : planPriceCents(plan, false);
 }
 
-/** The Stripe lookup key of a plan's price (found or created on first use). */
-export const planLookupKey = (plan: ProPlanId, yearly: boolean) => `plazo_pro_${plan}_${yearly ? 'yearly' : 'monthly'}_v1`;
-export const SETUP_LOOKUP_KEY = 'plazo_pro_setup_v1';
+/**
+ * The Stripe lookup key of a plan's price (found or created on first use). It carries the amount: a new price in
+ * PRO_PLANS makes a new Stripe price for new subscriptions, and running ones keep theirs until their plan changes.
+ */
+export const planLookupKey = (plan: ProPlanId, yearly: boolean) =>
+  `plazo_pro_${plan}_${yearly ? 'yearly' : 'monthly'}_${planPriceCents(plan, yearly)}`;
+export const SETUP_LOOKUP_KEY = `plazo_pro_setup_${SETUP_FEE_CENTS}`;
 
 export function planOfLookupKey(key: string | null | undefined): { plan: ProPlanId; yearly: boolean } | null {
-  const m = /^plazo_pro_(essentiel|operations|complet)_(monthly|yearly)_v1$/.exec(key ?? '');
+  const m = /^plazo_pro_(essentiel|operations|complet)_(monthly|yearly)_\d+$/.exec(key ?? '');
   return m ? { plan: m[1] as ProPlanId, yearly: m[2] === 'yearly' } : null;
 }
 

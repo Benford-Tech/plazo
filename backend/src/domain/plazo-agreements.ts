@@ -31,8 +31,8 @@ export const isAgreementKind = (value: unknown): value is AgreementKind => AGREE
 
 // The plans of « Mon contrat » and of the site's Tarifs page (admin/src/lib/pro-plans.ts), excluding VAT.
 export const PRO_PLANS = {
-  essentiel: { name: 'Essentiel', monthlyEuros: 99 },
-  operations: { name: 'Opérations', monthlyEuros: 199 },
+  essentiel: { name: 'Essentiel', monthlyEuros: 149 },
+  operations: { name: 'Opérations', monthlyEuros: 299 },
   complet: { name: 'Complet', monthlyEuros: 399 },
 } as const;
 export type ProPlanId = keyof typeof PRO_PLANS;

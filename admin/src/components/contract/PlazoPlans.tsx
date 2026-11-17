@@ -31,7 +31,7 @@ function Slider(props: { id: string; label: string; value: number; min: number; 
 
 /**
  * « Mon contrat Plazo » › the plans (13/11/2026, « intègre-le à Plazo Pro dans l'onglet Mon contrat Plazo »): the three
- * plans at 99 / 199 / 399 € HT, a monthly or yearly price, a calculator on the operator's own numbers, and the listing on
+ * plans at 149 / 299 / 399 € HT, a monthly or yearly price, a calculator on the operator's own numbers, and the listing on
  * Plazo. « Choisir cette formule » opens « Abonnement » with that plan (17/11/2026, paid with Stripe).
  */
 export function PlazoPlans({ operatorName }: { operatorName: string }) {

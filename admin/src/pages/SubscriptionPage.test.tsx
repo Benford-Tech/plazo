@@ -28,8 +28,8 @@ vi.mock("@/components/subscription/StripeForm", () => ({
 }));
 
 const plans: SubscriptionView["plans"] = [
-  { id: "essentiel", name: "Essentiel", monthlyCents: 9900, yearlyCents: 106800 },
-  { id: "operations", name: "Opérations", monthlyCents: 19900, yearlyCents: 214800 },
+  { id: "essentiel", name: "Essentiel", monthlyCents: 14900, yearlyCents: 160800 },
+  { id: "operations", name: "Opérations", monthlyCents: 29900, yearlyCents: 322800 },
   { id: "complet", name: "Complet", monthlyCents: 39900, yearlyCents: 430800 },
 ];
 const view = (over: Partial<SubscriptionView> = {}): SubscriptionView => ({
@@ -51,7 +51,7 @@ const running = (over: Partial<NonNullable<SubscriptionView["subscription"]>> = 
       running: true,
       plan: "operations",
       yearly: false,
-      priceCents: 19900,
+      priceCents: 29900,
       currentPeriodEnd: "2026-12-17T10:00:00Z",
       cancelAtPeriodEnd: false,
       paymentMethod: { type: "card", brand: "visa", last4: "4242", expMonth: 8, expYear: 2028 },
@@ -79,15 +79,15 @@ beforeEach(() => {
 describe("SubscriptionPage", () => {
   it("s'abonne avec la mise en route et la TVA, puis montre le paiement", async () => {
     api.getSubscription.mockResolvedValue(view());
-    api.subscribe.mockResolvedValue({ clientSecret: "pi_secret", totalCents: 58680, taxCents: 9780, setupFeeCents: 29000 });
+    api.subscribe.mockResolvedValue({ clientSecret: "pi_secret", totalCents: 70680, taxCents: 11780, setupFeeCents: 29000 });
     renderPage("/abonnement?formule=operations");
     const checkout = await screen.findByTestId("subscription-checkout");
     expect(checkout).toHaveTextContent("Mise en route (une fois)");
     expect(checkout).toHaveTextContent("290,00 € HT");
-    expect(screen.getByTestId("checkout-total")).toHaveTextContent("586,80 €");
+    expect(screen.getByTestId("checkout-total")).toHaveTextContent("706,80 €");
     await userEvent.click(screen.getByTestId("subscription-continue"));
     expect(api.subscribe).toHaveBeenCalledWith("operations", false);
-    expect(await screen.findByTestId("stripe-form")).toHaveTextContent("Payer 586,80 € et m'abonner");
+    expect(await screen.findByTestId("stripe-form")).toHaveTextContent("Payer 706,80 € et m'abonner");
   });
 
   it("change de formule avec l'aperçu du prorata, et résilie", async () => {

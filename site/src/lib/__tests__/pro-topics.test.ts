@@ -29,7 +29,7 @@ describe("Plazo Pro's pages by topic", () => {
     const text = fr.proHome.faq.flat().join(" ");
     expect(fr.proHome.faq).toHaveLength(6);
     expect(text).not.toMatch(TECHNICAL);
-    expect(text).toMatch(/99 € à 399 € HT/);
+    expect(text).toMatch(/149 € à 399 € HT/);
     for (const comparator of ["Allopark", "Onepark", "Parclick", "ParkMundo", "ParkVia", "Park Hit"]) expect(text).toContain(comparator);
   });
 

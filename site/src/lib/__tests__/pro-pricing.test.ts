@@ -5,8 +5,8 @@ import { commissionExample, quote, selectionSummary } from "../pro-pricing";
 describe("Plazo Pro pricing", () => {
   it("totals the plan, the monthly options and the one-off ones", () => {
     const q = quote({ plan: "operations", yearly: false, marketplace: true, options: ["setup", "booking_page"] });
-    expect(q.monthlyCents).toBe(19900 + 2900);
-    expect(q.periodCents).toBe(22800);
+    expect(q.monthlyCents).toBe(29900 + 2900);
+    expect(q.periodCents).toBe(32800);
     expect(q.onceCents).toBe(29000);
     expect(q.lines.map(l => l.kind)).toEqual(["monthly", "commission", "once", "monthly"]);
   });
@@ -22,16 +22,16 @@ describe("Plazo Pro pricing", () => {
 
   it("falls back to the recommended plan and leaves out unknown and « soon » options", () => {
     const q = quote({ plan: "x" as never, yearly: false, marketplace: false, options: ["second_parking", "nope" as never] });
-    expect(q.lines).toEqual([{ label: "Logiciel Opérations", cents: 19900, kind: "monthly" }]);
+    expect(q.lines).toEqual([{ label: "Logiciel Opérations", cents: 29900, kind: "monthly" }]);
   });
 
   it("words the selection for the quote request", () => {
     const text = selectionSummary({ plan: "essentiel", yearly: true, marketplace: true, options: ["setup"] }, formatEuros);
     expect(text).toContain("Facturation : annuelle");
-    expect(text).toContain("Logiciel Essentiel : 89,10");
+    expect(text).toContain("Logiciel Essentiel : 134,10");
     expect(text).toContain("Fiche sur Plazo : 15 % par réservation payée sur Plazo");
     expect(text).toContain("Mise en route sur place : 290,00 € une fois");
-    expect(text).toMatch(/Total : 1.069,20.€ HT par an/);
+    expect(text).toMatch(/Total : 1.609,20.€ HT par an/);
   });
 
   it("the commission example: 15 % of a 60 € week", () => {

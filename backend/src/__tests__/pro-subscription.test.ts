@@ -63,7 +63,7 @@ function installFake() {
         };
         subs.set(sub.id, sub);
         const setup = p.add_invoice_items ? 29000 : 0;
-        const ht = 19900 + setup;
+        const ht = 29900 + setup;
         return {
           ...sub,
           latest_invoice: { id: 'in_1', total: Math.round(ht * 1.2), total_excluding_tax: ht, confirmation_secret: { client_secret: 'pi_secret_1' } },
@@ -138,8 +138,8 @@ afterEach(() => {
 
 describe('abonnement Plazo Pro (domaine)', () => {
   it('donne les prix HT et reconnaît une montée de formule', () => {
-    expect(planPriceCents('operations', false)).toBe(19900);
-    expect(planPriceCents('operations', true)).toBe(179 * 12 * 100);
+    expect(planPriceCents('operations', false)).toBe(29900);
+    expect(planPriceCents('operations', true)).toBe(269 * 12 * 100);
     expect(planOfLookupKey(planLookupKey('complet', true))).toEqual({ plan: 'complet', yearly: true });
     expect(planOfLookupKey('autre')).toBeNull();
     expect(chargedNow({ plan: 'essentiel', yearly: false }, { plan: 'complet', yearly: false })).toBe(true);
@@ -171,7 +171,7 @@ describe('abonnement Plazo Pro (API)', () => {
 
     const res = await api().post('/api/internal/subscription').set(auth(token)).send({ plan: 'operations', yearly: false });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ clientSecret: 'pi_secret_1', totalCents: 58680, taxCents: 9780, setupFeeCents: 29000 });
+    expect(res.body).toMatchObject({ clientSecret: 'pi_secret_1', totalCents: 70680, taxCents: 11780, setupFeeCents: 29000 });
     const created = calls.createSub[0];
     expect(created.add_invoice_items).toHaveLength(1);
     expect(created.default_tax_rates).toEqual(['txr_20']);
@@ -185,7 +185,7 @@ describe('abonnement Plazo Pro (API)', () => {
     expect((await webhook('customer.subscription.updated', sub)).status).toBe(200);
     const view = await api().get('/api/internal/subscription').set(auth(token));
     expect(view.body.setupFeeDue).toBe(false);
-    expect(view.body.subscription).toMatchObject({ status: 'active', running: true, plan: 'operations', yearly: false, priceCents: 19900 });
+    expect(view.body.subscription).toMatchObject({ status: 'active', running: true, plan: 'operations', yearly: false, priceCents: 29900 });
     expect(view.body.subscription.paymentMethod).toMatchObject({ type: 'card', brand: 'visa', last4: '4242' });
     expect((await prisma.operator.findUnique({ where: { id: operator.id } }))!.proPlan).toBe('operations');
 
@@ -202,7 +202,7 @@ describe('abonnement Plazo Pro (API)', () => {
 
     // Downgrade: from the renewal, nothing now.
     const down = await api().get('/api/internal/subscription/preview?plan=essentiel').set(auth(token));
-    expect(down.body).toMatchObject({ chargedNow: false, dueNowCents: 0, nextCents: 11880 });
+    expect(down.body).toMatchObject({ chargedNow: false, dueNowCents: 0, nextCents: 17880 });
     await api().post('/api/internal/subscription/change').set(auth(token)).send({ plan: 'essentiel' });
     expect(calls.updateSub.at(-1).proration_behavior).toBe('none');
 
