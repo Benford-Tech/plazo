@@ -1562,11 +1562,22 @@ export const adminApi = {
     }),
   setProspectStatus: (
     id: string,
-    status: "replied" | "interested" | "not_interested" | "unsubscribed",
+    status: "replied" | "interested" | "not_interested" | "unsubscribed" | "reopen",
   ) =>
     apiRequest<{ data: Prospect }>(
       `/internal/platform/prospects/${encodeURIComponent(id)}/status`,
       { method: "POST", body: json({ status }) },
+    ),
+  // 17/11/2026: several ticked prospects at once, and the note on why.
+  setProspectStatuses: (ids: string[], status: "interested" | "not_interested") =>
+    apiRequest<{ updated: number; skipped: number }>("/internal/platform/prospects/status", {
+      method: "POST",
+      body: json({ ids, status }),
+    }),
+  setProspectNote: (id: string, note: string) =>
+    apiRequest<{ data: Prospect }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}/note`,
+      { method: "PUT", body: json({ note }) },
     ),
   stopProspect: (id: string) =>
     apiRequest<{ data: Prospect }>(

@@ -7,6 +7,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   Search,
+  ThumbsDown,
+  ThumbsUp,
   X,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
@@ -292,6 +294,7 @@ function RowActions({
       | "interested"
       | "not_interested"
       | "unsubscribed"
+      | "reopen"
       | "stop"
       | "remove",
   ) => {
@@ -374,6 +377,15 @@ function RowActions({
               >
                 {t.notInterested}
               </button>
+              {MARKED.includes(prospect.status) && (
+                <button
+                  role="menuitem"
+                  className={item}
+                  onClick={() => run("reopen")}
+                >
+                  {t.reopen}
+                </button>
+              )}
               {prospect.nextSendAt && (
                 <button
                   role="menuitem"
@@ -1191,6 +1203,8 @@ export default function ProspectingPage() {
                                 >
                                   {state.text}
                                 </span>
+                                <StateMarks prospect={p} />
+                                <StatusNote prospect={p} />
                                 {p.failedAttempts > 0 && (
                                   <span className="mt-1 block text-xs text-destructive">
                                     {t.failed(p.failedAttempts)}
@@ -1228,9 +1242,17 @@ export default function ProspectingPage() {
               </table>
             </div>
           )}
-          <p className="mt-auto px-4 py-3 text-xs text-muted-foreground">
-            {t.chosen(chosen.length)}
-          </p>
+          <div className="mt-auto flex flex-wrap items-center gap-2 px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              {t.chosen(chosen.length)}
+            </p>
+            {chosen.length > 0 && (
+              <BulkMarks
+                ids={chosen.map((p) => p.id)}
+                onDone={() => setSelected(new Set())}
+              />
+            )}
+          </div>
         </section>
         <div ref={panelRef} className="scroll-mt-4">
           <SendPanel
@@ -1330,5 +1352,195 @@ function FilterSelect({
         {children}
       </select>
     </label>
+  );
+}
+
+/** The states a prospect is « marked » in (17/11/2026): the row's thumbs and « Remettre à contacter » undo them. */
+const MARKED: ProspectStatus[] = ["replied", "interested", "not_interested"];
+
+function useProspectsRefresh() {
+  const queryClient = useQueryClient();
+  return () =>
+    queryClient.invalidateQueries({ queryKey: ["platform", "prospects"] });
+}
+
+/**
+ * 👍 / 👎 next to the state (17/11/2026, « pouvoir marquer des prospects comme intéressés ou non »): one click marks; a
+ * click on the lit one puts the prospect back (« À contacter », or « Contacté » once a mail left).
+ */
+function StateMarks({ prospect }: { prospect: Prospect }) {
+  const refresh = useProspectsRefresh();
+  const mark = useMutation({
+    mutationFn: (status: "interested" | "not_interested" | "reopen") =>
+      adminApi.setProspectStatus(prospect.id, status),
+    onSuccess: (_, status) => {
+      if (status === "reopen") toast.success(t.reopened);
+      return refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  if (prospect.status === "unsubscribed") return null;
+  const name = prospect.companyName;
+  const button = (
+    lit: boolean,
+    status: "interested" | "not_interested",
+    label: string,
+    Icon: typeof ThumbsUp,
+    litClass: string,
+  ) => (
+    <button
+      type="button"
+      aria-pressed={lit}
+      aria-label={lit ? t.unmark(name) : label}
+      title={lit ? t.unmark(name) : label}
+      disabled={mark.isPending}
+      onClick={() => mark.mutate(lit ? "reopen" : status)}
+      data-testid={`prospect-${status}-${prospect.id}`}
+      className={cn(
+        "flex h-8 w-8 items-center justify-center rounded-full border transition-colors disabled:opacity-50",
+        lit
+          ? litClass
+          : "border-panel-line bg-white text-muted-foreground hover:border-lime-deep hover:text-foreground",
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
+  return (
+    <span className="ml-1.5 inline-flex gap-1 align-middle">
+      {button(
+        prospect.status === "interested",
+        "interested",
+        t.markInterested(name),
+        ThumbsUp,
+        "border-lime-deep bg-lime text-lime-ink",
+      )}
+      {button(
+        prospect.status === "not_interested",
+        "not_interested",
+        t.markNotInterested(name),
+        ThumbsDown,
+        "border-warn-text/40 bg-warn-soft text-warn-text",
+      )}
+    </span>
+  );
+}
+
+/** The note on why, under the state (17/11/2026): « + Note » opens a field, a click on the note edits it. */
+function StatusNote({ prospect }: { prospect: Prospect }) {
+  const refresh = useProspectsRefresh();
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(prospect.statusNote ?? "");
+  const save = useMutation({
+    mutationFn: (note: string) => adminApi.setProspectNote(prospect.id, note),
+    onSuccess: () => {
+      setEditing(false);
+      return refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  const note = prospect.statusNote ?? "";
+  if (!editing) {
+    return note ? (
+      <button
+        type="button"
+        onClick={() => {
+          setText(note);
+          setEditing(true);
+        }}
+        aria-label={t.editNote(prospect.companyName)}
+        className="mt-1 block max-w-[220px] text-left text-xs text-muted-foreground hover:text-foreground"
+        data-testid={`prospect-note-${prospect.id}`}
+      >
+        {note}
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={() => {
+          setText("");
+          setEditing(true);
+        }}
+        className="mt-1 block text-xs font-semibold text-lime-deep hover:underline"
+        data-testid={`prospect-add-note-${prospect.id}`}
+      >
+        {t.addNote}
+      </button>
+    );
+  }
+  const tooLong = text.trim().length > 300;
+  return (
+    <form
+      className="mt-1 flex max-w-[240px] flex-col gap-1"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!tooLong) save.mutate(text);
+      }}
+    >
+      <input
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setEditing(false);
+        }}
+        aria-label={t.noteLabel(prospect.companyName)}
+        placeholder={t.notePlaceholder}
+        className="h-9 w-full rounded-md border border-input bg-white px-2 text-sm"
+        data-testid={`prospect-note-input-${prospect.id}`}
+      />
+      {tooLong && <span className="text-xs text-destructive">{t.noteTooLong}</span>}
+      <span className="flex gap-1">
+        <Button type="submit" size="sm" className="h-8" disabled={save.isPending || tooLong}>
+          {t.noteSave}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)}>
+          {t.noteCancel}
+        </Button>
+      </span>
+    </form>
+  );
+}
+
+/** « Intéressés » / « Pas intéressés » for the ticked prospects (17/11/2026). */
+function BulkMarks({ ids, onDone }: { ids: string[]; onDone: () => void }) {
+  const refresh = useProspectsRefresh();
+  const mark = useMutation({
+    mutationFn: (status: "interested" | "not_interested") =>
+      adminApi.setProspectStatuses(ids, status),
+    onSuccess: (r) => {
+      toast.success(t.bulkDone(r.updated, r.skipped));
+      onDone();
+      return refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  return (
+    <span className="flex gap-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-9"
+        disabled={mark.isPending}
+        onClick={() => mark.mutate("interested")}
+        data-testid="bulk-interested"
+      >
+        <ThumbsUp className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        {t.bulkInterested}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-9"
+        disabled={mark.isPending}
+        onClick={() => mark.mutate("not_interested")}
+        data-testid="bulk-not-interested"
+      >
+        <ThumbsDown className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        {t.bulkNotInterested}
+      </Button>
+    </span>
   );
 }

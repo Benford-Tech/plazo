@@ -270,6 +270,7 @@ export class ProspectingService {
       language: prospectLanguage(p),
       languageOverride: isProspectLanguage(p.language) ? p.language : null,
       notes: p.notes,
+      statusNote: p.statusNote,
       source: p.source,
       status: p.status,
       step: p.step,
@@ -515,14 +516,15 @@ export class ProspectingService {
   /**
    * « A répondu », « Intéressé », « Pas intéressé » or « Désinscrit » (by hand, e.g. asked by reply): each stops the
    * follow-ups for good. An unsubscribed address joins the opt-out list and never changes state again.
+   * 17/11/2026 (« pouvoir marquer des prospects comme intéressés ou non »): `reopen` puts a marked prospect back where it
+   * was (« Contacté » once a mail left, else « À contacter », sendable again); the follow-ups stay stopped. `note`: why
+   * (300 characters; absent: unchanged, empty: removed).
    */
-  public async setStatus(actor: AuthenticatedStaff, id: string, status: unknown) {
-    if (!(['replied', 'interested', 'not_interested', 'unsubscribed'] as unknown[]).includes(status)) {
-      throw new ValidationException({ status: 'invalid_status' });
-    }
+  public async setStatus(actor: AuthenticatedStaff, id: string, status: unknown, note?: unknown) {
+    if (!isSettableStatus(status)) throw new ValidationException({ status: 'invalid_status' });
+    const statusNote = readStatusNote(note);
     const current = await this.getOrThrow(id);
     if (current.status === 'unsubscribed') throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
-    const now = new Date();
     const prospect = await prisma.$transaction(async tx => {
       if (status === 'unsubscribed' && current.email) {
         await tx.prospectSuppression.upsert({
@@ -533,10 +535,38 @@ export class ProspectingService {
       }
       return tx.prospect.update({
         where: { id },
-        data: { status: status as ProspectStatus, nextSendAt: null, stoppedAt: current.stoppedAt ?? now },
+        data: { ...statusChange(current, status, new Date()), ...(statusNote !== undefined ? { statusNote } : {}) },
       });
     });
-    await this.record(actor, 'prospect.status_changed', 'prospect', id, { from: current.status, to: status as string });
+    const to = prospect.status;
+    await this.record(actor, 'prospect.status_changed', 'prospect', id, {
+      from: current.status,
+      to,
+      ...(status === 'reopen' ? { reopened: true } : {}),
+    });
+    return this.viewOf(prospect);
+  }
+
+  /** « Intéressés » / « Pas intéressés » for the ticked prospects (17/11/2026): unsubscribed ones are left alone. */
+  public async setStatuses(actor: AuthenticatedStaff, ids: unknown, status: unknown) {
+    if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string')) throw new ValidationException({ ids: 'required' });
+    if (ids.length > 500) throw new ValidationException({ ids: 'too_many' });
+    if (status === 'unsubscribed' || !isSettableStatus(status)) throw new ValidationException({ status: 'invalid_status' });
+    const rows = await prisma.prospect.findMany({ where: { id: { in: ids as string[] } } });
+    const now = new Date();
+    const open = rows.filter(r => r.status !== 'unsubscribed');
+    await prisma.$transaction(open.map(r => prisma.prospect.update({ where: { id: r.id }, data: statusChange(r, status, now) })));
+    if (open.length) await this.record(actor, 'prospect.statuses_changed', 'prospect', undefined, { count: open.length, to: status });
+    return { updated: open.length, skipped: ids.length - open.length };
+  }
+
+  /** The note on why (« + Note » under the state, 17/11/2026): empty removes it. */
+  public async setStatusNote(actor: AuthenticatedStaff, id: string, note: unknown) {
+    const statusNote = readStatusNote(note);
+    if (statusNote === undefined) throw new ValidationException({ note: 'required' });
+    await this.getOrThrow(id);
+    const prospect = await prisma.prospect.update({ where: { id }, data: { statusNote } });
+    await this.record(actor, 'prospect.note_set', 'prospect', id, { removed: statusNote === null });
     return this.viewOf(prospect);
   }
 
@@ -873,4 +903,28 @@ export class ProspectingService {
     });
     return count;
   }
+}
+
+type SettableStatus = 'replied' | 'interested' | 'not_interested' | 'unsubscribed' | 'reopen';
+const SETTABLE: readonly string[] = ['replied', 'interested', 'not_interested', 'unsubscribed', 'reopen'];
+function isSettableStatus(value: unknown): value is SettableStatus {
+  return typeof value === 'string' && SETTABLE.includes(value);
+}
+
+/** What a state change writes: a mark stops the follow-ups; `reopen` goes back to « Contacté » or « À contacter ». */
+function statusChange(current: Prospect, status: SettableStatus, now: Date): Prisma.ProspectUpdateInput {
+  if (status === 'reopen') {
+    // Never contacted: sendable again (stoppedAt cleared); contacted: the follow-ups stay stopped.
+    return current.step > 0 ? { status: 'contacted', nextSendAt: null } : { status: 'to_contact', nextSendAt: null, stoppedAt: null };
+  }
+  return { status: status as ProspectStatus, nextSendAt: null, stoppedAt: current.stoppedAt ?? now };
+}
+
+/** The note on why: undefined when absent, null when empty, 300 characters at most. */
+function readStatusNote(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value !== null && typeof value !== 'string') throw new ValidationException({ note: 'invalid' });
+  const text = (value ?? '').replace(/\s+/g, ' ').trim();
+  if (text.length > 300) throw new ValidationException({ note: 'too_long' });
+  return text || null;
 }

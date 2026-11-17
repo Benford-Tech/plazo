@@ -98,6 +98,25 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *     tags: [Prospection]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
+ * /internal/platform/prospects/status:
+ *   post:
+ *     summary: « Intéressés » / « Pas intéressés » / « A répondu » / « Remettre à contacter » (reopen) for the ticked prospects; unsubscribed ones skipped
+ *     tags: [Prospection]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [ids, status], properties: { ids: { type: array, maxItems: 500, items: { type: string } }, status: { type: string, enum: [replied, interested, not_interested, reopen] } } }
+ *     responses:
+ *       200: { description: "{ updated, skipped }" }
+ * /internal/platform/prospects/{id}/note:
+ *   put:
+ *     summary: The note on why it was marked (300 characters; empty removes it)
+ *     tags: [Prospection]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       400: { description: "note: required, invalid, too_long" }
  * /internal/platform/prospects/send:
  *   post:
  *     summary: « Envoyer à N prospects » — enrolls the chosen prospects still to contact and sends the first email now, within today's cap; the rest waits for the next window; the follow-ups leave by themselves
@@ -165,11 +184,13 @@ export class ProspectingRoute implements Routes {
     this.router.get(`${base}/settings`, PlatformAdminMiddleware(), this.prospecting.settings);
     this.router.put(`${base}/settings`, PlatformAdminMiddleware(), this.prospecting.updateSettings);
     this.router.post(`${base}/import`, PlatformAdminMiddleware(), this.prospecting.import);
+    this.router.post(`${base}/status`, PlatformAdminMiddleware(), this.prospecting.setStatuses);
     this.router.post(`${base}/send`, PlatformAdminMiddleware(), this.prospecting.send);
     this.router.post(`${base}/test`, PlatformAdminMiddleware(), this.prospecting.test);
     this.router.patch(`${base}/:id`, PlatformAdminMiddleware(), this.prospecting.update);
     this.router.delete(`${base}/:id`, PlatformAdminMiddleware(), this.prospecting.remove);
     this.router.post(`${base}/:id/status`, PlatformAdminMiddleware(), this.prospecting.setStatus);
+    this.router.put(`${base}/:id/note`, PlatformAdminMiddleware(), this.prospecting.setNote);
     this.router.post(`${base}/:id/stop`, PlatformAdminMiddleware(), this.prospecting.stop);
     this.router.get('/public/prospecting/unsubscribe/:token', this.prospecting.unsubscribePage);
     this.router.post('/public/prospecting/unsubscribe/:token', this.prospecting.unsubscribe);
