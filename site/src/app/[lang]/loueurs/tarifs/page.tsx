@@ -1,13 +1,15 @@
 import { permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/JsonLd";
+import { ProFaq } from "@/components/loueurs/ProFaq";
 import { ProPricing } from "@/components/loueurs/ProPricing";
 import { quoteAction } from "@/lib/contact-actions";
 import { fr, lazy } from "@/lib/fr";
 import { COMPANY, hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL } from "@/lib/product";
 import { PRO_PLANS } from "@/lib/pro-pricing";
 import { proOpenGraph } from "@/lib/seo";
-import { breadcrumbLd, proSoftwareLd } from "@/lib/structured-data";
+import { PRICING_FAQ } from "@/lib/pro-topics-pages/excel";
+import { breadcrumbLd, faqLd, proSoftwareLd } from "@/lib/structured-data";
 import { PRO_DEMO_PATH, PRO_HOME_PATH, PRO_PRICING_PATH, PRO_SIGNUP_PATH, siteUrl } from "@/lib/site";
 import { enterLocaleFrom } from "@/lib/i18n/server";
 
@@ -38,9 +40,14 @@ export default async function ProPricingPage({ params }: { params: Promise<{ lan
             { name: `${PRODUCT_NAME} Pro`, path: absolute(PRO_HOME_PATH) },
             { name: fr.proHome.nav.pricing, path: absolute(PRO_PRICING_PATH) },
           ]),
+          faqLd(PRICING_FAQ),
         ]}
       />
       <ProPricing action={quoteAction} demoHref={PRO_DEMO_PATH} signupHref={PRO_SIGNUP_PATH} supportEmail={hasSupportEmail() ? SUPPORT_EMAIL : null} />
+      {/* 17/11/2026 (« ameliore le SEO plazo pro »): the questions a manager asks before choosing, in the page and for Google. */}
+      <section aria-labelledby="pro-pricing-faq" className="mx-auto w-full max-w-[860px] py-12">
+        <ProFaq id="pro-pricing-faq" title={t.faqTitle} faq={PRICING_FAQ} />
+      </section>
     </div>
   );
 }

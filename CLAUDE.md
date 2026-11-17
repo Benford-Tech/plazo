@@ -2342,6 +2342,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   cassés par page ; le menu des voyageurs restait aussi dans le HTML de pro.plazo.fr (caché par CSS seulement). `renderedPath`
   (`lib/i18n/locales.ts`) donne le chemin public d'une page en cours de rendu, lu par `LanguagePicker` et `HiddenOn` ; le plan
   du site de pro.plazo.fr porte la date de chaque texte (`PRO_HOME_UPDATED`, `PRO_PRICING_UPDATED`, `ProTopic.updated`).
+  **Onze pages de plus (17/11/2026, choix « Pages par fonction · Une page par comparateur · Tarifs enrichis · Plazo Pro ou
+  Excel »)** : `PRO_TOPIC_SLUGS` passe à 14 pages sur le gabarit `ProTopicView`, textes dans `lib/pro-topics-pages/` :
+  `features.ts` (`contrat-etat-des-lieux`, `planning-reservations`, `plan-du-parking`, `messages-clients`), `comparators.ts`
+  (`allopark`, `onepark`, `parkvia`, `park-hit`, `parclick`, `parkmundo` : ce que Plazo fait vraiment pour chacun, et la
+  question « … est-il partenaire de … ? » → non, `PRO_COMPARATOR_SLUGS`), `excel.ts` (`logiciel-ou-excel`, aucun concurrent
+  nommé, et `PRICING_FAQ` : six questions sous la page Tarifs, en `FAQPage`, sans durée d'engagement inventée) ; « Contrat et
+  état des lieux » du menu mène à sa page ; pied de page : les pages par fonction sous « Solutions » et une colonne
+  « Comparateurs » ; la page « Comparateurs » renvoie à chacune ; sur-titre des Tarifs « Tarifs du logiciel de parking
+  d'aéroport ». Tests `pro-topics.test.ts` (900 mots, 5 questions, aucun mot technique, chaque page reliée).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.

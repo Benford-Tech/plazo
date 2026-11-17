@@ -5,7 +5,7 @@ import { currentYear, legalLine } from "@/lib/footer";
 import { fr, lazy } from "@/lib/fr";
 import { COMPANY, PRODUCT_NAME } from "@/lib/product";
 import { PRO_HOME_SECTIONS } from "@/components/loueurs/ProHome";
-import { PRO_TOPICS } from "@/lib/pro-topics";
+import { PRO_COMPARATOR_SLUGS, PRO_TOPICS } from "@/lib/pro-topics";
 import { PRO_DEMO_PATH, PRO_HOME_PATH, PRO_LOGIN_PATH, PRO_PRICING_PATH, PRO_SIGNUP_PATH, proTopicPath } from "@/lib/site";
 import { enterLocaleFrom } from "@/lib/i18n/server";
 
@@ -37,10 +37,23 @@ const SOLUTIONS = [
   { href: proTopicPath("navette"), label: PRO_TOPICS.navette.label },
   { href: proTopicPath("voiturier"), label: PRO_TOPICS.voiturier.label },
   { href: proTopicPath("comparateurs"), label: PRO_TOPICS.comparateurs.label },
-  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.paperwork}`, label: h.nav.paperwork },
+  // Its own page since 17/11/2026 (« ameliore le SEO plazo pro »), in place of the home page's section.
+  { href: proTopicPath("contrat-etat-des-lieux"), label: h.nav.paperwork },
 ];
-/** The footer adds what the header leaves out. */
-const FOOTER_SOLUTIONS = [...SOLUTIONS, { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.marketplace}`, label: h.nav.marketplace }];
+/** The footer adds what the header leaves out: the other pages by feature (17/11/2026) and the marketplace. */
+const FOOTER_SOLUTIONS = [
+  ...SOLUTIONS,
+  ...(["planning-reservations", "plan-du-parking", "messages-clients", "logiciel-ou-excel"] as const).map(slug => ({
+    href: proTopicPath(slug),
+    label: PRO_TOPICS[slug].label,
+  })),
+  { href: `${PRO_HOME_PATH}#${PRO_HOME_SECTIONS.marketplace}`, label: h.nav.marketplace },
+];
+/** One page per comparator (17/11/2026), under the page that presents them all. */
+const FOOTER_COMPARATORS = (["comparateurs", ...PRO_COMPARATOR_SLUGS] as const).map(slug => ({
+  href: proTopicPath(slug),
+  label: slug === "comparateurs" ? h.footer.allComparators : PRO_TOPICS[slug].label,
+}));
 
 /**
  * The operators' pages wear the pro space's colours (grey-green ground, lime, dark green) and their own header and
@@ -86,7 +99,7 @@ export default async function OperatorsLayout({ children, params }: { children: 
         {children}
       </main>
       <footer className="bg-lime-ink text-lime-band">
-        <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-x-10 gap-y-5 px-4 py-7 text-[13px] md:px-6 lg:grid-cols-[1.2fr_1.6fr_1fr_1fr_1fr]">
+        <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-x-10 gap-y-5 px-4 py-7 text-[13px] md:px-6 lg:grid-cols-[1.2fr_1.4fr_1fr_1fr_1fr_1fr]">
           <div>
             <b className="font-pro-display tracking-[.06em] text-lime">{PRODUCT_NAME.toUpperCase()} PRO</b>
             <br />
@@ -104,6 +117,14 @@ export default async function OperatorsLayout({ children, params }: { children: 
           <nav aria-label={h.footer.solutions} className="flex flex-col gap-1">
             <b className="text-[12px] tracking-[.08em] text-lime uppercase">{h.footer.solutions}</b>
             {FOOTER_SOLUTIONS.map(link => (
+              <Link key={link.href} href={link.href} className="text-lime-band">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <nav aria-label={h.footer.comparators} className="flex flex-col gap-1">
+            <b className="text-[12px] tracking-[.08em] text-lime uppercase">{h.footer.comparators}</b>
+            {FOOTER_COMPARATORS.map(link => (
               <Link key={link.href} href={link.href} className="text-lime-band">
                 {link.label}
               </Link>

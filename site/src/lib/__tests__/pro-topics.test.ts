@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fr } from "@/lib/fr";
-import { PRO_TOPIC_LIST, PRO_TOPICS, proTopicTexts, wordCount } from "@/lib/pro-topics";
+import { PRO_COMPARATOR_SLUGS, PRO_TOPIC_LIST, PRO_TOPICS, proTopicTexts, wordCount } from "@/lib/pro-topics";
+import { PRICING_FAQ } from "@/lib/pro-topics-pages/excel";
 import { PRO_TOPIC_SLUGS } from "@/lib/site";
 
 const TECHNICAL = /GPS|SMS|suivi de vol|API|Claude/;
@@ -30,5 +31,22 @@ describe("Plazo Pro's pages by topic", () => {
     expect(text).not.toMatch(TECHNICAL);
     expect(text).toMatch(/99 € à 299 € HT/);
     for (const comparator of ["Allopark", "Onepark", "Parclick", "ParkMundo", "ParkVia", "Park Hit"]) expect(text).toContain(comparator);
+  });
+
+  // 17/11/2026 (« ameliore le SEO plazo pro »): one page per comparator, never claiming a partnership, and every page linked.
+  it("gives each comparator its own page, which says Plazo is not its partner", () => {
+    for (const slug of PRO_COMPARATOR_SLUGS) {
+      const topic = PRO_TOPICS[slug];
+      expect(topic.metaTitle).toContain(topic.label);
+      expect(topic.faq.some(([question, answer]) => /partenaire/.test(question) && answer.startsWith("Non"))).toBe(true);
+    }
+    expect(new Set(PRO_TOPIC_LIST.map(topic => topic.lead)).size).toBe(PRO_TOPIC_LIST.length);
+  });
+
+  it("links every page from another one, and answers the pricing questions without technical words", () => {
+    const linked = new Set(PRO_TOPIC_LIST.flatMap(topic => topic.next));
+    for (const slug of PRO_TOPIC_SLUGS) if (slug !== "navette") expect(linked.has(slug)).toBe(true);
+    expect(PRICING_FAQ.length).toBeGreaterThanOrEqual(5);
+    expect(PRICING_FAQ.flat().join(" ")).not.toMatch(TECHNICAL);
   });
 });
