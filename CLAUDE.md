@@ -2273,6 +2273,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   stops, conditions }` (`PublicService.details`, `loadParkingValues` ; jamais le téléphone du chauffeur ni celui des SMS ; photo
   https ou `/api/public/…` seulement). Tests `parking-more.test.ts`, `listing-public.test.ts`. Pages A (ville, gare, cas d'usage) : liste
   proposée sur la même maquette, pas encore choisie.
+- **Pages ville et gare, mockup A (17/11/2026, « fais les pages ville et gare »)** : dix pages de plus dans le registre des guides
+  (`lib/guides/topics.ts` : `group` topic · station · city ; `topicLinks(airport, groups?)`), sous `/lyon-saint-exupery/guide/…` :
+  `parking-gare-tgv` (`lyon-gare-tgv.ts` : la gare d'après lyonaeroports.com relu le 17/11/2026, TGV, OUIGO et Trenitalia, pas de
+  guichet, P4 en face, P2 et P3, dépose-minute, Rhônexpress au niveau -1 ; passerelle de 250 m et Calatrava 1994 d'après Wikipédia ;
+  ni temps de marche ni TER, non vérifiés) et `depuis-<ville>` pour Grenoble, Chambéry, Annecy, Saint-Étienne, Bourgoin-Jallieu,
+  Vienne, Villefranche-sur-Saône, Mâcon, Bourg-en-Bresse (`lyon-depuis.ts`, `CITIES` : km, minutes et autoroutes relevés le 17/11/2026
+  avec OSRM, données OpenStreetMap, centre-ville → Terminal 1, sans circulation ; péages jamais indiqués ; le train seulement pour les
+  villes que l'aéroport cite). `TopicGuide.trip` : tuiles Distance · En voiture · Autoroutes (`driveText`, arrondi à 5 min) avec la
+  source ; « Les autres villes de départ » sur chaque guide ; pied de page : guides et gare seulement ; plan du site : tout. Français
+  seulement, comme les guides. Tests `topic-guides.test.ts`, `TopicGuideView.test.tsx`, `structured-data.test.ts`. Pas encore : les
+  pages par cas d'usage.
 - **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et

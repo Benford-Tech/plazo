@@ -536,6 +536,11 @@ export const pt: Dict = {
     seeAllResults: "Ver todos os parques para estas datas",
     faqTitle: "Perguntas frequentes",
     otherGuides: "Os outros guias",
+    otherCities: "Outras cidades de partida",
+    tripTitle: (from: string) => `O trajeto de ${from} ao aeroporto`,
+    tripDistance: "DISTÂNCIA",
+    tripDrive: "DE CARRO",
+    tripRoads: "AUTOESTRADAS",
     airportGuide: (airport: string) =>
       `O guia completo do estacionamento no aeroporto de ${airport}`,
     footerLink: (topic: string, airport: string) => `${topic} em ${airport}`,

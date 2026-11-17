@@ -1,3 +1,4 @@
+import { GUIDE_TOPICS } from "../guides/topics";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatEuros } from "../money";
 import { parkingMetaDescription } from "../seo";
@@ -160,7 +161,7 @@ describe("sitemap", () => {
     vi.unstubAllEnvs();
   });
 
-  const guides = ["parking-pas-cher", "parking-longue-duree", "parking-voiturier"].map(topic => `${BASE}/lyon-saint-exupery/guide/${topic}`);
+  const guides = GUIDE_TOPICS.map(t => `${BASE}/lyon-saint-exupery/guide/${t.slug}`);
 
   // 13/10/2026: the account deletion page of Plazo Pro, asked by the stores.
   const deletion = `${BASE}/suppression-compte`;

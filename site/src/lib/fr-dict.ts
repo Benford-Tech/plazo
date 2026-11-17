@@ -564,6 +564,11 @@ const frBase = {
     seeAllResults: "Voir tous les parkings pour ces dates",
     faqTitle: "Questions fréquentes",
     otherGuides: "Les autres guides",
+    otherCities: "Les autres villes de départ",
+    tripTitle: (from: string) => `Le trajet ${from} → aéroport`,
+    tripDistance: "DISTANCE",
+    tripDrive: "EN VOITURE",
+    tripRoads: "AUTOROUTES",
     airportGuide: (airport: string) =>
       `Le guide complet du parking à l’aéroport de ${airport}`,
     footerLink: (topic: string, airport: string) => `${topic} à ${airport}`,

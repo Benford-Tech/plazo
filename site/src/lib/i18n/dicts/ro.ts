@@ -539,6 +539,11 @@ export const ro: Dict = {
     seeAllResults: "Vedeți toate parcările pentru aceste date",
     faqTitle: "Întrebări frecvente",
     otherGuides: "Celelalte ghiduri",
+    otherCities: "Alte orașe de plecare",
+    tripTitle: (from: string) => `Drumul de la ${from} la aeroport`,
+    tripDistance: "DISTANȚĂ",
+    tripDrive: "CU MAȘINA",
+    tripRoads: "AUTOSTRĂZI",
     airportGuide: (airport: string) =>
       `Ghidul complet al parcării la aeroportul ${airport}`,
     footerLink: (topic: string, airport: string) => `${topic} la ${airport}`,
