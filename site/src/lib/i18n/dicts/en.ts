@@ -158,7 +158,7 @@ export const en: Dict = {
     ],
     buildOffer: "Build my plan",
     facts: [
-      { value: "6", label: "comparison sites recognised" },
+      { value: "25", label: "comparison sites supported" },
       { value: "4", label: "roles: manager, front desk, driver, valet" },
       { value: "Web · iPhone · Android", label: "the same team everywhere" },
     ],

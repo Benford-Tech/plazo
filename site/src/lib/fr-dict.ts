@@ -159,7 +159,7 @@ const frBase = {
     ],
     buildOffer: "Construire mon offre",
     facts: [
-      { value: "6", label: "comparateurs reconnus" },
+      { value: "25", label: "comparateurs pris en charge" },
       { value: "4", label: "postes : gérant, accueil, chauffeur, voiturier" },
       { value: "Web · iPhone · Android", label: "la même équipe partout" },
     ],

@@ -147,7 +147,7 @@ export const uk: Dict = {
     ],
     buildOffer: "Скласти мою пропозицію",
     facts: [
-      { value: "6", label: "агрегаторів розпізнаються" },
+      { value: "25", label: "підтримуваних агрегаторів" },
       { value: "4", label: "ролі: керівник, рецепція, водій, паркувальник" },
       { value: "Web · iPhone · Android", label: "одна команда всюди" },
     ],

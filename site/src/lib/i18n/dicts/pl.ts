@@ -151,7 +151,7 @@ export const pl: Dict = {
     ],
     buildOffer: "Skomponuj ofertę",
     facts: [
-      { value: "6", label: "obsługiwanych porównywarek" },
+      { value: "25", label: "obsługiwanych porównywarek" },
       { value: "4", label: "stanowiska: kierownik, recepcja, kierowca, valet" },
       { value: "Web · iPhone · Android", label: "ten sam zespół wszędzie" },
     ],

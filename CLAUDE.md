@@ -2314,7 +2314,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   pas les moyens techniques mis en place » ; maquette https://claude.ai/artifact/XBPQJUEg1qcto8MCwj7woY, « Go »)** : page `/loueurs`
   (`site/src/app/loueurs/page.tsx`, `components/loueurs/ProHome.tsx`, textes `fr.proHome`) sur le déroulé de la page d'accueil de
   Solution Park : bande vert foncé « Le logiciel des parkings d'aéroport » avec « Essayer la démo » et « Construire mon offre », trois
-  faits vrais (6 comparateurs reconnus, 4 postes, web · iPhone · Android) et un téléphone ; les quatre produits en alternance (Logiciel,
+  faits (25 comparateurs pris en charge depuis le 17/11/2026, « Augmente le nombre de comparateur à 25 », choix « Seulement le chiffre
+  du site » : 6 lus mot pour mot, les autres par Claude ; avant « 6 comparateurs reconnus » ; 4 postes, web · iPhone · Android) et un téléphone ; les quatre produits en alternance (Logiciel,
   Application Plazo Pro, Vendre sur Plazo, Contrat et état des lieux ; ancres `#logiciel`, `#application`, `#vendre-sur-plazo`,
   `#contrat`, « L'essayer dans la démo ») ; « Centralisez vos réservations » avec les canaux et trois gains ; « Fait sur le terrain »
   (client n°1 jamais nommé) ; « Construisez votre offre » (`PRO_PLANS`) ; « Un renseignement ? » : `QuoteForm` sans sélection

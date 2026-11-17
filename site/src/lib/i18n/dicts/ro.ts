@@ -147,7 +147,7 @@ export const ro: Dict = {
     ],
     buildOffer: "Alcătuiți oferta mea",
     facts: [
-      { value: "6", label: "comparatoare recunoscute" },
+      { value: "25", label: "comparatoare acceptate" },
       { value: "4", label: "posturi: administrator, recepție, șofer, valet" },
       { value: "Web · iPhone · Android", label: "aceeași echipă peste tot" },
     ],
