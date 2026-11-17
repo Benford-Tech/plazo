@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from "./product";
+import { BUYING_GUIDE_TOPICS } from "./pro-topics-pages/buying-guide";
 import { COMPARATOR_TOPICS } from "./pro-topics-pages/comparators";
 import { EXCEL_TOPICS } from "./pro-topics-pages/excel";
 import { FEATURE_TOPICS } from "./pro-topics-pages/features";
@@ -34,7 +35,7 @@ export type ProTopic = {
 };
 
 /** The day the home page's and the pricing page's texts last changed (sitemap). */
-export const PRO_HOME_UPDATED = "2026-11-12";
+export const PRO_HOME_UPDATED = "2026-11-17";
 export const PRO_PRICING_UPDATED = "2026-11-13";
 
 const FIRST_TOPICS = {
@@ -319,7 +320,7 @@ const FIRST_TOPICS = {
 /** The pages by comparator (17/11/2026), in the order of the footer. */
 export const PRO_COMPARATOR_SLUGS = ["allopark", "onepark", "parkvia", "park-hit", "parclick", "parkmundo"] as const satisfies readonly ProTopicSlug[];
 
-export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = { ...FIRST_TOPICS, ...FEATURE_TOPICS, ...COMPARATOR_TOPICS, ...EXCEL_TOPICS };
+export const PRO_TOPICS: Record<ProTopicSlug, ProTopic> = { ...FIRST_TOPICS, ...FEATURE_TOPICS, ...COMPARATOR_TOPICS, ...EXCEL_TOPICS, ...BUYING_GUIDE_TOPICS };
 
 export const PRO_TOPIC_LIST = Object.values(PRO_TOPICS);
 

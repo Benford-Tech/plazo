@@ -43,7 +43,7 @@ const SOLUTIONS = [
 /** The footer adds what the header leaves out: the other pages by feature (17/11/2026) and the marketplace. */
 const FOOTER_SOLUTIONS = [
   ...SOLUTIONS,
-  ...(["planning-reservations", "plan-du-parking", "messages-clients", "logiciel-ou-excel"] as const).map(slug => ({
+  ...(["planning-reservations", "plan-du-parking", "messages-clients", "logiciel-ou-excel", "choisir-logiciel-parking-aeroport"] as const).map(slug => ({
     href: proTopicPath(slug),
     label: PRO_TOPICS[slug].label,
   })),

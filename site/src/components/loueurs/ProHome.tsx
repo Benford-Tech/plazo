@@ -380,6 +380,10 @@ export function ProHome({ action, demoHref, pricingHref }: { action: Action; dem
       {/* 2A (28/10/2026): the questions operators ask first. */}
       <section aria-labelledby="pro-home-faq" className="mx-auto w-full max-w-[860px] px-4 py-12 md:px-6">
         <ProFaq id="pro-home-faq" title={t.faqTitle} faq={t.faq} />
+        {/* 17/11/2026: the buying guide, for operators still comparing. */}
+        <p className="mt-5">
+          <TopicLink slug="choisir-logiciel-parking-aeroport" />
+        </p>
       </section>
 
       {/* Demo request. */}

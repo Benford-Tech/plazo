@@ -47,6 +47,8 @@ export const PRO_TOPIC_SLUGS = [
   "parclick",
   "parkmundo",
   "logiciel-ou-excel",
+  // 17/11/2026 (« Plazo doit ressortir si on tape "logiciel aeroport parking" »): the buying guide.
+  "choisir-logiciel-parking-aeroport",
 ] as const;
 export type ProTopicSlug = (typeof PRO_TOPIC_SLUGS)[number];
 export const proTopicPath = (slug: ProTopicSlug) => (PRO_SITE_URL ? `${PRO_SITE_URL}/${slug}` : `${OPERATORS_PREFIX}/${slug}`);
