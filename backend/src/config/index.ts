@@ -120,7 +120,8 @@ export function brevoSmsAvailable(): boolean {
 
 // Default commission on online bookings, in basis points (1500 = 15 %), when an operator has none.
 // Unset: online payment stays closed until a commission is configured.
-const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
+// 17/11/2026: an empty PLATFORM_COMMISSION_BPS means « not set », never 0 % (Number('') is 0, like SMS_DAILY_LIMIT).
+const rawCommission = process.env.PLATFORM_COMMISSION_BPS?.trim() ? Number(process.env.PLATFORM_COMMISSION_BPS) : NaN;
 export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
 
 // Stripe Connect (online payment of the site's bookings). Read on every call, like the platform
