@@ -75,6 +75,19 @@ export interface TopicFacts extends GuideFacts {
   valet: { count: number; week: { priceCents: number; days: number } | null } | null;
 }
 
+/** A drive to the airport, as the city pages show it. */
+export interface GuideTrip {
+  /** « Grenoble ». */
+  from: string;
+  km: number;
+  /** Driving time without traffic, in minutes. */
+  minutes: number;
+  /** Motorways in driving order (« A48 », « A43 », « A432 »). */
+  roads: string[];
+  /** Where the figures come from and when they were read. */
+  note: string;
+}
+
 /** A topic guide: one page per search intent (« parking pas cher », « longue durée », « voiturier »). */
 export interface TopicGuide {
   /** Address segment, under /<airport>/guide/. */
@@ -94,6 +107,8 @@ export interface TopicGuide {
   updated: string;
   sections: GuideSection[];
   faq: [string, string][];
+  /** The road from a departure city (17/11/2026, city pages): figures read on one day from one router, shown as tiles. */
+  trip?: GuideTrip;
   /** The partner parkings shown on the page, with the length of the stay they are priced for. */
   partners: { filter: "all" | "valet"; stayDays: number; title: string; lead: string; empty: string };
 }

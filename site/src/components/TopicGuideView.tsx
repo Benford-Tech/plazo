@@ -10,6 +10,7 @@ import type { TopicGuide } from "@/lib/airport-guides";
 import { longDate, stayQuery, todayLocal } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 import { topicLinks } from "@/lib/guides";
+import { driveText } from "@/lib/guides/lyon-depuis";
 import { airportPath, siteUrl } from "@/lib/site";
 import { articleLd, breadcrumbLd, faqLd } from "@/lib/structured-data";
 import type { AirportResponse, SearchResponse } from "@/lib/types";
@@ -42,7 +43,8 @@ export function TopicGuideView({
 }) {
   const base = siteUrl();
   const partners = guidePartners(guide, preview, listings);
-  const others = topicLinks(airport.slug).filter(t => t.href !== path);
+  const others = topicLinks(airport.slug, ["topic", "station"]).filter(t => t.href !== path);
+  const cities = topicLinks(airport.slug, ["city"]).filter(t => t.href !== path);
   const sectionTitle = "font-title lining-nums text-[26px] leading-[1.15] text-ink md:text-[32px]";
 
   // Boutique (11/10/2026): the guide's editorial treatment (Playfair headings, a 65-character measure, hairlines),
@@ -65,6 +67,27 @@ export function TopicGuideView({
         <p className="text-[13.5px] font-semibold text-soft">{fr.guide.updated(longDate(guide.updated))}</p>
         <p className={`${MEASURE} border-t border-line pt-5 text-[17px] leading-[1.65] md:text-[18.5px]`}>{guide.intro}</p>
       </div>
+
+      {guide.trip && (
+        <section aria-labelledby="trajet-tuiles" className="flex flex-col gap-4">
+          <h2 id="trajet-tuiles" className={sectionTitle}>
+            {fr.guide.tripTitle(guide.trip.from)}
+          </h2>
+          <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              [fr.guide.tripDistance, `${guide.trip.km} km`],
+              [fr.guide.tripDrive, driveText(guide.trip.minutes)],
+              [fr.guide.tripRoads, guide.trip.roads.join(" · ")],
+            ].map(([label, value]) => (
+              <div key={label} className="card flex flex-col gap-1 p-4 md:p-5">
+                <dt className="eyebrow">{label}</dt>
+                <dd className="font-title lining-nums text-[26px] leading-tight text-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className={`${MEASURE} text-[13.5px] leading-[1.55] text-soft`}>{guide.trip.note}</p>
+        </section>
+      )}
 
       <section aria-labelledby="vos-dates" className="flex flex-col gap-4">
         <h2 id="vos-dates" className={sectionTitle}>
@@ -130,6 +153,26 @@ export function TopicGuideView({
             ))}
           </div>
         </section>
+      )}
+
+      {cities.length > 0 && (
+        <nav aria-labelledby="autres-villes" className="card px-5 pt-5 pb-2 md:px-6">
+          <h2 id="autres-villes" className="eyebrow mb-1.5">
+            {fr.guide.otherCities}
+          </h2>
+          <ul className="grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+            {cities.map(city => (
+              <li key={city.slug} className="border-b border-line-soft">
+                <Link href={city.href} className="flex min-h-12 items-center justify-between gap-3 py-2 text-[15px] font-semibold text-ink hover:text-accent-dark">
+                  {city.short}
+                  <span className="text-mute">
+                    <ChevronIcon direction="right" size={16} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       )}
 
       <nav aria-labelledby="autres-guides" className="card px-5 pt-5 pb-2 md:px-6">

@@ -45,8 +45,12 @@ describe("TopicGuideView (09/10/2026)", () => {
     expect(within(others).getAllByRole("link").map(a => a.getAttribute("href"))).toEqual([
       "/lyon-saint-exupery/guide/parking-pas-cher",
       "/lyon-saint-exupery/guide/parking-longue-duree",
+      "/lyon-saint-exupery/guide/parking-gare-tgv",
       "/#guide",
     ]);
+    // 17/11/2026: the city pages, in their own list.
+    const cities = screen.getByRole("navigation", { name: "Les autres villes de départ" });
+    expect(within(cities).getAllByRole("link")).toHaveLength(9);
     const ld = [...container.querySelectorAll('script[type="application/ld+json"]')].map(s => JSON.parse(s.textContent!));
     const types = ld.flat().map((d: { "@type": string }) => d["@type"]);
     expect(types).toEqual(expect.arrayContaining(["BreadcrumbList", "Article", "FAQPage"]));

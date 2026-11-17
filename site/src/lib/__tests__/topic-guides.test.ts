@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { guideTexts, topicFacts, type TopicFacts, type TopicGuide } from "../airport-guides";
 import { longDate } from "../dates";
 import { topicGuide, topicLinks } from "../guides";
+import { driveText } from "../guides/lyon-depuis";
 import { GUIDE_TOPICS, hasTopicGuides, isGuideTopic, topicPath } from "../guides/topics";
 import { formatEuros } from "../money";
 import type { AirportResponse, SearchResult } from "../types";
@@ -46,7 +47,7 @@ describe("topic guide registry (09/10/2026)", () => {
     expect(isGuideTopic("guide")).toBe(false);
     expect(topicGuide("nice-cote-d-azur", "parking-pas-cher", NONE)).toBeNull();
     expect(topicGuide("lyon-saint-exupery", "parking-gratuit", NONE)).toBeNull();
-    expect(topicLinks("lyon-saint-exupery").map(l => l.href)).toEqual([
+    expect(topicLinks("lyon-saint-exupery", ["topic"]).map(l => l.href)).toEqual([
       "/lyon-saint-exupery/guide/parking-pas-cher",
       "/lyon-saint-exupery/guide/parking-longue-duree",
       "/lyon-saint-exupery/guide/parking-voiturier",
@@ -68,7 +69,7 @@ describe("topic guide registry (09/10/2026)", () => {
   });
 });
 
-describe.each(GUIDE_TOPICS.map(t => t.slug))("topic guide %s", slug => {
+describe.each(GUIDE_TOPICS.filter(t => t.group === "topic").map(t => t.slug))("topic guide %s", slug => {
   const bare = topicGuide("lyon-saint-exupery", slug, NONE)!;
   const full = topicGuide("lyon-saint-exupery", slug, SOME)!;
 
@@ -111,7 +112,7 @@ describe.each(GUIDE_TOPICS.map(t => t.slug))("topic guide %s", slug => {
 
   it("uses the real partners' figures when there are some", () => {
     const all = texts(full).join("\n");
-    const expected = { "parking-pas-cher": formatEuros(5600), "parking-longue-duree": formatEuros(9800), "parking-voiturier": formatEuros(7400) }[slug];
+    const expected = ({ "parking-pas-cher": formatEuros(5600), "parking-longue-duree": formatEuros(9800), "parking-voiturier": formatEuros(7400) } as Record<string, string>)[slug];
     expect(all).toContain(expected);
   });
 
@@ -151,5 +152,66 @@ describe("night fees in the cheap-parking guide (12/10/2026)", () => {
     expect(hidden.parts).toHaveLength(5);
     const night = hidden.parts!.find(p => p.title === "Déposer ou reprendre la voiture la nuit")!;
     expect(night.paragraphs.join(" ")).toMatch(/compris dans le prix total affiché.*calculés sur les heures réservées/);
+  });
+});
+
+// 17/11/2026 (« fais les pages ville et gare »): the station page and the city pages, shorter than the topic guides.
+describe.each(GUIDE_TOPICS.filter(t => t.group !== "topic").map(t => t.slug))("place guide %s", slug => {
+  const bare = topicGuide("lyon-saint-exupery", slug, NONE)!;
+  const full = topicGuide("lyon-saint-exupery", slug, SOME)!;
+
+  it("has the shape of a search page", () => {
+    expect(bare.slug).toBe(slug);
+    expect(bare.metaTitle.length).toBeLessThanOrEqual(65);
+    expect(bare.metaDescription.length).toBeGreaterThanOrEqual(110);
+    expect(bare.metaDescription.length).toBeLessThanOrEqual(160);
+    const ids = bare.sections.map(s => s.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(bare.sections.some(s => s.table)).toBe(true);
+    expect(words(bare)).toBeGreaterThanOrEqual(500);
+    expect(bare.faq.length).toBeGreaterThanOrEqual(5);
+    for (const [question, answer] of bare.faq) {
+      expect(question).toMatch(/\?$/);
+      expect(answer.length).toBeGreaterThan(60);
+    }
+  });
+
+  it("states no figure about the partners without a real one, and uses them when there are some", () => {
+    for (const text of texts(bare)) {
+      for (const sentence of text.split(/(?<=[.;:!?])\s+/)) {
+        if (/partenaire/i.test(sentence)) expect(sentence).not.toMatch(/\d+(?:,\d+)? ?€|\d+ (?:à \d+ )?min(?:utes)?\b/);
+      }
+    }
+    expect(texts(full).join("\n")).toContain(formatEuros(5600));
+  });
+
+  it("keeps the corrections of the airport guide", () => {
+    for (const guide of [bare, full]) {
+      const all = texts(guide).join("\n");
+      expect(all).not.toMatch(/Terminal 1 ou (au )?Terminal 2|devant le terminal|payez sur place|avis clients|péage[^.]*\d/i);
+    }
+  });
+});
+
+describe("city guides: the road read on 17/11/2026", () => {
+  it("shows the dated trip, rounded to five minutes", () => {
+    const guide = topicGuide("lyon-saint-exupery", "depuis-grenoble", NONE)!;
+    expect(guide.trip).toMatchObject({ from: "Grenoble", km: 91, minutes: 63, roads: ["A48", "A43", "A432"] });
+    expect(guide.trip!.note).toMatch(/17 novembre 2026.*OSRM/);
+    expect(driveText(63)).toBe("1 h 05");
+    expect(driveText(24)).toBe("25 min");
+    expect(driveText(83)).toBe("1 h 25");
+  });
+
+  it("speaks of trains only for the cities the airport lists", () => {
+    const train = (slug: string) => topicGuide("lyon-saint-exupery", slug, NONE)!.sections.some(s => s.id === "train");
+    expect(train("depuis-annecy")).toBe(true);
+    expect(train("depuis-macon")).toBe(false);
+    expect(topicGuide("lyon-saint-exupery", "depuis-annecy", NONE)!.title).toContain("d’Annecy");
+  });
+
+  it("keeps the footer to the topic guides and the station", () => {
+    expect(topicLinks("lyon-saint-exupery", ["topic", "station"]).map(l => l.slug)).toEqual(["parking-pas-cher", "parking-longue-duree", "parking-voiturier", "parking-gare-tgv"]);
+    expect(topicLinks("lyon-saint-exupery", ["city"])).toHaveLength(9);
   });
 });

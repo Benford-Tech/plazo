@@ -535,6 +535,11 @@ export const es: Dict = {
     seeAllResults: "Ver todos los parkings para estas fechas",
     faqTitle: "Preguntas frecuentes",
     otherGuides: "Las demás guías",
+    otherCities: "Otras ciudades de salida",
+    tripTitle: (from: string) => `El trayecto de ${from} al aeropuerto`,
+    tripDistance: "DISTANCIA",
+    tripDrive: "EN COCHE",
+    tripRoads: "AUTOPISTAS",
     airportGuide: (airport: string) =>
       `La guía completa del parking en el aeropuerto de ${airport}`,
     footerLink: (topic: string, airport: string) => `${topic} en ${airport}`,
