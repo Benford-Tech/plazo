@@ -164,6 +164,11 @@ export class PlatformController {
     res.json(await this.platform.resendInvitation(req.staff, req.params.id as string));
   });
 
+  /** POST /internal/platform/invitations/:staffId/resend */
+  public resendStaffInvitation = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.platform.resendStaffInvitation(req.staff, req.params.staffId as string));
+  });
+
   /** GET /internal/platform/listings?status= */
   public listings = catchAsync(async (req: Request, res: Response) => {
     res.json(await this.platform.listListings(str(req.query.status) || undefined));

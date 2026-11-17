@@ -35,6 +35,7 @@ import { OperatorService } from './operator.service';
 import { MeetingPhotoService } from './meeting-photo.service';
 import { OperatorLogoService } from './operator-logo.service';
 import { StaffPhotoService } from './staff-photo.service';
+import { StaffService } from './staff.service';
 import { ContractTemplateService } from './contract-template.service';
 import { PartnerContractService } from './partner-contract.service';
 import { PaymentService } from './payment.service';
@@ -693,6 +694,34 @@ export class PlatformService {
     const sent = await this.accounts.sendInvitation(manager, operator.name);
     await this.record(actor, operator.id, 'operator.invitation_resent', { emailSent: sent.emailSent });
     return { operator: { id: operator.id, name: operator.name }, ...sent };
+  }
+
+  /**
+   * Plateforme › Invitations « Renvoyer l'invitation » (17/11/2026, « pouvoir reenvoyer une invitation »): a new link (the
+   * previous one stops working) for anyone the platform follows there, manager invited by Plazo or team member, with the
+   * same email as the first time. Refused for a deactivated or deleted member, and for a manager who already chose a
+   * password (they sign in; « Mot de passe oublié » is theirs).
+   */
+  public async resendStaffInvitation(actor: AuthenticatedStaff, staffId: string) {
+    const staff = await prisma.staff.findUnique({ where: { id: staffId }, include: { operator: { select: { name: true } } } });
+    if (!staff) throw new HttpException(httpStatus.NOT_FOUND, 'Staff not found', 'not_found');
+    if (!staff.isActive || staff.deletedAt || staff.leftAt) {
+      throw new HttpException(httpStatus.CONFLICT, 'This member is deactivated', 'staff_inactive');
+    }
+    const last = await prisma.invitationTracking.findFirst({ where: { staffId }, orderBy: { sentAt: 'desc' }, select: { kind: true } });
+    if (!last) throw new HttpException(httpStatus.NOT_FOUND, 'No invitation for this member', 'not_found');
+    if (last.kind === 'operator') {
+      if (staff.passwordSetAt) throw new HttpException(httpStatus.CONFLICT, 'The invitation was already accepted', 'already_accepted');
+      const sent = await this.accounts.sendInvitation(
+        { id: staff.id, email: staff.email, name: `${staff.firstName} ${staff.lastName}`.trim() },
+        staff.operator.name,
+      );
+      await this.record(actor, staff.operatorId, 'operator.invitation_resent', { emailSent: sent.emailSent });
+      return { emailSent: sent.emailSent };
+    }
+    const sent = await Container.get(StaffService).inviteAsPlatform(actor, staff);
+    await this.record(actor, staff.operatorId, 'staff.invitation_resent', { staffId: staff.id, emailSent: sent.emailSent });
+    return sent;
   }
 
   // ---- Listings -----------------------------------------------------------------------------------
