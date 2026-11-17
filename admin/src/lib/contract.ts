@@ -35,3 +35,6 @@ export function savePdf(blob: Blob, filename: string) {
 /** The file name the API gives, else one of ours. */
 export const pdfName = (given: string | null, kind: ContractFileKind) =>
   given ?? (kind === "proof" ? "preuve-signature.pdf" : kind === "signed" ? "contrat-signe.pdf" : "contrat.pdf");
+
+/** The query of the two contracts Plazo writes (17/11/2026). */
+export const AGREEMENTS_KEY = ["agreements"];

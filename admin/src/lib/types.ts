@@ -2235,6 +2235,38 @@ export interface MyContract {
   canSign: boolean;
 }
 
+/** The two contracts Plazo writes for every operator (17/11/2026, choice C « Un parcours, deux signatures »). */
+export type AgreementKind = "pro_terms" | "listing";
+export type ProPlanId = "essentiel" | "operations" | "complet";
+
+export interface SignedAgreement {
+  id: string;
+  version: string;
+  signedAt: string;
+  signerName: string;
+  textSha256: string;
+  pdfSha256: string;
+}
+
+export interface Agreement {
+  kind: AgreementKind;
+  title: string;
+  version: string;
+  parties: string[];
+  articles: { heading: string; paragraphs: string[] }[];
+  textSha256: string;
+  signed: SignedAgreement | null;
+  history: SignedAgreement[];
+}
+
+export interface Agreements {
+  agreements: Agreement[];
+  sellsOnPlazo: boolean;
+  toSign: AgreementKind[];
+  canSign: boolean;
+  plan: { id: ProPlanId; yearly: boolean } | null;
+}
+
 // ---- The parking's own contract (26/10/2026, choice A « Mon PDF », register R-A) ---------------------------------------
 
 export interface ContractTemplate {

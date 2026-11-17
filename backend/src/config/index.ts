@@ -324,7 +324,7 @@ const product = JSON.parse(readFileSync(productPath, 'utf8')) as {
   name: string;
   tagline: string;
   supportEmail?: string;
-  company?: { name?: string; legalForm?: string; address?: string; registration?: string };
+  company?: { name?: string; legalForm?: string; address?: string; registration?: string; vatNumber?: string };
 };
 export const PRODUCT_NAME = product.name;
 export const PRODUCT_TAGLINE = product.tagline;
@@ -338,6 +338,7 @@ export const PRODUCT_COMPANY = {
   legalForm: (product.company?.legalForm || '').trim(),
   address: (product.company?.address || '').trim(),
   registration: (product.company?.registration || '').trim(),
+  vatNumber: (product.company?.vatNumber || '').trim(),
 };
 
 // Prospection (Plateforme › Prospection, 18/10/2026). Read on every call so that tests can set them. The sender defaults to

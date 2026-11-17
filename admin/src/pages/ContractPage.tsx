@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { AgreementsFlow } from "@/components/contract/AgreementsFlow";
 import { PlazoPlans } from "@/components/contract/PlazoPlans";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { contractDate, contractDateTime, pdfName, savePdf } from "@/lib/contract";
-import { contractFr as t, describeError } from "@/lib/fr";
+import { agreementsFr, contractFr as t, describeError } from "@/lib/fr";
 import { PRODUCT } from "@/lib/product";
 import type { ContractFileKind, PartnerContract } from "@/lib/types";
 
@@ -192,29 +193,33 @@ export default function ContractPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.pageTitle}</h1>
+      <AgreementsFlow />
       {contract.isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : contract.error ? (
         <p className="text-destructive">{describeError(contract.error)}</p>
-      ) : !current ? (
-        <p className="rounded-[14px] border border-border bg-card p-5 text-muted-foreground">{t.noneYet(PRODUCT.name)}</p>
-      ) : current.status === "pending" ? (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-border bg-card">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-              <span className="font-semibold">
-                {current.title} · v{current.version}
-              </span>
-              <button type="button" className="text-lime-deep underline" onClick={() => download.mutate({ c: current, kind: "original" })}>
-                {t.download}
-              </button>
+      ) : !current ? null : (
+        <>
+          <h2 className="text-lg font-semibold">{agreementsFr.particular}</h2>
+          {current.status === "pending" ? (
+            <div className="flex flex-col gap-4 lg:flex-row">
+              <section className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px] border border-border bg-card">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+                  <span className="font-semibold">
+                    {current.title} · v{current.version}
+                  </span>
+                  <button type="button" className="text-lime-deep underline" onClick={() => download.mutate({ c: current, kind: "original" })}>
+                    {t.download}
+                  </button>
+                </div>
+                <PdfPreview contract={current} />
+              </section>
+              <SignPanel contract={current} canSign={!!contract.data?.canSign} operatorName={operatorName} />
             </div>
-            <PdfPreview contract={current} />
-          </section>
-          <SignPanel contract={current} canSign={!!contract.data?.canSign} operatorName={operatorName} />
-        </div>
-      ) : (
-        <SignedCard contract={current} />
+          ) : (
+            <SignedCard contract={current} />
+          )}
+        </>
       )}
 
       {!!contract.data?.history.length && (

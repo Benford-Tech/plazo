@@ -3276,9 +3276,9 @@ export const fr = {
         payout_failed: (name: string, n: number) =>
           `${name} : ${n} reversement${n > 1 ? "s" : ""} refusé${n > 1 ? "s" : ""} par Stripe`,
         contract_missing: (name: string) =>
-          `${name} n'a pas de contrat Plazo déposé`,
+          `${name} n'a pas encore signé ses contrats Plazo`,
         contract_pending: (name: string) =>
-          `${name} n'a pas encore signé son contrat Plazo`,
+          `${name} n'a pas encore signé son contrat particulier`,
         invitation_expired: (name: string) =>
           `L'invitation de ${name} a expiré sans être acceptée`,
       },
@@ -3287,7 +3287,7 @@ export const fr = {
         whatsapp_requested: "Ajouter le numéro",
         stripe_missing: "Voir le loueur",
         payout_failed: "Voir les paiements",
-        contract_missing: "Déposer le PDF",
+        contract_missing: "Voir les contrats",
         contract_pending: "Voir le contrat",
         invitation_expired: "Renvoyer l'invitation",
       },
@@ -6860,4 +6860,61 @@ export const plansFr = {
     "Web, iPhone et Android",
     "Démo en ligne, sans inscription",
   ],
+};
+
+/** The two contracts Plazo writes for every operator (17/11/2026, choice C « Un parcours, deux signatures »). */
+export const agreementsFr = {
+  title: `Vos contrats ${PRODUCT.name}`,
+  intro: "Deux contrats rédigés pour votre parking, avec vos chiffres. Lisez-les, puis signez-les d'un seul nom. Rien n'est bloqué en attendant.",
+  steps: { pro_terms: `${PRODUCT.name} Pro`, listing: "Diffusion des annonces", sign: "Signature" } as Record<string, string>,
+  stepLabel: (n: number, total: number) => `Étape ${n} sur ${total}`,
+  summary: {
+    pro_terms: "Le logiciel : formule, données de vos clients, messages, fin du contrat.",
+    listing: `Vendre sur ${PRODUCT.name} : votre fiche, l'encaissement, la commission, les reversements.`,
+  } as Record<string, string>,
+  version: (v: string) => `Version du ${v.split("-").reverse().join("/")}`,
+  between: "Entre",
+  downloadPdf: "Télécharger le PDF",
+  read: "J'ai lu, continuer",
+  back: "Retour",
+  skipListing: `Je ne vends pas sur ${PRODUCT.name} pour l'instant`,
+  listingOptional: `Vous ne vendez pas encore sur ${PRODUCT.name} : ce contrat pourra attendre que vous envoyiez votre fiche.`,
+  signTitle: "Signer",
+  nameLabel: "Votre nom complet, comme signature",
+  accept: (title: string, operator: string) => `J'ai lu « ${title} » en entier et je l'accepte au nom de ${operator}. « Lu et approuvé ».`,
+  signCount: (n: number) => (n > 1 ? `Signer les ${n} contrats` : "Signer le contrat"),
+  signing: "Signature…",
+  confirmTitle: "Signer",
+  confirm: (name: string, n: number) =>
+    `Vous signez ${n > 1 ? `ces ${n} contrats` : "ce contrat"} au nom de votre parking, sous le nom « ${name} ». Cette signature vous engage.`,
+  signedToast: (n: number) => (n > 1 ? "Contrats signés." : "Contrat signé."),
+  proofNote: `${PRODUCT.name} garde le texte signé mot pour mot, votre nom, la date et l'heure, votre adresse IP, votre navigateur et l'empreinte de chaque PDF.`,
+  viewAsNote: "En consultation ou dans la démo, on lit les contrats mais on ne les signe pas : seul un gérant du parking le peut.",
+  textChanged: "Un chiffre du contrat a changé pendant votre lecture (commission, formule…) : relisez-le avant de signer.",
+  signErrors: {
+    required: "Tapez votre nom complet.",
+    full_name: "Tapez votre prénom et votre nom.",
+    too_long: "Nom trop long.",
+  } as Record<string, string>,
+  start: "Les lire et les signer",
+  startOne: "Le lire et le signer",
+  signedLine: (date: string, name: string) => `Signé le ${date} par ${name}`,
+  signedBadge: "Signé",
+  toSignBadge: "À signer",
+  laterBadge: "Quand vous vendrez sur Plazo",
+  signedPdf: "PDF signé",
+  proof: "Preuve",
+  previous: "Versions signées avant",
+  particular: "Contrat particulier",
+  banner: (n: number) => (n > 1 ? `Vos ${n} contrats ${PRODUCT.name} sont prêts à signer.` : `Votre contrat ${PRODUCT.name} est prêt à signer.`),
+  bannerAction: "Les lire et les signer",
+  // Plateforme › loueur › Contrat
+  platformTitle: `Contrats ${PRODUCT.name}`,
+  planLabel: "Formule Plazo Pro",
+  planNone: "Pas choisie (« selon le devis accepté »)",
+  planYearly: "À l'année (−10 %)",
+  planSaved: "Formule enregistrée : les conditions d'utilisation la reprennent.",
+  planNote: "La formule est écrite dans les conditions d'utilisation. Un contrat déjà signé garde le texte signé.",
+  notSigned: "Pas encore signé",
+  waitingListing: "Pas demandé tant que la fiche n'est pas envoyée",
 };

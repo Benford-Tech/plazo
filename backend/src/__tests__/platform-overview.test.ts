@@ -46,7 +46,11 @@ describe('le genre d’un loueur', () => {
       ...over,
     });
     const todos = platformTodos(
-      [op({}), op({ id: 'o2', kind: 'test', listing: { id: 'l2', status: 'pending_review' } }), op({ id: 'o3', invitation: { expired: true } })],
+      [
+        op({ agreementsSigned: false }),
+        op({ id: 'o2', kind: 'test', listing: { id: 'l2', status: 'pending_review' } }),
+        op({ id: 'o3', invitation: { expired: true } }),
+      ],
       new Map([['o1', 2]]),
     );
     expect(todos.map(t => [t.kind, t.operatorId])).toEqual([

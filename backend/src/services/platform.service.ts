@@ -1,3 +1,4 @@
+import { AGREEMENT_VERSIONS } from '@/domain/plazo-agreements';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isPlatformAdmin, PLATFORM_COMMISSION_BPS, PRODUCT_NAME } from '@/config';
@@ -395,6 +396,14 @@ export class PlatformService {
       }),
       prisma.operatorWhatsappNumber.findMany({ where: { status: 'requested' }, select: { operatorId: true } }),
     ]);
+    const signedTerms = new Set(
+      (
+        await prisma.plazoAgreement.findMany({
+          where: { kind: 'pro_terms', version: AGREEMENT_VERSIONS.pro_terms },
+          select: { operatorId: true },
+        })
+      ).map(a => a.operatorId),
+    );
     const real = operators.filter(o => o.kind === 'real');
     const realIds = new Set(real.map(o => o.id));
     const sum = (list: typeof operators) => list.reduce((total, o) => total + o.bookingsThisMonth, 0);
@@ -414,7 +423,11 @@ export class PlatformService {
         bookings: paid.reduce((total, c) => total + c._count._all, 0),
         commissionCents: paid.reduce((total, c) => total + (c._sum.commissionCents ?? 0), 0),
       },
-      todos: platformTodos(operators, new Map(failed.map(f => [f.operatorId, f._count._all])), new Set(whatsappRequested.map(w => w.operatorId))),
+      todos: platformTodos(
+        operators.map(o => ({ ...o, agreementsSigned: signedTerms.has(o.id) })),
+        new Map(failed.map(f => [f.operatorId, f._count._all])),
+        new Set(whatsappRequested.map(w => w.operatorId)),
+      ),
       operatorsList: operators,
     };
   }

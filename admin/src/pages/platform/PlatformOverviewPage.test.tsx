@@ -78,7 +78,7 @@ it("la vue d'ensemble : chiffres des vrais loueurs, « À traiter » et les loue
   expect(screen.getByText(/12,50/)).toBeInTheDocument();
   const todos = screen.getByTestId("platform-todos");
   expect(within(todos).getByText("Parking Exemple n'a pas relié son compte Stripe : ses reversements attendent")).toBeInTheDocument();
-  expect(within(todos).getByText("Déposer le PDF ›").closest("a")).toHaveAttribute("href", "/plateforme/loueurs/o1?onglet=contrat");
+  expect(within(todos).getByText("Voir les contrats ›").closest("a")).toHaveAttribute("href", "/plateforme/loueurs/o1?onglet=contrat");
   expect(screen.getByRole("link", { name: "Parking Exemple" })).toHaveAttribute("href", "/plateforme/loueurs/o1");
   expect(screen.queryByText("Plazo (tests)")).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Tests et démo · 2" }));
