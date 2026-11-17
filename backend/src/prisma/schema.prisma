@@ -104,6 +104,7 @@ model Operator {
   contractTemplates     OperatorContractTemplate[]
   partnerContracts      PartnerContract[]
   plazoAgreements       PlazoAgreement[]
+  proSubscription       ProSubscription?
   reservationImports    ReservationImport[]
   invoices              Invoice[]
 
@@ -2531,4 +2532,32 @@ model InvitationTracking {
   @@index([staffId, sentAt])
   @@index([sentAt])
   @@map("invitation_trackings")
+}
+
+// The operator's Plazo Pro subscription, paid with Stripe Billing (17/11/2026, direction B « Tout dans Plazo », with the
+// one-time setup fee). One row per operator: the Stripe customer and subscription of the keys' mode (`live`), the state
+// copied from Stripe by the webhook and after each payment. The plan's price lives at Stripe, by lookup key.
+model ProSubscription {
+  id                String    @id @default(cuid())
+  operatorId        String    @unique
+  operator          Operator  @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  live              Boolean
+  customerId        String
+  subscriptionId    String?   @unique
+  /// Stripe's status: incomplete, incomplete_expired, active, past_due, unpaid, canceled, trialing, paused.
+  status            String
+  plan              String
+  yearly            Boolean   @default(false)
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+  /// The setup fee is on this subscription's first invoice.
+  setupFeeIncluded  Boolean   @default(false)
+  setupFeePaidAt    DateTime?
+  /// { type: card | sepa_debit, brand?, last4, expMonth?, expYear? }
+  paymentMethod     Json?
+  lastPaymentError  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("pro_subscriptions")
 }

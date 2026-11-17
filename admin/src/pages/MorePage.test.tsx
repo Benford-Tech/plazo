@@ -36,6 +36,7 @@ describe("« Plus » of the phone's tab bar (10/11/2026)", () => {
       "/equipe",
       "/contrats",
       "/mon-contrat",
+      "/abonnement",
       "/mon-compte",
       "/notifications",
       "/plateforme",

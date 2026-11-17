@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { plansFr as t } from "@/lib/fr";
 import { PRODUCT } from "@/lib/product";
 import { MARKETPLACE_RATE_PERCENT, PLAZO_PLANS, savings, yearlyMonthly } from "@/lib/pro-plans";
@@ -31,7 +32,7 @@ function Slider(props: { id: string; label: string; value: number; min: number; 
 /**
  * « Mon contrat Plazo » › the plans (13/11/2026, « intègre-le à Plazo Pro dans l'onglet Mon contrat Plazo »): the three
  * plans at 149 / 299 / 399 € HT, a monthly or yearly price, a calculator on the operator's own numbers, and the listing on
- * Plazo. « Demander cette formule » writes to Plazo (no online subscription yet).
+ * Plazo. « Choisir cette formule » opens « Abonnement » with that plan (17/11/2026, paid with Stripe).
  */
 export function PlazoPlans({ operatorName }: { operatorName: string }) {
   const [yearly, setYearly] = useState(false);
@@ -98,12 +99,12 @@ export function PlazoPlans({ operatorName }: { operatorName: string }) {
                 </li>
               ))}
             </ul>
-            <a
+            <Link
               className={`mt-auto block min-h-11 rounded-full px-4 py-2.5 text-center text-sm font-bold ${p.recommended ? "bg-primary text-primary-foreground" : "bg-ok-soft text-ok-text"}`}
-              href={`mailto:${PRODUCT.supportEmail}?subject=${encodeURIComponent(t.askSubject(p.name, operatorName))}`}
+              to={`/abonnement?formule=${p.id}${yearly ? "&annuel=1" : ""}`}
             >
               {t.ask}
-            </a>
+            </Link>
           </article>
         ))}
       </div>

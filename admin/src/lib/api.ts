@@ -213,6 +213,61 @@ export const DEV_VERIFICATION_KEY = "plazo_dev_verification_url";
 export const VIEW_AS_ENDED_EVENT = "plazo:view-as-ended";
 
 /** API error with the backend's machine-readable code and per-field validation codes. */
+export type PlanId = "essentiel" | "operations" | "complet";
+
+export interface SubscriptionPaymentMethod {
+  type: "card" | "sepa_debit" | "other";
+  brand: string | null;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
+export interface SubscriptionView {
+  available: boolean;
+  refusal: "unavailable" | "test_operator" | null;
+  publishableKey: string | null;
+  vatPercent: number;
+  setupFeeCents: number;
+  setupFeeDue: boolean;
+  plans: { id: PlanId; name: string; monthlyCents: number; yearlyCents: number }[];
+  subscription: {
+    status: string;
+    running: boolean;
+    plan: PlanId;
+    yearly: boolean;
+    priceCents: number;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    paymentMethod: SubscriptionPaymentMethod | null;
+    lastPaymentError: string | null;
+  } | null;
+}
+
+export interface SubscribeResult {
+  clientSecret: string | null;
+  totalCents: number;
+  taxCents: number;
+  setupFeeCents: number;
+}
+
+export interface SubscriptionPreview {
+  chargedNow: boolean;
+  dueNowCents: number;
+  nextCents: number;
+  effectiveAt: string | null;
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  number: string | null;
+  date: string;
+  totalCents: number;
+  status: string | null;
+  pdfUrl: string | null;
+  url: string | null;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -1368,6 +1423,21 @@ export const adminApi = {
       body: json({ before }),
     }),
   getAgreements: () => apiRequest<Agreements>("/internal/agreements"),
+  // 17/11/2026 (direction B): the Plazo Pro subscription, paid with Stripe.
+  getSubscription: () => apiRequest<SubscriptionView>("/internal/subscription"),
+  subscribe: (plan: PlanId, yearly: boolean) =>
+    apiRequest<SubscribeResult>("/internal/subscription", { method: "POST", body: json({ plan, yearly }) }),
+  syncSubscription: () => apiRequest<SubscriptionView>("/internal/subscription/sync", { method: "POST" }),
+  previewSubscriptionChange: (plan: PlanId, yearly: boolean) =>
+    apiRequest<SubscriptionPreview>(`/internal/subscription/preview?plan=${plan}&yearly=${yearly}`),
+  changeSubscription: (plan: PlanId, yearly: boolean) =>
+    apiRequest<SubscriptionView>("/internal/subscription/change", { method: "POST", body: json({ plan, yearly }) }),
+  subscriptionPaymentMethod: () => apiRequest<{ clientSecret: string }>("/internal/subscription/payment-method", { method: "POST" }),
+  confirmSubscriptionPaymentMethod: (setupIntentId: string) =>
+    apiRequest<SubscriptionView>("/internal/subscription/payment-method/confirm", { method: "POST", body: json({ setupIntentId }) }),
+  subscriptionInvoices: () => apiRequest<{ data: SubscriptionInvoice[] }>("/internal/subscription/invoices"),
+  cancelSubscription: () => apiRequest<SubscriptionView>("/internal/subscription/cancel", { method: "POST" }),
+  resumeSubscription: () => apiRequest<SubscriptionView>("/internal/subscription/resume", { method: "POST" }),
   signAgreements: (signerName: string, kinds: AgreementKind[], read: Partial<Record<AgreementKind, string>>) =>
     apiRequest<Agreements>("/internal/agreements/sign", { method: "POST", body: json({ signerName, kinds, read }) }),
   agreementPreview: (kind: AgreementKind) => apiFile(`/internal/agreements/preview/${kind}`),

@@ -113,8 +113,8 @@ describe("Mon contrat", () => {
     expect(within(plans).getByTestId("price-complet")).toHaveTextContent("399 €");
     await userEvent.click(within(plans).getByTestId("plans-yearly"));
     expect(within(plans).getByTestId("price-operations")).toHaveTextContent("269 €");
-    const ask = within(screen.getByTestId("plan-complet")).getByRole("link", { name: "Demander cette formule" });
-    expect(ask.getAttribute("href")).toMatch(/^mailto:contact@plazo\.fr\?subject=Formule%20Complet/);
+    const ask = within(screen.getByTestId("plan-complet")).getByRole("link", { name: "Choisir cette formule" });
+    expect(ask.getAttribute("href")).toBe("/abonnement?formule=complet&annuel=1");
     // 400 bookings × 3 min + 15 calls × 30 days × 2 min = 35 h at 18 € = 630 €, less 269 € (Opérations, yearly).
     expect(screen.getByTestId("calc-net")).toHaveTextContent("+ 361 €");
     fireEvent.change(screen.getByRole("slider", { name: /Réservations par mois/ }), { target: { value: "100" } });

@@ -24,6 +24,7 @@ import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
+import { ProSubscriptionService } from './pro-subscription.service';
 import { ExtraService } from './extra.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
@@ -126,6 +127,10 @@ export class PaymentService {
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
   public settings = { siteUrl: PUBLIC_SITE_URL, proSpaceUrl: PRO_SPACE_URL };
+
+  private get subscriptions(): ProSubscriptionService {
+    return Container.get(ProSubscriptionService);
+  }
 
   // Lazy: the services for the car (21/10/2026) use this service for their own payments.
   private get extras(): ExtraService {
@@ -935,6 +940,8 @@ export class PaymentService {
         await this.sessionEnded(event.data.object);
         break;
       case 'payment_intent.succeeded':
+        // A Plazo Pro invoice's payment (17/11/2026) carries neither: the invoice events below handle it.
+        if (!event.data.object.metadata?.reservationId && !event.data.object.metadata?.extraId) break;
         // A service's own payment (21/10/2026) carries extraId, never reservationId.
         if (!(await this.extras.confirmIntent(event.data.object, 'webhook'))) await this.confirmIntent(event.data.object, 'webhook');
         break;
@@ -943,6 +950,16 @@ export class PaymentService {
         break;
       case 'account.updated':
         await this.accountUpdated(event.data.object);
+        break;
+      // The Plazo Pro subscription (17/11/2026).
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted':
+        await this.subscriptions.sync(event.data.object);
+        break;
+      case 'invoice.paid':
+      case 'invoice.payment_failed':
+        await this.subscriptions.invoiceEvent(event.data.object, event.type === 'invoice.payment_failed');
         break;
       default:
         break;
