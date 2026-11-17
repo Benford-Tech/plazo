@@ -1860,7 +1860,7 @@ model ProspectingSettings {
   steps        Json
   // 13/11/2026: the German and English subjects and texts ({ de: [...], en: [...] }); null: Plazo's own.
   translations Json?
-  dailyCap     Int      @default(50)
+  dailyCap     Int      @default(500)
   updatedById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt

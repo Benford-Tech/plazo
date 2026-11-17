@@ -109,7 +109,7 @@ describe('Plateforme › Prospection : accès et prospects', () => {
       { code: 'CDG', name: null, count: 1 },
       { code: 'LYS', name: 'Lyon Saint-Exupéry', count: 1 },
     ]);
-    expect(list.body.today).toEqual({ sent: 0, cap: 50, remaining: 50 });
+    expect(list.body.today).toEqual({ sent: 0, cap: 500, remaining: 500 });
     expect(list.body.configured).toBe(true);
     expect((await api().get(`${P}?status=interested`).set(auth(admin.token))).body.data.map((p: any) => p.id)).toEqual([a.id]);
     const lys = await api().get(`${P}?airport=lys`).set(auth(admin.token));
@@ -326,7 +326,7 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     expect(again.body).toMatchObject({ enrolled: 0, sent: 0, skipped: 1 });
     expect(emails()).toHaveLength(2);
     const list = await api().get(P).set(auth(admin.token));
-    expect(list.body.today).toMatchObject({ sent: 2, remaining: 48 });
+    expect(list.body.today).toMatchObject({ sent: 2, remaining: 498 });
     expect(list.body.data.find((p: any) => p.id === a.id)).toMatchObject({ status: 'contacted', step: 1, nextStep: 2 });
   });
 
@@ -429,7 +429,7 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const bad = await api()
       .put(`${P}/settings`)
       .set(auth(admin.token))
-      .send({ steps: [current.steps[0], { ...current.steps[1], subject: '{société}' }, current.steps[2]], dailyCap: 1000 });
+      .send({ steps: [current.steps[0], { ...current.steps[1], subject: '{société}' }, current.steps[2]], dailyCap: 1001 });
     expect(bad.body.fields).toEqual({ 'steps.2.subject': 'unknown_variable', dailyCap: 'cap_range' });
 
     const steps = [current.steps[0], { ...current.steps[1], enabled: false }, { ...current.steps[2], delayDays: 20 }];

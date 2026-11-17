@@ -18,8 +18,8 @@ import { addDays, localDate, localDateTime, parseInstant } from './time';
 export const PROSPECTING_TZ = 'Europe/Paris';
 export const WINDOW_START = '09:00';
 export const WINDOW_END = '18:00';
-export const DEFAULT_DAILY_CAP = 50;
-export const MAX_DAILY_CAP = 300;
+export const DEFAULT_DAILY_CAP = 500;
+export const MAX_DAILY_CAP = 1000;
 /** Prospects are deleted this long after the last contact (or their creation when never contacted): CNIL, B2B. */
 export const RETENTION_YEARS = 3;
 /** Brevo refusals in a row on the same step before the follow-ups stop. */

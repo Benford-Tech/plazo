@@ -159,7 +159,7 @@ export function StepsEditor({ settings, onClose }: { settings: ProspectingSettin
           </fieldset>
         ))}
         <div className="w-56">
-          <FormField id="prospect-cap" label={t.dailyCap} type="number" min={1} max={300} value={cap} error={errors.dailyCap} onChange={e => setCap(e.target.value)} />
+          <FormField id="prospect-cap" label={t.dailyCap} type="number" min={1} max={1000} value={cap} error={errors.dailyCap} onChange={e => setCap(e.target.value)} />
         </div>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" className="h-11" onClick={onClose}>
