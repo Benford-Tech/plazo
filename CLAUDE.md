@@ -2607,6 +2607,18 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   réservation payée, « Inclus partout ». Web seulement, rien n'est souscrit en ligne ; les offres de lancement (mois offert, mise
   en route offerte, prix garanti) attendent la validation de Joanny. Tests `pro-plans.test.ts`, `ContractPage.test.tsx`.
 
+- **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
+  permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
+  "Partez léger, revenez sans attendre." », « QR vers la page du parking »)** : Gérant › Sur Plazo › « Flyer »
+  (`/pro/plazo/flyer`, `FlyerPage`, onglet « Mon flyer » de `PlazoTabs`, `parking:manage`) : logo du parking (celui de Parking ›
+  Réglages, sinon ses initiales sur une tuile vert foncé, `initialsOf`), nom imprimé (titre de la fiche, 40 caractères),
+  téléphone de la fiche à cocher, QR code vers la page du parking sur plazo.fr une fois la fiche en ligne, sinon vers « Ma
+  réservation » avec un avertissement (`flyerQrUrl`) ; aperçu = le PDF lui-même dessiné par pdf.js (300 ms après un changement) ;
+  « Télécharger le PDF (A4) » et « Format A5 (2 par page) » (deux flyers sur un A4 paysage, trait de coupe). Le PDF est fait
+  dans le navigateur (`lib/flyer.ts`, `buildFlyerPdf` : `pdf-lib` et `qrcode` chargés avec la page, polices standard Helvetica et
+  Times italique, caractères hors WinAnsi sans accent ou retirés, `printable` ; badges des stores lus sur le site
+  `/badges/*.png`, sinon en mots) ; rien n'est enregistré côté serveur. Tests `flyer.test.ts`, `FlyerPage.test.tsx`. Pas encore :
+  Plazo Pro.
 - **Synchronisation en direct entre l'espace pro web et Plazo Pro (02/11/2026, « les actions doivent être synchroniser entre
   l'espace admin et l'application », choix « Statut d'une réservation, Clés / place / file, Navette, Tout, en direct »)** :
   `GET /internal/sync` (`LiveSyncService`, `reservations:view`, `no-store`) rend `{ version }`, qui change à chaque écriture du
