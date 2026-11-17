@@ -89,7 +89,7 @@ export const EXCEL_TOPICS = {
         title: "Ce que le tableur garde, et comment démarrer",
         paragraphs: [
           "Soyons honnêtes : un tableur est gratuit, et il se plie à tout. Vous ajoutez une colonne quand vous voulez, vous le triez à votre façon, vous le connaissez par cœur. Rien ne vous empêche de le garder pour vos propres calculs : le chiffre d’affaires et les réservations s’exportent en CSV pour lui.",
-          `${P} Pro coûte de 99 € à 299 € HT par mois selon la formule, −10 % à l’année. Ce qu’il rend, c’est le temps passé à recopier, à vérifier et à se demander qui a raison.`,
+          `${P} Pro coûte de 99 € à 399 € HT par mois selon la formule, −10 % à l’année. Ce qu’il rend, c’est le temps passé à recopier, à vérifier et à se demander qui a raison.`,
           "Rien n’oblige à tout changer d’un coup. Commencez par importer votre fichier et faire suivre les mails des comparateurs : le planning se remplit seul. Le chauffeur et le voiturier rejoignent l’équipe quand vous êtes prêt, le contrat et l’état des lieux viennent ensuite. La démo est gratuite, sans inscription, pour essayer avant.",
         ],
       },
@@ -100,7 +100,7 @@ export const EXCEL_TOPICS = {
       ["Mes colonnes ne s’appellent pas comme les vôtres, est-ce un problème ?", `Non. ${P} Pro devine la colonne d’après son titre, et vous corrigez sur place celles qu’il n’a pas reconnues avant de lancer l’aperçu.`],
       ["Est-ce que je peux encore travailler dans Excel ?", "Oui. Le chiffre d’affaires et ses réservations s’exportent en CSV, ouvert directement dans un tableur, pour vos calculs ou votre comptable."],
       ["Toute mon équipe doit-elle changer le même jour ?", "Non. Le gérant peut commencer seul avec l’import et les mails des comparateurs, puis inviter le comptoir, les chauffeurs et les voituriers quand il le souhaite."],
-      ["Combien ça coûte ?", "De 99 € à 299 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
+      ["Combien ça coûte ?", "De 99 € à 399 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
     ],
     next: ["planning-reservations", "comparateurs"],
   },
@@ -118,7 +118,7 @@ export const PRICING_FAQ: [string, string][] = [
   ],
   [
     "Qu’est-ce qui est compris dans chaque formule ?",
-    "Essentiel (99 € HT par mois) réunit les réservations : saisie au téléphone et au comptoir, mails des comparateurs lus tout seuls, planning, tableau de bord et chiffre d’affaires. Opérations (199 €) ajoute le plan du parking, les files de voiturier, la navette et l’équipe. Complet (299 €) ajoute la commission de chaque comparateur et le chiffre net, le contrat signé et l’état des lieux en photos, et le mail du matin. À l’année, chaque formule coûte 10 % de moins.",
+    "Essentiel (99 € HT par mois) réunit les réservations : saisie au téléphone et au comptoir, mails des comparateurs lus tout seuls, planning, tableau de bord et chiffre d’affaires. Opérations (199 €) ajoute le plan du parking, les files de voiturier, la navette et l’équipe. Complet (399 €) ajoute la commission de chaque comparateur et le chiffre net, le contrat signé et l’état des lieux en photos, et le mail du matin. À l’année, chaque formule coûte 10 % de moins.",
   ],
   [
     "Comment fonctionne la commission de la fiche sur Plazo ?",

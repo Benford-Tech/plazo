@@ -33,7 +33,7 @@ export const isAgreementKind = (value: unknown): value is AgreementKind => AGREE
 export const PRO_PLANS = {
   essentiel: { name: 'Essentiel', monthlyEuros: 99 },
   operations: { name: 'Opérations', monthlyEuros: 199 },
-  complet: { name: 'Complet', monthlyEuros: 299 },
+  complet: { name: 'Complet', monthlyEuros: 399 },
 } as const;
 export type ProPlanId = keyof typeof PRO_PLANS;
 export const isProPlan = (value: unknown): value is ProPlanId => typeof value === 'string' && value in PRO_PLANS;
