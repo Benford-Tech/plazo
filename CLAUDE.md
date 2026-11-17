@@ -721,7 +721,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Version courte avec lien », aperçu et « M'envoyer un test ». Tables `reminder_settings` et `reminder_evenings`,
      `Reservation.reminderExcludedAt/ById`, `domain/day-before-sms.ts`, `ReminderService` : le rappel (SMS au texte du parking,
      mail et push de B) part une fois, à l'heure de sa soirée ou dès la réservation si elle est plus tardive, jamais de 22:00 à
-     07:00, ni le jour du dépôt pour un envoi manqué la veille ; sans ligne `reminder_settings` : activé, 18:00, texte de Plazo.
+     07:00, ni le jour du dépôt pour un envoi manqué la veille ; sans ligne `reminder_settings` : activé, 18:00, texte de Plazo. **Dépôt avant 07:00 réservé la veille au soir (17/11/2026, « pk trop tard » : dépôt à 04:00 saisi après 22:00)** : quand la pause de nuit repousserait le message après le dépôt, il part tout de suite, pause ou non (`reminderDueAt` → `{ at, early: true }`, envoi immédiat à la création par `sendSameDayNow` et par le passage de 15 minutes), « à tout à l'heure » s'il part après minuit ; « Trop tard » ne reste que pour une réservation faite après l'heure du dépôt. Test `reminders.test.ts`.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.

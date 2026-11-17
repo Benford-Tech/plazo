@@ -250,8 +250,11 @@ export class ReminderService {
       for (const row of rows) {
         checked += 1;
         const due = reminderDueAt({ ...row, timeZone: parking.timezone, evening: rules.get(eveningOf(row.arrivalAt, parking.timezone))! });
-        if (!('at' in due) || now < due.at || (quiet && !due.sameDay) || missedEvening(due.at, row.arrivalAt, now, parking.timezone)) continue;
-        const outcome = await this.send(row.id, now, undefined, due.sameDay);
+        if (!('at' in due) || now < due.at) continue;
+        if (!due.early && ((quiet && !due.sameDay) || missedEvening(due.at, row.arrivalAt, now, parking.timezone))) continue;
+        // An early message that leaves after midnight is read on the drop-off day: worded for the same day.
+        const onDropOffDay = localDate(now, parking.timezone) === localDate(row.arrivalAt, parking.timezone);
+        const outcome = await this.send(row.id, now, undefined, due.sameDay || (due.early && onDropOffDay));
         if (outcome === 'sent') sent += 1;
         else if (outcome === 'failed') failed += 1;
       }
@@ -284,8 +287,9 @@ export class ReminderService {
       const evening = eveningOf(row.arrivalAt, row.parking.timezone);
       const rules = await this.rules(row.parkingId, usual, [evening]);
       const due = reminderDueAt({ ...row, timeZone: row.parking.timezone, evening: rules.get(evening)! });
-      if (!('at' in due) || !due.sameDay || now < due.at) return;
-      await this.send(row.id, now, undefined, true);
+      if (!('at' in due) || !(due.sameDay || due.early) || now < due.at) return;
+      const onDropOffDay = localDate(now, row.parking.timezone) === localDate(row.arrivalAt, row.parking.timezone);
+      await this.send(row.id, now, undefined, Boolean(due.sameDay) || onDropOffDay);
     } catch (error) {
       logger.warn(`[Reminders] Same-day message failed: ${error instanceof Error ? error.message : 'unknown error'}`);
     }
@@ -805,7 +809,7 @@ export class ReminderService {
     if (!ctx.usual.enabled) return { status: 'disabled', at: null };
     const due = reminderDueAt({ arrivalAt: r.arrivalAt, createdAt: r.createdAt, timeZone: ctx.tz, evening: ctx.rule });
     if ('reason' in due) return { status: due.reason, at: null };
-    if (r.status !== 'upcoming' || r.arrivalAt <= ctx.now || missedEvening(due.at, r.arrivalAt, ctx.now, ctx.tz))
+    if (r.status !== 'upcoming' || r.arrivalAt <= ctx.now || (!due.early && missedEvening(due.at, r.arrivalAt, ctx.now, ctx.tz)))
       return { status: 'not_sent', at: null };
     return { status: 'planned', at: due.at };
   }
