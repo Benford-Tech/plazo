@@ -204,7 +204,7 @@ export function reminderDueAt(input: {
   createdAt: Date;
   timeZone: string;
   evening: EveningRule;
-}): { at: Date; sameDay?: true } | { reason: NotDueReason } {
+}): { at: Date; sameDay?: true; early?: true } | { reason: NotDueReason } {
   const { arrivalAt, createdAt, timeZone, evening } = input;
   const day = localDate(arrivalAt, timeZone);
   if (evening.paused) return { reason: 'paused' };
@@ -212,8 +212,11 @@ export function reminderDueAt(input: {
     return createdAt < arrivalAt ? { at: createdAt, sameDay: true } : { reason: 'too_late' };
   }
   const planned = parseInstant(`${addDays(day, -1)}T${evening.sendTime}`, timeZone)!;
-  const at = outOfQuietHours(createdAt > planned ? createdAt : planned, timeZone);
-  if (at >= arrivalAt) return { reason: 'too_late' };
+  const wanted = createdAt > planned ? createdAt : planned;
+  const at = outOfQuietHours(wanted, timeZone);
+  // 17/11/2026 (« pk trop tard » : dépôt à 04:00, réservé la veille après 22:00) : when the quiet hours would push the
+  // message past the drop-off, it leaves right away, quiet hours or not (`early`).
+  if (at >= arrivalAt) return wanted < arrivalAt ? { at: wanted, early: true } : { reason: 'too_late' };
   return { at };
 }
 

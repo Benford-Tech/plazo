@@ -161,7 +161,9 @@ describe('les règles du SMS de la veille', () => {
     expect(due(at('2027-06-01T12:00'), { sendTime: '20:30', paused: false })).toEqual({ at: at('2027-06-14T20:30') });
     expect(due(at('2027-06-14T20:12'))).toEqual({ at: at('2027-06-14T20:12') });
     expect(due(at('2027-06-14T23:00'))).toEqual({ at: at('2027-06-15T07:00') });
-    expect(due(at('2027-06-14T23:00'), evening, at('2027-06-15T06:30'))).toEqual({ reason: 'too_late' });
+    // 17/11/2026 (« pk trop tard »): a drop-off before 07:00 booked the evening before after 22:00 gets it right away.
+    expect(due(at('2027-06-14T23:00'), evening, at('2027-06-15T06:30'))).toEqual({ at: at('2027-06-14T23:00'), early: true });
+    expect(due(at('2027-06-01T12:00'), { sendTime: '18:00', paused: false }, at('2027-06-15T04:00'))).toEqual({ at: at('2027-06-14T18:00') });
     // 15/11/2026 (« quand c'est réservé le jour même envoi juste après la réservation »): right away, quiet hours or not.
     expect(due(at('2027-06-15T00:30'))).toEqual({ at: at('2027-06-15T00:30'), sameDay: true });
     expect(due(at('2027-06-15T10:30'))).toEqual({ reason: 'too_late' });
@@ -468,6 +470,21 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(smsSent()).toHaveLength(2);
     await reminders.sendSameDayNow(night.id, at('2027-06-15T23:06'));
     expect(smsSent()).toHaveLength(2);
+  });
+
+  // 17/11/2026 (« pk trop tard » : dépôt à 04:00, réservé la veille au soir après 22:00).
+  it('dépôt avant 07:00 réservé la veille après 22:00 : le SMS part tout de suite, « à tout à l’heure » après minuit', async () => {
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    const evening = await booking(op, '2027-06-15T04:00', { createdAt: at('2027-06-14T23:00') });
+    await booking(op, '2027-06-15T05:00', { name: 'Pierre Lefèvre', createdAt: at('2027-06-14T23:55') });
+    const reminders = Container.get(ReminderService);
+    await reminders.sendSameDayNow(evening.id, at('2027-06-14T23:00'));
+    expect(smsSent()).toHaveLength(1);
+    expect(smsSent()[0].content).toMatch(/demain/i);
+    expect(await reminders.dispatchDue(at('2027-06-15T00:05'))).toEqual({ checked: 1, sent: 1, failed: 0 });
+    expect(smsSent()).toHaveLength(2);
+    expect(smsSent()[1].content).toContain("à tout à l'heure");
   });
 
   it('un envoi de la veille manqué (planificateur arrêté) ne part pas le jour du dépôt', async () => {
