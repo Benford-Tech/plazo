@@ -2146,6 +2146,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
+- **Veille des forums (17/11/2026, « Fais un robot qui poste sur des forums tous les jours au sujet de Plazo » : refusé, du spam ;
+  la veille choisie à la place, « Brave Search » et « réponse rédigée par Claude »)** : chaque matin (Vercel Cron 07:15 UTC,
+  `GET /internal/cron/forum-watch`, de 08:00 à midi heure de Paris, une fois par jour réservée dans `forum_watch_runs` ;
+  `?force=1` le relance), `ForumWatchService` cherche la semaine passée sur Brave Search (`BRAVE_SEARCH_API_KEY`, offre gratuite,
+  8 recherches par jour `FORUM_QUERIES`, une par seconde), garde les discussions de forum sur le stationnement à l'aéroport de
+  Lyon (`isForumThread` : hôtes de forums ou chemins de discussion, parking et Lyon dans le titre ou l'extrait, jamais plazo.fr),
+  jamais une déjà envoyée (`forum_watch_seen`, sha256 de l'adresse, 180 jours ; migration `forum_watch`), 8 au plus, fait rédiger
+  une réponse par Claude (`FORUM_REPLY_MODEL` ; répondre d'abord à la question, citer Plazo seulement s'il aide en disant faire
+  partie de son équipe, aucun prix ni chiffre, `checkForumReply` écarte un prix, une durée ou le Terminal 2) et envoie un mail aux
+  administrateurs de `PLATFORM_ADMIN_EMAILS` (`forumWatchEmail` : titre, lien, extrait, réponse proposée) ; **rien n'est jamais
+  posté**, l'administrateur relit et poste lui-même ; rien sans clé ni nouveauté. Test `forum-watch.test.ts`.
 - **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
   Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
   (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur

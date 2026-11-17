@@ -52,6 +52,10 @@ export const emailReadingModel = (): string => (process.env.EMAIL_READING_MODEL 
 // 09/10/2026: the same key lets Claude write the « Présentation » of the operator's Plazo page (Plazo › Fiche,
 // nothing saved). Without it, the button answers 409 `ai_unavailable`. The model can be pinned too.
 export const listingDescriptionModel = (): string => (process.env.LISTING_DESCRIPTION_MODEL || '').trim() || 'claude-opus-5-5';
+// 17/11/2026: the forum watch (domain/forum-watch.ts) searches the web with Brave Search (free tier, 2 000 searches a
+// month); without its key the watch does nothing. Claude drafts the replies with the same Anthropic key.
+export const braveSearchApiKey = (): string => (process.env.BRAVE_SEARCH_API_KEY || '').trim();
+export const forumReplyModel = (): string => (process.env.FORUM_REPLY_MODEL || '').trim() || 'claude-opus-5-5';
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';

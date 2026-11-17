@@ -766,6 +766,24 @@ model InboundWatchReport {
   @@map("inbound_watch_reports")
 }
 
+/// 17/11/2026: the forum watch's day, reserved before the search (two passes never mail twice).
+model ForumWatchRun {
+  day     String   @id
+  ranAt   DateTime @default(now())
+  found   Int      @default(0)
+
+  @@map("forum_watch_runs")
+}
+
+/// 17/11/2026: a discussion already mailed (sha256 of its address), never mailed again; forgotten after 180 days.
+model ForumWatchSeen {
+  key    String   @id
+  seenAt DateTime @default(now())
+
+  @@index([seenAt])
+  @@map("forum_watch_seen")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   operatorId String
