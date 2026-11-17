@@ -3695,7 +3695,7 @@ export const fr = {
         "Par défaut, la région (ou le pays) de l'aéroport. Choisissez-en une si le parking n'en dépend pas.",
       // 13/11/2026 (« fais les 3 »): the countries of Europe, the language of the mails, the prospects without an email.
       regionGroupFrance: "France",
-      regionGroupEurope: "Europe",
+      regionGroupEurope: "Autres pays",
       languages: {
         fr: "Français",
         de: "Allemand",
@@ -3720,7 +3720,7 @@ export const fr = {
         l === "nb" ? "NO" : l.toUpperCase(),
       languageAuto: "Automatique (d'après la région)",
       languageHelp:
-        "Allemand en Allemagne et en Autriche, anglais ailleurs en Europe, français en France, en Belgique et au Luxembourg.",
+        "Allemand en Allemagne et en Autriche, français en France, en Belgique et au Luxembourg, portugais au Brésil, la langue du pays ailleurs.",
       languageOf: (label: string) => `Mails en ${label.toLowerCase()}`,
       noEmail: "Pas d'e-mail · à appeler",
       noEmailCheck: (name: string) =>

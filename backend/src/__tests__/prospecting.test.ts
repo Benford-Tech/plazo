@@ -216,7 +216,7 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     expect(byEmail['contact4@parking-fictif.example'].region).toBeNull();
     expect(byEmail['contact6@parking-fictif.example'].region).toEqual({ key: 'occitanie', label: 'Occitanie', manual: true });
     expect(byEmail['contact6@parking-fictif.example'].regionOverride).toBe('occitanie');
-    expect(all.body.regions).toHaveLength(39);
+    expect(all.body.regions).toHaveLength(41);
     expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes', country: false });
     expect(all.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 2, 'provence-alpes-cote-d-azur': 1, occitanie: 1, none: 2, bretagne: 0 });
 

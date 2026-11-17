@@ -119,11 +119,11 @@ describe('régions des aéroports', () => {
     const labels = sortedRegions().map(r => r.label);
     expect(labels.slice(0, 4)).toEqual(['Auvergne-Rhône-Alpes', 'Bourgogne-Franche-Comté', 'Bretagne', 'Centre-Val de Loire']);
     expect(labels.indexOf('Île-de-France')).toBe(labels.indexOf('Hauts-de-France') + 1);
-    // 13/11/2026: the 18 French regions first, then Switzerland and the European countries (20).
-    expect(labels).toHaveLength(39);
+    // 13/11/2026: the 18 French regions first, then Switzerland, the European countries (20), Brazil and the US (17/11/2026).
+    expect(labels).toHaveLength(41);
     expect(labels[18]).toBe('Allemagne');
     expect(labels.at(-1)).toBe('Suisse');
-    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261113230000_prospects_europe/migration.sql'), 'utf8').split(
+    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261117190000_prospect_region_brazil_usa/migration.sql'), 'utf8').split(
       'DROP CONSTRAINT "prospects_region_key"',
     )[1];
     const inCheck = [...sql.matchAll(/'([a-z-]+)'/g)].map(m => m[1]).sort();
