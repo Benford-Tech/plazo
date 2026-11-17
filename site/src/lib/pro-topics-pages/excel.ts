@@ -102,7 +102,7 @@ export const EXCEL_TOPICS = {
       ["Toute mon équipe doit-elle changer le même jour ?", "Non. Le gérant peut commencer seul avec l’import et les mails des comparateurs, puis inviter le comptoir, les chauffeurs et les voituriers quand il le souhaite."],
       ["Combien ça coûte ?", "De 149 € à 399 € HT par mois et par parking selon la formule, −10 % à l’année. La démo est gratuite, sans inscription."],
     ],
-    next: ["planning-reservations", "comparateurs"],
+    next: ["planning-reservations", "comparateurs", "choisir-logiciel-parking-aeroport"],
   },
 } satisfies Record<string, ProTopic>;
 

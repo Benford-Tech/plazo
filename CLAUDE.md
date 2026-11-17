@@ -2382,6 +2382,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   état des lieux » du menu mène à sa page ; pied de page : les pages par fonction sous « Solutions » et une colonne
   « Comparateurs » ; la page « Comparateurs » renvoie à chacune ; sur-titre des Tarifs « Tarifs du logiciel de parking
   d'aéroport ». Tests `pro-topics.test.ts` (900 mots, 5 questions, aucun mot technique, chaque page reliée).
+  **Guide d'achat (17/11/2026, « Plazo doit ressortir si on tape "logiciel aeroport parking" sur google » → « fais la page guide
+  d'achat »)** : `/choisir-logiciel-parking-aeroport` (`lib/pro-topics-pages/buying-guide.ts`, gabarit `ProTopicView`, ~1 600 mots) :
+  pourquoi un logiciel de parking ordinaire ne suffit pas, sept critères (réservations, capacité, navette, parking et clés, contrat
+  et état des lieux, chiffre net, prix et mise en route), chacun avec la question à poser et ce que fait Plazo Pro, six questions ;
+  aucun concurrent nommé ; reliée depuis l'accueil (sous les questions fréquentes), « Plazo Pro ou Excel » et le pied de page.
+  Reste chez Joanny : Search Console (sitemap de pro.plazo.fr, demande d'indexation), liens vers pro.plazo.fr (annuaires de
+  logiciels, LinkedIn, Google Business Profile), `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` absent de Vercel.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) n'est plus branché (vérifié le 23/10/2026)** : quand il l'était, chaque fusion sur `main` déployait un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; ne pas le rebrancher (Workers & Pages › `plazo` › Settings › Build). `email-worker-ci.yml` ne redéploie plus que sur un push qui touche le relais (plus d'attente de 3 min) et vérifie toujours toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. **`FALLBACK_ADDRESS` = l'adresse Gmail de Joanny depuis le 23/10/2026** (variable de l'environnement GitHub Production, destination vérifiée dans Email Routing) : `contact@plazo.fr` et les adresses qui ne sont à aucun parking y sont transférées.
