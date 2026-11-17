@@ -1,4 +1,5 @@
 import type { Dict } from "../../fr-dict";
+import type { CancellationPolicy } from "../../types";
 import { PRODUCT_NAME } from "../../product";
 
 const P = PRODUCT_NAME;
@@ -1145,6 +1146,50 @@ export const ru: Dict = {
     free_24h: "Бесплатно за 24 ч",
     free_48h: "Бесплатно за 48 ч",
     non_refundable: "Без отмены",
+  },
+  // B « fiche parking enrichie » (17/11/2026): prices, the day of departure and the return, services and conditions, questions.
+  parkingMore: {
+    prices: "Цены",
+    duration: "Срок",
+    total: "Итоговая цена",
+    days: (n: number) => {
+      const m10 = n % 10, m100 = n % 100;
+      return `${n} ${m10 === 1 && m100 !== 11 ? "день" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "дня" : "дней"}`;
+    },
+    extraDay: "Дополнительный день",
+    pricesNote: "Итоговая цена пакета, оплачивается онлайн при бронировании. Точную цену дают ваши даты.",
+    waitLine: (min: number) => `Среднее ожидание шаттла: ${min} мин.`,
+    open24: "Парковка работает круглосуточно: сдача и получение машины в любое время.",
+    meetingPoint: (place: string) => `Место встречи: ${place}.`,
+    meetingPhotoAlt: (place: string) => `Место встречи по возвращении: ${place}`,
+    servicesTitle: "Услуги и условия",
+    extras: "Услуги для вашей машины",
+    childSeats: "Детские автокресла в шаттле, по запросу и бесплатно.",
+    stops: (names: string) => `Шаттл также ездит: ${names}.`,
+    conditions: "Полезно знать:",
+    faqTitle: (name: string) => `Вопросы о ${name}`,
+    faq: {
+      shuttleQ: "Сколько едет шаттл до терминала?",
+      shuttleA: (min: number, terminal1: boolean, wait: number | null) =>
+        `Бесплатный шаттл довезёт вас ${terminal1 ? "до Терминала 1" : "до аэропорта"} за ${min} мин${wait !== null ? `, после ожидания в среднем ${wait} мин` : ""}.`,
+      hoursQ: "Работает ли парковка ночью?",
+      hoursA24: "Да, круглосуточно: вы сдаёте и забираете машину в любое время.",
+      hoursA: (hours: string) => `Часы работы парковки: ${hours}.`,
+      keysQ: "Нужно ли оставлять ключи?",
+      keysValet: "Да: машину паркует служащий, по приезде вы отдаёте ему ключи.",
+      keysSelf: "Нет: вы паркуете машину сами и оставляете ключи у себя.",
+      delayQ: "Что если мой обратный рейс задержится?",
+      delayA: "Укажите номер рейса при бронировании: парковка следит за посадкой, и шаттл приедет к месту встречи к вашему прилёту.",
+      cancelQ: "Можно ли отменить бронь?",
+      cancelA: {
+        free_until_arrival: "Да, бесплатно до вашего приезда, в разделе «Моё бронирование».",
+        free_24h: "Да, бесплатно не позднее чем за 24 ч до приезда, в разделе «Моё бронирование».",
+        free_48h: "Да, бесплатно не позднее чем за 48 ч до приезда, в разделе «Моё бронирование».",
+        non_refundable: "Нет: эту бронь нельзя отменить или вернуть деньги.",
+      } satisfies Record<CancellationPolicy, string>,
+      payQ: "Нужно ли платить на парковке?",
+      payA: "Нет: всё оплачивается онлайн картой при бронировании. На месте платить ничего не нужно.",
+    },
   },
   calendar: {
     dropOff: (parking: string) => `Сдача машины · ${parking}`,

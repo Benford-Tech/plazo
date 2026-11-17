@@ -12,6 +12,7 @@ import { HttpException } from '@/utils/httpException';
 import { CapacityService } from './capacity.service';
 import { type OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
 import { LatLng, ParkingLocationService } from './parking-location.service';
+import { loadParkingValues } from './parking-values';
 
 const MAX_STAY_DAYS = 90;
 
@@ -302,6 +303,32 @@ export class PublicService {
         })(),
       },
       offer: stay ? await this.offer(listing, stay) : null,
+      details: await this.details(listing.parkingId),
+    };
+  }
+
+  /**
+   * B « fiche parking enrichie » (17/11/2026): what the parking's settings say, for the blocks under the presentation
+   * (« Au retour », « Services et conditions », questions): the return meeting point and its photo, the shuttle's
+   * stops, the conditions on one line. Never the SMS phone nor the driver's phone.
+   */
+  private async details(parkingId: string) {
+    const [values, parking, stops] = await Promise.all([
+      loadParkingValues(parkingId),
+      prisma.parking.findUnique({ where: { id: parkingId }, select: { returnMeetingLabel: true, returnMeetingPhotoUrl: true } }),
+      prisma.shuttleStop.findMany({
+        where: { parkingId },
+        select: { name: true, kind: true },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+    ]);
+    const photo = parking?.returnMeetingPhotoUrl?.trim() || null;
+    return {
+      meetingPoint: parking?.returnMeetingLabel?.trim() || null,
+      meetingInstructions: values?.meetingInstructions ?? null,
+      meetingPhotoUrl: photo && /^(https:\/\/|\/api\/public\/)/.test(photo) ? photo : null,
+      stops: stops.map(s => ({ name: s.name, kind: s.kind })),
+      conditions: values?.conditions?.trim() || null,
     };
   }
 }

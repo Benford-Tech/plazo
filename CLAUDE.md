@@ -2254,6 +2254,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   au-delà ; lettre chez Brevo, double confirmation, gardée jusqu'à la désinscription en un clic, puis marquée désinscrite chez
   Brevo) et conditions générales (le
   formulaire à côté de l'adresse du service client, dès qu'elle est réelle) mises à jour.
+- **Fiche parking enrichie, choix B (17/11/2026, « ameliore le SEO », audit : sitemap de 6 adresses, fiche de ~490 mots ; maquettes
+  https://claude.ai/artifact/UAEy1nUtQ2RYBiHffuFmFA, « B »)** : sous la présentation de la fiche parking du site, « Tarifs » (la grille
+  `priceRows`, plus courte d'abord, et le jour en plus ; la grille revient sur la fiche, le prix des dates restant celui de la carte),
+  « Comment ça se passe » complété (attente moyenne de la navette, ouvert 24h/24, point de rendez-vous du retour, ses consignes et sa
+  photo), « Services et conditions » (services additionnels et leurs prix, sièges auto gratuits avec une navette, dessertes, « À savoir »
+  = `{conditions}` du parking, annulation) et « Questions sur <parking> » (`parkingFaq` de `lib/parking-more.ts` : navette, nuit, clés,
+  vol en retard, annulation, paiement ; seulement ce que le parking a réglé ; balisées `FAQPage` hors démo) ; textes `parkingMore` dans
+  les neuf langues. API : `GET /public/airports/:slug/parkings/:slug` rend `details { meetingPoint, meetingInstructions, meetingPhotoUrl,
+  stops, conditions }` (`PublicService.details`, `loadParkingValues` ; jamais le téléphone du chauffeur ni celui des SMS ; photo
+  https ou `/api/public/…` seulement). Tests `parking-more.test.ts`, `listing-public.test.ts`. Pages A (ville, gare, cas d'usage) : liste
+  proposée sur la même maquette, pas encore choisie.
 - **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et

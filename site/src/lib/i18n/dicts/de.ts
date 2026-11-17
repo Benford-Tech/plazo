@@ -1,4 +1,5 @@
 import type { Dict } from "../../fr-dict";
+import type { CancellationPolicy } from "../../types";
 import { PRODUCT_NAME } from "../../product";
 
 const P = PRODUCT_NAME;
@@ -1138,6 +1139,47 @@ export const de: Dict = {
     free_24h: "Kostenlos bis 24 Std. vorher",
     free_48h: "Kostenlos bis 48 Std. vorher",
     non_refundable: "Nicht stornierbar",
+  },
+  // B « fiche parking enrichie » (17/11/2026): prices, the day of departure and the return, services and conditions, questions.
+  parkingMore: {
+    prices: "Preise",
+    duration: "Dauer",
+    total: "Gesamtpreis",
+    days: (n: number) => `${n} Tag${n === 1 ? "" : "e"}`,
+    extraDay: "Zusätzlicher Tag",
+    pricesNote: "Gesamtpreis des Pakets, online bei der Buchung bezahlt. Ihre Daten ergeben den genauen Preis.",
+    waitLine: (min: number) => `Durchschnittliche Wartezeit auf den Shuttle: ${min} Min.`,
+    open24: "Der Parkplatz ist rund um die Uhr geöffnet: Abgabe und Abholung jederzeit.",
+    meetingPoint: (place: string) => `Treffpunkt: ${place}.`,
+    meetingPhotoAlt: (place: string) => `Der Treffpunkt bei der Rückkehr: ${place}`,
+    servicesTitle: "Leistungen und Bedingungen",
+    extras: "Leistungen für Ihr Auto",
+    childSeats: "Kindersitze im Shuttle, auf Anfrage und kostenlos.",
+    stops: (names: string) => `Der Shuttle fährt auch: ${names}.`,
+    conditions: "Gut zu wissen:",
+    faqTitle: (name: string) => `Fragen zu ${name}`,
+    faq: {
+      shuttleQ: "Wie lange dauert die Shuttlefahrt zum Terminal?",
+      shuttleA: (min: number, terminal1: boolean, wait: number | null) =>
+        `Der kostenlose Shuttle bringt Sie in ${min} Minuten ${terminal1 ? "zum Terminal 1" : "zum Flughafen"}${wait !== null ? `, nach durchschnittlich ${wait} Min. Wartezeit` : ""}.`,
+      hoursQ: "Ist der Parkplatz nachts geöffnet?",
+      hoursA24: "Ja, er ist rund um die Uhr geöffnet: Sie geben Ihr Auto jederzeit ab und holen es jederzeit ab.",
+      hoursA: (hours: string) => `Der Parkplatz ist geöffnet: ${hours}.`,
+      keysQ: "Muss ich meine Schlüssel abgeben?",
+      keysValet: "Ja: Ein Parkservice parkt Ihr Auto, Sie geben bei der Ankunft Ihre Schlüssel ab.",
+      keysSelf: "Nein: Sie parken Ihr Auto selbst und behalten Ihre Schlüssel.",
+      delayQ: "Was passiert, wenn mein Rückflug Verspätung hat?",
+      delayA: "Geben Sie bei der Buchung Ihre Flugnummer an: Der Parkplatz verfolgt Ihre Landung und der Shuttle kommt bei Ihrer Ankunft zum Treffpunkt.",
+      cancelQ: "Kann ich meine Buchung stornieren?",
+      cancelA: {
+        free_until_arrival: "Ja, kostenlos bis zu Ihrer Ankunft, über „Meine Buchung“.",
+        free_24h: "Ja, kostenlos bis 24 Stunden vor Ihrer Ankunft, über „Meine Buchung“.",
+        free_48h: "Ja, kostenlos bis 48 Stunden vor Ihrer Ankunft, über „Meine Buchung“.",
+        non_refundable: "Nein: Diese Buchung ist weder stornierbar noch erstattungsfähig.",
+      } satisfies Record<CancellationPolicy, string>,
+      payQ: "Muss ich am Parkplatz bezahlen?",
+      payA: "Nein: Alles wird bei der Buchung online per Karte bezahlt. Vor Ort ist nichts zu zahlen.",
+    },
   },
   calendar: {
     dropOff: (parking: string) => `Abgabe des Autos · ${parking}`,
