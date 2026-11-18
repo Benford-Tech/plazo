@@ -2147,10 +2147,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
 - **Veille des forums (17/11/2026, « Fais un robot qui poste sur des forums tous les jours au sujet de Plazo » : refusé, du spam ;
-  la veille choisie à la place, « Brave Search » et « réponse rédigée par Claude »)** : chaque matin (Vercel Cron 07:15 UTC,
+  la veille choisie à la place, « réponse rédigée par Claude » ; recherche par Brave remplacée le 18/11/2026, « c'est pas gratuit »,
+  par la recherche web de Claude)** : chaque matin (Vercel Cron 07:15 UTC,
   `GET /internal/cron/forum-watch`, de 08:00 à midi heure de Paris, une fois par jour réservée dans `forum_watch_runs` ;
-  `?force=1` le relance), `ForumWatchService` cherche la semaine passée sur Brave Search (`BRAVE_SEARCH_API_KEY`, offre gratuite,
-  8 recherches par jour `FORUM_QUERIES`, une par seconde), garde les discussions de forum sur le stationnement à l'aéroport de
+  `?force=1` le relance), `ForumWatchService` lance les 8 recherches du jour (`FORUM_QUERIES`) en parallèle, chacune
+  par l'outil `web_search_20250305` de Claude (`ANTHROPIC_API_KEY`, `FORUM_SEARCH_MODEL`, Claude Haiku 5.5 par défaut, une
+  recherche par appel, plazo.fr exclu, environ 10 $ les 1 000 recherches ; résultats lus dans les blocs `web_search_tool_result`,
+  `webSearchResults`, jamais dans le texte de Claude ; une page datée de plus de 30 jours écartée, `recentEnough`), garde les discussions de forum sur le stationnement à l'aéroport de
   Lyon (`isForumThread` : hôtes de forums ou chemins de discussion, parking et Lyon dans le titre ou l'extrait, jamais plazo.fr),
   jamais une déjà envoyée (`forum_watch_seen`, sha256 de l'adresse, 180 jours ; migration `forum_watch`), 8 au plus, fait rédiger
   une réponse par Claude (`FORUM_REPLY_MODEL` ; répondre d'abord à la question, citer Plazo seulement s'il aide en disant faire

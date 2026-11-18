@@ -54,7 +54,8 @@ export const emailReadingModel = (): string => (process.env.EMAIL_READING_MODEL 
 export const listingDescriptionModel = (): string => (process.env.LISTING_DESCRIPTION_MODEL || '').trim() || 'claude-opus-5-5';
 // 17/11/2026: the forum watch (domain/forum-watch.ts) searches the web with Brave Search (free tier, 2 000 searches a
 // month); without its key the watch does nothing. Claude drafts the replies with the same Anthropic key.
-export const braveSearchApiKey = (): string => (process.env.BRAVE_SEARCH_API_KEY || '').trim();
+/** The forum watch's searches: a cheap model is enough to run a web search (18/11/2026). */
+export const forumSearchModel = (): string => (process.env.FORUM_SEARCH_MODEL || '').trim() || 'claude-haiku-5-5';
 export const forumReplyModel = (): string => (process.env.FORUM_REPLY_MODEL || '').trim() || 'claude-opus-5-5';
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.

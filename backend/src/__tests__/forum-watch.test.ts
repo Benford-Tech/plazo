@@ -1,6 +1,15 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { braveResults, checkForumReply, FORUM_QUERIES, forumWatchDay, forumWatchEmail, isForumThread, threadKey } from '@/domain/forum-watch';
+import {
+  checkForumReply,
+  FORUM_QUERIES,
+  forumWatchDay,
+  forumWatchEmail,
+  isForumThread,
+  recentEnough,
+  threadKey,
+  webSearchResults,
+} from '@/domain/forum-watch';
 import { ForumWatchService } from '@/services/forum-watch.service';
 import { NotificationService } from '@/services/notification.service';
 import { resetDatabase } from './utils/helpers';
@@ -18,7 +27,6 @@ const thread = (over: Partial<{ title: string; url: string; description: string 
   age: '2 jours',
   ...over,
 });
-const brave = (results: unknown[]) => ({ ok: true, status: 200, json: async () => ({ web: { results } }) }) as unknown as Response;
 
 describe('le tri des résultats', () => {
   it('garde une discussion de forum sur le stationnement à Lyon, jamais une page ordinaire ni plazo.fr', () => {
@@ -29,12 +37,21 @@ describe('le tri des résultats', () => {
     expect(isForumThread(thread({ title: 'Restaurant à Lyon', description: 'Où manger près de Bellecour ?' }))).toBe(false);
   });
 
-  it('nettoie les balises de Brave et retrouve une discussion par son adresse', () => {
-    const [r] = braveResults({
-      web: { results: [{ title: 'Parking <strong>Lyon</strong>', url: 'https://x.fr/forum/1', description: 'a &amp; b' }] },
-    });
-    expect(r).toMatchObject({ title: 'Parking Lyon', description: 'a & b' });
-    expect(braveResults(null)).toEqual([]);
+  it('lit les résultats de la recherche web de Claude et retrouve une discussion par son adresse', () => {
+    const results = webSearchResults([
+      { type: 'text', text: 'ok' },
+      { type: 'web_search_tool_result', content: { type: 'web_search_tool_result_error', error_code: 'unavailable' } },
+      {
+        type: 'web_search_tool_result',
+        content: [{ type: 'web_search_result', title: 'Parking  Lyon', url: 'https://x.fr/forum/1', page_age: '2 days ago', encrypted_content: 'e' }],
+      },
+    ]);
+    expect(results).toEqual([{ title: 'Parking Lyon', url: 'https://x.fr/forum/1', description: '', age: '2 days ago' }]);
+    expect(webSearchResults(null)).toEqual([]);
+    expect(recentEnough('2 days ago', MORNING)).toBe(true);
+    expect(recentEnough('3 months ago', MORNING)).toBe(false);
+    expect(recentEnough('March 2, 2024', MORNING)).toBe(false);
+    expect(recentEnough(null, MORNING)).toBe(true);
     expect(threadKey('https://www.x.fr/forum/1/?utm=a#r')).toBe(threadKey('https://x.fr/forum/1'));
   });
 
@@ -66,42 +83,39 @@ describe('la veille du matin', () => {
   beforeEach(async () => {
     await resetDatabase();
     process.env.PLATFORM_ADMIN_EMAILS = 'admin@exemple.test';
-    process.env.BRAVE_SEARCH_API_KEY = 'brave-test-key';
-    service().pause = async () => undefined;
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
     jest.spyOn(service(), 'draft').mockResolvedValue('Comparez le prix total. Je travaille sur Plazo : https://www.plazo.fr');
   });
   afterEach(() => {
     jest.restoreAllMocks();
     delete process.env.PLATFORM_ADMIN_EMAILS;
-    delete process.env.BRAVE_SEARCH_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
   });
   afterAll(() => prisma.$disconnect());
 
   it('envoie les nouvelles discussions une fois, puis rien le lendemain pour les mêmes', async () => {
     jest.spyOn(notifications(), 'canSendEmail').mockReturnValue(true);
     const email = jest.spyOn(notifications(), 'emailStaff').mockResolvedValue(true);
-    const fetcher = jest.fn(async () => brave([thread(), thread({ url: 'https://www.lyonaeroports.com/parkings' })]));
-    service().fetcher = fetcher as never;
+    const search = jest.spyOn(service(), 'search').mockResolvedValue([thread(), thread({ url: 'https://www.lyonaeroports.com/parkings' })]);
 
     const first = await service().run(MORNING);
     expect(first).toMatchObject({ status: 'sent', searches: FORUM_QUERIES.length, found: 1, drafted: 1 });
     expect(email).toHaveBeenCalledTimes(1);
     const [, , , message] = email.mock.calls[0];
     expect(message.text).toContain('Je travaille sur Plazo');
-    const headers = (fetcher.mock.calls[0] as unknown as [string, RequestInit])[1].headers as Record<string, string>;
-    expect(headers['X-Subscription-Token']).toBe('brave-test-key');
+    expect(search.mock.calls.map(([q]) => q)).toEqual([...FORUM_QUERIES]);
 
     expect((await service().run(new Date(MORNING.getTime() + 15 * 60_000))).status).toBe('already_ran');
     expect((await service().run(new Date('2026-11-19T08:30:00Z'))).status).toBe('nothing_new');
     expect(email).toHaveBeenCalledTimes(1);
   });
 
-  it('ne fait rien sans clé Brave, et réessaie quand le mail ne part pas', async () => {
+  it('ne fait rien sans clé Anthropic, et réessaie quand le mail ne part pas', async () => {
     jest.spyOn(notifications(), 'canSendEmail').mockReturnValue(true);
-    delete process.env.BRAVE_SEARCH_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
     expect((await service().run(MORNING)).status).toBe('not_configured');
-    process.env.BRAVE_SEARCH_API_KEY = 'brave-test-key';
-    service().fetcher = (async () => brave([thread()])) as never;
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    jest.spyOn(service(), 'search').mockResolvedValue([thread()]);
     jest.spyOn(notifications(), 'emailStaff').mockResolvedValueOnce(false).mockResolvedValue(true);
     expect((await service().run(MORNING)).status).toBe('not_sent');
     expect((await service().run(MORNING)).status).toBe('sent');
