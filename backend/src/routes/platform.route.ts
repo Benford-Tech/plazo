@@ -153,6 +153,14 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *   post:
  *     summary: The campaign's email sent to the admin, « [Test] » in its subject
  *     tags: [Platform]
+ * /internal/platform/traveller-welcome:
+ *   get:
+ *     summary: 18/11/2026 — Plateforme › Mails d'accueil, the welcome emails to travellers over the period
+ *     description: >
+ *       ?days=7|30|90 (30 by default), ?operatorId= to keep one operator. The bookings of the other channels created over
+ *       the period (no demo, no test operator): counts, the handled ones newest first (300 at most, traveller's first name,
+ *       masked address, outcome) and, for the others, the first reason they never were candidates.
+ *     tags: [Platform]
  * /internal/platform/traveller-welcome/test:
  *   post:
  *     summary: 15/11/2026 — the welcome email to travellers, for an example booking of the operator chosen (operatorId, else an example parking), sent to the admin from the service client's address
@@ -370,6 +378,7 @@ export class PlatformRoute implements Routes {
       ValidationMiddleware(PlatformNotificationDto),
       this.platform.sendNotification,
     );
+    this.router.get(`${base}/traveller-welcome`, PlatformAdminMiddleware(), this.platform.travellerWelcomeReport);
     this.router.post(`${base}/traveller-welcome/test`, PlatformAdminMiddleware(), this.platform.travellerWelcomeTest);
     this.router.get(`${base}/traveller-campaigns`, PlatformAdminMiddleware(), this.platform.travellerCampaigns);
     this.router.post(`${base}/traveller-campaigns/preview`, PlatformAdminMiddleware(), this.platform.travellerCampaignPreview);

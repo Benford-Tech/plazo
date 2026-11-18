@@ -65,6 +65,7 @@ const PlatformProspectingPage = lazy(
 const PlatformSeoPage = lazy(() => import("@/pages/platform/SeoPage"));
 const PlatformInvitationsPage = lazy(() => import("@/pages/platform/InvitationsPage"));
 const PlatformAppsPage = lazy(() => import("@/pages/platform/AppsPage"));
+const PlatformWelcomeEmailsPage = lazy(() => import("@/pages/platform/WelcomeEmailsPage"));
 const CapacityStudiesPage = lazy(
   () => import("@/pages/capacity/CapacityStudiesPage"),
 );
@@ -385,6 +386,10 @@ const App = () => (
               <Route
                 path="/plateforme/applications"
                 element={lazyPage(<PlatformAppsPage />)}
+              />
+              <Route
+                path="/plateforme/mails-accueil"
+                element={lazyPage(<PlatformWelcomeEmailsPage />)}
               />
               <Route
                 path="/plateforme/capacite"
