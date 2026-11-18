@@ -2087,6 +2087,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   secrets `PLAZO_ADMIN_EMAIL` / `PLAZO_ADMIN_PASSWORD` (un administrateur de la plateforme), session fermée à la fin ; rien n'est
   jamais envoyé aux prospects (les mails partent de la page). Liste France du 07/11/2026 (57 parkings, maturité du système
   d'information « SI n/4 » en tête des notes) relevée sur les sites des exploitants eux-mêmes.
+  **E-mails trouvés sur les sites (18/11/2026, « complete les prospects en visitant les sites pour recuperer le mail »)** : workflow
+  « E-mails des prospects (sites) » (`prospects-emails.yml`, à la main ; `.github/scripts/prospect_emails.py`) : pour chaque prospect
+  sans e-mail avec un site (désinscrits exclus), la page d'accueil, ses liens de contact ou de mentions légales, puis /contact,
+  /mentions-legales, /impressum…, 6 pages au plus, robots.txt respecté ; adresses des liens mailto et du texte (« [at] » compris),
+  celle du domaine du site d'abord (reservation@, contact@, info@ avant les autres, dpo@ ou jobs@ en dernier), sinon une adresse de
+  messagerie (gmail, orange…) publiée par le site, jamais celle d'une autre société (agence web, comparateur) ; puis l'import avec
+  `complete` (même nom au même aéroport, jamais une adresse déjà prise ni désinscrite) ; aperçu par défaut, `appliquer` pour écrire ;
+  le résumé montre l'adresse masquée « c•••@parking-x.fr ».
   **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
   une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
   `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
