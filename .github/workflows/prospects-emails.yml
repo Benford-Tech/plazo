@@ -1,0 +1,42 @@
+name: E-mails des prospects (sites)
+
+# Completes the prospects of Plateforme › Prospection that have a website but no email, by reading their site
+# (18/11/2026, « complete les prospects en visitant les sites pour recuperer le mail »): the address the site publishes
+# (contact or legal page), the site's own domain first, fills the empty email through POST …/prospects/import with
+# `complete` (never an address taken by another prospect, never an opted-out one). By default a preview only; « appliquer »
+# writes. The run prints each parking, its site and the address masked. Nothing is ever sent: the mails leave only from the
+# page. Secrets: PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD (a platform admin). By hand only (.github/scripts/prospect_emails.py).
+on:
+  workflow_dispatch:
+    inputs:
+      appliquer:
+        description: "Enregistrer les adresses trouvées (sinon un aperçu seulement)"
+        type: boolean
+        default: false
+      limite:
+        description: "Nombre de prospects à visiter au plus"
+        type: string
+        default: "500"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prospects-import
+  cancel-in-progress: false
+
+jobs:
+  emails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Recherche des e-mails sur les sites
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          APPLY: ${{ inputs.appliquer }}
+          LIMIT: ${{ inputs.limite }}
+        run: python3 .github/scripts/prospect_emails.py
