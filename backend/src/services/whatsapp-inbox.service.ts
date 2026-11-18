@@ -21,6 +21,7 @@ import {
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
+import { DemoMessagesService } from './demo-messages.service';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { PushService } from './push.service';
@@ -377,6 +378,7 @@ export class WhatsappInboxService {
 
   /** GET /internal/whatsapp/inbox?view= */
   public async list(actor: AuthenticatedStaff, view: InboxView, now = new Date()) {
+    if (actor.demo) await Container.get(DemoMessagesService).tick(actor.operatorId, now);
     const admin = this.platformAdmin(actor);
     if (view === 'unknown' && !admin) throw new HttpException(httpStatus.FORBIDDEN, 'Platform admins only', 'forbidden');
     const [rows, unread, all, handled, unknown] = await Promise.all([
@@ -571,7 +573,22 @@ export class WhatsappInboxService {
     const row = await this.find(actor, id);
     const channel = replyChannelOf(row, now);
     let message;
-    if (channel === 'app') {
+    if (actor.demo) {
+      // 18/11/2026 (« Simule les messages reçus sur les env de démo »): in the prospects' demo the reply is kept and shown,
+      // never sent (no Meta, no SMS, no push: its travellers are fictional).
+      message = await prisma.whatsappInboxMessage.create({
+        data: {
+          conversationId: id,
+          direction: 'out',
+          type: 'text',
+          text,
+          status: 'delivered',
+          staffId: actor.id,
+          channel: channel === 'app' || channel === 'sms' ? channel : 'whatsapp',
+          reservationId: row.reservationId,
+        },
+      });
+    } else if (channel === 'app') {
       // The traveller wrote from the Plazo app: the reply shows there, with a push to their phone.
       const last = await prisma.whatsappInboxMessage.findFirst({
         where: { conversationId: id, channel: 'app', direction: 'in' },

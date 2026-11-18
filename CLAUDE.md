@@ -2063,6 +2063,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   carte du lien avec « Copier » ; `demo` sur chaque prospect de la liste ; variable `{lien_demo}` des mails (le lien du prospect, créé à
   l'envoi ; un exemple dans l'aperçu et le test) ; `GET /public/demo/links/:jeton` (état, nom du parking). Tests
   `prospect-demo.test.ts`, `DemoEntryPage.test.tsx`.
+  **Messages reçus simulés (18/11/2026, « Simule les messages reçus sur les env de démo »)** : la démo des prospects a sa boîte
+  « Messages » remplie : cinq conversations semées avec elle (`DEMO_THREADS` de `domain/demo-messages.ts` : WhatsApp, SMS et app,
+  liées aux réservations `DEMO_BOOKINGS` de `domain/prospect-demo.ts`, numéros fictifs 06 39 98, deux non lues, deux traitées avec la
+  réponse de Sami), puis un message nouveau de la liste `DEMO_POOL` par créneau de 20 minutes tant que quelqu'un regarde
+  (`DemoMessagesService.tick`, appelé par `nav/counts` et la liste de la boîte pour une session de démo ; clé unique
+  `demo:<loueur>:slot:<n>` : jamais deux fois), avec la cloche ; en démo, une réponse est gardée et montrée « remise », jamais envoyée
+  (ni Meta, ni SMS, ni push ; `RefuseInDemo` retiré de `…/reply`) ; la suppression reste refusée (démo partagée). Test
+  `demo-messages.test.ts`.
   **Classement par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » + « De l'aéroport »)** :
   le tableau est découpé en blocs repliables, un par région (en-tête « AUVERGNE-RHÔNE-ALPES · 14 », nombre sous les filtres en
   cours ; régions dans l'ordre alphabétique, « Sans région » en dernier ; replis gardés dans le navigateur,

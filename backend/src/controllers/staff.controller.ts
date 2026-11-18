@@ -11,6 +11,7 @@ import { StaffPhotoService } from '@/services/staff-photo.service';
 import { InboundEmailService } from '@/services/inbound-email.service';
 import { ExtraService } from '@/services/extra.service';
 import { can } from '@/domain/roles';
+import { DemoMessagesService } from '@/services/demo-messages.service';
 import { WhatsappInboxService } from '@/services/whatsapp-inbox.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -45,6 +46,8 @@ export class StaffController {
   /** GET /internal/nav/counts (30/10/2026): the menu's counters. */
   public navCounts = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const manage = can(req.staff.role, 'reservations:manage');
+    // 18/11/2026: the prospects' demo receives its fictional travellers' messages while someone looks.
+    if (req.staff.demo) await Container.get(DemoMessagesService).tick(req.staff.operatorId);
     const [inbox, extras, whatsapp] = await Promise.all([
       manage ? Container.get(InboundEmailService).todoCount(req.staff.operatorId) : null,
       Container.get(ExtraService).todoCount(req.staff.operatorId),
