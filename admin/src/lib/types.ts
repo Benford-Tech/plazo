@@ -2800,6 +2800,49 @@ export interface PlatformInvitations {
   data: PlatformInvitation[];
   counts: { all: number; not_opened: number; not_clicked: number; no_app: number };
 }
+/** 18/11/2026: Plateforme › Mails d'accueil (GET /internal/platform/traveller-welcome). */
+export type WelcomeOutcome = "sent" | "repeat" | "opted_out" | "no_email" | "failed" | "in_progress";
+export type WelcomeNotSentReason =
+  | "before_launch"
+  | "allopark"
+  | "import"
+  | "no_email"
+  | "no_listing"
+  | "operator_off"
+  | "too_late"
+  | "cancelled"
+  | "anonymized"
+  | "already_dropped"
+  | "pending"
+  | "missed";
+
+export interface WelcomeReportRow {
+  id: string;
+  operatorId: string;
+  operatorName: string;
+  parking: string;
+  traveller: string;
+  email: string | null;
+  reference: string;
+  channel: string;
+  channelDetail: string | null;
+  createdAt: string;
+  arrivalAt: string;
+  handledAt: string;
+  outcome: WelcomeOutcome;
+}
+
+export interface WelcomeReport {
+  days: number;
+  from: string;
+  counts: { bookings: number; sent: number; handledNotSent: number; notCandidate: number; pending: number };
+  reasons: { reason: WelcomeNotSentReason; count: number }[];
+  outcomes: { outcome: WelcomeOutcome; count: number }[];
+  rows: WelcomeReportRow[];
+  truncated: boolean;
+  operators: { id: string; name: string }[];
+}
+
 export interface PlatformApps {
   days: number;
   from: string;

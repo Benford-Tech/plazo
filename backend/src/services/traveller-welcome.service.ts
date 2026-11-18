@@ -8,6 +8,8 @@ import { localDateTime } from '@/domain/time';
 import { travellerEmail } from '@/domain/traveller-email';
 import { EmailMessage } from '@/domain/booking-messages';
 import { welcomeEmail, welcomeEmailHash } from '@/domain/traveller-welcome';
+import { isTestOperatorName } from '@/domain/test-feed';
+import { maskEmail, NOT_SENT_REASONS, NotSentReason, shortName, WelcomeOutcome, welcomeStateOf } from '@/domain/welcome-report';
 import { HttpException } from '@/utils/httpException';
 import { isSilentOperator } from '@/services/demo-guard';
 import { NotificationService } from '@/services/notification.service';
@@ -20,6 +22,37 @@ export const WELCOME_REPEAT_MS = 365 * 24 * 3600_000;
 /** Not when the drop-off is this close: the reminder of the day before (or nothing) does the job. */
 export const WELCOME_MIN_LEAD_MS = 3 * 3600_000;
 const PER_PASS = 40;
+
+const REPORT_PERIODS = [7, 30, 90];
+/** The list shows at most this many handled bookings (the counts cover them all). */
+const REPORT_ROWS = 300;
+
+export interface WelcomeReportRow {
+  id: string;
+  operatorId: string;
+  operatorName: string;
+  parking: string;
+  traveller: string;
+  email: string | null;
+  reference: string;
+  channel: string;
+  channelDetail: string | null;
+  createdAt: string;
+  arrivalAt: string;
+  handledAt: string;
+  outcome: WelcomeOutcome | 'in_progress';
+}
+
+export interface WelcomeReport {
+  days: number;
+  from: string;
+  counts: { bookings: number; sent: number; handledNotSent: number; notCandidate: number; pending: number };
+  reasons: { reason: NotSentReason; count: number }[];
+  outcomes: { outcome: WelcomeOutcome | 'in_progress'; count: number }[];
+  rows: WelcomeReportRow[];
+  truncated: boolean;
+  operators: { id: string; name: string }[];
+}
 
 export interface WelcomeRunReport {
   sent: number;
@@ -171,6 +204,100 @@ export class TravellerWelcomeService {
         : [],
       publisher: publisherLine(PRODUCT_COMPANY) || PRODUCT_NAME,
     });
+  }
+
+  /**
+   * 18/11/2026 (« affiche une liste des mails d'invitation envoyés côté plateforme », direction B): Plateforme › Mails
+   * d'accueil. The bookings of the other channels created over the period (no demo, no test operator), the welcome
+   * emails handled (newest first) and, for the others, the first reason they never were candidates.
+   */
+  public async report(requestedDays: number, operatorId: string | null, now: Date = new Date()): Promise<WelcomeReport> {
+    const days = REPORT_PERIODS.includes(requestedDays) ? requestedDays : 30;
+    const from = new Date(now.getTime() - days * 86400_000);
+    const [marked, operators] = await Promise.all([
+      prisma.reservation.aggregate({ _min: { welcomeEmailAt: true } }),
+      prisma.operator.findMany({
+        where: { isDemo: false, prospectDemo: false },
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+    ]);
+    const real = operators.filter(o => !isTestOperatorName(o.name));
+    const realIds = real.map(o => o.id);
+    const ids = operatorId ? realIds.filter(id => id === operatorId) : realIds;
+    const rows = await prisma.reservation.findMany({
+      where: { operatorId: { in: ids }, channel: { not: 'plazo' }, createdAt: { gte: from } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        operatorId: true,
+        reference: true,
+        externalReference: true,
+        channel: true,
+        channelDetail: true,
+        status: true,
+        importId: true,
+        anonymizedAt: true,
+        customerEmail: true,
+        customerFirstName: true,
+        customerLastName: true,
+        createdAt: true,
+        arrivalAt: true,
+        welcomeEmailAt: true,
+        welcomeEmailOutcome: true,
+        operator: { select: { name: true, suspendedAt: true, archivedAt: true } },
+        parking: { select: { name: true, listing: { select: { title: true } } } },
+      },
+    });
+    const markedAt = marked._min.welcomeEmailAt ?? null;
+    const reasons = new Map<NotSentReason, number>();
+    const outcomes = new Map<WelcomeOutcome | 'in_progress', number>();
+    const handled: WelcomeReportRow[] = [];
+    for (const r of rows) {
+      const state = welcomeStateOf(
+        {
+          ...r,
+          hasListing: !!r.parking.listing,
+          operatorOff: !!(r.operator.suspendedAt || r.operator.archivedAt),
+        },
+        now,
+        markedAt,
+      );
+      if (state.kind === 'not_sent') {
+        reasons.set(state.reason, (reasons.get(state.reason) ?? 0) + 1);
+        continue;
+      }
+      outcomes.set(state.outcome, (outcomes.get(state.outcome) ?? 0) + 1);
+      handled.push({
+        id: r.id,
+        operatorId: r.operatorId,
+        operatorName: r.operator.name,
+        parking: r.parking.listing?.title || r.parking.name,
+        traveller: r.anonymizedAt ? 'Client anonymisé' : shortName(r.customerFirstName, r.customerLastName),
+        email: r.anonymizedAt ? null : maskEmail(r.customerEmail),
+        reference: r.externalReference || r.reference,
+        channel: r.channel,
+        channelDetail: r.channelDetail,
+        createdAt: r.createdAt.toISOString(),
+        arrivalAt: r.arrivalAt.toISOString(),
+        handledAt: (r.welcomeEmailAt as Date).toISOString(),
+        outcome: state.outcome,
+      });
+    }
+    handled.sort((a, b) => b.handledAt.localeCompare(a.handledAt));
+    const sent = outcomes.get('sent') ?? 0;
+    const pending = reasons.get('pending') ?? 0;
+    const notCandidate = [...reasons.entries()].reduce((n, [k, v]) => (k === 'pending' ? n : n + v), 0);
+    return {
+      days,
+      from: from.toISOString(),
+      counts: { bookings: rows.length, sent, handledNotSent: handled.length - sent, notCandidate, pending },
+      reasons: NOT_SENT_REASONS.filter(k => reasons.get(k)).map(reason => ({ reason, count: reasons.get(reason) as number })),
+      outcomes: [...outcomes.entries()].map(([outcome, count]) => ({ outcome, count })),
+      rows: handled.slice(0, REPORT_ROWS),
+      truncated: handled.length > REPORT_ROWS,
+      operators: real,
+    };
   }
 
   /**

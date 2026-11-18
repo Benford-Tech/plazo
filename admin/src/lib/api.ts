@@ -57,6 +57,7 @@ import type {
   PhoneHistory,
   PlatformInvitations,
   PlatformApps,
+  WelcomeReport,
   PlatformSeo,
   WhatsappSettings,
   WhatsappNumber,
@@ -1574,6 +1575,10 @@ export const adminApi = {
     apiRequest<{ emailSent: boolean }>(`/internal/platform/invitations/${encodeURIComponent(staffId)}/resend`, { method: "POST" }),
   getPlatformInvitations: (view: string) => apiRequest<PlatformInvitations>(`/internal/platform/invitations?view=${encodeURIComponent(view)}`),
   getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
+  getWelcomeReport: (days: number, operatorId?: string | null) =>
+    apiRequest<WelcomeReport>(
+      `/internal/platform/traveller-welcome?days=${days}${operatorId ? `&operatorId=${encodeURIComponent(operatorId)}` : ""}`,
+    ),
   getPlatformApps: (days: number) => apiRequest<PlatformApps>(`/internal/platform/apps?days=${days}`),
   getPlatformNotifications: () =>
     apiRequest<{ data: PlatformNotification[] }>(

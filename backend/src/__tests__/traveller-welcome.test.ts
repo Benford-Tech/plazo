@@ -203,3 +203,48 @@ describe('le test depuis Plateforme › Notifications', () => {
     expect(refused.status).toBe(403);
   });
 });
+
+describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
+  afterEach(() => {
+    delete process.env.PLATFORM_ADMIN_EMAILS;
+  });
+
+  it('liste les mails traités et dit pourquoi les autres réservations ne l’ont pas eu', async () => {
+    const admin = await setupOperator('Plazo');
+    await prisma.operator.update({ where: { id: admin.operator.id }, data: { name: 'Plazo (tests)' } });
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    // A booking the migration marked on 15/11, before the launch: never shown as « already received ».
+    await booking(op, {
+      createdAt: new Date('2026-11-10T10:00:00Z'),
+      welcomeEmailAt: new Date('2026-11-15T09:00:00Z'),
+      welcomeEmailOutcome: 'repeat',
+      customerEmail: 'old@example.org',
+    });
+    await prisma.travellerEmailOptout.deleteMany();
+    await booking(op); // sent
+    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'a@example.org' });
+    await booking(op, { customerEmail: null, externalReference: '#2' });
+    await booking(op, { arrivalAt: new Date(NOW.getTime() - 3600_000 + 2 * 3600_000), customerEmail: 'b@example.org' });
+    await booking(admin, { customerEmail: 'test@example.org' }); // the test operator is left out
+    const ran = await service.run(NOW);
+    expect(ran).toEqual({ sent: 1, skipped: 0, failed: 0 });
+
+    const res = await api().get('/api/internal/platform/traveller-welcome?days=30').set('Authorization', `Bearer ${admin.token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.counts).toEqual({ bookings: 5, sent: 1, handledNotSent: 0, notCandidate: 4, pending: 0 });
+    expect(res.body.reasons).toEqual([
+      { reason: 'before_launch', count: 1 },
+      { reason: 'allopark', count: 1 },
+      { reason: 'no_email', count: 1 },
+      { reason: 'too_late', count: 1 },
+    ]);
+    expect(res.body.rows).toHaveLength(1);
+    expect(res.body.rows[0]).toMatchObject({ traveller: 'Camille M.', email: 'c•••••@example.org', parking: 'Parking des Cèdres', outcome: 'sent' });
+    expect(res.body.operators.map((o: { name: string }) => o.name)).toEqual([op.operator.name]);
+
+    const refused = await api().get('/api/internal/platform/traveller-welcome').set('Authorization', `Bearer ${op.token}`);
+    expect(refused.status).toBe(403);
+  });
+});

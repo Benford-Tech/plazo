@@ -73,6 +73,14 @@ export class PlatformController {
     res.json(await Container.get(TravellerWelcomeService).sendTest({ email: req.staff.email, firstName: req.staff.firstName ?? '' }, operatorId));
   });
 
+  /** GET /internal/platform/traveller-welcome?days=7|30|90&operatorId= (18/11/2026: Plateforme › Mails d'accueil) */
+  public travellerWelcomeReport = catchAsync(async (req: Request, res: Response) => {
+    const operatorId = str(req.query.operatorId)?.trim() || null;
+    if (operatorId && operatorId.length > 40) throw new ValidationException({ operatorId: 'invalid' });
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerWelcomeService).report(Number(req.query.days) || 30, operatorId));
+  });
+
   /** GET /internal/platform/traveller-campaigns (15/11/2026: the emails to the travellers, « Pensez à Plazo ») */
   public travellerCampaigns = catchAsync(async (_req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
