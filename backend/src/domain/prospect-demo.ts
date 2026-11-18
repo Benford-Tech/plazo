@@ -46,6 +46,15 @@ export const DEMO_STAFF: Record<DemoRole, { email: string; firstName: string; la
   valet: { email: 'demo-voiturier@demo.plazo.invalid', firstName: 'Léa', lastName: 'Démo', post: 'valet' },
 };
 
+/** A few comparators' bookings of the coming days, two of them without a price (« Sans prix »); the demo's messages are theirs. */
+export const DEMO_BOOKINGS = [
+  { detail: 'Allopark', ref: 'AL-900000101', first: 'Camille', last: 'Martin', plate: 'AB-123-CD', inDays: 2, nights: 5, price: 5400 },
+  { detail: 'Allopark', ref: 'AL-900000102', first: 'Julien', last: 'Petit', plate: 'GH-456-JK', inDays: 3, nights: 7, price: 6900 },
+  { detail: 'Onepark', ref: '5900101', first: 'Sarah', last: 'Leroy', plate: 'LM-789-NP', inDays: 4, nights: 3, price: null },
+  { detail: 'Onepark', ref: '5900102', first: 'Thomas', last: 'Roux', plate: 'QR-321-ST', inDays: 5, nights: 10, price: null },
+  { detail: 'Parclick', ref: 'PK90010', first: 'Inès', last: 'Moreau', plate: 'UV-654-WX', inDays: 6, nights: 4, price: 4200 },
+] as const;
+
 export const isDemoRole = (value: unknown): value is DemoRole => typeof value === 'string' && (DEMO_ROLES as readonly string[]).includes(value);
 
 /** « … (démo) »: the cheap check of the test feed's trigger (the flag is checked in the database). */

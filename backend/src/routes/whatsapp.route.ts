@@ -75,7 +75,7 @@ export class WhatsappRoute implements Routes {
     this.router.get('/internal/whatsapp/sent', StaffAuthMiddleware('reservations:status'), this.whatsapp.sent);
     this.router.get('/internal/whatsapp/inbox/messages/:messageId/media', StaffAuthMiddleware('reservations:status'), this.whatsapp.media);
     this.router.get('/internal/whatsapp/inbox/:id', StaffAuthMiddleware('reservations:status'), this.whatsapp.conversation);
-    this.router.post('/internal/whatsapp/inbox/:id/reply', StaffAuthMiddleware('reservations:status'), RefuseInDemo(), this.whatsapp.reply);
+    this.router.post('/internal/whatsapp/inbox/:id/reply', StaffAuthMiddleware('reservations:status'), this.whatsapp.reply);
     this.router.post('/internal/whatsapp/inbox/:id/handle', StaffAuthMiddleware('reservations:status'), this.whatsapp.handle);
     this.router.post('/internal/whatsapp/inbox/:id/unhandle', StaffAuthMiddleware('reservations:status'), this.whatsapp.unhandle);
     this.router.post('/internal/whatsapp/inbox/:id/attach', StaffAuthMiddleware('reservations:manage'), this.whatsapp.attach);

@@ -6,6 +6,7 @@ import { BCRYPT_ROUNDS } from '@/config';
 import prisma from '@/database';
 import { demoPricing } from '@/domain/demo-data';
 import {
+  DEMO_BOOKINGS,
   DEMO_COMMISSIONS,
   DEMO_FILES,
   DEMO_LINK_DAYS,
@@ -28,6 +29,7 @@ import { HttpException } from '@/utils/httpException';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { forgetDemoOperators, isProspectDemoOperator } from './demo-guard';
+import { DemoMessagesService } from './demo-messages.service';
 import { allocateInboundSlug } from './inbound-slug';
 import { NotificationService } from './notification.service';
 import { ParkingLocationService } from './parking-location.service';
@@ -142,16 +144,11 @@ export class ProspectDemoService {
         data: DEMO_COMMISSIONS.map(c => ({ operatorId: operator.id, ...c, effectiveFrom: monthStart })),
       });
       // A few comparators' bookings of the coming days, two of them without a price (« Sans prix »).
-      const bookings = [
-        { detail: 'Allopark', ref: 'AL-900000101', first: 'Camille', last: 'Martin', plate: 'AB-123-CD', inDays: 2, nights: 5, price: 5400 },
-        { detail: 'Allopark', ref: 'AL-900000102', first: 'Julien', last: 'Petit', plate: 'GH-456-JK', inDays: 3, nights: 7, price: 6900 },
-        { detail: 'Onepark', ref: '5900101', first: 'Sarah', last: 'Leroy', plate: 'LM-789-NP', inDays: 4, nights: 3, price: null },
-        { detail: 'Onepark', ref: '5900102', first: 'Thomas', last: 'Roux', plate: 'QR-321-ST', inDays: 5, nights: 10, price: null },
-        { detail: 'Parclick', ref: 'PK90010', first: 'Inès', last: 'Moreau', plate: 'UV-654-WX', inDays: 6, nights: 4, price: 4200 },
-      ];
+      const bookings = DEMO_BOOKINGS;
+      const bookingIds: string[] = [];
       for (const [i, b] of bookings.entries()) {
         const arrivalAt = new Date(now.getTime() + b.inDays * DAY + (i % 3) * 3600000);
-        await tx.reservation.create({
+        const booking = await tx.reservation.create({
           data: {
             reference: newReference(),
             operatorId: operator.id,
@@ -171,7 +168,11 @@ export class ProspectDemoService {
             createdAt: new Date(now.getTime() - (i + 1) * DAY),
           },
         });
+        bookingIds.push(booking.id);
       }
+      // 18/11/2026 (« Simule les messages reçus sur les env de démo »): its travellers' messages.
+      const agent = await tx.staff.findFirst({ where: { operatorId: operator.id, role: 'agent' }, select: { id: true } });
+      await Container.get(DemoMessagesService).seed(tx, operator.id, bookingIds, agent?.id ?? null, now);
       return { operatorId: operator.id, parkingId: parking.id };
     });
     return result;
