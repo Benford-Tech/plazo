@@ -5,7 +5,8 @@ import { localDate, localDateTime } from './time';
 
 /**
  * 17/11/2026 (« Fais un robot qui poste sur des forums tous les jours au sujet de Plazo » → refused as spam, the watch
- * chosen instead, « Brave Search » and « réponse rédigée par Claude »): each morning Plazo looks for the new forum
+ * chosen instead, « réponse rédigée par Claude »; 18/11/2026, « c'est pas gratuit » : Brave's API is paid, the searches go through
+ * Claude's web search tool, on the Anthropic key Plazo already has): each morning Plazo looks for the new forum
  * discussions about parking at Lyon airport, and mails the platform's administrators the links with a reply Claude
  * drafted. Nothing is ever posted: an administrator reads, edits and posts the reply himself, in his own name.
  * Pure functions: the searches, which results are discussions, the prompt, the mail.
@@ -21,8 +22,8 @@ export const FORUM_WATCH_MAX_THREADS = 8;
 export const FORUM_SEEN_DAYS = 180;
 
 /**
- * The daily searches (8 a day: about 240 a month, well inside Brave's free 2 000). French words a traveller types when he
- * asks a forum where to park; Brave's `freshness=pw` keeps the past week only.
+ * The daily searches (8 a day, about 240 a month: some 2,40 $ of Claude's web search at 10 $ per 1 000). French words a
+ * traveller types when he asks a forum where to park.
  */
 export const FORUM_QUERIES: readonly string[] = [
   'parking aéroport Lyon Saint-Exupéry forum',
@@ -47,7 +48,7 @@ export interface SearchResult {
   title: string;
   url: string;
   description: string;
-  /** Brave's « 3 days ago » or a date, as given. */
+  /** The page's date as the search gives it (« 2 days ago », « November 12, 2026 »…), or null. */
   age: string | null;
 }
 
@@ -57,31 +58,34 @@ export interface ForumThread extends SearchResult {
   reply: string | null;
 }
 
-const stripTags = (s: string) =>
-  s
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&#39;|&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/\s+/g, ' ')
-    .trim();
+/** A result older than this (when its date can be read) is not a new discussion. */
+export const FORUM_MAX_AGE_DAYS = 30;
 
-/** Brave's web results, cleaned (its titles and descriptions hold <strong> tags). */
-export function braveResults(body: unknown): SearchResult[] {
-  const results = (body as { web?: { results?: unknown[] } } | null)?.web?.results;
-  if (!Array.isArray(results)) return [];
-  return results.flatMap(r => {
-    const row = r as { title?: unknown; url?: unknown; description?: unknown; age?: unknown; page_age?: unknown };
-    if (typeof row.url !== 'string' || typeof row.title !== 'string') return [];
-    return [
-      {
-        title: stripTags(row.title),
-        url: row.url,
-        description: typeof row.description === 'string' ? stripTags(row.description) : '',
-        age: typeof row.age === 'string' ? row.age : typeof row.page_age === 'string' ? row.page_age : null,
-      },
-    ];
+/** The results of every web search in Claude's answer (`web_search_tool_result` blocks; an error block holds no list). */
+export function webSearchResults(content: unknown): SearchResult[] {
+  if (!Array.isArray(content)) return [];
+  return content.flatMap(block => {
+    const b = block as { type?: unknown; content?: unknown };
+    if (b.type !== 'web_search_tool_result' || !Array.isArray(b.content)) return [];
+    return b.content.flatMap(r => {
+      const row = r as { type?: unknown; title?: unknown; url?: unknown; page_age?: unknown };
+      if (row.type !== 'web_search_result' || typeof row.url !== 'string' || typeof row.title !== 'string') return [];
+      const title = row.title.replace(/\s+/g, ' ').trim();
+      return [{ title, url: row.url, description: '', age: typeof row.page_age === 'string' ? row.page_age : null }];
+    });
   });
+}
+
+/** False only for a page whose date can be read and is older than FORUM_MAX_AGE_DAYS. */
+export function recentEnough(age: string | null, now: Date): boolean {
+  if (!age) return true;
+  const ago = /^(\d+)\s+(hour|day|week|month|year)s?\s+ago$/i.exec(age.trim());
+  if (ago) {
+    const days = { hour: 0, day: 1, week: 7, month: 30, year: 365 }[ago[2].toLowerCase() as 'day'] * Number(ago[1]);
+    return days <= FORUM_MAX_AGE_DAYS;
+  }
+  const at = Date.parse(age);
+  return Number.isNaN(at) || now.getTime() - at <= FORUM_MAX_AGE_DAYS * 86_400_000;
 }
 
 export function hostOf(url: string): string | null {

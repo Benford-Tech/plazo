@@ -1,9 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Container, Service } from 'typedi';
-import { anthropicApiKey, braveSearchApiKey, forumReplyModel, platformAdminEmails, PRODUCT_NAME, PUBLIC_SITE_URL } from '@/config';
+import { anthropicApiKey, forumReplyModel, forumSearchModel, platformAdminEmails, PRODUCT_NAME, PUBLIC_SITE_URL } from '@/config';
 import prisma from '@/database';
 import {
-  braveResults,
   checkForumReply,
   FORUM_QUERIES,
   FORUM_REPLY_SCHEMA,
@@ -16,16 +15,15 @@ import {
   forumWatchEmail,
   hostOf,
   isForumThread,
+  recentEnough,
   SearchResult,
   threadKey,
+  webSearchResults,
 } from '@/domain/forum-watch';
 import { logger } from '@/utils/logger';
 import { NotificationService } from './notification.service';
 
-const BRAVE_URL = 'https://api.search.brave.com/res/v1/web/search';
-/** Brave's free tier answers one search per second. */
-const SEARCH_SPACING_MS = 1100;
-const SEARCH_TIMEOUT_MS = 8000;
+const SEARCH_TIMEOUT_MS = 30000;
 const REPLY_TIMEOUT_MS = 25000;
 
 export interface ForumWatchResult {
@@ -36,7 +34,8 @@ export interface ForumWatchResult {
 }
 
 /**
- * 17/11/2026: the forum watch (domain/forum-watch.ts). Once a Paris morning: Brave's past week for each search, the
+ * 17/11/2026: the forum watch (domain/forum-watch.ts). Once a Paris morning: each search run by Claude's web search
+ * tool (18/11/2026: Brave's API is paid), the
  * discussions about parking at Lyon's airport not mailed yet, a reply drafted by Claude for each, one mail to the
  * platform's administrators. Nothing is ever posted anywhere. Logged without the discussions' text.
  */
@@ -44,23 +43,21 @@ export interface ForumWatchResult {
 export class ForumWatchService {
   private notifications = Container.get(NotificationService);
   private client?: Anthropic;
-  /** Swapped by the tests. */
-  public fetcher: typeof fetch = (...args) => fetch(...args);
-  public pause = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
-
   public async run(now = new Date(), options: { force?: boolean } = {}): Promise<ForumWatchResult> {
     const empty = { searches: 0, found: 0, drafted: 0 };
     const day = forumWatchDay(now) ?? (options.force ? now.toISOString().slice(0, 10) : null);
     if (!day) return { status: 'not_due', ...empty };
     const recipients = platformAdminEmails();
-    if (!braveSearchApiKey() || !recipients.length || !this.notifications.canSendEmail()) return { status: 'not_configured', ...empty };
+    if (!anthropicApiKey() || !recipients.length || !this.notifications.canSendEmail()) return { status: 'not_configured', ...empty };
     if (!options.force) {
       const { count } = await prisma.forumWatchRun.createMany({ data: [{ day }], skipDuplicates: true });
       if (!count) return { status: 'already_ran', ...empty };
     }
     await prisma.forumWatchSeen.deleteMany({ where: { seenAt: { lt: new Date(now.getTime() - FORUM_SEEN_DAYS * 86_400_000) } } });
 
-    const { results, searches } = await this.search();
+    const searched = await Promise.all(FORUM_QUERIES.map(q => this.search(q)));
+    const searches = searched.filter(r => r !== null).length;
+    const results = searched.flatMap(r => r ?? []).filter(r => recentEnough(r.age, now));
     const candidates = new Map<string, SearchResult>();
     for (const result of results) {
       if (!isForumThread(result)) continue;
@@ -108,44 +105,66 @@ export class ForumWatchService {
     await prisma.forumWatchRun.update({ where: { day }, data: { found } }).catch(() => undefined);
   }
 
-  /** Every search of the day, one per second; a failed search is skipped (logged with its status only). */
-  private async search(): Promise<{ results: SearchResult[]; searches: number }> {
-    const results: SearchResult[] = [];
-    let searches = 0;
-    for (const [i, q] of FORUM_QUERIES.entries()) {
-      if (i) await this.pause(SEARCH_SPACING_MS);
-      const url = `${BRAVE_URL}?${new URLSearchParams({ q, country: 'FR', search_lang: 'fr', freshness: 'pw', count: '20' })}`;
-      try {
-        const response = await this.fetcher(url, {
-          headers: { Accept: 'application/json', 'X-Subscription-Token': braveSearchApiKey() },
-          signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
-        });
-        searches += 1;
-        if (!response.ok) {
-          logger.warn(`[Forum watch] Brave answered ${response.status}`);
-          if (response.status === 401 || response.status === 403) break;
-          continue;
-        }
-        results.push(...braveResults(await response.json()));
-      } catch (error) {
-        logger.warn(`[Forum watch] search failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+  private anthropic(): Anthropic {
+    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), maxRetries: 0 });
+    return this.client;
+  }
+
+  /**
+   * One search, run by Claude's web search tool (the results are read from its result blocks, never from what Claude
+   * writes). Null when it failed (logged without the query's results).
+   */
+  public async search(query: string): Promise<SearchResult[] | null> {
+    try {
+      const response = await this.anthropic().messages.create(
+        {
+          model: forumSearchModel(),
+          max_tokens: 1024,
+          tools: [
+            {
+              type: 'web_search_20250305',
+              name: 'web_search',
+              max_uses: 1,
+              blocked_domains: ['plazo.fr'],
+              user_location: { type: 'approximate', country: 'FR', city: 'Lyon', timezone: 'Europe/Paris' },
+            },
+          ],
+          messages: [
+            {
+              role: 'user',
+              content: `Fais une seule recherche web avec exactement ces mots, puis réponds « ok » : ${query}`,
+            },
+          ],
+        },
+        { timeout: SEARCH_TIMEOUT_MS },
+      );
+      const results = webSearchResults(response.content);
+      const failed = response.content.some(b => b.type === 'web_search_tool_result' && !Array.isArray((b as { content?: unknown }).content));
+      if (failed && !results.length) {
+        logger.warn('[Forum watch] web search answered an error');
+        return null;
       }
+      return results;
+    } catch (error) {
+      logger.warn(`[Forum watch] search failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return null;
     }
-    return { results, searches };
   }
 
   /** Claude's reply for one discussion, or null (no key, not relevant, refused, failed, or a figure it may have made up). */
   public async draft(thread: SearchResult): Promise<string | null> {
     if (!anthropicApiKey()) return null;
-    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: REPLY_TIMEOUT_MS, maxRetries: 0 });
     try {
-      const response = await this.client.messages.create({
-        model: forumReplyModel(),
-        max_tokens: 2000,
-        system: forumReplyPrompt(PRODUCT_NAME, PUBLIC_SITE_URL || 'https://www.plazo.fr'),
-        output_config: { effort: 'low', format: { type: 'json_schema', schema: FORUM_REPLY_SCHEMA } },
-        messages: [{ role: 'user', content: forumReplyInput(thread) }],
-      });
+      const response = await this.anthropic().messages.create(
+        {
+          model: forumReplyModel(),
+          max_tokens: 2000,
+          system: forumReplyPrompt(PRODUCT_NAME, PUBLIC_SITE_URL || 'https://www.plazo.fr'),
+          output_config: { effort: 'low', format: { type: 'json_schema', schema: FORUM_REPLY_SCHEMA } },
+          messages: [{ role: 'user', content: forumReplyInput(thread) }],
+        },
+        { timeout: REPLY_TIMEOUT_MS },
+      );
       if (response.stop_reason !== 'end_turn') return null;
       const raw = response.content
         .filter((b): b is Anthropic.TextBlock => b.type === 'text')

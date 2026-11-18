@@ -437,8 +437,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
    voient l'espace Plateforme).
-   Veille des forums (17/11/2026) : `BRAVE_SEARCH_API_KEY` (clé de l'API Brave Search, offre gratuite sur
-   api.search.brave.com ; sans elle, rien ne se passe) et `FORUM_REPLY_MODEL` (facultatif) : chaque matin vers 8 h, les
+   Veille des forums (17/11/2026) : rien à poser de plus, les recherches passent par la recherche web de Claude avec
+   `ANTHROPIC_API_KEY` (environ 2 à 3 € par mois ; sans clé, rien ne se passe), `FORUM_SEARCH_MODEL` et
+   `FORUM_REPLY_MODEL` facultatifs (la recherche web doit être permise dans la console Anthropic) : chaque matin vers 8 h, les
    nouvelles discussions de forum sur le stationnement à l'aéroport de Lyon sont envoyées par mail aux administrateurs de
    la plateforme, avec une réponse proposée par Claude ; rien n'est posté.
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`, avec 5 essais en une minute
