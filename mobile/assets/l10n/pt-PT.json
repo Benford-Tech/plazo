@@ -533,7 +533,8 @@
     "or_email": "ou com o seu e-mail",
     "board": "Embarcar",
     "fetch": "Recolher",
-    "contract_signed": "Contrato assinado"
+    "contract_signed": "Contrato assinado",
+    "login_demo": "Experimentar a demo"
   },
   "errors": {
     "child_seats_exceed_passengers": "As crianças contam como passageiros: adicione-as ao número de passageiros.",
@@ -705,7 +706,10 @@
     "photo_not_found": "Esta foto já não existe.",
     "not_an_image": "Este ficheiro não é uma foto.",
     "contract_at_counter": "O contrato assina-se no balcão do parque, no dia da entrega.",
-    "demo_read_only": "Demo: esta definição não se altera."
+    "demo_read_only": "Demo: esta definição não se altera.",
+    "demo_link_unknown": "Este link de demo não é reconhecido.",
+    "demo_link_expired": "Este link de demo expirou.",
+    "demo_unavailable": "A demo não está pronta. Tente novamente dentro de instantes."
   },
   "tabs": {
     "search": "Pesquisar",
@@ -3085,5 +3089,26 @@
       "demo_read_only": "Demo: a mensagem não é enviada.",
       "generic": "A mensagem não foi enviada. Tente novamente."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Experimente o Plazo Pro num parque fictício",
+    "intro": "Parking des Cèdres · 120 lugares · 3 shuttles. As reservas mudam em direto, nada é real.",
+    "welcome": "Olá, {company}: eis a sua demo.",
+    "link_expired": "Este link expirou: pode mesmo assim entrar na demo.",
+    "link_unknown": "Este link não é reconhecido: pode mesmo assim entrar na demo.",
+    "choose_role": "Em que função a quer experimentar?",
+    "hint": {
+      "manager": "Painel, faturação, planta do parque",
+      "agent": "Chegadas, e-mails dos comparadores, reservas",
+      "driver": "Quem levar, quem recolher, o shuttle em direto",
+      "valet": "Onde arrumar cada carro, as chaves"
+    },
+    "enter": "Entrar na demo",
+    "footnote": "Sem conta · reposta todas as noites",
+    "banner": "Demo",
+    "banner_note": "dados fictícios · reposta esta noite",
+    "quit": "Sair",
+    "back": "Voltar ao início de sessão"
   }
 }

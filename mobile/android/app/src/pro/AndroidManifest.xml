@@ -1,0 +1,23 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name=".MainActivity">
+            <!-- 19/11/2026 (« pouvoir lancer l'app mobile Plazo Pro en mode démo avec le lien »): the prospects' demo,
+                 https://pro.plazo.fr/pro/demo and a prospect's own /pro/demo/<token>, opens Plazo Pro. Android verifies
+                 the host against https://pro.plazo.fr/.well-known/assetlinks.json (site/public/.well-known/, with the
+                 Play App Signing fingerprint of com.benfordtech.plazopro since 19/11/2026). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="pro.plazo.fr" android:pathPrefix="/pro/demo"/>
+            </intent-filter>
+            <!-- The same demo on www.plazo.fr (redirected to pro.plazo.fr in a browser). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="www.plazo.fr" android:pathPrefix="/pro/demo"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

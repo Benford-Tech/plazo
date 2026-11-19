@@ -647,6 +647,73 @@ class ProContractRouteArgs {
 }
 
 /// generated route for
+/// [ProDemoLinkPage]
+class ProDemoLinkRoute extends PageRouteInfo<ProDemoLinkRouteArgs> {
+  ProDemoLinkRoute({
+    Key? key,
+    required String token,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProDemoLinkRoute.name,
+         args: ProDemoLinkRouteArgs(key: key, token: token),
+         rawPathParams: {'token': token},
+         initialChildren: children,
+       );
+
+  static const String name = 'ProDemoLinkRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<ProDemoLinkRouteArgs>(
+        orElse: () => ProDemoLinkRouteArgs(token: pathParams.getString('token')),
+      );
+      return ProDemoLinkPage(key: args.key, token: args.token);
+    },
+  );
+}
+
+class ProDemoLinkRouteArgs {
+  const ProDemoLinkRouteArgs({this.key, required this.token});
+
+  final Key? key;
+
+  final String token;
+
+  @override
+  String toString() {
+    return 'ProDemoLinkRouteArgs{key: $key, token: $token}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProDemoLinkRouteArgs) return false;
+    return key == other.key && token == other.token;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ token.hashCode;
+}
+
+/// generated route for
+/// [ProDemoPage]
+class ProDemoRoute extends PageRouteInfo<void> {
+  const ProDemoRoute({List<PageRouteInfo>? children})
+    : super(ProDemoRoute.name, initialChildren: children);
+
+  static const String name = 'ProDemoRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProDemoPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ProDriverPlanningPage]
 class ProDriverPlanningRoute extends PageRouteInfo<void> {
   const ProDriverPlanningRoute({List<PageRouteInfo>? children})

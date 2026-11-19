@@ -17,6 +17,7 @@ import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_vehicle_page.dart';
 import '../../features/pro_bell/presentation/pro_bell_page.dart';
+import '../../features/pro_demo/presentation/pro_demo_page.dart';
 import '../../features/pro_whatsapp/presentation/pro_whatsapp_inbox_page.dart';
 import '../../features/pro_whatsapp/presentation/pro_whatsapp_conversation_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
@@ -88,6 +89,10 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProLoginRoute.page, path: '/pro/connexion'),
       // Signed in with Apple or Google, no parking yet: the code du jour, then the wait for a manager (13/10/2026).
       AutoRoute(page: ProJoinRoute.page, path: '/pro/rejoindre', guards: [joinGuard]),
+      // The prospects' demo (19/11/2026), never guarded: the login's « Essayer la démo » and the links
+      // https://pro.plazo.fr/pro/demo and /pro/demo/<token> (a prospect's own) open it, signed in or not.
+      AutoRoute(page: ProDemoRoute.page, path: '/pro/demo'),
+      AutoRoute(page: ProDemoLinkRoute.page, path: '/pro/demo/:token'),
       AutoRoute(
         page: ProShellRoute.page,
         path: '/pro',

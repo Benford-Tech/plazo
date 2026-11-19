@@ -532,7 +532,8 @@
     "or_email": "ou avec votre e-mail",
     "board": "Embarquer",
     "fetch": "Récupérer",
-    "contract_signed": "Contrat signé"
+    "contract_signed": "Contrat signé",
+    "login_demo": "Essayer la démo"
   },
   "errors": {
     "child_seats_exceed_passengers": "Les enfants comptent dans les passagers : ajoutez-les au nombre de passagers.",
@@ -704,7 +705,10 @@
     "photo_not_found": "Cette photo n'existe plus.",
     "not_an_image": "Ce fichier n'est pas une photo.",
     "contract_at_counter": "Le contrat se signe au comptoir du parking, le jour du dépôt.",
-    "demo_read_only": "Démo : ce réglage ne se change pas."
+    "demo_read_only": "Démo : ce réglage ne se change pas.",
+    "demo_link_unknown": "Ce lien de démo n'est pas reconnu.",
+    "demo_link_expired": "Ce lien de démo a expiré.",
+    "demo_unavailable": "La démo n'est pas prête. Réessayez dans un instant."
   },
   "tabs": {
     "search": "Rechercher",
@@ -3082,5 +3086,26 @@
       "demo_read_only": "Démo : le message n'est pas envoyé.",
       "generic": "Le message n'est pas parti. Réessayez."
     }
+  },
+  "demo": {
+    "badge": "Démo",
+    "title": "Essayez Plazo Pro sur un parking fictif",
+    "intro": "Parking des Cèdres · 120 places · 3 navettes. Les réservations bougent en direct, rien n'est réel.",
+    "welcome": "Bonjour {company} : voici votre démo.",
+    "link_expired": "Ce lien a expiré : vous pouvez tout de même entrer dans la démo.",
+    "link_unknown": "Ce lien n'est pas reconnu : vous pouvez tout de même entrer dans la démo.",
+    "choose_role": "Dans quel rôle voulez-vous l'essayer ?",
+    "hint": {
+      "manager": "Tableau de bord, chiffre d'affaires, plan du parking",
+      "agent": "Arrivées, mails des comparateurs, réservations",
+      "driver": "Qui emmener, qui récupérer, la navette en direct",
+      "valet": "Où ranger chaque voiture, les clés"
+    },
+    "enter": "Entrer dans la démo",
+    "footnote": "Sans compte · remise à zéro chaque nuit",
+    "banner": "Démo",
+    "banner_note": "données fictives · remise à zéro cette nuit",
+    "quit": "Quitter",
+    "back": "Retour à la connexion"
   }
 }

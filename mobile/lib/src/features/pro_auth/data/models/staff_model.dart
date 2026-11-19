@@ -42,6 +42,11 @@ abstract class StaffModel with _$StaffModel {
   /// The post the app lays itself out for: the one chosen, else the role.
   String get activePost => effectivePost ?? post ?? role;
 
+  /// A member of the prospects' demo (19/11/2026): its four members alone have an address on `demo.plazo.invalid`
+  /// (`DEMO_STAFF` of the server; `.invalid` is reserved, never a real address), so the demo band shows without a new
+  /// field to generate.
+  bool get isDemo => email.toLowerCase().endsWith('@demo.plazo.invalid');
+
   /// The identity of this provider (apple, google) linked to the account, if any.
   StaffIdentityModel? identity(String provider) => identities.where((i) => i.provider == provider).firstOrNull;
 

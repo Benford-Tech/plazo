@@ -533,7 +533,8 @@
     "or_email": "sau cu e-mailul dvs.",
     "board": "Îmbarcare",
     "fetch": "Preluați",
-    "contract_signed": "Contract semnat"
+    "contract_signed": "Contract semnat",
+    "login_demo": "Încercați demo-ul"
   },
   "errors": {
     "child_seats_exceed_passengers": "Copiii se numără printre pasageri: adăugați-i la numărul de pasageri.",
@@ -705,7 +706,10 @@
     "photo_not_found": "Această fotografie nu mai există.",
     "not_an_image": "Acest fișier nu este o fotografie.",
     "contract_at_counter": "Contractul se semnează la ghișeul parcării, în ziua predării.",
-    "demo_read_only": "Demo: această setare nu poate fi schimbată."
+    "demo_read_only": "Demo: această setare nu poate fi schimbată.",
+    "demo_link_unknown": "Acest link de demo nu este recunoscut.",
+    "demo_link_expired": "Acest link de demo a expirat.",
+    "demo_unavailable": "Demo-ul nu este gata. Încercați din nou peste câteva clipe."
   },
   "tabs": {
     "search": "Căutare",
@@ -3085,5 +3089,26 @@
       "demo_read_only": "Demo: mesajul nu este trimis.",
       "generic": "Mesajul nu a fost trimis. Încercați din nou."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Încercați Plazo Pro pe o parcare fictivă",
+    "intro": "Parking des Cèdres · 120 de locuri · 3 navete. Rezervările se schimbă în direct, nimic nu este real.",
+    "welcome": "Bună ziua, {company}: iată demo-ul dumneavoastră.",
+    "link_expired": "Acest link a expirat: puteți totuși intra în demo.",
+    "link_unknown": "Acest link nu este recunoscut: puteți totuși intra în demo.",
+    "choose_role": "În ce rol doriți să-l încercați?",
+    "hint": {
+      "manager": "Tablou de bord, cifră de afaceri, planul parcării",
+      "agent": "Sosiri, e-mailurile comparatoarelor, rezervări",
+      "driver": "Pe cine duceți, pe cine luați, naveta în direct",
+      "valet": "Unde parcați fiecare mașină, cheile"
+    },
+    "enter": "Intrați în demo",
+    "footnote": "Fără cont · resetat în fiecare noapte",
+    "banner": "Demo",
+    "banner_note": "date fictive · resetare în noaptea aceasta",
+    "quit": "Ieșire",
+    "back": "Înapoi la conectare"
   }
 }
