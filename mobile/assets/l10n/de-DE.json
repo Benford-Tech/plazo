@@ -532,7 +532,8 @@
     "or_email": "oder mit Ihrer E-Mail",
     "board": "Einsteigen lassen",
     "fetch": "Abholen",
-    "contract_signed": "Vertrag unterschrieben"
+    "contract_signed": "Vertrag unterschrieben",
+    "login_demo": "Demo ausprobieren"
   },
   "errors": {
     "child_seats_exceed_passengers": "Kinder zählen als Fahrgäste: Rechnen Sie sie in die Fahrgastzahl ein.",
@@ -704,7 +705,10 @@
     "photo_not_found": "Dieses Foto existiert nicht mehr.",
     "not_an_image": "Diese Datei ist kein Foto.",
     "contract_at_counter": "Der Vertrag wird am Tag der Abgabe am Schalter des Parkplatzes unterschrieben.",
-    "demo_read_only": "Demo: Diese Einstellung kann nicht geändert werden."
+    "demo_read_only": "Demo: Diese Einstellung kann nicht geändert werden.",
+    "demo_link_unknown": "Dieser Demo-Link ist unbekannt.",
+    "demo_link_expired": "Dieser Demo-Link ist abgelaufen.",
+    "demo_unavailable": "Die Demo ist noch nicht bereit. Versuchen Sie es gleich noch einmal."
   },
   "tabs": {
     "search": "Suchen",
@@ -3082,5 +3086,26 @@
       "demo_read_only": "Demo: Die Nachricht wird nicht gesendet.",
       "generic": "Die Nachricht wurde nicht gesendet. Bitte erneut versuchen."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Testen Sie Plazo Pro auf einem fiktiven Parkplatz",
+    "intro": "Parking des Cèdres · 120 Stellplätze · 3 Shuttles. Die Buchungen ändern sich live, nichts ist echt.",
+    "welcome": "Hallo {company}: Hier ist Ihre Demo.",
+    "link_expired": "Dieser Link ist abgelaufen: Sie können die Demo trotzdem öffnen.",
+    "link_unknown": "Dieser Link ist unbekannt: Sie können die Demo trotzdem öffnen.",
+    "choose_role": "In welcher Rolle möchten Sie sie testen?",
+    "hint": {
+      "manager": "Dashboard, Umsatz, Parkplatzplan",
+      "agent": "Ankünfte, E-Mails der Vergleichsportale, Buchungen",
+      "driver": "Wen hinbringen, wen abholen, der Shuttle live",
+      "valet": "Wo jedes Auto hinkommt, die Schlüssel"
+    },
+    "enter": "Demo öffnen",
+    "footnote": "Ohne Konto · jede Nacht zurückgesetzt",
+    "banner": "Demo",
+    "banner_note": "fiktive Daten · heute Nacht zurückgesetzt",
+    "quit": "Beenden",
+    "back": "Zurück zur Anmeldung"
   }
 }

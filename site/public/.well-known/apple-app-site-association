@@ -7,6 +7,13 @@
           { "/": "/ma-reservation/*", "comment": "A booking's manage link opens the Plazo app" },
           { "/": "/a/*", "comment": "The short link of the SMS and emails (27/10/2026) opens the booking in the app" }
         ]
+      },
+      {
+        "appIDs": ["3BX4795V2Y.com.benfordtech.plazopro"],
+        "components": [
+          { "/": "/pro/demo", "comment": "The prospects' demo (19/11/2026) opens in Plazo Pro" },
+          { "/": "/pro/demo/*", "comment": "A prospect's own demo link opens in Plazo Pro" }
+        ]
       }
     ]
   }

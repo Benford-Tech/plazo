@@ -2063,6 +2063,20 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   carte du lien avec « Copier » ; `demo` sur chaque prospect de la liste ; variable `{lien_demo}` des mails (le lien du prospect, créé à
   l'envoi ; un exemple dans l'aperçu et le test) ; `GET /public/demo/links/:jeton` (état, nom du parking). Tests
   `prospect-demo.test.ts`, `DemoEntryPage.test.tsx`.
+  **Dans Plazo Pro, « Lien + bouton » (19/11/2026, « pouvoir lancer l'app mobile Plazo Pro en mode démo avec le lien »)** :
+  page `ProDemoPage` (`/pro/demo`) et `ProDemoLinkPage` (`/pro/demo/:token`), sans garde (`features/pro_demo` : `ProDemoView`,
+  `DemoDataSource` par Dio sans freezed : `GET /public/demo/links/:token`, `POST /internal/auth/demo`, session gardée par
+  `storeStaffSession` puis `ProAuthJoined`) : bonjour au parking du prospect, rôle Gérant · Accueil · Chauffeur · Voiturier,
+  « Entrer dans la démo », un lien expiré ou inconnu laisse entrer sans compter (comme le web), erreurs traduites
+  (`demo_link_unknown`, `demo_link_expired`, `demo_unavailable`) ; entrer remplace la session ouverte ; « Essayer la démo »
+  (`pro-login-demo`) sous la connexion ; bandeau citron `ProDemoBanner` en tête des onglets (« Démo · données fictives · remise à
+  zéro cette nuit », « Quitter » → déconnexion puis `/pro/demo`), membre de la démo reconnu à son adresse `@demo.plazo.invalid`
+  (`StaffModel.isDemo`). Liens : `https://pro.plazo.fr/pro/demo…` ouvre l'app : Android (`android/app/src/pro/AndroidManifest.xml`,
+  pro.plazo.fr et www.plazo.fr, `autoVerify` ; empreinte Play App Signing de `com.benfordtech.plazopro` publiée dans
+  `assetlinks.json` le 19/11/2026) ; iOS : `apple-app-site-association` liste `/pro/demo` et `/pro/demo/*` pour
+  `3BX4795V2Y.com.benfordtech.plazopro`, et `applinks:pro.plazo.fr` n'est ajouté à `RunnerPro.entitlements` par
+  `mobile-release` (Codemagic et GitHub Actions, étape « Liens de la démo (Plazo Pro) ») que si le profil App Store de Plazo Pro
+  porte la capacité « Associated Domains » (sinon avertissement, le lien ouvre la démo web). Test `pro_demo_page_test.dart`.
   **Messages reçus simulés (18/11/2026, « Simule les messages reçus sur les env de démo »)** : la démo des prospects a sa boîte
   « Messages » remplie : cinq conversations semées avec elle (`DEMO_THREADS` de `domain/demo-messages.ts` : WhatsApp, SMS et app,
   liées aux réservations `DEMO_BOOKINGS` de `domain/prospect-demo.ts`, numéros fictifs 06 39 98, deux non lues, deux traitées avec la

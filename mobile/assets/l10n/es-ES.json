@@ -533,7 +533,8 @@
     "or_email": "o con tu e-mail",
     "board": "Embarcar",
     "fetch": "Recoger",
-    "contract_signed": "Contrato firmado"
+    "contract_signed": "Contrato firmado",
+    "login_demo": "Probar la demo"
   },
   "errors": {
     "child_seats_exceed_passengers": "Los niños cuentan como pasajeros: súmalos al número de pasajeros.",
@@ -705,7 +706,10 @@
     "photo_not_found": "Esta foto ya no existe.",
     "not_an_image": "Este archivo no es una foto.",
     "contract_at_counter": "El contrato se firma en el mostrador del aparcamiento, el día de la entrega.",
-    "demo_read_only": "Demo: este ajuste no se puede cambiar."
+    "demo_read_only": "Demo: este ajuste no se puede cambiar.",
+    "demo_link_unknown": "Este enlace de demo no se reconoce.",
+    "demo_link_expired": "Este enlace de demo ha caducado.",
+    "demo_unavailable": "La demo no está lista. Vuelve a intentarlo en un momento."
   },
   "tabs": {
     "search": "Buscar",
@@ -3085,5 +3089,26 @@
       "demo_read_only": "Demo: el mensaje no se envía.",
       "generic": "El mensaje no se ha enviado. Inténtalo de nuevo."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Prueba Plazo Pro en un parking ficticio",
+    "intro": "Parking des Cèdres · 120 plazas · 3 lanzaderas. Las reservas cambian en directo, nada es real.",
+    "welcome": "Hola, {company}: aquí tienes tu demo.",
+    "link_expired": "Este enlace ha caducado: aun así puedes entrar en la demo.",
+    "link_unknown": "Este enlace no se reconoce: aun así puedes entrar en la demo.",
+    "choose_role": "¿Con qué rol quieres probarla?",
+    "hint": {
+      "manager": "Panel, facturación, plano del parking",
+      "agent": "Llegadas, correos de los comparadores, reservas",
+      "driver": "A quién llevar, a quién recoger, la lanzadera en directo",
+      "valet": "Dónde aparcar cada coche, las llaves"
+    },
+    "enter": "Entrar en la demo",
+    "footnote": "Sin cuenta · se reinicia cada noche",
+    "banner": "Demo",
+    "banner_note": "datos ficticios · se reinicia esta noche",
+    "quit": "Salir",
+    "back": "Volver al inicio de sesión"
   }
 }

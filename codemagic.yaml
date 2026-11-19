@@ -411,6 +411,38 @@ workflows:
           else
             echo "ATTENTION: le profil App Store de Plazo Pro ($IOS_BUNDLE_ID_PLAZO_PRO) n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple (activer la capacité sur l'App ID, régénérer le profil plazo_pro_app_store puis le recharger dans Codemagic sous le même nom)"
           fi
+      - name: Liens de la démo (Plazo Pro) selon son profil App Store
+        # 19/11/2026 (« pouvoir lancer l'app mobile Plazo Pro en mode démo avec le lien »): https://pro.plazo.fr/pro/demo
+        # and /pro/demo/<token> open Plazo Pro only when its App Store profile (plazo_pro_app_store) carries the
+        # « Associated Domains » capability. Then applinks:pro.plazo.fr is added to RunnerPro.entitlements for this build
+        # only (never committed: signing with a profile that lacks it would fail). Without it, a warning, and the build
+        # goes on: the demo link opens the web demo.
+        script: |
+          set -e
+          ENTITLEMENTS="ios/Runner/RunnerPro.entitlements"
+          FOUND=""
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO_PRO")
+                if /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.associated-domains" "$DECODED" >/dev/null 2>&1; then
+                  FOUND="$PROFILE"
+                fi
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          if [ -n "$FOUND" ]; then
+            /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.associated-domains" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+            /usr/libexec/PlistBuddy -c "Add :com.apple.developer.associated-domains array" -c "Add :com.apple.developer.associated-domains:0 string applinks:pro.plazo.fr" "$ENTITLEMENTS"
+            echo "Liens de la démo : capacité « Associated Domains » présente dans le profil de Plazo Pro, applinks:pro.plazo.fr ajouté"
+          else
+            echo "ATTENTION: le profil App Store de Plazo Pro ($IOS_BUNDLE_ID_PLAZO_PRO) n'a pas la capacité « Associated Domains » : le lien de la démo ouvre la démo web au lieu de l'app (activer la capacité sur l'App ID, régénérer le profil plazo_pro_app_store puis le recharger dans Codemagic sous le même nom)"
+          fi
       - name: Profils de signature dans le projet Xcode (les deux apps)
         # ios_signing has put the account's certificate and the two App Store profiles in the keychain; the App
         # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only); Sign in with Apple

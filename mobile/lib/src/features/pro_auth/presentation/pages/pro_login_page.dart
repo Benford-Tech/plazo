@@ -18,7 +18,8 @@ import '../bloc/pro_auth_bloc.dart';
 /// morning): a full lime screen with the pro wordmark, then a white sheet that asks one thing at a time: the email
 /// address, then the password on a second step (« Changer d'adresse e-mail » goes back). Apple on an iPhone, Google on
 /// Android (13/10/2026) and on an iPhone (22/10/2026), when the build and the API allow it, sit under the email step; « Nouveau ? J'ai un code du
-/// jour » explains how to join a parking. The app serves many car parks: nothing names one before the sign-in.
+/// jour » explains how to join a parking; « Essayer la démo » (19/11/2026) opens the prospects' demo. The app serves many
+/// car parks: nothing names one before the sign-in.
 @RoutePage()
 class ProLoginPage extends StatefulWidget {
   const ProLoginPage({super.key});
@@ -228,6 +229,15 @@ class _ProLoginPageState extends State<ProLoginPage> {
               key: const Key('pro-login-newcomer'),
               onPressed: () => _explainNewcomer(state),
               child: Text('pro.login_new_link'.tr(), style: AppText.strong(size: 14, color: AppColors.accent)),
+            ),
+          ),
+          // The prospects' demo (19/11/2026, « Lien + bouton »): a role, then a fictional car park.
+          Center(
+            child: TextButton.icon(
+              key: const Key('pro-login-demo'),
+              onPressed: busy ? null : () => context.router.push(const ProDemoRoute()),
+              icon: const Icon(Icons.play_circle_outline_rounded, size: 18, color: AppColors.muted),
+              label: Text('pro.login_demo'.tr(), style: AppText.strong(size: 13.5, color: AppColors.muted)),
             ),
           ),
         ],

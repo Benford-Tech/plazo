@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/helpers/posts.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../pro_demo/presentation/demo_banner.dart';
 import '../../../pro_whatsapp/presentation/whatsapp_unread_badge.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_service.dart';
@@ -22,6 +23,8 @@ class ProShellPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final post = context.select((ProAuthBloc b) => b.state.staff?.activePost ?? 'agent');
+    // The prospects' demo (19/11/2026): its lime band on top of the tabs.
+    final demo = context.select((ProAuthBloc b) => b.state.staff?.isDemo ?? false);
     final tabs = tabsFor(post);
     return AutoTabsRouter(
       // A new post is a new set of tabs: the router restarts on its first one.
@@ -42,7 +45,21 @@ class ProShellPage extends StatelessWidget {
           child: Scaffold(
             // Edge-to-edge (Android 15+): in landscape the 3-button bar or the cutout sits on a side; the tab bodies keep
             // clear of it (the app bars and the NavigationBar pad themselves).
-            body: SafeArea(top: false, bottom: false, child: child),
+            body: demo
+                ? Column(
+                    children: [
+                      const ProDemoBanner(),
+                      // The band takes the status bar's room: the tab's own app bar does not pad for it again.
+                      Expanded(
+                        child: MediaQuery.removePadding(
+                          context: context,
+                          removeTop: true,
+                          child: SafeArea(top: false, bottom: false, child: child),
+                        ),
+                      ),
+                    ],
+                  )
+                : SafeArea(top: false, bottom: false, child: child),
             bottomNavigationBar: NavigationBarTheme(
               data: NavigationBarThemeData(
                 backgroundColor: AppColors.surface,

@@ -534,7 +534,8 @@
     "or_email": "lub przez e-mail",
     "board": "Zabierz do busa",
     "fetch": "Odbierz",
-    "contract_signed": "Umowa podpisana"
+    "contract_signed": "Umowa podpisana",
+    "login_demo": "Wypróbuj demo"
   },
   "errors": {
     "child_seats_exceed_passengers": "Dzieci liczą się jako pasażerowie: dodaj je do liczby pasażerów.",
@@ -706,7 +707,10 @@
     "photo_not_found": "To zdjęcie już nie istnieje.",
     "not_an_image": "Ten plik nie jest zdjęciem.",
     "contract_at_counter": "Umowę podpisuje się w recepcji parkingu w dniu oddania samochodu.",
-    "demo_read_only": "Demo: tego ustawienia nie można zmienić."
+    "demo_read_only": "Demo: tego ustawienia nie można zmienić.",
+    "demo_link_unknown": "Ten link do demo nie jest rozpoznany.",
+    "demo_link_expired": "Ten link do demo wygasł.",
+    "demo_unavailable": "Demo nie jest gotowe. Spróbuj ponownie za chwilę."
   },
   "tabs": {
     "search": "Szukaj",
@@ -3088,5 +3092,26 @@
       "demo_read_only": "Demo: wiadomość nie zostanie wysłana.",
       "generic": "Wiadomość nie została wysłana. Spróbuj ponownie."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Wypróbuj Plazo Pro na fikcyjnym parkingu",
+    "intro": "Parking des Cèdres · 120 miejsc · 3 busy. Rezerwacje zmieniają się na żywo, nic nie jest prawdziwe.",
+    "welcome": "Dzień dobry, {company}: oto Twoje demo.",
+    "link_expired": "Ten link wygasł: mimo to możesz wejść do demo.",
+    "link_unknown": "Ten link nie jest rozpoznany: mimo to możesz wejść do demo.",
+    "choose_role": "W jakiej roli chcesz je wypróbować?",
+    "hint": {
+      "manager": "Pulpit, obroty, plan parkingu",
+      "agent": "Przyjazdy, e-maile porównywarek, rezerwacje",
+      "driver": "Kogo zawieźć, kogo odebrać, bus na żywo",
+      "valet": "Gdzie postawić każde auto, kluczyki"
+    },
+    "enter": "Wejdź do demo",
+    "footnote": "Bez konta · resetowane co noc",
+    "banner": "Demo",
+    "banner_note": "fikcyjne dane · reset tej nocy",
+    "quit": "Wyjdź",
+    "back": "Powrót do logowania"
   }
 }

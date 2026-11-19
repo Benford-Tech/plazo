@@ -410,6 +410,33 @@ jobs:
           else
             echo "::warning::le profil App Store de Plazo Pro n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple"
           fi
+      - name: Liens de la démo (Plazo Pro) selon son profil App Store
+        run: |
+          set -euo pipefail
+          # 19/11/2026: https://pro.plazo.fr/pro/demo opens Plazo Pro only when its App Store profile carries the
+          # « Associated Domains » capability: then applinks:pro.plazo.fr is added for this build only.
+          ENTITLEMENTS="ios/Runner/RunnerPro.entitlements"
+          FOUND=""
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO_PRO")
+                /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.associated-domains" "$DECODED" >/dev/null 2>&1 && FOUND="$PROFILE"
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          if [ -n "$FOUND" ]; then
+            /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.associated-domains" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+            /usr/libexec/PlistBuddy -c "Add :com.apple.developer.associated-domains array" -c "Add :com.apple.developer.associated-domains:0 string applinks:pro.plazo.fr" "$ENTITLEMENTS"
+            echo "Liens de la démo : capacité « Associated Domains » présente, applinks:pro.plazo.fr ajouté"
+          else
+            echo "::warning::le profil App Store de Plazo Pro n'a pas la capacité « Associated Domains » : le lien de la démo ouvre la démo web au lieu de l'app"
+          fi
       - name: Apple Pay (Plazo) selon son profil App Store
         run: |
           set -euo pipefail

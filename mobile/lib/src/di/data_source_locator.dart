@@ -21,6 +21,7 @@ void _initDataSource() {
     ..registerLazySingleton<ParkingMessagesDataSource>(() => ParkingMessagesDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReservationTrashDataSource>(() => ReservationTrashDataSourceImpl(locator()))
     ..registerLazySingleton<KeysDataSource>(() => KeysDataSourceImpl(locator()))
+    ..registerLazySingleton<DemoDataSource>(() => DemoDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<SurchargesDataSource>(() => SurchargesDataSourceImpl(locator()))
     ..registerLazySingleton<NotificationsDataSource>(() => NotificationsDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReturnDataSource>(() => ReturnDataSourceImpl(locator(), locator(), locator()))

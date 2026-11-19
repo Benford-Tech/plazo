@@ -532,7 +532,8 @@
     "or_email": "or with your email",
     "board": "Board",
     "fetch": "Pick up",
-    "contract_signed": "Contract signed"
+    "contract_signed": "Contract signed",
+    "login_demo": "Try the demo"
   },
   "errors": {
     "child_seats_exceed_passengers": "Children count as passengers: add them to the number of passengers.",
@@ -704,7 +705,10 @@
     "photo_not_found": "This photo no longer exists.",
     "not_an_image": "This file isn't a photo.",
     "contract_at_counter": "The contract is signed at the car park counter on the day of drop-off.",
-    "demo_read_only": "Demo: this setting can't be changed."
+    "demo_read_only": "Demo: this setting can't be changed.",
+    "demo_link_unknown": "This demo link is not recognised.",
+    "demo_link_expired": "This demo link has expired.",
+    "demo_unavailable": "The demo is not ready. Try again in a moment."
   },
   "tabs": {
     "search": "Search",
@@ -3082,5 +3086,26 @@
       "demo_read_only": "Demo: the message is not sent.",
       "generic": "The message was not sent. Try again."
     }
+  },
+  "demo": {
+    "badge": "Demo",
+    "title": "Try Plazo Pro on a fictional car park",
+    "intro": "Parking des Cèdres · 120 spaces · 3 shuttles. Bookings move live, nothing is real.",
+    "welcome": "Hello {company}: here is your demo.",
+    "link_expired": "This link has expired: you can still enter the demo.",
+    "link_unknown": "This link is not recognised: you can still enter the demo.",
+    "choose_role": "Which role would you like to try it in?",
+    "hint": {
+      "manager": "Dashboard, revenue, car park plan",
+      "agent": "Arrivals, comparison sites' emails, bookings",
+      "driver": "Who to drop off, who to pick up, the live shuttle",
+      "valet": "Where to park each car, the keys"
+    },
+    "enter": "Enter the demo",
+    "footnote": "No account · reset every night",
+    "banner": "Demo",
+    "banner_note": "fictional data · reset tonight",
+    "quit": "Quit",
+    "back": "Back to sign-in"
   }
 }

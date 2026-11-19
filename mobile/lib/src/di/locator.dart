@@ -49,6 +49,7 @@ import '../features/pro_auth/domain/usecases/set_vehicle_use_case.dart';
 import '../features/pro_auth/domain/usecases/update_name_use_case.dart';
 import '../features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../features/pro_auth/presentation/bloc/pro_join_bloc.dart';
+import '../features/pro_demo/demo_data_source.dart';
 import '../features/pro_notifications/data/client/notifications_client.dart';
 import '../features/pro_notifications/data/datasources/notifications_data_source.dart';
 import '../features/pro_notifications/domain/repositories/notifications_repository.dart';
