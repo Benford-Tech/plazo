@@ -1290,6 +1290,22 @@ export const ro: Dict = {
     retry: "Încercați din nou",
     home: "Înapoi la pagina principală",
   },
+  /** Site du parking, niveau 3 (19/11/2026): a parking's own booking page, /r/<slug>, in its site. */
+  bookingPage: {
+    meta: "Rezervă",
+    dropOff: "Predare",
+    pickUp: "Preluare",
+    seePrice: "Vezi prețul",
+    checking: "O clipă…",
+    full: "Complet la aceste date: încercați alte date.",
+    noPrice: "Nu există preț online pentru aceste date: sunați la parcare.",
+    held: "Locul dvs. este rezervat 30 de minute, cât timp plătiți.",
+    payNote: "Pagina de plată securizată Stripe se deschide în toată fereastra.",
+    by: `Rezervare și plată securizate de ${P}`,
+    notFound: "Această pagină de rezervare nu este deschisă.",
+    yourDetails: "Datele dvs.",
+    nightFee: "Taxă de noapte",
+  },
   errors: {
     required: "Câmp obligatoriu.",
     too_long: "Text prea lung.",
@@ -1357,6 +1373,7 @@ export const ro: Dict = {
     network: "Serviciul nu răspunde. Verificați conexiunea și încercați din nou.",
     server_error:
       "A apărut o eroare din partea noastră. Încercați din nou peste o clipă.",
+    booking_page_unavailable: `Această pagină de rezervare nu mai este deschisă. Rezervați pe site-ul ${P}.`,
     unknown: "A apărut o eroare. Încercați din nou.",
   } as Record<string, string>,
 };

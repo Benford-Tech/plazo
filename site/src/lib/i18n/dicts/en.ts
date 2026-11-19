@@ -1213,6 +1213,22 @@ export const en: Dict = {
     retry: "Try again",
     home: "Back to home",
   },
+  /** Site du parking, niveau 3 (19/11/2026): a parking's own booking page, /r/<slug>, in its site. */
+  bookingPage: {
+    meta: "Book",
+    dropOff: "Drop-off",
+    pickUp: "Return",
+    seePrice: "See the price",
+    checking: "One moment…",
+    full: "Full on these dates: try other dates.",
+    noPrice: "No online price for these dates: please call the parking.",
+    held: "Your space is held for 30 minutes while you pay.",
+    payNote: "The secure Stripe payment page opens in the whole window.",
+    by: `Booking and payment secured by ${P}`,
+    notFound: "This booking page is not open.",
+    yourDetails: "Your details",
+    nightFee: "Night fees",
+  },
   errors: {
     required: "Required field.",
     too_long: "Text too long.",
@@ -1264,6 +1280,7 @@ export const en: Dict = {
     too_many_attempts: "Too many attempts. Please try again in 15 minutes.",
     network: "The service is not responding. Check your connection and try again.",
     server_error: "Something went wrong on our side. Please try again in a moment.",
+    booking_page_unavailable: `This booking page is no longer open. Book on the ${P} website.`,
     unknown: "Something went wrong. Please try again.",
   } as Record<string, string>,
 };

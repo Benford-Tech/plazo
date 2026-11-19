@@ -106,6 +106,7 @@ import type {
   ProspectSendResult,
   ProspectSmsResult,
   WebsiteIntegration,
+  BookingPageSettings,
   ProspectStatus,
   ReturnMeetingPoint,
   ShuttleStop,
@@ -1673,6 +1674,10 @@ export const adminApi = {
   createWebsiteKey: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration/key", { method: "POST" }),
   removeWebsiteKey: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration", { method: "DELETE" }),
   wordpressPluginUrl: () => `${API_BASE}/public/site/wordpress-plugin.zip`,
+  // Site du parking, niveau 3 (19/11/2026): the parking's own Plazo booking page.
+  getBookingPage: () => apiRequest<{ data: BookingPageSettings }>("/internal/booking-page"),
+  updateBookingPage: (input: { enabled?: boolean; slug?: string; accent?: string }) =>
+    apiRequest<{ data: BookingPageSettings }>("/internal/booking-page", { method: "PUT", body: json(input) }),
   // 19/11/2026: the prospecting SMS (dryRun: who would get it) and its test to PROSPECTING_PHONE.
   sendProspectsSms: (ids: string[], text: string, dryRun = false) =>
     apiRequest<ProspectSmsResult>("/internal/platform/prospects/sms", {

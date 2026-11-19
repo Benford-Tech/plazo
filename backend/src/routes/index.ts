@@ -33,6 +33,7 @@ import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
 import { ProspectingRoute } from './prospecting.route';
 import { WebsiteIntegrationRoute } from './website-integration.route';
+import { BookingPageRoute } from './booking-page.route';
 import { PublicBookingRoute } from './public-booking.route';
 import { AppLinkRoute } from './app-link.route';
 import { PublicRoute } from './public.route';
@@ -74,6 +75,7 @@ const AppRoutes = [
   new PlatformRoute(),
   new ProspectingRoute(),
   new WebsiteIntegrationRoute(),
+  new BookingPageRoute(),
   new DemoRoute(),
   new MorningEmailRoute(),
   new TravellerWelcomeRoute(),

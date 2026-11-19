@@ -18,6 +18,7 @@ import { ChildSeatsDto } from '@/dtos/child-seats.dto';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { BookingPageService } from './booking-page.service';
 import { CapacityService } from './capacity.service';
 import { ExtraService } from './extra.service';
 import { NotificationService } from './notification.service';
@@ -60,6 +61,7 @@ const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClie
 @Service()
 export class PublicBookingService {
   public audit = Container.get(AuditService);
+  public bookingPages = Container.get(BookingPageService);
   public capacity = Container.get(CapacityService);
   public extras = Container.get(ExtraService);
   public notifications = Container.get(NotificationService);
@@ -114,8 +116,13 @@ export class PublicBookingService {
           throw new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
         }
         // Services for the car asked with the booking (21/10/2026): paid in the same payment, accounted apart.
-        const extras = await this.extras.priceForBooking(tx, listing.parkingId, data.extras, operator);
-        const amounts = this.payments.split(operator, quote.priceCents);
+        // From the parking's own booking page (niveau 3, 19/11/2026): only that parking's, and the whole amount is its.
+        const viaBookingPage = await this.bookingPages.allows(data.bookingPage, operator.id);
+        const priced = await this.extras.priceForBooking(tx, listing.parkingId, data.extras, operator);
+        const extras = viaBookingPage
+          ? { ...priced, rows: priced.rows.map(row => ({ ...row, commissionCents: 0, operatorShareCents: row.priceCents })) }
+          : priced;
+        const amounts = viaBookingPage ? this.payments.splitWhole(operator, quote.priceCents) : this.payments.split(operator, quote.priceCents);
         const payment = {
           status: 'pending_payment' as const,
           paymentStatus: 'pending' as const,
@@ -156,6 +163,7 @@ export class PublicBookingService {
             acquisitionSource: acquisition?.source ?? null,
             acquisitionDetail: acquisition?.detail || null,
             acquisitionLanding: acquisition?.landing || null,
+            viaBookingPage,
             ...payment,
           },
           include: WITH_LISTING,
@@ -169,6 +177,7 @@ export class PublicBookingService {
             entityId: created.id,
             details: {
               channel: 'plazo',
+              ...(viaBookingPage ? { bookingPage: data.bookingPage } : {}),
               ...(operator ? { payment: 'online', commissionCents: created.commissionCents, operatorShareCents: created.operatorShareCents } : {}),
               ...(extras.rows.length ? { extras: extras.rows.map(r => r.kind), extrasCents: extras.totalCents } : {}),
               ...(quote.nightFee

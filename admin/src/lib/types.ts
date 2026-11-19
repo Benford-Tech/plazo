@@ -3067,6 +3067,18 @@ export interface ReservationConversation {
 }
 
 /** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */
+/** « Ma page de réservation » (Site du parking, niveau 3, 19/11/2026). */
+export interface BookingPageSettings {
+  enabled: boolean;
+  slug: string;
+  saved: boolean;
+  accent: string;
+  listingOnline: boolean;
+  listingTitle: string | null;
+  page: string | null;
+  embed: string | null;
+}
+
 export interface WebsiteIntegration {
   connected: boolean;
   keyPrefix: string | null;

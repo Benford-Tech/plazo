@@ -231,6 +231,20 @@ export interface BookingInput {
   idempotencyKey?: string;
   /** 06/11/2026 (SEO local M1): where the visit came from (the session cookie of the site). */
   acquisition?: { source: string; detail: string; landing: string };
+  /** Site du parking, niveau 3 (19/11/2026): booked on the parking's own page (/r/<slug>), no commission. */
+  bookingPage?: string;
+}
+
+/** A parking's own booking page (Site du parking, niveau 3, 19/11/2026). */
+export interface BookingPageInfo {
+  slug: string;
+  title: string;
+  airport: string;
+  airportName: string;
+  parking: string;
+  /** Button colour, « #0E4C6E », and the text colour that reads on it. */
+  accent: string;
+  accentInk: string;
 }
 
 export interface PublicBooking {

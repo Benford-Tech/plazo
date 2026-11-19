@@ -6,6 +6,7 @@ import type {
   AppLinkTarget,
   BookingAccess,
   BookingInput,
+  BookingPageInfo,
   CheckoutResult,
   CreatedBooking,
   ParkingResponse,
@@ -232,6 +233,9 @@ export const api = {
         `/api/public/airports/${seg(airport)}/parkings/${seg(slug)}${query({ arrivalAt, returnAt })}`,
       ),
   ),
+
+  /** Site du parking, niveau 3 (19/11/2026): what a parking's own booking page opens. */
+  bookingPage: cache((slug: string) => apiRequest<BookingPageInfo>(`/api/public/booking-pages/${seg(slug)}`)),
 
   createBooking: (input: BookingInput) =>
     apiRequest<CreatedBooking>("/api/public/bookings", {
