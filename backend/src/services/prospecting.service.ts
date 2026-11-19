@@ -28,6 +28,7 @@ import {
   ProspectStatusName,
   PROSPECTING_TZ,
   remainingToday,
+  renderTemplate,
   retentionCutoff,
   RETRY_AFTER_MINUTES,
   sameCompany,
@@ -58,6 +59,8 @@ import {
   regionView,
   sortedRegions,
 } from '@/domain/prospect-regions';
+import { displayPhone, smsRecipient } from '@/domain/phone';
+import { PROSPECT_SMS_DAILY_CAP, PROSPECT_SMS_MAX_IDS, smsFits, SmsSkipReason, smsTarget, validateSmsText } from '@/domain/prospect-sms';
 import { addDays, dayBounds, localDate } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -281,12 +284,13 @@ export class ProspectingService {
       stoppedAt: p.stoppedAt?.toISOString() ?? null,
       failedAttempts: p.failedAttempts,
       lastError: p.failedAttempts > 0 ? (errors.get(p.id) ?? null) : null,
+      lastSmsAt: p.lastSmsAt?.toISOString() ?? null,
       createdAt: p.createdAt.toISOString(),
     };
   }
 
   public async sentToday(now = new Date()): Promise<number> {
-    return prisma.prospectMessage.count({ where: { status: 'sent', sentAt: { gte: capDayStart(now) } } });
+    return prisma.prospectMessage.count({ where: { channel: 'email', status: 'sent', sentAt: { gte: capDayStart(now) } } });
   }
 
   /**
@@ -319,7 +323,7 @@ export class ProspectingService {
     const placeWhere: Prisma.ProspectWhereInput = region
       ? { AND: [airportWhere, this.regionWhere(region as RegionKey | typeof NO_REGION)] }
       : airportWhere;
-    const [rows, grouped, airportGroups, regionGroups, settings, sent] = await Promise.all([
+    const [rows, grouped, airportGroups, regionGroups, settings, sent, smsSent] = await Promise.all([
       prisma.prospect.findMany({
         where: { AND: [placeWhere, status ? { status: status as ProspectStatus } : {}] },
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
@@ -330,6 +334,7 @@ export class ProspectingService {
       prisma.prospect.groupBy({ by: ['region', 'airportCode'], where: airportWhere, _count: { _all: true } }),
       this.loadSettings(),
       this.sentToday(now),
+      this.smsSentToday(now),
     ]);
     const names = await this.airportNames([...rows.map(r => r.airportCode), ...airportGroups.map(g => g.airportCode)]);
     const errors = await this.lastErrors(rows.filter(r => r.failedAttempts > 0).map(r => r.id));
@@ -353,6 +358,13 @@ export class ProspectingService {
       regions: sortedRegions(),
       regionCounts,
       today: { sent, cap: settings.dailyCap, remaining: remainingToday(settings.dailyCap, sent) },
+      // 19/11/2026: the prospecting SMS of the day (their own cap) and whether they can leave (Brevo).
+      sms: {
+        sent: smsSent,
+        cap: PROSPECT_SMS_DAILY_CAP,
+        remaining: remainingToday(PROSPECT_SMS_DAILY_CAP, smsSent),
+        configured: this.smsConfigured(),
+      },
       window: { open: inSendingWindow(now), nextOpening: nextWindowStart(now).toISOString() },
       configured: this.configured(),
     };
@@ -862,6 +874,150 @@ export class ProspectingService {
     );
     if (!result.ok) throw new HttpException(httpStatus.BAD_GATEWAY, 'The test email was refused', 'email_failed');
     return { sentTo: actor.email };
+  }
+
+  // ---- SMS (19/11/2026, « pouvoir envoyer un sms de prospection », choix C) ----------------------------------------------
+
+  public async smsSentToday(now = new Date()): Promise<number> {
+    return prisma.prospectMessage.count({ where: { channel: 'sms', status: 'sent', sentAt: { gte: capDayStart(now) } } });
+  }
+
+  private smsConfigured(): boolean {
+    return !!this.notifications.settings.apiKey;
+  }
+
+  private assertSmsConfigured() {
+    if (!this.smsConfigured())
+      throw new HttpException(httpStatus.CONFLICT, 'Prospecting SMS are not configured (Brevo)', 'prospecting_sms_unavailable');
+  }
+
+  /**
+   * « Envoyer un SMS à N prospects »: the same text to each chosen prospect, its variables filled in. `dryRun` tells who
+   * would get it (`ready`) without sending. A prospect without a mobile (or in a country Plazo does not text), unsubscribed,
+   * not interested or texted in the last 7 days is skipped with its reason; beyond today's cap, `cap`.
+   */
+  public async sendSms(actor: AuthenticatedStaff, input: { ids?: unknown; text?: unknown; dryRun?: unknown }, now = new Date()) {
+    const ids = input.ids;
+    if (!Array.isArray(ids) || !ids.length || ids.some(id => typeof id !== 'string')) throw new ValidationException({ ids: 'required' });
+    if (ids.length > PROSPECT_SMS_MAX_IDS) throw new ValidationException({ ids: 'too_many' });
+    const text = validateSmsText(input.text);
+    if (!text.ok) throw new ValidationException({ text: text.error });
+    const dryRun = input.dryRun === true;
+    if (!dryRun) {
+      this.assertSmsConfigured();
+      if (!inSendingWindow(now)) {
+        throw new HttpException(httpStatus.CONFLICT, 'Prospecting SMS leave Monday to Friday, 09:00 to 18:00 (Paris)', 'outside_window', {
+          nextOpening: nextWindowStart(now).toISOString(),
+        });
+      }
+    }
+    const wanted = [...new Set(ids as string[])];
+    const rows = await prisma.prospect.findMany({ where: { id: { in: wanted } } });
+    const byId = new Map(rows.map(r => [r.id, r]));
+    const hashes = new Set(
+      (
+        await prisma.prospectSuppression.findMany({
+          where: { emailHash: { in: rows.flatMap(r => (r.email ? [suppressionHash(r.email)] : [])) } },
+          select: { emailHash: true },
+        })
+      ).map(s => s.emailHash),
+    );
+    const names = await this.airportNames(rows.map(r => r.airportCode));
+    const usesDemo = /\{(?:lien_d[ée]mo|liendemo)\}/i.test(text.value);
+    let remaining = remainingToday(PROSPECT_SMS_DAILY_CAP, await this.smsSentToday(now));
+    type Outcome = { id: string; outcome: 'ready' | 'sent' | 'failed' | 'skipped'; reason?: SmsSkipReason | 'too_long' | 'cap' | 'not_found' };
+    const results: Outcome[] = [];
+    for (const id of wanted) {
+      const prospect = byId.get(id);
+      if (!prospect) {
+        results.push({ id, outcome: 'skipped', reason: 'not_found' });
+        continue;
+      }
+      const target = smsTarget(
+        {
+          phone: prospect.phone,
+          status: prospect.status,
+          lastSmsAt: prospect.lastSmsAt,
+          suppressed: !!prospect.email && hashes.has(suppressionHash(prospect.email)),
+        },
+        now,
+      );
+      if ('skip' in target) {
+        results.push({ id, outcome: 'skipped', reason: target.skip });
+        continue;
+      }
+      const airportName = prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null;
+      const sampleDemo = usesDemo ? SAMPLE_VALUES.lien_demo : '';
+      if (!smsFits(renderTemplate(text.value, templateValues(prospect, airportName, sampleDemo)))) {
+        results.push({ id, outcome: 'skipped', reason: 'too_long' });
+        continue;
+      }
+      if (dryRun) {
+        results.push({ id, outcome: 'ready' });
+        continue;
+      }
+      if (remaining <= 0) {
+        results.push({ id, outcome: 'skipped', reason: 'cap' });
+        continue;
+      }
+      // Claimed first: two sends at once never text the same prospect twice.
+      const claimed = await prisma.prospect.updateMany({ where: { id, lastSmsAt: prospect.lastSmsAt }, data: { lastSmsAt: now } });
+      if (!claimed.count) {
+        results.push({ id, outcome: 'skipped', reason: 'recent' });
+        continue;
+      }
+      remaining -= 1;
+      const demoUrl = usesDemo ? (await this.demo.linkFor(prospect.id, actor.id)).url : '';
+      const filled = renderTemplate(text.value, templateValues(prospect, airportName, demoUrl));
+      const ok = await this.notifications.smsViaBrevo(target.to, `${TAG}_sms`, `prospect ${id}`, filled, 'marketing');
+      await prisma.prospectMessage.create({
+        data: {
+          prospectId: id,
+          channel: 'sms',
+          step: 0,
+          subject: 'SMS',
+          sentAt: now,
+          status: ok ? 'sent' : 'failed',
+          ...(ok ? {} : { error: 'refused' }),
+        },
+      });
+      // A refused SMS can be tried again: the prospect gets back its previous mark.
+      if (!ok) await prisma.prospect.updateMany({ where: { id, lastSmsAt: now }, data: { lastSmsAt: prospect.lastSmsAt } });
+      results.push({ id, outcome: ok ? 'sent' : 'failed' });
+    }
+    const count = (outcome: Outcome['outcome']) => results.filter(r => r.outcome === outcome).length;
+    const counts = { ready: count('ready'), sent: count('sent'), failed: count('failed'), skipped: count('skipped') };
+    if (!dryRun) {
+      await this.record(actor, 'prospecting.sms_sent', 'prospect', undefined, { chosen: wanted.length, ...counts });
+      logger.info(`[Prospecting] SMS: ${counts.sent} sent, ${counts.failed} failed, ${counts.skipped} skipped`);
+    }
+    return { results, counts, remainingToday: remaining };
+  }
+
+  /** « M'envoyer un test »: the text, for the first chosen prospect (else sample values), to PROSPECTING_PHONE. */
+  public async sendSmsTest(actor: AuthenticatedStaff, input: { text?: unknown; prospectId?: unknown }) {
+    const text = validateSmsText(input.text);
+    if (!text.ok) throw new ValidationException({ text: text.error });
+    this.assertSmsConfigured();
+    const phone = prospectingSettings().phone;
+    const to = phone ? smsRecipient(phone) : null;
+    if (!to) throw new HttpException(httpStatus.CONFLICT, 'PROSPECTING_PHONE is not a mobile number', 'no_test_phone');
+    let values = SAMPLE_VALUES;
+    if (typeof input.prospectId === 'string' && input.prospectId) {
+      const prospect = await this.getOrThrow(input.prospectId);
+      const names = await this.airportNames([prospect.airportCode]);
+      const link = (await this.demo.linksOf([prospect.id])).get(prospect.id);
+      values = templateValues(
+        prospect,
+        prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null,
+        link && !link.expired ? link.url : SAMPLE_VALUES.lien_demo,
+      );
+    }
+    const filled = renderTemplate(text.value, values);
+    if (!smsFits(filled)) throw new ValidationException({ text: 'too_long' });
+    const ok = await this.notifications.smsViaBrevo(to, `${TAG}_sms_test`, `staff ${actor.id}`, filled, 'marketing');
+    if (!ok) throw new HttpException(httpStatus.CONFLICT, 'The test SMS was refused', 'sms_failed');
+    return { sentTo: displayPhone(phone) };
   }
 
   // ---- Opt-out (public) --------------------------------------------------------------------------------------------

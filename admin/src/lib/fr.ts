@@ -3846,6 +3846,61 @@ export const fr = {
         `${withEmail} avec e-mail${without ? `, ${without} à appeler` : ""}`,
       checkFiltered: (n: number) => `Cocher les ${n}`,
       sendFiltered: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
+      // 19/11/2026 (« pouvoir envoyer un sms de prospection », choix C).
+      smsFiltered: (n: number) => `Envoyer un SMS à ${n} prospect${n > 1 ? "s" : ""}`,
+      smsSent: (when: string) => `SMS · ${when}`,
+      sms: {
+        title: (n: number) => `SMS à ${n} prospect${n > 1 ? "s" : ""}`,
+        intro:
+          "Le même texte part à chacun, avec son nom, son parking et son lien de démo. Envoyé par Brevo au nom « Plazo », sur les mobiles seulement, du lundi au vendredi de 09:00 à 18:00.",
+        textLabel: "Texte",
+        variables: "Variables",
+        count: (segments: number, characters: number) =>
+          `${segments} SMS · ${characters} caractères`,
+        tooLong: "Trop long : 3 SMS au plus.",
+        noReply:
+          "Le prospect ne peut pas répondre au SMS : donnez le lien de la démo, ou votre numéro.",
+        previewFor: (company: string) => `Ce que lit ${company}`,
+        checking: "Vérification des numéros…",
+        recipients: (ready: number, skipped: number) =>
+          `${ready} recevront ce SMS${skipped ? ` · ${skipped} laissé${skipped > 1 ? "s" : ""} de côté` : ""}`,
+        reasons: {
+          unsubscribed: "désinscrit",
+          closed: "pas intéressé",
+          no_phone: "pas de numéro",
+          not_mobile: "fixe ou pays non couvert",
+          recent: "déjà un SMS cette semaine",
+          too_long: "texte trop long une fois rempli",
+          cap: "plafond du jour atteint",
+          not_found: "introuvable",
+        } as Record<string, string>,
+        today: (sent: number, cap: number) => `${sent} / ${cap} SMS aujourd'hui`,
+        closedWindow: (when: string) => `Envoi possible à partir du ${when} (du lundi au vendredi, de 09:00 à 18:00).`,
+        unavailable: "Les SMS ne sont pas branchés : il manque la clé Brevo.",
+        test: "M'envoyer un test",
+        testSent: (to: string) => `Test envoyé au ${to}.`,
+        send: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
+        confirmTitle: (n: number) => `Envoyer ce SMS à ${n} prospect${n > 1 ? "s" : ""} ?`,
+        confirmYes: "Envoyer",
+        done: (sent: number, failed: number) =>
+          `${sent} SMS envoyé${sent > 1 ? "s" : ""}${failed ? `, ${failed} refusé${failed > 1 ? "s" : ""} par Brevo` : ""}.`,
+        results: "Résultat",
+        outcomes: { sent: "Envoyé", failed: "Refusé par Brevo", skipped: "Pas envoyé", ready: "Prêt" } as Record<string, string>,
+        close: "Fermer",
+        cancel: "Annuler",
+        errors: {
+          text: {
+            required: "Écrivez le texte du SMS.",
+            too_long: "Trop long : 480 caractères au plus.",
+            unknown_variable: "Une variable n'existe pas : utilisez celles proposées.",
+          },
+          no_test_phone:
+            "Pas de numéro pour le test : PROSPECTING_PHONE doit être un mobile.",
+          sms_failed: "Brevo a refusé le SMS de test.",
+          outside_window: "Les SMS partent du lundi au vendredi, de 09:00 à 18:00.",
+          prospecting_sms_unavailable: "Les SMS ne sont pas branchés : il manque la clé Brevo.",
+        },
+      },
       sortBy: (column: string) => `Trier par ${column}`,
       sortedAll: "Tous, triés",
       states: {

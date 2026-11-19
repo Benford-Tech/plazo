@@ -483,3 +483,41 @@ export function nextSort(
   if (!current || current.key !== key) return { key, dir: "asc" };
   return current.dir === "asc" ? { key, dir: "desc" } : null;
 }
+
+// ---- SMS (19/11/2026, « pouvoir envoyer un sms de prospection », choix C) --------------------------------------------
+
+export const DEFAULT_PROSPECT_SMS =
+  "Bonjour, c'est Joanny de Plazo. Plazo Pro range les réservations des comparateurs, la navette et les clés de {parking} dans une seule app. Démo : {lien_demo}";
+export const PROSPECT_SMS_MAX_LENGTH = 480;
+export const PROSPECT_SMS_MAX_SEGMENTS = 3;
+const SMS_GAP_MS = 7 * DAY;
+
+/** The countries Plazo texts (backend/src/domain/phone.ts, SMS_COUNTRY_CODES): Europe, French overseas, the Maghreb. */
+const SMS_COUNTRY_CODES = [
+  "30", "31", "32", "34", "351", "352", "353", "354", "356", "357", "358", "359", "36", "370", "371", "372", "376", "377",
+  "378", "385", "386", "39", "40", "41", "420", "421", "423", "43", "44", "45", "46", "47", "48", "49", "262", "590", "594",
+  "596", "508", "687", "681", "689", "212", "213", "216",
+];
+
+/** Whether a number can get an SMS: a French mobile, or a number of an allowed country written with its code. */
+export function isTextablePhone(phone: string | null): boolean {
+  if (!phone) return false;
+  let digits = phone.replace(/\(0\)/g, "").replace(/[\s.()-]/g, "");
+  if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
+  // The 06 39 98 range is kept for fiction: never texted.
+  if (/^0[67]\d{8}$/.test(digits)) return !digits.startsWith("063998");
+  if (digits.startsWith("+33")) return /^[67]\d{8}$/.test(digits.slice(3).replace(/^0/, ""));
+  if (/^\+[1-9]\d{7,14}$/.test(digits)) return SMS_COUNTRY_CODES.some((code) => digits.slice(1).startsWith(code));
+  return false;
+}
+
+/** The prospects of a list that can get a prospecting SMS now (the API decides in the end). */
+export function smsCandidates(rows: Prospect[], now = Date.now()): Prospect[] {
+  return rows.filter(
+    (p) =>
+      p.status !== "unsubscribed" &&
+      p.status !== "not_interested" &&
+      isTextablePhone(p.phone) &&
+      !(p.lastSmsAt && now - new Date(p.lastSmsAt).getTime() < SMS_GAP_MS),
+  );
+}

@@ -89,6 +89,16 @@ export class ProspectingController {
     res.json(await this.prospecting.sendTest(req.staff, req.body ?? {}));
   });
 
+  /** POST /internal/platform/prospects/sms */
+  public sms = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.prospecting.sendSms(req.staff, req.body ?? {}));
+  });
+
+  /** POST /internal/platform/prospects/sms/test */
+  public smsTest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.prospecting.sendSmsTest(req.staff, req.body ?? {}));
+  });
+
   /** GET /internal/platform/prospects/settings */
   public settings = catchAsync(async (req: Request, res: Response) => {
     res.json({ data: await this.prospecting.settingsView() });

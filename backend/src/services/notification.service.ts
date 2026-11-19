@@ -85,7 +85,13 @@ export class NotificationService {
    * An SMS through Brevo ("Plazo envoie pour moi"), to a number already checked by smsRecipient().
    * Returns whether Brevo accepted it; nothing (false) without an API key. `about` is an id.
    */
-  public async smsViaBrevo(recipient: string, tag: string, about: string, content: string): Promise<boolean> {
+  public async smsViaBrevo(
+    recipient: string,
+    tag: string,
+    about: string,
+    content: string,
+    type: 'transactional' | 'marketing' = 'transactional',
+  ): Promise<boolean> {
     if (!this.settings.apiKey) {
       logger.info(`[Notifications] BREVO_API_KEY not set: ${tag} SMS not sent for ${about}`);
       return false;
@@ -95,7 +101,8 @@ export class NotificationService {
       // Brevo expects the country code without "+", e.g. 33612345678.
       recipient: recipient.slice(1),
       content,
-      type: 'transactional',
+      // 19/11/2026: prospecting SMS go as `marketing` (Brevo's opt-out handling for France).
+      type,
       tag,
       unicodeEnabled: !isGsm7(content),
     });

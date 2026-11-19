@@ -2102,6 +2102,8 @@ export interface Prospect {
   stoppedAt: string | null;
   failedAttempts: number;
   lastError: string | null;
+  /** 19/11/2026: the last prospecting SMS that left. */
+  lastSmsAt?: string | null;
   createdAt: string;
   /** 21/10/2026 (C): the prospect's demo link, its opens and its expiry; null until « Créer un lien de démo ». */
   demo?: DemoLink | null;
@@ -2159,6 +2161,17 @@ export interface ProspectList {
   today: { sent: number; cap: number; remaining: number };
   window: { open: boolean; nextOpening: string };
   configured: boolean;
+  /** 19/11/2026: the prospecting SMS of the day (their own cap) and whether Brevo can send them. */
+  sms?: { sent: number; cap: number; remaining: number; configured: boolean };
+}
+
+export type ProspectSmsReason = "unsubscribed" | "closed" | "no_phone" | "not_mobile" | "recent" | "too_long" | "cap" | "not_found";
+
+/** « Envoyer un SMS à N prospects » (19/11/2026): each prospect's outcome; `ready` for a dry run. */
+export interface ProspectSmsResult {
+  results: { id: string; outcome: "ready" | "sent" | "failed" | "skipped"; reason?: ProspectSmsReason }[];
+  counts: { ready: number; sent: number; failed: number; skipped: number };
+  remainingToday: number;
 }
 
 export interface ProspectingStep {
