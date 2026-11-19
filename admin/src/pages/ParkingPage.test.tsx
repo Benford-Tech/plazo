@@ -17,6 +17,9 @@ vi.mock("@/lib/api", async (importOriginal) => {
 vi.mock("@/components/parking/FlightCheckCard", () => ({
   FlightCheckCard: () => null,
 }));
+vi.mock("@/components/parking/WebsiteIntegrationCard", () => ({
+  WebsiteIntegrationCard: () => null,
+}));
 vi.mock("@/components/parking/InboundEmailCard", () => ({
   InboundEmailCard: () => null,
 }));

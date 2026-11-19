@@ -488,6 +488,26 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `inbound-attachments` tourne à part avec `node --experimental-vm-modules` (`npm run test:pdf`, enchaîné par `npm test`) : le
      PDF.js d'`unpdf` est un module ESM, et l'option sur toute la suite faisait manquer de mémoire la CI. Test
      `inbound-attachments.test.ts`. Pas encore : un vrai bon Parclick pour vérifier ses étiquettes.
+   - **Site du parking, niveau 2 « l'extension WordPress Plazo » (19/11/2026, « comment connecter un site wordpress en temps réel
+     à Plazo pro », maquettes https://claude.ai/artifact/Q1jDdmhm1px9MHr1Q4ttd2, « 2 et 3 », « 1 oui, 2 oui » : paiement au parking
+     pour le 2, reversé entier pour le 3 ; le 3 reste à faire)** : carte « Site du parking » de Parking › Réglages
+     (`WebsiteIntegrationCard`, `#site`, gérants ; lecture seule en démo) : « Créer la clé » (montrée une seule fois, « Copier la clé »),
+     « Nouvelle clé » (l'ancienne s'arrête), « Retirer la clé », « Télécharger l'extension (v1.0.0) », état Relié · Clé créée, en attente
+     du site · Pas encore relié, « site · dernière réservation reçue le … ». Table `website_integrations` (migration `website_integration` :
+     une par loueur, `keyHash` sha256, `keyPrefix`, `lastUsedAt`, `lastBookingAt`, `siteHost`) ; `domain/website-integration.ts`
+     (`newSiteKey` « plz_site_… », `readSiteBooking`) ; `WebsiteIntegrationService`. Routes : `GET|DELETE /internal/website-integration`,
+     `POST …/key` (`parking:manage`, `RefuseInDemo`) ; pour l'extension, en-tête `X-Plazo-Site-Key` (et `X-Plazo-Site-Url`) :
+     `GET /public/site/status`, `GET /public/site/quote?arrivalAt=&returnAt=` (heures locales du parking ; places et prix de la grille,
+     sans frais de nuit : `available`, `reason` full · no_price, `fullNights`, `days`, `priceCents`), `POST /public/site/bookings`
+     (prénom, nom, téléphone, e-mail, plaque, vol retour, passagers, message → `createFromImport(…, { by: 'website_plugin',
+     refuseFull: true })` : canal `website`, sans commission, à payer au parking, doublon renvoyé avec sa référence, 409 `full`) ;
+     401 `invalid_site_key`, 403 `operator_inactive` ; limites par clé (`siteQuoteLimiter` 600 / 15 min, `siteBookingLimiter` 60 / h).
+     L'extension : `wordpress-plugin/plazo/` (PHP : Réglages › Plazo avec la clé et la couleur des boutons, code court
+     `[plazo_reservation]`, appels à Plazo depuis le serveur WordPress par `admin-ajax`, la clé jamais dans le navigateur, nonce et
+     champ piège ; `assets/plazo.js`, `plazo.css`, `readme.txt`), copiée dans `backend/src/wordpress/plugin-files.generated.ts` par
+     `node backend/tools/sync-wordpress-plugin.mjs` (à relancer après chaque changement de l'extension ; vérifié par le test) et servie
+     en zip par `GET /public/site/wordpress-plugin.zip` (`WordpressPluginService`, `buildZip`). Tests `website-integration.test.ts`,
+     `WebsiteIntegrationCard.test.tsx`. Pas encore essayée dans un vrai WordPress.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet

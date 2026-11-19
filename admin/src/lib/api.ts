@@ -105,6 +105,7 @@ import type {
   ProspectList,
   ProspectSendResult,
   ProspectSmsResult,
+  WebsiteIntegration,
   ProspectStatus,
   ReturnMeetingPoint,
   ShuttleStop,
@@ -1667,6 +1668,11 @@ export const adminApi = {
       method: "POST",
       body: json({ ids }),
     }),
+  // 19/11/2026 (niveau 2 « l'extension WordPress Plazo »): the key of the parking's site and the plugin's address.
+  getWebsiteIntegration: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration"),
+  createWebsiteKey: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration/key", { method: "POST" }),
+  removeWebsiteKey: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration", { method: "DELETE" }),
+  wordpressPluginUrl: () => `${API_BASE}/public/site/wordpress-plugin.zip`,
   // 19/11/2026: the prospecting SMS (dryRun: who would get it) and its test to PROSPECTING_PHONE.
   sendProspectsSms: (ids: string[], text: string, dryRun = false) =>
     apiRequest<ProspectSmsResult>("/internal/platform/prospects/sms", {

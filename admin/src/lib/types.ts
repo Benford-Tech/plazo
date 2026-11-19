@@ -3065,3 +3065,15 @@ export interface ReservationConversation {
   unread: number;
   messages: { id: string; direction: "in" | "out"; text: string; status: string | null; at: string; by: { firstName: string } | null }[];
 }
+
+/** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */
+export interface WebsiteIntegration {
+  connected: boolean;
+  keyPrefix: string | null;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+  lastBookingAt: string | null;
+  siteHost: string | null;
+  pluginVersion: string;
+  key?: string;
+}
