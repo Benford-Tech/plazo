@@ -2176,6 +2176,22 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
+- **SMS de prospection, choix C (19/11/2026, « pouvoir envoyer un sms de prospection », maquettes
+  https://claude.ai/artifact/YLE1Hq6B57VNT5hq8pQ1kQ)** : dans le bandeau vert des filtres de la Prospection, « Envoyer un SMS à N
+  prospects » (`smsCandidates` de `lib/prospecting.ts` : mobile français ou pays couvert, `isTextablePhone`, ni désinscrit ni pas
+  intéressé, pas de SMS depuis 7 jours) ouvre `SmsDialog` (`pages/platform/prospecting/`) : texte prérempli (`DEFAULT_PROSPECT_SMS`)
+  et variables de la séquence, compte de SMS (3 au plus), aperçu pour le premier, « N recevront ce SMS · M laissés de côté » avec la
+  raison (aperçu de l'API), « M'envoyer un test », « Envoyer à N » confirmé, puis le résultat par prospect ; « SMS · 19 nov. » sur la
+  ligne. Serveur : `POST /internal/platform/prospects/sms { ids, text, dryRun }` (`ProspectingService.sendSms`, `PlatformAdminMiddleware`,
+  500 ids, 480 caractères ; `domain/prospect-sms.ts` : `smsTarget`, `validateSmsText`, `smsFits`) : Brevo `type: marketing`
+  (`smsViaBrevo(…, 'marketing')`, au nom « Plazo »), mobiles des pays de `smsRecipient`, du lundi au vendredi 09:00–18:00 (409
+  `outside_window`), 200 par jour (`PROSPECT_SMS_DAILY_CAP`, raison `cap`), un par prospect et par semaine (réservé par `lastSmsAt`
+  avant l'envoi, rendu si Brevo refuse), jamais une adresse désinscrite ; raisons `unsubscribed` · `closed` · `no_phone` · `not_mobile` ·
+  `recent` · `too_long` · `cap` ; ligne `prospect_messages` `channel: 'sms'` sans le texte (le plafond des mails ne compte que
+  `email`), `Prospect.lastSmsAt` (migration `prospect_sms`), tracé `prospecting.sms_sent` ; `POST …/sms/test` vers `PROSPECTING_PHONE`
+  (409 `no_test_phone`, `sms_failed`) ; `list` › `sms { sent, cap, remaining, configured }`. Politique de confidentialité (section 11).
+  À vérifier avec le premier test : que Brevo ajoute bien la mention STOP aux SMS `marketing` vers la France (ses pages n'ont pas pu
+  être lues) ; un STOP reçu par Brevo n'est pas encore relu par Plazo. Tests `prospect-sms.test.ts`, `SmsDialog.test.tsx`.
 - **Veille des forums (17/11/2026, « Fais un robot qui poste sur des forums tous les jours au sujet de Plazo » : refusé, du spam ;
   la veille choisie à la place, « réponse rédigée par Claude » ; recherche par Brave remplacée le 18/11/2026, « c'est pas gratuit »,
   par la recherche web de Claude)** : chaque matin (Vercel Cron 07:15 UTC,

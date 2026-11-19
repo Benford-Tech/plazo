@@ -37,7 +37,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "13 novembre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "17 novembre 2026";
+export const PRIVACY_VERSION = "19 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -477,7 +477,8 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           `Base : l’intérêt légitime de ${p} à faire connaître son service à des professionnels, pour une offre en rapport avec leur activité. Trois messages au plus (un premier contact et deux relances), qui s’arrêtent dès que le parking répond.`,
           "Chaque message dit qui écrit et porte un lien « Ne plus recevoir de messages » : un clic suffit pour s’opposer à toute nouvelle sollicitation, comme une simple réponse le demandant. L’adresse est alors gardée sous forme d’empreinte, d’où on ne peut pas la retrouver, uniquement pour ne plus jamais l’écrire, même si elle était de nouveau importée.",
           `Un message peut contenir un lien personnel vers la démo de ${p} Pro, valable 14 jours : ${p} compte combien de fois il est ouvert et quand, rien d’autre (ni adresse IP, ni ce qui est fait dans la démo, dont les données sont fictives et effacées chaque nuit).`,
-          "Durée : ces données sont supprimées 3 ans après le dernier contact (ou après leur saisie, si le parking n’a jamais été contacté). Les e-mails partent par Brevo (voir l’article 4). Les droits de l’article 8 s’exercent de la même façon.",
+          `${p} peut aussi envoyer un SMS au numéro de mobile professionnel du parking, au nom de ${p}, du lundi au vendredi de 9 h à 18 h et une fois par semaine au plus : le même texte pour chacun, avec le nom du parking et son lien de démo. Le texte n’est pas gardé, seulement la date d’envoi. Il suffit de demander à ne plus en recevoir (en répondant à un e-mail ou par son lien de désinscription) : le parking ne reçoit alors plus ni SMS ni e-mail.`,
+          "Durée : ces données sont supprimées 3 ans après le dernier contact (ou après leur saisie, si le parking n’a jamais été contacté). Les e-mails et les SMS partent par Brevo (voir l’article 4). Les droits de l’article 8 s’exercent de la même façon.",
         ],
       },
       {

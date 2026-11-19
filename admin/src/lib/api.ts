@@ -104,6 +104,7 @@ import type {
   ProspectingStep,
   ProspectList,
   ProspectSendResult,
+  ProspectSmsResult,
   ProspectStatus,
   ReturnMeetingPoint,
   ShuttleStop,
@@ -1665,6 +1666,17 @@ export const adminApi = {
     apiRequest<ProspectSendResult>("/internal/platform/prospects/send", {
       method: "POST",
       body: json({ ids }),
+    }),
+  // 19/11/2026: the prospecting SMS (dryRun: who would get it) and its test to PROSPECTING_PHONE.
+  sendProspectsSms: (ids: string[], text: string, dryRun = false) =>
+    apiRequest<ProspectSmsResult>("/internal/platform/prospects/sms", {
+      method: "POST",
+      body: json({ ids, text, dryRun }),
+    }),
+  sendProspectSmsTest: (text: string, prospectId?: string | null) =>
+    apiRequest<{ sentTo: string }>("/internal/platform/prospects/sms/test", {
+      method: "POST",
+      body: json({ text, prospectId: prospectId ?? null }),
     }),
   sendProspectTest: (input: {
     step: number;

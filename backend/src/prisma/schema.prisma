@@ -1843,6 +1843,8 @@ model Prospect {
   sendingAt        DateTime?
   // Brevo refusals in a row on the current step (3: stopped).
   failedAttempts   Int            @default(0)
+  // 19/11/2026 (« pouvoir envoyer un sms de prospection », choix C): the last prospecting SMS that left.
+  lastSmsAt        DateTime?
   // The platform admin who enrolled the prospect: the replies go to them unless PROSPECTING_REPLY_TO is set.
   enrolledById     String?
   createdAt        DateTime       @default(now())
@@ -1860,6 +1862,8 @@ model Prospect {
 model ProspectMessage {
   id                String                @id @default(cuid())
   prospectId        String
+  // 19/11/2026: `email` (a step of the sequence) or `sms` (step 0, subject « SMS »; the text is not kept).
+  channel           String                @default("email")
   step              Int
   subject           String
   sentAt            DateTime              @default(now())
@@ -1872,6 +1876,7 @@ model ProspectMessage {
 
   @@index([prospectId])
   @@index([sentAt])
+  @@index([channel, sentAt])
   @@map("prospect_messages")
 }
 

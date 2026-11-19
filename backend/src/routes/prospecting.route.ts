@@ -146,6 +146,26 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *     responses:
  *       200: { description: "{ sentTo }" }
  *       502: { description: "email_failed" }
+ * /internal/platform/prospects/sms:
+ *   post:
+ *     summary: « Envoyer un SMS à N prospects » (19/11/2026) — the same text to each chosen prospect (variables filled), through Brevo as Plazo, mobiles only, Monday to Friday 09:00-18:00 (Paris), 200 a day, one a week per prospect; dryRun tells who would get it
+ *     tags: [Prospection]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [ids, text], properties: { ids: { type: array, maxItems: 500, items: { type: string } }, text: { type: string, maxLength: 480 }, dryRun: { type: boolean } } }
+ *     responses:
+ *       200: { description: "{ results: [{ id, outcome: ready|sent|failed|skipped, reason? }], counts, remainingToday }; reasons unsubscribed, closed, no_phone, not_mobile, recent, too_long, cap, not_found" }
+ *       400: { description: "ids: required, too_many; text: required, too_long, unknown_variable" }
+ *       409: { description: "prospecting_sms_unavailable (no Brevo key), outside_window (details.nextOpening)" }
+ * /internal/platform/prospects/sms/test:
+ *   post:
+ *     summary: « M'envoyer un test » — the SMS (for prospectId, else sample values) to PROSPECTING_PHONE
+ *     tags: [Prospection]
+ *     responses:
+ *       200: { description: "{ sentTo }" }
+ *       409: { description: "no_test_phone, sms_failed, prospecting_sms_unavailable" }
  * /internal/platform/prospects/settings:
  *   get:
  *     summary: The sequence (3 steps), the daily cap, the sender, the Reply-To and the sending window
@@ -187,6 +207,8 @@ export class ProspectingRoute implements Routes {
     this.router.post(`${base}/status`, PlatformAdminMiddleware(), this.prospecting.setStatuses);
     this.router.post(`${base}/send`, PlatformAdminMiddleware(), this.prospecting.send);
     this.router.post(`${base}/test`, PlatformAdminMiddleware(), this.prospecting.test);
+    this.router.post(`${base}/sms`, PlatformAdminMiddleware(), this.prospecting.sms);
+    this.router.post(`${base}/sms/test`, PlatformAdminMiddleware(), this.prospecting.smsTest);
     this.router.patch(`${base}/:id`, PlatformAdminMiddleware(), this.prospecting.update);
     this.router.delete(`${base}/:id`, PlatformAdminMiddleware(), this.prospecting.remove);
     this.router.post(`${base}/:id/status`, PlatformAdminMiddleware(), this.prospecting.setStatus);

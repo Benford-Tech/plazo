@@ -33,6 +33,7 @@ import {
   renderSubjectText,
   renderText,
   sequenceFor,
+  smsCandidates,
   sortProspects,
   stepFor,
   toolOptions,
@@ -47,6 +48,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ImportDialog } from "./prospecting/ImportDialog";
+import { SmsDialog } from "./prospecting/SmsDialog";
 import { ProspectForm } from "./prospecting/ProspectForm";
 import { StepsEditor } from "./prospecting/StepsEditor";
 
@@ -631,6 +633,7 @@ export default function ProspectingPage() {
     | { kind: "add" }
     | { kind: "edit"; prospect: Prospect }
     | { kind: "import" }
+    | { kind: "sms" }
     | { kind: "steps" }
     | null
   >(null);
@@ -661,6 +664,8 @@ export default function ProspectingPage() {
   );
   const filtered = hasFilters(filters);
   const withEmail = rows.filter((p) => !!p.email);
+  // 19/11/2026 (choix C): the filtered prospects that can get a prospecting SMS.
+  const textable = useMemo(() => smsCandidates(rows), [rows]);
   const setFilter = <K extends keyof ProspectFilters>(
     key: K,
     value: ProspectFilters[K],
@@ -997,6 +1002,19 @@ export default function ProspectingPage() {
               </button>
             </div>
           )}
+          {textable.length > 0 && (
+            <button
+              type="button"
+              data-testid="prospects-sms"
+              onClick={() => setDialog({ kind: "sms" })}
+              className={cn(
+                "min-h-11 rounded-full border border-lime px-4 font-semibold text-lime",
+                withEmail.length === 0 && "ml-auto",
+              )}
+            >
+              {t.smsFiltered(textable.length)}
+            </button>
+          )}
         </div>
       )}
 
@@ -1152,6 +1170,14 @@ export default function ProspectingPage() {
                                     {p.phone}
                                   </span>
                                 )}
+                                {p.lastSmsAt && (
+                                  <span
+                                    className="block text-xs font-semibold text-lime-deep"
+                                    data-testid="prospect-sms-sent"
+                                  >
+                                    {t.smsSent(dayMonth.format(new Date(p.lastSmsAt)))}
+                                  </span>
+                                )}
                                 {p.website && (
                                   <a
                                     href={p.website}
@@ -1282,6 +1308,14 @@ export default function ProspectingPage() {
       )}
       {dialog?.kind === "import" && (
         <ImportDialog onClose={() => setDialog(null)} />
+      )}
+      {dialog?.kind === "sms" && (
+        <SmsDialog
+          prospects={textable}
+          today={list.data?.sms}
+          window={list.data?.window}
+          onClose={() => setDialog(null)}
+        />
       )}
       {dialog?.kind === "steps" && settings.data && (
         <StepsEditor
