@@ -10,11 +10,13 @@ import {
   PRODUCT_NAME,
   PRO_SPACE_URL,
   PUBLIC_SITE_URL,
+  SECRET_KEY,
   stripePublishableKey,
   stripeSecretKey,
   stripeWebhookSecrets,
 } from '@/config';
 import prisma, { Operator, PayoutSchedule, Prisma, Reservation } from '@/database';
+import { manageToken } from '@/domain/booking';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { confirmationSms, formatEuros, formatLocalShort } from '@/domain/booking-messages';
 import { splitPayment } from '@/domain/pricing';
@@ -203,6 +205,12 @@ export class PaymentService {
     return { chargedCents: priceCents, commissionCents, operatorShareCents: operatorCents };
   }
 
+  /** A booking from the parking's own booking page (niveau 3, 19/11/2026): the whole amount goes to the parking. */
+  public splitWhole(operator: PaymentOperator, priceCents: number): { chargedCents: number; commissionCents: number; operatorShareCents: number } {
+    if (this.commissionBps(operator) === null) throw unavailable();
+    return { chargedCents: priceCents, commissionCents: 0, operatorShareCents: priceCents };
+  }
+
   private siteUrl(): string {
     const url = this.settings.siteUrl.replace(/\/+$/, '');
     if (!url) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'PUBLIC_SITE_URL is not set', 'payments_unavailable');
@@ -265,7 +273,7 @@ export class PaymentService {
       const minute = Math.floor(Date.now() / 60000);
       const expiresAt = Math.max(Math.ceil(r.holdExpiresAt.getTime() / 1000), (minute + 1) * 60 + CHECKOUT_MIN_SECONDS);
       // Computed when the place was held (never from the client).
-      const amounts = r.chargedCents !== null ? null : this.split(operator, r.priceCents);
+      const amounts = r.chargedCents !== null ? null : (r.viaBookingPage ? this.splitWhole : this.split).call(this, operator, r.priceCents);
       // The services asked with the booking are paid with it (21/10/2026).
       const charged = (r.chargedCents ?? amounts!.chargedCents) + (r.extrasChargedCents ?? 0);
       const reference = encodeURIComponent(r.reference);
@@ -303,8 +311,10 @@ export class PaymentService {
             description: `Réservation ${r.reference}`,
             metadata: { reservationId: r.id },
           },
-          success_url: `${site}/ma-reservation/${reference}?paiement=retour`,
-          cancel_url: `${site}/ma-reservation/${reference}/paiement`,
+          // Booked from the parking's own page (niveau 3, 19/11/2026), in its site's iframe: that browser has no key of
+          // the booking at plazo.fr's top level, so the return carries it (the proxy keeps it in a cookie, as the email's link).
+          success_url: `${site}/ma-reservation/${reference}?${r.viaBookingPage && SECRET_KEY ? `cle=${manageToken(r.id, SECRET_KEY, r.manageTokenVersion)}&` : ''}paiement=retour`,
+          cancel_url: `${site}/ma-reservation/${reference}/paiement${r.viaBookingPage && SECRET_KEY ? `?cle=${manageToken(r.id, SECRET_KEY, r.manageTokenVersion)}` : ''}`,
         },
         { idempotencyKey: `plazo-checkout-${r.id}-${r.stripeCheckoutSessionId ?? 'first'}-${minute}` },
       );
@@ -381,7 +391,7 @@ export class PaymentService {
       const operator = r.operator;
       if (this.modeFor(operator) !== 'online' || r.priceCents === null) throw unavailable();
       // Computed when the place was held (never from the client).
-      const amounts = r.chargedCents !== null ? null : this.split(operator, r.priceCents);
+      const amounts = r.chargedCents !== null ? null : (r.viaBookingPage ? this.splitWhole : this.split).call(this, operator, r.priceCents);
       // The services asked with the booking are paid with it (21/10/2026).
       const charged = (r.chargedCents ?? amounts!.chargedCents) + (r.extrasChargedCents ?? 0);
       const intent = await api.paymentIntents.create(

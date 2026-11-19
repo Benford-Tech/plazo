@@ -1220,6 +1220,22 @@ export const pl: Dict = {
     retry: "Spróbuj ponownie",
     home: "Powrót do strony głównej",
   },
+  /** Site du parking, niveau 3 (19/11/2026): a parking's own booking page, /r/<slug>, in its site. */
+  bookingPage: {
+    meta: "Zarezerwuj",
+    dropOff: "Oddanie",
+    pickUp: "Odbiór",
+    seePrice: "Zobacz cenę",
+    checking: "Chwileczkę…",
+    full: "Brak miejsc w tych dniach: wybierz inne daty.",
+    noPrice: "Brak ceny online dla tych dat: zadzwoń na parking.",
+    held: "Twoje miejsce jest zarezerwowane na 30 minut na czas płatności.",
+    payNote: "Bezpieczna strona płatności Stripe otworzy się w całym oknie.",
+    by: `Rezerwacja i płatność zabezpieczone przez ${P}`,
+    notFound: "Ta strona rezerwacji nie jest otwarta.",
+    yourDetails: "Twoje dane",
+    nightFee: "Opłata nocna",
+  },
   errors: {
     required: "Pole wymagane.",
     too_long: "Tekst jest za długi.",
@@ -1273,6 +1289,7 @@ export const pl: Dict = {
     too_many_attempts: "Zbyt wiele prób. Prosimy spróbować za 15 minut.",
     network: "Usługa nie odpowiada. Prosimy sprawdzić połączenie i spróbować ponownie.",
     server_error: "Wystąpił błąd po naszej stronie. Prosimy spróbować za chwilę.",
+    booking_page_unavailable: `Ta strona rezerwacji nie jest już otwarta. Zarezerwuj na stronie ${P}.`,
     unknown: "Wystąpił błąd. Prosimy spróbować ponownie.",
   } as Record<string, string>,
 };

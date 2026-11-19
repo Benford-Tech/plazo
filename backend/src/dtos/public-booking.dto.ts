@@ -176,6 +176,12 @@ export class CreatePublicBookingDto {
   @IsOptional()
   @IsObject({ message: 'invalid' })
   public acquisition?: Record<string, unknown>;
+
+  /** Site du parking, niveau 3 (19/11/2026): the slug of the parking's own booking page it was made on. */
+  @IsOptional()
+  @MaxLength(40, { message: 'invalid' })
+  @IsString({ message: 'invalid' })
+  public bookingPage?: string;
 }
 
 /**

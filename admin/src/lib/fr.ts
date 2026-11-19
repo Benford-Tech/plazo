@@ -4557,6 +4557,35 @@ export const websiteFr = {
   demo: "Démo : la clé ne se crée pas ici.",
 };
 
+/** « Réservation Plazo dans votre site » (Site du parking, niveau 3, 19/11/2026). */
+export const bookingPageFr = {
+  title: "Réservation Plazo dans votre site",
+  intro:
+    "Le module de réservation de Plazo dans une page de votre site, à vos couleurs : places et prix du moment, paiement par carte, confirmation et annulation par Plazo. Tout ce que paie le client vous est reversé, sans commission.",
+  on: "En ligne",
+  off: "Éteinte",
+  enable: "Ouvrir la page de réservation",
+  listingOffline: "Votre fiche doit d'abord être en ligne sur Plazo (Sur Plazo › Ma fiche).",
+  slug: "Adresse de la page",
+  slugHint: "Lettres, chiffres et tirets.",
+  accent: "Couleur des boutons",
+  save: "Enregistrer",
+  saved: "Page de réservation enregistrée.",
+  code: "Code à coller dans votre site, là où le module doit s'afficher :",
+  link: "Ou le lien direct, pour un bouton « Réserver » ou vos réseaux sociaux :",
+  copy: "Copier",
+  copied: "Copié.",
+  open: "Voir la page",
+  payouts: "Les paiements vous sont reversés comme ceux de Plazo, sans commission : vérifiez votre compte Stripe dans Reversements.",
+  demo: "Démo : la page ne s'ouvre pas ici.",
+  errors: {
+    invalid: "Adresse ou couleur invalide.",
+    reserved: "Cette adresse est réservée par Plazo : choisissez-en une autre.",
+    taken: "Cette adresse est déjà prise par un autre parking.",
+    listing_offline: "Votre fiche doit être en ligne sur Plazo pour ouvrir la page.",
+  } as Record<string, string>,
+};
+
 export const flightCheckFr = {
   title: "Tester le suivi de vol",
   intro:

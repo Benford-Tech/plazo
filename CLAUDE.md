@@ -508,6 +508,25 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `node backend/tools/sync-wordpress-plugin.mjs` (à relancer après chaque changement de l'extension ; vérifié par le test) et servie
      en zip par `GET /public/site/wordpress-plugin.zip` (`WordpressPluginService`, `buildZip`). Tests `website-integration.test.ts`,
      `WebsiteIntegrationCard.test.tsx`. Pas encore essayée dans un vrai WordPress.
+   - **Site du parking, niveau 3 « La réservation Plazo dans le site » (19/11/2026, mêmes maquettes, « reversé entier »)** : carte
+     « Réservation Plazo dans votre site » de Parking › Réglages (`BookingPageCard`, `#page-reservation`, gérants ; lecture seule en
+     démo) : adresse `plazo.fr/r/<slug>` (proposée d'après la fiche, lettres, chiffres et tirets, `plazo` `pro` `api`… réservés),
+     couleur des boutons, « Ouvrir la page de réservation » (fiche en ligne exigée), puis le code à coller
+     `<script src="…/r/embed.js" data-plazo="<slug>" async>` et le lien direct. `Operator.bookingPageSlug` (unique) /
+     `bookingPageAccent` / `bookingPageEnabledAt`, `Reservation.viaBookingPage` (migration `booking_page`, CHECK : canal `plazo`
+     seulement) ; `domain/booking-page.ts`, `BookingPageService` ; `GET|PUT /internal/booking-page` (`parking:manage`, PUT
+     `RefuseInDemo` ; 400 `slug` invalid · reserved · taken, `accent` invalid, `enabled` listing_offline), `GET
+     /public/booking-pages/:slug` (404 éteinte, fiche hors ligne, loueur inactif). Une réservation de la page est une réservation
+     Plazo ordinaire (place tenue, paiement Stripe, confirmation, annulation, reversement) avec `bookingPage` dans
+     `POST /public/bookings` : seulement la page du loueur de la fiche, allumée (409 `booking_page_unavailable`), sans commission
+     (`PaymentService.splitWhole`, services compris) ; le retour de Stripe porte la clé (`?cle=`), le navigateur n'ayant pas de
+     cookie de plazo.fr dans le cadre. Site : page `/r/[slug]` (`BookingPageModule` : dates, prix de la fiche, informations,
+     puis « Payer » qui ouvre Stripe dans toute la fenêtre, `target="_top"` ; actions `lib/booking-page-actions.ts`, sans cookie ;
+     sa hauteur envoyée au site par `postMessage`), sans l'en-tête ni le pied de page des voyageurs (`BOOKING_PAGE_PREFIX`), seule
+     page qui accepte d'être affichée dans un autre site (`frame-ancestors https:`, `noindex`) ; `public/r/embed.js` pose le cadre et
+     suit sa hauteur. Tests `payments.test.ts` (« Ma page de réservation »), `booking-page-actions.test.ts`, `BookingPageCard.test.tsx`.
+     Pas encore : le canal affiché « Site du parking » sur la fiche et dans les chiffres (la réservation reste « Plazo », commission 0),
+     les sièges auto, les services et le vol aller dans le module, Plazo Pro.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet

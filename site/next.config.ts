@@ -12,6 +12,8 @@ const PRO_TOPICS = PRO_TOPIC_SLUGS.join("|");
  */
 const LANG = `:lang(${LOCALES.join("|")})`;
 const OTHER_LANG = `:lang(${LOCALES.filter(l => l !== "fr").join("|")})`;
+/** The same languages inside a pattern of a header rule. */
+const OTHER_LANGS = `(?:${LOCALES.filter(l => l !== "fr").join("|")})`;
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -81,7 +83,18 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      { source: "/:path*", headers: securityHeaders },
+      // Every page refuses to be framed, but a parking's booking page (Site du parking, niveau 3, 19/11/2026): its site
+      // shows it in a frame (/r/embed.js). Only https sites may; the payment page itself opens in the whole window.
+      { source: "/", headers: securityHeaders },
+      { source: `/:path((?!(?:${OTHER_LANGS}/)?r/).+)`, headers: securityHeaders },
+      {
+        source: `/:path((?:${OTHER_LANGS}/)?r/.+)`,
+        headers: [
+          ...securityHeaders.filter(h => h.key !== "X-Frame-Options"),
+          { key: "Content-Security-Policy", value: "frame-ancestors https:" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
       // Universal links of the Plazo app (11/10/2026): Apple reads this file, served from public/, as JSON
       // (a file without extension is otherwise served as application/octet-stream).
       {

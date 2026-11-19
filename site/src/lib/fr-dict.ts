@@ -1353,6 +1353,22 @@ const frBase = {
     home: "Retour à l’accueil",
   },
   // Backend codes (error `code` and per-field `fields` codes), translated.
+  /** Site du parking, niveau 3 (19/11/2026): a parking's own booking page, /r/<slug>, in its site. */
+  bookingPage: {
+    meta: "Réserver",
+    dropOff: "Dépôt",
+    pickUp: "Retour",
+    seePrice: "Voir le prix",
+    checking: "Un instant…",
+    full: "Complet à ces dates : essayez d’autres dates.",
+    noPrice: "Pas de prix en ligne pour ces dates : appelez le parking.",
+    held: "Votre place est réservée 30 minutes, le temps du paiement.",
+    payNote: "Le paiement sécurisé par Stripe s’ouvre dans toute la fenêtre.",
+    by: `Réservation et paiement sécurisés par ${P}`,
+    notFound: "Cette page de réservation n’est pas ouverte.",
+    yourDetails: "Vos informations",
+    nightFee: "Frais de nuit",
+  },
   errors: {
     required: "Champ obligatoire.",
     too_long: "Texte trop long.",
@@ -1420,6 +1436,7 @@ const frBase = {
     network: "Le service ne répond pas. Vérifiez votre connexion et réessayez.",
     server_error:
       "Une erreur est survenue de notre côté. Réessayez dans un instant.",
+    booking_page_unavailable: `Cette page de réservation n’est plus ouverte. Réservez sur le site de ${P}.`,
     unknown: "Une erreur est survenue. Réessayez.",
   } as Record<string, string>,
 };

@@ -80,6 +80,11 @@ model Operator {
   inboundSlug            String?        @unique
   // N-A (08/10/2026): end of the last hourly booking digest's window (null: never sent; see BookingDigestService).
   bookingDigestAt        DateTime?
+  // Site du parking, niveau 3 (19/11/2026): « Ma page de réservation », Plazo's booking module on the parking's own
+  // site (plazo.fr/r/<slug>, in an iframe or as a link). Paid online, the whole amount paid back (no commission).
+  bookingPageSlug        String?        @unique
+  bookingPageAccent      String?
+  bookingPageEnabledAt   DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt
 
@@ -909,6 +914,8 @@ model Reservation {
   acquisitionSource        String?
   acquisitionDetail        String?
   acquisitionLanding       String?
+  // Booked through the parking's own booking page (niveau 3, 19/11/2026): channel plazo, no commission.
+  viaBookingPage           Boolean             @default(false)
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
   manageTokenVersion       Int                 @default(0)
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.

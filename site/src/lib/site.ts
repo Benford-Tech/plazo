@@ -18,6 +18,8 @@ export const PRO_LOGIN_PATH = "/pro/login";
 
 /** Plazo Pro's pages for the operators (27/10/2026), on the site: the home page and the pricing page. */
 export const OPERATORS_PREFIX = "/loueurs";
+/** Site du parking, niveau 3 (19/11/2026): a parking's own Plazo booking page, /r/<slug>, shown in its site (no travellers' chrome). */
+export const BOOKING_PAGE_PREFIX = "/r";
 /**
  * Plazo Pro's own address (27/10/2026, « Le site pro est sur pro.plazo.fr »), e.g. https://pro.plazo.fr. Set once its DNS
  * answers: the pages are then served at its root (rewrites of next.config.ts), /loueurs redirects there and every link

@@ -5,6 +5,7 @@ import { Container } from 'typedi';
 import prisma, { PayoutSchedule } from '@/database';
 import { payoutDueAt, payoutDueDate } from '@/domain/payout';
 import { addDays, localDate, localDateTime } from '@/domain/time';
+import { BookingPageService } from '@/services/booking-page.service';
 import { NotificationService } from '@/services/notification.service';
 import { PaymentService } from '@/services/payment.service';
 import { StripeApi, StripeService } from '@/services/stripe.service';
@@ -1432,5 +1433,71 @@ describe('garde-fou clé live', () => {
     process.env = { ...savedEnv, ...base };
     delete process.env.STRIPE_SECRET_KEY;
     expect(() => ValidateEnv()).not.toThrow();
+  });
+});
+
+describe('Ma page de réservation (Site du parking, niveau 3, 19/11/2026)', () => {
+  const page = (token: string, body: Record<string, unknown>) => api().put('/api/internal/booking-page').set(auth(token)).send(body);
+  beforeEach(() => {
+    Container.get(BookingPageService).settings.siteUrl = 'https://site.example';
+  });
+
+  it('le gérant règle sa page ; le site la lit seulement allumée', async () => {
+    const op = await publishedParking();
+    const first = await api().get('/api/internal/booking-page').set(auth(op.token));
+    expect(first.body.data).toMatchObject({ enabled: false, saved: false, slug: 'parking-demo-lys', accent: '#FF6600', listingOnline: true });
+    expect((await api().get('/api/public/booking-pages/parking-demo-lys')).status).toBe(404);
+
+    expect((await page(op.token, { slug: 'pro' })).body.fields).toEqual({ slug: 'reserved' });
+    expect((await page(op.token, { accent: 'bleu' })).body.fields).toEqual({ accent: 'invalid' });
+    const saved = await page(op.token, { enabled: true, slug: 'Parking des Cèdres', accent: '#0e4c6e' });
+    expect(saved.status).toBe(200);
+    expect(saved.body.data).toMatchObject({
+      enabled: true,
+      slug: 'parking-des-cedres',
+      accent: '#0E4C6E',
+      page: 'https://site.example/r/parking-des-cedres',
+    });
+    expect(saved.body.data.embed).toContain('data-plazo="parking-des-cedres"');
+    const pub = await api().get('/api/public/booking-pages/parking-des-cedres');
+    expect(pub.body).toMatchObject({ airport: 'lyon-saint-exupery', parking: 'parking-demo', accent: '#0E4C6E', accentInk: '#FFFFFF' });
+
+    // Another parking cannot take the same address.
+    const other = await publishedParking({ slug: 'autre', name: 'Autre' });
+    expect((await page(other.token, { slug: 'parking-des-cedres' })).body.fields).toEqual({ slug: 'taken' });
+  });
+
+  it('une réservation de la page : payée en ligne, sans commission, et le retour du paiement porte la clé', async () => {
+    const op = await publishedParking();
+    await page(op.token, { enabled: true, slug: 'cedres' });
+    const held = await book({ bookingPage: 'cedres' });
+    expect(held.status).toBe(201);
+    const saved = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.body.reference } });
+    expect(saved).toMatchObject({ channel: 'plazo', viaBookingPage: true, chargedCents: 3499, commissionCents: 0, operatorShareCents: 3499 });
+    const res = await checkout(held.body.reference, held.body.manageToken);
+    expect(res.status).toBe(200);
+    const [params] = fake.checkout.sessions.create.mock.calls[0];
+    expect(params.success_url).toBe(`https://site.example/ma-reservation/${held.body.reference}?cle=${held.body.manageToken}&paiement=retour`);
+    expect(params.line_items[0].price_data.unit_amount).toBe(3499);
+
+    // A plain Plazo booking keeps its commission.
+    const plain = await book({ plate: 'AB-123-CD', customerPhone: '06 98 76 54 32', customerEmail: 'autre@example.com' });
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: plain.body.reference } })).toMatchObject({
+      viaBookingPage: false,
+      commissionCents: 420,
+    });
+  });
+
+  it("refuse la page d'un autre parking, ou une page éteinte", async () => {
+    const op = await publishedParking();
+    await page(op.token, { enabled: true, slug: 'cedres' });
+    const other = await publishedParking({ slug: 'autre', name: 'Autre' });
+    await page(other.token, { enabled: true, slug: 'autre-page' });
+    const wrong = await book({ bookingPage: 'autre-page' });
+    expect(wrong.status).toBe(409);
+    expect(wrong.body.code).toBe('booking_page_unavailable');
+    await page(op.token, { enabled: false });
+    expect((await book({ bookingPage: 'cedres' })).body.code).toBe('booking_page_unavailable');
+    expect(await prisma.reservation.count()).toBe(0);
   });
 });
