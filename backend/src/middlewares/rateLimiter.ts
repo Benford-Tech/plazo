@@ -259,3 +259,25 @@ export const testSendLimiter = rateLimit({
   },
   message: tooMany('too_many_requests'),
 });
+
+// 19/11/2026 (niveau 2 « l'extension WordPress Plazo »): the parking's site calls from its own server, so it is counted by
+// its key (its sha256), not by the visitor.
+const siteKeyOf = (req: Request) =>
+  `site:${createHash('sha256')
+    .update(String(req.get('x-plazo-site-key') ?? ''))
+    .digest('hex')
+    .slice(0, 32)}`;
+export const siteQuoteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  skip,
+  keyGenerator: siteKeyOf,
+  message: tooMany('too_many_requests'),
+});
+export const siteBookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 60,
+  skip,
+  keyGenerator: siteKeyOf,
+  message: tooMany('too_many_requests'),
+});

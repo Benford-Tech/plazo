@@ -1,0 +1,13 @@
+/* Plazo · formulaire de réservation : sobre, il prend la police du site ; la couleur des boutons vient des réglages. */
+.plazo-form { --plazo-accent: #1E5E2E; display: grid; gap: 12px; max-width: 560px; }
+.plazo-form label { display: grid; gap: 4px; font-weight: 600; font-size: 0.95em; }
+.plazo-form input, .plazo-form textarea { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #c8ccd0; border-radius: 8px; font: inherit; }
+.plazo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .plazo-row { grid-template-columns: 1fr; } }
+.plazo-quote { margin: 0; font-weight: 600; color: var(--plazo-accent); min-height: 1.4em; }
+.plazo-button { background: var(--plazo-accent); color: #fff; border: 0; border-radius: 999px; padding: 12px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+.plazo-button[disabled] { opacity: 0.6; cursor: wait; }
+.plazo-result { margin: 0; font-weight: 600; min-height: 1.4em; }
+.plazo-by { margin: 0; font-size: 0.8em; opacity: 0.7; }
+.plazo-trap { position: absolute; left: -9999px; width: 1px; height: 1px; }
+.plazo-done .plazo-button { display: none; }

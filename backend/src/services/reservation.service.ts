@@ -280,7 +280,12 @@ export class ReservationService {
    * à l'import quand la plaque est manquante »): without a plate (or what is no plate: importedPlate) the booking is
    * created with '' (read on arrival).
    */
-  public async createFromImport(operatorId: string, parsed: ParsedBooking): Promise<{ reservation: Reservation; duplicate: boolean }> {
+  public async createFromImport(
+    operatorId: string,
+    parsed: ParsedBooking,
+    // 19/11/2026: the parking's WordPress site (niveau 2) books through here too, and is told when a night is full.
+    options: { by?: string; refuseFull?: boolean } = {},
+  ): Promise<{ reservation: Reservation; duplicate: boolean }> {
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) throw notFound();
     const stay = this.parseStay(parking, parsed.arrivalAt!, parsed.returnAt!);
@@ -301,6 +306,9 @@ export class ReservationService {
       const existing = await this.importDuplicate(tx, operatorId, parsed, stay.arrivalAt);
       if (existing) return { reservation: existing, duplicate: true };
       const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { client: tx });
+      if (options.refuseFull && full.length) {
+        throw new HttpException(httpStatus.CONFLICT, 'The parking is full on some nights', 'full', { fullNights: full.map(n => n.date) });
+      }
       const reference = await this.newUniqueReference(tx);
       const reservation = await tx.reservation.create({
         data: {
@@ -335,7 +343,7 @@ export class ReservationService {
           action: full.length ? 'reservation.created_overbooked' : 'reservation.created',
           entityType: 'reservation',
           entityId: reservation.id,
-          details: { by: 'inbound_email', provider: parsed.provider, ...(full.length ? { fullNights: full.map(n => n.date) } : {}) },
+          details: { by: options.by ?? 'inbound_email', provider: parsed.provider, ...(full.length ? { fullNights: full.map(n => n.date) } : {}) },
         },
         tx,
       );

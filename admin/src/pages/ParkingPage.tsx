@@ -8,6 +8,7 @@ import { BillingSettingsCard } from "@/components/parking/BillingSettingsCard";
 import { ContractTemplateCard } from "@/components/parking/ContractTemplateCard";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
+import { WebsiteIntegrationCard } from "@/components/parking/WebsiteIntegrationCard";
 import { ParkingLogoCard } from "@/components/parking/ParkingLogoCard";
 import { TravellerSms } from "@/components/account/TravellerSms";
 import { WhatsappCard } from "@/components/parking/WhatsappCard";
@@ -283,6 +284,8 @@ export default function ParkingPage() {
       {parking && <SurchargesCard parkingId={parking.id} />}
       <ParkingLogoCard />
       <InboundEmailCard />
+      {/* 19/11/2026 (niveau 2 « l'extension WordPress Plazo »): the parking's own site books straight into Plazo. */}
+      <WebsiteIntegrationCard />
       {/* 03/11/2026 (« mets le dans les réglages parkings »): moved from Mon compte, for the managers and the platform in consultation. */}
       {/* 03/11/2026: WhatsApp first, the SMS below as the fallback. */}
       <WhatsappCard />

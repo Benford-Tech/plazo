@@ -4528,6 +4528,35 @@ export const dateTime = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
+export const websiteFr = {
+  title: "Site du parking",
+  intro:
+    "Votre site WordPress montre les places et le prix du moment, et chaque réservation arrive tout de suite dans votre planning, au canal « Site du parking », sans commission. Le client paie au parking.",
+  connected: "Relié",
+  notConnected: "Pas encore relié",
+  waiting: "Clé créée, en attente du site",
+  siteLine: (host: string | null, when: string | null) =>
+    [host, when ? `dernière réservation reçue le ${when}` : "aucune réservation reçue pour l'instant"].filter(Boolean).join(" · "),
+  steps: [
+    "Téléchargez l'extension et installez-la dans WordPress : Extensions › Ajouter › Téléverser.",
+    "Dans WordPress, Réglages › Plazo : collez la clé.",
+    "Collez [plazo_reservation] dans votre page « Réserver ».",
+  ],
+  download: (version: string) => `Télécharger l'extension (v${version})`,
+  create: "Créer la clé",
+  renew: "Nouvelle clé",
+  renewConfirm: "Créer une nouvelle clé ? L'ancienne s'arrête tout de suite : il faudra coller la nouvelle dans WordPress.",
+  remove: "Retirer la clé",
+  removeConfirm: "Retirer la clé ? Le formulaire de votre site ne pourra plus réserver.",
+  keyOnce: "Copiez la clé maintenant : elle ne sera plus affichée.",
+  copy: "Copier la clé",
+  copied: "Clé copiée.",
+  keyShown: (prefix: string) => `Clé ${prefix}…`,
+  created: "Clé créée.",
+  removed: "Clé retirée.",
+  demo: "Démo : la clé ne se crée pas ici.",
+};
+
 export const flightCheckFr = {
   title: "Tester le suivi de vol",
   intro:

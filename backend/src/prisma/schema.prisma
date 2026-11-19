@@ -109,6 +109,7 @@ model Operator {
   invoices              Invoice[]
 
   @@map("operators")
+  websiteIntegration WebsiteIntegration?
 }
 
 // 15/10/2026 (« ajoute en continu des données de tests pour le chauffeur pour qu'il ait toujours des personnes à
@@ -2583,4 +2584,24 @@ model ProSubscription {
   updatedAt         DateTime  @updatedAt
 
   @@map("pro_subscriptions")
+}
+
+// ---- Site du parking (19/11/2026, niveau 2 « l'extension WordPress Plazo ») --------------------------------------------
+// The key the parking's WordPress site uses to read places and prices and to create bookings (channel `website`). Only its
+// sha256 is kept; `keyPrefix` is what the page shows. One per operator: a new key replaces the old one.
+model WebsiteIntegration {
+  id            String    @id @default(cuid())
+  operatorId    String    @unique
+  keyHash       String    @unique
+  keyPrefix     String
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  lastUsedAt    DateTime?
+  lastBookingAt DateTime?
+  // The host the bookings come from (« parking-des-cedres.fr »), as the plugin reports it.
+  siteHost      String?
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("website_integrations")
 }
