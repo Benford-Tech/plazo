@@ -124,6 +124,27 @@ describe('l’envoi', () => {
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
   });
 
+  it('un mail refusé par Brevo est réessayé une heure plus tard (19/11/2026)', async () => {
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    const b = await booking(op);
+    fetchMock.mockImplementation(async url => {
+      if (String(url) === BREVO_EMAIL) return new Response(JSON.stringify({ message: 'unrecognised IP address' }), { status: 401 });
+      return new Response('{}', { status: 200 });
+    });
+    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 1 });
+    // Not before an hour has passed.
+    expect(await service.run(new Date(NOW.getTime() + 15 * 60_000))).toEqual({ sent: 0, skipped: 0, failed: 0 });
+
+    fetchMock.mockImplementation(async url => {
+      if (String(url) === BREVO_EMAIL) return new Response(JSON.stringify({ messageId: '<m@brevo>' }), { status: 201 });
+      return new Response('{}', { status: 200 });
+    });
+    expect(await service.run(new Date(NOW.getTime() + 61 * 60_000))).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } })).welcomeEmailOutcome).toBe('sent');
+    expect(await service.run(new Date(NOW.getTime() + 3 * 3600_000))).toEqual({ sent: 0, skipped: 0, failed: 0 });
+  });
+
   it('jamais pour une réservation Allopark, par son nom ou son numéro AL-…', async () => {
     const op = await setupOperator('Parking Fictif');
     await withListing(op);

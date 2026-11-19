@@ -22,6 +22,8 @@ export const WELCOME_REPEAT_MS = 365 * 24 * 3600_000;
 /** Not when the drop-off is this close: the reminder of the day before (or nothing) does the job. */
 export const WELCOME_MIN_LEAD_MS = 3 * 3600_000;
 const PER_PASS = 40;
+/** A mail the provider refused is tried again after this long, while the booking is still in its window. */
+export const WELCOME_RETRY_MS = 3600_000;
 
 const REPORT_PERIODS = [7, 30, 90];
 /** The list shows at most this many handled bookings (the counts cover them all). */
@@ -76,7 +78,9 @@ export class TravellerWelcomeService {
     if (!this.notifications.canSendEmail() || !this.secret()) return report;
     const candidates = await prisma.reservation.findMany({
       where: {
-        welcomeEmailAt: null,
+        // 19/11/2026 (« les mails d'invitation ne semblent pas être envoyés »): a mail Brevo refused (its outage of the
+        // day) was marked `failed` for good; it is now tried again every hour while the booking is in its window.
+        OR: [{ welcomeEmailAt: null }, { welcomeEmailOutcome: 'failed', welcomeEmailAt: { lt: new Date(now.getTime() - WELCOME_RETRY_MS) } }],
         channel: { not: 'plazo' },
         status: 'upcoming',
         importId: null,
@@ -99,6 +103,7 @@ export class TravellerWelcomeService {
       take: PER_PASS,
       select: {
         id: true,
+        welcomeEmailAt: true,
         operatorId: true,
         reference: true,
         externalReference: true,
@@ -112,7 +117,10 @@ export class TravellerWelcomeService {
     });
     for (const r of candidates) {
       // Claimed first: a second pass at the same time finds nothing to send.
-      const claimed = await prisma.reservation.updateMany({ where: { id: r.id, welcomeEmailAt: null }, data: { welcomeEmailAt: now } });
+      const claimed = await prisma.reservation.updateMany({
+        where: { id: r.id, welcomeEmailAt: r.welcomeEmailAt },
+        data: { welcomeEmailAt: now },
+      });
       if (!claimed.count) continue;
       const outcome = await this.handle(r, now);
       await prisma.reservation.update({ where: { id: r.id }, data: { welcomeEmailOutcome: outcome } });
