@@ -2215,6 +2215,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
+- **Prospection sur téléphone, direction A (19/11/2026, « Optimise pour les téléphones » d'après une capture, maquettes
+  https://claude.ai/artifact/UwLgoBeRNaDmmjVokCycHp)** : sous 768 px (`useNarrow` de `ProspectingPage.tsx`), le tableau laisse la place
+  à une carte par prospect (`ProspectCard`, `prospect-card` : case à cocher, nom, contact et ville, aéroport, e-mail entier ou « à
+  appeler », état, téléphone, prochain envoi, outil, démo, note, puis « Appeler » en `tel:`, « Site », 👍 👎 et « ⋯ »), dans les mêmes
+  blocs par région ; les pilules d'état défilent sur une ligne, les deux listes aéroport et région partagent une ligne, les cinq
+  filtres attendent derrière « Filtres · N » (`prospects-filters-toggle`), et les prospects cochés ont une barre fixée en bas
+  (`prospects-send-bar` : « N prospects cochés », « SMS » pour ceux qui peuvent en recevoir, « Envoyer le mail » qui mène au panneau
+  d'envoi) ; la page ne glisse plus de côté (la grille du tableau prenait ses 900 px sur téléphone). L'ordinateur ne change pas.
+  Test `ProspectingPage.test.tsx`.
 - **SMS de prospection, choix C (19/11/2026, « pouvoir envoyer un sms de prospection », maquettes
   https://claude.ai/artifact/YLE1Hq6B57VNT5hq8pQ1kQ)** : dans le bandeau vert des filtres de la Prospection, « Envoyer un SMS à N
   prospects » (`smsCandidates` de `lib/prospecting.ts` : mobile français ou pays couvert, `isTextablePhone`, ni désinscrit ni pas
