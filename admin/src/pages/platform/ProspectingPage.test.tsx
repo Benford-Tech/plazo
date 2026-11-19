@@ -810,4 +810,39 @@ describe("Plateforme › Prospection", () => {
     expect(sent.translations.en).toBeUndefined();
     expect(sent.steps).toEqual(settings.steps);
   });
+
+  it("téléphone (19/11/2026, direction A) : une carte par prospect, filtres derrière un bouton, barre d'envoi en bas", async () => {
+    const user = userEvent.setup();
+    const desktop = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      ...desktop(query),
+      matches: query.includes("max-width: 767px"),
+    })) as typeof window.matchMedia;
+    try {
+      renderIn();
+      const cards = await screen.findAllByTestId("prospect-card");
+      expect(cards).toHaveLength(prospects.length);
+      expect(screen.queryByRole("table")).toBeNull();
+      expect(within(cards[1]).getByText("Valet Bêta")).toBeInTheDocument();
+      expect(within(cards[1]).getByText("malik@beta.example")).toBeInTheDocument();
+
+      // The five selects wait behind « Filtres »; the search stays.
+      expect(screen.queryByLabelText("Filtrer par e-mail")).toBeNull();
+      const toggle = screen.getByTestId("prospects-filters-toggle");
+      expect(toggle).toHaveTextContent("Filtres");
+      await user.click(toggle);
+      await user.selectOptions(screen.getByLabelText("Filtrer par e-mail"), "with");
+      expect(toggle).toHaveTextContent("Filtres · 1");
+
+      // Checking a card brings the send bar.
+      expect(screen.queryByTestId("prospects-send-bar")).toBeNull();
+      const first = screen.getAllByTestId("prospect-card")[0];
+      await user.click(within(first).getByRole("checkbox"));
+      const bar = screen.getByTestId("prospects-send-bar");
+      expect(bar).toHaveTextContent("1 prospect coché");
+      expect(within(bar).getByRole("button", { name: "Envoyer le mail" })).toBeInTheDocument();
+    } finally {
+      window.matchMedia = desktop;
+    }
+  });
 });

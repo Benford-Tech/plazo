@@ -3840,6 +3840,12 @@ export const fr = {
         older: "Écrit il y a plus de 30 jours",
       },
       clearFilters: "Effacer les filtres",
+      // 19/11/2026 (direction A, phones).
+      filtersButton: (n: number) => (n > 0 ? `Filtres · ${n}` : "Filtres"),
+      call: "Appeler",
+      barChosen: (n: number) => `${n} prospect${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""}`,
+      barSms: "SMS",
+      barSend: "Envoyer le mail",
       filteredCount: (n: number) =>
         `${n} prospect${n > 1 ? "s" : ""} filtré${n > 1 ? "s" : ""}`,
       filteredSplit: (withEmail: number, without: number) =>

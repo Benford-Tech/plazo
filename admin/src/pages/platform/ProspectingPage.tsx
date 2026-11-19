@@ -5,13 +5,16 @@ import {
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   MoreHorizontal,
+  Phone,
   Search,
+  SlidersHorizontal,
   ThumbsDown,
   ThumbsUp,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -166,9 +169,12 @@ const ago = new Intl.DateTimeFormat("fr-FR", {
 function DemoCell({
   prospect,
   onShow,
+  quiet = false,
 }: {
   prospect: Prospect;
   onShow: (link: DemoLink) => void;
+  /** On a phone card: an outlined button, the lime one being the send bar's. */
+  quiet?: boolean;
 }) {
   const queryClient = useQueryClient();
   const create = useMutation({
@@ -187,6 +193,7 @@ function DemoCell({
     return (
       <Button
         type="button"
+        variant={quiet ? "outline" : "default"}
         className="h-11 whitespace-nowrap text-[13px]"
         disabled={create.isPending}
         onClick={() => create.mutate(false)}
@@ -624,6 +631,9 @@ export default function ProspectingPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<ProspectFilters>(NO_FILTERS);
   const [sort, setSort] = useState<ProspectSort | null>(null);
+  // 19/11/2026 (direction A, phones): one card per prospect, the filters behind one button, a send bar at the bottom.
+  const narrow = useNarrow();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const [demoPanel, setDemoPanel] = useState<{
     company: string;
@@ -633,7 +643,7 @@ export default function ProspectingPage() {
     | { kind: "add" }
     | { kind: "edit"; prospect: Prospect }
     | { kind: "import" }
-    | { kind: "sms" }
+    | { kind: "sms"; prospects?: Prospect[] }
     | { kind: "steps" }
     | null
   >(null);
@@ -663,6 +673,9 @@ export default function ProspectingPage() {
     [all],
   );
   const filtered = hasFilters(filters);
+  const activeFilters = (
+    ["email", "language", "tool", "demo", "lastMail"] as const
+  ).filter((k) => filters[k] !== NO_FILTERS[k]).length;
   const withEmail = rows.filter((p) => !!p.email);
   // 19/11/2026 (choix C): the filtered prospects that can get a prospecting SMS.
   const textable = useMemo(() => smsCandidates(rows), [rows]);
@@ -789,7 +802,7 @@ export default function ProspectingPage() {
         <div
           role="group"
           aria-label={t.filters}
-          className="flex flex-wrap gap-2"
+          className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:max-w-none md:flex-wrap md:overflow-visible md:px-0"
         >
           {FILTERS.map((f) => {
             const pressed = f === status;
@@ -801,7 +814,7 @@ export default function ProspectingPage() {
                 aria-pressed={pressed}
                 onClick={() => setStatus(f)}
                 className={cn(
-                  "min-h-11 rounded-full px-3.5 text-sm",
+                  "min-h-11 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm",
                   pressed
                     ? "bg-lime-deep font-semibold text-white"
                     : "border border-panel-line bg-white hover:bg-panel-2",
@@ -820,7 +833,7 @@ export default function ProspectingPage() {
           id="prospect-airport"
           value={airport}
           onChange={(e) => setAirport(e.target.value)}
-          className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
+          className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
         >
           <option value="">{t.airportAll}</option>
           {(list.data?.airports ?? []).map((a) => (
@@ -836,7 +849,7 @@ export default function ProspectingPage() {
           id="prospect-region-filter"
           value={region}
           onChange={(e) => setRegion(e.target.value)}
-          className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
+          className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
         >
           <option value="">{t.regionAll}</option>
           {[false, true].map((country) => {
@@ -871,7 +884,7 @@ export default function ProspectingPage() {
         aria-label={t.filterBar}
         className="flex flex-wrap items-center gap-2 rounded-[14px] border border-panel-line bg-white p-3"
       >
-        <label className="flex h-11 min-w-[220px] flex-1 items-center gap-2 rounded-[10px] bg-panel-2 px-3 sm:max-w-[300px]">
+        <label className="flex h-11 min-w-0 flex-1 basis-[160px] items-center gap-2 rounded-[10px] bg-panel-2 px-3 sm:max-w-[300px]">
           <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="sr-only">{t.search}</span>
           <input
@@ -882,6 +895,29 @@ export default function ProspectingPage() {
             className="min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
         </label>
+        {narrow && (
+          <button
+            type="button"
+            data-testid="prospects-filters-toggle"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((o) => !o)}
+            className={cn(
+              "inline-flex h-11 items-center gap-1.5 rounded-[10px] border px-3 text-sm font-semibold",
+              activeFilters > 0
+                ? "border-lime-deep bg-[#F1F8E6] text-lime-deep"
+                : "border-panel-line bg-white",
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+            {t.filtersButton(activeFilters)}
+          </button>
+        )}
+        {(!narrow || filtersOpen) && (
+          <div
+            className={cn(
+              narrow ? "grid w-full grid-cols-2 gap-2" : "contents",
+            )}
+          >
         <FilterSelect
           label={t.filterEmail}
           value={filters.email}
@@ -955,6 +991,8 @@ export default function ProspectingPage() {
             </option>
           ))}
         </FilterSelect>
+          </div>
+        )}
         {filtered && (
           <button
             type="button"
@@ -1018,7 +1056,7 @@ export default function ProspectingPage() {
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-panel-line bg-white">
           {demoPanel && (
             <DemoLinkPanel
@@ -1037,6 +1075,62 @@ export default function ProspectingPage() {
                 ? t.emptyFilter
                 : t.empty}
             </p>
+          ) : narrow ? (
+            <div data-testid="prospect-cards" className="bg-panel-2">
+              {groups.map((group) => {
+                const open = !collapsed.has(group.key);
+                const groupChosen = group.prospects.every((p) =>
+                  selected.has(p.id),
+                );
+                return (
+                  <div key={group.key} data-testid={`region-${group.key}`}>
+                    <div className="flex items-center justify-between gap-2 border-b border-panel-line px-1">
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => toggleBlock(group.key)}
+                        className="flex min-h-11 min-w-0 items-center gap-1.5 px-2 text-left text-xs font-bold uppercase tracking-[0.06em] text-lime-deep"
+                      >
+                        {open ? (
+                          <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                        )}
+                        <span className="truncate">
+                          {t.regionBlock(group.label, group.prospects.length)}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`${groupChosen ? t.regionUncheckAll : t.regionCheckAll} · ${group.label}`}
+                        onClick={() => toggleGroup(group)}
+                        className="min-h-11 shrink-0 px-2 text-xs font-semibold text-lime-deep"
+                      >
+                        {groupChosen ? t.regionUncheckAll : t.regionCheckAll}
+                      </button>
+                    </div>
+                    {open && (
+                      <ul className="flex flex-col gap-2.5 p-2.5">
+                        {group.prospects.map((p) => (
+                          <ProspectCard
+                            key={p.id}
+                            prospect={p}
+                            checked={selected.has(p.id)}
+                            onToggle={() => toggle(p.id)}
+                            onEdit={() =>
+                              setDialog({ kind: "edit", prospect: p })
+                            }
+                            onDemo={(link) =>
+                              setDemoPanel({ company: p.companyName, link })
+                            }
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-sm">
@@ -1292,6 +1386,46 @@ export default function ProspectingPage() {
         </div>
       </div>
 
+      {narrow && chosen.length > 0 && (
+        <>
+          <div className="h-16" aria-hidden />
+          <div
+            data-testid="prospects-send-bar"
+            className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 bg-lime-deep px-3 pt-2.5 text-white shadow-[0_-4px_16px_rgba(0,0,0,0.18)]"
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+            }}
+          >
+            <span className="min-w-0 flex-1 text-sm font-semibold">
+              {t.barChosen(chosen.length)}
+            </span>
+            {smsCandidates(chosen).length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDialog({ kind: "sms", prospects: smsCandidates(chosen) })
+                }
+                className="min-h-11 rounded-full border border-lime px-4 text-sm font-semibold text-lime"
+              >
+                {t.barSms}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                panelRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                })
+              }
+              className="min-h-11 rounded-full bg-lime px-4 text-sm font-bold text-lime-ink"
+            >
+              {t.barSend}
+            </button>
+          </div>
+        </>
+      )}
+
       {dialog?.kind === "add" && (
         <ProspectForm
           prospect={null}
@@ -1311,7 +1445,7 @@ export default function ProspectingPage() {
       )}
       {dialog?.kind === "sms" && (
         <SmsDialog
-          prospects={textable}
+          prospects={dialog.prospects ?? textable}
           today={list.data?.sms}
           window={list.data?.window}
           onClose={() => setDialog(null)}
@@ -1324,6 +1458,159 @@ export default function ProspectingPage() {
         />
       )}
     </>
+  );
+}
+
+/** Phones (19/11/2026, direction A): under 768 px the table gives way to one card per prospect. */
+const NARROW_QUERY = "(max-width: 767px)";
+
+function useNarrow(): boolean {
+  const [narrow, setNarrow] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      !!window.matchMedia?.(NARROW_QUERY).matches,
+  );
+  useEffect(() => {
+    const media = window.matchMedia?.(NARROW_QUERY);
+    if (!media) return;
+    const onChange = () => setNarrow(media.matches);
+    onChange();
+    media.addEventListener?.("change", onChange);
+    return () => media.removeEventListener?.("change", onChange);
+  }, []);
+  return narrow;
+}
+
+/** One prospect on a phone: everything the table row says, with « Appeler » and « Site » under the thumb. */
+function ProspectCard({
+  prospect: p,
+  checked,
+  onToggle,
+  onEdit,
+  onDemo,
+}: {
+  prospect: Prospect;
+  checked: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDemo: (link: DemoLink) => void;
+}) {
+  const state = stateLabel(p);
+  const next = nextLabel(p);
+  const name = contactName(p);
+  return (
+    <li
+      data-testid="prospect-card"
+      className={cn(
+        "flex flex-col gap-2 rounded-[14px] border bg-white p-3 text-sm",
+        checked
+          ? "border-lime-deep shadow-[inset_0_0_0_1px_#1E5E2E]"
+          : "border-panel-line",
+      )}
+    >
+      <div className="flex items-start gap-2.5">
+        <label className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center">
+          <input
+            type="checkbox"
+            aria-label={t.selectOne(p.companyName)}
+            className="h-5 w-5 accent-[#1E5E2E]"
+            checked={checked}
+            onChange={onToggle}
+          />
+        </label>
+        <div className="min-w-0 flex-1">
+          <span className="block font-semibold leading-snug">
+            {p.companyName}
+          </span>
+          {(p.town || name) && (
+            <span className="block text-xs text-muted-foreground">
+              {[name, p.town].filter(Boolean).join(" · ")}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className="rounded-md bg-panel-2 px-1.5 py-0.5 font-mono text-[11px]">
+            {p.airportCode ?? "—"}
+          </span>
+          {p.language !== "fr" && (
+            <span className="rounded-full bg-info-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-info-text">
+              {t.languageShort(p.language)}
+            </span>
+          )}
+        </div>
+      </div>
+      {p.email ? (
+        <span className="break-all text-[13px]">{p.email}</span>
+      ) : (
+        <span
+          className="text-[13px] font-semibold text-warn-text"
+          data-testid="prospect-no-email"
+        >
+          {t.noEmail}
+        </span>
+      )}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          className={cn(
+            "inline-block rounded-full px-2.5 py-1 text-xs font-semibold",
+            state.tone,
+          )}
+        >
+          {state.text}
+        </span>
+        {p.phone && (
+          <span className="font-mono text-xs text-[#4B5563]">{p.phone}</span>
+        )}
+        {next && next !== t.next.none && (
+          <span className="font-mono text-xs text-[#4B5563]">{next}</span>
+        )}
+        {p.lastSmsAt && (
+          <span className="text-xs font-semibold text-lime-deep">
+            {t.smsSent(dayMonth.format(new Date(p.lastSmsAt)))}
+          </span>
+        )}
+        {p.failedAttempts > 0 && (
+          <span className="text-xs text-destructive">
+            {t.failed(p.failedAttempts)}
+          </span>
+        )}
+      </div>
+      {(p.tool || p.toolDetail) && (
+        <div data-testid="prospect-tool">
+          <ToolCell prospect={p} />
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <DemoCell prospect={p} onShow={onDemo} quiet />
+        <StatusNote prospect={p} />
+      </div>
+      <div className="flex items-center gap-2 border-t border-panel-line pt-2">
+        {p.phone && (
+          <a
+            href={`tel:${p.phone.replace(/[^+\d]/g, "")}`}
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold"
+          >
+            <Phone className="h-4 w-4" aria-hidden />
+            {t.call}
+          </a>
+        )}
+        {p.website && (
+          <a
+            href={p.website}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold text-lime-deep"
+          >
+            <ExternalLink className="h-4 w-4" aria-hidden />
+            {t.website}
+          </a>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          <StateMarks prospect={p} />
+          <RowActions prospect={p} onEdit={onEdit} />
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -1377,7 +1664,7 @@ function FilterSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={cn(
-          "h-11 rounded-[10px] border px-3 text-sm",
+          "h-11 min-w-0 max-w-full rounded-[10px] border px-3 text-sm",
           value
             ? "border-lime-deep bg-[#F1F8E6] font-semibold text-lime-deep"
             : "border-panel-line bg-white",
