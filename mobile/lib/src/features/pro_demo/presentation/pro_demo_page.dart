@@ -29,7 +29,7 @@ class ProDemoPage extends StatelessWidget {
   Widget build(BuildContext context) => const ProDemoView();
 }
 
-/// A prospect's own link, /pro/demo/<token>: the greeting with their parking, and the opens counted by the server.
+/// A prospect's own link, `/pro/demo/<token>`: the greeting with their parking, and the opens counted by the server.
 @RoutePage()
 class ProDemoLinkPage extends StatelessWidget {
   const ProDemoLinkPage({super.key, @PathParam('token') required this.token});
@@ -117,14 +117,14 @@ class _ProDemoViewState extends State<ProDemoView> {
   /// As after a sign-in: the post of the day first when none is set, else the tabs.
   void _open(StaffModel? staff) {
     _enteredId = null;
-    AutoRouter.maybeOf(context)?.replaceAll([if (staff?.post == null) const ProPostRoute() else const ProShellRoute()]);
+    _maybeRouter(context)?.replaceAll([if (staff?.post == null) const ProPostRoute() else const ProShellRoute()]);
   }
 
   /// A member who opened a demo link keeps their own session until they enter the demo.
   bool get _signedIn => context.read<ProAuthBloc>().state.status == ProAuthStatus.signedIn;
 
   /// Back to the tabs for a member, else to the login.
-  void _back() => AutoRouter.maybeOf(context)?.replaceAll([if (_signedIn) const ProShellRoute() else const ProLoginRoute()]);
+  void _back() => _maybeRouter(context)?.replaceAll([if (_signedIn) const ProShellRoute() else const ProLoginRoute()]);
 
   @override
   Widget build(BuildContext context) {
@@ -347,5 +347,14 @@ class _DemoWordmark extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// The app's router, or null outside it (widget tests).
+StackRouter? _maybeRouter(BuildContext context) {
+  try {
+    return context.router;
+  } catch (_) {
+    return null;
   }
 }

@@ -15,7 +15,7 @@ class ProDemoBanner extends StatelessWidget {
 
   void _quit(BuildContext context) {
     context.read<ProAuthBloc>().add(const ProAuthLogoutRequested());
-    AutoRouter.maybeOf(context)?.replaceAll([const ProDemoRoute()]);
+    _maybeRouter(context)?.replaceAll([const ProDemoRoute()]);
   }
 
   @override
@@ -53,5 +53,14 @@ class ProDemoBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The app's router, or null outside it (widget tests).
+StackRouter? _maybeRouter(BuildContext context) {
+  try {
+    return context.router;
+  } catch (_) {
+    return null;
   }
 }
