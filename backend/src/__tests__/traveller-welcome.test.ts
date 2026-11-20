@@ -160,15 +160,19 @@ describe('l’envoi', () => {
     expect(await service.run(new Date(NOW.getTime() + 3 * 3600_000))).toEqual({ sent: 0, skipped: 0, failed: 0 });
   });
 
-  it('jamais pour une réservation Allopark, par son nom ou son numéro AL-…', async () => {
+  it('Allopark et import de fichier : envoyé dès que l’e-mail du voyageur est connu (20/11/2026)', async () => {
     const op = await setupOperator('Parking Fictif');
     await withListing(op);
+    const file = await prisma.reservationImport.create({ data: { operatorId: op.operator.id, fileName: 'planning.xlsx' } });
     await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'allo@example.org' });
-    await booking(op, { channelDetail: 'allopark', externalReference: null, customerEmail: 'allo2@example.org' });
-    await booking(op, { channelDetail: null, externalReference: 'AL-884880720', customerEmail: 'allo3@example.org' });
-    await booking(op, { channel: 'phone', channelDetail: null, externalReference: null, customerEmail: 'tel@example.org' });
-    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
-    expect(emails().map(m => m.to[0].email)).toEqual(['tel@example.org']);
+    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880720', customerEmail: 'resa@allopark.com' });
+    await booking(op, { importId: file.id, customerEmail: 'fichier@example.org' });
+    expect(await service.run(NOW)).toEqual({ sent: 2, skipped: 1, failed: 0 });
+    expect(
+      emails()
+        .map(m => m.to[0].email)
+        .sort(),
+    ).toEqual(['allo@example.org', 'fichier@example.org']);
   });
 
   it('rien sans fiche Plazo, ni depuis le parking de test', async () => {
@@ -260,7 +264,6 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
     });
     await prisma.travellerEmailOptout.deleteMany();
     await booking(op); // sent
-    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'a@example.org' });
     await booking(op, { customerEmail: null, externalReference: '#2' });
     await booking(op, { arrivalAt: new Date(NOW.getTime() - 60_000), customerEmail: 'b@example.org' });
     await booking(admin, { customerEmail: 'test@example.org' }); // the test operator is left out
@@ -269,10 +272,9 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
 
     const res = await api().get('/api/internal/platform/traveller-welcome?days=30').set('Authorization', `Bearer ${admin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.counts).toEqual({ bookings: 5, sent: 1, handledNotSent: 0, notCandidate: 4, pending: 0 });
+    expect(res.body.counts).toEqual({ bookings: 4, sent: 1, handledNotSent: 0, notCandidate: 3, pending: 0 });
     expect(res.body.reasons).toEqual([
       { reason: 'before_launch', count: 1 },
-      { reason: 'allopark', count: 1 },
       { reason: 'no_email', count: 1 },
       { reason: 'arrival_passed', count: 1 },
     ]);

@@ -3571,8 +3571,6 @@ export const fr = {
       whyEmpty: "Toutes les réservations de la période ont été traitées.",
       reasons: {
         before_launch: "Réservée avant la mise en service (15/11)",
-        allopark: "Réservation Allopark",
-        import: "Import de fichier",
         no_email: "Pas d'e-mail du voyageur",
         no_listing: "Parking sans fiche Plazo",
         operator_off: "Parking suspendu ou archivé",
