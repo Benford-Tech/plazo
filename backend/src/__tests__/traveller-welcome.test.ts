@@ -101,14 +101,13 @@ describe('le mail', () => {
 });
 
 describe('l’envoi', () => {
-  it('une fois par adresse et par parking, jamais pour Plazo, un import de fichier ou un séjour proche', async () => {
+  it('une fois par adresse et par parking, jamais pour Plazo ni pour un dépôt passé', async () => {
     const op = await setupOperator('Parking Fictif');
     await withListing(op);
     const first = await booking(op);
     await booking(op, { customerEmail: 'Camille@Example.org' }); // the same traveller again
     await booking(op, { channel: 'plazo', channelDetail: null, externalReference: null, customerEmail: 'plazo@example.org' });
-    await booking(op, { customerEmail: 'proche@example.org', arrivalAt: new Date(NOW.getTime() + 3600_000) });
-    await booking(op, { customerEmail: 'ancienne@example.org', createdAt: new Date(NOW.getTime() - 5 * 86400_000) });
+    await booking(op, { customerEmail: 'passe@example.org', arrivalAt: new Date(NOW.getTime() - 60_000) });
     await booking(op, { customerEmail: 'robot@allopark.com' });
 
     const report = await service.run(NOW);
@@ -122,6 +121,22 @@ describe('l’envoi', () => {
 
     // A second pass sends nothing more.
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+  });
+
+  it('dès que l’e-mail est connu : dépôt dans une heure, réservation d’il y a 5 jours (20/11/2026)', async () => {
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    await booking(op, { customerEmail: 'proche@example.org', arrivalAt: new Date(NOW.getTime() + 3600_000) });
+    const old = await booking(op, { customerEmail: null, createdAt: new Date(NOW.getTime() - 5 * 86400_000) });
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    // The email is typed later by the team: it goes at the next pass.
+    await prisma.reservation.update({ where: { id: old.id }, data: { customerEmail: 'ancienne@example.org' } });
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect(
+      emails()
+        .map(m => m.to[0].email)
+        .sort(),
+    ).toEqual(['ancienne@example.org', 'proche@example.org']);
   });
 
   it('un mail refusé par Brevo est réessayé une heure plus tard (19/11/2026)', async () => {
@@ -247,7 +262,7 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
     await booking(op); // sent
     await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'a@example.org' });
     await booking(op, { customerEmail: null, externalReference: '#2' });
-    await booking(op, { arrivalAt: new Date(NOW.getTime() - 3600_000 + 2 * 3600_000), customerEmail: 'b@example.org' });
+    await booking(op, { arrivalAt: new Date(NOW.getTime() - 60_000), customerEmail: 'b@example.org' });
     await booking(admin, { customerEmail: 'test@example.org' }); // the test operator is left out
     const ran = await service.run(NOW);
     expect(ran).toEqual({ sent: 1, skipped: 0, failed: 0 });
@@ -259,7 +274,7 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
       { reason: 'before_launch', count: 1 },
       { reason: 'allopark', count: 1 },
       { reason: 'no_email', count: 1 },
-      { reason: 'too_late', count: 1 },
+      { reason: 'arrival_passed', count: 1 },
     ]);
     expect(res.body.rows).toHaveLength(1);
     expect(res.body.rows[0]).toMatchObject({ traveller: 'Camille M.', email: 'c•••••@example.org', parking: 'Parking des Cèdres', outcome: 'sent' });

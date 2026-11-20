@@ -15,12 +15,8 @@ import { isSilentOperator } from '@/services/demo-guard';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
 
-/** Bookings made at most this long ago get the welcome email (older ones are left: the stay may already be near). */
-export const WELCOME_WINDOW_MS = 48 * 3600_000;
 /** One welcome email per address and operator in this time. */
 export const WELCOME_REPEAT_MS = 365 * 24 * 3600_000;
-/** Not when the drop-off is this close: the reminder of the day before (or nothing) does the job. */
-export const WELCOME_MIN_LEAD_MS = 3 * 3600_000;
 const PER_PASS = 40;
 /** A mail the provider refused is tried again after this long, while the booking is still in its window. */
 export const WELCOME_RETRY_MS = 3600_000;
@@ -85,8 +81,9 @@ export class TravellerWelcomeService {
         status: 'upcoming',
         importId: null,
         anonymizedAt: null,
-        createdAt: { gte: new Date(now.getTime() - WELCOME_WINDOW_MS) },
-        arrivalAt: { gt: new Date(now.getTime() + WELCOME_MIN_LEAD_MS) },
+        // As soon as the traveller's email is known, however late (« il faut envoyer quand on a le mail », 20/11/2026):
+        // a drop-off an hour away or an email added days after the booking still gets it, until the drop-off has passed.
+        arrivalAt: { gt: now },
         customerEmail: { not: null },
         parking: { listing: { isNot: null } },
         operator: { suspendedAt: null, archivedAt: null, isDemo: false, prospectDemo: false },
