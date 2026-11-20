@@ -33,7 +33,7 @@ const report: WelcomeReport = {
   from: "2026-10-19T00:00:00Z",
   counts: { bookings: 120, sent: 1, handledNotSent: 1, notCandidate: 118, pending: 0 },
   reasons: [
-    { reason: "allopark", count: 96 },
+    { reason: "cancelled", count: 96 },
     { reason: "no_email", count: 22 },
   ],
   outcomes: [],
@@ -63,7 +63,7 @@ describe("Plateforme › Mails d'accueil (18/11/2026)", () => {
     expect(screen.getByText("c•••••@gmail.com")).toBeInTheDocument();
     expect(screen.queryByText("Marc T.")).not.toBeInTheDocument();
     expect(screen.getByText("Pourquoi les 118 autres ne l'ont pas eu")).toBeInTheDocument();
-    expect(screen.getByText("Réservation Allopark")).toBeInTheDocument();
+    expect(screen.getByText("Annulée ou non venue")).toBeInTheDocument();
     expect(screen.getByTestId("welcome-not-candidate")).toHaveTextContent("118");
 
     await userEvent.click(screen.getByTestId("welcome-tab-other"));

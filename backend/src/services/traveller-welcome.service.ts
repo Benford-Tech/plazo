@@ -61,7 +61,7 @@ export interface WelcomeRunReport {
 /**
  * 15/11/2026 (« Mail d'intro de Plazo au client avec message pour installer l'App », direction B): the welcome email to a
  * traveller whose booking did not come through Plazo (comparator, phone, counter, the parking's site, an imported mail).
- * Sent by the 15-minute pass, once per address and operator in 12 months, never for a file import, a stay already near,
+ * Sent by the 15-minute pass, once per address and operator in 12 months, never for a drop-off already passed,
  * an operator who sends nothing (test, demo), a parking without a listing (the link would not find the booking), nor an
  * address that opted out. Each booking is claimed before its email (two passes never send twice).
  */
@@ -79,7 +79,8 @@ export class TravellerWelcomeService {
         OR: [{ welcomeEmailAt: null }, { welcomeEmailOutcome: 'failed', welcomeEmailAt: { lt: new Date(now.getTime() - WELCOME_RETRY_MS) } }],
         channel: { not: 'plazo' },
         status: 'upcoming',
-        importId: null,
+        // 20/11/2026: an imported file's booking and an Allopark booking get it too, when the traveller's own address is
+        // known (an Allopark or robot address is left by travellerEmail in handle: « no_email »).
         anonymizedAt: null,
         // As soon as the traveller's email is known, however late (« il faut envoyer quand on a le mail », 20/11/2026):
         // a drop-off an hour away or an email added days after the booking still gets it, until the drop-off has passed.
@@ -87,13 +88,6 @@ export class TravellerWelcomeService {
         customerEmail: { not: null },
         parking: { listing: { isNot: null } },
         operator: { suspendedAt: null, archivedAt: null, isDemo: false, prospectDemo: false },
-        // Never a traveller who booked through Allopark (« ne pas envoyer le mail d'invitation quand c'est un mail
-        // Allopark », 15/11/2026): neither its name on the booking nor its AL-… number. Written to keep the rows
-        // whose name or number is empty (a NOT over a null column would drop them).
-        AND: [
-          { OR: [{ channelDetail: null }, { NOT: { channelDetail: { equals: 'Allopark', mode: 'insensitive' } } }] },
-          { OR: [{ externalReference: null }, { NOT: { externalReference: { startsWith: 'AL-', mode: 'insensitive' } } }] },
-        ],
       },
       // The id breaks a tie (two bookings of the same instant): the first booked of a traveller gets the mail, every time.
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

@@ -2817,8 +2817,6 @@ export interface PlatformInvitations {
 export type WelcomeOutcome = "sent" | "repeat" | "opted_out" | "no_email" | "failed" | "in_progress";
 export type WelcomeNotSentReason =
   | "before_launch"
-  | "allopark"
-  | "import"
   | "no_email"
   | "no_listing"
   | "operator_off"
