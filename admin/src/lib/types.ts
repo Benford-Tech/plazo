@@ -2822,12 +2822,11 @@ export type WelcomeNotSentReason =
   | "no_email"
   | "no_listing"
   | "operator_off"
-  | "too_late"
   | "cancelled"
   | "anonymized"
   | "already_dropped"
   | "pending"
-  | "missed";
+  | "arrival_passed";
 
 export interface WelcomeReportRow {
   id: string;
