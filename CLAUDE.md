@@ -2167,6 +2167,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   messagerie (gmail, orange…) publiée par le site, jamais celle d'une autre société (agence web, comparateur) ; puis l'import avec
   `complete` (même nom au même aéroport, jamais une adresse déjà prise ni désinscrite) ; aperçu par défaut, `appliquer` pour écrire ;
   le résumé montre l'adresse masquée « c•••@parking-x.fr ».
+  **Nouveaux parkings (22/11/2026, « comment trouver les parking avec navette qui vienne d'ouvrir ? » → « ok »)** : workflow
+  « Nouveaux parkings (annuaire des entreprises) » (`prospects-new-parkings.yml`, à la main ; `.github/scripts/new_parkings.py`) :
+  l'annuaire des entreprises de l'État (`recherche-entreprises.api.gouv.fr/near_point`, sans clé) autour de chaque aéroport
+  (`AIRPORT_POINTS`, 44 aéroports français ; `aeroports` LYS par défaut ou « tous », `rayon_km` 15, `mois` 12) : établissements
+  ouverts au code 52.21Z créés depuis N mois (société nouvelle ou nouvel établissement d'une plus ancienne), hors grandes et
+  moyennes entreprises (GE, ETI) et hors dépannage, autoroutes, rail et transports publics (`NOT_PARKING`) ; un nom qui dit
+  parking, parc, navette, voiturier ou aéroport est marqué « parking », les autres « à vérifier » ; puis l'import (nom, commune,
+  aéroport, dirigeant quand c'est une personne, notes « Créé le … · SIRET … · adresse ») : aperçu par défaut, `appliquer` pour
+  écrire, un prospect déjà listé ou désinscrit laissé de côté ; « E-mails des prospects (sites) » cherche ensuite leur adresse.
   **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
   une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
   `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
