@@ -25,7 +25,16 @@ function useReportHeight(slug: string) {
  * colours. Dates, price and places from Plazo, the traveller's details, then « Payer » opens Stripe's page in the whole
  * window (a payment page is never framed). No cookie: the payment's return carries the booking's key.
  */
-export function BookingPageModule({ page, idempotencyKey }: { page: BookingPageInfo; idempotencyKey: string }) {
+export function BookingPageModule({
+  page,
+  idempotencyKey,
+  embedded = false,
+}: {
+  page: BookingPageInfo;
+  idempotencyKey: string;
+  /** In a block of the parking's own site (22/11/2026): the site carries the title and the margins. */
+  embedded?: boolean;
+}) {
   const t = fr.bookingPage;
   useReportHeight(page.slug);
   const [arrivalAt, setArrivalAt] = useState("");
@@ -57,8 +66,8 @@ export function BookingPageModule({ page, idempotencyKey }: { page: BookingPageI
     ) : null;
 
   return (
-    <div style={accent} className="mx-auto flex w-full max-w-[520px] flex-col gap-4 p-4 text-ink">
-      <h1 className="text-[20px] font-semibold">{page.title}</h1>
+    <div style={accent} className={embedded ? "flex w-full flex-col gap-4 text-ink" : "mx-auto flex w-full max-w-[520px] flex-col gap-4 p-4 text-ink"}>
+      {!embedded && <h1 className="text-[20px] font-semibold">{page.title}</h1>}
 
       {state.payUrl ? (
         <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-paper p-4" data-testid="bp-pay">

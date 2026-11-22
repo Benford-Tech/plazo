@@ -1309,6 +1309,16 @@ export const es: Dict = {
     yourDetails: "Sus datos",
     nightFee: "Recargo nocturno",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Vista previa: este sitio aún no está en línea.",
+    photos: "Fotos",
+    contact: "Contacto",
+    goodToKnow: "A tener en cuenta",
+    bookingClosed: "La reserva en línea se abrirá cuando el sitio esté en línea.",
+    notFound: "Este sitio no está en línea.",
+    call: "Llamar",
+  },
   errors: {
     required: "Campo obligatorio.",
     too_long: "Texto demasiado largo.",

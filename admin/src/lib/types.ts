@@ -1077,6 +1077,7 @@ export interface PlatformTodo {
   kind:
     | "listing_review"
     | "whatsapp_requested"
+    | "site_requested"
     | "stripe_missing"
     | "contract_missing"
     | "contract_pending"
@@ -3069,6 +3070,39 @@ export interface ReservationConversation {
 
 /** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */
 /** « Ma page de réservation » (Site du parking, niveau 3, 19/11/2026). */
+/** 22/11/2026: « Mon site », the parking's own site made of blocks (GET|PUT /internal/site). */
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export interface SiteBlock {
+  id: string;
+  kind: SiteBlockKind;
+  enabled: boolean;
+  title: string | null;
+  text: string | null;
+}
+export interface SiteAddon {
+  active: boolean;
+  requestedAt: string | null;
+  priceCents: number;
+}
+export interface SiteSettings {
+  slug: string;
+  saved: boolean;
+  accent: string;
+  blocks: SiteBlock[];
+  published: boolean;
+  listingOnline: boolean;
+  listingTitle: string | null;
+  url: string | null;
+  previewUrl: string | null;
+  addon: SiteAddon;
+}
+/** Plateforme › loueur: the extra's state. */
+export interface PlatformSite {
+  addon: SiteAddon;
+  published: boolean;
+  url: string | null;
+}
+
 export interface BookingPageSettings {
   enabled: boolean;
   slug: string;

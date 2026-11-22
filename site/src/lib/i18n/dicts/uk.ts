@@ -1253,6 +1253,16 @@ export const uk: Dict = {
     yourDetails: "Ваші дані",
     nightFee: "Нічна доплата",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Попередній перегляд: сайт ще не опубліковано.",
+    photos: "Фото",
+    contact: "Зв’язатися з нами",
+    goodToKnow: "Варто знати",
+    bookingClosed: "Онлайн-бронювання відкриється після публікації сайту.",
+    notFound: "Цей сайт не опубліковано.",
+    call: "Зателефонувати",
+  },
   errors: {
     required: "Обов’язкове поле.",
     too_long: "Текст задовгий.",

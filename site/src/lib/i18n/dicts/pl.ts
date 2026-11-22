@@ -1241,6 +1241,16 @@ export const pl: Dict = {
     yourDetails: "Twoje dane",
     nightFee: "Opłata nocna",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Podgląd: ta strona nie jest jeszcze dostępna.",
+    photos: "Zdjęcia",
+    contact: "Kontakt",
+    goodToKnow: "Warto wiedzieć",
+    bookingClosed: "Rezerwacja online ruszy po opublikowaniu strony.",
+    notFound: "Ta strona nie jest dostępna.",
+    call: "Zadzwoń",
+  },
   errors: {
     required: "Pole wymagane.",
     too_long: "Tekst jest za długi.",

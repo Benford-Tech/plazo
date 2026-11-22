@@ -15,7 +15,15 @@ export function operatorKind(o: { name: string; isDemo: boolean; prospectDemo: b
 
 /** One line of « À traiter »: what is waiting, for which operator, and where it is handled. */
 export interface PlatformTodo {
-  kind: 'listing_review' | 'whatsapp_requested' | 'stripe_missing' | 'contract_missing' | 'contract_pending' | 'invitation_expired' | 'payout_failed';
+  kind:
+    | 'listing_review'
+    | 'whatsapp_requested'
+    | 'site_requested'
+    | 'stripe_missing'
+    | 'contract_missing'
+    | 'contract_pending'
+    | 'invitation_expired'
+    | 'payout_failed';
   operatorId: string;
   operatorName: string;
   /** listing_review: the listing; payout_failed: how many transfers failed. */
@@ -46,10 +54,13 @@ export function platformTodos(
   failedPayouts: Map<string, number>,
   /** 14/11/2026: parkings that asked for their own WhatsApp number (« Demander mon numéro WhatsApp »). */
   whatsappRequested: Set<string> = new Set(),
+  /** 22/11/2026: parkings that asked for their own site (a paid extra the platform switches on). */
+  siteRequested: Set<string> = new Set(),
 ): PlatformTodo[] {
   const order: PlatformTodo['kind'][] = [
     'listing_review',
     'whatsapp_requested',
+    'site_requested',
     'payout_failed',
     'stripe_missing',
     'invitation_expired',
@@ -61,6 +72,7 @@ export function platformTodos(
     const base = { operatorId: o.id, operatorName: o.name };
     if (o.kind !== 'demo' && o.listing?.status === 'pending_review') todos.push({ kind: 'listing_review', listingId: o.listing.id, ...base });
     if (o.kind !== 'demo' && whatsappRequested.has(o.id)) todos.push({ kind: 'whatsapp_requested', ...base });
+    if (o.kind !== 'demo' && siteRequested.has(o.id)) todos.push({ kind: 'site_requested', ...base });
     if (o.kind !== 'real') continue;
     if (o.invitation?.expired) {
       todos.push({ kind: 'invitation_expired', ...base });
