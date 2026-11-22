@@ -77,7 +77,7 @@ def directory_page(point, page):
         "per_page": 25, "page": page,
     })
     request = urllib.request.Request(f"{DIRECTORY}?{query}", headers={"user-agent": "plazo-new-parkings", "accept": "application/json"})
-    for attempt in range(5):
+    for attempt in range(6):
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
                 text = response.read().decode()
@@ -86,7 +86,7 @@ def directory_page(point, page):
         except urllib.error.HTTPError as error:
             if error.code not in (429, 500, 502, 503, 504):
                 raise
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError):  # URLError, resets and timeouts are all OSError
             pass
         time.sleep(1.5 * (attempt + 1))  # 7 calls per second at most for this API
     raise RuntimeError(f"the company directory did not answer (page {page})")
