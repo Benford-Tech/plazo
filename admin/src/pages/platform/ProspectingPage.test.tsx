@@ -811,7 +811,7 @@ describe("Plateforme › Prospection", () => {
     expect(sent.steps).toEqual(settings.steps);
   });
 
-  it("téléphone (19/11/2026, direction A) : une carte par prospect, filtres derrière un bouton, barre d'envoi en bas", async () => {
+  it("téléphone (22/11/2026, direction A) : liste serrée, filtres derrière un bouton, envoi dans une feuille", async () => {
     const user = userEvent.setup();
     const desktop = window.matchMedia;
     window.matchMedia = ((query: string) => ({
@@ -823,24 +823,39 @@ describe("Plateforme › Prospection", () => {
       const cards = await screen.findAllByTestId("prospect-card");
       expect(cards).toHaveLength(prospects.length);
       expect(screen.queryByRole("table")).toBeNull();
+      // Two lines by default: the name and how to reach it; a touch unfolds the rest.
       expect(within(cards[1]).getByText("Valet Bêta")).toBeInTheDocument();
+      expect(within(cards[1]).queryByText("malik@beta.example")).toBeNull();
+      await user.click(within(cards[1]).getByTestId("prospect-card-toggle"));
       expect(within(cards[1]).getByText("malik@beta.example")).toBeInTheDocument();
 
-      // The five selects wait behind « Filtres »; the search stays.
+      // The header keeps its actions as icons, with the mails editor a touch away.
+      expect(screen.getByRole("button", { name: "Importer un CSV" })).toBeInTheDocument();
+      expect(screen.getByTestId("prospects-edit-mails")).toBeInTheDocument();
+
+      // Airport, region and the five selects wait behind « Filtres »; the search stays.
       expect(screen.queryByLabelText("Filtrer par e-mail")).toBeNull();
+      expect(document.getElementById("prospect-airport")).toBeNull();
       const toggle = screen.getByTestId("prospects-filters-toggle");
       expect(toggle).toHaveTextContent("Filtres");
       await user.click(toggle);
+      expect(document.getElementById("prospect-airport")).not.toBeNull();
       await user.selectOptions(screen.getByLabelText("Filtrer par e-mail"), "with");
       expect(toggle).toHaveTextContent("Filtres · 1");
 
-      // Checking a card brings the send bar.
+      // Checking a card brings the send bar; « Envoyer le mail » opens the panel in a sheet.
       expect(screen.queryByTestId("prospects-send-bar")).toBeNull();
+      expect(screen.queryByTestId("prospect-preview")).toBeNull();
       const first = screen.getAllByTestId("prospect-card")[0];
       await user.click(within(first).getByRole("checkbox"));
       const bar = screen.getByTestId("prospects-send-bar");
       expect(bar).toHaveTextContent("1 prospect coché");
-      expect(within(bar).getByRole("button", { name: "Envoyer le mail" })).toBeInTheDocument();
+      expect(screen.queryByTestId("prospects-send-sheet")).toBeNull();
+      await user.click(within(bar).getByRole("button", { name: "Envoyer le mail" }));
+      const sheet = screen.getByTestId("prospects-send-sheet");
+      expect(within(sheet).getByRole("heading", { name: /Envoyer à 1 prospect/ })).toBeInTheDocument();
+      await user.keyboard("{Escape}");
+      expect(screen.queryByTestId("prospects-send-sheet")).toBeNull();
     } finally {
       window.matchMedia = desktop;
     }

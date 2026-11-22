@@ -46,6 +46,7 @@ const FlyerPage = lazy(() => import("@/pages/FlyerPage"));
 const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
 const OperatorsPage = lazy(() => import("@/pages/platform/OperatorsPage"));
 const PlatformOverviewPage = lazy(() => import("@/pages/platform/PlatformOverviewPage"));
+const PlatformMorePage = lazy(() => import("@/pages/platform/PlatformMorePage"));
 const PlatformOperatorPage = lazy(() => import("@/pages/platform/PlatformOperatorPage"));
 const PlatformListingsPage = lazy(
   () => import("@/pages/platform/ListingsPage"),
@@ -346,6 +347,10 @@ const App = () => (
               <Route
                 path="/plateforme"
                 element={lazyPage(<PlatformOverviewPage />)}
+              />
+              <Route
+                path="/plateforme/plus"
+                element={lazyPage(<PlatformMorePage />)}
               />
               <Route
                 path="/plateforme/loueurs"
