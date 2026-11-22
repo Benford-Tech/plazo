@@ -49,10 +49,12 @@ import {
 import {
   airportsOfRegion,
   effectiveRegion,
+  isCountry,
   isRegionKey,
   KNOWN_AIRPORTS,
   isProspectLanguage,
   NO_REGION,
+  FRANCE,
   ProspectLanguage,
   prospectLanguage,
   RegionKey,
@@ -300,7 +302,15 @@ export class ProspectingService {
    * The prospects of a region (`none`: without one): the region chosen by hand, or none chosen and an airport of the region
    * (for `none`: no airport, or one Plazo does not place).
    */
-  private regionWhere(region: RegionKey | typeof NO_REGION): Prisma.ProspectWhereInput {
+  private regionWhere(region: RegionKey | typeof NO_REGION | typeof FRANCE): Prisma.ProspectWhereInput {
+    // 22/11/2026 (« un filtre par pays »): France is every French region at once.
+    if (region === FRANCE) {
+      return {
+        OR: sortedRegions()
+          .filter(r => !isCountry(r.key))
+          .map(r => this.regionWhere(r.key)),
+      };
+    }
     if (region === NO_REGION) {
       return { region: null, OR: [{ airportCode: null }, { airportCode: { notIn: KNOWN_AIRPORTS } }] };
     }
@@ -319,12 +329,12 @@ export class ProspectingService {
     const airport = query.airport === undefined || query.airport === '' ? null : query.airport;
     if (airport !== null && (typeof airport !== 'string' || !/^[A-Za-z]{3}$/.test(airport))) fields.airport = 'invalid_airport';
     const region = query.region === undefined || query.region === '' ? null : query.region;
-    if (region !== null && region !== NO_REGION && !isRegionKey(region)) fields.region = 'invalid_region';
+    if (region !== null && region !== NO_REGION && region !== FRANCE && !isRegionKey(region)) fields.region = 'invalid_region';
     if (Object.keys(fields).length) throw new ValidationException(fields);
 
     const airportWhere: Prisma.ProspectWhereInput = airport ? { airportCode: (airport as string).toUpperCase() } : {};
     const placeWhere: Prisma.ProspectWhereInput = region
-      ? { AND: [airportWhere, this.regionWhere(region as RegionKey | typeof NO_REGION)] }
+      ? { AND: [airportWhere, this.regionWhere(region as RegionKey | typeof NO_REGION | typeof FRANCE)] }
       : airportWhere;
     const [rows, grouped, airportGroups, regionGroups, settings, sent, smsSent] = await Promise.all([
       prisma.prospect.findMany({

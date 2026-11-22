@@ -2287,6 +2287,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
+  **Filtre par pays (22/11/2026, « avoir un filtre par pays pour les prospections »)** : à côté de l'aéroport, « Tous les pays » :
+  France (toutes ses régions, `region=france` de `GET …/prospects`, `FRANCE` de `domain/prospect-regions.ts`), chaque autre pays qui a
+  des prospects, « Sans pays » ; « Toutes les régions » n'apparaît qu'avec France choisie et ne liste que ses régions. Tests
+  `prospecting.test.ts`, `ProspectingPage.test.tsx`.
 - **Prospection sur téléphone, direction A (19/11/2026, « Optimise pour les téléphones » d'après une capture, maquettes
   https://claude.ai/artifact/UwLgoBeRNaDmmjVokCycHp)** : sous 768 px (`useNarrow` de `ProspectingPage.tsx`), le tableau laisse la place
   à une carte par prospect (`ProspectCard`, `prospect-card` : case à cocher, nom, contact et ville, aéroport, e-mail entier ou « à

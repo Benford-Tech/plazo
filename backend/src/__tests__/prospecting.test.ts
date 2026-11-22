@@ -256,6 +256,10 @@ describe('Plateforme › Prospection : classement par région (19/10/2026)', () 
     expect(none.body.data.map((p: any) => p.email).sort()).toEqual(['contact4@parking-fictif.example', 'contact5@parking-fictif.example']);
     const occitanie = await api().get(P).query({ region: 'occitanie' }).set(auth(admin.token));
     expect(occitanie.body.data.map((p: any) => p.id)).toEqual([manual.id]);
+    // 22/11/2026: « France » = every French region at once (here all but the two without a region).
+    const france = await api().get(P).query({ region: 'france' }).set(auth(admin.token));
+    expect(france.body.data).toHaveLength(4);
+    expect(france.body.data.map((p: any) => p.email)).not.toContain('contact4@parking-fictif.example');
 
     // The region counts follow the airport filter.
     const lys = await api().get(P).query({ airport: 'LYS' }).set(auth(admin.token));
