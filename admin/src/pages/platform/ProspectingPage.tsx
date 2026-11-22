@@ -682,14 +682,12 @@ export default function ProspectingPage() {
   const filtered = hasFilters(filters);
   // On a phone the airport and the region are behind « Filtres » too, and count with the others.
   const activeFilters =
-    (
-      ["email", "language", "tool", "demo", "lastMail", "origin"] as const
-    ).filter((k) => filters[k] !== NO_FILTERS[k]).length +
-    (narrow ? Number(!!airport) + Number(!!region) : 0);
+    (["email", "language", "tool", "demo", "lastMail", "origin"] as const).filter(
+      (k) => filters[k] !== NO_FILTERS[k],
+    ).length + (narrow ? Number(!!airport) + Number(!!region) : 0);
   const toSendPanel = () => {
     if (narrow) setSheetOpen(true);
-    else
-      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    else panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const withEmail = rows.filter((p) => !!p.email);
   // 19/11/2026 (choix C): the filtered prospects that can get a prospecting SMS.
@@ -777,57 +775,57 @@ export default function ProspectingPage() {
 
   const scope = (
     <>
-      <label className="sr-only" htmlFor="prospect-airport">
-        {t.airport}
-      </label>
-      <select
-        id="prospect-airport"
-        value={airport}
-        onChange={(e) => setAirport(e.target.value)}
-        className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
-      >
-        <option value="">{t.airportAll}</option>
-        {(list.data?.airports ?? []).map((a) => (
-          <option key={a.code} value={a.code}>
-            {`${t.airport} : ${a.name ?? a.code} (${a.count})`}
-          </option>
-        ))}
-      </select>
-      <label className="sr-only" htmlFor="prospect-region-filter">
-        {t.region}
-      </label>
-      <select
-        id="prospect-region-filter"
-        value={region}
-        onChange={(e) => setRegion(e.target.value)}
-        className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
-      >
-        <option value="">{t.regionAll}</option>
-        {[false, true].map((country) => {
-          const shown = regions.filter(
-            (r) =>
-              !!r.country === country &&
-              ((regionCounts[r.key] ?? 0) > 0 || r.key === region),
-          );
-          return shown.length ? (
-            <optgroup
-              key={String(country)}
-              label={country ? t.regionGroupEurope : t.regionGroupFrance}
-            >
-              {shown.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
-                </option>
-              ))}
-            </optgroup>
-          ) : null;
-        })}
-        {((regionCounts[NO_REGION] ?? 0) > 0 || region === NO_REGION) && (
-          <option value={NO_REGION}>
-            {t.regionOption(t.regionNone, regionCounts[NO_REGION] ?? 0)}
-          </option>
-        )}
-      </select>
+        <label className="sr-only" htmlFor="prospect-airport">
+          {t.airport}
+        </label>
+        <select
+          id="prospect-airport"
+          value={airport}
+          onChange={(e) => setAirport(e.target.value)}
+          className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
+        >
+          <option value="">{t.airportAll}</option>
+          {(list.data?.airports ?? []).map((a) => (
+            <option key={a.code} value={a.code}>
+              {`${t.airport} : ${a.name ?? a.code} (${a.count})`}
+            </option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor="prospect-region-filter">
+          {t.region}
+        </label>
+        <select
+          id="prospect-region-filter"
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+          className="h-11 min-w-0 flex-1 basis-[140px] rounded-full border border-panel-line bg-white px-3.5 text-sm md:flex-none md:basis-auto"
+        >
+          <option value="">{t.regionAll}</option>
+          {[false, true].map((country) => {
+            const shown = regions.filter(
+              (r) =>
+                !!r.country === country &&
+                ((regionCounts[r.key] ?? 0) > 0 || r.key === region),
+            );
+            return shown.length ? (
+              <optgroup
+                key={String(country)}
+                label={country ? t.regionGroupEurope : t.regionGroupFrance}
+              >
+                {shown.map((r) => (
+                  <option key={r.key} value={r.key}>
+                    {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null;
+          })}
+          {((regionCounts[NO_REGION] ?? 0) > 0 || region === NO_REGION) && (
+            <option value={NO_REGION}>
+              {t.regionOption(t.regionNone, regionCounts[NO_REGION] ?? 0)}
+            </option>
+          )}
+        </select>
     </>
   );
 
@@ -886,186 +884,180 @@ export default function ProspectingPage() {
       )}
 
       <div className="flex flex-col gap-2 md:gap-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <div
-            role="group"
-            aria-label={t.filters}
-            className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:max-w-none md:flex-wrap md:overflow-visible md:px-0"
-          >
-            {FILTERS.map((f) => {
-              const pressed = f === status;
-              const count = list.data?.counts[f ?? "all"];
-              return (
-                <button
-                  key={f ?? "all"}
-                  type="button"
-                  aria-pressed={pressed}
-                  onClick={() => setStatus(f)}
-                  className={cn(
-                    "min-h-10 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm md:min-h-11",
-                    pressed
-                      ? "bg-lime-deep font-semibold text-white"
-                      : "border border-panel-line bg-white hover:bg-panel-2",
-                  )}
-                >
-                  {f ? t.filterLabels[f] : t.all}
-                  {count !== undefined && ` · ${count}`}
-                </button>
-              );
-            })}
-          </div>
-          {!narrow && scope}
-        </div>
-
+      <div className="flex flex-wrap items-center gap-2">
         <div
           role="group"
-          aria-label={t.filterBar}
-          className="order-first flex flex-wrap items-center gap-2 md:order-none md:rounded-[14px] md:border md:border-panel-line md:bg-white md:p-3"
+          aria-label={t.filters}
+          className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:max-w-none md:flex-wrap md:overflow-visible md:px-0"
         >
-          <label className="flex h-11 min-w-0 flex-1 basis-[160px] items-center gap-2 rounded-[10px] border border-panel-line bg-white px-3 sm:max-w-[300px] md:border-0 md:bg-panel-2">
-            <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
-            <span className="sr-only">{t.search}</span>
-            <input
-              type="search"
-              value={filters.q}
-              onChange={(e) => setFilter("q", e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-            />
-          </label>
-          {narrow && (
-            <button
-              type="button"
-              data-testid="prospects-filters-toggle"
-              aria-expanded={filtersOpen}
-              onClick={() => setFiltersOpen((o) => !o)}
-              className={cn(
-                "inline-flex h-11 items-center gap-1.5 rounded-[10px] border px-3 text-sm font-semibold",
-                activeFilters > 0
-                  ? "border-lime-deep bg-[#F1F8E6] text-lime-deep"
-                  : "border-panel-line bg-white",
-              )}
-            >
-              <SlidersHorizontal className="h-4 w-4" aria-hidden />
-              {t.filtersButton(activeFilters)}
-            </button>
-          )}
-          {(!narrow || filtersOpen) && (
-            <div
-              className={cn(
-                narrow ? "grid w-full grid-cols-2 gap-2" : "contents",
-              )}
-            >
-              {narrow && scope}
-              <FilterSelect
-                label={t.filterEmail}
-                value={filters.email}
-                onChange={(v) =>
-                  setFilter("email", v as ProspectFilters["email"])
-                }
+          {FILTERS.map((f) => {
+            const pressed = f === status;
+            const count = list.data?.counts[f ?? "all"];
+            return (
+              <button
+                key={f ?? "all"}
+                type="button"
+                aria-pressed={pressed}
+                onClick={() => setStatus(f)}
+                className={cn(
+                  "min-h-10 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm md:min-h-11",
+                  pressed
+                    ? "bg-lime-deep font-semibold text-white"
+                    : "border border-panel-line bg-white hover:bg-panel-2",
+                )}
               >
-                {(
-                  Object.keys(
-                    t.filterEmailOptions,
-                  ) as (keyof typeof t.filterEmailOptions)[]
-                ).map((k) => (
-                  <option key={k} value={k}>
-                    {t.filterEmailOptions[k]}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                label={t.filterLanguage}
-                value={filters.language}
-                onChange={(v) => setFilter("language", v)}
-              >
-                <option value="">{t.filterLanguageAll}</option>
-                {languages.map((l) => (
-                  <option key={l} value={l}>
-                    {t.languages[l]}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                label={t.filterTool}
-                value={filters.tool}
-                onChange={(v) => setFilter("tool", v)}
-              >
-                <option value="">{t.filterToolAll}</option>
-                <option value="none">{t.filterToolNone}</option>
-                <option value="unknown">{t.filterToolUnknown}</option>
-                {tools.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {`${o.value} (${o.count})`}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                label={t.filterDemo}
-                value={filters.demo}
-                onChange={(v) =>
-                  setFilter("demo", v as ProspectFilters["demo"])
-                }
-              >
-                {(
-                  Object.keys(
-                    t.filterDemoOptions,
-                  ) as (keyof typeof t.filterDemoOptions)[]
-                ).map((k) => (
-                  <option key={k} value={k}>
-                    {t.filterDemoOptions[k]}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                label={t.filterOrigin}
-                value={filters.origin}
-                onChange={(v) =>
-                  setFilter("origin", v as ProspectFilters["origin"])
-                }
-              >
-                {(
-                  Object.keys(
-                    t.filterOriginOptions,
-                  ) as (keyof typeof t.filterOriginOptions)[]
-                ).map((k) => (
-                  <option key={k} value={k}>
-                    {k === "new" && newCount
-                      ? `${t.filterOriginOptions[k]} · ${newCount}`
-                      : t.filterOriginOptions[k]}
-                  </option>
-                ))}
-              </FilterSelect>
-              <FilterSelect
-                label={t.filterLastMail}
-                value={filters.lastMail}
-                onChange={(v) =>
-                  setFilter("lastMail", v as ProspectFilters["lastMail"])
-                }
-              >
-                {(
-                  Object.keys(
-                    t.filterLastMailOptions,
-                  ) as (keyof typeof t.filterLastMailOptions)[]
-                ).map((k) => (
-                  <option key={k} value={k}>
-                    {t.filterLastMailOptions[k]}
-                  </option>
-                ))}
-              </FilterSelect>
-            </div>
-          )}
-          {filtered && (
-            <button
-              type="button"
-              onClick={() => setFilters(NO_FILTERS)}
-              className="ml-auto inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-lime-deep underline-offset-4 hover:underline"
-            >
-              <X className="h-4 w-4" aria-hidden />
-              {t.clearFilters}
-            </button>
-          )}
+                {f ? t.filterLabels[f] : t.all}
+                {count !== undefined && ` · ${count}`}
+              </button>
+            );
+          })}
         </div>
+        {!narrow && scope}
+      </div>
+
+      <div
+        role="group"
+        aria-label={t.filterBar}
+        className="order-first flex flex-wrap items-center gap-2 md:order-none md:rounded-[14px] md:border md:border-panel-line md:bg-white md:p-3"
+      >
+        <label className="flex h-11 min-w-0 flex-1 basis-[160px] items-center gap-2 rounded-[10px] border border-panel-line bg-white px-3 sm:max-w-[300px] md:border-0 md:bg-panel-2">
+          <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <span className="sr-only">{t.search}</span>
+          <input
+            type="search"
+            value={filters.q}
+            onChange={(e) => setFilter("q", e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+        </label>
+        {narrow && (
+          <button
+            type="button"
+            data-testid="prospects-filters-toggle"
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((o) => !o)}
+            className={cn(
+              "inline-flex h-11 items-center gap-1.5 rounded-[10px] border px-3 text-sm font-semibold",
+              activeFilters > 0
+                ? "border-lime-deep bg-[#F1F8E6] text-lime-deep"
+                : "border-panel-line bg-white",
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" aria-hidden />
+            {t.filtersButton(activeFilters)}
+          </button>
+        )}
+        {(!narrow || filtersOpen) && (
+          <div
+            className={cn(
+              narrow ? "grid w-full grid-cols-2 gap-2" : "contents",
+            )}
+          >
+            {narrow && scope}
+        <FilterSelect
+          label={t.filterEmail}
+          value={filters.email}
+          onChange={(v) => setFilter("email", v as ProspectFilters["email"])}
+        >
+          {(
+            Object.keys(
+              t.filterEmailOptions,
+            ) as (keyof typeof t.filterEmailOptions)[]
+          ).map((k) => (
+            <option key={k} value={k}>
+              {t.filterEmailOptions[k]}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.filterLanguage}
+          value={filters.language}
+          onChange={(v) => setFilter("language", v)}
+        >
+          <option value="">{t.filterLanguageAll}</option>
+          {languages.map((l) => (
+            <option key={l} value={l}>
+              {t.languages[l]}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.filterTool}
+          value={filters.tool}
+          onChange={(v) => setFilter("tool", v)}
+        >
+          <option value="">{t.filterToolAll}</option>
+          <option value="none">{t.filterToolNone}</option>
+          <option value="unknown">{t.filterToolUnknown}</option>
+          {tools.map((o) => (
+            <option key={o.value} value={o.value}>
+              {`${o.value} (${o.count})`}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.filterDemo}
+          value={filters.demo}
+          onChange={(v) => setFilter("demo", v as ProspectFilters["demo"])}
+        >
+          {(
+            Object.keys(
+              t.filterDemoOptions,
+            ) as (keyof typeof t.filterDemoOptions)[]
+          ).map((k) => (
+            <option key={k} value={k}>
+              {t.filterDemoOptions[k]}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.filterOrigin}
+          value={filters.origin}
+          onChange={(v) => setFilter("origin", v as ProspectFilters["origin"])}
+        >
+          {(
+            Object.keys(
+              t.filterOriginOptions,
+            ) as (keyof typeof t.filterOriginOptions)[]
+          ).map((k) => (
+            <option key={k} value={k}>
+              {k === "new" && newCount
+                ? `${t.filterOriginOptions[k]} · ${newCount}`
+                : t.filterOriginOptions[k]}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.filterLastMail}
+          value={filters.lastMail}
+          onChange={(v) =>
+            setFilter("lastMail", v as ProspectFilters["lastMail"])
+          }
+        >
+          {(
+            Object.keys(
+              t.filterLastMailOptions,
+            ) as (keyof typeof t.filterLastMailOptions)[]
+          ).map((k) => (
+            <option key={k} value={k}>
+              {t.filterLastMailOptions[k]}
+            </option>
+          ))}
+        </FilterSelect>
+          </div>
+        )}
+        {filtered && (
+          <button
+            type="button"
+            onClick={() => setFilters(NO_FILTERS)}
+            className="ml-auto inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-lime-deep underline-offset-4 hover:underline"
+          >
+            <X className="h-4 w-4" aria-hidden />
+            {t.clearFilters}
+          </button>
+        )}
+      </div>
       </div>
 
       {filtered && list.data && (
@@ -1152,15 +1144,9 @@ export default function ProspectingPage() {
                         className="flex min-h-11 min-w-0 items-center gap-1.5 px-2 text-left text-xs font-bold uppercase tracking-[0.06em] text-lime-deep"
                       >
                         {open ? (
-                          <ChevronDown
-                            className="h-4 w-4 shrink-0"
-                            aria-hidden
-                          />
+                          <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
                         ) : (
-                          <ChevronRight
-                            className="h-4 w-4 shrink-0"
-                            aria-hidden
-                          />
+                          <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
                         )}
                         <span className="truncate">
                           {t.regionBlock(group.label, group.prospects.length)}
@@ -1336,9 +1322,7 @@ export default function ProspectingPage() {
                                     className="block text-xs font-semibold text-lime-deep"
                                     data-testid="prospect-sms-sent"
                                   >
-                                    {t.smsSent(
-                                      dayMonth.format(new Date(p.lastSmsAt)),
-                                    )}
+                                    {t.smsSent(dayMonth.format(new Date(p.lastSmsAt)))}
                                   </span>
                                 )}
                                 {p.website && (
@@ -1592,9 +1576,7 @@ function SendSheet({
         data-testid="prospects-send-sheet"
         onClick={(e) => e.stopPropagation()}
         className="max-h-[88vh] w-full overflow-y-auto rounded-t-[18px] bg-panel-2 px-2.5 pt-1.5"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-        }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
       >
         <div className="flex items-center justify-between">
           <span
@@ -1718,9 +1700,7 @@ function ProspectCard({
           )}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {p.phone && (
-              <span className="font-mono text-xs text-[#4B5563]">
-                {p.phone}
-              </span>
+              <span className="font-mono text-xs text-[#4B5563]">{p.phone}</span>
             )}
             {next && next !== t.next.none && (
               <span className="font-mono text-xs text-[#4B5563]">{next}</span>
@@ -2015,25 +1995,12 @@ function StatusNote({ prospect }: { prospect: Prospect }) {
         className="h-9 w-full rounded-md border border-input bg-white px-2 text-sm"
         data-testid={`prospect-note-input-${prospect.id}`}
       />
-      {tooLong && (
-        <span className="text-xs text-destructive">{t.noteTooLong}</span>
-      )}
+      {tooLong && <span className="text-xs text-destructive">{t.noteTooLong}</span>}
       <span className="flex gap-1">
-        <Button
-          type="submit"
-          size="sm"
-          className="h-8"
-          disabled={save.isPending || tooLong}
-        >
+        <Button type="submit" size="sm" className="h-8" disabled={save.isPending || tooLong}>
           {t.noteSave}
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8"
-          onClick={() => setEditing(false)}
-        >
+        <Button type="button" size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)}>
           {t.noteCancel}
         </Button>
       </span>
