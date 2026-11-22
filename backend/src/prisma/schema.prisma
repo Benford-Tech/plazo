@@ -103,6 +103,7 @@ model Operator {
   whatsappMessages      WhatsappMessage[]
   whatsappConversations WhatsappConversation[]
   whatsappNumber        OperatorWhatsappNumber?
+  site                  OperatorSite?
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
@@ -2507,6 +2508,25 @@ model WhatsappInboxMessage {
 /// nom affiché est toujours Plazo »): a parking's own WhatsApp number, added by the platform to Benford Tech's WhatsApp
 /// Business account (display name « Plazo », Meta bills Benford Tech). Travellers' messages leave from it once `status`
 /// is `active`; until then, and when it is paused, Plazo's number as before. Replies to it go to this parking only.
+/// 22/11/2026 (« pouvoir créer un site dédié au parking », « le plus modulaire possible », « le site est en supplément »):
+/// the parking's own site, plazo.fr/s/<slug> (the slug and the colour are the booking page's), made of blocks the manager
+/// orders, switches and titles. A paid extra: asked by the manager, switched on by the platform.
+model OperatorSite {
+  id               String    @id @default(cuid())
+  operatorId       String    @unique
+  /// [{ id, kind, enabled, title, text }] in the order shown (domain/operator-site.ts); null: the default blocks.
+  blocks           Json?
+  addonRequestedAt DateTime?
+  addonAt          DateTime?
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_sites")
+}
+
 model OperatorWhatsappNumber {
   id            String    @id @default(cuid())
   operatorId    String    @unique

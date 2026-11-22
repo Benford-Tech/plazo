@@ -386,7 +386,7 @@ export class PlatformService {
    */
   public async overview() {
     const since = monthStart();
-    const [{ operators, counts, defaultCommissionBps }, failed, commission, whatsappRequested] = await Promise.all([
+    const [{ operators, counts, defaultCommissionBps }, failed, commission, whatsappRequested, siteRequested] = await Promise.all([
       this.operators(),
       prisma.reservation.groupBy({ by: ['operatorId'], where: { payoutStatus: 'failed' }, _count: { _all: true } }),
       prisma.reservation.groupBy({
@@ -396,6 +396,7 @@ export class PlatformService {
         _count: { _all: true },
       }),
       prisma.operatorWhatsappNumber.findMany({ where: { status: 'requested' }, select: { operatorId: true } }),
+      prisma.operatorSite.findMany({ where: { addonRequestedAt: { not: null }, addonAt: null }, select: { operatorId: true } }),
     ]);
     const signedTerms = new Set(
       (
@@ -428,6 +429,7 @@ export class PlatformService {
         operators.map(o => ({ ...o, agreementsSigned: signedTerms.has(o.id) })),
         new Map(failed.map(f => [f.operatorId, f._count._all])),
         new Set(whatsappRequested.map(w => w.operatorId)),
+        new Set(siteRequested.map(w => w.operatorId)),
       ),
       operatorsList: operators,
     };
