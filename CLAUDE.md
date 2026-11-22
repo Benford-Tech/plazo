@@ -527,6 +527,45 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      suit sa hauteur. Tests `payments.test.ts` (« Ma page de réservation »), `booking-page-actions.test.ts`, `BookingPageCard.test.tsx`.
      Pas encore : le canal affiché « Site du parking » sur la fiche et dans les chiffres (la réservation reste « Plazo », commission 0),
      les sièges auto, les services et le vol aller dans le module, Plazo Pro.
+   - **Site dédié du parking, en blocs, étape 1 (22/11/2026, « pouvoir créer une site dédié au parking », « le plus modulaire
+     possible », « le site est en supplément », maquettes https://claude.ai/artifact/96WZPaPofiyzbePTDDzpxD)** : chaque parking a son
+     site `plazo.fr/s/<slug>` (l'adresse et la couleur sont celles de sa page de réservation, `Operator.bookingPageSlug/Accent`),
+     fait de blocs que le gérant range, allume, éteint et retitre : blocs « Plazo » remplis seuls (`booking` toujours affiché,
+     `highlights`, `steps`, `pricing`, `photos`, `access`, `services`, `conditions`, `faq`, `contact`) et blocs libres `text` (6 au
+     plus, 1 200 caractères) ; `domain/operator-site.ts` (`PLAZO_BLOCK_KINDS`, `readBlocks`, `blocksOf` : un genre ajouté plus tard
+     revient éteint en fin de liste, `sitePreviewKey`), table `operator_sites` (migration `operator_site` : `blocks` JSON,
+     `addonRequestedAt`, `addonAt`, `publishedAt`, CHECK en ligne ⇒ option). **Option payante** : `SITE_ADDON_PRICE_CENTS` 29 € HT
+     par mois (à confirmer par Joanny), demandée par le gérant, activée par la plateforme ; rien n'est facturé en ligne.
+     `OperatorSiteService` : `GET|PUT /internal/site` (`parking:manage`, PUT `RefuseInDemo` ; 400 `blocks` invalid · invalid_kind ·
+     duplicate · booking_required · text_required · text_too_long · too_many_texts, `slug` invalid · reserved · taken, `published`
+     addon_required · listing_offline ; publier ouvre aussi la page de réservation, dont le bloc « Réserver » se sert : payé en
+     ligne, reversé en entier), `POST /internal/site/request` (ligne « À traiter » `site_requested` de la plateforme),
+     `GET|PUT /internal/platform/operators/:id/site` `{ active }` (éteindre retire le site, les blocs restent),
+     `GET /public/sites/:slug` (404 hors ligne, sauf avec `?apercu=<clé>` du gérant). Site : page `/s/[slug]`
+     (`components/parking-site/` : `ParkingSite`, un composant par bloc dans `blocks.tsx`, registre `BLOCKS` ; menu tiré des blocs,
+     en-tête et pied de page propres au parking, « Réservation par Plazo » au pied ; `BookingPageModule embedded` ; indexée, sauf
+     aperçu et démo ; textes `parkingSite` dans les neuf langues). Espace pro : Gérant › Sur Plazo › « Mon site » (`/plazo/site`,
+     `SitePage` : blocs avec ↑ ↓, interrupteur, titre, « + Ajouter un texte », adresse, couleur, « Voir l'aperçu », encart de
+     l'option, « Mettre mon site en ligne ») ; Plateforme › loueur : `OperatorSiteCard`. Tests `operator-site.test.ts`,
+     `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : variantes de présentation par bloc, blocs image / bouton / annonce,
+     plusieurs pages, logo du parking, `nom.plazo.fr` ou le nom de domaine du parking, paiement de l'option par Stripe, Plazo Pro.
+   - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : avec l'option, le gérant tape son
+     nom de domaine dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son
+     fournisseur (`domain/site-domain.ts` : `readDomain` (jamais plazo.fr, vercel.app ni une adresse IP), `dnsRecordFor` : CNAME
+     `www` → `cname.vercel-dns.com`, ou A `@` → `76.76.21.21` pour un nom nu ; `dnsState`), relit ses DNS (`SiteDomainHostService.dns`,
+     à « Vérifier » et à chaque lecture de la page, une fois par minute au plus) et suit l'état : `dns_missing` · `dns_wrong` ·
+     `not_attached` · `host_error` · actif. `OperatorSite.domain` (unique) / `domainSetAt` / `domainActiveAt` / `domainCheckedAt` /
+     `domainIssue` (migration `operator_site_domain`). **Branchement chez l'hébergeur** : avec `VERCEL_DOMAINS_TOKEN` (et
+     `VERCEL_DOMAINS_PROJECT`, `VERCEL_DOMAINS_TEAM`, sinon `VERCEL_PROJECT_ID` / `VERCEL_TEAM_ID`), Plazo ajoute le nom au projet
+     Vercel et l'active seul (`attach`, `detach`) ; sans jeton, ligne « À traiter » `site_domain` et la plateforme l'ajoute à la
+     main puis « Marquer comme branché » (`PUT /internal/platform/operators/:id/site/domain { active }`). Routes :
+     `PUT /internal/site/domain { domain }` (nul = retiré ; 400 `domain` invalid · taken · addon_required), `POST …/domain/check`,
+     `GET /public/site-domains/:host` → `{ slug }` (404 tant que le site n'est pas en ligne et le nom actif). Site : `proxy.ts`
+     reconnaît un hôte étranger (`lib/parking-site-host.ts`, réponse gardée une minute) : sa racine sert `/s/<slug>` dans la langue
+     demandée, toute autre page part en 308 vers plazo.fr ; `plazo.fr/s/<slug>` renvoie vers le nom de domaine, qui devient
+     l'adresse canonique. Éteindre l'option ou retirer le nom ferme l'hôte. Tests `operator-site.test.ts`,
+     `parking-site-host.test.ts`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore essayé avec un vrai nom de domaine ; l'offre
+     Hobby de Vercel limite le nombre de domaines par projet ; `robots.txt` et le plan du site sur le nom du parking restent ceux de Plazo.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet

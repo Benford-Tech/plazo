@@ -1088,6 +1088,8 @@ export interface PlatformTodo {
   kind:
     | "listing_review"
     | "whatsapp_requested"
+    | "site_requested"
+    | "site_domain"
     | "stripe_missing"
     | "contract_missing"
     | "contract_pending"
@@ -3322,6 +3324,52 @@ export interface ReservationConversation {
 
 /** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */
 /** « Ma page de réservation » (Site du parking, niveau 3, 19/11/2026). */
+/** 22/11/2026: « Mon site », the parking's own site made of blocks (GET|PUT /internal/site). */
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export interface SiteBlock {
+  id: string;
+  kind: SiteBlockKind;
+  enabled: boolean;
+  title: string | null;
+  text: string | null;
+}
+export interface SiteAddon {
+  active: boolean;
+  requestedAt: string | null;
+  priceCents: number;
+}
+/** 22/11/2026: the parking's own domain name for its site. */
+export interface SiteDomain {
+  name: string;
+  record: { type: "CNAME" | "A"; name: string; value: string };
+  active: boolean;
+  /** Why it is not active yet: dns_missing · dns_wrong · not_attached · host_error. */
+  issue: string | null;
+  checkedAt: string | null;
+  /** Plazo attaches the name by itself; otherwise its team does it by hand. */
+  automatic: boolean;
+}
+export interface SiteSettings {
+  slug: string;
+  saved: boolean;
+  accent: string;
+  blocks: SiteBlock[];
+  published: boolean;
+  listingOnline: boolean;
+  listingTitle: string | null;
+  url: string | null;
+  previewUrl: string | null;
+  addon: SiteAddon;
+  domain: SiteDomain | null;
+}
+/** Plateforme › loueur: the extra's state. */
+export interface PlatformSite {
+  addon: SiteAddon;
+  published: boolean;
+  url: string | null;
+  domain: SiteDomain | null;
+}
+
 export interface BookingPageSettings {
   enabled: boolean;
   slug: string;

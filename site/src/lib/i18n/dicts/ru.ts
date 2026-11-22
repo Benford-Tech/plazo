@@ -1242,6 +1242,16 @@ export const ru: Dict = {
     yourDetails: "Ваши данные",
     nightFee: "Ночная доплата",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Предпросмотр: сайт ещё не опубликован.",
+    photos: "Фото",
+    contact: "Связаться с нами",
+    goodToKnow: "Полезно знать",
+    bookingClosed: "Онлайн-бронирование откроется после публикации сайта.",
+    notFound: "Этот сайт не опубликован.",
+    call: "Позвонить",
+  },
   errors: {
     required: "Обязательное поле.",
     too_long: "Слишком длинный текст.",

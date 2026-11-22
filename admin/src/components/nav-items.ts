@@ -127,6 +127,7 @@ export const NAV: NavItem[] = [
       { label: sub.listing, to: "/plazo/fiche" },
       { label: sub.pricing, to: "/plazo/tarifs" },
       { label: sub.flyer, to: "/plazo/flyer" },
+      { label: sub.site, to: "/plazo/site" },
     ],
   },
   { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage", section: "manager" },

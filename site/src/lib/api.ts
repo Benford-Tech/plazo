@@ -7,6 +7,7 @@ import type {
   BookingAccess,
   BookingInput,
   BookingPageInfo,
+  ParkingSiteInfo,
   CheckoutResult,
   CreatedBooking,
   ParkingResponse,
@@ -236,6 +237,11 @@ export const api = {
 
   /** Site du parking, niveau 3 (19/11/2026): what a parking's own booking page opens. */
   bookingPage: cache((slug: string) => apiRequest<BookingPageInfo>(`/api/public/booking-pages/${seg(slug)}`)),
+
+  /** 22/11/2026: a parking's own site (its blocks); `preview` is the manager's key while it is offline. */
+  parkingSite: cache((slug: string, preview?: string | null) =>
+    apiRequest<ParkingSiteInfo>(`/api/public/sites/${seg(slug)}${query({ apercu: preview })}`),
+  ),
 
   createBooking: (input: BookingInput) =>
     apiRequest<CreatedBooking>("/api/public/bookings", {

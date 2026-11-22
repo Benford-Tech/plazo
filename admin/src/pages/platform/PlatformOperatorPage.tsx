@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { toast } from "sonner";
 import { OperatorAgreementsCard } from "@/components/platform/OperatorAgreementsCard";
+import { OperatorSiteCard } from "@/components/platform/OperatorSiteCard";
 import {
   OperatorContractPanel,
   ContractPill,
@@ -275,6 +276,7 @@ export default function PlatformOperatorPage() {
               <CommissionCell operator={o} defaultBps={defaultBps} />
             </Tile>
           </section>
+          <OperatorSiteCard operatorId={o.id} />
 
           <div className="flex flex-wrap gap-4">
             <section
