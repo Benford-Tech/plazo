@@ -265,6 +265,8 @@ export interface ParkingSiteInfo extends BookingPageInfo {
   bookable: boolean;
   /** Opened with the manager's key while the site is offline. */
   preview: boolean;
+  /** The parking's own host once it serves the site (missing from an older API). */
+  domain?: string | null;
 }
 
 export interface PublicBooking {

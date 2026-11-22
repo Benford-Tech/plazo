@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { ParkingSite } from "@/components/parking-site/ParkingSite";
 import { api, ApiError } from "@/lib/api";
@@ -43,15 +44,16 @@ export async function generateMetadata({ params, searchParams }: { params: Param
   const { site, data } = loaded;
   const title = fr.meta.parkingTitle(data.parking.title, data.airport.name);
   const description = parkingMetaDescription(data);
-  const path = `/s/${site.slug}`;
+  // On its own domain the site's one address is that domain; plazo.fr/s/<slug> otherwise.
+  const path = site.domain ? `https://${site.domain}/` : lp(`/s/${site.slug}`);
   return {
     // The parking's own name, without Plazo's after it.
     title: { absolute: title },
     description,
-    alternates: { canonical: lp(path) },
+    alternates: { canonical: path },
     // A preview and a demo parking are never offered to search engines.
     ...(site.preview || data.parking.isDemo ? { robots: { index: false, follow: false } } : {}),
-    openGraph: openGraph({ title, description, url: lp(path), ...(data.parking.photos[0] ? { images: [data.parking.photos[0]] } : {}) }),
+    openGraph: openGraph({ title, description, url: path, ...(data.parking.photos[0] ? { images: [data.parking.photos[0]] } : {}) }),
   };
 }
 
@@ -61,6 +63,11 @@ export default async function ParkingSitePage({ params, searchParams }: { params
   const loaded = await load(slug, await previewOf(searchParams));
   if (!loaded) notFound();
   const { site, data } = loaded;
+  // The parking's own domain is the site's address: plazo.fr/s/<slug> sends there (one address for search engines).
+  if (site.domain && !site.preview) {
+    const host = ((await headers()).get("host") ?? "").toLowerCase().replace(/:\d+$/, "");
+    if (host && host !== site.domain) redirect(`https://${site.domain}/`);
+  }
   return (
     <>
       {!site.preview && !data.parking.isDemo && <JsonLd data={[parkingLd(siteUrl(), data, parkingMetaDescription(data)), faqLd(parkingFaq(data))]} />}

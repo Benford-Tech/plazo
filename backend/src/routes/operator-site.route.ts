@@ -29,6 +29,14 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *   put:
  *     tags: [Site du parking]
  *     summary: Switch the extra on or off (platform)
+ * /internal/site/domain:
+ *   put:
+ *     tags: [Site du parking]
+ *     summary: Set or remove the parking's own domain name (400 domain invalid · taken · addon_required)
+ * /public/site-domains/{host}:
+ *   get:
+ *     tags: [Site du parking]
+ *     summary: The site a parking's own host opens (404 unless online and the name active)
  * /public/sites/{slug}:
  *   get:
  *     tags: [Site du parking]
@@ -44,6 +52,10 @@ export class OperatorSiteRoute implements Routes {
     this.router.post('/internal/site/request', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.request);
     this.router.get('/internal/platform/operators/:id/site', PlatformAdminMiddleware(), this.controller.platformView);
     this.router.put('/internal/platform/operators/:id/site', PlatformAdminMiddleware(), this.controller.setAddon);
+    this.router.put('/internal/site/domain', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.setDomain);
+    this.router.post('/internal/site/domain/check', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.checkDomain);
+    this.router.put('/internal/platform/operators/:id/site/domain', PlatformAdminMiddleware(), this.controller.setDomainActive);
     this.router.get('/public/sites/:slug', this.controller.publicSite);
+    this.router.get('/public/site-domains/:host', this.controller.byDomain);
   }
 }

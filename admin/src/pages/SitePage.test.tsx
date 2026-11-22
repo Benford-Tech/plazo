@@ -9,7 +9,7 @@ import SitePage from "./SitePage";
 
 const auth = vi.hoisted(() => ({ user: { demo: null as unknown } }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
-const api = vi.hoisted(() => ({ getSite: vi.fn(), updateSite: vi.fn(), requestSite: vi.fn() }));
+const api = vi.hoisted(() => ({ getSite: vi.fn(), updateSite: vi.fn(), requestSite: vi.fn(), setSiteDomain: vi.fn(), checkSiteDomain: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
@@ -29,6 +29,7 @@ const settings = (over: Partial<SiteSettings> = {}): SiteSettings => ({
   url: "https://www.plazo.example/s/parking-des-cedres",
   previewUrl: "https://www.plazo.example/s/parking-des-cedres?apercu=abc",
   addon: { active: false, requestedAt: null, priceCents: 2900 },
+  domain: null,
   ...over,
 });
 
@@ -109,5 +110,41 @@ describe("Mon site", () => {
     expect(api.updateSite).toHaveBeenCalledWith({ published: true });
     expect(await screen.findByRole("link", { name: "Ouvrir mon site" })).toHaveAttribute("href", "https://www.plazo.example/s/parking-des-cedres");
     expect(screen.getByTestId("site-state")).toHaveTextContent("En ligne");
+  });
+
+  it("nom de domaine : avec l'option, le gérant le pose, lit l'enregistrement à créer et suit son état", async () => {
+    const user = userEvent.setup();
+    const active = { active: true, requestedAt: null, priceCents: 2900 };
+    const domain = {
+      name: "www.parking-des-cedres.fr",
+      record: { type: "CNAME" as const, name: "www", value: "cname.vercel-dns.com" },
+      active: false,
+      issue: "dns_missing",
+      checkedAt: "2026-11-22T15:00:00Z",
+      automatic: false,
+    };
+    api.getSite.mockResolvedValue({ data: settings({ addon: active }) });
+    api.setSiteDomain.mockResolvedValue({ data: settings({ addon: active, domain }) });
+    api.checkSiteDomain.mockResolvedValue({ data: settings({ addon: active, domain: { ...domain, issue: "not_attached" } }) });
+    renderPage();
+    const section = await screen.findByTestId("site-domain");
+    await user.type(within(section).getByLabelText("Nom de domaine"), "www.parking-des-cedres.fr");
+    await user.click(within(section).getByRole("button", { name: "Utiliser ce nom de domaine" }));
+    expect(api.setSiteDomain).toHaveBeenCalledWith("www.parking-des-cedres.fr");
+    expect(await within(section).findByTestId("site-domain-state")).toHaveTextContent("En attente de l'enregistrement");
+    expect(section).toHaveTextContent("CNAME");
+    expect(section).toHaveTextContent("cname.vercel-dns.com");
+
+    await user.click(within(section).getByRole("button", { name: "Vérifier" }));
+    expect(await within(section).findByText(/L'équipe Plazo termine le branchement/)).toBeInTheDocument();
+    expect(within(section).getByTestId("site-domain-state")).toHaveTextContent("Enregistrement en place");
+  });
+
+  it("nom de domaine : sans l'option, pas de champ", async () => {
+    api.getSite.mockResolvedValue({ data: settings() });
+    renderPage();
+    const section = await screen.findByTestId("site-domain");
+    expect(within(section).queryByLabelText("Nom de domaine")).toBeNull();
+    expect(section).toHaveTextContent("Le nom de domaine fait partie de l'option.");
   });
 });
