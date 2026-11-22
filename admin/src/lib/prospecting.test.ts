@@ -3,6 +3,7 @@ import {
   groupByRegion,
   nextSort,
   NO_FILTERS,
+  notOpenYet,
   parseCsvCells,
   readProspectsCsv,
   renderSubjectText,
@@ -175,6 +176,24 @@ describe("filtres et tri des prospects (16/11/2026)", () => {
     }),
   ];
   const ids = (list: Prospect[]) => list.map((x) => x.id);
+
+  it("origine : nouveaux parkings, BODACC, annuaire, fichier, à la main ; pas encore ouvert (22/11/2026)", () => {
+    const list = [
+      ...rows,
+      p({ id: "d", origin: "bodacc", opensOn: "2026-12-01", source: "csv" }),
+      p({ id: "e", origin: "directory", source: "csv" }),
+      p({ id: "f", source: "manual" }),
+    ];
+    const by = (origin: typeof NO_FILTERS.origin) =>
+      ids(filterProspects(list, { ...NO_FILTERS, origin }, now));
+    expect(by("new")).toEqual(["d", "e"]);
+    expect(by("bodacc")).toEqual(["d"]);
+    expect(by("directory")).toEqual(["e"]);
+    expect(by("manual")).toEqual(["f"]);
+    expect(notOpenYet({ opensOn: "2026-12-01" }, "2026-11-22")).toBe(true);
+    expect(notOpenYet({ opensOn: "2026-11-01" }, "2026-11-22")).toBe(false);
+    expect(notOpenYet({ opensOn: null }, "2026-11-22")).toBe(false);
+  });
 
   it("recherche sans accents, e-mail, langue, outil, démo, dernier mail", () => {
     expect(

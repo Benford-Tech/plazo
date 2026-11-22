@@ -53,6 +53,7 @@ AIRPORT_POINTS = {
 }
 
 # Same activity code, never an airport car park.
+ISO_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 NOT_PARKING = re.compile(
     r"depann|remorqu|assistance|convoy|fourriere|sncf|reseau ferre|gares? &|autoroute|aprr|area\b|sanef|vinci autoroutes|"
     r"escota|mobilites|transports? en commun|keolis|transdev|tcl\b|sytral|port autonome|chambre de commerce|"
@@ -136,6 +137,7 @@ def found_around(code, point, since):
                     "name": name.title() if name.isupper() else name, "town": (place.get("libelle_commune") or "").title(),
                     "created": created, "siret": siret, "km": km, "address": place.get("adresse") or "",
                     "parking": bool(PARKING_WORDS.search(words)), "first": first, "last": last, "airport": code,
+                    "origin": "directory", "opens": "",
                     "where": f"{code} · {km:.1f} km", "key": company.get("siren") or siret,
                     "note": f"Créé le {french_date(created)} · SIRET {siret} · {place.get('adresse') or ''} · annuaire des "
                             f"entreprises (52.21Z){'' if PARKING_WORDS.search(words) else ' · activité à vérifier'}",
@@ -241,7 +243,7 @@ def bodacc_entry(record, code):
         "name": name.title() if name.isupper() else name, "town": (address.get("ville") or record.get("ville") or "").title(),
         "created": published, "parking": True, "first": first, "last": last, "airport": code,
         "where": f"{code} · dép. {record.get('numerodepartement') or '?'}", "key": siren,
-        "note": note[:1000], "upcoming": bool(upcoming),
+        "note": note[:1000], "upcoming": bool(upcoming), "origin": "bodacc", "opens": start,
     }
 
 
@@ -300,13 +302,20 @@ def main():
         return
     rows = []
     for f in found:
-        row = {"companyName": f["name"][:120], "town": f["town"], "airportCode": f["airport"], "notes": f["note"]}
+        row = {"companyName": f["name"][:120], "town": f["town"], "airportCode": f["airport"], "notes": f["note"],
+               # The marker of Plateforme › Prospection (22/11/2026): where it was found and its dates.
+               "origin": f["origin"]}
+        for key, day in (("foundOn", f["created"]), ("opensOn", f["opens"])):
+            if day and ISO_DAY.match(day[:10]):
+                row[key] = day[:10]
         if f["first"] and f["last"]:
             row["contactFirstName"], row["contactLastName"] = f["first"][:60], f["last"][:60]
         rows.append(row)
     try:
         api.login()
-        answer = api.call("POST", "/internal/platform/prospects/import", {"rows": rows[: api.MAX_ROWS], "dryRun": not APPLY})
+        answer = api.call("POST", "/internal/platform/prospects/import", {"rows": rows[: api.MAX_ROWS], "dryRun": not APPLY,
+                                                                        # A prospect already listed gets its marker.
+                                                                        "complete": True})
         api.report(rows, answer)
     finally:
         api.logout()

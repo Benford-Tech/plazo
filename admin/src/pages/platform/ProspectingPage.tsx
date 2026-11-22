@@ -45,6 +45,7 @@ import {
   toolOptions,
   valuesOf,
   VARIABLES,
+  notOpenYet,
 } from "@/lib/prospecting";
 import type {
   DemoLink,
@@ -673,6 +674,7 @@ export default function ProspectingPage() {
     [all, filters, sort],
   );
   const tools = useMemo(() => toolOptions(all), [all]);
+  const newCount = useMemo(() => all.filter((p) => p.origin).length, [all]);
   const languages = useMemo(
     () => [...new Set(all.map((p) => p.language))].sort(),
     [all],
@@ -680,7 +682,7 @@ export default function ProspectingPage() {
   const filtered = hasFilters(filters);
   // On a phone the airport and the region are behind « Filtres » too, and count with the others.
   const activeFilters =
-    (["email", "language", "tool", "demo", "lastMail"] as const).filter(
+    (["email", "language", "tool", "demo", "lastMail", "origin"] as const).filter(
       (k) => filters[k] !== NO_FILTERS[k],
     ).length + (narrow ? Number(!!airport) + Number(!!region) : 0);
   const toSendPanel = () => {
@@ -1010,6 +1012,23 @@ export default function ProspectingPage() {
           ))}
         </FilterSelect>
         <FilterSelect
+          label={t.filterOrigin}
+          value={filters.origin}
+          onChange={(v) => setFilter("origin", v as ProspectFilters["origin"])}
+        >
+          {(
+            Object.keys(
+              t.filterOriginOptions,
+            ) as (keyof typeof t.filterOriginOptions)[]
+          ).map((k) => (
+            <option key={k} value={k}>
+              {k === "new" && newCount
+                ? `${t.filterOriginOptions[k]} · ${newCount}`
+                : t.filterOriginOptions[k]}
+            </option>
+          ))}
+        </FilterSelect>
+        <FilterSelect
           label={t.filterLastMail}
           value={filters.lastMail}
           onChange={(v) =>
@@ -1275,6 +1294,7 @@ export default function ProspectingPage() {
                                     {p.town}
                                   </span>
                                 )}
+                                <OriginBadges prospect={p} />
                               </td>
                               <td className="max-w-[220px] px-2 py-2">
                                 <span className="block">
@@ -1645,6 +1665,7 @@ function ProspectCard({
               {state.text}
             </span>
           </span>
+          <OriginBadges prospect={p} short />
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="min-w-0 flex-1 truncate">{reach.join(" · ")}</span>
             {p.language !== "fr" && (
@@ -1737,6 +1758,48 @@ function ProspectCard({
 }
 
 /** 15/11/2026: the software seen at the parking, its detail beneath (whole text in the tooltip). */
+/**
+ * 22/11/2026 (« mets des marqueurs sur l'interface pour les retrouver », choix A): a parking found by the « Nouveaux
+ * parkings » workflow, and an amber « Pas encore ouvert » while its declared start of activity is still to come.
+ */
+function OriginBadges({
+  prospect,
+  short = false,
+}: {
+  prospect: Prospect;
+  short?: boolean;
+}) {
+  const origin = prospect.origin;
+  const later = notOpenYet(prospect);
+  if (!origin && !later) return null;
+  const day = (iso: string) => dayMonth.format(new Date(`${iso}T12:00:00`));
+  return (
+    <span className="mt-1 flex flex-wrap gap-1" data-testid="prospect-origin">
+      {origin && (
+        <span
+          title={t.originTitle(
+            t.originShort[origin],
+            prospect.foundOn ? day(prospect.foundOn) : null,
+          )}
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+            origin === "bodacc"
+              ? "bg-info-soft text-info-text"
+              : "bg-ok-soft text-ok-text",
+          )}
+        >
+          {short ? t.originShort[origin] : t.originBadge[origin]}
+        </span>
+      )}
+      {later && prospect.opensOn && (
+        <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-warn-text">
+          {short ? t.notOpenYetShort : t.notOpenYet(day(prospect.opensOn))}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function ToolCell({ prospect }: { prospect: Prospect }) {
   if (!prospect.tool && !prospect.toolDetail)
     return <span className="text-muted-foreground">—</span>;

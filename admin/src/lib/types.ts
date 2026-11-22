@@ -2098,6 +2098,11 @@ export interface Prospect {
   /** 17/11/2026: why it was marked (« rappeler en janvier »). */
   statusNote?: string | null;
   source: "manual" | "csv";
+  /** 22/11/2026: found by the « Nouveaux parkings » workflow (BODACC or annuaire des entreprises), its creation or
+   * announcement day and its declared start of activity (« AAAA-MM-JJ »). */
+  origin?: "bodacc" | "directory" | null;
+  foundOn?: string | null;
+  opensOn?: string | null;
   status: ProspectStatus;
   /** Last step sent (0: none). */
   step: number;

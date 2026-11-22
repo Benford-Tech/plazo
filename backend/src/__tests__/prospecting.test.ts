@@ -198,6 +198,31 @@ describe('Plateforme › Prospection : compléter les prospects déjà présents
   });
 });
 
+describe('Plateforme › Prospection : marqueur des nouveaux parkings (22/11/2026)', () => {
+  it("l'import porte l'origine et les dates ; « complete » marque un prospect déjà présent ; valeurs refusées", async () => {
+    await api().post(P).set(auth(admin.token)).send({ companyName: 'Safe Park', email: '', airportCode: 'LYS' });
+    const rows = [
+      { companyName: 'Safe Park', airportCode: 'LYS', origin: 'bodacc', foundOn: '2026-11-14', opensOn: '2026-12-01' },
+      { companyName: 'LM park', airportCode: 'ORY', origin: 'directory', foundOn: '2026-10-03' },
+    ];
+    const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, complete: true });
+    expect(done.body).toMatchObject({ created: 1, updated: 1 });
+    expect(done.body.results[0].completed).toEqual(['foundOn', 'opensOn', 'origin']);
+    const list = await api().get(P).set(auth(admin.token));
+    expect(list.body.data.find((p: any) => p.companyName === 'Safe Park')).toMatchObject({
+      origin: 'bodacc',
+      foundOn: '2026-11-14',
+      opensOn: '2026-12-01',
+    });
+    expect(list.body.data.find((p: any) => p.companyName === 'LM park')).toMatchObject({ origin: 'directory', opensOn: null });
+    const bad = await api()
+      .post(`${P}/import`)
+      .set(auth(admin.token))
+      .send({ rows: [{ companyName: 'X', origin: 'google', foundOn: '14/11/2026' }], dryRun: true });
+    expect(bad.body.results[0].fields).toEqual({ origin: 'invalid', foundOn: 'invalid' });
+  });
+});
+
 describe('Plateforme › Prospection : classement par région (19/10/2026)', () => {
   it('région de l’aéroport ou choisie à la main ; filtre, comptages des pilules et des régions', async () => {
     const lyon = await create(1, { airportCode: 'LYS' });

@@ -322,6 +322,8 @@ export interface ProspectFilters {
   demo: "" | "opened" | "not_opened" | "none";
   /** "" all, "never" never emailed, "7d" / "30d" emailed in the last 7 / 30 days, "older" more than 30 days ago. */
   lastMail: "" | "never" | "7d" | "30d" | "older";
+  /** 22/11/2026: "new" BODACC or annuaire, one of them, "csv" a file, "manual" typed by hand. */
+  origin: "" | "new" | "bodacc" | "directory" | "csv" | "manual";
 }
 
 export const NO_FILTERS: ProspectFilters = {
@@ -331,7 +333,14 @@ export const NO_FILTERS: ProspectFilters = {
   tool: "",
   demo: "",
   lastMail: "",
+  origin: "",
 };
+
+/** 22/11/2026: a declared start of activity still to come (« Pas encore ouvert »). */
+export const notOpenYet = (
+  p: Pick<Prospect, "opensOn">,
+  today: string = new Date().toISOString().slice(0, 10),
+) => !!p.opensOn && p.opensOn > today;
 
 export const hasFilters = (f: ProspectFilters) =>
   Object.values(f).some((v) => v !== "");
@@ -405,6 +414,16 @@ export function filterProspects(
     if (f.demo === "opened" && !(p.demo && p.demo.opens > 0)) return false;
     if (f.demo === "not_opened" && !(p.demo && p.demo.opens === 0))
       return false;
+    if (f.origin) {
+      const origin = p.origin ?? null;
+      const keep =
+        f.origin === "new"
+          ? !!origin
+          : f.origin === "bodacc" || f.origin === "directory"
+            ? origin === f.origin
+            : !origin && p.source === f.origin;
+      if (!keep) return false;
+    }
     if (f.lastMail) {
       const last = p.lastContactedAt
         ? new Date(p.lastContactedAt).getTime()

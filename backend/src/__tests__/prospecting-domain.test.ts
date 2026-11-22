@@ -190,6 +190,9 @@ describe('validation', () => {
         region: null,
         tool: null,
         toolDetail: null,
+        origin: null,
+        foundOn: null,
+        opensOn: null,
       },
     });
     expect(validateProspect({ email: 'pas-une-adresse', airportCode: 'LYON' })).toEqual({

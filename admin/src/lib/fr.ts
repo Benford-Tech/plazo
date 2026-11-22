@@ -3988,6 +3988,26 @@ export const fr = {
         not_opened: "Démo jamais ouverte",
         none: "Pas de lien de démo",
       },
+      filterOrigin: "Filtrer par origine",
+      filterOriginOptions: {
+        "": "Origine : toutes",
+        new: "Nouveaux parkings (BODACC + annuaire)",
+        bodacc: "BODACC",
+        directory: "Annuaire des entreprises",
+        csv: "Fichier CSV",
+        manual: "Saisi à la main",
+      },
+      originBadge: {
+        bodacc: "Nouveau parking · BODACC",
+        directory: "Nouveau parking · annuaire",
+      },
+      originShort: { bodacc: "BODACC", directory: "Annuaire" },
+      originTitle: (source: string, day: string | null) =>
+        day
+          ? `Trouvé par l'outil « Nouveaux parkings » (${source}) · créé ou annoncé le ${day}`
+          : `Trouvé par l'outil « Nouveaux parkings » (${source})`,
+      notOpenYet: (day: string) => `Pas encore ouvert · début le ${day}`,
+      notOpenYetShort: "Pas encore ouvert",
       filterLastMail: "Filtrer par dernier mail",
       filterLastMailOptions: {
         "": "Dernier mail : tous",
