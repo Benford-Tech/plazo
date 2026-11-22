@@ -881,6 +881,11 @@ export const pl: Dict = {
     nonRefundable: "Brak możliwości anulacji online",
     dayTitle: "W dniu wyjazdu",
     conditionsTitle: "Warto wiedzieć",
+    review: {
+      title: "Witamy z powrotem!",
+      text: (parking: string) => `Kilka słów o ${parking}? Twoja opinia pomaga innym podróżnym wybrać parking.`,
+      button: "Wystaw opinię w Google",
+    },
     step1Title: "Przyjazd na parking",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Proszę doliczyć ${min ? `${min} min transferu` : "czas transferu"} do godziny zalecanej przez linię lotniczą.`,

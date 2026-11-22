@@ -809,7 +809,7 @@ as int?,
 /// @nodoc
 mixin _$BookingParkingModel {
 
- String get title; String? get slug; String? get address; int? get shuttleMinutes; String? get openingHours; String? get phone; BookingAirportModel? get airport;
+ String get title; String? get slug; String? get address; int? get shuttleMinutes; String? get openingHours; String? get phone; String? get reviewUrl; BookingAirportModel? get airport;
 /// Create a copy of BookingParkingModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -823,20 +823,20 @@ $BookingParkingModelCopyWith<BookingParkingModel> get copyWith => _$BookingParki
 @override
 bool operator ==(Object other) {
   final _this = this as BookingParkingModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingParkingModel&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.airport, _this.airport) || other.airport == _this.airport));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BookingParkingModel&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.reviewUrl, _this.reviewUrl) || other.reviewUrl == _this.reviewUrl)&&(identical(other.airport, _this.airport) || other.airport == _this.airport));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as BookingParkingModel;
-  return Object.hash(runtimeType,_this.title,_this.slug,_this.address,_this.shuttleMinutes,_this.openingHours,_this.phone,_this.airport);
+  return Object.hash(runtimeType,_this.title,_this.slug,_this.address,_this.shuttleMinutes,_this.openingHours,_this.phone,_this.reviewUrl,_this.airport);
 }
 
 @override
 String toString() {
   final _this = this as BookingParkingModel;
-  return 'BookingParkingModel(title: ${_this.title}, slug: ${_this.slug}, address: ${_this.address}, shuttleMinutes: ${_this.shuttleMinutes}, openingHours: ${_this.openingHours}, phone: ${_this.phone}, airport: ${_this.airport})';
+  return 'BookingParkingModel(title: ${_this.title}, slug: ${_this.slug}, address: ${_this.address}, shuttleMinutes: ${_this.shuttleMinutes}, openingHours: ${_this.openingHours}, phone: ${_this.phone}, reviewUrl: ${_this.reviewUrl}, airport: ${_this.airport})';
 }
 
 
@@ -847,7 +847,7 @@ abstract mixin class $BookingParkingModelCopyWith<$Res>  {
   factory $BookingParkingModelCopyWith(BookingParkingModel value, $Res Function(BookingParkingModel) _then) = _$BookingParkingModelCopyWithImpl;
 @useResult
 $Res call({
- String title, String? slug, String? address, int? shuttleMinutes, String? openingHours, String? phone, BookingAirportModel? airport
+ String title, String? slug, String? address, int? shuttleMinutes, String? openingHours, String? phone, String? reviewUrl, BookingAirportModel? airport
 });
 
 
@@ -864,7 +864,7 @@ class _$BookingParkingModelCopyWithImpl<$Res>
 
 /// Create a copy of BookingParkingModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? slug = freezed,Object? address = freezed,Object? shuttleMinutes = freezed,Object? openingHours = freezed,Object? phone = freezed,Object? airport = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? slug = freezed,Object? address = freezed,Object? shuttleMinutes = freezed,Object? openingHours = freezed,Object? phone = freezed,Object? reviewUrl = freezed,Object? airport = freezed,}) {
   return _then(BookingParkingModel(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,slug: freezed == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -872,6 +872,7 @@ as String?,address: freezed == address ? _self.address : address // ignore: cast
 as String?,shuttleMinutes: freezed == shuttleMinutes ? _self.shuttleMinutes : shuttleMinutes // ignore: cast_nullable_to_non_nullable
 as int?,openingHours: freezed == openingHours ? _self.openingHours : openingHours // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,reviewUrl: freezed == reviewUrl ? _self.reviewUrl : reviewUrl // ignore: cast_nullable_to_non_nullable
 as String?,airport: freezed == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
 as BookingAirportModel?,
   ));
@@ -970,10 +971,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  BookingAirportModel? airport)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  String? reviewUrl,  BookingAirportModel? airport)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _BookingParkingModel() when $default != null:
-return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.airport);case _:
+return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.reviewUrl,_that.airport);case _:
   return orElse();
 
 }
@@ -991,10 +992,10 @@ return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  BookingAirportModel? airport)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  String? reviewUrl,  BookingAirportModel? airport)  $default,) {final _that = this;
 switch (_that) {
 case _BookingParkingModel():
-return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.airport);case _:
+return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.reviewUrl,_that.airport);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1011,10 +1012,10 @@ return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  BookingAirportModel? airport)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  String? slug,  String? address,  int? shuttleMinutes,  String? openingHours,  String? phone,  String? reviewUrl,  BookingAirportModel? airport)?  $default,) {final _that = this;
 switch (_that) {
 case _BookingParkingModel() when $default != null:
-return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.airport);case _:
+return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.openingHours,_that.phone,_that.reviewUrl,_that.airport);case _:
   return null;
 
 }
@@ -1026,7 +1027,7 @@ return $default(_that.title,_that.slug,_that.address,_that.shuttleMinutes,_that.
 @JsonSerializable()
 
 class _BookingParkingModel implements BookingParkingModel {
-  const _BookingParkingModel({required this.title, this.slug, this.address, this.shuttleMinutes, this.openingHours, this.phone, this.airport});
+  const _BookingParkingModel({required this.title, this.slug, this.address, this.shuttleMinutes, this.openingHours, this.phone, this.reviewUrl, this.airport});
   factory _BookingParkingModel.fromJson(Map<String, dynamic> json) => _$BookingParkingModelFromJson(json);
 
 @override final  String title;
@@ -1035,6 +1036,7 @@ class _BookingParkingModel implements BookingParkingModel {
 @override final  int? shuttleMinutes;
 @override final  String? openingHours;
 @override final  String? phone;
+@override final  String? reviewUrl;
 @override final  BookingAirportModel? airport;
 
 /// Create a copy of BookingParkingModel
@@ -1050,18 +1052,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingParkingModel&&(identical(other.title, title) || other.title == title)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.address, address) || other.address == address)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.airport, airport) || other.airport == airport));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BookingParkingModel&&(identical(other.title, title) || other.title == title)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.address, address) || other.address == address)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.reviewUrl, reviewUrl) || other.reviewUrl == reviewUrl)&&(identical(other.airport, airport) || other.airport == airport));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,title,slug,address,shuttleMinutes,openingHours,phone,airport);
+    return Object.hash(runtimeType,title,slug,address,shuttleMinutes,openingHours,phone,reviewUrl,airport);
 }
 
 @override
 String toString() {
-    return 'BookingParkingModel(title: $title, slug: $slug, address: $address, shuttleMinutes: $shuttleMinutes, openingHours: $openingHours, phone: $phone, airport: $airport)';
+    return 'BookingParkingModel(title: $title, slug: $slug, address: $address, shuttleMinutes: $shuttleMinutes, openingHours: $openingHours, phone: $phone, reviewUrl: $reviewUrl, airport: $airport)';
 }
 
 
@@ -1072,7 +1074,7 @@ abstract mixin class _$BookingParkingModelCopyWith<$Res> implements $BookingPark
   factory _$BookingParkingModelCopyWith(_BookingParkingModel value, $Res Function(_BookingParkingModel) _then) = __$BookingParkingModelCopyWithImpl;
 @override @useResult
 $Res call({
- String title, String? slug, String? address, int? shuttleMinutes, String? openingHours, String? phone, BookingAirportModel? airport
+ String title, String? slug, String? address, int? shuttleMinutes, String? openingHours, String? phone, String? reviewUrl, BookingAirportModel? airport
 });
 
 
@@ -1089,7 +1091,7 @@ class __$BookingParkingModelCopyWithImpl<$Res>
 
 /// Create a copy of BookingParkingModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? slug = freezed,Object? address = freezed,Object? shuttleMinutes = freezed,Object? openingHours = freezed,Object? phone = freezed,Object? airport = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? slug = freezed,Object? address = freezed,Object? shuttleMinutes = freezed,Object? openingHours = freezed,Object? phone = freezed,Object? reviewUrl = freezed,Object? airport = freezed,}) {
   return _then(_BookingParkingModel(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,slug: freezed == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -1097,6 +1099,7 @@ as String?,address: freezed == address ? _self.address : address // ignore: cast
 as String?,shuttleMinutes: freezed == shuttleMinutes ? _self.shuttleMinutes : shuttleMinutes // ignore: cast_nullable_to_non_nullable
 as int?,openingHours: freezed == openingHours ? _self.openingHours : openingHours // ignore: cast_nullable_to_non_nullable
 as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,reviewUrl: freezed == reviewUrl ? _self.reviewUrl : reviewUrl // ignore: cast_nullable_to_non_nullable
 as String?,airport: freezed == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
 as BookingAirportModel?,
   ));

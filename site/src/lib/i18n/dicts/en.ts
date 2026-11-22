@@ -879,6 +879,11 @@ export const en: Dict = {
     nonRefundable: "Cannot be cancelled online",
     dayTitle: "On the day you leave",
     conditionsTitle: "Good to know",
+    review: {
+      title: "Welcome back!",
+      text: (parking: string) => `A few words about ${parking}? Your review helps other travellers choose their car park.`,
+      button: "Leave a Google review",
+    },
     step1Title: "Go to the car park",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Allow ${min ? `${min} min for the shuttle` : "time for the shuttle ride"} before the time recommended by your airline.`,

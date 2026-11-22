@@ -916,6 +916,11 @@ export const es: Dict = {
     nonRefundable: "No cancelable en línea",
     dayTitle: "El día de la salida",
     conditionsTitle: "A tener en cuenta",
+    review: {
+      title: "¡Bienvenido de vuelta!",
+      text: (parking: string) => `¿Unas palabras sobre ${parking}? Su opinión ayuda a otros viajeros a elegir su aparcamiento.`,
+      button: "Dejar una opinión en Google",
+    },
     step1Title: "Diríjase al parking",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Calcule ${min ? `${min} min de lanzadera` : "el trayecto en lanzadera"} antes de la hora recomendada por su aerolínea.`,

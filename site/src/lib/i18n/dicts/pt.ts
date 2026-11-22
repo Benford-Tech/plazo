@@ -916,6 +916,11 @@ export const pt: Dict = {
     nonRefundable: "Não cancelável online",
     dayTitle: "No dia da partida",
     conditionsTitle: "A saber",
+    review: {
+      title: "Bem-vindo de volta!",
+      text: (parking: string) => `Algumas palavras sobre ${parking}? A sua opinião ajuda outros viajantes a escolher o parque.`,
+      button: "Deixar uma avaliação no Google",
+    },
     step1Title: "Dirija-se ao parque",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Conte com ${min ? `${min} min de shuttle` : "o trajeto de shuttle"} antes da hora recomendada pela sua companhia aérea.`,

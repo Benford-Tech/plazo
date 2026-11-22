@@ -96,6 +96,8 @@ abstract class BookingParkingModel with _$BookingParkingModel {
     int? shuttleMinutes,
     String? openingHours,
     String? phone,
+    /// Lien d'avis Google (22/11/2026): the parking's review link, sent only once the car is handed back.
+    String? reviewUrl,
     BookingAirportModel? airport,
   }) = _BookingParkingModel;
 

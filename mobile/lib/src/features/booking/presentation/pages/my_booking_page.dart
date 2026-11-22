@@ -37,6 +37,7 @@ import '../widgets/booking_card.dart';
 import '../widgets/booking_steps.dart';
 import '../widgets/car_location_card.dart';
 import '../widgets/child_seats_card.dart';
+import '../widgets/review_card.dart';
 import '../../../parking_messages/parking_messages_card.dart';
 import '../../../../shared/tutorials/tutorial_catalog.dart';
 import '../../../../shared/tutorials/tutorial_spot.dart';
@@ -191,6 +192,9 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                 if (b.status == 'cancelled') ...[_CancelledBanner(booking: b), const SizedBox(height: 12)],
                                 // A (13/11/2026, « Mix A et C »): the next thing to do, as the one orange card.
                                 if (b.status == 'upcoming' || b.status == 'arrived') NextStepHero(key: ValueKey('next-${b.reference}-${b.status}'), reference: b.reference),
+                                // 22/11/2026 (lien d'avis Google, option B): once the car is handed back.
+                                if (b.status == 'returned' && (b.parking.reviewUrl?.isNotEmpty ?? false))
+                                  ReviewCard(parking: b.parking.title, url: b.parking.reviewUrl!),
                                 KeyedSubtree(
                                   key: const Key('booking-card'),
                                   child: BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),

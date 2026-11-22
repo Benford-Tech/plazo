@@ -891,6 +891,11 @@ export const uk: Dict = {
     nonRefundable: "Не скасовується онлайн",
     dayTitle: "У день від’їзду",
     conditionsTitle: "Варто знати",
+    review: {
+      title: "З поверненням!",
+      text: (parking: string) => `Кілька слів про ${parking}? Ваш відгук допоможе іншим мандрівникам обрати паркінг.`,
+      button: "Залишити відгук у Google",
+    },
     step1Title: "Приїжджайте на паркінг",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Закладіть ${min ? `${min} хв на шатл` : "час на поїздку шатлом"} до часу, рекомендованого вашою авіакомпанією.`,

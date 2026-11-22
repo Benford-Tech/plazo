@@ -270,6 +270,8 @@ export interface PublicBooking {
     phone?: string | null;
     /** 12/11/2026: the parking's supplements and conditions, one line. */
     conditions?: string | null;
+    /** 22/11/2026: the parking's Google review link, sent only once the car is handed back; null or missing: none. */
+    reviewUrl?: string | null;
   };
   arrivalAt: string;
   returnAt: string;

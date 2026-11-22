@@ -8,6 +8,7 @@ import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
 import { ArrivalBlock } from "@/components/ArrivalBlock";
 import { ReturnLive } from "@/components/ReturnLive";
+import { ReviewCard } from "@/components/ReviewCard";
 import { StayShuttles } from "@/components/StayShuttles";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
@@ -210,6 +211,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
 
       <main className="mx-auto flex w-full max-w-[720px] flex-col gap-4 px-4 pt-5 pb-12 md:gap-5 md:pb-20">
         {onSite && <ReturnLive reference={b.reference} token={token} initial={returnState} />}
+        {b.status === "returned" && b.parking.reviewUrl && <ReviewCard parking={b.parking.title} url={b.parking.reviewUrl} />}
         {/* D (06/10/2026): the app's day-J gestures on the site — the blocks hide themselves outside their window. */}
         {active && <ArrivalBlock reference={b.reference} token={token} />}
         {active && <StayShuttles reference={b.reference} token={token} />}
