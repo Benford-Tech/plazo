@@ -2519,6 +2519,14 @@ model OperatorSite {
   addonRequestedAt DateTime?
   addonAt          DateTime?
   publishedAt      DateTime?
+  /// 22/11/2026 (« le nom de domaine du parking »): the parking's own host name, « www.parking-des-cedres.fr », lower
+  /// case; the site answers on it once its DNS points to Plazo and the host is attached (`domainActiveAt`).
+  domain           String?   @unique
+  domainSetAt      DateTime?
+  domainActiveAt   DateTime?
+  domainCheckedAt  DateTime?
+  /// What the last check found: dns_missing · dns_wrong · not_attached · host_error (no personal data).
+  domainIssue      String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

@@ -1,7 +1,9 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { blocksOf, defaultBlocks, readBlocks } from '@/domain/operator-site';
+import { dnsRecordFor, dnsState, isApex, readDomain } from '@/domain/site-domain';
 import { OperatorSiteService } from '@/services/operator-site.service';
+import { SiteDomainHostService } from '@/services/site-domain-host.service';
 import { api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
 
 // 22/11/2026 (« pouvoir créer un site dédié au parking », « le plus modulaire possible », « le site est en supplément »).
@@ -158,5 +160,101 @@ describe('Mon site', () => {
     const other = await parkingWithListing('Autre Parking', 'autre');
     expect((await api().put('/api/internal/site').set(auth(other.token)).send({ slug: 'cedres' })).body.fields).toEqual({ slug: 'taken' });
     expect((await api().put('/api/internal/site').set(auth(other.token)).send({ slug: 'api' })).body.fields).toEqual({ slug: 'reserved' });
+  });
+});
+
+describe('le nom de domaine du parking (22/11/2026)', () => {
+  const hosts = Container.get(SiteDomainHostService);
+  afterEach(() => jest.restoreAllMocks());
+
+  it('lit un nom de domaine, donne l’enregistrement à créer et juge la réponse du DNS', () => {
+    expect(readDomain(' https://WWW.Parking-des-Cedres.fr/accueil?x=1 ')).toBe('www.parking-des-cedres.fr');
+    expect(readDomain('parking-des-cedres.fr.')).toBe('parking-des-cedres.fr');
+    for (const bad of [
+      'cedres',
+      'www.plazo.fr',
+      'plazo.fr',
+      'x.vercel.app',
+      '192.168.1.1',
+      'parking des cedres.fr',
+      '-x.fr',
+      'parking-cèdres.fr',
+      42,
+    ]) {
+      expect(readDomain(bad)).toBeNull();
+    }
+    expect(isApex('parking-des-cedres.fr')).toBe(true);
+    expect(isApex('www.parking-des-cedres.fr')).toBe(false);
+    expect(isApex('exemple.co.uk')).toBe(true);
+    expect(dnsRecordFor('www.parking-des-cedres.fr')).toEqual({ type: 'CNAME', name: 'www', value: 'cname.vercel-dns.com' });
+    expect(dnsRecordFor('parking-des-cedres.fr')).toEqual({ type: 'A', name: '@', value: '76.76.21.21' });
+    expect(dnsRecordFor('reservation.exemple.co.uk')).toEqual({ type: 'CNAME', name: 'reservation', value: 'cname.vercel-dns.com' });
+    expect(dnsState('www.x.fr', { cname: ['cname.vercel-dns.com.'], a: [] })).toBe('ok');
+    expect(dnsState('x.fr', { cname: [], a: ['76.76.21.21'] })).toBe('ok');
+    expect(dnsState('x.fr', { cname: [], a: [] })).toBe('dns_missing');
+    expect(dnsState('www.x.fr', { cname: ['autre.exemple.net'], a: ['203.0.113.9'] })).toBe('dns_wrong');
+  });
+
+  it('avec l’option : le gérant pose son domaine, Plazo suit les DNS, la plateforme le branche, le site y répond', async () => {
+    const op = await parkingWithListing();
+    const admin = await setupOperator('Plazo (tests)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const put = (domain: unknown) => api().put('/api/internal/site/domain').set(auth(op.token)).send({ domain });
+    const dns = jest.spyOn(hosts, 'dns').mockResolvedValue('dns_missing');
+    await api().put('/api/internal/site').set(auth(op.token)).send({ slug: 'cedres' });
+
+    // Part of the paid option.
+    expect((await put('www.parking-des-cedres.fr')).body.fields).toEqual({ domain: 'addon_required' });
+    await api().put(`/api/internal/platform/operators/${op.operator.id}/site`).set(auth(admin.token)).send({ active: true });
+    expect((await put('plazo.fr')).body.fields).toEqual({ domain: 'invalid' });
+
+    const set = await put('https://www.Parking-des-Cedres.fr/');
+    expect(set.body.data.domain).toMatchObject({
+      name: 'www.parking-des-cedres.fr',
+      record: { type: 'CNAME', name: 'www', value: 'cname.vercel-dns.com' },
+      active: false,
+      issue: 'dns_missing',
+      automatic: false,
+    });
+    await api().put('/api/internal/site').set(auth(op.token)).send({ published: true });
+    expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).status).toBe(404);
+
+    // The DNS is in place: without the hosting's token, the platform attaches the name and marks it.
+    dns.mockResolvedValue('ok');
+    const checked = await api().post('/api/internal/site/domain/check').set(auth(op.token));
+    expect(checked.body.data.domain).toMatchObject({ active: false, issue: 'not_attached' });
+    const overview = await api().get('/api/internal/platform/overview').set(auth(admin.token));
+    expect((overview.body.data ?? overview.body).todos).toContainEqual(expect.objectContaining({ kind: 'site_domain', operatorId: op.operator.id }));
+    const marked = await api().put(`/api/internal/platform/operators/${op.operator.id}/site/domain`).set(auth(admin.token)).send({ active: true });
+    expect(marked.body.data.domain).toMatchObject({ active: true, issue: null });
+
+    expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).body).toEqual({ slug: 'cedres' });
+    expect((await api().get('/api/public/sites/cedres')).body.domain).toBe('www.parking-des-cedres.fr');
+
+    // Another parking cannot take it; removing it closes the host.
+    const other = await parkingWithListing('Autre Parking', 'autre');
+    await api().put(`/api/internal/platform/operators/${other.operator.id}/site`).set(auth(admin.token)).send({ active: true });
+    expect((await api().put('/api/internal/site/domain').set(auth(other.token)).send({ domain: 'www.parking-des-cedres.fr' })).body.fields).toEqual({
+      domain: 'taken',
+    });
+    expect((await put(null)).body.data.domain).toBeNull();
+    expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).status).toBe(404);
+  });
+
+  it('avec le jeton de l’hébergeur : le nom s’active seul une fois ses DNS en place', async () => {
+    const op = await parkingWithListing();
+    const admin = await setupOperator('Plazo (tests)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    await api().put('/api/internal/site').set(auth(op.token)).send({ slug: 'cedres' });
+    await api().put(`/api/internal/platform/operators/${op.operator.id}/site`).set(auth(admin.token)).send({ active: true });
+    jest.spyOn(hosts, 'automatic', 'get').mockReturnValue(true);
+    jest.spyOn(hosts, 'dns').mockResolvedValue('ok');
+    const attach = jest.spyOn(hosts, 'attach').mockResolvedValue('not_attached');
+    const set = await api().put('/api/internal/site/domain').set(auth(op.token)).send({ domain: 'parking-des-cedres.fr' });
+    expect(set.body.data.domain).toMatchObject({ record: { type: 'A', name: '@' }, active: false, issue: 'not_attached', automatic: true });
+    attach.mockResolvedValue('active');
+    const checked = await api().post('/api/internal/site/domain/check').set(auth(op.token));
+    expect(checked.body.data.domain).toMatchObject({ active: true, issue: null });
+    expect(attach).toHaveBeenCalledWith('parking-des-cedres.fr');
   });
 });

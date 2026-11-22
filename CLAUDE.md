@@ -549,6 +549,23 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      l'option, « Mettre mon site en ligne ») ; Plateforme › loueur : `OperatorSiteCard`. Tests `operator-site.test.ts`,
      `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : variantes de présentation par bloc, blocs image / bouton / annonce,
      plusieurs pages, logo du parking, `nom.plazo.fr` ou le nom de domaine du parking, paiement de l'option par Stripe, Plazo Pro.
+   - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : avec l'option, le gérant tape son
+     nom de domaine dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son
+     fournisseur (`domain/site-domain.ts` : `readDomain` (jamais plazo.fr, vercel.app ni une adresse IP), `dnsRecordFor` : CNAME
+     `www` → `cname.vercel-dns.com`, ou A `@` → `76.76.21.21` pour un nom nu ; `dnsState`), relit ses DNS (`SiteDomainHostService.dns`,
+     à « Vérifier » et à chaque lecture de la page, une fois par minute au plus) et suit l'état : `dns_missing` · `dns_wrong` ·
+     `not_attached` · `host_error` · actif. `OperatorSite.domain` (unique) / `domainSetAt` / `domainActiveAt` / `domainCheckedAt` /
+     `domainIssue` (migration `operator_site_domain`). **Branchement chez l'hébergeur** : avec `VERCEL_DOMAINS_TOKEN` (et
+     `VERCEL_DOMAINS_PROJECT`, `VERCEL_DOMAINS_TEAM`, sinon `VERCEL_PROJECT_ID` / `VERCEL_TEAM_ID`), Plazo ajoute le nom au projet
+     Vercel et l'active seul (`attach`, `detach`) ; sans jeton, ligne « À traiter » `site_domain` et la plateforme l'ajoute à la
+     main puis « Marquer comme branché » (`PUT /internal/platform/operators/:id/site/domain { active }`). Routes :
+     `PUT /internal/site/domain { domain }` (nul = retiré ; 400 `domain` invalid · taken · addon_required), `POST …/domain/check`,
+     `GET /public/site-domains/:host` → `{ slug }` (404 tant que le site n'est pas en ligne et le nom actif). Site : `proxy.ts`
+     reconnaît un hôte étranger (`lib/parking-site-host.ts`, réponse gardée une minute) : sa racine sert `/s/<slug>` dans la langue
+     demandée, toute autre page part en 308 vers plazo.fr ; `plazo.fr/s/<slug>` renvoie vers le nom de domaine, qui devient
+     l'adresse canonique. Éteindre l'option ou retirer le nom ferme l'hôte. Tests `operator-site.test.ts`,
+     `parking-site-host.test.ts`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore essayé avec un vrai nom de domaine ; l'offre
+     Hobby de Vercel limite le nombre de domaines par projet ; `robots.txt` et le plan du site sur le nom du parking restent ceux de Plazo.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet

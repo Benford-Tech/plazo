@@ -1,10 +1,10 @@
 // @vitest-environment node
-import { NextRequest } from "next/server";
+import { NextRequest, type NextResponse } from "next/server";
 import { describe, expect, it } from "vitest";
 import { proxy } from "../../proxy";
 
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUvWxYz012345";
-const run = (url: string) => proxy(new NextRequest(new URL(url)));
+const run = (url: string) => proxy(new NextRequest(new URL(url))) as NextResponse;
 
 describe("manage links (proxy)", () => {
   it("keeps the key in a cookie limited to the booking, and drops it from the address", () => {
@@ -60,5 +60,36 @@ describe("languages (proxy, 13/11/2026)", () => {
     const res = run(`https://site.example/en/ma-reservation/rab234?cle=${TOKEN}`);
     expect(res.headers.get("location")).toBe("https://site.example/en/ma-reservation/RAB234");
     expect(res.headers.get("set-cookie")).toContain("Path=/en/ma-reservation/RAB234");
+  });
+});
+
+// 22/11/2026 (« le nom de domaine du parking »): on a parking's own host, the home page is its site.
+describe("le nom de domaine d'un parking", () => {
+  const onHost = async (url: string, host: string, slug: string | null) => {
+    const { vi } = await import("vitest");
+    const { forgetSiteHosts } = await import("../parking-site-host");
+    forgetSiteHosts();
+    vi.stubGlobal("fetch", async () => (slug ? { ok: true, status: 200, json: async () => ({ slug }) } : { ok: false, status: 404, json: async () => ({}) }));
+    try {
+      return await proxy(new NextRequest(new URL(url), { headers: { host } }));
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  };
+
+  it("sert le site du parking à la racine, dans la langue demandée", async () => {
+    const home = await onHost("https://www.cedres.example/", "www.cedres.example", "cedres");
+    expect(home.headers.get("x-middleware-rewrite")).toBe("https://www.cedres.example/fr/s/cedres");
+    const english = await onHost("https://www.cedres.example/en", "www.cedres.example", "cedres");
+    expect(english.headers.get("x-middleware-rewrite")).toBe("https://www.cedres.example/en/s/cedres");
+  });
+
+  it("renvoie toute autre page, et un hôte sans site, vers le site de Plazo", async () => {
+    const other = await onHost("https://www.cedres.example/ma-reservation?x=1", "www.cedres.example", "cedres");
+    expect(other.status).toBe(308);
+    expect(new URL(other.headers.get("location")!).pathname).toBe("/ma-reservation");
+    expect(new URL(other.headers.get("location")!).host).not.toBe("www.cedres.example");
+    const unknown = await onHost("https://inconnu.example/", "inconnu.example", null);
+    expect(unknown.status).toBe(307);
   });
 });

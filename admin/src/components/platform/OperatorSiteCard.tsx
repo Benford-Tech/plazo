@@ -24,6 +24,15 @@ export function OperatorSiteCard({ operatorId }: { operatorId: string }) {
     },
     onError: (err) => toast.error(describeError(err)),
   });
+  const mark = useMutation({
+    mutationFn: (active: boolean) => adminApi.setPlatformSiteDomain(operatorId, active),
+    onSuccess: (res) => {
+      queryClient.setQueryData(key, res);
+      queryClient.invalidateQueries({ queryKey: ["platform", "operators", "overview"] });
+      toast.success(t.done);
+    },
+    onError: (err) => toast.error(describeError(err)),
+  });
   const site = query.data?.data;
   if (!site) return null;
   return (
@@ -37,6 +46,24 @@ export function OperatorSiteCard({ operatorId }: { operatorId: string }) {
           {site.addon.requestedAt && !site.addon.active && ` · ${t.requested(day.format(new Date(site.addon.requestedAt)))}`}
         </p>
         {site.url && <p className="break-all font-mono text-xs">{site.url.replace(/^https?:\/\//, "")}</p>}
+        {site.domain && (
+          <div className="mt-2 flex flex-col gap-1 text-sm" data-testid="operator-site-domain">
+            <p>
+              <span className="text-muted-foreground">{t.domain} : </span>
+              <span className="break-all font-mono font-semibold">{site.domain.name}</span>
+              {" · "}
+              {t.domainStates[site.domain.active ? "active" : (site.domain.issue ?? "dns_missing")]}
+            </p>
+            {!site.domain.automatic && (site.domain.active || site.domain.issue === "not_attached") && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" variant="outline" className="h-10 font-semibold" disabled={mark.isPending} onClick={() => mark.mutate(!site.domain?.active)}>
+                  {site.domain.active ? t.markDetached : t.markAttached}
+                </Button>
+                {!site.domain.active && <span className="text-xs text-muted-foreground">{t.attachHint}</span>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <Button
         type="button"

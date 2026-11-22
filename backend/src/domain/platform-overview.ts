@@ -19,6 +19,7 @@ export interface PlatformTodo {
     | 'listing_review'
     | 'whatsapp_requested'
     | 'site_requested'
+    | 'site_domain'
     | 'stripe_missing'
     | 'contract_missing'
     | 'contract_pending'
@@ -56,11 +57,14 @@ export function platformTodos(
   whatsappRequested: Set<string> = new Set(),
   /** 22/11/2026: parkings that asked for their own site (a paid extra the platform switches on). */
   siteRequested: Set<string> = new Set(),
+  /** A parking's own domain whose DNS is in place and that waits to be attached at the hosting. */
+  siteDomains: Set<string> = new Set(),
 ): PlatformTodo[] {
   const order: PlatformTodo['kind'][] = [
     'listing_review',
     'whatsapp_requested',
     'site_requested',
+    'site_domain',
     'payout_failed',
     'stripe_missing',
     'invitation_expired',
@@ -73,6 +77,7 @@ export function platformTodos(
     if (o.kind !== 'demo' && o.listing?.status === 'pending_review') todos.push({ kind: 'listing_review', listingId: o.listing.id, ...base });
     if (o.kind !== 'demo' && whatsappRequested.has(o.id)) todos.push({ kind: 'whatsapp_requested', ...base });
     if (o.kind !== 'demo' && siteRequested.has(o.id)) todos.push({ kind: 'site_requested', ...base });
+    if (o.kind !== 'demo' && siteDomains.has(o.id)) todos.push({ kind: 'site_domain', ...base });
     if (o.kind !== 'real') continue;
     if (o.invitation?.expired) {
       todos.push({ kind: 'invitation_expired', ...base });

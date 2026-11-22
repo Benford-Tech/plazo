@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ExternalLink, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, ExternalLink, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -22,8 +23,9 @@ const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
 /** The first field the server refused, in words. */
 function siteError(err: unknown): string {
   if (err instanceof ApiError && err.fields) {
-    const code = Object.values(err.fields)[0];
-    if (code && t.errors[code]) return t.errors[code];
+    const [field, code] = Object.entries(err.fields)[0] ?? [];
+    const text = t.errors[`${field}_${code}`] ?? (code ? t.errors[code] : undefined);
+    if (text) return text;
   }
   return describeError(err);
 }
@@ -268,6 +270,8 @@ export default function SitePage() {
             </section>
           )}
 
+          <DomainSection site={site} readOnly={readOnly} onChange={store} />
+
           <section className={card} aria-labelledby="site-settings">
             <h2 id="site-settings" className="font-narrow text-xl font-bold">
               {t.settingsTitle}
@@ -288,5 +292,122 @@ export default function SitePage() {
         </div>
       </div>
     </>
+  );
+}
+
+const time = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
+
+/**
+ * « Votre nom de domaine » (22/11/2026, « le nom de domaine du parking »): the manager types his own host name, creates
+ * the one DNS record shown at his registrar, and follows where it stands until the site answers on it.
+ */
+function DomainSection({ site, readOnly, onChange }: { site: SiteSettings; readOnly: boolean; onChange: (data: SiteSettings) => void }) {
+  const d = t.domain;
+  const confirm = useConfirm();
+  const [value, setValue] = useState("");
+  const set = useMutation({
+    mutationFn: (domain: string | null) => adminApi.setSiteDomain(domain),
+    onSuccess: (res, domain) => {
+      onChange(res.data);
+      setValue("");
+      if (domain === null) toast.success(d.removed);
+    },
+    onError: (err) => toast.error(siteError(err)),
+  });
+  const check = useMutation({
+    mutationFn: adminApi.checkSiteDomain,
+    onSuccess: (res) => onChange(res.data),
+    onError: (err) => toast.error(describeError(err)),
+  });
+  const domain = site.domain;
+  const state = domain ? (domain.active ? "active" : (domain.issue ?? "dns_missing")) : null;
+  const detail = !state ? null : state === "not_attached" ? d.details[domain?.automatic ? "not_attached_auto" : "not_attached_manual"] : d.details[state];
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(d.copied);
+    } catch {
+      // No clipboard here: the value stays selectable.
+    }
+  };
+
+  return (
+    <section className={card} aria-labelledby="site-domain" data-testid="site-domain">
+      <h2 id="site-domain" className="font-narrow text-xl font-bold">
+        {d.title}
+      </h2>
+      {!domain ? (
+        <>
+          <p className="text-sm text-muted-foreground">{d.intro}</p>
+          {site.addon.active ? (
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (value.trim()) set.mutate(value.trim());
+              }}
+            >
+              <label className="flex flex-col gap-1">
+                <span className={label}>{d.field}</span>
+                <input className={cn(input, "font-mono")} value={value} placeholder={d.placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setValue(e.target.value)} />
+              </label>
+              <p className="text-xs text-muted-foreground">{d.hint}</p>
+              <Button type="submit" className="h-11 self-start bg-lime font-bold text-lime-ink hover:bg-lime/90" disabled={readOnly || set.isPending || !value.trim()}>
+                {d.save}
+              </Button>
+            </form>
+          ) : (
+            <p className="text-sm font-semibold">{d.needsAddon}</p>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="break-all font-mono text-[15px] font-semibold">{domain.name}</span>
+            <span data-testid="site-domain-state" className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", domain.active ? "bg-ok-soft text-ok-text" : "bg-warn-soft text-warn-text")}>
+              {d.states[state ?? "dns_missing"]}
+            </span>
+          </div>
+          {detail && <p className="text-sm">{detail}</p>}
+          {domain.active && !site.published && <p className="text-sm text-muted-foreground">{d.offlineNote}</p>}
+          {!domain.active && (
+            <div className="flex flex-col gap-1.5 rounded-[12px] bg-panel-2 p-3">
+              <p className={label}>{d.recordTitle}</p>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+                <dt className="text-muted-foreground">{d.recordType}</dt>
+                <dd className="font-mono font-semibold">{domain.record.type}</dd>
+                <dt className="text-muted-foreground">{d.recordName}</dt>
+                <dd className="font-mono font-semibold">{domain.record.name}</dd>
+                <dt className="text-muted-foreground">{d.recordValue}</dt>
+                <dd className="flex items-center gap-2">
+                  <span className="break-all font-mono font-semibold select-all">{domain.record.value}</span>
+                  <button type="button" aria-label={d.copy} onClick={() => copy(domain.record.value)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md hover:bg-accent">
+                    <Copy className="h-4 w-4" aria-hidden />
+                  </button>
+                </dd>
+              </dl>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {!domain.active && (
+              <Button type="button" variant="outline" className="h-11 font-semibold" disabled={readOnly || check.isPending} onClick={() => check.mutate()}>
+                {d.check}
+              </Button>
+            )}
+            <button
+              type="button"
+              disabled={readOnly || set.isPending}
+              onClick={async () => {
+                if (await confirm(d.removeConfirm, { destructive: true, confirmLabel: d.remove })) set.mutate(null);
+              }}
+              className="min-h-11 px-2 text-sm font-semibold text-destructive disabled:opacity-50"
+            >
+              {d.remove}
+            </button>
+            {domain.checkedAt && <span className="ml-auto text-xs text-muted-foreground">{d.checked(time.format(new Date(domain.checkedAt)))}</span>}
+          </div>
+        </>
+      )}
+    </section>
   );
 }

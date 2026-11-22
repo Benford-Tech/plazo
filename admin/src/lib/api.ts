@@ -1683,6 +1683,10 @@ export const adminApi = {
   updateSite: (input: { blocks?: Pick<SiteBlock, "kind" | "enabled" | "title" | "text">[]; slug?: string; accent?: string; published?: boolean }) =>
     apiRequest<{ data: SiteSettings }>("/internal/site", { method: "PUT", body: json(input) }),
   requestSite: () => apiRequest<{ data: SiteSettings }>("/internal/site/request", { method: "POST" }),
+  setSiteDomain: (domain: string | null) => apiRequest<{ data: SiteSettings }>("/internal/site/domain", { method: "PUT", body: json({ domain }) }),
+  checkSiteDomain: () => apiRequest<{ data: SiteSettings }>("/internal/site/domain/check", { method: "POST" }),
+  setPlatformSiteDomain: (operatorId: string, active: boolean) =>
+    apiRequest<{ data: PlatformSite }>(`/internal/platform/operators/${operatorId}/site/domain`, { method: "PUT", body: json({ active }) }),
   getPlatformSite: (operatorId: string) => apiRequest<{ data: PlatformSite }>(`/internal/platform/operators/${operatorId}/site`),
   setPlatformSite: (operatorId: string, active: boolean) =>
     apiRequest<{ data: PlatformSite }>(`/internal/platform/operators/${operatorId}/site`, { method: "PUT", body: json({ active }) }),

@@ -1078,6 +1078,7 @@ export interface PlatformTodo {
     | "listing_review"
     | "whatsapp_requested"
     | "site_requested"
+    | "site_domain"
     | "stripe_missing"
     | "contract_missing"
     | "contract_pending"
@@ -3084,6 +3085,17 @@ export interface SiteAddon {
   requestedAt: string | null;
   priceCents: number;
 }
+/** 22/11/2026: the parking's own domain name for its site. */
+export interface SiteDomain {
+  name: string;
+  record: { type: "CNAME" | "A"; name: string; value: string };
+  active: boolean;
+  /** Why it is not active yet: dns_missing · dns_wrong · not_attached · host_error. */
+  issue: string | null;
+  checkedAt: string | null;
+  /** Plazo attaches the name by itself; otherwise its team does it by hand. */
+  automatic: boolean;
+}
 export interface SiteSettings {
   slug: string;
   saved: boolean;
@@ -3095,12 +3107,14 @@ export interface SiteSettings {
   url: string | null;
   previewUrl: string | null;
   addon: SiteAddon;
+  domain: SiteDomain | null;
 }
 /** Plateforme › loueur: the extra's state. */
 export interface PlatformSite {
   addon: SiteAddon;
   published: boolean;
   url: string | null;
+  domain: SiteDomain | null;
 }
 
 export interface BookingPageSettings {

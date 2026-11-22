@@ -20,6 +20,22 @@ export class OperatorSiteController {
     res.json({ data: await this.service.request(req.staff) });
   });
 
+  public setDomain = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.service.setDomain(req.staff, req.body?.domain) });
+  });
+
+  public checkDomain = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.service.checkDomain(req.staff) });
+  });
+
+  public setDomainActive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.service.setDomainActive(req.staff, req.params.id as string, req.body?.active) });
+  });
+
+  public byDomain = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=60').json(await this.service.byDomain(req.params.host as string));
+  });
+
   public platformView = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json({ data: await this.service.platformView(req.params.id as string) });
   });
