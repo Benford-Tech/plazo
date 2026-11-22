@@ -1232,6 +1232,16 @@ export const de: Dict = {
     yourDetails: "Ihre Angaben",
     nightFee: "Nachtzuschlag",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Vorschau: Diese Website ist noch nicht online.",
+    photos: "Fotos",
+    contact: "Kontakt",
+    goodToKnow: "Gut zu wissen",
+    bookingClosed: "Die Online-Buchung öffnet, sobald die Website online ist.",
+    notFound: "Diese Website ist nicht online.",
+    call: "Anrufen",
+  },
   errors: {
     required: "Pflichtfeld.",
     too_long: "Text zu lang.",

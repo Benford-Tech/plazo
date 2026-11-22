@@ -1374,6 +1374,16 @@ const frBase = {
     yourDetails: "Vos informations",
     nightFee: "Frais de nuit",
   },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Aperçu : ce site n’est pas encore en ligne.",
+    photos: "Photos",
+    contact: "Nous contacter",
+    goodToKnow: "À savoir",
+    bookingClosed: "La réservation en ligne ouvrira avec la mise en ligne du site.",
+    notFound: "Ce site n’est pas en ligne.",
+    call: "Appeler",
+  },
   errors: {
     required: "Champ obligatoire.",
     too_long: "Texte trop long.",

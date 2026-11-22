@@ -247,6 +247,26 @@ export interface BookingPageInfo {
   accentInk: string;
 }
 
+/** 22/11/2026: one block of a parking's own site (/s/<slug>), in the order the manager chose. */
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export interface SiteBlock {
+  id: string;
+  /** A kind this site does not know yet is skipped. */
+  kind: SiteBlockKind | (string & {});
+  enabled: boolean;
+  title: string | null;
+  text: string | null;
+}
+
+/** GET /public/sites/:slug: what the parking's own site shows. */
+export interface ParkingSiteInfo extends BookingPageInfo {
+  blocks: SiteBlock[];
+  /** The « Réserver » block takes bookings (always, for a site online). */
+  bookable: boolean;
+  /** Opened with the manager's key while the site is offline. */
+  preview: boolean;
+}
+
 export interface PublicBooking {
   reference: string;
   status: BookingStatus;
