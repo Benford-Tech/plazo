@@ -73,6 +73,14 @@ export interface TopicFacts extends GuideFacts {
   twoWeeks: { priceCents: number; days: number } | null;
   /** Real partners with a valet: how many there are, and the cheapest week among them. */
   valet: { count: number; week: { priceCents: number; days: number } | null } | null;
+  /** Use-case guides (22/11/2026): real partners open around the clock. */
+  open24?: number;
+  /** Real partners that offer an electric charge (the « Recharge » filter). */
+  ev?: number;
+  /** An early drop-off (04:30): the cheapest real offer, and the night drop-off fees of the real partners that charge one. */
+  early?: { offer: { priceCents: number; days: number } | null; fee: { min: number; max: number } | null } | null;
+  /** A three-day stay: the cheapest real offer. */
+  weekend?: { priceCents: number; days: number } | null;
 }
 
 /** A drive to the airport, as the city pages show it. */
@@ -110,7 +118,7 @@ export interface TopicGuide {
   /** The road from a departure city (17/11/2026, city pages): figures read on one day from one router, shown as tiles. */
   trip?: GuideTrip;
   /** The partner parkings shown on the page, with the length of the stay they are priced for. */
-  partners: { filter: "all" | "valet"; stayDays: number; title: string; lead: string; empty: string };
+  partners: { filter: "all" | "valet" | "open_24h" | "ev_charging"; stayDays: number; title: string; lead: string; empty: string };
 }
 
 type Offer = { priceCents: number; days: number };
@@ -121,13 +129,29 @@ function cheapestOffer(preview: SearchResponse | null, keep: (slug: string) => b
   return best ? { priceCents: best.priceCents!, days: best.days } : null;
 }
 
-export function topicFacts(listings: AirportResponse["listings"], week: SearchResponse | null, twoWeeks: SearchResponse | null): TopicFacts {
-  const valets = new Set(listings.filter(l => !l.isDemo && l.services.includes("valet")).map(l => l.slug));
-  return {
+export function topicFacts(
+  listings: AirportResponse["listings"],
+  week: SearchResponse | null,
+  twoWeeks: SearchResponse | null,
+  more: { early?: SearchResponse | null; weekend?: SearchResponse | null } = {},
+): TopicFacts {
+  const real = listings.filter(l => !l.isDemo);
+  const valets = new Set(real.filter(l => l.services.includes("valet")).map(l => l.slug));
+  const facts: TopicFacts = {
     ...guideFacts(listings, week),
     twoWeeks: cheapestOffer(twoWeeks),
     valet: valets.size ? { count: valets.size, week: cheapestOffer(week, slug => valets.has(slug)) } : null,
   };
+  const open24 = real.filter(l => l.services.includes("open_24h")).length;
+  const ev = real.filter(l => l.services.includes("ev_charging")).length;
+  if (open24) facts.open24 = open24;
+  if (ev) facts.ev = ev;
+  if (more.early) {
+    const fees = more.early.results.filter(r => !r.isDemo && r.available && r.nightFee && r.nightFee.arrivalCents > 0).map(r => r.nightFee!.arrivalCents);
+    facts.early = { offer: cheapestOffer(more.early), fee: fees.length ? { min: Math.min(...fees), max: Math.max(...fees) } : null };
+  }
+  if (more.weekend) facts.weekend = cheapestOffer(more.weekend);
+  return facts;
 }
 
 export function rideText({ min, max }: { min: number; max: number }): string {

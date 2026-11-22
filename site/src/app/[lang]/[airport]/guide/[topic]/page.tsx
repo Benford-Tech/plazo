@@ -8,7 +8,7 @@ import { topicFacts } from "@/lib/airport-guides";
 import { api } from "@/lib/api";
 import { addDays, defaultStay } from "@/lib/dates";
 import { topicGuide } from "@/lib/guides";
-import { hasTopicGuides, isGuideTopic, topicPath } from "@/lib/guides/topics";
+import { guideStayOf, hasTopicGuides, isGuideTopic, topicPath } from "@/lib/guides/topics";
 import { PRODUCT_NAME } from "@/lib/product";
 import { openGraph } from "@/lib/seo";
 import { SLUG_RE } from "@/lib/site";
@@ -38,21 +38,34 @@ const loadTopic = cache(async (airportSlug: string, topic: string) => {
   if (!SLUG_RE.test(airportSlug) || !hasTopicGuides(airportSlug) || !isGuideTopic(topic)) notFound();
   const data = await loadAirport(airportSlug);
   const week = defaultStay();
-  // Long stay: two weeks from the same drop-off.
-  const twoWeeks = { arrivee: week.arrivee, retour: `${addDays(week.arrivee.slice(0, 10), 14)}T18:00` };
-  const long = topic === "parking-longue-duree";
-  const [weekPreview, twoWeeksPreview] = await Promise.all([
+  const day = week.arrivee.slice(0, 10);
+  // Long stay: two weeks from the same drop-off; an early flight: a drop-off at 04:30; a week-end: three calendar days.
+  const stays = {
+    week,
+    twoWeeks: { arrivee: week.arrivee, retour: `${addDays(day, 14)}T18:00` },
+    early: { arrivee: `${day}T04:30`, retour: week.retour },
+    weekend: { arrivee: `${day}T07:00`, retour: `${addDays(day, 2)}T21:00` },
+  };
+  const kind = guideStayOf(topic);
+  const [weekPreview, otherPreview] = await Promise.all([
     searchOrNull(airportSlug, week.arrivee, week.retour),
-    long ? searchOrNull(airportSlug, twoWeeks.arrivee, twoWeeks.retour) : Promise.resolve(null),
+    kind === "week" ? Promise.resolve(null) : searchOrNull(airportSlug, stays[kind].arrivee, stays[kind].retour),
   ]);
-  const guide = topicGuide(airportSlug, topic, topicFacts(data.listings, weekPreview, twoWeeksPreview));
+  const guide = topicGuide(
+    airportSlug,
+    topic,
+    topicFacts(data.listings, weekPreview, kind === "twoWeeks" ? otherPreview : null, {
+      early: kind === "early" ? otherPreview : undefined,
+      weekend: kind === "weekend" ? otherPreview : undefined,
+    }),
+  );
   if (!guide) notFound();
   return {
     data,
     guide,
     path: topicPath(airportSlug, topic),
-    stay: long ? twoWeeks : week,
-    preview: long ? twoWeeksPreview : weekPreview,
+    stay: stays[kind],
+    preview: kind === "week" ? weekPreview : otherPreview,
   };
 });
 
