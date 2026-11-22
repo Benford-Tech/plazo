@@ -105,7 +105,7 @@ export function SiteFooter({ config = footerConfig(), year = currentYear() }: { 
               </li>
               {/* The topic guides of each airport (09/10/2026), linked from every page; written in French only for now. */}
               {currentLocale() === "fr" && AIRPORTS.flatMap(a =>
-                topicLinks(a.slug, ["topic", "station"]).map(topic => (
+                topicLinks(a.slug, ["topic", "usage", "station"]).map(topic => (
                   <li key={topic.href}>
                     <Link href={topic.href} className={linkClass}>
                       {fr.guide.footerLink(topic.short, a.name)}

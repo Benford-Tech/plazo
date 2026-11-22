@@ -155,8 +155,86 @@ describe("night fees in the cheap-parking guide (12/10/2026)", () => {
   });
 });
 
+// 22/11/2026 (« Comment bombarder le référencement » → « Ok »): the five use-case guides.
+const RICH: TopicFacts = { ...SOME, open24: 2, ev: 1, early: { offer: { priceCents: 6100, days: 8 }, fee: { min: 1000, max: 1500 } }, weekend: { priceCents: 2400, days: 3 } };
+
+describe.each(GUIDE_TOPICS.filter(t => t.group === "usage").map(t => t.slug))("use-case guide %s", slug => {
+  const bare = topicGuide("lyon-saint-exupery", slug, NONE)!;
+  const full = topicGuide("lyon-saint-exupery", slug, RICH)!;
+
+  it("has the shape of a search page, 2 000 words and nine questions", () => {
+    expect(bare.slug).toBe(slug);
+    expect(bare.metaTitle.length).toBeLessThanOrEqual(65);
+    expect(bare.metaDescription.length).toBeGreaterThanOrEqual(110);
+    expect(bare.metaDescription.length).toBeLessThanOrEqual(160);
+    const ids = bare.sections.map(s => s.id);
+    expect(bare.sections.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    expect(bare.sections.some(s => s.table || s.parts?.some(p => p.table))).toBe(true);
+    for (const s of bare.sections) if (s.table) for (const row of s.table.rows) expect(row).toHaveLength(s.table.columns.length + 1);
+    expect(words(bare)).toBeGreaterThanOrEqual(2000);
+    expect(bare.faq.length).toBeGreaterThanOrEqual(9);
+    expect(new Set(bare.faq.map(([q]) => q)).size).toBe(bare.faq.length);
+    for (const [question, answer] of bare.faq) {
+      expect(question).toMatch(/\?$/);
+      expect(answer.length).toBeGreaterThan(60);
+      expect(answer).not.toMatch(/ci-dessus|ci-dessous/);
+    }
+  });
+
+  it("states no figure about the partners without a real one", () => {
+    for (const text of texts(bare)) {
+      for (const sentence of text.split(/(?<=[.;:!?])\s+/)) {
+        if (/partenaire/i.test(sentence)) expect(sentence).not.toMatch(/\d+(?:,\d+)? ?€|\d+ (?:à \d+ )?min(?:utes)?\b/);
+      }
+    }
+  });
+
+  it("keeps the corrections of the airport guide", () => {
+    for (const guide of [bare, full]) {
+      const all = texts(guide).join("\n");
+      expect(all).not.toMatch(/Terminal 1 ou (au )?Terminal 2|devant le terminal|au plus près des portes/i);
+      expect(all).not.toMatch(/payez sur place|réglez à l’accueil|rien n’est payé en ligne/i);
+      expect(all).not.toMatch(/avis des voyageurs|avis clients|note moyenne|étoiles/i);
+      for (const text of texts(guide)) if (/frais ajoutés à l’arrivée|rien ne s’(?:y )?ajoute/.test(text)) expect(text).toMatch(/frais de nuit/);
+    }
+  });
+});
+
+describe("use-case guides read their own facts", () => {
+  it("the early flight shows the night fees and the open parkings", () => {
+    const guide = topicGuide("lyon-saint-exupery", "parking-vol-tot-le-matin", RICH)!;
+    const all = texts(guide).join("\n");
+    expect(all).toContain(`de ${formatEuros(1000)} à ${formatEuros(1500)}`);
+    expect(all).toContain(formatEuros(6100));
+    expect(guide.partners.filter).toBe("open_24h");
+    expect(topicGuide("lyon-saint-exupery", "parking-vol-tot-le-matin", NONE)!.partners.filter).toBe("all");
+  });
+
+  it("the electric car shows the parkings with a charge, the week-end three days", () => {
+    expect(topicGuide("lyon-saint-exupery", "parking-voiture-electrique", RICH)!.partners.filter).toBe("ev_charging");
+    const weekend = topicGuide("lyon-saint-exupery", "parking-week-end", RICH)!;
+    expect(texts(weekend).join("\n")).toContain(formatEuros(2400));
+    expect(weekend.partners.stayDays).toBe(3);
+  });
+
+  it("topicFacts reads the open, charging and night facts of the real partners only", () => {
+    const listings = [listing({ slug: "a", services: ["shuttle", "open_24h", "ev_charging"] }), listing({ slug: "d", services: ["open_24h"], isDemo: true })];
+    const early = preview([
+      result({ slug: "a", priceCents: 6100, nightFee: { arrivalCents: 1500, returnCents: 0, totalCents: 1500 } }),
+      result({ slug: "d", isDemo: true, priceCents: 100, nightFee: { arrivalCents: 500, returnCents: 0, totalCents: 500 } }),
+    ]);
+    const facts = topicFacts(listings, null, null, { early, weekend: preview([result({ slug: "a", days: 3, priceCents: 2400 })]) });
+    expect(facts.open24).toBe(1);
+    expect(facts.ev).toBe(1);
+    expect(facts.early).toEqual({ offer: { priceCents: 6100, days: 8 }, fee: { min: 1500, max: 1500 } });
+    expect(facts.weekend).toEqual({ priceCents: 2400, days: 3 });
+  });
+});
+
 // 17/11/2026 (« fais les pages ville et gare »): the station page and the city pages, shorter than the topic guides.
-describe.each(GUIDE_TOPICS.filter(t => t.group !== "topic").map(t => t.slug))("place guide %s", slug => {
+describe.each(GUIDE_TOPICS.filter(t => t.group === "station" || t.group === "city").map(t => t.slug))("place guide %s", slug => {
   const bare = topicGuide("lyon-saint-exupery", slug, NONE)!;
   const full = topicGuide("lyon-saint-exupery", slug, SOME)!;
 
@@ -212,6 +290,13 @@ describe("city guides: the road read on 17/11/2026", () => {
 
   it("keeps the footer to the topic guides and the station", () => {
     expect(topicLinks("lyon-saint-exupery", ["topic", "station"]).map(l => l.slug)).toEqual(["parking-pas-cher", "parking-longue-duree", "parking-voiturier", "parking-gare-tgv"]);
+    expect(topicLinks("lyon-saint-exupery", ["usage"]).map(l => l.slug)).toEqual([
+      "parking-vol-tot-le-matin",
+      "parking-en-famille",
+      "parking-voiture-electrique",
+      "parking-week-end",
+      "parking-voyage-affaires",
+    ]);
     expect(topicLinks("lyon-saint-exupery", ["city"])).toHaveLength(9);
   });
 });

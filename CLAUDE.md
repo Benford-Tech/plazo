@@ -2396,6 +2396,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   source ; « Les autres villes de départ » sur chaque guide ; pied de page : guides et gare seulement ; plan du site : tout. Français
   seulement, comme les guides. Tests `topic-guides.test.ts`, `TopicGuideView.test.tsx`, `structured-data.test.ts`. Pas encore : les
   pages par cas d'usage.
+- **Pages par cas d'usage, U1 à U5 (22/11/2026, « Comment bombarder le référencement » → « Go » → « Ok », maquettes
+  https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : cinq guides de plus sous `/lyon-saint-exupery/guide/…`, groupe `usage` de
+  `GUIDE_TOPICS` : `parking-vol-tot-le-matin` (`lyon-vol-tot.ts` : horaires d'accueil, frais de nuit, calcul à rebours, message de la
+  veille, « Prévenir de mon arrivée », retour tard), `parking-en-famille` (`lyon-en-famille.ts` : sièges auto gratuits par âge,
+  passagers, bagages, voiturier, jour du départ pas à pas), `parking-voiture-electrique` (`lyon-voiture-electrique.ts` : bornes de
+  l'aéroport, P4 Elec et P5 Elec, recharge commandée dans l'app et remboursée si elle n'est pas faite, batterie à l'arrêt),
+  `parking-week-end` (`lyon-week-end.ts` : grille 2026 de 24 h, 2 et 4 jours, tranches de 24 h face aux jours du calendrier,
+  dépose-minute, budget) et `parking-voyage-affaires` (`lyon-voyage-affaires.ts` : facture du parking demandée dans Ma réservation,
+  avoir, carte professionnelle, vol changé, réservation pour un collègue) ; ~2 000 mots et 9 questions au moins chacun (test
+  `topic-guides.test.ts`, « use-case guide »). Faits des vrais partenaires en plus (`topicFacts(…, { early, weekend })`) : `open24`,
+  `ev`, `early` (recherche avec un dépôt à 04:30 : offre la moins chère et frais de dépôt de nuit), `weekend` (trois jours) ; séjour
+  de chaque page par `guideStayOf` ; liste des partenaires filtrée par service (`partners.filter` `open_24h` · `ev_charging` quand un
+  vrai partenaire l'a) ; liens depuis les autres guides et le pied de page.
 - **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
