@@ -101,14 +101,13 @@ describe('le mail', () => {
 });
 
 describe('l’envoi', () => {
-  it('une fois par adresse et par parking, jamais pour Plazo, un import de fichier ou un séjour proche', async () => {
+  it('une fois par adresse et par parking, jamais pour Plazo ni pour un dépôt passé', async () => {
     const op = await setupOperator('Parking Fictif');
     await withListing(op);
     const first = await booking(op);
     await booking(op, { customerEmail: 'Camille@Example.org' }); // the same traveller again
     await booking(op, { channel: 'plazo', channelDetail: null, externalReference: null, customerEmail: 'plazo@example.org' });
-    await booking(op, { customerEmail: 'proche@example.org', arrivalAt: new Date(NOW.getTime() + 3600_000) });
-    await booking(op, { customerEmail: 'ancienne@example.org', createdAt: new Date(NOW.getTime() - 5 * 86400_000) });
+    await booking(op, { customerEmail: 'passe@example.org', arrivalAt: new Date(NOW.getTime() - 60_000) });
     await booking(op, { customerEmail: 'robot@allopark.com' });
 
     const report = await service.run(NOW);
@@ -124,15 +123,56 @@ describe('l’envoi', () => {
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
   });
 
-  it('jamais pour une réservation Allopark, par son nom ou son numéro AL-…', async () => {
+  it('dès que l’e-mail est connu : dépôt dans une heure, réservation d’il y a 5 jours (20/11/2026)', async () => {
     const op = await setupOperator('Parking Fictif');
     await withListing(op);
-    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'allo@example.org' });
-    await booking(op, { channelDetail: 'allopark', externalReference: null, customerEmail: 'allo2@example.org' });
-    await booking(op, { channelDetail: null, externalReference: 'AL-884880720', customerEmail: 'allo3@example.org' });
-    await booking(op, { channel: 'phone', channelDetail: null, externalReference: null, customerEmail: 'tel@example.org' });
+    await booking(op, { customerEmail: 'proche@example.org', arrivalAt: new Date(NOW.getTime() + 3600_000) });
+    const old = await booking(op, { customerEmail: null, createdAt: new Date(NOW.getTime() - 5 * 86400_000) });
     expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
-    expect(emails().map(m => m.to[0].email)).toEqual(['tel@example.org']);
+    // The email is typed later by the team: it goes at the next pass.
+    await prisma.reservation.update({ where: { id: old.id }, data: { customerEmail: 'ancienne@example.org' } });
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect(
+      emails()
+        .map(m => m.to[0].email)
+        .sort(),
+    ).toEqual(['ancienne@example.org', 'proche@example.org']);
+  });
+
+  it('un mail refusé par Brevo est réessayé une heure plus tard (19/11/2026)', async () => {
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    const b = await booking(op);
+    fetchMock.mockImplementation(async url => {
+      if (String(url) === BREVO_EMAIL) return new Response(JSON.stringify({ message: 'unrecognised IP address' }), { status: 401 });
+      return new Response('{}', { status: 200 });
+    });
+    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 1 });
+    // Not before an hour has passed.
+    expect(await service.run(new Date(NOW.getTime() + 15 * 60_000))).toEqual({ sent: 0, skipped: 0, failed: 0 });
+
+    fetchMock.mockImplementation(async url => {
+      if (String(url) === BREVO_EMAIL) return new Response(JSON.stringify({ messageId: '<m@brevo>' }), { status: 201 });
+      return new Response('{}', { status: 200 });
+    });
+    expect(await service.run(new Date(NOW.getTime() + 61 * 60_000))).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } })).welcomeEmailOutcome).toBe('sent');
+    expect(await service.run(new Date(NOW.getTime() + 3 * 3600_000))).toEqual({ sent: 0, skipped: 0, failed: 0 });
+  });
+
+  it('Allopark et import de fichier : envoyé dès que l’e-mail du voyageur est connu (20/11/2026)', async () => {
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    const file = await prisma.reservationImport.create({ data: { operatorId: op.operator.id, fileName: 'planning.xlsx' } });
+    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'allo@example.org' });
+    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880720', customerEmail: 'resa@allopark.com' });
+    await booking(op, { importId: file.id, customerEmail: 'fichier@example.org' });
+    expect(await service.run(NOW)).toEqual({ sent: 2, skipped: 1, failed: 0 });
+    expect(
+      emails()
+        .map(m => m.to[0].email)
+        .sort(),
+    ).toEqual(['allo@example.org', 'fichier@example.org']);
   });
 
   it('rien sans fiche Plazo, ni depuis le parking de test', async () => {
@@ -224,21 +264,19 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
     });
     await prisma.travellerEmailOptout.deleteMany();
     await booking(op); // sent
-    await booking(op, { channelDetail: 'Allopark', externalReference: 'AL-884880719', customerEmail: 'a@example.org' });
     await booking(op, { customerEmail: null, externalReference: '#2' });
-    await booking(op, { arrivalAt: new Date(NOW.getTime() - 3600_000 + 2 * 3600_000), customerEmail: 'b@example.org' });
+    await booking(op, { arrivalAt: new Date(NOW.getTime() - 60_000), customerEmail: 'b@example.org' });
     await booking(admin, { customerEmail: 'test@example.org' }); // the test operator is left out
     const ran = await service.run(NOW);
     expect(ran).toEqual({ sent: 1, skipped: 0, failed: 0 });
 
     const res = await api().get('/api/internal/platform/traveller-welcome?days=30').set('Authorization', `Bearer ${admin.token}`);
     expect(res.status).toBe(200);
-    expect(res.body.counts).toEqual({ bookings: 5, sent: 1, handledNotSent: 0, notCandidate: 4, pending: 0 });
+    expect(res.body.counts).toEqual({ bookings: 4, sent: 1, handledNotSent: 0, notCandidate: 3, pending: 0 });
     expect(res.body.reasons).toEqual([
       { reason: 'before_launch', count: 1 },
-      { reason: 'allopark', count: 1 },
       { reason: 'no_email', count: 1 },
-      { reason: 'too_late', count: 1 },
+      { reason: 'arrival_passed', count: 1 },
     ]);
     expect(res.body.rows).toHaveLength(1);
     expect(res.body.rows[0]).toMatchObject({ traveller: 'Camille M.', email: 'c•••••@example.org', parking: 'Parking des Cèdres', outcome: 'sent' });

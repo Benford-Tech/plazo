@@ -258,6 +258,7 @@ describe("Ma fiche", () => {
       distanceKm: 3.5,
       openingHours: null,
       contactPhone: null,
+      googleReviewUrl: null,
       cancellationPolicy: "free_24h",
       photos: [],
     });
@@ -424,6 +425,25 @@ describe("Ma fiche", () => {
     expect(field).toHaveAttribute("aria-invalid", "false");
     expect(screen.queryByText("Nombre entier, entre 0 et 120 minutes.")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+  });
+
+  it("enregistre le lien d'avis Google et explique un lien refusé (22/11/2026)", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, googleReviewUrl: null }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockRejectedValueOnce(new ApiError(400, "invalid", "validation_failed", { googleReviewUrl: "invalid" }));
+    api.updateListing.mockImplementation(async (input: { googleReviewUrl: string | null }) => ({ data: { ...savedListing, googleReviewUrl: input.googleReviewUrl } }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Lien d'avis Google (facultatif)");
+    expect(screen.getByText(/« Demander des avis » › copier le lien/)).toBeInTheDocument();
+    fireEvent.change(field, { target: { value: "https://exemple.fr/avis" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(screen.getByText(/Collez le lien d'avis donné par Google/)).toBeInTheDocument();
+    fireEvent.change(field, { target: { value: " https://g.page/r/CbX/review " } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(2));
+    expect(api.updateListing.mock.calls[1][0]).toMatchObject({ googleReviewUrl: "https://g.page/r/CbX/review" });
   });
 
   it("montre en français le refus du serveur sur l'attente moyenne", async () => {

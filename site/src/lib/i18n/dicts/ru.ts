@@ -881,6 +881,11 @@ export const ru: Dict = {
     nonRefundable: "Отмена онлайн невозможна",
     dayTitle: "В день отъезда",
     conditionsTitle: "Полезно знать",
+    review: {
+      title: "С возвращением!",
+      text: (parking: string) => `Пара слов о ${parking}? Ваш отзыв поможет другим путешественникам выбрать парковку.`,
+      button: "Оставить отзыв в Google",
+    },
     step1Title: "Приезжайте на парковку",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Заложите ${min ? `${min} мин на трансфер` : "время на трансфер"} до срока, рекомендованного Вашей авиакомпанией.`,
@@ -1236,6 +1241,16 @@ export const ru: Dict = {
     notFound: "Эта страница бронирования не открыта.",
     yourDetails: "Ваши данные",
     nightFee: "Ночная доплата",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Предпросмотр: сайт ещё не опубликован.",
+    photos: "Фото",
+    contact: "Связаться с нами",
+    goodToKnow: "Полезно знать",
+    bookingClosed: "Онлайн-бронирование откроется после публикации сайта.",
+    notFound: "Этот сайт не опубликован.",
+    call: "Позвонить",
   },
   errors: {
     required: "Обязательное поле.",

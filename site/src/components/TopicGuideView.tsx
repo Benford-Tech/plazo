@@ -17,9 +17,10 @@ import type { AirportResponse, SearchResponse } from "@/lib/types";
 
 /** The partner parkings a topic guide shows: real ones only, bookable for the stay, cheapest first. */
 export function guidePartners(guide: Pick<TopicGuide, "partners">, preview: SearchResponse | null, listings: AirportResponse["listings"]) {
-  const valets = new Set(listings.filter(l => l.services.includes("valet")).map(l => l.slug));
+  const filter = guide.partners.filter;
+  const matching = new Set(listings.filter(l => filter !== "all" && l.services.includes(filter)).map(l => l.slug));
   return (preview?.results ?? [])
-    .filter(r => !r.isDemo && r.available && r.priceCents !== null && (guide.partners.filter === "all" || valets.has(r.slug)))
+    .filter(r => !r.isDemo && r.available && r.priceCents !== null && (filter === "all" || matching.has(r.slug)))
     .sort((a, b) => a.priceCents! - b.priceCents!)
     .slice(0, 6);
 }
@@ -43,7 +44,7 @@ export function TopicGuideView({
 }) {
   const base = siteUrl();
   const partners = guidePartners(guide, preview, listings);
-  const others = topicLinks(airport.slug, ["topic", "station"]).filter(t => t.href !== path);
+  const others = topicLinks(airport.slug, ["topic", "usage", "station"]).filter(t => t.href !== path);
   const cities = topicLinks(airport.slug, ["city"]).filter(t => t.href !== path);
   const sectionTitle = "font-title lining-nums text-[26px] leading-[1.15] text-ink md:text-[32px]";
 

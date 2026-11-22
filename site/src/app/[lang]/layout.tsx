@@ -11,7 +11,7 @@ import { enterLocale } from "@/lib/i18n/server";
 import { paymentsOnline } from "@/lib/payments";
 import { PRODUCT_NAME } from "@/lib/product";
 import { openGraph } from "@/lib/seo";
-import { BOOKING_PAGE_PREFIX, OPERATORS_PREFIX, siteUrl } from "@/lib/site";
+import { BOOKING_PAGE_PREFIX, OPERATORS_PREFIX, PARKING_SITE_PREFIX, siteUrl } from "@/lib/site";
 import "../globals.css";
 
 // Boutique (11/10/2026): Manrope for the text and the prices, Playfair Display regular (no more italic) for the
@@ -59,7 +59,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
         {/* Plazo Pro's pages carry their own header and footer: hidden by path on /loueurs, and by CSS wherever the pro
             layout is on the page (on pro.plazo.fr the path is « / », 28/10/2026). */}
         <div data-traveller-chrome className="contents">
-          <HiddenOn prefixes={[OPERATORS_PREFIX, BOOKING_PAGE_PREFIX]}>
+          <HiddenOn prefixes={[OPERATORS_PREFIX, BOOKING_PAGE_PREFIX, PARKING_SITE_PREFIX]}>
             <SiteHeader />
           </HiddenOn>
         </div>
@@ -67,7 +67,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
           {children}
         </div>
         <div data-traveller-chrome className="contents">
-          <HiddenOn prefixes={[OPERATORS_PREFIX, BOOKING_PAGE_PREFIX]}>
+          <HiddenOn prefixes={[OPERATORS_PREFIX, BOOKING_PAGE_PREFIX, PARKING_SITE_PREFIX]}>
             <SiteFooter />
           </HiddenOn>
         </div>

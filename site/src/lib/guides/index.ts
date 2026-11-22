@@ -1,10 +1,15 @@
 // Topic guides of the airports (09/10/2026): the registry the guide route, the sitemap and the footer read.
 import type { TopicFacts, TopicGuide } from "../airport-guides";
 import { lyonCityGuides } from "./lyon-depuis";
+import { lyonEnFamille } from "./lyon-en-famille";
 import { lyonGareTgv } from "./lyon-gare-tgv";
 import { lyonLongueDuree } from "./lyon-longue-duree";
 import { lyonPasCher } from "./lyon-pas-cher";
 import { lyonVoiturier } from "./lyon-voiturier";
+import { lyonVoitureElectrique } from "./lyon-voiture-electrique";
+import { lyonVolTot } from "./lyon-vol-tot";
+import { lyonVoyageAffaires } from "./lyon-voyage-affaires";
+import { lyonWeekEnd } from "./lyon-week-end";
 import { GUIDE_TOPICS, isGuideTopic, topicPath, type GuideGroup, type GuideTopicSlug } from "./topics";
 
 const TOPICS: Record<string, Record<GuideTopicSlug, (facts: TopicFacts) => TopicGuide>> = {
@@ -12,6 +17,11 @@ const TOPICS: Record<string, Record<GuideTopicSlug, (facts: TopicFacts) => Topic
     "parking-pas-cher": lyonPasCher,
     "parking-longue-duree": lyonLongueDuree,
     "parking-voiturier": lyonVoiturier,
+    "parking-vol-tot-le-matin": lyonVolTot,
+    "parking-en-famille": lyonEnFamille,
+    "parking-voiture-electrique": lyonVoitureElectrique,
+    "parking-week-end": lyonWeekEnd,
+    "parking-voyage-affaires": lyonVoyageAffaires,
     "parking-gare-tgv": lyonGareTgv,
     ...lyonCityGuides,
   },

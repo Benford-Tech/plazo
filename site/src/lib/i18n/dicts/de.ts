@@ -870,6 +870,11 @@ export const de: Dict = {
     nonRefundable: "Online nicht stornierbar",
     dayTitle: "Am Abreisetag",
     conditionsTitle: "Gut zu wissen",
+    review: {
+      title: "Willkommen zurück!",
+      text: (parking: string) => `Ein paar Worte zu ${parking}? Ihre Bewertung hilft anderen Reisenden bei der Wahl ihres Parkplatzes.`,
+      button: "Auf Google bewerten",
+    },
     step1Title: "Kommen Sie zum Parkplatz",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Planen Sie ${min ? `${min} Min. Shuttle-Fahrt` : "die Shuttle-Fahrt"} vor der von Ihrer Fluggesellschaft empfohlenen Zeit ein.`,
@@ -1226,6 +1231,16 @@ export const de: Dict = {
     notFound: "Diese Buchungsseite ist nicht geöffnet.",
     yourDetails: "Ihre Angaben",
     nightFee: "Nachtzuschlag",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Vorschau: Diese Website ist noch nicht online.",
+    photos: "Fotos",
+    contact: "Kontakt",
+    goodToKnow: "Gut zu wissen",
+    bookingClosed: "Die Online-Buchung öffnet, sobald die Website online ist.",
+    notFound: "Diese Website ist nicht online.",
+    call: "Anrufen",
   },
   errors: {
     required: "Pflichtfeld.",

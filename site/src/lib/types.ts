@@ -247,6 +247,28 @@ export interface BookingPageInfo {
   accentInk: string;
 }
 
+/** 22/11/2026: one block of a parking's own site (/s/<slug>), in the order the manager chose. */
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export interface SiteBlock {
+  id: string;
+  /** A kind this site does not know yet is skipped. */
+  kind: SiteBlockKind | (string & {});
+  enabled: boolean;
+  title: string | null;
+  text: string | null;
+}
+
+/** GET /public/sites/:slug: what the parking's own site shows. */
+export interface ParkingSiteInfo extends BookingPageInfo {
+  blocks: SiteBlock[];
+  /** The « Réserver » block takes bookings (always, for a site online). */
+  bookable: boolean;
+  /** Opened with the manager's key while the site is offline. */
+  preview: boolean;
+  /** The parking's own host once it serves the site (missing from an older API). */
+  domain?: string | null;
+}
+
 export interface PublicBooking {
   reference: string;
   status: BookingStatus;
@@ -270,6 +292,8 @@ export interface PublicBooking {
     phone?: string | null;
     /** 12/11/2026: the parking's supplements and conditions, one line. */
     conditions?: string | null;
+    /** 22/11/2026: the parking's Google review link, sent only once the car is handed back; null or missing: none. */
+    reviewUrl?: string | null;
   };
   arrivalAt: string;
   returnAt: string;

@@ -221,6 +221,7 @@ describe('messages au voyageur', () => {
       meetingLabel: null,
       meetingInstructions: null,
       conditions: null,
+      reviewUrl: null,
     },
     arrivalAt: '2026-10-04T23:30',
     returnAt: '2026-10-11T15:05',

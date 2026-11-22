@@ -15,13 +15,11 @@ import { isSilentOperator } from '@/services/demo-guard';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
 
-/** Bookings made at most this long ago get the welcome email (older ones are left: the stay may already be near). */
-export const WELCOME_WINDOW_MS = 48 * 3600_000;
 /** One welcome email per address and operator in this time. */
 export const WELCOME_REPEAT_MS = 365 * 24 * 3600_000;
-/** Not when the drop-off is this close: the reminder of the day before (or nothing) does the job. */
-export const WELCOME_MIN_LEAD_MS = 3 * 3600_000;
 const PER_PASS = 40;
+/** A mail the provider refused is tried again after this long, while the booking is still in its window. */
+export const WELCOME_RETRY_MS = 3600_000;
 
 const REPORT_PERIODS = [7, 30, 90];
 /** The list shows at most this many handled bookings (the counts cover them all). */
@@ -63,7 +61,7 @@ export interface WelcomeRunReport {
 /**
  * 15/11/2026 (« Mail d'intro de Plazo au client avec message pour installer l'App », direction B): the welcome email to a
  * traveller whose booking did not come through Plazo (comparator, phone, counter, the parking's site, an imported mail).
- * Sent by the 15-minute pass, once per address and operator in 12 months, never for a file import, a stay already near,
+ * Sent by the 15-minute pass, once per address and operator in 12 months, never for a drop-off already passed,
  * an operator who sends nothing (test, demo), a parking without a listing (the link would not find the booking), nor an
  * address that opted out. Each booking is claimed before its email (two passes never send twice).
  */
@@ -76,29 +74,27 @@ export class TravellerWelcomeService {
     if (!this.notifications.canSendEmail() || !this.secret()) return report;
     const candidates = await prisma.reservation.findMany({
       where: {
-        welcomeEmailAt: null,
+        // 19/11/2026 (« les mails d'invitation ne semblent pas être envoyés »): a mail Brevo refused (its outage of the
+        // day) was marked `failed` for good; it is now tried again every hour while the booking is in its window.
+        OR: [{ welcomeEmailAt: null }, { welcomeEmailOutcome: 'failed', welcomeEmailAt: { lt: new Date(now.getTime() - WELCOME_RETRY_MS) } }],
         channel: { not: 'plazo' },
         status: 'upcoming',
-        importId: null,
+        // 20/11/2026: an imported file's booking and an Allopark booking get it too, when the traveller's own address is
+        // known (an Allopark or robot address is left by travellerEmail in handle: « no_email »).
         anonymizedAt: null,
-        createdAt: { gte: new Date(now.getTime() - WELCOME_WINDOW_MS) },
-        arrivalAt: { gt: new Date(now.getTime() + WELCOME_MIN_LEAD_MS) },
+        // As soon as the traveller's email is known, however late (« il faut envoyer quand on a le mail », 20/11/2026):
+        // a drop-off an hour away or an email added days after the booking still gets it, until the drop-off has passed.
+        arrivalAt: { gt: now },
         customerEmail: { not: null },
         parking: { listing: { isNot: null } },
         operator: { suspendedAt: null, archivedAt: null, isDemo: false, prospectDemo: false },
-        // Never a traveller who booked through Allopark (« ne pas envoyer le mail d'invitation quand c'est un mail
-        // Allopark », 15/11/2026): neither its name on the booking nor its AL-… number. Written to keep the rows
-        // whose name or number is empty (a NOT over a null column would drop them).
-        AND: [
-          { OR: [{ channelDetail: null }, { NOT: { channelDetail: { equals: 'Allopark', mode: 'insensitive' } } }] },
-          { OR: [{ externalReference: null }, { NOT: { externalReference: { startsWith: 'AL-', mode: 'insensitive' } } }] },
-        ],
       },
       // The id breaks a tie (two bookings of the same instant): the first booked of a traveller gets the mail, every time.
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: PER_PASS,
       select: {
         id: true,
+        welcomeEmailAt: true,
         operatorId: true,
         reference: true,
         externalReference: true,
@@ -112,7 +108,10 @@ export class TravellerWelcomeService {
     });
     for (const r of candidates) {
       // Claimed first: a second pass at the same time finds nothing to send.
-      const claimed = await prisma.reservation.updateMany({ where: { id: r.id, welcomeEmailAt: null }, data: { welcomeEmailAt: now } });
+      const claimed = await prisma.reservation.updateMany({
+        where: { id: r.id, welcomeEmailAt: r.welcomeEmailAt },
+        data: { welcomeEmailAt: now },
+      });
       if (!claimed.count) continue;
       const outcome = await this.handle(r, now);
       await prisma.reservation.update({ where: { id: r.id }, data: { welcomeEmailOutcome: outcome } });

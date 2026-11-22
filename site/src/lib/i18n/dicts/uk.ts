@@ -891,6 +891,11 @@ export const uk: Dict = {
     nonRefundable: "Не скасовується онлайн",
     dayTitle: "У день від’їзду",
     conditionsTitle: "Варто знати",
+    review: {
+      title: "З поверненням!",
+      text: (parking: string) => `Кілька слів про ${parking}? Ваш відгук допоможе іншим мандрівникам обрати паркінг.`,
+      button: "Залишити відгук у Google",
+    },
     step1Title: "Приїжджайте на паркінг",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Закладіть ${min ? `${min} хв на шатл` : "час на поїздку шатлом"} до часу, рекомендованого вашою авіакомпанією.`,
@@ -1247,6 +1252,16 @@ export const uk: Dict = {
     notFound: "Ця сторінка бронювання не відкрита.",
     yourDetails: "Ваші дані",
     nightFee: "Нічна доплата",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Попередній перегляд: сайт ще не опубліковано.",
+    photos: "Фото",
+    contact: "Зв’язатися з нами",
+    goodToKnow: "Варто знати",
+    bookingClosed: "Онлайн-бронювання відкриється після публікації сайту.",
+    notFound: "Цей сайт не опубліковано.",
+    call: "Зателефонувати",
   },
   errors: {
     required: "Обов’язкове поле.",

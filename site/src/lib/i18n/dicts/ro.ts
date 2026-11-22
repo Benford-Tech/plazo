@@ -918,6 +918,11 @@ export const ro: Dict = {
     nonRefundable: "Nu poate fi anulată online",
     dayTitle: "În ziua plecării",
     conditionsTitle: "De știut",
+    review: {
+      title: "Bine ați revenit!",
+      text: (parking: string) => `Câteva cuvinte despre ${parking}? Recenzia dvs. îi ajută pe alți călători să-și aleagă parcarea.`,
+      button: "Lăsați o recenzie pe Google",
+    },
     step1Title: "Veniți la parcare",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Prevedeți ${min ? `${min} min de navetă` : "drumul cu naveta"} înainte de ora recomandată de compania aeriană.`,
@@ -1305,6 +1310,16 @@ export const ro: Dict = {
     notFound: "Această pagină de rezervare nu este deschisă.",
     yourDetails: "Datele dvs.",
     nightFee: "Taxă de noapte",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Previzualizare: acest site nu este încă online.",
+    photos: "Fotografii",
+    contact: "Contact",
+    goodToKnow: "De știut",
+    bookingClosed: "Rezervarea online se deschide odată cu publicarea site-ului.",
+    notFound: "Acest site nu este online.",
+    call: "Sunați",
   },
   errors: {
     required: "Câmp obligatoriu.",

@@ -4,27 +4,22 @@
  * never was a candidate, with the first reason met, in the order of TravellerWelcomeService.run's own filters.
  */
 
+import { travellerEmail } from '@/domain/traveller-email';
+
 export type WelcomeOutcome = 'sent' | 'repeat' | 'opted_out' | 'no_email' | 'failed';
 
 export const NOT_SENT_REASONS = [
   'before_launch',
-  'allopark',
-  'import',
   'no_email',
   'no_listing',
   'operator_off',
-  'too_late',
   'cancelled',
   'anonymized',
   'already_dropped',
   'pending',
-  'missed',
+  'arrival_passed',
 ] as const;
 export type NotSentReason = (typeof NOT_SENT_REASONS)[number];
-
-/** Same limits as the pass (traveller-welcome.service.ts). */
-const WINDOW_MS = 48 * 3600_000;
-const MIN_LEAD_MS = 3 * 3600_000;
 
 export interface WelcomeFacts {
   createdAt: Date;
@@ -66,17 +61,16 @@ export function welcomeStateOf(r: WelcomeFacts, now: Date, markedAt: Date | null
 }
 
 function notSentReason(r: WelcomeFacts, now: Date): NotSentReason {
-  if (/^allopark$/i.test(r.channelDetail ?? '') || /^AL-/i.test(r.externalReference ?? '')) return 'allopark';
-  if (r.importId) return 'import';
-  if (!r.customerEmail) return 'no_email';
+  // 20/11/2026: Allopark and file imports are sent too, as long as the traveller's own address is known.
+  if (!travellerEmail(r.customerEmail)) return 'no_email';
   if (!r.hasListing) return 'no_listing';
   if (r.operatorOff) return 'operator_off';
-  if (r.arrivalAt.getTime() - r.createdAt.getTime() <= MIN_LEAD_MS) return 'too_late';
   if (r.status === 'cancelled' || r.status === 'no_show') return 'cancelled';
   if (r.anonymizedAt) return 'anonymized';
   if (r.status !== 'upcoming') return 'already_dropped';
-  if (now.getTime() - r.createdAt.getTime() < WINDOW_MS && r.arrivalAt.getTime() > now.getTime() + MIN_LEAD_MS) return 'pending';
-  return 'missed';
+  // The pass sends as soon as the email is known, until the drop-off (20/11/2026).
+  if (r.arrivalAt.getTime() > now.getTime()) return 'pending';
+  return 'arrival_passed';
 }
 
 /** « camille.martin@gmail.com » → « c•••••@gmail.com »: the platform sees who, not the whole address. */

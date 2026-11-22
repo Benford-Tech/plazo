@@ -527,6 +527,45 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      suit sa hauteur. Tests `payments.test.ts` (« Ma page de réservation »), `booking-page-actions.test.ts`, `BookingPageCard.test.tsx`.
      Pas encore : le canal affiché « Site du parking » sur la fiche et dans les chiffres (la réservation reste « Plazo », commission 0),
      les sièges auto, les services et le vol aller dans le module, Plazo Pro.
+   - **Site dédié du parking, en blocs, étape 1 (22/11/2026, « pouvoir créer une site dédié au parking », « le plus modulaire
+     possible », « le site est en supplément », maquettes https://claude.ai/artifact/96WZPaPofiyzbePTDDzpxD)** : chaque parking a son
+     site `plazo.fr/s/<slug>` (l'adresse et la couleur sont celles de sa page de réservation, `Operator.bookingPageSlug/Accent`),
+     fait de blocs que le gérant range, allume, éteint et retitre : blocs « Plazo » remplis seuls (`booking` toujours affiché,
+     `highlights`, `steps`, `pricing`, `photos`, `access`, `services`, `conditions`, `faq`, `contact`) et blocs libres `text` (6 au
+     plus, 1 200 caractères) ; `domain/operator-site.ts` (`PLAZO_BLOCK_KINDS`, `readBlocks`, `blocksOf` : un genre ajouté plus tard
+     revient éteint en fin de liste, `sitePreviewKey`), table `operator_sites` (migration `operator_site` : `blocks` JSON,
+     `addonRequestedAt`, `addonAt`, `publishedAt`, CHECK en ligne ⇒ option). **Option payante** : `SITE_ADDON_PRICE_CENTS` 29 € HT
+     par mois (à confirmer par Joanny), demandée par le gérant, activée par la plateforme ; rien n'est facturé en ligne.
+     `OperatorSiteService` : `GET|PUT /internal/site` (`parking:manage`, PUT `RefuseInDemo` ; 400 `blocks` invalid · invalid_kind ·
+     duplicate · booking_required · text_required · text_too_long · too_many_texts, `slug` invalid · reserved · taken, `published`
+     addon_required · listing_offline ; publier ouvre aussi la page de réservation, dont le bloc « Réserver » se sert : payé en
+     ligne, reversé en entier), `POST /internal/site/request` (ligne « À traiter » `site_requested` de la plateforme),
+     `GET|PUT /internal/platform/operators/:id/site` `{ active }` (éteindre retire le site, les blocs restent),
+     `GET /public/sites/:slug` (404 hors ligne, sauf avec `?apercu=<clé>` du gérant). Site : page `/s/[slug]`
+     (`components/parking-site/` : `ParkingSite`, un composant par bloc dans `blocks.tsx`, registre `BLOCKS` ; menu tiré des blocs,
+     en-tête et pied de page propres au parking, « Réservation par Plazo » au pied ; `BookingPageModule embedded` ; indexée, sauf
+     aperçu et démo ; textes `parkingSite` dans les neuf langues). Espace pro : Gérant › Sur Plazo › « Mon site » (`/plazo/site`,
+     `SitePage` : blocs avec ↑ ↓, interrupteur, titre, « + Ajouter un texte », adresse, couleur, « Voir l'aperçu », encart de
+     l'option, « Mettre mon site en ligne ») ; Plateforme › loueur : `OperatorSiteCard`. Tests `operator-site.test.ts`,
+     `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : variantes de présentation par bloc, blocs image / bouton / annonce,
+     plusieurs pages, logo du parking, `nom.plazo.fr` ou le nom de domaine du parking, paiement de l'option par Stripe, Plazo Pro.
+   - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : avec l'option, le gérant tape son
+     nom de domaine dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son
+     fournisseur (`domain/site-domain.ts` : `readDomain` (jamais plazo.fr, vercel.app ni une adresse IP), `dnsRecordFor` : CNAME
+     `www` → `cname.vercel-dns.com`, ou A `@` → `76.76.21.21` pour un nom nu ; `dnsState`), relit ses DNS (`SiteDomainHostService.dns`,
+     à « Vérifier » et à chaque lecture de la page, une fois par minute au plus) et suit l'état : `dns_missing` · `dns_wrong` ·
+     `not_attached` · `host_error` · actif. `OperatorSite.domain` (unique) / `domainSetAt` / `domainActiveAt` / `domainCheckedAt` /
+     `domainIssue` (migration `operator_site_domain`). **Branchement chez l'hébergeur** : avec `VERCEL_DOMAINS_TOKEN` (et
+     `VERCEL_DOMAINS_PROJECT`, `VERCEL_DOMAINS_TEAM`, sinon `VERCEL_PROJECT_ID` / `VERCEL_TEAM_ID`), Plazo ajoute le nom au projet
+     Vercel et l'active seul (`attach`, `detach`) ; sans jeton, ligne « À traiter » `site_domain` et la plateforme l'ajoute à la
+     main puis « Marquer comme branché » (`PUT /internal/platform/operators/:id/site/domain { active }`). Routes :
+     `PUT /internal/site/domain { domain }` (nul = retiré ; 400 `domain` invalid · taken · addon_required), `POST …/domain/check`,
+     `GET /public/site-domains/:host` → `{ slug }` (404 tant que le site n'est pas en ligne et le nom actif). Site : `proxy.ts`
+     reconnaît un hôte étranger (`lib/parking-site-host.ts`, réponse gardée une minute) : sa racine sert `/s/<slug>` dans la langue
+     demandée, toute autre page part en 308 vers plazo.fr ; `plazo.fr/s/<slug>` renvoie vers le nom de domaine, qui devient
+     l'adresse canonique. Éteindre l'option ou retirer le nom ferme l'hôte. Tests `operator-site.test.ts`,
+     `parking-site-host.test.ts`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore essayé avec un vrai nom de domaine ; l'offre
+     Hobby de Vercel limite le nombre de domaines par projet ; `robots.txt` et le plan du site sur le nom du parking restent ceux de Plazo.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
      https://claude.ai/artifact/RJGgDZou8Fy1dMnzCtZGWA ; l'import par copier-coller retiré le 06/10/2026 revient, par la boîte
      de réception)** : bouton « Coller un mail » en tête de la Boîte de réception (`PasteMailDialog` d'`InboundEmailsPage` : objet
@@ -1620,15 +1659,26 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `TravellerWelcomeService.run`, 40 par passage) envoie au voyageur « Camille, installez Plazo avant votre départ du 20 novembre »
      (`domain/traveller-welcome.ts`, `welcomeEmail`) : bandeau orange avec les badges des stores et « Déjà installée ? Ouvrir ma
      réservation », trois écrans de l'app (`site/public/mail/plazo-depot|atterrissage|ma-voiture.jpg`), « Et aussi », puis ouvrir sa
-     réservation par le lien court (`/a/…`) ou le numéro (celui du comparateur) et l'e-mail. Seulement : statut « Attendu », créée
-     depuis moins de 48 h, dépôt dans plus de 3 h, avec un e-mail du voyageur (`travellerEmail`), hors import de fichier, **jamais une réservation
-     Allopark** (15/11/2026, « ne pas envoyer le mail d'invitation quand c'est un mail allopark » : comparateur Allopark ou numéro
-     `AL-…`), parking avec une fiche, loueur ni suspendu, archivé, de démo ni de test (`isSilentOperator`) ; une fois par adresse et par loueur sur 12 mois
+     réservation par le lien court (`/a/…`) ou le numéro (celui du comparateur) et l'e-mail. Seulement : statut « Attendu », dépôt pas encore passé,
+     avec un e-mail du voyageur (dès qu'il est connu, même ajouté plus tard ou pour un dépôt dans l'heure : « il faut envoyer quand on a le mail », 20/11/2026 ; avant : créée depuis moins de 48 h et dépôt dans plus de 3 h) (`travellerEmail` : jamais une adresse de comparateur ni de robot) ; **Allopark et import de fichier compris depuis le 20/11/2026**
+     (« Jamais pour une réservation Allopark. Sauf on a le mail de la personne », « import de fichier : faux » ; du 15 au 20/11 Allopark
+     était exclu), parking avec une fiche, loueur ni suspendu, archivé, de démo ni de test (`isSilentOperator`) ; une fois par adresse et par loueur sur 12 mois
      (`Reservation.welcomeEmailAt` réservé avant l'envoi, `welcomeEmailOutcome` sent · repeat · opted_out · no_email · failed ;
      migration `traveller_welcome`, qui marque les réservations d'avant). « Ne plus recevoir ces messages » :
      `GET|POST /public/traveller-emails/unsubscribe/:jeton` (id de la réservation + HMAC de `SECRET_KEY`, page avec un bouton,
      un clic RFC 8058, `List-Unsubscribe`) → `traveller_email_optouts` (sha256 de l'adresse). Politique de confidentialité
-     (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Onepark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). Test `traveller-welcome.test.ts`. **Liste côté plateforme, direction B (18/11/2026, « affiche une liste des mails d'invitation envoyés côté plateforme », maquettes https://claude.ai/artifact/4goDrXUVpCpN6hqF7ExgSF)** : Plateforme › Croissance › « Mails d'accueil » (`/pro/plateforme/mails-accueil`, `WelcomeEmailsPage`) : réservations hors Plazo créées sur 7, 30 ou 90 jours (sans démo ni loueur « … (tests) »), filtre par parking ; tuiles Réservations hors Plazo · Mails envoyés · Traitées sans envoi · Jamais candidates ; onglets Envoyés · Sans envoi (traité le, parking, prénom et initiale, e-mail masqué « c•••••@gmail.com », numéro et canal, dépôt, résultat : Envoyé, Déjà reçu, Désinscrit, Sans e-mail, Échec, En cours ; 300 au plus) ; encart « Pourquoi les N autres ne l'ont pas eu » : première raison dans l'ordre du passage (`welcomeStateOf` de `domain/welcome-report.ts` : réservée avant la mise en service (lignes marquées « repeat » par la migration, `markedAt` = premier `welcomeEmailAt`), Allopark, import, pas d'e-mail, pas de fiche, parking suspendu, dépôt à moins de 3 h, annulée, anonymisée, voiture déposée, en attente du prochain passage, non traitée en 48 h). `GET /internal/platform/traveller-welcome?days=&operatorId=` (`TravellerWelcomeService.report`, `PlatformAdminMiddleware`). Tests `traveller-welcome.test.ts`, `WelcomeEmailsPage.test.tsx`.
+     (article 3). **Envoyé depuis contact@plazo.fr et testable (15/11/2026, « passe par le mail contact@plazo.fr », « mets-le à dispo sur Plazo, je ferai le test d'envoi »)** : expéditeur « Plazo <`supportEmail`> » (`emailTraveller(…, from)`) ; bloc « Mail d'accueil aux voyageurs » de Plateforme › Notifications (`WelcomeTestCard` : parking au choix ou d'exemple, « M'envoyer un test ») → `POST /internal/platform/traveller-welcome/test { operatorId? }` (`TravellerWelcomeService.sendTest` : réservation d'exemple dans 5 jours, numéro Onepark, objet « [Test] … », envoyé à l'administrateur, rien d'enregistré ; 409 `email_unavailable`, 404 `not_found`, 502 `email_failed`). **Échec réessayé (19/11/2026, « les mails d'invitation à télécharger Plazo ne semblent pas être envoyés », Brevo refusait tout, 401 `ip_not_authorised`)** : un mail que Brevo refuse (`failed`) est réessayé une heure plus tard (`WELCOME_RETRY_MS`), tant que le dépôt n'est pas passé ; avant, il était perdu. Test `traveller-welcome.test.ts`. **Liste côté plateforme, direction B (18/11/2026, « affiche une liste des mails d'invitation envoyés côté plateforme », maquettes https://claude.ai/artifact/4goDrXUVpCpN6hqF7ExgSF)** : Plateforme › Croissance › « Mails d'accueil » (`/pro/plateforme/mails-accueil`, `WelcomeEmailsPage`) : réservations hors Plazo créées sur 7, 30 ou 90 jours (sans démo ni loueur « … (tests) »), filtre par parking ; tuiles Réservations hors Plazo · Mails envoyés · Traitées sans envoi · Jamais candidates ; onglets Envoyés · Sans envoi (traité le, parking, prénom et initiale, e-mail masqué « c•••••@gmail.com », numéro et canal, dépôt, résultat : Envoyé, Déjà reçu, Désinscrit, Sans e-mail, Échec, En cours ; 300 au plus) ; encart « Pourquoi les N autres ne l'ont pas eu » : première raison dans l'ordre du passage (`welcomeStateOf` de `domain/welcome-report.ts` : réservée avant la mise en service (lignes marquées « repeat » par la migration, `markedAt` = premier `welcomeEmailAt`), pas d'e-mail du voyageur, pas de fiche, parking suspendu, annulée, anonymisée, voiture déposée, en attente du prochain passage, dépôt passé avant l'envoi). `GET /internal/platform/traveller-welcome?days=&operatorId=` (`TravellerWelcomeService.report`, `PlatformAdminMiddleware`). Tests `traveller-welcome.test.ts`, `WelcomeEmailsPage.test.tsx`.
+   - **Lien d'avis Google, option B (22/11/2026, « Comment bombarder le référencement » → « Ok », maquettes
+     https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : le gérant colle une fois le lien « Demander des avis » de la fiche Google
+     de son parking dans « Ma fiche » (« Lien d'avis Google (facultatif) », `l-review` ; `Listing.googleReviewUrl`, migration
+     `listing_google_review`, CHECK 500 ; `PUT /internal/listing` : absent = inchangé, vide = retiré, 400 `googleReviewUrl` `invalid`
+     hors https de Google : google.com et ses sous-domaines, g.page, goo.gl, maps.app.goo.gl, `readReviewUrl` de
+     `domain/review-link.ts`). Une fois la voiture rendue, Plazo le donne à tous les voyageurs, sans trier les mécontents (règle de
+     Google) : bloc « Comment s'est passé votre séjour au … ? » et bouton « Laisser un avis sur Google » du mail de clôture
+     (`closingEmail`, texte compris ; jamais depuis la démo ni le parking de test, déjà muets), et carte « Bon retour ! » en tête de Ma
+     réservation, site (`ReviewCard`, nouvel onglet) et app Plazo (`ReviewCard`, `booking-review`) ; `PublicBooking.parking.reviewUrl`
+     n'est servi qu'au statut « Rendu ». Sans lien, rien n'est demandé. Pas de SMS (option C). Tests `review-link.test.ts`,
+     `traveller-messages.test.ts`, `listing-public.test.ts`, `PlazoPages.test.tsx`, `ReviewCard.test.tsx`.
    - **Mail « Pensez à Plazo », direction C « La saison des départs » (15/11/2026, « Mail de promotion à Plazo pour dire de penser à
      Plazo pour la prochaine location de parking avec lien de téléchargement », maquettes https://claude.ai/artifact/4ZYD6KgTYbUFkYMLeMrKHK,
      choix « Tous les voyageurs » et « Campagne à la main », le risque d'écrire sans accord aux clients des comparateurs ayant été dit)** :
@@ -2156,6 +2206,22 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   messagerie (gmail, orange…) publiée par le site, jamais celle d'une autre société (agence web, comparateur) ; puis l'import avec
   `complete` (même nom au même aéroport, jamais une adresse déjà prise ni désinscrite) ; aperçu par défaut, `appliquer` pour écrire ;
   le résumé montre l'adresse masquée « c•••@parking-x.fr ».
+  **Nouveaux parkings (22/11/2026, « comment trouver les parking avec navette qui vienne d'ouvrir ? » → « ok »)** : workflow
+  « Nouveaux parkings (annuaire des entreprises) » (`prospects-new-parkings.yml`, à la main ; `.github/scripts/new_parkings.py`) :
+  l'annuaire des entreprises de l'État (`recherche-entreprises.api.gouv.fr/near_point`, sans clé) autour de chaque aéroport
+  (`AIRPORT_POINTS`, 44 aéroports français ; `aeroports` LYS par défaut ou « tous », `rayon_km` 15, `mois` 12) : établissements
+  ouverts au code 52.21Z créés depuis N mois (société nouvelle ou nouvel établissement d'une plus ancienne), hors grandes et
+  moyennes entreprises (GE, ETI) et hors dépannage, autoroutes, rail et transports publics (`NOT_PARKING`) ; un nom qui dit
+  parking, parc, navette, voiturier ou aéroport est marqué « parking », les autres « à vérifier » ; puis l'import (nom, commune,
+  aéroport, dirigeant quand c'est une personne, notes « Créé le … · SIRET … · adresse ») : aperçu par défaut, `appliquer` pour
+  écrire, un prospect déjà listé ou désinscrit laissé de côté ; « E-mails des prospects (sites) » cherche ensuite leur adresse.
+  **Et ceux qui vont ouvrir (22/11/2026, « comment trouver les parking avec navette qui vont ouvrir ? » → « oui »)** : seconde source
+  `source` bodacc (`tous` par défaut, `annuaire` pour la première seule) : les annonces de création du BODACC (open data de la DILA,
+  `annonces-commerciales`, sans clé) des départements de chaque aéroport (`AIRPORT_DEPARTMENTS`) dont l'activité déclarée dit garder
+  des voitures (parking, stationnement, garer) et conduire à l'aéroport (aéroport, navette) (`KEEPS_CARS`, `SERVES_TRAVELLERS`),
+  jamais un voiturier ou un chauffeur indépendant seul ni la sous-traitance (`NOT_AIRPORT_PARKING`) ; note « Annonce de création au
+  BODACC le … · début d'activité prévu le … · SIREN · adresse · activité », « pas encore ouvert » quand le début est à venir ; une
+  même société trouvée deux fois n'est importée qu'une fois. Lancé à la main (une écriture automatique planifiée a été refusée).
   **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
   une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
   `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
@@ -2219,6 +2285,27 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   France (toutes ses régions, `region=france` de `GET …/prospects`, `FRANCE` de `domain/prospect-regions.ts`), chaque autre pays qui a
   des prospects, « Sans pays » ; « Toutes les régions » n'apparaît qu'avec France choisie et ne liste que ses régions. Tests
   `prospecting.test.ts`, `ProspectingPage.test.tsx`.
+- **Prospection sur téléphone, direction A (19/11/2026, « Optimise pour les téléphones » d'après une capture, maquettes
+  https://claude.ai/artifact/UwLgoBeRNaDmmjVokCycHp)** : sous 768 px (`useNarrow` de `ProspectingPage.tsx`), le tableau laisse la place
+  à une carte par prospect (`ProspectCard`, `prospect-card` : case à cocher, nom, contact et ville, aéroport, e-mail entier ou « à
+  appeler », état, téléphone, prochain envoi, outil, démo, note, puis « Appeler » en `tel:`, « Site », 👍 👎 et « ⋯ »), dans les mêmes
+  blocs par région ; les pilules d'état défilent sur une ligne, les deux listes aéroport et région partagent une ligne, les cinq
+  filtres attendent derrière « Filtres · N » (`prospects-filters-toggle`), et les prospects cochés ont une barre fixée en bas
+  (`prospects-send-bar` : « N prospects cochés », « SMS » pour ceux qui peuvent en recevoir, « Envoyer le mail » qui mène au panneau
+  d'envoi) ; la page ne glisse plus de côté (la grille du tableau prenait ses 900 px sur téléphone). L'ordinateur ne change pas.
+  Test `ProspectingPage.test.tsx`.
+- **Plateforme sur téléphone, direction A « Liste serrée, envoi dans une feuille » (22/11/2026, « Améliore l'orgo sur mobile web » :
+  « Envoi trop loin, Trop de haut de page, Cartes trop chargées », maquettes https://claude.ai/artifact/UVDxCEmaQwDYNG91Py4PTx)** :
+  **menu** : sous 1 024 px, la rangée de liens de `PlatformLayout` laisse la place à une barre en bas, Pilotage · Loueurs · Prospection ·
+  Plus (`PlatformTabBar`, `platform-tab-bar`, `components/platform/platform-nav.ts` : `PLATFORM_GROUPS`, `TABS`), le nombre d'annonces à
+  valider sur « Plus » ; page `/plateforme/plus` (`PlatformMorePage` : les pages sans onglet par groupe, « Se déconnecter »). **Prospection
+  sous 768 px** : titre et actions sur une ligne (icônes « Modifier les mails », « Importer un CSV », « Ajouter »), recherche et « Filtres ·
+  N » en tête (l'aéroport et la région rejoignent les cinq filtres derrière le bouton), pilules d'état dessous ; chaque prospect en deux
+  lignes (nom et état, puis aéroport · contact · e-mail ou « à appeler » · tél.), un toucher déplie le reste (`prospect-card-toggle`) ;
+  « Envoyer le mail » de la barre du bas et « Envoyer à N prospects » du bandeau ouvrent le panneau d'envoi dans une feuille
+  (`SendSheet`, `prospects-send-sheet`, Échap ou toucher hors de la feuille), qui n'est plus sous les cartes ; la barre d'envoi se pose
+  au-dessus des onglets. L'ordinateur ne change pas. Tests `ProspectingPage.test.tsx`, `PlatformMorePage.test.tsx`. Pas encore : le reste
+  de l'espace pro (Réservations, Tableau de bord, Messages, Chiffre d'affaires, Loueurs, Invitations).
 - **SMS de prospection, choix C (19/11/2026, « pouvoir envoyer un sms de prospection », maquettes
   https://claude.ai/artifact/YLE1Hq6B57VNT5hq8pQ1kQ)** : dans le bandeau vert des filtres de la Prospection, « Envoyer un SMS à N
   prospects » (`smsCandidates` de `lib/prospecting.ts` : mobile français ou pays couvert, `isTextablePhone`, ni désinscrit ni pas
@@ -2391,6 +2478,19 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   source ; « Les autres villes de départ » sur chaque guide ; pied de page : guides et gare seulement ; plan du site : tout. Français
   seulement, comme les guides. Tests `topic-guides.test.ts`, `TopicGuideView.test.tsx`, `structured-data.test.ts`. Pas encore : les
   pages par cas d'usage.
+- **Pages par cas d'usage, U1 à U5 (22/11/2026, « Comment bombarder le référencement » → « Go » → « Ok », maquettes
+  https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : cinq guides de plus sous `/lyon-saint-exupery/guide/…`, groupe `usage` de
+  `GUIDE_TOPICS` : `parking-vol-tot-le-matin` (`lyon-vol-tot.ts` : horaires d'accueil, frais de nuit, calcul à rebours, message de la
+  veille, « Prévenir de mon arrivée », retour tard), `parking-en-famille` (`lyon-en-famille.ts` : sièges auto gratuits par âge,
+  passagers, bagages, voiturier, jour du départ pas à pas), `parking-voiture-electrique` (`lyon-voiture-electrique.ts` : bornes de
+  l'aéroport, P4 Elec et P5 Elec, recharge commandée dans l'app et remboursée si elle n'est pas faite, batterie à l'arrêt),
+  `parking-week-end` (`lyon-week-end.ts` : grille 2026 de 24 h, 2 et 4 jours, tranches de 24 h face aux jours du calendrier,
+  dépose-minute, budget) et `parking-voyage-affaires` (`lyon-voyage-affaires.ts` : facture du parking demandée dans Ma réservation,
+  avoir, carte professionnelle, vol changé, réservation pour un collègue) ; ~2 000 mots et 9 questions au moins chacun (test
+  `topic-guides.test.ts`, « use-case guide »). Faits des vrais partenaires en plus (`topicFacts(…, { early, weekend })`) : `open24`,
+  `ev`, `early` (recherche avec un dépôt à 04:30 : offre la moins chère et frais de dépôt de nuit), `weekend` (trois jours) ; séjour
+  de chaque page par `guideStayOf` ; liste des partenaires filtrée par service (`partners.filter` `open_24h` · `ev_charging` quand un
+  vrai partenaire l'a) ; liens depuis les autres guides et le pied de page ; et depuis le guide de la page Lyon (22/11/2026, « ameliore encore et encore le referencement » : liens « → » des sections navette, couvert et électrique, accès, saisons et conseils vers vol tôt, voiture électrique, gare TGV, week-end et famille).
 - **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et

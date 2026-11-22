@@ -1,6 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { LogOut } from "lucide-react";
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Building2,
+  LayoutDashboard,
+  LogOut,
+  MoreHorizontal,
+  Send,
+} from "lucide-react";
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { fr } from "@/lib/fr";
@@ -8,43 +20,84 @@ import { cn } from "@/lib/utils";
 import { Logo } from "../Logo";
 import { ViewAsBanner } from "./ViewAsBanner";
 import { ParkingSwitcher } from "./ParkingSwitcher";
+import { PLATFORM_GROUPS, PLATFORM_MORE_PATH, TABS } from "./platform-nav";
 
-type Item = { to: string; label: string; end?: boolean; badge?: "listings" };
+function tabOf(pathname: string): string {
+  if (pathname === "/plateforme") return "overview";
+  const tab = TABS.find(
+    (t) =>
+      t.key !== "overview" &&
+      (pathname === t.to || pathname.startsWith(`${t.to}/`)),
+  );
+  return tab?.key ?? "more";
+}
 
-const GROUPS: { label: string; items: Item[] }[] = [
-  {
-    label: fr.platform.nav.groups.steer,
-    items: [
-      { to: "/plateforme", label: fr.platform.nav.overview, end: true },
-      { to: "/plateforme/loueurs", label: fr.platform.tabs.operators },
-      {
-        to: "/plateforme/annonces",
-        label: fr.platform.tabs.listings,
-        badge: "listings",
-      },
-      { to: "/plateforme/reservations", label: fr.platform.tabs.reservations },
-      { to: "/plateforme/paiements", label: fr.platform.tabs.payments },
-      { to: "/plateforme/invitations", label: fr.platform.tabs.invitations },
-    ],
-  },
-  {
-    label: fr.platform.nav.groups.grow,
-    items: [
-      { to: "/plateforme/prospection", label: fr.platform.tabs.prospecting },
-      { to: "/plateforme/referencement", label: fr.platform.tabs.seo },
-      { to: "/plateforme/applications", label: fr.platform.tabs.apps },
-      { to: "/plateforme/mails-accueil", label: fr.platform.tabs.welcome },
-      {
-        to: "/plateforme/notifications",
-        label: fr.platform.tabs.notifications,
-      },
-    ],
-  },
-  {
-    label: fr.platform.nav.groups.tools,
-    items: [{ to: "/plateforme/capacite", label: fr.platform.tabs.capacity }],
-  },
-];
+/**
+ * On a phone the scrolling row of twelve links gives way to a bar at the bottom, like the operators' space:
+ * Pilotage · Loueurs · Prospection · Plus. Hidden from 1 024 px, where the rail takes over.
+ */
+function PlatformTabBar({ pending }: { pending: number }) {
+  const { pathname } = useLocation();
+  const current = tabOf(pathname);
+  const labels: Record<string, string> = {
+    overview: fr.platform.nav.groups.steer,
+    operators: fr.platform.tabs.operators,
+    prospecting: fr.platform.tabs.prospecting,
+  };
+  const tabs = [
+    ...TABS.map((t) => ({ ...t, label: labels[t.key], badge: 0 })),
+    {
+      key: "more",
+      to: PLATFORM_MORE_PATH,
+      icon: MoreHorizontal,
+      label: fr.nav.more,
+      badge: pending,
+    },
+  ];
+  return (
+    <nav
+      aria-label={fr.platform.nav.tabBar}
+      data-testid="platform-tab-bar"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-panel-line bg-panel pb-[env(safe-area-inset-bottom,0px)] lg:hidden"
+    >
+      <div className="mx-auto grid max-w-xl grid-cols-4">
+        {tabs.map(({ key, to, icon: TabIcon, label, badge }) => {
+          const active = key === current;
+          return (
+            <Link
+              key={key}
+              to={to}
+              data-testid={`platform-tab-${key}`}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex min-h-[58px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
+                active ? "text-lime-deep" : "text-muted-foreground",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-7 w-12 items-center justify-center rounded-full",
+                  active && "bg-primary text-primary-foreground",
+                )}
+              >
+                <TabIcon className="h-[19px] w-[19px]" aria-hidden="true" />
+              </span>
+              <span className="max-w-full truncate px-1">{label}</span>
+              {badge > 0 && (
+                <span
+                  aria-label={fr.nav.toDo(badge)}
+                  className="absolute left-1/2 top-1 ml-2 min-w-[18px] rounded-full bg-[#D97706] px-1 text-center font-mono text-[10px] font-semibold leading-4 text-white"
+                >
+                  {badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
 
 /**
  * The super admin's "Plateforme" space, direction A of 11/11/2026 (« A avec la page loueur de C »): a rail on the left
@@ -90,8 +143,8 @@ export function PlatformLayout() {
             />
             <ParkingSwitcher current="platform" className="ml-auto lg:ml-0" />
           </div>
-          <div className="flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-1 lg:flex-col lg:gap-5 lg:overflow-visible lg:px-3.5 lg:pb-4">
-            {GROUPS.map((group) => (
+          <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:gap-5 lg:px-3.5 lg:pb-4">
+            {PLATFORM_GROUPS.map((group) => (
               <div
                 key={group.label}
                 className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5"
@@ -146,17 +199,23 @@ export function PlatformLayout() {
           </div>
         </nav>
         {study ? (
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col pb-[calc(58px+env(safe-area-inset-bottom,0px))] lg:pb-0">
             <Outlet />
           </div>
         ) : (
-          <main className="min-w-0 flex-1">
-            <div className={cn("mx-auto w-full space-y-6 px-4 py-6 sm:px-8", !wide && "max-w-7xl")}>
+          <main className="min-w-0 flex-1 pb-[calc(58px+env(safe-area-inset-bottom,0px))] lg:pb-0">
+            <div
+              className={cn(
+                "mx-auto w-full space-y-4 px-4 py-4 sm:px-8 md:space-y-6 md:py-6",
+                !wide && "max-w-7xl",
+              )}
+            >
               <Outlet />
             </div>
           </main>
         )}
       </div>
+      <PlatformTabBar pending={pendingListings} />
     </div>
   );
 }

@@ -103,6 +103,7 @@ model Operator {
   whatsappMessages      WhatsappMessage[]
   whatsappConversations WhatsappConversation[]
   whatsappNumber        OperatorWhatsappNumber?
+  site                  OperatorSite?
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
@@ -1185,6 +1186,9 @@ model Listing {
   openingHours       String? // free text, e.g. "24h/24" or "5h – 0h"
   // Phone travellers can call (shown on the page and in their booking), e.g. "04 72 00 00 00".
   contactPhone       String?
+  // Lien d'avis Google (22/11/2026): link of the parking's Google Business Profile « Demander des avis », sent to the
+  // travellers once their car is returned (closing email, « Ma réservation »); null: Plazo asks for no review.
+  googleReviewUrl    String?
   cancellationPolicy CancellationPolicy @default(free_24h)
   photos             String[] // URLs
   createdAt          DateTime           @default(now())
@@ -2504,6 +2508,33 @@ model WhatsappInboxMessage {
 /// nom affiché est toujours Plazo »): a parking's own WhatsApp number, added by the platform to Benford Tech's WhatsApp
 /// Business account (display name « Plazo », Meta bills Benford Tech). Travellers' messages leave from it once `status`
 /// is `active`; until then, and when it is paused, Plazo's number as before. Replies to it go to this parking only.
+/// 22/11/2026 (« pouvoir créer un site dédié au parking », « le plus modulaire possible », « le site est en supplément »):
+/// the parking's own site, plazo.fr/s/<slug> (the slug and the colour are the booking page's), made of blocks the manager
+/// orders, switches and titles. A paid extra: asked by the manager, switched on by the platform.
+model OperatorSite {
+  id               String    @id @default(cuid())
+  operatorId       String    @unique
+  /// [{ id, kind, enabled, title, text }] in the order shown (domain/operator-site.ts); null: the default blocks.
+  blocks           Json?
+  addonRequestedAt DateTime?
+  addonAt          DateTime?
+  publishedAt      DateTime?
+  /// 22/11/2026 (« le nom de domaine du parking »): the parking's own host name, « www.parking-des-cedres.fr », lower
+  /// case; the site answers on it once its DNS points to Plazo and the host is attached (`domainActiveAt`).
+  domain           String?   @unique
+  domainSetAt      DateTime?
+  domainActiveAt   DateTime?
+  domainCheckedAt  DateTime?
+  /// What the last check found: dns_missing · dns_wrong · not_attached · host_error (no personal data).
+  domainIssue      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_sites")
+}
+
 model OperatorWhatsappNumber {
   id            String    @id @default(cuid())
   operatorId    String    @unique

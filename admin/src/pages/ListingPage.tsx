@@ -37,6 +37,7 @@ type Form = {
   distanceKm: string;
   openingHours: string;
   contactPhone: string;
+  googleReviewUrl: string;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
 };
@@ -53,6 +54,7 @@ function initialForm(data: ListingResponse): Form {
     distanceKm: l?.distanceKm !== null && l?.distanceKm !== undefined ? String(l.distanceKm).replace(".", ",") : "",
     openingHours: l?.openingHours ?? "",
     contactPhone: l?.contactPhone ?? "",
+    googleReviewUrl: l?.googleReviewUrl ?? "",
     cancellationPolicy: l?.cancellationPolicy ?? "free_24h",
     photos: l?.photos ?? [],
   };
@@ -79,6 +81,7 @@ function toInput(form: Form, airportCode: string): ListingInput {
     distanceKm: km,
     openingHours: form.openingHours.trim() || null,
     contactPhone: form.contactPhone.trim() || null,
+    googleReviewUrl: form.googleReviewUrl.trim() || null,
     cancellationPolicy: form.cancellationPolicy,
     photos: form.photos,
   };
@@ -430,6 +433,27 @@ export default function ListingPage() {
               {err("contactPhone")}
               <p id="l-phone-help" className="mt-1 text-sm text-muted-foreground">
                 {t.contactPhoneHelp}
+              </p>
+            </div>
+            {/* 22/11/2026 (Lien d'avis Google, option B): sent to the travellers once their car is returned. */}
+            <div className="sm:col-span-2">
+              <label htmlFor="l-review" className={labelClass}>
+                {t.googleReview}
+              </label>
+              <input
+                id="l-review"
+                type="url"
+                inputMode="url"
+                value={form.googleReviewUrl}
+                onChange={set("googleReviewUrl")}
+                placeholder={t.googleReviewPlaceholder}
+                aria-invalid={!!fieldErrors.googleReviewUrl}
+                aria-describedby="l-review-help"
+                className={cn(inputClass, "font-mono")}
+              />
+              {fieldErrors.googleReviewUrl ? <p className="mt-1 text-sm text-destructive">{t.googleReviewInvalid}</p> : null}
+              <p id="l-review-help" className="mt-1 text-sm text-muted-foreground">
+                {t.googleReviewHelp}
               </p>
             </div>
           </div>

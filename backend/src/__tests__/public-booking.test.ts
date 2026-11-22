@@ -137,6 +137,7 @@ describe('réservation sur le site', () => {
         meetingLabel: null,
         meetingInstructions: null,
         conditions: null,
+        reviewUrl: null,
       },
       arrivalAt: inDays(5, '06:30'),
       returnAt: inDays(7, '15:05'),

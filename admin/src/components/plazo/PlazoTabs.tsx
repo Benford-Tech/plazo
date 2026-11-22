@@ -17,6 +17,9 @@ export function PlazoTabs({ right }: { right?: React.ReactNode }) {
       <NavLink to="/plazo/flyer" className={({ isActive }) => cn(tab, isActive ? "bg-primary font-bold text-primary-foreground" : "hover:bg-accent")}>
         {t.flyer}
       </NavLink>
+      <NavLink to="/plazo/site" className={({ isActive }) => cn(tab, isActive ? "bg-primary font-bold text-primary-foreground" : "hover:bg-accent")}>
+        {t.site}
+      </NavLink>
       {right && <div className="ml-auto flex items-center gap-2.5 pb-1.5">{right}</div>}
     </div>
   );

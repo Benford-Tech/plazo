@@ -56,6 +56,36 @@ describe('fiche Plazo du loueur', () => {
     expect(await prisma.auditLog.count({ where: { action: 'listing.created' } })).toBe(1);
   });
 
+  it('lien d’avis Google (22/11/2026) : gardé quand il n’est pas envoyé, refusé hors de Google, retiré à vide', async () => {
+    const { token } = await setupOperator();
+    const url = 'https://g.page/r/CbX1234/review';
+    expect(
+      (
+        await api()
+          .put('/api/internal/listing')
+          .set(auth(token))
+          .send(listing({ googleReviewUrl: ` ${url} ` }))
+      ).status,
+    ).toBe(200);
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ title: 'Nouveau titre' }));
+    expect((await prisma.listing.findFirstOrThrow()).googleReviewUrl).toBe(url);
+    expect((await api().get('/api/internal/listing').set(auth(token))).body.listing.googleReviewUrl).toBe(url);
+    const refused = await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ googleReviewUrl: 'https://avis.example.com/r' }));
+    expect(refused.status).toBe(400);
+    expect(refused.body.fields).toEqual({ googleReviewUrl: 'invalid' });
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ googleReviewUrl: '' }));
+    expect((await prisma.listing.findFirstOrThrow()).googleReviewUrl).toBeNull();
+  });
+
   it('garde le téléphone du parking quand le formulaire ne l’envoie pas', async () => {
     const { token } = await setupOperator();
     await api()

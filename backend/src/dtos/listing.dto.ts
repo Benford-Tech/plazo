@@ -94,6 +94,10 @@ export class UpdateListingDto {
   @IsString({ message: 'invalid_phone' })
   public contactPhone?: string | null;
 
+  /** Lien d'avis Google (22/11/2026): left unchanged when absent, removed when blank; checked by domain/review-link.ts. */
+  @Allow()
+  public googleReviewUrl?: string | null;
+
   @IsIn(Object.values(CancellationPolicy), { message: 'invalid_policy' })
   public cancellationPolicy: CancellationPolicy;
 

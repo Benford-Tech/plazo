@@ -916,6 +916,11 @@ export const es: Dict = {
     nonRefundable: "No cancelable en línea",
     dayTitle: "El día de la salida",
     conditionsTitle: "A tener en cuenta",
+    review: {
+      title: "¡Bienvenido de vuelta!",
+      text: (parking: string) => `¿Unas palabras sobre ${parking}? Su opinión ayuda a otros viajeros a elegir su aparcamiento.`,
+      button: "Dejar una opinión en Google",
+    },
     step1Title: "Diríjase al parking",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Calcule ${min ? `${min} min de lanzadera` : "el trayecto en lanzadera"} antes de la hora recomendada por su aerolínea.`,
@@ -1303,6 +1308,16 @@ export const es: Dict = {
     notFound: "Esta página de reserva no está abierta.",
     yourDetails: "Sus datos",
     nightFee: "Recargo nocturno",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Vista previa: este sitio aún no está en línea.",
+    photos: "Fotos",
+    contact: "Contacto",
+    goodToKnow: "A tener en cuenta",
+    bookingClosed: "La reserva en línea se abrirá cuando el sitio esté en línea.",
+    notFound: "Este sitio no está en línea.",
+    call: "Llamar",
   },
   errors: {
     required: "Campo obligatorio.",

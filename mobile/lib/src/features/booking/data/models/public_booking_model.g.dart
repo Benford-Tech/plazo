@@ -112,6 +112,7 @@ _BookingParkingModel _$BookingParkingModelFromJson(Map<String, dynamic> json) =>
       shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
       openingHours: json['openingHours'] as String?,
       phone: json['phone'] as String?,
+      reviewUrl: json['reviewUrl'] as String?,
       airport: json['airport'] == null
           ? null
           : BookingAirportModel.fromJson(
@@ -128,6 +129,7 @@ Map<String, dynamic> _$BookingParkingModelToJson(
   'shuttleMinutes': instance.shuttleMinutes,
   'openingHours': instance.openingHours,
   'phone': instance.phone,
+  'reviewUrl': instance.reviewUrl,
   'airport': instance.airport,
 };
 

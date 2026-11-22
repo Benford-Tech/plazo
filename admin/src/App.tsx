@@ -43,9 +43,11 @@ import { lazy, Suspense } from "react";
 // The platform space is only loaded by the platform owner; the capacity estimator (maps, geometry) on demand.
 // 17/11/2026: pdf-lib and pdf.js load with this page only.
 const FlyerPage = lazy(() => import("@/pages/FlyerPage"));
+const SitePage = lazy(() => import("@/pages/SitePage"));
 const SubscriptionPage = lazy(() => import("@/pages/SubscriptionPage"));
 const OperatorsPage = lazy(() => import("@/pages/platform/OperatorsPage"));
 const PlatformOverviewPage = lazy(() => import("@/pages/platform/PlatformOverviewPage"));
+const PlatformMorePage = lazy(() => import("@/pages/platform/PlatformMorePage"));
 const PlatformOperatorPage = lazy(() => import("@/pages/platform/PlatformOperatorPage"));
 const PlatformListingsPage = lazy(
   () => import("@/pages/platform/ListingsPage"),
@@ -291,6 +293,14 @@ const App = () => (
                 }
               />
               <Route
+                path="/plazo/site"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<SitePage />)}
+                  </RequirePermission>
+                }
+              />
+              <Route
                 path="/plazo/flyer"
                 element={
                   <RequirePermission permission="parking:manage">
@@ -346,6 +356,10 @@ const App = () => (
               <Route
                 path="/plateforme"
                 element={lazyPage(<PlatformOverviewPage />)}
+              />
+              <Route
+                path="/plateforme/plus"
+                element={lazyPage(<PlatformMorePage />)}
               />
               <Route
                 path="/plateforme/loueurs"

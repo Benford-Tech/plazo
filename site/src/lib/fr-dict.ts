@@ -971,6 +971,11 @@ const frBase = {
     dayTitle: "Le jour du départ",
     /** 12/11/2026: the parking's supplements and conditions. */
     conditionsTitle: "À savoir",
+    review: {
+      title: "Bon retour !",
+      text: (parking: string) => `Un mot sur ${parking} ? Votre avis aide les autres voyageurs à choisir leur parking.`,
+      button: "Laisser un avis Google",
+    },
     step1Title: "Rendez-vous au parking",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Prévoyez ${min ? `${min} min de navette` : "le trajet en navette"} avant l’heure conseillée par votre compagnie.`,
@@ -1368,6 +1373,16 @@ const frBase = {
     notFound: "Cette page de réservation n’est pas ouverte.",
     yourDetails: "Vos informations",
     nightFee: "Frais de nuit",
+  },
+  // 22/11/2026: a parking's own site, /s/<slug>.
+  parkingSite: {
+    preview: "Aperçu : ce site n’est pas encore en ligne.",
+    photos: "Photos",
+    contact: "Nous contacter",
+    goodToKnow: "À savoir",
+    bookingClosed: "La réservation en ligne ouvrira avec la mise en ligne du site.",
+    notFound: "Ce site n’est pas en ligne.",
+    call: "Appeler",
   },
   errors: {
     required: "Champ obligatoire.",

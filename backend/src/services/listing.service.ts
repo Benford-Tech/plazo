@@ -3,6 +3,7 @@ import { Container, Service } from 'typedi';
 import { PLATFORM_COMMISSION_BPS } from '@/config';
 import prisma, { Prisma } from '@/database';
 import { ListingAction, isReservedListingSlug, nextListingStatus } from '@/domain/listing';
+import { readReviewUrl } from '@/domain/review-link';
 import { nightColumns, nightSettingsOf, validateNightSettings } from '@/domain/night-fees';
 import { can } from '@/domain/roles';
 import { UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
@@ -36,6 +37,9 @@ export class ListingService {
     const airport = await prisma.airport.findUnique({ where: { code: data.airportCode } });
     if (!airport) throw new ValidationException({ airportCode: 'unknown_airport' });
 
+    const reviewUrl = readReviewUrl(data.googleReviewUrl);
+    if (reviewUrl === 'invalid') throw new ValidationException({ googleReviewUrl: 'invalid' });
+
     if (isReservedListingSlug(data.slug)) throw new ValidationException({ slug: 'slug_reserved' });
     const taken = await prisma.listing.findFirst({ where: { airportId: airport.id, slug: data.slug, NOT: { parkingId: parking.id } } });
     if (taken) throw new ValidationException({ slug: 'slug_taken' });
@@ -53,6 +57,8 @@ export class ListingService {
       openingHours: data.openingHours?.trim() || null,
       // The pro form does not edit it yet: keep it when the field is not sent.
       ...(data.contactPhone !== undefined && { contactPhone: data.contactPhone?.trim() || null }),
+      // Lien d'avis Google (22/11/2026): kept when a form that does not know it saves the page.
+      ...(reviewUrl !== undefined && { googleReviewUrl: reviewUrl }),
       cancellationPolicy: data.cancellationPolicy,
       photos: data.photos,
     };

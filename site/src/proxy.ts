@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, LOCALE_HEADER, localizedPath, splitLocale } from "@/lib/i18n/locales";
 import { isManageToken, manageCookie, managePath, REFERENCE_RE, secureCookies } from "@/lib/manage-access";
+import { foreignHost, siteSlugOfHost } from "@/lib/parking-site-host";
+import { siteUrl } from "@/lib/site";
 
 /**
  * Every page of the site is under its language (13/11/2026): French at the root (served from /fr internally), the
@@ -9,7 +11,33 @@ import { isManageToken, manageCookie, managePath, REFERENCE_RE, secureCookies } 
  * Links from the confirmation email and SMS carry the manage key (?cle=…): keep it in a cookie limited to the
  * booking's pages, then load the same page without it in the address.
  */
-export function proxy(request: NextRequest) {
+/** Read at call time: the service binding exists at runtime only. */
+const backendUrl = () => (process.env.BACKEND_URL || "http://localhost:3005").replace(/\/+$/, "");
+
+/**
+ * A parking's own domain name (22/11/2026): its home page is the parking's site (/s/<slug>, in the visitor's language);
+ * every other page is Plazo's and goes to its address on the main site. A host that opens no site goes there too.
+ */
+async function parkingSiteHost(request: NextRequest, host: string) {
+  const url = request.nextUrl;
+  const { locale, path } = splitLocale(url.pathname);
+  const slug = await siteSlugOfHost(host, backendUrl());
+  if (slug && path === "/") {
+    const headers = new Headers(request.headers);
+    headers.set(LOCALE_HEADER, locale);
+    const target = url.clone();
+    target.pathname = `/${locale}/s/${slug}`;
+    return NextResponse.rewrite(target, { request: { headers } });
+  }
+  return NextResponse.redirect(new URL(`${url.pathname}${url.search}`, siteUrl()), slug ? 308 : 307);
+}
+
+export function proxy(request: NextRequest): NextResponse | Promise<NextResponse> {
+  const host = foreignHost(request.headers.get("host"));
+  return host ? parkingSiteHost(request, host) : ownHost(request);
+}
+
+function ownHost(request: NextRequest): NextResponse {
   const url = request.nextUrl;
   const { locale, path } = splitLocale(url.pathname);
 

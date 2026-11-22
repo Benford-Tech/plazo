@@ -45,6 +45,11 @@ describe("TopicGuideView (09/10/2026)", () => {
     expect(within(others).getAllByRole("link").map(a => a.getAttribute("href"))).toEqual([
       "/lyon-saint-exupery/guide/parking-pas-cher",
       "/lyon-saint-exupery/guide/parking-longue-duree",
+      "/lyon-saint-exupery/guide/parking-vol-tot-le-matin",
+      "/lyon-saint-exupery/guide/parking-en-famille",
+      "/lyon-saint-exupery/guide/parking-voiture-electrique",
+      "/lyon-saint-exupery/guide/parking-week-end",
+      "/lyon-saint-exupery/guide/parking-voyage-affaires",
       "/lyon-saint-exupery/guide/parking-gare-tgv",
       "/#guide",
     ]);
