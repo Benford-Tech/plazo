@@ -35,7 +35,7 @@ export function ParkingSite({ site, data, idempotencyKey }: { site: ParkingSiteI
           <span className="min-w-0 flex-1 truncate text-[16px] font-bold">{parking.title}</span>
           <nav aria-label={parking.title} className="hidden items-center gap-5 text-[14px] font-medium text-soft md:flex">
             {menu.map(entry => (
-              <a key={entry.href} href={entry.href} className="hover:text-ink">
+              <a key={entry.href} href={entry.href} className="text-soft no-underline hover:text-ink">
                 {entry.label}
               </a>
             ))}

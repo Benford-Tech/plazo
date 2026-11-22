@@ -107,6 +107,9 @@ import type {
   ProspectSmsResult,
   WebsiteIntegration,
   BookingPageSettings,
+  PlatformSite,
+  SiteBlock,
+  SiteSettings,
   ProspectStatus,
   ReturnMeetingPoint,
   ShuttleStop,
@@ -1675,6 +1678,14 @@ export const adminApi = {
   removeWebsiteKey: () => apiRequest<{ data: WebsiteIntegration }>("/internal/website-integration", { method: "DELETE" }),
   wordpressPluginUrl: () => `${API_BASE}/public/site/wordpress-plugin.zip`,
   // Site du parking, niveau 3 (19/11/2026): the parking's own Plazo booking page.
+  /** 22/11/2026: « Mon site ». */
+  getSite: () => apiRequest<{ data: SiteSettings }>("/internal/site"),
+  updateSite: (input: { blocks?: Pick<SiteBlock, "kind" | "enabled" | "title" | "text">[]; slug?: string; accent?: string; published?: boolean }) =>
+    apiRequest<{ data: SiteSettings }>("/internal/site", { method: "PUT", body: json(input) }),
+  requestSite: () => apiRequest<{ data: SiteSettings }>("/internal/site/request", { method: "POST" }),
+  getPlatformSite: (operatorId: string) => apiRequest<{ data: PlatformSite }>(`/internal/platform/operators/${operatorId}/site`),
+  setPlatformSite: (operatorId: string, active: boolean) =>
+    apiRequest<{ data: PlatformSite }>(`/internal/platform/operators/${operatorId}/site`, { method: "PUT", body: json({ active }) }),
   getBookingPage: () => apiRequest<{ data: BookingPageSettings }>("/internal/booking-page"),
   updateBookingPage: (input: { enabled?: boolean; slug?: string; accent?: string }) =>
     apiRequest<{ data: BookingPageSettings }>("/internal/booking-page", { method: "PUT", body: json(input) }),
