@@ -870,6 +870,11 @@ export const de: Dict = {
     nonRefundable: "Online nicht stornierbar",
     dayTitle: "Am Abreisetag",
     conditionsTitle: "Gut zu wissen",
+    review: {
+      title: "Willkommen zurück!",
+      text: (parking: string) => `Ein paar Worte zu ${parking}? Ihre Bewertung hilft anderen Reisenden bei der Wahl ihres Parkplatzes.`,
+      button: "Auf Google bewerten",
+    },
     step1Title: "Kommen Sie zum Parkplatz",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Planen Sie ${min ? `${min} Min. Shuttle-Fahrt` : "die Shuttle-Fahrt"} vor der von Ihrer Fluggesellschaft empfohlenen Zeit ein.`,

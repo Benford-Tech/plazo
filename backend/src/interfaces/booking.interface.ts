@@ -36,6 +36,11 @@ export interface PublicBooking {
      * 10 € ; … »), or null.
      */
     conditions: string | null;
+    /**
+     * Lien d'avis Google (22/11/2026): the parking's Google review link, only once the car is handed back (« Rendu »);
+     * null otherwise or when the parking gave none.
+     */
+    reviewUrl: string | null;
   };
   arrivalAt: string;
   returnAt: string;

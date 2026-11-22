@@ -86,6 +86,8 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
         parking.travellerConditions,
         surchargeConditions(parking),
       ),
+      // Lien d'avis Google (22/11/2026): only once the car is handed back, and only when the parking gave one.
+      reviewUrl: reservation.status === 'returned' ? (listing.googleReviewUrl ?? null) : null,
     },
     arrivalAt: localDateTime(reservation.arrivalAt, tz),
     returnAt: localDateTime(reservation.returnAt, tz),

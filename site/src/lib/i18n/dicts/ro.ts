@@ -918,6 +918,11 @@ export const ro: Dict = {
     nonRefundable: "Nu poate fi anulată online",
     dayTitle: "În ziua plecării",
     conditionsTitle: "De știut",
+    review: {
+      title: "Bine ați revenit!",
+      text: (parking: string) => `Câteva cuvinte despre ${parking}? Recenzia dvs. îi ajută pe alți călători să-și aleagă parcarea.`,
+      button: "Lăsați o recenzie pe Google",
+    },
     step1Title: "Veniți la parcare",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Prevedeți ${min ? `${min} min de navetă` : "drumul cu naveta"} înainte de ora recomandată de compania aeriană.`,

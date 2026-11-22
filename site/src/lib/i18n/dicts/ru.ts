@@ -881,6 +881,11 @@ export const ru: Dict = {
     nonRefundable: "Отмена онлайн невозможна",
     dayTitle: "В день отъезда",
     conditionsTitle: "Полезно знать",
+    review: {
+      title: "С возвращением!",
+      text: (parking: string) => `Пара слов о ${parking}? Ваш отзыв поможет другим путешественникам выбрать парковку.`,
+      button: "Оставить отзыв в Google",
+    },
     step1Title: "Приезжайте на парковку",
     step1Text: (address: string | null, min: number | null) =>
       `${address ? `${address}. ` : ""}Заложите ${min ? `${min} мин на трансфер` : "время на трансфер"} до срока, рекомендованного Вашей авиакомпанией.`,

@@ -291,6 +291,27 @@ ${manageUrl ? `<p style="margin:20px 0 0"><a href="${escapeHtml(manageUrl)}" sty
   return { subject, html, text };
 }
 
+/**
+ * Lien d'avis Google, option B (22/11/2026): the parking's review link under the summary, sent to every traveller (Google
+ * forbids asking only the happy ones); nothing when the parking gave no link.
+ */
+function reviewBlockHtml(booking: PublicBooking): string {
+  const url = booking.parking.reviewUrl;
+  if (!url) return '';
+  return `<div style="margin:20px 0 0;padding:16px 0 0;border-top:1px solid ${COLORS.line}">
+<p style="margin:0;font-size:20px;letter-spacing:4px;color:${COLORS.brand}">★★★★★</p>
+<p style="margin:6px 0 0;font-size:15px"><strong>Comment s'est passé votre séjour au ${escapeHtml(booking.parking.title)} ?</strong></p>
+<p style="margin:4px 0 0;font-size:14px;color:${COLORS.soft}">Votre avis aide les autres voyageurs à choisir leur parking.</p>
+<p style="margin:12px 0 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:${COLORS.brand};color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Laisser un avis sur Google</a></p>
+</div>`;
+}
+
+function reviewBlockText(booking: PublicBooking): string[] {
+  const url = booking.parking.reviewUrl;
+  if (!url) return [];
+  return [`Comment s'est passé votre séjour au ${booking.parking.title} ? Laisser un avis sur Google : ${url}`, ''];
+}
+
 /** After the handover: thanks, the stay's summary, the amount paid. */
 export function closingEmail(productName: string, booking: PublicBooking, returnedAtLocal: string): EmailMessage {
   const subject = `Merci, et à bientôt · ${booking.parking.title}`;
@@ -302,6 +323,7 @@ export function closingEmail(productName: string, booking: PublicBooking, return
 <p style="margin:0;font-size:15px">Votre véhicule vous a été rendu le ${escapeHtml(formatLocalLong(returnedAtLocal))} à ${escapeHtml(booking.parking.title)}.</p>
 ${detailsTable(booking)}
 ${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total)}</strong>${escapeHtml(nightFeeNote(booking))}, payé en ligne par carte.</p>` : ''}
+${reviewBlockHtml(booking)}
 <p style="margin:16px 0 0;font-size:14px">Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${escapeHtml(booking.parking.phone)}` : ''}.</p>
 <p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">Merci d'avoir choisi ${escapeHtml(productName)} : à bientôt pour votre prochain voyage.</p>`,
   );
@@ -313,6 +335,7 @@ ${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total
     ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
     '',
     ...(total ? [`Total : ${total}${nightFeeNote(booking)}, payé en ligne par carte.`, ''] : []),
+    ...reviewBlockText(booking),
     `Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${booking.parking.phone}` : ''}.`,
     '',
     `Merci d'avoir choisi ${productName} : à bientôt pour votre prochain voyage.`,

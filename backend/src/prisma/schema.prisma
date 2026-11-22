@@ -1185,6 +1185,9 @@ model Listing {
   openingHours       String? // free text, e.g. "24h/24" or "5h – 0h"
   // Phone travellers can call (shown on the page and in their booking), e.g. "04 72 00 00 00".
   contactPhone       String?
+  // Lien d'avis Google (22/11/2026): link of the parking's Google Business Profile « Demander des avis », sent to the
+  // travellers once their car is returned (closing email, « Ma réservation »); null: Plazo asks for no review.
+  googleReviewUrl    String?
   cancellationPolicy CancellationPolicy @default(free_24h)
   photos             String[] // URLs
   createdAt          DateTime           @default(now())

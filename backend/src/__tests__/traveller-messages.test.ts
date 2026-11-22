@@ -263,6 +263,29 @@ describe('le fil de messages du voyageur (B)', () => {
     expect(calls(BREVO_EMAIL).filter(e => e.tags?.[0] === 'booking_closed')).toHaveLength(1);
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id: reservation.id }, include: WITH_LISTING });
     expect(closingEmail('Plazo', toPublicBooking(record), '2027-03-03T15:40').text).toContain('rendu le mercredi 3 mars 2027 à 15:40');
+    // No review link given: the closing email asks for nothing.
+    expect(email.htmlContent).not.toContain('Laisser un avis');
+  });
+
+  it('lien d’avis Google (22/11/2026) : dans le mail de clôture et la réservation, une fois la voiture rendue', async () => {
+    const { op, reservation, reference } = await setup();
+    const url = 'https://g.page/r/CbX1234/review';
+    await prisma.listing.update({ where: { parkingId: op.parking.id }, data: { googleReviewUrl: url } });
+    const before = await prisma.reservation.findUniqueOrThrow({ where: { reference }, include: WITH_LISTING });
+    expect(toPublicBooking(before).parking.reviewUrl).toBeNull();
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { arrivalAt: new Date(Date.now() - 3600000), returnAt: new Date(Date.now() + 3600000), arrivedAt: new Date(), status: 'back_at_parking' },
+    });
+    fetchMock.mockClear();
+    const handed = await api().post(`/api/internal/reservations/${reservation.id}/status`).set(auth(op.token)).send({ status: 'returned' });
+    expect(handed.status).toBe(200);
+    const email = calls(BREVO_EMAIL).find(e => e.tags?.[0] === 'booking_closed');
+    expect(email.htmlContent).toContain('Laisser un avis sur Google');
+    expect(email.htmlContent).toContain(`href="${url}"`);
+    expect(email.textContent).toContain(`Laisser un avis sur Google : ${url}`);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { reference }, include: WITH_LISTING });
+    expect(toPublicBooking(after).parking.reviewUrl).toBe(url);
   });
 
   it('le SMS d’atterrissage garde le téléphone avec le lien, et le rappel tient en un ou deux segments', async () => {

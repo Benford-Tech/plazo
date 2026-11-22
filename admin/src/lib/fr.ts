@@ -2387,6 +2387,11 @@ export const fr = {
     contactPhonePlaceholder: "06 77 61 60 62",
     contactPhoneHelp:
       "Le numéro que vos clients appellent : il est donné dans le message de la veille ({téléphone}) et dans leur réservation.",
+    googleReview: "Lien d'avis Google (facultatif)",
+    googleReviewPlaceholder: "https://g.page/r/…/review",
+    googleReviewHelp:
+      "Dans votre fiche Google : « Demander des avis » › copier le lien. Plazo l'envoie à vos clients une fois leur voiture rendue.",
+    googleReviewInvalid: "Collez le lien d'avis donné par Google (une adresse https de Google, par exemple https://g.page/r/…/review).",
     cancellation: "Annulation",
     photos: "Photos (la première sert de vignette)",
     photoUrl: "Adresse de la photo (https://…)",

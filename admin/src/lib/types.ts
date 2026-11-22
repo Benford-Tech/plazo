@@ -906,6 +906,8 @@ export interface Listing {
   openingHours: string | null;
   /** The number travellers call ({téléphone} of the day-before message). */
   contactPhone?: string | null;
+  /** 22/11/2026: the parking's Google review link, sent to travellers once their car is returned (null: none). */
+  googleReviewUrl?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
   airport: { code: string; name: string; slug: string };
@@ -923,6 +925,8 @@ export interface ListingInput {
   openingHours: string | null;
   /** 11/11/2026: the number travellers call (null clears it). */
   contactPhone?: string | null;
+  /** 22/11/2026: the Google review link (null removes it). */
+  googleReviewUrl?: string | null;
   cancellationPolicy: CancellationPolicy;
   photos: string[];
 }
