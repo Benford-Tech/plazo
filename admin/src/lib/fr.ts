@@ -3746,6 +3746,9 @@ export const fr = {
       // Classement par région (19/10/2026, « Groupés par région » + « De l'aéroport »).
       region: "Région",
       regionAll: "Toutes les régions",
+      country: "Pays",
+      countryAll: "Tous les pays",
+      countryNone: "Sans pays",
       regionNone: "Sans région",
       regionOption: (label: string, n: number) => `${label} (${n})`,
       regionBlock: (label: string, n: number) => `${label} · ${n}`,

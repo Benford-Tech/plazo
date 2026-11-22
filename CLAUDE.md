@@ -2215,6 +2215,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `etats-unis` de `REGIONS`, leurs aéroports dans `AIRPORT_REGIONS`, « Brasil », « Brazil », « BR », « USA », « US » par `parseRegion`,
   mails en portugais et en anglais ; migration `prospect_region_brazil_usa` ; villes des principaux aéroports dans `airport-names.ts`) ;
   le groupe « Europe » des listes devient « Autres pays ».
+  **Filtre par pays (22/11/2026, « avoir un filtre par pays pour les prospections »)** : à côté de l'aéroport, « Tous les pays » :
+  France (toutes ses régions, `region=france` de `GET …/prospects`, `FRANCE` de `domain/prospect-regions.ts`), chaque autre pays qui a
+  des prospects, « Sans pays » ; « Toutes les régions » n'apparaît qu'avec France choisie et ne liste que ses régions. Tests
+  `prospecting.test.ts`, `ProspectingPage.test.tsx`.
 - **SMS de prospection, choix C (19/11/2026, « pouvoir envoyer un sms de prospection », maquettes
   https://claude.ai/artifact/YLE1Hq6B57VNT5hq8pQ1kQ)** : dans le bandeau vert des filtres de la Prospection, « Envoyer un SMS à N
   prospects » (`smsCandidates` de `lib/prospecting.ts` : mobile français ou pays couvert, `isTextablePhone`, ni désinscrit ni pas

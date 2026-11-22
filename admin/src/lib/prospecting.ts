@@ -250,6 +250,8 @@ export function stepFor(
 
 /** The filter value (and block key) of the prospects without a region. */
 export const NO_REGION = "none";
+/** The API's « France » filter (22/11/2026): every French region at once. */
+export const FRANCE = "france";
 
 export interface RegionGroup {
   key: string;

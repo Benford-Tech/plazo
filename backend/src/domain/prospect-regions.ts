@@ -55,6 +55,8 @@ export type RegionKey = (typeof REGIONS)[number]['key'];
 export const REGION_KEYS: RegionKey[] = REGIONS.map(r => r.key);
 /** The filter value of the prospects without a region. */
 export const NO_REGION = 'none';
+/** The prospects' filter « France » (22/11/2026): every French region at once, countries excepted. */
+export const FRANCE = 'france';
 
 const LABELS = new Map<string, string>(REGIONS.map(r => [r.key, r.label]));
 

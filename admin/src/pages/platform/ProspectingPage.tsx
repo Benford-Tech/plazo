@@ -24,6 +24,7 @@ import {
   groupByRegion,
   hasFilters,
   NO_FILTERS,
+  FRANCE,
   NO_REGION,
   nextSort,
   type ProspectFilters,
@@ -619,7 +620,11 @@ function SendPanel({
 export default function ProspectingPage() {
   const [status, setStatus] = useState<ProspectStatus | null>(null);
   const [airport, setAirport] = useState<string>("");
-  const [region, setRegion] = useState<string>("");
+  // 22/11/2026 (« un filtre par pays »): the country first (France, each other country, or without one), then for France
+  // its regions. The API gets the narrowest: a French region, else the country (« france » = every French region).
+  const [country, setCountry] = useState<string>("");
+  const [frRegion, setFrRegion] = useState<string>("");
+  const region = country === FRANCE && frRegion ? frRegion : country;
   const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<ProspectFilters>(NO_FILTERS);
@@ -721,6 +726,9 @@ export default function ProspectingPage() {
     [rows, regions, sort],
   );
   const regionCounts = list.data?.regionCounts ?? {};
+  const franceCount = regions
+    .filter((r) => !r.country)
+    .reduce((sum, r) => sum + (regionCounts[r.key] ?? 0), 0);
   const toggleBlock = (key: string) =>
     setCollapsed((c) => {
       const next = new Set(c);
@@ -829,41 +837,57 @@ export default function ProspectingPage() {
             </option>
           ))}
         </select>
-        <label className="sr-only" htmlFor="prospect-region-filter">
-          {t.region}
+        <label className="sr-only" htmlFor="prospect-country-filter">
+          {t.country}
         </label>
         <select
-          id="prospect-region-filter"
-          value={region}
-          onChange={(e) => setRegion(e.target.value)}
+          id="prospect-country-filter"
+          value={country}
+          onChange={(e) => {
+            setCountry(e.target.value);
+            setFrRegion("");
+          }}
           className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
         >
-          <option value="">{t.regionAll}</option>
-          {[false, true].map((country) => {
-            const shown = regions.filter(
-              (r) =>
-                !!r.country === country &&
-                ((regionCounts[r.key] ?? 0) > 0 || r.key === region),
-            );
-            return shown.length ? (
-              <optgroup
-                key={String(country)}
-                label={country ? t.regionGroupEurope : t.regionGroupFrance}
-              >
-                {shown.map((r) => (
+          <option value="">{t.countryAll}</option>
+          {franceCount > 0 || country === FRANCE ? (
+            <option value={FRANCE}>{t.regionOption(t.regionGroupFrance, franceCount)}</option>
+          ) : null}
+          {regions
+            .filter((r) => r.country && ((regionCounts[r.key] ?? 0) > 0 || r.key === country))
+            .map((r) => (
+              <option key={r.key} value={r.key}>
+                {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
+              </option>
+            ))}
+          {((regionCounts[NO_REGION] ?? 0) > 0 || country === NO_REGION) && (
+            <option value={NO_REGION}>
+              {t.regionOption(t.countryNone, regionCounts[NO_REGION] ?? 0)}
+            </option>
+          )}
+        </select>
+        {country === FRANCE && (
+          <>
+            <label className="sr-only" htmlFor="prospect-region-filter">
+              {t.region}
+            </label>
+            <select
+              id="prospect-region-filter"
+              value={frRegion}
+              onChange={(e) => setFrRegion(e.target.value)}
+              className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
+            >
+              <option value="">{t.regionAll}</option>
+              {regions
+                .filter((r) => !r.country && ((regionCounts[r.key] ?? 0) > 0 || r.key === frRegion))
+                .map((r) => (
                   <option key={r.key} value={r.key}>
                     {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
                   </option>
                 ))}
-              </optgroup>
-            ) : null;
-          })}
-          {((regionCounts[NO_REGION] ?? 0) > 0 || region === NO_REGION) && (
-            <option value={NO_REGION}>
-              {t.regionOption(t.regionNone, regionCounts[NO_REGION] ?? 0)}
-            </option>
-          )}
-        </select>
+            </select>
+          </>
+        )}
       </div>
 
       <div

@@ -625,13 +625,24 @@ describe("Plateforme › Prospection", () => {
       expect(screen.getByText("Aucun prospect choisi")).toBeInTheDocument();
     });
 
-    it("filtre « Toutes les régions » : régions qui ont des prospects, avec leur nombre, et « Sans région »", async () => {
+    it("filtre par pays (22/11/2026) : France entière puis ses régions, chaque pays, « Sans pays »", async () => {
       const user = userEvent.setup();
       renderIn();
       await screen.findByText("Parking Rhône");
-      const select = screen.getByLabelText("Région");
+      const select = screen.getByLabelText("Pays");
       expect(
         within(select)
+          .getAllByRole("option")
+          .map((o) => o.textContent),
+      ).toEqual(["Tous les pays", "France (4)", "Sans pays (1)"]);
+      expect(screen.queryByLabelText("Région")).not.toBeInTheDocument();
+      await user.selectOptions(select, "france");
+      await waitFor(() =>
+        expect(api.getProspects).toHaveBeenLastCalledWith({ status: null, airport: null, region: "france" }),
+      );
+      const regionSelect = screen.getByLabelText("Région");
+      expect(
+        within(regionSelect)
           .getAllByRole("option")
           .map((o) => o.textContent),
       ).toEqual([
@@ -639,8 +650,11 @@ describe("Plateforme › Prospection", () => {
         "Auvergne-Rhône-Alpes (2)",
         "Occitanie (1)",
         "Provence-Alpes-Côte d'Azur (1)",
-        "Sans région (1)",
       ]);
+      await user.selectOptions(regionSelect, "occitanie");
+      await waitFor(() =>
+        expect(api.getProspects).toHaveBeenLastCalledWith({ status: null, airport: null, region: "occitanie" }),
+      );
       await user.selectOptions(select, "none");
       await waitFor(() =>
         expect(api.getProspects).toHaveBeenLastCalledWith({
@@ -774,7 +788,7 @@ describe("Plateforme › Prospection", () => {
     expect(
       within(screen.getByText("Parken Fictif").closest("tr")!).getByText("DE"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Autres pays" })).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Pays")).getByRole("option", { name: /^Allemagne/ })).toBeInTheDocument();
 
     await user.click(screen.getByLabelText("Choisir Parken Fictif"));
     await user.click(screen.getByLabelText("Choisir Avio Fictif"));
