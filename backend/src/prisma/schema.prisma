@@ -1839,6 +1839,13 @@ model Prospect {
   notes            String?
   // 17/11/2026: why it was marked (« rappeler en janvier », « a déjà un logiciel »), 300 characters.
   statusNote       String?
+  // 22/11/2026 (« mets des marqueurs sur l'interface pour les retrouver », choix A): a parking found by the
+  // « Nouveaux parkings » workflow: `bodacc` (creation notice) or `directory` (annuaire des entreprises); null otherwise.
+  origin           String?
+  // The day it was created (directory) or its creation was announced (BODACC), and the start of activity it declared
+  // (a future one: not open yet); « AAAA-MM-JJ ».
+  foundOn          String?
+  opensOn          String?
   source           ProspectSource @default(manual)
   status           ProspectStatus @default(to_contact)
   // Last step of the sequence sent (0: none yet).

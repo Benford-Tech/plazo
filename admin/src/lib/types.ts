@@ -217,7 +217,13 @@ export type ReservationChannel =
 export type Handover = "shuttle" | "valet";
 
 /** 29/10/2026 (« Payé par »): how a booking not made on Plazo was paid; `online` is a Plazo booking's. */
-export type PaymentMethod = "card" | "cash" | "cheque" | "transfer" | "holiday_vouchers" | "comparator";
+export type PaymentMethod =
+  | "card"
+  | "cash"
+  | "cheque"
+  | "transfer"
+  | "holiday_vouchers"
+  | "comparator";
 export type PaidBy = PaymentMethod | "online";
 
 export interface Reservation {
@@ -228,7 +234,12 @@ export interface Reservation {
   /** 15/11/2026: when the parking contract was signed (planning, list and detail), null while it is not. */
   contractSignedAt?: string | null;
   /** 29/10/2026: the file it was imported from (detail only). */
-  import?: { id: string; fileName: string; createdAt: string; undoneAt: string | null } | null;
+  import?: {
+    id: string;
+    fileName: string;
+    createdAt: string;
+    undoneAt: string | null;
+  } | null;
   /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */
   commission?: ReservationCommission | null;
   commissionOverrideBp?: number | null;
@@ -1091,7 +1102,13 @@ export interface PlatformTodo {
 export interface PlatformOverview {
   today: string;
   defaultCommissionBps: number | null;
-  operators: { real: number; realActive: number; invitations: number; other: number; archived: number };
+  operators: {
+    real: number;
+    realActive: number;
+    invitations: number;
+    other: number;
+    archived: number;
+  };
   bookingsThisMonth: { real: number; other: number };
   plazoThisMonth: { bookings: number; commissionCents: number };
   todos: PlatformTodo[];
@@ -1108,8 +1125,20 @@ export interface PlatformOperatorDetail extends PlatformOperator {
     reviewMessage: string | null;
     airport: { slug: string; name: string };
   } | null;
-  activity: { bookingsThisMonth: number; plazoBookingsThisMonth: number; inboxToCheck: number; failedPayouts: number };
-  team: { id: string; name: string; email: string; role: StaffRole; isActive: boolean; createdAt: string }[];
+  activity: {
+    bookingsThisMonth: number;
+    plazoBookingsThisMonth: number;
+    inboxToCheck: number;
+    failedPayouts: number;
+  };
+  team: {
+    id: string;
+    name: string;
+    email: string;
+    role: StaffRole;
+    isActive: boolean;
+    createdAt: string;
+  }[];
   journal: { id: string; action: string; at: string; by: string }[];
 }
 
@@ -1223,12 +1252,27 @@ export interface PaymentStatus {
   payoutSchedule: PayoutSchedule;
 }
 
-export type PlatformAudience = "staff" | "travellers" | "operator" | "promotion";
+export type PlatformAudience =
+  | "staff"
+  | "travellers"
+  | "operator"
+  | "promotion";
 
 /** 13/11/2026 (promotions, choix A): where a promotion opens the Plazo app; dates as `YYYY-MM-DDTHH:mm`. */
 export type PromotionLink =
-  | { kind: "search"; airport: string; arrival?: string | null; return?: string | null }
-  | { kind: "parking"; airport: string; parking: string; arrival?: string | null; return?: string | null };
+  | {
+      kind: "search";
+      airport: string;
+      arrival?: string | null;
+      return?: string | null;
+    }
+  | {
+      kind: "parking";
+      airport: string;
+      parking: string;
+      arrival?: string | null;
+      return?: string | null;
+    };
 
 /** 13/11/2026: who receives a promotion, on top of the phones that accepted the offers. */
 export interface PromotionFilters {
@@ -1333,7 +1377,13 @@ export interface WhatsappSettings {
 }
 
 /** 14/11/2026 (un numéro WhatsApp par parking, sur le compte de Benford Tech, nom affiché « Plazo »). */
-export type WhatsappNumberStatus = "requested" | "added" | "code_sent" | "registered" | "active" | "paused";
+export type WhatsappNumberStatus =
+  | "requested"
+  | "added"
+  | "code_sent"
+  | "registered"
+  | "active"
+  | "paused";
 export interface WhatsappNumber {
   status: WhatsappNumberStatus;
   phone: string | null;
@@ -1387,13 +1437,31 @@ export interface PhoneHistory {
   pingSet: boolean;
   days: {
     date: string;
-    segments: { start: number; end: number; from: string; to: string; state: PhoneState | "none" }[];
+    segments: {
+      start: number;
+      end: number;
+      from: string;
+      to: string;
+      state: PhoneState | "none";
+    }[];
     failed: number;
     reminderAt: string | null;
   }[];
   events: (
-    | { kind: "state"; at: string; state: PhoneState; lastSeenAt: string | null; afterMinutes: number | null }
-    | { kind: "sms_failed"; at: string; smsKind: string; status: "failed" | "abandoned"; count: number }
+    | {
+        kind: "state";
+        at: string;
+        state: PhoneState;
+        lastSeenAt: string | null;
+        afterMinutes: number | null;
+      }
+    | {
+        kind: "sms_failed";
+        at: string;
+        smsKind: string;
+        status: "failed" | "abandoned";
+        count: number;
+      }
   )[];
 }
 
@@ -1872,7 +1940,11 @@ export interface ReminderBoard {
   };
   defaults: { template: string; short: string };
   /** 15/11/2026: the valet bookings' text, by SMS alone; null while the parking has none (the usual message). */
-  valet?: { template: string | null; suggested: string; updatedAt: string | null };
+  valet?: {
+    template: string | null;
+    suggested: string;
+    updatedAt: string | null;
+  };
   sendTimes: string[];
   variables: TemplateVariable[];
   channel: { mode: SmsMode; repliesReachParking: boolean };
@@ -1960,9 +2032,18 @@ export interface RevenueReport {
   /** 02/11/2026: phone, counter and own website (no commission); absent from an older API. */
   direct?: { count: number; totalCents: number };
   /** 29/10/2026 (« Payé par »): null method = not said, last; absent from an older API. */
-  byPaymentMethod?: { method: PaidBy | null; count: number; totalCents: number }[];
+  byPaymentMethod?: {
+    method: PaidBy | null;
+    count: number;
+    totalCents: number;
+  }[];
   /** 12/11/2026: the services added by the team and paid at the parking, inside the total; absent from an older API. */
-  parkingExtras?: { count: number; totalCents: number; toCollectCount: number; toCollectCents: number };
+  parkingExtras?: {
+    count: number;
+    totalCents: number;
+    toCollectCount: number;
+    toCollectCents: number;
+  };
   /** 12/11/2026 (B): the supplements applied by the team, inside the total. */
   surcharges?: { count: number; totalCents: number };
   byDay: {
@@ -2066,7 +2147,25 @@ export type ProspectStatus =
 
 /** 13/11/2026 (« fais les 3 »): the language of a prospect's mails. */
 // 15/11/2026 (« Les mails sont à envoyer dans la langue du pays »): each European country's own language.
-export const PROSPECT_LANGUAGES = ["fr", "de", "en", "es", "it", "pt", "nl", "pl", "ro", "sv", "da", "nb", "fi", "hu", "cs", "et", "el"] as const;
+export const PROSPECT_LANGUAGES = [
+  "fr",
+  "de",
+  "en",
+  "es",
+  "it",
+  "pt",
+  "nl",
+  "pl",
+  "ro",
+  "sv",
+  "da",
+  "nb",
+  "fi",
+  "hu",
+  "cs",
+  "et",
+  "el",
+] as const;
 export type ProspectLanguage = (typeof PROSPECT_LANGUAGES)[number];
 
 export interface Prospect {
@@ -2096,6 +2195,11 @@ export interface Prospect {
   /** 17/11/2026: why it was marked (« rappeler en janvier »). */
   statusNote?: string | null;
   source: "manual" | "csv";
+  /** 22/11/2026: found by the « Nouveaux parkings » workflow (BODACC or annuaire des entreprises), its creation or
+   * announcement day and its declared start of activity (« AAAA-MM-JJ »). */
+  origin?: "bodacc" | "directory" | null;
+  foundOn?: string | null;
+  opensOn?: string | null;
   status: ProspectStatus;
   /** Last step sent (0: none). */
   step: number;
@@ -2169,11 +2273,23 @@ export interface ProspectList {
   sms?: { sent: number; cap: number; remaining: number; configured: boolean };
 }
 
-export type ProspectSmsReason = "unsubscribed" | "closed" | "no_phone" | "not_mobile" | "recent" | "too_long" | "cap" | "not_found";
+export type ProspectSmsReason =
+  | "unsubscribed"
+  | "closed"
+  | "no_phone"
+  | "not_mobile"
+  | "recent"
+  | "too_long"
+  | "cap"
+  | "not_found";
 
 /** « Envoyer un SMS à N prospects » (19/11/2026): each prospect's outcome; `ready` for a dry run. */
 export interface ProspectSmsResult {
-  results: { id: string; outcome: "ready" | "sent" | "failed" | "skipped"; reason?: ProspectSmsReason }[];
+  results: {
+    id: string;
+    outcome: "ready" | "sent" | "failed" | "skipped";
+    reason?: ProspectSmsReason;
+  }[];
   counts: { ready: number; sent: number; failed: number; skipped: number };
   remainingToday: number;
 }
@@ -2523,7 +2639,12 @@ export interface ReservationExtra {
 
 export type ExtraSource = "traveller" | "staff";
 /** How a service added at the parking is paid (12/11/2026); `on_return`: « Au retour », not yet. */
-export type ParkingPaymentMethod = "card" | "cash" | "cheque" | "transfer" | "holiday_vouchers";
+export type ParkingPaymentMethod =
+  | "card"
+  | "cash"
+  | "cheque"
+  | "transfer"
+  | "holiday_vouchers";
 export type ParkingPaymentChoice = ParkingPaymentMethod | "on_return";
 
 /** A service the team can add to a booking (« + Ajouter un service »), with why not when it cannot. */
@@ -2716,8 +2837,16 @@ export interface ReminderDelivery {
 /** confirmed: Meta or the network confirmed it · unconfirmed: it left, nobody confirmed · failed · pending. */
 export interface ReminderProof {
   level: "confirmed" | "unconfirmed" | "failed" | "pending";
-  whatsapp: { state: "accepted" | "delivered" | "read" | "refused"; at: string; statusAt: string | null } | null;
-  sms: { state: "queued" | "sent" | "delivered" | "failed"; at: string; statusAt: string | null } | null;
+  whatsapp: {
+    state: "accepted" | "delivered" | "read" | "refused";
+    at: string;
+    statusAt: string | null;
+  } | null;
+  sms: {
+    state: "queued" | "sent" | "delivered" | "failed";
+    at: string;
+    statusAt: string | null;
+  } | null;
 }
 
 /** 02/11/2026 (« Mes notifications »): the bell, and where each event reaches the member. */
@@ -2766,7 +2895,13 @@ export interface NotificationChannels {
   webPush: { available: boolean; publicKey: string | null };
   devices: {
     phones: { platform: string | null; updatedAt: string }[];
-    browsers: { id: string; label: string | null; endpoint: string; createdAt: string; lastSentAt: string | null }[];
+    browsers: {
+      id: string;
+      label: string | null;
+      endpoint: string;
+      createdAt: string;
+      lastSentAt: string | null;
+    }[];
   };
 }
 
@@ -2801,11 +2936,22 @@ export interface PlatformInvitation {
   id: string;
   kind: "operator" | "team";
   operator: { id: string; name: string };
-  staff: { id: string; name: string; email: string; role: string; isActive: boolean };
+  staff: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    isActive: boolean;
+  };
   sends: number;
   sentAt: string;
   emailSent: boolean;
-  opened: { at: string; lastAt: string | null; count: number; device: string | null } | null;
+  opened: {
+    at: string;
+    lastAt: string | null;
+    count: number;
+    device: string | null;
+  } | null;
   clicked: { at: string; device: string | null } | null;
   store: { at: string; store: string | null } | null;
   demoAt: string | null;
@@ -2815,10 +2961,21 @@ export interface PlatformInvitation {
 }
 export interface PlatformInvitations {
   data: PlatformInvitation[];
-  counts: { all: number; not_opened: number; not_clicked: number; no_app: number };
+  counts: {
+    all: number;
+    not_opened: number;
+    not_clicked: number;
+    no_app: number;
+  };
 }
 /** 18/11/2026: Plateforme › Mails d'accueil (GET /internal/platform/traveller-welcome). */
-export type WelcomeOutcome = "sent" | "repeat" | "opted_out" | "no_email" | "failed" | "in_progress";
+export type WelcomeOutcome =
+  | "sent"
+  | "repeat"
+  | "opted_out"
+  | "no_email"
+  | "failed"
+  | "in_progress";
 export type WelcomeNotSentReason =
   | "before_launch"
   | "no_email"
@@ -2849,7 +3006,13 @@ export interface WelcomeReportRow {
 export interface WelcomeReport {
   days: number;
   from: string;
-  counts: { bookings: number; sent: number; handledNotSent: number; notCandidate: number; pending: number };
+  counts: {
+    bookings: number;
+    sent: number;
+    handledNotSent: number;
+    notCandidate: number;
+    pending: number;
+  };
   reasons: { reason: WelcomeNotSentReason; count: number }[];
   outcomes: { outcome: WelcomeOutcome; count: number }[];
   rows: WelcomeReportRow[];
@@ -2880,7 +3043,12 @@ export interface PlatformApps {
     activeOperators7: number;
     operators: number;
   };
-  series: { date: string; installs: number; plazoActive: number; proActive: number }[];
+  series: {
+    date: string;
+    installs: number;
+    plazoActive: number;
+    proActive: number;
+  }[];
   measuredSince: string | null;
 }
 
@@ -2892,19 +3060,47 @@ export interface PlatformSeo {
     total: number;
     revenueCents: number;
     search: { count: number; revenueCents: number };
-    bySource: { source: string; detail: string; count: number; revenueCents: number }[];
+    bySource: {
+      source: string;
+      detail: string;
+      count: number;
+      revenueCents: number;
+    }[];
   };
   visits: { total: number; search: number };
-  pages: { landing: string; visits: number; searchVisits: number; bookings: number; revenueCents: number }[];
+  pages: {
+    landing: string;
+    visits: number;
+    searchVisits: number;
+    bookings: number;
+    revenueCents: number;
+  }[];
   searchConsole: {
     configured: boolean;
     lastSyncAt: string | null;
     lastDate: string | null;
     lastError: string | null;
     property: string;
-    totals: { clicks: number; impressions: number; position: number | null } | null;
-    queries: { query: string; page: string; clicks: number; impressions: number; position: number | null; previous: number | null }[];
-    pages: { page: string; clicks: number; impressions: number; position: number | null; previous: number | null }[];
+    totals: {
+      clicks: number;
+      impressions: number;
+      position: number | null;
+    } | null;
+    queries: {
+      query: string;
+      page: string;
+      clicks: number;
+      impressions: number;
+      position: number | null;
+      previous: number | null;
+    }[];
+    pages: {
+      page: string;
+      clicks: number;
+      impressions: number;
+      position: number | null;
+      previous: number | null;
+    }[];
   };
 }
 
@@ -2943,14 +3139,24 @@ export interface InvoiceView {
   number: string;
   issuedAt: string;
   totalTtcCents: number;
-  customer: { name: string; email: string | null; company: string | null; address: string | null };
+  customer: {
+    name: string;
+    email: string | null;
+    company: string | null;
+    address: string | null;
+  };
   sentAt: string | null;
   sentTo: string | null;
   creditOf: string | null;
   creditedBy: string | null;
 }
 
-export type InvoiceRefusal = "billing_incomplete" | "no_price" | "reservation_cancelled" | "invoice_exists" | "anonymized";
+export type InvoiceRefusal =
+  | "billing_incomplete"
+  | "no_price"
+  | "reservation_cancelled"
+  | "invoice_exists"
+  | "anonymized";
 
 export interface ReservationInvoices {
   billing: { complete: boolean; missing: string[] };
@@ -2958,7 +3164,11 @@ export interface ReservationInvoices {
   refusal: InvoiceRefusal | null;
   customerEmail: string | null;
   /** 07/11/2026: the traveller asked for the invoice from Plazo, with what the invoice will take. */
-  request: { at: string; company: string | null; address: string | null } | null;
+  request: {
+    at: string;
+    company: string | null;
+    address: string | null;
+  } | null;
   invoices: InvoiceView[];
 }
 
@@ -2983,9 +3193,27 @@ export interface SurchargeSettings {
 
 /** 12/11/2026 (B): the supplements applied on a booking. */
 export interface BookingSurcharges {
-  surcharges: { id: string; kind: string; label: string; amountCents: number; at: string; by: string | null }[];
-  options: { key: string; kind: SurchargeKind; label: string; amountCents: number }[];
-  suggestion: { kind: "late"; lateMinutes: number; amountCents: number; scheduledAt: string; arrivedAt: string } | null;
+  surcharges: {
+    id: string;
+    kind: string;
+    label: string;
+    amountCents: number;
+    at: string;
+    by: string | null;
+  }[];
+  options: {
+    key: string;
+    kind: SurchargeKind;
+    label: string;
+    amountCents: number;
+  }[];
+  suggestion: {
+    kind: "late";
+    lateMinutes: number;
+    amountCents: number;
+    scheduledAt: string;
+    arrivedAt: string;
+  } | null;
   totalCents: number;
   canEdit: boolean;
 }
@@ -3021,7 +3249,13 @@ export interface WhatsappConversation {
 
 export interface WhatsappInboxList {
   data: WhatsappConversation[];
-  counts: { unread: number; all: number; handled: number; unknown: number | null; sent?: number };
+  counts: {
+    unread: number;
+    all: number;
+    handled: number;
+    unknown: number | null;
+    sent?: number;
+  };
 }
 
 /** « Envoyés » (12/11/2026): one WhatsApp Plazo sent a traveller of the parking (30 days). */
@@ -3036,7 +3270,12 @@ export interface WhatsappSentMessage {
   phone: string;
   at: string;
   smsFallback: boolean;
-  reservation: { id: string; reference: string; externalReference: string | null; customerName: string } | null;
+  reservation: {
+    id: string;
+    reference: string;
+    externalReference: string | null;
+    customerName: string;
+  } | null;
   conversationId: string | null;
 }
 
@@ -3058,13 +3297,27 @@ export interface WhatsappConversationDetail {
   conversation: WhatsappConversation;
   messages: WhatsappInboxMessage[];
   /** What Plazo sent this booking by WhatsApp (confirmation, day before…), shown between the messages. */
-  sent: { id: string; channel?: "whatsapp" | "sms"; kind: string; status: string; text?: string | null; at: string }[];
+  sent: {
+    id: string;
+    channel?: "whatsapp" | "sms";
+    kind: string;
+    status: string;
+    text?: string | null;
+    at: string;
+  }[];
 }
 
 export interface ReservationConversation {
   id: string;
   unread: number;
-  messages: { id: string; direction: "in" | "out"; text: string; status: string | null; at: string; by: { firstName: string } | null }[];
+  messages: {
+    id: string;
+    direction: "in" | "out";
+    text: string;
+    status: string | null;
+    at: string;
+    by: { firstName: string } | null;
+  }[];
 }
 
 /** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */

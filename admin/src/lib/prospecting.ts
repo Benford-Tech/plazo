@@ -322,6 +322,8 @@ export interface ProspectFilters {
   demo: "" | "opened" | "not_opened" | "none";
   /** "" all, "never" never emailed, "7d" / "30d" emailed in the last 7 / 30 days, "older" more than 30 days ago. */
   lastMail: "" | "never" | "7d" | "30d" | "older";
+  /** 22/11/2026: "new" BODACC or annuaire, one of them, "csv" a file, "manual" typed by hand. */
+  origin: "" | "new" | "bodacc" | "directory" | "csv" | "manual";
 }
 
 export const NO_FILTERS: ProspectFilters = {
@@ -331,7 +333,14 @@ export const NO_FILTERS: ProspectFilters = {
   tool: "",
   demo: "",
   lastMail: "",
+  origin: "",
 };
+
+/** 22/11/2026: a declared start of activity still to come (« Pas encore ouvert »). */
+export const notOpenYet = (
+  p: Pick<Prospect, "opensOn">,
+  today: string = new Date().toISOString().slice(0, 10),
+) => !!p.opensOn && p.opensOn > today;
 
 export const hasFilters = (f: ProspectFilters) =>
   Object.values(f).some((v) => v !== "");
@@ -405,6 +414,17 @@ export function filterProspects(
     if (f.demo === "opened" && !(p.demo && p.demo.opens > 0)) return false;
     if (f.demo === "not_opened" && !(p.demo && p.demo.opens === 0))
       return false;
+    if (f.origin) {
+      const origin = p.origin ?? null;
+      if (
+        f.origin === "new"
+          ? !origin
+          : f.origin === "bodacc" || f.origin === "directory"
+            ? origin !== f.origin
+            : origin || p.source !== f.origin
+      )
+        return false;
+    }
     if (f.lastMail) {
       const last = p.lastContactedAt
         ? new Date(p.lastContactedAt).getTime()
@@ -494,9 +514,51 @@ const SMS_GAP_MS = 7 * DAY;
 
 /** The countries Plazo texts (backend/src/domain/phone.ts, SMS_COUNTRY_CODES): Europe, French overseas, the Maghreb. */
 const SMS_COUNTRY_CODES = [
-  "30", "31", "32", "34", "351", "352", "353", "354", "356", "357", "358", "359", "36", "370", "371", "372", "376", "377",
-  "378", "385", "386", "39", "40", "41", "420", "421", "423", "43", "44", "45", "46", "47", "48", "49", "262", "590", "594",
-  "596", "508", "687", "681", "689", "212", "213", "216",
+  "30",
+  "31",
+  "32",
+  "34",
+  "351",
+  "352",
+  "353",
+  "354",
+  "356",
+  "357",
+  "358",
+  "359",
+  "36",
+  "370",
+  "371",
+  "372",
+  "376",
+  "377",
+  "378",
+  "385",
+  "386",
+  "39",
+  "40",
+  "41",
+  "420",
+  "421",
+  "423",
+  "43",
+  "44",
+  "45",
+  "46",
+  "47",
+  "48",
+  "49",
+  "262",
+  "590",
+  "594",
+  "596",
+  "508",
+  "687",
+  "681",
+  "689",
+  "212",
+  "213",
+  "216",
 ];
 
 /** Whether a number can get an SMS: a French mobile, or a number of an allowed country written with its code. */
@@ -506,8 +568,10 @@ export function isTextablePhone(phone: string | null): boolean {
   if (digits.startsWith("00")) digits = `+${digits.slice(2)}`;
   // The 06 39 98 range is kept for fiction: never texted.
   if (/^0[67]\d{8}$/.test(digits)) return !digits.startsWith("063998");
-  if (digits.startsWith("+33")) return /^[67]\d{8}$/.test(digits.slice(3).replace(/^0/, ""));
-  if (/^\+[1-9]\d{7,14}$/.test(digits)) return SMS_COUNTRY_CODES.some((code) => digits.slice(1).startsWith(code));
+  if (digits.startsWith("+33"))
+    return /^[67]\d{8}$/.test(digits.slice(3).replace(/^0/, ""));
+  if (/^\+[1-9]\d{7,14}$/.test(digits))
+    return SMS_COUNTRY_CODES.some((code) => digits.slice(1).startsWith(code));
   return false;
 }
 

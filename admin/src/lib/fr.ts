@@ -2270,20 +2270,24 @@ export const fr = {
     logoNone: "Pas encore de logo : vos initiales sont imprimées à la place.",
     changeLogo: "Changer le logo",
     name: "Nom imprimé",
-    nameHint: (max: number) => `Repris de votre fiche Plazo. ${max} caractères au plus.`,
+    nameHint: (max: number) =>
+      `Repris de votre fiche Plazo. ${max} caractères au plus.`,
     phone: "Ajouter le téléphone du parking",
     phoneHint: (phone: string) => `${phone}, celui de votre fiche`,
-    phoneMissing: "Ajoutez le téléphone du parking dans « Ma fiche » pour l'imprimer.",
+    phoneMissing:
+      "Ajoutez le téléphone du parking dans « Ma fiche » pour l'imprimer.",
     qrTitle: "Le QR code",
     qrListing: "Mène à la page de votre parking sur plazo.fr :",
     qrNoListing:
       "Votre fiche n'est pas encore en ligne : le QR code mène à « Ma réservation » sur plazo.fr. Retéléchargez le flyer une fois la fiche publiée.",
     preview: "Aperçu",
-    previewFailed: "L'aperçu n'a pas pu être dessiné. Le PDF reste téléchargeable.",
+    previewFailed:
+      "L'aperçu n'a pas pu être dessiné. Le PDF reste téléchargeable.",
     downloadA4: "Télécharger le PDF (A4)",
     downloadA5: "Format A5 (2 par page)",
     preparing: "Préparation…",
-    footnote: "Le logo, le nom et le téléphone suivent vos réglages : retéléchargez le flyer après un changement.",
+    footnote:
+      "Le logo, le nom et le téléphone suivent vos réglages : retéléchargez le flyer après un changement.",
     failed: "Le flyer n'a pas pu être préparé. Réessayez.",
   },
   plazo: {
@@ -2391,7 +2395,8 @@ export const fr = {
     googleReviewPlaceholder: "https://g.page/r/…/review",
     googleReviewHelp:
       "Dans votre fiche Google : « Demander des avis » › copier le lien. Plazo l'envoie à vos clients une fois leur voiture rendue.",
-    googleReviewInvalid: "Collez le lien d'avis donné par Google (une adresse https de Google, par exemple https://g.page/r/…/review).",
+    googleReviewInvalid:
+      "Collez le lien d'avis donné par Google (une adresse https de Google, par exemple https://g.page/r/…/review).",
     cancellation: "Annulation",
     photos: "Photos (la première sert de vignette)",
     photoUrl: "Adresse de la photo (https://…)",
@@ -3519,11 +3524,14 @@ export const fr = {
       inactive: "désactivé",
       resend: "Renvoyer",
       resending: "Envoi…",
-      resent: (name: string) => `Invitation renvoyée à ${name}. Le lien précédent ne marche plus.`,
+      resent: (name: string) =>
+        `Invitation renvoyée à ${name}. Le lien précédent ne marche plus.`,
       resentNoEmail: "Nouveau lien créé, mais l'e-mail n'a pas pu partir.",
       resendErrors: {
-        already_accepted: "Ce gérant a déjà choisi son mot de passe : il se connecte.",
-        staff_inactive: "Ce compte est désactivé : réactivez-le avant de renvoyer l'invitation.",
+        already_accepted:
+          "Ce gérant a déjà choisi son mot de passe : il se connecte.",
+        staff_inactive:
+          "Ce compte est désactivé : réactivez-le avant de renvoyer l'invitation.",
       } as Record<string, string>,
       resendError: "Impossible de renvoyer l'invitation.",
       empty: "Aucune invitation à montrer ici.",
@@ -3534,7 +3542,10 @@ export const fr = {
       title: "Mails d'accueil aux voyageurs",
       intro:
         "Le mail « Installez Plazo avant votre départ », envoyé aux clients des parkings qui n'ont pas réservé sur Plazo. Réservations créées sur la période, hors démo et parking de test.",
-      periods: { 7: "7 jours", 30: "30 jours", 90: "90 jours" } as Record<number, string>,
+      periods: { 7: "7 jours", 30: "30 jours", 90: "90 jours" } as Record<
+        number,
+        string
+      >,
       periodLabel: "Période",
       allOperators: "Tous les parkings",
       operatorLabel: "Parking",
@@ -3572,7 +3583,8 @@ export const fr = {
       emptySent: "Aucun mail envoyé sur cette période.",
       emptyOther: "Aucune réservation traitée sans envoi sur cette période.",
       truncated: (n: number) => `Les ${n} plus récents seulement.`,
-      why: (n: number) => `Pourquoi ${n === 1 ? "l'autre ne l'a" : `les ${n} autres ne l'ont`} pas eu`,
+      why: (n: number) =>
+        `Pourquoi ${n === 1 ? "l'autre ne l'a" : `les ${n} autres ne l'ont`} pas eu`,
       whyHelp: "Première raison rencontrée, dans l'ordre où Plazo les vérifie.",
       whyEmpty: "Toutes les réservations de la période ont été traitées.",
       reasons: {
@@ -3586,7 +3598,8 @@ export const fr = {
         pending: "En attente du prochain passage",
         arrival_passed: "Dépôt passé avant l'envoi",
       } as Record<string, string>,
-      masked: "Les adresses sont masquées : la plateforme voit le prénom et le parking, pas l'e-mail entier.",
+      masked:
+        "Les adresses sont masquées : la plateforme voit le prénom et le parking, pas l'e-mail entier.",
     },
     // 15/11/2026 (« Suivre le nombre de téléchargements et d'utilisation de plazo », choix « Mesuré par Plazo »).
     apps: {
@@ -3834,6 +3847,26 @@ export const fr = {
         not_opened: "Démo jamais ouverte",
         none: "Pas de lien de démo",
       },
+      filterOrigin: "Filtrer par origine",
+      filterOriginOptions: {
+        "": "Origine : toutes",
+        new: "Nouveaux parkings (BODACC + annuaire)",
+        bodacc: "BODACC",
+        directory: "Annuaire des entreprises",
+        csv: "Fichier CSV",
+        manual: "Saisi à la main",
+      },
+      originBadge: {
+        bodacc: "Nouveau parking · BODACC",
+        directory: "Nouveau parking · annuaire",
+      },
+      originShort: { bodacc: "BODACC", directory: "Annuaire" },
+      originTitle: (source: string, day: string | null) =>
+        day
+          ? `Trouvé par l'outil « Nouveaux parkings » (${source}) · créé ou annoncé le ${day}`
+          : `Trouvé par l'outil « Nouveaux parkings » (${source})`,
+      notOpenYet: (day: string) => `Pas encore ouvert · début le ${day}`,
+      notOpenYetShort: "Pas encore ouvert",
       filterLastMail: "Filtrer par dernier mail",
       filterLastMailOptions: {
         "": "Dernier mail : tous",
@@ -3846,7 +3879,8 @@ export const fr = {
       // 19/11/2026 (direction A, phones).
       filtersButton: (n: number) => (n > 0 ? `Filtres · ${n}` : "Filtres"),
       call: "Appeler",
-      barChosen: (n: number) => `${n} prospect${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""}`,
+      barChosen: (n: number) =>
+        `${n} prospect${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""}`,
       barSms: "SMS",
       barSend: "Envoyer le mail",
       // 22/11/2026 (direction A, téléphone) : the folded card's second line and the sheet.
@@ -3862,7 +3896,8 @@ export const fr = {
       checkFiltered: (n: number) => `Cocher les ${n}`,
       sendFiltered: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
       // 19/11/2026 (« pouvoir envoyer un sms de prospection », choix C).
-      smsFiltered: (n: number) => `Envoyer un SMS à ${n} prospect${n > 1 ? "s" : ""}`,
+      smsFiltered: (n: number) =>
+        `Envoyer un SMS à ${n} prospect${n > 1 ? "s" : ""}`,
       smsSent: (when: string) => `SMS · ${when}`,
       sms: {
         title: (n: number) => `SMS à ${n} prospect${n > 1 ? "s" : ""}`,
@@ -3889,31 +3924,42 @@ export const fr = {
           cap: "plafond du jour atteint",
           not_found: "introuvable",
         } as Record<string, string>,
-        today: (sent: number, cap: number) => `${sent} / ${cap} SMS aujourd'hui`,
-        closedWindow: (when: string) => `Envoi possible à partir du ${when} (du lundi au vendredi, de 09:00 à 18:00).`,
+        today: (sent: number, cap: number) =>
+          `${sent} / ${cap} SMS aujourd'hui`,
+        closedWindow: (when: string) =>
+          `Envoi possible à partir du ${when} (du lundi au vendredi, de 09:00 à 18:00).`,
         unavailable: "Les SMS ne sont pas branchés : il manque la clé Brevo.",
         test: "M'envoyer un test",
         testSent: (to: string) => `Test envoyé au ${to}.`,
         send: (n: number) => `Envoyer à ${n} prospect${n > 1 ? "s" : ""}`,
-        confirmTitle: (n: number) => `Envoyer ce SMS à ${n} prospect${n > 1 ? "s" : ""} ?`,
+        confirmTitle: (n: number) =>
+          `Envoyer ce SMS à ${n} prospect${n > 1 ? "s" : ""} ?`,
         confirmYes: "Envoyer",
         done: (sent: number, failed: number) =>
           `${sent} SMS envoyé${sent > 1 ? "s" : ""}${failed ? `, ${failed} refusé${failed > 1 ? "s" : ""} par Brevo` : ""}.`,
         results: "Résultat",
-        outcomes: { sent: "Envoyé", failed: "Refusé par Brevo", skipped: "Pas envoyé", ready: "Prêt" } as Record<string, string>,
+        outcomes: {
+          sent: "Envoyé",
+          failed: "Refusé par Brevo",
+          skipped: "Pas envoyé",
+          ready: "Prêt",
+        } as Record<string, string>,
         close: "Fermer",
         cancel: "Annuler",
         errors: {
           text: {
             required: "Écrivez le texte du SMS.",
             too_long: "Trop long : 480 caractères au plus.",
-            unknown_variable: "Une variable n'existe pas : utilisez celles proposées.",
+            unknown_variable:
+              "Une variable n'existe pas : utilisez celles proposées.",
           },
           no_test_phone:
             "Pas de numéro pour le test : PROSPECTING_PHONE doit être un mobile.",
           sms_failed: "Brevo a refusé le SMS de test.",
-          outside_window: "Les SMS partent du lundi au vendredi, de 09:00 à 18:00.",
-          prospecting_sms_unavailable: "Les SMS ne sont pas branchés : il manque la clé Brevo.",
+          outside_window:
+            "Les SMS partent du lundi au vendredi, de 09:00 à 18:00.",
+          prospecting_sms_unavailable:
+            "Les SMS ne sont pas branchés : il manque la clé Brevo.",
         },
       },
       sortBy: (column: string) => `Trier par ${column}`,
@@ -4008,7 +4054,9 @@ export const fr = {
       bulkNotInterested: "Pas intéressés",
       bulkDone: (n: number, skipped: number) =>
         `${n} prospect${n > 1 ? "s" : ""} marqué${n > 1 ? "s" : ""}` +
-        (skipped ? ` · ${skipped} désinscrit${skipped > 1 ? "s" : ""} laissé${skipped > 1 ? "s" : ""}` : "") +
+        (skipped
+          ? ` · ${skipped} désinscrit${skipped > 1 ? "s" : ""} laissé${skipped > 1 ? "s" : ""}`
+          : "") +
         ".",
       addNote: "+ Note",
       editNote: (name: string) => `Modifier la note de ${name}`,
@@ -4551,7 +4599,14 @@ export const websiteFr = {
   notConnected: "Pas encore relié",
   waiting: "Clé créée, en attente du site",
   siteLine: (host: string | null, when: string | null) =>
-    [host, when ? `dernière réservation reçue le ${when}` : "aucune réservation reçue pour l'instant"].filter(Boolean).join(" · "),
+    [
+      host,
+      when
+        ? `dernière réservation reçue le ${when}`
+        : "aucune réservation reçue pour l'instant",
+    ]
+      .filter(Boolean)
+      .join(" · "),
   steps: [
     "Téléchargez l'extension et installez-la dans WordPress : Extensions › Ajouter › Téléverser.",
     "Dans WordPress, Réglages › Plazo : collez la clé.",
@@ -4560,9 +4615,11 @@ export const websiteFr = {
   download: (version: string) => `Télécharger l'extension (v${version})`,
   create: "Créer la clé",
   renew: "Nouvelle clé",
-  renewConfirm: "Créer une nouvelle clé ? L'ancienne s'arrête tout de suite : il faudra coller la nouvelle dans WordPress.",
+  renewConfirm:
+    "Créer une nouvelle clé ? L'ancienne s'arrête tout de suite : il faudra coller la nouvelle dans WordPress.",
   remove: "Retirer la clé",
-  removeConfirm: "Retirer la clé ? Le formulaire de votre site ne pourra plus réserver.",
+  removeConfirm:
+    "Retirer la clé ? Le formulaire de votre site ne pourra plus réserver.",
   keyOnce: "Copiez la clé maintenant : elle ne sera plus affichée.",
   copy: "Copier la clé",
   copied: "Clé copiée.",
@@ -4580,7 +4637,8 @@ export const bookingPageFr = {
   on: "En ligne",
   off: "Éteinte",
   enable: "Ouvrir la page de réservation",
-  listingOffline: "Votre fiche doit d'abord être en ligne sur Plazo (Sur Plazo › Ma fiche).",
+  listingOffline:
+    "Votre fiche doit d'abord être en ligne sur Plazo (Sur Plazo › Ma fiche).",
   slug: "Adresse de la page",
   slugHint: "Lettres, chiffres et tirets.",
   accent: "Couleur des boutons",
@@ -4591,13 +4649,15 @@ export const bookingPageFr = {
   copy: "Copier",
   copied: "Copié.",
   open: "Voir la page",
-  payouts: "Les paiements vous sont reversés comme ceux de Plazo, sans commission : vérifiez votre compte Stripe dans Reversements.",
+  payouts:
+    "Les paiements vous sont reversés comme ceux de Plazo, sans commission : vérifiez votre compte Stripe dans Reversements.",
   demo: "Démo : la page ne s'ouvre pas ici.",
   errors: {
     invalid: "Adresse ou couleur invalide.",
     reserved: "Cette adresse est réservée par Plazo : choisissez-en une autre.",
     taken: "Cette adresse est déjà prise par un autre parking.",
-    listing_offline: "Votre fiche doit être en ligne sur Plazo pour ouvrir la page.",
+    listing_offline:
+      "Votre fiche doit être en ligne sur Plazo pour ouvrir la page.",
   } as Record<string, string>,
 };
 
@@ -7113,11 +7173,17 @@ export const plansFr = {
 /** The two contracts Plazo writes for every operator (17/11/2026, choice C « Un parcours, deux signatures »). */
 export const agreementsFr = {
   title: `Vos contrats ${PRODUCT.name}`,
-  intro: "Deux contrats rédigés pour votre parking, avec vos chiffres. Lisez-les, puis signez-les d'un seul nom. Rien n'est bloqué en attendant.",
-  steps: { pro_terms: `${PRODUCT.name} Pro`, listing: "Diffusion des annonces", sign: "Signature" } as Record<string, string>,
+  intro:
+    "Deux contrats rédigés pour votre parking, avec vos chiffres. Lisez-les, puis signez-les d'un seul nom. Rien n'est bloqué en attendant.",
+  steps: {
+    pro_terms: `${PRODUCT.name} Pro`,
+    listing: "Diffusion des annonces",
+    sign: "Signature",
+  } as Record<string, string>,
   stepLabel: (n: number, total: number) => `Étape ${n} sur ${total}`,
   summary: {
-    pro_terms: "Le logiciel : formule, données de vos clients, messages, fin du contrat.",
+    pro_terms:
+      "Le logiciel : formule, données de vos clients, messages, fin du contrat.",
     listing: `Vendre sur ${PRODUCT.name} : votre fiche, l'encaissement, la commission, les reversements.`,
   } as Record<string, string>,
   version: (v: string) => `Version du ${v.split("-").reverse().join("/")}`,
@@ -7129,16 +7195,20 @@ export const agreementsFr = {
   listingOptional: `Vous ne vendez pas encore sur ${PRODUCT.name} : ce contrat pourra attendre que vous envoyiez votre fiche.`,
   signTitle: "Signer",
   nameLabel: "Votre nom complet, comme signature",
-  accept: (title: string, operator: string) => `J'ai lu « ${title} » en entier et je l'accepte au nom de ${operator}. « Lu et approuvé ».`,
-  signCount: (n: number) => (n > 1 ? `Signer les ${n} contrats` : "Signer le contrat"),
+  accept: (title: string, operator: string) =>
+    `J'ai lu « ${title} » en entier et je l'accepte au nom de ${operator}. « Lu et approuvé ».`,
+  signCount: (n: number) =>
+    n > 1 ? `Signer les ${n} contrats` : "Signer le contrat",
   signing: "Signature…",
   confirmTitle: "Signer",
   confirm: (name: string, n: number) =>
     `Vous signez ${n > 1 ? `ces ${n} contrats` : "ce contrat"} au nom de votre parking, sous le nom « ${name} ». Cette signature vous engage.`,
   signedToast: (n: number) => (n > 1 ? "Contrats signés." : "Contrat signé."),
   proofNote: `${PRODUCT.name} garde le texte signé mot pour mot, votre nom, la date et l'heure, votre adresse IP, votre navigateur et l'empreinte de chaque PDF.`,
-  viewAsNote: "En consultation ou dans la démo, on lit les contrats mais on ne les signe pas : seul un gérant du parking le peut.",
-  textChanged: "Un chiffre du contrat a changé pendant votre lecture (commission, formule…) : relisez-le avant de signer.",
+  viewAsNote:
+    "En consultation ou dans la démo, on lit les contrats mais on ne les signe pas : seul un gérant du parking le peut.",
+  textChanged:
+    "Un chiffre du contrat a changé pendant votre lecture (commission, formule…) : relisez-le avant de signer.",
   signErrors: {
     required: "Tapez votre nom complet.",
     full_name: "Tapez votre prénom et votre nom.",
@@ -7154,15 +7224,20 @@ export const agreementsFr = {
   proof: "Preuve",
   previous: "Versions signées avant",
   particular: "Contrat particulier",
-  banner: (n: number) => (n > 1 ? `Vos ${n} contrats ${PRODUCT.name} sont prêts à signer.` : `Votre contrat ${PRODUCT.name} est prêt à signer.`),
+  banner: (n: number) =>
+    n > 1
+      ? `Vos ${n} contrats ${PRODUCT.name} sont prêts à signer.`
+      : `Votre contrat ${PRODUCT.name} est prêt à signer.`,
   bannerAction: "Les lire et les signer",
   // Plateforme › loueur › Contrat
   platformTitle: `Contrats ${PRODUCT.name}`,
   planLabel: "Formule Plazo Pro",
   planNone: "Pas choisie (« selon le devis accepté »)",
   planYearly: "À l'année (−10 %)",
-  planSaved: "Formule enregistrée : les conditions d'utilisation la reprennent.",
-  planNote: "La formule est écrite dans les conditions d'utilisation. Un contrat déjà signé garde le texte signé.",
+  planSaved:
+    "Formule enregistrée : les conditions d'utilisation la reprennent.",
+  planNote:
+    "La formule est écrite dans les conditions d'utilisation. Un contrat déjà signé garde le texte signé.",
   notSigned: "Pas encore signé",
   waitingListing: "Pas demandé tant que la fiche n'est pas envoyée",
 };
@@ -7170,8 +7245,10 @@ export const agreementsFr = {
 // 17/11/2026 (« Branche stripe pour le paiement des abonnements plazo pro », direction B « Tout dans Plazo »).
 export const subscriptionFr = {
   title: `Abonnement ${PRODUCT.name} Pro`,
-  intro: "Votre formule, votre moyen de paiement et vos factures. Le paiement est sécurisé par Stripe.",
-  unavailable: "Le paiement en ligne de l'abonnement n'est pas encore ouvert. Écrivez-nous pour choisir votre formule.",
+  intro:
+    "Votre formule, votre moyen de paiement et vos factures. Le paiement est sécurisé par Stripe.",
+  unavailable:
+    "Le paiement en ligne de l'abonnement n'est pas encore ouvert. Écrivez-nous pour choisir votre formule.",
   testOperator: "Parking de test : aucun abonnement réel n'y est payé.",
   status: {
     active: "Actif",
@@ -7194,9 +7271,11 @@ export const subscriptionFr = {
   card: (brand: string, last4: string) => `${brand} •••• ${last4}`,
   sepa: (last4: string) => `Prélèvement SEPA •••• ${last4}`,
   noMethod: "Aucun moyen de paiement enregistré",
-  pastDue: "Le dernier prélèvement n'est pas passé. Stripe va réessayer : mettez à jour votre moyen de paiement pour régler tout de suite.",
+  pastDue:
+    "Le dernier prélèvement n'est pas passé. Stripe va réessayer : mettez à jour votre moyen de paiement pour régler tout de suite.",
   incomplete: "Le premier paiement n'est pas terminé : reprenez-le ci-dessous.",
-  processing: "Paiement reçu, en cours de validation par la banque (un prélèvement SEPA prend quelques jours).",
+  processing:
+    "Paiement reçu, en cours de validation par la banque (un prélèvement SEPA prend quelques jours).",
   updateMethod: "Mettre à jour le moyen de paiement",
   plansTitle: "Choisir une formule",
   changeTitle: "Changer de formule",
@@ -7204,11 +7283,13 @@ export const subscriptionFr = {
   choose: (name: string) => `Choisir ${name}`,
   switchTo: (name: string) => `Passer à ${name}`,
   checkoutTitle: (name: string) => `S'abonner à ${name}`,
-  planLine: (name: string, yearly: boolean) => `${name}, ${yearly ? "à l'année" : "au mois"}`,
+  planLine: (name: string, yearly: boolean) =>
+    `${name}, ${yearly ? "à l'année" : "au mois"}`,
   setupLine: "Mise en route (une fois)",
   vatLine: (percent: number) => `TVA ${percent} %`,
   totalNow: "À payer aujourd'hui",
-  thenEach: (yearly: boolean) => (yearly ? "Puis chaque année" : "Puis chaque mois"),
+  thenEach: (yearly: boolean) =>
+    yearly ? "Puis chaque année" : "Puis chaque mois",
   continue: "Continuer vers le paiement",
   pay: (amount: string) => `Payer ${amount} et m'abonner`,
   paying: "Paiement en cours…",
@@ -7216,7 +7297,8 @@ export const subscriptionFr = {
   cancelChoice: "Changer de formule",
   previewTitle: (name: string) => `Passer à ${name}`,
   dueNow: "À payer aujourd'hui (prorata compris)",
-  fromRenewal: (date: string) => `Le nouveau prix s'applique au prochain prélèvement, le ${date}. Rien à payer aujourd'hui.`,
+  fromRenewal: (date: string) =>
+    `Le nouveau prix s'applique au prochain prélèvement, le ${date}. Rien à payer aujourd'hui.`,
   nextPrice: "Ensuite",
   confirmChange: "Confirmer le changement",
   changed: "Formule changée.",
@@ -7224,14 +7306,21 @@ export const subscriptionFr = {
   changeMethod: "Changer de moyen de paiement",
   saveMethod: "Enregistrer",
   methodSaved: "Moyen de paiement enregistré.",
-  methodHint: "Carte bancaire ou prélèvement SEPA (IBAN). Le formulaire est fourni par Stripe : Plazo ne voit jamais vos numéros.",
+  methodHint:
+    "Carte bancaire ou prélèvement SEPA (IBAN). Le formulaire est fourni par Stripe : Plazo ne voit jamais vos numéros.",
   invoicesTitle: "Factures",
   invoicesEmpty: "Aucune facture pour l'instant.",
-  invoiceStatus: { paid: "Payée", open: "À payer", void: "Annulée", uncollectible: "Impayée" } as Record<string, string>,
+  invoiceStatus: {
+    paid: "Payée",
+    open: "À payer",
+    void: "Annulée",
+    uncollectible: "Impayée",
+  } as Record<string, string>,
   headers: { date: "Date", number: "Numéro", total: "TTC", status: "État" },
   pdf: "PDF",
   cancelTitle: "Résilier",
-  cancelText: (date: string) => `L'abonnement s'arrête à la fin de la période payée, le ${date}. Vos données restent lisibles.`,
+  cancelText: (date: string) =>
+    `L'abonnement s'arrête à la fin de la période payée, le ${date}. Vos données restent lisibles.`,
   cancel: "Résilier l'abonnement…",
   cancelConfirm: "Résilier l'abonnement à la fin de la période payée ?",
   cancelled: "Résiliation enregistrée.",
@@ -7239,13 +7328,17 @@ export const subscriptionFr = {
   resumed: "Votre abonnement continue.",
   loadFailed: "Le paiement sécurisé n'a pas pu se charger. Rechargez la page.",
   errors: {
-    already_subscribed: "Vous avez déjà un abonnement : changez de formule plus bas.",
+    already_subscribed:
+      "Vous avez déjà un abonnement : changez de formule plus bas.",
     no_subscription: "Aucun abonnement en cours.",
     same_plan: "C'est déjà votre formule.",
-    payment_failed: "Le paiement du changement n'est pas passé : vérifiez votre moyen de paiement.",
+    payment_failed:
+      "Le paiement du changement n'est pas passé : vérifiez votre moyen de paiement.",
     setup_not_confirmed: "Le moyen de paiement n'a pas été confirmé.",
-    subscriptions_unavailable: "Le paiement de l'abonnement n'est pas encore ouvert.",
+    subscriptions_unavailable:
+      "Le paiement de l'abonnement n'est pas encore ouvert.",
     test_operator: "Parking de test : aucun abonnement réel n'y est payé.",
-    view_as_payments: "En consultation, les paiements du loueur ne se modifient pas.",
+    view_as_payments:
+      "En consultation, les paiements du loueur ne se modifient pas.",
   } as Record<string, string>,
 };

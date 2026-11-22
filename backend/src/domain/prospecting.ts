@@ -546,6 +546,10 @@ export interface ProspectInput {
   tool?: unknown;
   toolDetail?: unknown;
   notes?: unknown;
+  /** 22/11/2026: `bodacc` or `directory` (« Nouveaux parkings »), and its dates « AAAA-MM-JJ ». */
+  origin?: unknown;
+  foundOn?: unknown;
+  opensOn?: unknown;
 }
 
 export interface ProspectFields {
@@ -563,9 +567,18 @@ export interface ProspectFields {
   tool: string | null;
   toolDetail: string | null;
   notes: string | null;
+  origin: ProspectOrigin | null;
+  foundOn: string | null;
+  opensOn: string | null;
 }
 
-type TextField = Exclude<keyof ProspectFields, 'region' | 'language'>;
+/** 22/11/2026: where the « Nouveaux parkings » workflow found a parking. */
+export const PROSPECT_ORIGINS = ['bodacc', 'directory'] as const;
+export type ProspectOrigin = (typeof PROSPECT_ORIGINS)[number];
+export const isProspectOrigin = (value: unknown): value is ProspectOrigin =>
+  typeof value === 'string' && (PROSPECT_ORIGINS as readonly string[]).includes(value);
+
+type TextField = Exclude<keyof ProspectFields, 'region' | 'language' | 'origin' | 'foundOn' | 'opensOn'>;
 const LIMITS: Record<TextField, number> = {
   companyName: 120,
   contactFirstName: 60,
@@ -627,19 +640,46 @@ export function sameCompany(a: { companyName: string; airportCode: string | null
  * they are not there yet and still fit. An email already taken by another prospect is left out.
  */
 export function completionOf(
-  prospect: Pick<
-    ProspectFields,
-    'contactFirstName' | 'contactLastName' | 'email' | 'town' | 'airportCode' | 'phone' | 'website' | 'tool' | 'toolDetail' | 'notes'
-  >,
+  prospect: Omit<
+    Pick<
+      ProspectFields,
+      | 'contactFirstName'
+      | 'contactLastName'
+      | 'email'
+      | 'town'
+      | 'airportCode'
+      | 'phone'
+      | 'website'
+      | 'tool'
+      | 'toolDetail'
+      | 'notes'
+      | 'origin'
+      | 'foundOn'
+      | 'opensOn'
+    >,
+    'origin'
+  > & { origin: string | null },
   row: Partial<ProspectFields>,
   takenEmails: ReadonlySet<string> = new Set(),
 ): Partial<ProspectFields> {
   const patch: Partial<ProspectFields> = {};
-  const keys = ['contactFirstName', 'contactLastName', 'town', 'airportCode', 'phone', 'website', 'tool', 'toolDetail'] as const;
+  const keys = [
+    'contactFirstName',
+    'contactLastName',
+    'town',
+    'airportCode',
+    'phone',
+    'website',
+    'tool',
+    'toolDetail',
+    'foundOn',
+    'opensOn',
+  ] as const;
   for (const key of keys) {
     const value = row[key];
     if (value && !prospect[key]) patch[key] = value;
   }
+  if (row.origin && !prospect.origin) patch.origin = row.origin;
   if (row.email && !prospect.email && !takenEmails.has(row.email)) patch.email = row.email;
   const notes = row.notes?.trim();
   if (notes) {
@@ -700,6 +740,20 @@ export function validateProspect(
   text('tool', false);
   text('toolDetail', false);
   text('notes', false);
+  // 22/11/2026: the « Nouveaux parkings » marker and its dates (absent or empty: none).
+  const origin = input.origin;
+  if (!(origin === undefined && partial)) {
+    if (origin === undefined || origin === null || origin === '') value.origin = null;
+    else if (isProspectOrigin(origin)) value.origin = origin;
+    else fields.origin = 'invalid';
+  }
+  for (const key of ['foundOn', 'opensOn'] as const) {
+    const raw = input[key];
+    if (raw === undefined && partial) continue;
+    if (raw === undefined || raw === null || raw === '') value[key] = null;
+    else if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw) && !Number.isNaN(Date.parse(`${raw}T00:00:00Z`))) value[key] = raw;
+    else fields[key] = 'invalid';
+  }
   const language = input.language;
   if (!(language === undefined && partial)) {
     if (language === undefined || language === null || (typeof language === 'string' && !language.trim())) value.language = null;

@@ -2182,7 +2182,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   des voitures (parking, stationnement, garer) et conduire à l'aéroport (aéroport, navette) (`KEEPS_CARS`, `SERVES_TRAVELLERS`),
   jamais un voiturier ou un chauffeur indépendant seul ni la sous-traitance (`NOT_AIRPORT_PARKING`) ; note « Annonce de création au
   BODACC le … · début d'activité prévu le … · SIREN · adresse · activité », « pas encore ouvert » quand le début est à venir ; une
-  même société trouvée deux fois n'est importée qu'une fois. Lancé à la main (une écriture automatique planifiée a été refusée).
+  même société trouvée deux fois n'est importée qu'une fois. **Marqueurs, choix A (22/11/2026, « mets des marqueurs sur l'interface pour les retrouver », maquettes
+  https://claude.ai/artifact/ByieAyEtt3ahY7Qq2wLMKE)** : `Prospect.origin` (`bodacc` · `directory`, nul sinon), `foundOn` (jour de
+  création ou d'annonce) et `opensOn` (début d'activité déclaré), « AAAA-MM-JJ » (migration `prospect_origin`, CHECK) ; l'import les
+  accepte (400 `invalid`), `completionOf` les pose sur un prospect déjà présent, et le workflow les envoie avec `complete` (un
+  prospect déjà listé reçoit son marqueur) ; page : pastille « Nouveau parking · BODACC » / « · annuaire » sous le nom (« BODACC » /
+  « Annuaire » sur téléphone), ambre « Pas encore ouvert · début le 1 déc. » tant que `opensOn` est à venir (`notOpenYet`), filtre
+  « Origine » (Nouveaux parkings · BODACC · Annuaire · Fichier CSV · Saisi à la main). Lancé à la main (une écriture automatique planifiée a été refusée).
   **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
   une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
   `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
