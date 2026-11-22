@@ -33,6 +33,7 @@ APPLY = os.environ.get("APPLY", "").strip().lower() == "true"
 MONTHS = int(os.environ.get("MONTHS", "").strip() or "12")
 RADIUS_KM = float(os.environ.get("RADIUS_KM", "").strip() or "15")
 AIRPORTS = os.environ.get("AIRPORTS", "").strip() or "LYS"
+SOURCE = (os.environ.get("SOURCE", "").strip().lower() or "tous")  # annuaire · bodacc · tous
 DIRECTORY = "https://recherche-entreprises.api.gouv.fr/near_point"
 ACTIVITY = "52.21Z"
 
@@ -135,6 +136,9 @@ def found_around(code, point, since):
                     "name": name.title() if name.isupper() else name, "town": (place.get("libelle_commune") or "").title(),
                     "created": created, "siret": siret, "km": km, "address": place.get("adresse") or "",
                     "parking": bool(PARKING_WORDS.search(words)), "first": first, "last": last, "airport": code,
+                    "where": f"{code} · {km:.1f} km", "key": company.get("siren") or siret,
+                    "note": f"Créé le {french_date(created)} · SIRET {siret} · {place.get('adresse') or ''} · annuaire des "
+                            f"entreprises (52.21Z){'' if PARKING_WORDS.search(words) else ' · activité à vérifier'}",
                 })
         page += 1
         time.sleep(0.2)
@@ -143,6 +147,117 @@ def found_around(code, point, since):
 
 def french_date(iso):
     return f"{iso[8:10]}/{iso[5:7]}/{iso[:4]}"
+
+
+BODACC = "https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records"
+# Departments whose new companies may serve each airport (the BODACC gives a department, not a position).
+AIRPORT_DEPARTMENTS = {
+    "CDG": ["95", "77", "93"], "ORY": ["91", "94"], "BVA": ["60"], "LYS": ["69", "38", "01"], "MRS": ["13"], "NCE": ["06"],
+    "TLS": ["31"], "BOD": ["33"], "NTE": ["44"], "MPL": ["34"], "LIL": ["59"], "BSL": ["68"], "SXB": ["67"], "BIQ": ["64"],
+    "RNS": ["35"], "GNB": ["38"], "CFE": ["63"], "BES": ["29"], "PUF": ["64", "65"], "PGF": ["66"], "TLN": ["83"],
+    "AJA": ["2A"], "BIA": ["2B"], "FSC": ["2A"], "CCF": ["11"], "LDE": ["65"], "LRH": ["17"], "LIG": ["87"], "CMF": ["73"],
+    "EGC": ["24"], "TUF": ["37"], "FNI": ["30"], "AVN": ["84"], "ETZ": ["57", "54"], "BVE": ["19", "46"], "RDZ": ["12"],
+    "LRT": ["56"], "DNR": ["35", "22"], "CFR": ["14"], "DOL": ["14"], "URO": ["76"], "PIS": ["86"], "BZR": ["34"], "NCY": ["74"],
+}
+# The activity the company declared must say it keeps cars (parking, parking the car) AND carries travellers to the
+# airport (airport, shuttle). A valet or a driver working for other car parks, alone, is not a car park.
+KEEPS_CARS = re.compile(r"parking|parc de stationnement|stationnement|garer|garde de(s)? vehicules|gardiennage de(s)? vehicules")
+SERVES_TRAVELLERS = re.compile(r"aeroport|airport|navette")
+NOT_AIRPORT_PARKING = re.compile(
+    r"fourriere|food truck|auto[- ]?ecole|sans vehicule|sous[- ]traitance|pour le compte (de|d'une|des) (societes?|entreprises?) de "
+    r"(parking|voiturier)|appartenant a des societes|location (de )?places? de parking (a|en) (titre|usage) prive"
+)
+
+
+def bodacc_page(departments, since, offset):
+    depts = ", ".join(f'"{d}"' for d in departments)
+    where = (f'familleavis="creation" AND numerodepartement IN ({depts}) AND dateparution>="{since}" AND '
+             '(search(listeetablissements,"navette") OR search(listeetablissements,"aéroport") OR '
+             'search(listeetablissements,"aeroport") OR search(listeetablissements,"voiturier") OR '
+             'search(listeetablissements,"valet"))')
+    query = urllib.parse.urlencode({"where": where, "limit": 100, "offset": offset, "order_by": "dateparution desc"})
+    request = urllib.request.Request(f"{BODACC}?{query}", headers={"user-agent": "plazo-new-parkings", "accept": "application/json"})
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(request, timeout=40) as response:
+                text = response.read().decode()
+            if text.strip():
+                return json.loads(text)
+        except urllib.error.HTTPError as error:
+            if error.code not in (429, 500, 502, 503, 504):
+                raise
+        except (OSError, json.JSONDecodeError):
+            pass
+        time.sleep(2 * (attempt + 1))
+    raise RuntimeError("the BODACC did not answer")
+
+
+def as_json(value):
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(value or "null")
+    except (TypeError, json.JSONDecodeError):
+        return None
+
+
+def listed(value):
+    return value if isinstance(value, list) else [value] if value else []
+
+
+def bodacc_entry(record, code):
+    places = [p for e in listed((as_json(record.get("listeetablissements")) or {}).get("etablissement")) for p in [e] if isinstance(p, dict)]
+    activity = " ".join(p.get("activite") or "" for p in places)
+    words = plain(activity)
+    if not (KEEPS_CARS.search(words) and SERVES_TRAVELLERS.search(words)) or NOT_AIRPORT_PARKING.search(words):
+        return None
+    person = (as_json(record.get("listepersonnes")) or {}).get("personne")
+    person = person[0] if isinstance(person, list) and person else person if isinstance(person, dict) else {}
+    sign = person.get("nomCommercial") or next((p.get("enseigne") or p.get("nomCommercial") for p in places
+                                                if p.get("enseigne") or p.get("nomCommercial")), None)
+    first = last = ""
+    if person.get("typePersonne") == "pp":
+        given = person.get("prenom")
+        first = (given[0] if isinstance(given, list) and given else given or "").strip().title()
+        last = (person.get("nomUsage") or person.get("nom") or "").strip().title()
+        name = sign or f"{first} {last}".strip()
+    else:
+        name = sign or person.get("denomination") or record.get("commercant") or ""
+    name = name.strip()
+    if not name:
+        return None
+    act = as_json(record.get("acte")) or {}
+    start = act.get("dateCommencementActivite") or ""
+    published = record.get("dateparution") or ""
+    siren = next((r for r in listed(record.get("registre")) if r and " " not in r), None) or record.get("id")
+    address = next((p.get("adresse") for p in places if isinstance(p.get("adresse"), dict)), None) or {}
+    street = " ".join(str(address.get(k) or "") for k in ("numeroVoie", "typeVoie", "nomVoie")).split()
+    where_text = f"{' '.join(street)} {address.get('codePostal') or record.get('cp') or ''} {address.get('ville') or record.get('ville') or ''}".strip()
+    upcoming = start and start > datetime.date.today().isoformat()
+    note = (f"Annonce de création au BODACC le {french_date(published)} · début d'activité "
+            f"{('prévu le ' if upcoming else 'le ') + french_date(start) if start else 'non précisé'} · SIREN {siren} · "
+            f"{where_text} · activité : {activity.strip()[:400]}")
+    return {
+        "name": name.title() if name.isupper() else name, "town": (address.get("ville") or record.get("ville") or "").title(),
+        "created": published, "parking": True, "first": first, "last": last, "airport": code,
+        "where": f"{code} · dép. {record.get('numerodepartement') or '?'}", "key": siren,
+        "note": note[:1000], "upcoming": bool(upcoming),
+    }
+
+
+def found_in_bodacc(code, since):
+    kept, offset = [], 0
+    while True:
+        answer = bodacc_page(AIRPORT_DEPARTMENTS.get(code, []), since, offset)
+        records = answer.get("results") or []
+        for record in records:
+            entry = bodacc_entry(record, code)
+            if entry:
+                kept.append(entry)
+        offset += len(records)
+        if not records or offset >= (answer.get("total_count") or 0) or offset >= 1000:
+            return kept
+        time.sleep(0.3)
 
 
 def main():
@@ -155,16 +270,27 @@ def main():
     unknown = [c for c in wanted if c not in AIRPORT_POINTS]
     if unknown:
         print(f"::warning::Aéroports inconnus, laissés de côté : {', '.join(unknown)} (connus : {', '.join(sorted(AIRPORT_POINTS))})")
-    found = []
+    found, seen = [], set()
     for code in [c for c in wanted if c in AIRPORT_POINTS]:
-        around = found_around(code, AIRPORT_POINTS[code], since)
-        print(f"{code} : {len(around)} établissement(s) créé(s) depuis le {french_date(since)} à {RADIUS_KM:g} km")
-        found.extend(around)
-    found.sort(key=lambda f: (not f["parking"], f["airport"], f["created"]), reverse=False)
-    lines = [f"| {f['name']} | {f['town']} | {f['airport']} · {f['km']:.1f} km | {french_date(f['created'])} | "
-             f"{'parking' if f['parking'] else 'à vérifier'} |" for f in found]
-    summary = [f"## Nouveaux parkings : {len(found)} depuis le {french_date(since)} ({MONTHS} mois, {RADIUS_KM:g} km)", "",
-               "| Établissement | Commune | Aéroport | Créé le | Nom |", "|---|---|---|---|---|", *lines]
+        if SOURCE in ("bodacc", "tous"):
+            announced = found_in_bodacc(code, since)
+            print(f"{code} : {len(announced)} création(s) au BODACC depuis le {french_date(since)} ({', '.join(AIRPORT_DEPARTMENTS[code])})")
+            found.extend(announced)
+        if SOURCE in ("annuaire", "tous"):
+            around = found_around(code, AIRPORT_POINTS[code], since)
+            print(f"{code} : {len(around)} établissement(s) créé(s) depuis le {french_date(since)} à {RADIUS_KM:g} km")
+            found.extend(around)
+    unique = []
+    for f in found:  # the same company found by both sources, or for two airports sharing a department
+        if f["key"] in seen:
+            continue
+        seen.add(f["key"])
+        unique.append(f)
+    found = sorted(unique, key=lambda f: (not f["parking"], f["airport"], f["created"]))
+    lines = [f"| {f['name']} | {f['town']} | {f['where']} | {french_date(f['created'])} | "
+             f"{'pas encore ouvert' if f.get('upcoming') else 'parking' if f['parking'] else 'à vérifier'} |" for f in found]
+    summary = [f"## Nouveaux parkings : {len(found)} depuis le {french_date(since)} ({MONTHS} mois, source : {SOURCE})", "",
+               "| Établissement | Commune | Aéroport | Créé / annoncé le | Nom |", "|---|---|---|---|---|", *lines]
     print("\n".join(summary))
     target = os.environ.get("GITHUB_STEP_SUMMARY")
     if target:
@@ -174,11 +300,9 @@ def main():
         return
     rows = []
     for f in found:
-        row = {"companyName": f["name"][:120], "town": f["town"], "airportCode": f["airport"],
-               "notes": f"Créé le {french_date(f['created'])} · SIRET {f['siret']} · {f['address']} · "
-                        f"annuaire des entreprises (52.21Z){'' if f['parking'] else ' · activité à vérifier'}"}
+        row = {"companyName": f["name"][:120], "town": f["town"], "airportCode": f["airport"], "notes": f["note"]}
         if f["first"] and f["last"]:
-            row["contactFirstName"], row["contactLastName"] = f["first"], f["last"]
+            row["contactFirstName"], row["contactLastName"] = f["first"][:60], f["last"][:60]
         rows.append(row)
     try:
         api.login()

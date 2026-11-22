@@ -5,6 +5,8 @@ name: Nouveaux parkings (annuaire des entreprises)
 # les parking avec navette qui vienne d'ouvrir ? »). By default a preview only; « appliquer » writes. The server leaves out
 # a prospect already listed or opted out. Nothing is ever sent: the mails leave only from the page. Secrets:
 # PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD (a platform admin). By hand only (.github/scripts/new_parkings.py).
+# Second source (22/11/2026, « comment trouver les parking avec navette qui vont ouvrir ? » → « oui »): the BODACC creation
+# notices whose declared activity says parking and airport, shuttle or valet, often before the car park opens.
 on:
   workflow_dispatch:
     inputs:
@@ -12,6 +14,11 @@ on:
         description: "Ajouter les parkings trouvés à la Prospection (sinon un aperçu seulement)"
         type: boolean
         default: false
+      source:
+        description: "Où chercher"
+        type: choice
+        options: ["tous", "bodacc", "annuaire"]
+        default: "tous"
       aeroports:
         description: "Codes des aéroports (LYS, ou LYS,GNB,CMF), ou « tous »"
         type: string
@@ -45,6 +52,7 @@ jobs:
           PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
           PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
           APPLY: ${{ inputs.appliquer }}
+          SOURCE: ${{ inputs.source }}
           AIRPORTS: ${{ inputs.aeroports }}
           MONTHS: ${{ inputs.mois }}
           RADIUS_KM: ${{ inputs.rayon_km }}
