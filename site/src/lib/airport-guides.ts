@@ -398,6 +398,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       },
       {
         id: "navette",
+        more: { href: topicPath("lyon-saint-exupery", "parking-vol-tot-le-matin"), label: "Partir tôt le matin : horaires d’accueil et frais de nuit" },
         short: "La navette, aller et retour",
         title: "La navette, à l’aller et au retour",
         paragraphs: [
@@ -440,6 +441,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       },
       {
         id: "couvert-electrique-moto",
+        more: { href: topicPath("lyon-saint-exupery", "parking-voiture-electrique"), label: "Le guide du parking avec une voiture électrique" },
         short: "Couvert, électrique, moto, véhicules hauts",
         title: "Parking couvert, voiture électrique, moto et véhicules hauts",
         paragraphs: [
@@ -451,6 +453,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       },
       {
         id: "acces",
+        more: { href: topicPath("lyon-saint-exupery", "parking-gare-tgv"), label: "Se garer près de la gare TGV de Lyon Saint-Exupéry" },
         short: "Venir en voiture",
         title: "Venir à l’aéroport de Lyon en voiture",
         paragraphs: [
@@ -461,6 +464,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       },
       {
         id: "saisons",
+        more: { href: topicPath("lyon-saint-exupery", "parking-week-end"), label: "Un week-end ou un court séjour : prix et décompte des jours" },
         short: "Quand réserver",
         title: "Vacances, hiver, ski : quand réserver son parking ?",
         paragraphs: [
@@ -497,6 +501,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       },
       {
         id: "conseils",
+        more: { href: topicPath("lyon-saint-exupery", "parking-en-famille"), label: "Partir en famille : sièges auto, bagages et navette" },
         short: "La check-list",
         title: "Jour du dépôt, jour du retour : la check-list",
         paragraphs: ["Quelques gestes simples évitent la plupart des petits tracas au parking, à l’aller comme au retour."],

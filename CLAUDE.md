@@ -2419,7 +2419,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `topic-guides.test.ts`, « use-case guide »). Faits des vrais partenaires en plus (`topicFacts(…, { early, weekend })`) : `open24`,
   `ev`, `early` (recherche avec un dépôt à 04:30 : offre la moins chère et frais de dépôt de nuit), `weekend` (trois jours) ; séjour
   de chaque page par `guideStayOf` ; liste des partenaires filtrée par service (`partners.filter` `open_24h` · `ev_charging` quand un
-  vrai partenaire l'a) ; liens depuis les autres guides et le pied de page.
+  vrai partenaire l'a) ; liens depuis les autres guides et le pied de page ; et depuis le guide de la page Lyon (22/11/2026, « ameliore encore et encore le referencement » : liens « → » des sections navette, couvert et électrique, accès, saisons et conseils vers vol tôt, voiture électrique, gare TGV, week-end et famille).
 - **Tarifs de Plazo Pro (27/10/2026, « le site de plazo pro doit ressembler à » la page Tarifs de Solution Park ; maquette
   https://claude.ai/artifact/S4fcSrSC28DS8UMSwwdcJ3 validée, « garde ces prix pour l'instant »)** : page `/loueurs/tarifs` du site
   (`site/src/app/loueurs/`, sa propre mise en page aux couleurs de l'espace pro : jetons `pro-*` et `lime*` de `globals.css`, Inter et
