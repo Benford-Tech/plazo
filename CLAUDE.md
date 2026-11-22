@@ -2176,6 +2176,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   parking, parc, navette, voiturier ou aéroport est marqué « parking », les autres « à vérifier » ; puis l'import (nom, commune,
   aéroport, dirigeant quand c'est une personne, notes « Créé le … · SIRET … · adresse ») : aperçu par défaut, `appliquer` pour
   écrire, un prospect déjà listé ou désinscrit laissé de côté ; « E-mails des prospects (sites) » cherche ensuite leur adresse.
+  **Et ceux qui vont ouvrir (22/11/2026, « comment trouver les parking avec navette qui vont ouvrir ? » → « oui »)** : seconde source
+  `source` bodacc (`tous` par défaut, `annuaire` pour la première seule) : les annonces de création du BODACC (open data de la DILA,
+  `annonces-commerciales`, sans clé) des départements de chaque aéroport (`AIRPORT_DEPARTMENTS`) dont l'activité déclarée dit garder
+  des voitures (parking, stationnement, garer) et conduire à l'aéroport (aéroport, navette) (`KEEPS_CARS`, `SERVES_TRAVELLERS`),
+  jamais un voiturier ou un chauffeur indépendant seul ni la sous-traitance (`NOT_AIRPORT_PARKING`) ; note « Annonce de création au
+  BODACC le … · début d'activité prévu le … · SIREN · adresse · activité », « pas encore ouvert » quand le début est à venir ; une
+  même société trouvée deux fois n'est importée qu'une fois. Lancé à la main (une écriture automatique planifiée a été refusée).
   **Prospects européens (13/11/2026, « importe ces parkings » puis « fais les 3 », fichier de 330 parkings d'Europe dont 47 avec
   une adresse)** : **pays** : les pays d'Europe rejoignent les régions (`allemagne`, `autriche`, `belgique`, `danemark`,
   `espagne`, `estonie`, `finlande`, `grece`, `hongrie`, `irlande`, `italie`, `luxembourg`, `norvege`, `pays-bas`, `pologne`,
