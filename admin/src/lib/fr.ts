@@ -3268,6 +3268,7 @@ export const fr = {
       overview: "Vue d'ensemble",
       groups: { steer: "Pilotage", grow: "Croissance", tools: "Outils" },
       superAdmin: "Super admin",
+      tabBar: "Onglets de la plateforme",
     },
     overview: {
       title: "Vue d'ensemble",
@@ -3848,6 +3849,12 @@ export const fr = {
       barChosen: (n: number) => `${n} prospect${n > 1 ? "s" : ""} coché${n > 1 ? "s" : ""}`,
       barSms: "SMS",
       barSend: "Envoyer le mail",
+      // 22/11/2026 (direction A, téléphone) : the folded card's second line and the sheet.
+      cardEmail: "e-mail",
+      cardNoEmail: "à appeler",
+      cardPhone: "tél.",
+      sheetTitle: "Envoyer aux prospects cochés",
+      sheetClose: "Fermer",
       filteredCount: (n: number) =>
         `${n} prospect${n > 1 ? "s" : ""} filtré${n > 1 ? "s" : ""}`,
       filteredSplit: (withEmail: number, without: number) =>

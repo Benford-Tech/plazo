@@ -2235,6 +2235,18 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (`prospects-send-bar` : « N prospects cochés », « SMS » pour ceux qui peuvent en recevoir, « Envoyer le mail » qui mène au panneau
   d'envoi) ; la page ne glisse plus de côté (la grille du tableau prenait ses 900 px sur téléphone). L'ordinateur ne change pas.
   Test `ProspectingPage.test.tsx`.
+- **Plateforme sur téléphone, direction A « Liste serrée, envoi dans une feuille » (22/11/2026, « Améliore l'orgo sur mobile web » :
+  « Envoi trop loin, Trop de haut de page, Cartes trop chargées », maquettes https://claude.ai/artifact/UVDxCEmaQwDYNG91Py4PTx)** :
+  **menu** : sous 1 024 px, la rangée de liens de `PlatformLayout` laisse la place à une barre en bas, Pilotage · Loueurs · Prospection ·
+  Plus (`PlatformTabBar`, `platform-tab-bar`, `components/platform/platform-nav.ts` : `PLATFORM_GROUPS`, `TABS`), le nombre d'annonces à
+  valider sur « Plus » ; page `/plateforme/plus` (`PlatformMorePage` : les pages sans onglet par groupe, « Se déconnecter »). **Prospection
+  sous 768 px** : titre et actions sur une ligne (icônes « Modifier les mails », « Importer un CSV », « Ajouter »), recherche et « Filtres ·
+  N » en tête (l'aéroport et la région rejoignent les cinq filtres derrière le bouton), pilules d'état dessous ; chaque prospect en deux
+  lignes (nom et état, puis aéroport · contact · e-mail ou « à appeler » · tél.), un toucher déplie le reste (`prospect-card-toggle`) ;
+  « Envoyer le mail » de la barre du bas et « Envoyer à N prospects » du bandeau ouvrent le panneau d'envoi dans une feuille
+  (`SendSheet`, `prospects-send-sheet`, Échap ou toucher hors de la feuille), qui n'est plus sous les cartes ; la barre d'envoi se pose
+  au-dessus des onglets. L'ordinateur ne change pas. Tests `ProspectingPage.test.tsx`, `PlatformMorePage.test.tsx`. Pas encore : le reste
+  de l'espace pro (Réservations, Tableau de bord, Messages, Chiffre d'affaires, Loueurs, Invitations).
 - **SMS de prospection, choix C (19/11/2026, « pouvoir envoyer un sms de prospection », maquettes
   https://claude.ai/artifact/YLE1Hq6B57VNT5hq8pQ1kQ)** : dans le bandeau vert des filtres de la Prospection, « Envoyer un SMS à N
   prospects » (`smsCandidates` de `lib/prospecting.ts` : mobile français ou pays couvert, `isTextablePhone`, ni désinscrit ni pas

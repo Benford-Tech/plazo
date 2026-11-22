@@ -6,12 +6,15 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
+  Mail,
   MoreHorizontal,
   Phone,
+  Plus,
   Search,
   SlidersHorizontal,
   ThumbsDown,
   ThumbsUp,
+  Upload,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -634,6 +637,8 @@ export default function ProspectingPage() {
   // 19/11/2026 (direction A, phones): one card per prospect, the filters behind one button, a send bar at the bottom.
   const narrow = useNarrow();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // 22/11/2026 (direction A, téléphone) : the sending panel comes up in a sheet instead of waiting under every card.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const [demoPanel, setDemoPanel] = useState<{
     company: string;
@@ -673,9 +678,15 @@ export default function ProspectingPage() {
     [all],
   );
   const filtered = hasFilters(filters);
-  const activeFilters = (
-    ["email", "language", "tool", "demo", "lastMail"] as const
-  ).filter((k) => filters[k] !== NO_FILTERS[k]).length;
+  // On a phone the airport and the region are behind « Filtres » too, and count with the others.
+  const activeFilters =
+    (["email", "language", "tool", "demo", "lastMail"] as const).filter(
+      (k) => filters[k] !== NO_FILTERS[k],
+    ).length + (narrow ? Number(!!airport) + Number(!!region) : 0);
+  const toSendPanel = () => {
+    if (narrow) setSheetOpen(true);
+    else panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const withEmail = rows.filter((p) => !!p.email);
   // 19/11/2026 (choix C): the filtered prospects that can get a prospecting SMS.
   const textable = useMemo(() => smsCandidates(rows), [rows]);
@@ -760,72 +771,8 @@ export default function ProspectingPage() {
       return next;
     });
 
-  return (
+  const scope = (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-narrow text-[30px] font-bold text-lime-deep">
-            {t.title}
-          </h1>
-          <p className="text-muted-foreground">{t.intro}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 font-semibold"
-            onClick={() => setDialog({ kind: "import" })}
-          >
-            {t.importCsv}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 font-semibold"
-            onClick={() => setDialog({ kind: "add" })}
-          >
-            {t.add}
-          </Button>
-        </div>
-      </div>
-
-      {list.data && !list.data.configured && (
-        <p
-          role="status"
-          className="rounded-[14px] border border-warn/40 bg-warn-soft p-3 text-sm text-warn-text"
-        >
-          {t.notConfigured}
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div
-          role="group"
-          aria-label={t.filters}
-          className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:max-w-none md:flex-wrap md:overflow-visible md:px-0"
-        >
-          {FILTERS.map((f) => {
-            const pressed = f === status;
-            const count = list.data?.counts[f ?? "all"];
-            return (
-              <button
-                key={f ?? "all"}
-                type="button"
-                aria-pressed={pressed}
-                onClick={() => setStatus(f)}
-                className={cn(
-                  "min-h-11 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm",
-                  pressed
-                    ? "bg-lime-deep font-semibold text-white"
-                    : "border border-panel-line bg-white hover:bg-panel-2",
-                )}
-              >
-                {f ? t.filterLabels[f] : t.all}
-                {count !== undefined && ` · ${count}`}
-              </button>
-            );
-          })}
-        </div>
         <label className="sr-only" htmlFor="prospect-airport">
           {t.airport}
         </label>
@@ -877,14 +824,101 @@ export default function ProspectingPage() {
             </option>
           )}
         </select>
+    </>
+  );
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 md:flex-wrap md:items-end md:gap-4">
+        <div className="min-w-0 space-y-1">
+          <h1 className="font-narrow text-2xl font-bold text-lime-deep md:text-[30px]">
+            {t.title}
+          </h1>
+          <p className="hidden text-muted-foreground md:block">{t.intro}</p>
+        </div>
+        <div className="flex shrink-0 gap-2 md:flex-wrap">
+          {narrow && (
+            <Button
+              type="button"
+              variant="outline"
+              aria-label={t.editSteps}
+              data-testid="prospects-edit-mails"
+              className="h-11 w-11 p-0"
+              onClick={() => setDialog({ kind: "steps" })}
+            >
+              <Mail className="h-4 w-4" aria-hidden />
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={t.importCsv}
+            className="h-11 w-11 p-0 font-semibold md:w-auto md:px-4"
+            onClick={() => setDialog({ kind: "import" })}
+          >
+            <Upload className="h-4 w-4 md:hidden" aria-hidden />
+            <span className="hidden md:inline">{t.importCsv}</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            aria-label={t.add}
+            className="h-11 w-11 p-0 font-semibold md:w-auto md:px-4"
+            onClick={() => setDialog({ kind: "add" })}
+          >
+            <Plus className="h-4 w-4 md:hidden" aria-hidden />
+            <span className="hidden md:inline">{t.add}</span>
+          </Button>
+        </div>
+      </div>
+
+      {list.data && !list.data.configured && (
+        <p
+          role="status"
+          className="rounded-[14px] border border-warn/40 bg-warn-soft p-3 text-sm text-warn-text"
+        >
+          {t.notConfigured}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2 md:gap-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <div
+          role="group"
+          aria-label={t.filters}
+          className="-mx-4 flex max-w-[100vw] gap-2 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:max-w-none md:flex-wrap md:overflow-visible md:px-0"
+        >
+          {FILTERS.map((f) => {
+            const pressed = f === status;
+            const count = list.data?.counts[f ?? "all"];
+            return (
+              <button
+                key={f ?? "all"}
+                type="button"
+                aria-pressed={pressed}
+                onClick={() => setStatus(f)}
+                className={cn(
+                  "min-h-10 shrink-0 whitespace-nowrap rounded-full px-3.5 text-sm md:min-h-11",
+                  pressed
+                    ? "bg-lime-deep font-semibold text-white"
+                    : "border border-panel-line bg-white hover:bg-panel-2",
+                )}
+              >
+                {f ? t.filterLabels[f] : t.all}
+                {count !== undefined && ` · ${count}`}
+              </button>
+            );
+          })}
+        </div>
+        {!narrow && scope}
       </div>
 
       <div
         role="group"
         aria-label={t.filterBar}
-        className="flex flex-wrap items-center gap-2 rounded-[14px] border border-panel-line bg-white p-3"
+        className="order-first flex flex-wrap items-center gap-2 md:order-none md:rounded-[14px] md:border md:border-panel-line md:bg-white md:p-3"
       >
-        <label className="flex h-11 min-w-0 flex-1 basis-[160px] items-center gap-2 rounded-[10px] bg-panel-2 px-3 sm:max-w-[300px]">
+        <label className="flex h-11 min-w-0 flex-1 basis-[160px] items-center gap-2 rounded-[10px] border border-panel-line bg-white px-3 sm:max-w-[300px] md:border-0 md:bg-panel-2">
           <Search className="h-4 w-4 text-muted-foreground" aria-hidden />
           <span className="sr-only">{t.search}</span>
           <input
@@ -918,6 +952,7 @@ export default function ProspectingPage() {
               narrow ? "grid w-full grid-cols-2 gap-2" : "contents",
             )}
           >
+            {narrow && scope}
         <FilterSelect
           label={t.filterEmail}
           value={filters.email}
@@ -1004,6 +1039,7 @@ export default function ProspectingPage() {
           </button>
         )}
       </div>
+      </div>
 
       {filtered && list.data && (
         <div
@@ -1029,10 +1065,7 @@ export default function ProspectingPage() {
                 type="button"
                 onClick={() => {
                   checkFiltered();
-                  panelRef.current?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  });
+                  toSendPanel();
                 }}
                 className="min-h-11 rounded-full bg-lime px-4 font-semibold text-lime-ink"
               >
@@ -1110,7 +1143,7 @@ export default function ProspectingPage() {
                       </button>
                     </div>
                     {open && (
-                      <ul className="flex flex-col gap-2.5 p-2.5">
+                      <ul className="flex flex-col gap-1.5 p-2">
                         {group.prospects.map((p) => (
                           <ProspectCard
                             key={p.id}
@@ -1374,27 +1407,47 @@ export default function ProspectingPage() {
             )}
           </div>
         </section>
-        <div ref={panelRef} className="scroll-mt-4">
+        {!narrow && (
+          <div ref={panelRef} className="scroll-mt-4">
+            <SendPanel
+              chosen={chosen}
+              settings={settings.data?.data}
+              today={list.data?.today}
+              configured={!!list.data?.configured}
+              onEdit={() => setDialog({ kind: "steps" })}
+              onSent={() => setSelected(new Set())}
+            />
+          </div>
+        )}
+      </div>
+
+      {narrow && sheetOpen && (
+        <SendSheet onClose={() => setSheetOpen(false)}>
           <SendPanel
             chosen={chosen}
             settings={settings.data?.data}
             today={list.data?.today}
             configured={!!list.data?.configured}
-            onEdit={() => setDialog({ kind: "steps" })}
-            onSent={() => setSelected(new Set())}
+            onEdit={() => {
+              setSheetOpen(false);
+              setDialog({ kind: "steps" });
+            }}
+            onSent={() => {
+              setSelected(new Set());
+              setSheetOpen(false);
+            }}
           />
-        </div>
-      </div>
+        </SendSheet>
+      )}
 
       {narrow && chosen.length > 0 && (
         <>
           <div className="h-16" aria-hidden />
           <div
             data-testid="prospects-send-bar"
-            className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 bg-lime-deep px-3 pt-2.5 text-white shadow-[0_-4px_16px_rgba(0,0,0,0.18)]"
-            style={{
-              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-            }}
+            className="fixed inset-x-0 z-30 flex items-center gap-2 bg-lime-deep px-3 py-2 text-white shadow-[0_-4px_16px_rgba(0,0,0,0.18)]"
+            // Above the Plateforme's tab bar (58 px and the gesture bar).
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 58px)" }}
           >
             <span className="min-w-0 flex-1 text-sm font-semibold">
               {t.barChosen(chosen.length)}
@@ -1412,12 +1465,7 @@ export default function ProspectingPage() {
             )}
             <button
               type="button"
-              onClick={() =>
-                panelRef.current?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                })
-              }
+              onClick={toSendPanel}
               className="min-h-11 rounded-full bg-lime px-4 text-sm font-bold text-lime-ink"
             >
               {t.barSend}
@@ -1481,7 +1529,59 @@ function useNarrow(): boolean {
   return narrow;
 }
 
-/** One prospect on a phone: everything the table row says, with « Appeler » and « Site » under the thumb. */
+/** The sending panel in a sheet that comes up from the bottom of a phone (Échap or a touch outside closes it). */
+function SendSheet({
+  onClose,
+  children,
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-[rgba(15,42,20,0.45)]"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.sheetTitle}
+        data-testid="prospects-send-sheet"
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[88vh] w-full overflow-y-auto rounded-t-[18px] bg-panel-2 px-2.5 pt-1.5"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
+      >
+        <div className="flex items-center justify-between">
+          <span
+            className="mx-auto h-1 w-10 translate-x-[22px] rounded-full bg-panel-line"
+            aria-hidden
+          />
+          <button
+            type="button"
+            aria-label={t.sheetClose}
+            onClick={onClose}
+            className="flex h-11 w-11 items-center justify-center text-muted-foreground"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One prospect on a phone, direction A of 22/11/2026 (« Liste serrée ») : two lines (name and state, then where and how
+ * to reach it); a touch unfolds the rest (e-mail, phone, tool, demo, note, « Appeler », « Site » and the actions).
+ */
 function ProspectCard({
   prospect: p,
   checked,
@@ -1495,21 +1595,28 @@ function ProspectCard({
   onEdit: () => void;
   onDemo: (link: DemoLink) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const state = stateLabel(p);
   const next = nextLabel(p);
   const name = contactName(p);
+  const reach = [
+    p.airportCode,
+    name || p.town,
+    p.email ? t.cardEmail : t.cardNoEmail,
+    p.phone ? t.cardPhone : null,
+  ].filter(Boolean);
   return (
     <li
       data-testid="prospect-card"
       className={cn(
-        "flex flex-col gap-2 rounded-[14px] border bg-white p-3 text-sm",
+        "flex flex-col rounded-[12px] border bg-white text-sm",
         checked
           ? "border-lime-deep shadow-[inset_0_0_0_1px_#1E5E2E]"
           : "border-panel-line",
       )}
     >
-      <div className="flex items-start gap-2.5">
-        <label className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center">
+      <div className="flex items-center gap-1 pr-2.5">
+        <label className="flex h-12 w-11 shrink-0 items-center justify-center">
           <input
             type="checkbox"
             aria-label={t.selectOne(p.companyName)}
@@ -1518,98 +1625,113 @@ function ProspectCard({
             onChange={onToggle}
           />
         </label>
-        <div className="min-w-0 flex-1">
-          <span className="block font-semibold leading-snug">
-            {p.companyName}
+        <button
+          type="button"
+          aria-expanded={open}
+          data-testid="prospect-card-toggle"
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 flex-col gap-0.5 py-2 text-left"
+        >
+          <span className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate font-semibold">
+              {p.companyName}
+            </span>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                state.tone,
+              )}
+            >
+              {state.text}
+            </span>
           </span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate">{reach.join(" · ")}</span>
+            {p.language !== "fr" && (
+              <span className="shrink-0 rounded-full bg-info-soft px-1.5 font-mono text-[10px] font-semibold text-info-text">
+                {t.languageShort(p.language)}
+              </span>
+            )}
+            {open ? (
+              <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+            )}
+          </span>
+        </button>
+      </div>
+      {open && (
+        <div className="flex flex-col gap-2 border-t border-panel-line p-3">
           {(p.town || name) && (
-            <span className="block text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {[name, p.town].filter(Boolean).join(" · ")}
             </span>
           )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="rounded-md bg-panel-2 px-1.5 py-0.5 font-mono text-[11px]">
-            {p.airportCode ?? "—"}
-          </span>
-          {p.language !== "fr" && (
-            <span className="rounded-full bg-info-soft px-2 py-0.5 font-mono text-[11px] font-semibold text-info-text">
-              {t.languageShort(p.language)}
+          {p.email ? (
+            <span className="break-all text-[13px]">{p.email}</span>
+          ) : (
+            <span
+              className="text-[13px] font-semibold text-warn-text"
+              data-testid="prospect-no-email"
+            >
+              {t.noEmail}
             </span>
           )}
-        </div>
-      </div>
-      {p.email ? (
-        <span className="break-all text-[13px]">{p.email}</span>
-      ) : (
-        <span
-          className="text-[13px] font-semibold text-warn-text"
-          data-testid="prospect-no-email"
-        >
-          {t.noEmail}
-        </span>
-      )}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span
-          className={cn(
-            "inline-block rounded-full px-2.5 py-1 text-xs font-semibold",
-            state.tone,
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {p.phone && (
+              <span className="font-mono text-xs text-[#4B5563]">{p.phone}</span>
+            )}
+            {next && next !== t.next.none && (
+              <span className="font-mono text-xs text-[#4B5563]">{next}</span>
+            )}
+            {p.lastSmsAt && (
+              <span className="text-xs font-semibold text-lime-deep">
+                {t.smsSent(dayMonth.format(new Date(p.lastSmsAt)))}
+              </span>
+            )}
+            {p.failedAttempts > 0 && (
+              <span className="text-xs text-destructive">
+                {t.failed(p.failedAttempts)}
+              </span>
+            )}
+          </div>
+          {(p.tool || p.toolDetail) && (
+            <div data-testid="prospect-tool">
+              <ToolCell prospect={p} />
+            </div>
           )}
-        >
-          {state.text}
-        </span>
-        {p.phone && (
-          <span className="font-mono text-xs text-[#4B5563]">{p.phone}</span>
-        )}
-        {next && next !== t.next.none && (
-          <span className="font-mono text-xs text-[#4B5563]">{next}</span>
-        )}
-        {p.lastSmsAt && (
-          <span className="text-xs font-semibold text-lime-deep">
-            {t.smsSent(dayMonth.format(new Date(p.lastSmsAt)))}
-          </span>
-        )}
-        {p.failedAttempts > 0 && (
-          <span className="text-xs text-destructive">
-            {t.failed(p.failedAttempts)}
-          </span>
-        )}
-      </div>
-      {(p.tool || p.toolDetail) && (
-        <div data-testid="prospect-tool">
-          <ToolCell prospect={p} />
+          <div className="flex flex-wrap items-center gap-2">
+            <DemoCell prospect={p} onShow={onDemo} quiet />
+            <StatusNote prospect={p} />
+          </div>
+          <div className="flex items-center gap-2 border-t border-panel-line pt-2">
+            {p.phone && (
+              <a
+                href={`tel:${p.phone.replace(/[^+\d]/g, "")}`}
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold"
+              >
+                <Phone className="h-4 w-4" aria-hidden />
+                {t.call}
+              </a>
+            )}
+            {p.website && (
+              <a
+                href={p.website}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold text-lime-deep"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden />
+                {t.website}
+              </a>
+            )}
+            <div className="ml-auto flex items-center gap-1">
+              <StateMarks prospect={p} />
+              <RowActions prospect={p} onEdit={onEdit} />
+            </div>
+          </div>
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-2">
-        <DemoCell prospect={p} onShow={onDemo} quiet />
-        <StatusNote prospect={p} />
-      </div>
-      <div className="flex items-center gap-2 border-t border-panel-line pt-2">
-        {p.phone && (
-          <a
-            href={`tel:${p.phone.replace(/[^+\d]/g, "")}`}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold"
-          >
-            <Phone className="h-4 w-4" aria-hidden />
-            {t.call}
-          </a>
-        )}
-        {p.website && (
-          <a
-            href={p.website}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] border border-panel-line font-semibold text-lime-deep"
-          >
-            <ExternalLink className="h-4 w-4" aria-hidden />
-            {t.website}
-          </a>
-        )}
-        <div className="ml-auto flex items-center gap-1">
-          <StateMarks prospect={p} />
-          <RowActions prospect={p} onEdit={onEdit} />
-        </div>
-      </div>
     </li>
   );
 }
