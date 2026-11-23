@@ -14,7 +14,7 @@ import type { ChannelProfit, RevenueChannels, RevenueMonth } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const CARD = "rounded-[14px] border border-panel-line bg-white p-4 sm:p-5";
-const GRID = "grid grid-cols-[1.6fr_repeat(5,minmax(0,1fr))_1.3fr] items-center gap-3";
+const GRID = "grid grid-cols-[1.6fr_repeat(6,minmax(0,1fr))_1.3fr] items-center gap-3";
 
 const channelName = (c: Pick<ChannelProfit, "channel" | "detail">) => c.detail ?? fr.channels[c.channel];
 const monthShort = (month: string) =>
@@ -37,6 +37,9 @@ function Sparkline({ values }: { values: number[] }) {
 
 function ChannelRow({ line }: { line: ChannelProfit }) {
   const direct = isDirectBooking(line.channel);
+  // 23/11/2026: the commission excluding tax, then the VAT the comparator adds (the net takes off both).
+  const vat = line.commissionVatCents ?? 0;
+  const excl = line.commissionCents - vat;
   return (
     <div
       data-testid={`stats-channel-${line.detail ?? line.channel}`}
@@ -49,13 +52,21 @@ function ChannelRow({ line }: { line: ChannelProfit }) {
         <span className="flex min-w-0 items-center gap-1.5 font-semibold">
           <span className="truncate">{channelName(line)}</span>
           {direct && <DirectBadge />}
-          {line.rateBp !== null && <span className="font-normal text-muted-foreground">· {formatRate(line.rateBp)}</span>}
+          {line.rateBp !== null && (
+            <span className="font-normal text-muted-foreground">
+              · {formatRate(line.rateBp)}
+              {line.vatBp ? ` ${t.vatRate(formatRate(line.vatBp))}` : ""}
+            </span>
+          )}
           {line.missingRate && <span className="font-normal text-[#B45309]">· {t.rateMissing}</span>}
         </span>
         <span className="font-mono">{line.count}</span>
         <span className="font-mono">{euros(line.totalCents)}</span>
-        <span className={cn("font-mono", line.commissionCents > 0 ? "text-[#B91C1C]" : "text-muted-foreground")}>
-          {line.missingRate ? "?" : line.commissionCents > 0 ? `− ${euros(line.commissionCents)}` : euros(0)}
+        <span className={cn("font-mono", excl > 0 ? "text-[#B91C1C]" : "text-muted-foreground")}>
+          {line.missingRate ? "?" : excl > 0 ? `− ${euros(excl)}` : euros(0)}
+        </span>
+        <span className={cn("font-mono", vat > 0 ? "text-[#B91C1C]" : "text-muted-foreground")} data-testid="stats-vat">
+          {vat > 0 ? `− ${euros(vat)}` : "—"}
         </span>
         <strong className="font-mono">{line.missingRate ? "—" : euros(line.netCents)}</strong>
         <span className="font-mono">{line.missingRate || line.netPerBookingCents === null ? "—" : euros(line.netPerBookingCents)}</span>
@@ -84,6 +95,33 @@ function ChannelRow({ line }: { line: ChannelProfit }) {
           )}
         </span>
       </div>
+    </div>
+  );
+}
+
+/** 23/11/2026 (choix A): over the 12 months, the revenue, the commissions VAT included, the net and the VAT inside. */
+function Tiles({ channels }: { channels: ChannelProfit[] }) {
+  const sum = (pick: (c: ChannelProfit) => number) => channels.reduce((s, c) => s + pick(c), 0);
+  const vat = sum(c => c.commissionVatCents ?? 0);
+  const tiles = [
+    { key: "total", label: t.tiles.total, value: euros(sum(c => c.totalCents)), tone: "" },
+    { key: "commissions", label: t.tiles.commissions, value: `− ${euros(sum(c => c.commissionCents))}`, tone: "" },
+    { key: "kept", label: t.tiles.kept, value: euros(sum(c => c.netCents)), tone: "text-lime-deep" },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="stats-tiles">
+      {tiles.map(tile => (
+        <div key={tile.key} className={cn(CARD, "flex flex-col gap-1")}>
+          <span className="text-xs text-muted-foreground">{tile.label}</span>
+          <span className={cn("font-mono text-xl", tile.tone)}>{tile.value}</span>
+        </div>
+      ))}
+      {vat > 0 && (
+        <div className="flex flex-col gap-1 rounded-[14px] border border-lime bg-[#F1F8E6] p-4 sm:p-5" data-testid="stats-vat-tile">
+          <span className="text-xs text-lime-deep">{t.tiles.vat}</span>
+          <span className="font-mono text-xl text-lime-deep">+ {euros(vat)}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -181,6 +219,7 @@ function Takeaways({ data }: { data: RevenueChannels }) {
       ))}
       {!missing.length && !data.withoutAmount && <p className="text-sm text-muted-foreground">{t.allGood}</p>}
       <p className="text-xs text-muted-foreground">{t.netNote}</p>
+      {data.channels.some(c => (c.commissionVatCents ?? 0) > 0) && <p className="text-xs text-muted-foreground">{t.vatNote}</p>}
     </section>
   );
 }
@@ -225,12 +264,14 @@ export default function StatsPage() {
         <Skeleton className="h-72 w-full" />
       ) : (
         <>
+          <Tiles channels={data.channels} />
           <section className="overflow-hidden rounded-[14px] border border-panel-line bg-white" data-testid="stats-channels">
             <div className={cn(GRID, "border-b border-panel-line px-5 py-3 text-xs text-muted-foreground max-md:hidden")}>
               <span>{t.columns.channel}</span>
               <span>{t.columns.count}</span>
               <span>{t.columns.total}</span>
               <span>{t.columns.commission}</span>
+              <span>{t.columns.vat}</span>
               <span>{t.columns.net}</span>
               <span>{t.columns.perBooking}</span>
               <span>{t.columns.trend}</span>

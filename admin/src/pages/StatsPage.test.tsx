@@ -86,6 +86,35 @@ describe("StatsPage (« Quelles plateformes vous rapportent », 12/11/2026)", ()
     expect(within(takeaways).getByRole("link", { name: "Les compléter" })).toHaveAttribute("href", "/reservations?sansprix=1");
   });
 
+  it("TVA sur la commission (23/11/2026, choix A) : commission HT, TVA, net après TTC, et la TVA récupérable à part", async () => {
+    api.getRevenueChannels.mockResolvedValue(
+      data({
+        channels: [
+          line({
+            detail: "Allopark",
+            comparatorKey: "allopark",
+            rateBp: 1800,
+            vatBp: 2000,
+            count: 1,
+            totalCents: 6000,
+            commissionCents: 1296,
+            commissionVatCents: 216,
+            netCents: 4704,
+            netPerBookingCents: 4704,
+          }),
+        ],
+      }),
+    );
+    renderPage();
+    const allopark = await screen.findByTestId("stats-channel-Allopark");
+    expect(allopark).toHaveTextContent("18 % + TVA 20 %");
+    expect(allopark).toHaveTextContent("10,80");
+    expect(within(allopark).getAllByTestId("stats-vat")[0]).toHaveTextContent("2,16");
+    expect(allopark).toHaveTextContent("47,04");
+    expect(screen.getByTestId("stats-tiles")).toHaveTextContent("12,96");
+    expect(screen.getByTestId("stats-vat-tile")).toHaveTextContent("2,16");
+  });
+
   it("asks nothing while the platform admin hides the revenue on this browser", async () => {
     localStorage.setItem("plazo:revenue-hidden", "1");
     renderPage();

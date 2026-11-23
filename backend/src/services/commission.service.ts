@@ -52,7 +52,7 @@ export class CommissionService {
   public async rates(operatorId: string): Promise<CommissionRate[]> {
     return prisma.comparatorCommission.findMany({
       where: { operatorId },
-      select: { comparatorKey: true, label: true, rateBp: true, fixedCents: true, effectiveFrom: true },
+      select: { comparatorKey: true, label: true, rateBp: true, fixedCents: true, vatBp: true, effectiveFrom: true },
     });
   }
 
@@ -129,13 +129,15 @@ export class CommissionService {
     if (!checked.ok) throw new ValidationException(checked.fields);
     const { label, rateBp, fixedCents, effectiveFrom } = checked.value;
     const key = comparatorKey(label)!;
+    // Not sent (the revenue page's rate field): the VAT in force that day stays.
+    const vatBp = checked.value.vatBp ?? rateOn(await this.rates(actor.operatorId), key, effectiveFrom)?.vatBp ?? 0;
     const where = { operatorId_comparatorKey_effectiveFrom: { operatorId: actor.operatorId, comparatorKey: key, effectiveFrom } };
     return prisma.$transaction(async tx => {
       const before = await tx.comparatorCommission.findUnique({ where });
       const row = await tx.comparatorCommission.upsert({
         where,
-        create: { operatorId: actor.operatorId, comparatorKey: key, label, rateBp, fixedCents, effectiveFrom, createdById: actor.id },
-        update: { label, rateBp, fixedCents },
+        create: { operatorId: actor.operatorId, comparatorKey: key, label, rateBp, fixedCents, vatBp, effectiveFrom, createdById: actor.id },
+        update: { label, rateBp, fixedCents, vatBp },
       });
       await this.audit.record(
         actor,
@@ -148,11 +150,19 @@ export class CommissionService {
             effectiveFrom,
             rateBp: { from: before?.rateBp ?? null, to: rateBp },
             fixedCents: { from: before?.fixedCents ?? null, to: fixedCents },
+            vatBp: { from: before?.vatBp ?? null, to: vatBp },
           },
         },
         tx,
       );
-      return { comparatorKey: row.comparatorKey, label: row.label, rateBp: row.rateBp, fixedCents: row.fixedCents, effectiveFrom: row.effectiveFrom };
+      return {
+        comparatorKey: row.comparatorKey,
+        label: row.label,
+        rateBp: row.rateBp,
+        fixedCents: row.fixedCents,
+        vatBp: row.vatBp,
+        effectiveFrom: row.effectiveFrom,
+      };
     });
   }
 

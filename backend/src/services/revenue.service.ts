@@ -82,7 +82,7 @@ export interface RevenueChannels {
   today: string;
   basis: RevenueBasis;
   months: RevenueMonth[];
-  channels: (ChannelProfit & { comparatorKey: string | null; rateBp: number | null; missingRate: boolean })[];
+  channels: (ChannelProfit & { comparatorKey: string | null; rateBp: number | null; vatBp: number; missingRate: boolean })[];
   /** Bookings of the 12 months without a price: not counted. */
   withoutAmount: number;
 }
@@ -169,6 +169,7 @@ export class RevenueService {
     return bookings.map((b, i) => ({
       ...b,
       commissionCents: b.channel === 'plazo' ? (b.commissionCents ?? 0) : (commissions[i]?.amountCents ?? 0),
+      commissionVatCents: b.channel === 'plazo' ? 0 : (commissions[i]?.vatCents ?? 0),
     }));
   }
 
@@ -334,6 +335,7 @@ export class RevenueService {
         ...line,
         comparatorKey: key,
         rateBp: rate?.rateBp ?? null,
+        vatBp: rate?.vatBp ?? 0,
         missingRate: !!key && !rate && line.commissionCents === 0,
       };
     });

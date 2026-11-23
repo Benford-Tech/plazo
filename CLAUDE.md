@@ -895,6 +895,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      chiffre) = Vous gardez », puis une pastille par canal qui a retenu (« Allopark 18 % · −612,00 € », « Plazo · −240,00 € ») et
      « Parclick : taux à régler » en ambre pour un comparateur sans taux ; `GET /internal/revenue/summary` rend `month.commissionCents`
      et `commissions[] { label, comparatorKey, rateBp, amountCents, count, missingRate }` (`RevenueService.commissionLines`).
+     **TVA sur la commission, choix A (23/11/2026, « pour certain contract il y'a une TVA, mets le en place dans les statistiques »,
+     maquettes https://claude.ai/artifact/DW1PkcCZCVKoKruTbthbAb)** : `ComparatorCommission.vatBp` (0 à 5 000, 0 = aucune ; migration
+     `commission_vat`, CHECK), posée avec le taux à partir de son jour (`PUT …/commissions` `vatBp`, absent = la TVA en vigueur ce jour
+     reste : le champ du taux du Chiffre d'affaires ne l'efface pas ; 400 `vat_range`) ; `commissionOf` : la TVA du comparateur
+     s'ajoute à la commission, aussi sur une exception de la réservation, `amountCents` = TTC (jamais plus que le prix), `vatCents` la
+     TVA dedans, le net retire le TTC partout (Chiffre d'affaires, tuile, Statistiques, fiche) ; `commissionVatCents` du rapport, des
+     canaux, des mois et de `GET /internal/revenue/channels` (`vatBp` par canal). Web : pastilles « TVA sur la commission · Aucune ·
+     20 % · Autre… » de chaque comparateur dans Parking › Réglages, exemple « 10,80 € HT + TVA 20 % 2,16 € = 12,96 € TTC » ;
+     Statistiques : tuiles Chiffre · Commissions TTC · Vous gardez · « dont TVA récupérable » (montrée à part, jamais ajoutée au net),
+     colonnes Commission HT et TVA, « 18 % + TVA 20 % » ; fiche réservation « − 12,96 € TTC ». Pas encore : la TVA dans l'export CSV,
+     Plazo Pro. Tests `comparator-commission.test.ts`, `ComparatorCommissionCard.test.tsx`, `StatsPage.test.tsx`.
    - **Statistiques, choix B « Quelles plateformes vous rapportent » (12/11/2026, d'après une capture d'un concurrent, maquettes
      https://claude.ai/artifact/6kXrPDgyh5r71S8KwcRAHi)** : page `/pro/statistiques` (Gérant › Statistiques, `revenue:view`, `StatsPage`) :
      sur les 12 derniers mois, un tableau par canal (réservations, chiffre, commission, net, net par réservation, mini-courbe du net mois

@@ -45,9 +45,9 @@ describe('le chiffre d’affaires (domaine)', () => {
     );
     expect(report).toMatchObject({ totalCents: 3400 + 3600 + 4500 + 5290, count: 4, withoutAmount: 1, averageCents: Math.round(16790 / 4) });
     expect(report.byChannel).toEqual([
-      { channel: 'aggregator', detail: 'Allopark', count: 2, totalCents: 7000, commissionCents: 0, netCents: 7000 },
-      { channel: 'plazo', detail: null, count: 1, totalCents: 5290, commissionCents: 0, netCents: 5290 },
-      { channel: 'aggregator', detail: 'Onepark', count: 1, totalCents: 4500, commissionCents: 0, netCents: 4500 },
+      { channel: 'aggregator', detail: 'Allopark', count: 2, totalCents: 7000, commissionCents: 0, commissionVatCents: 0, netCents: 7000 },
+      { channel: 'plazo', detail: null, count: 1, totalCents: 5290, commissionCents: 0, commissionVatCents: 0, netCents: 5290 },
+      { channel: 'aggregator', detail: 'Onepark', count: 1, totalCents: 4500, commissionCents: 0, commissionVatCents: 0, netCents: 4500 },
     ]);
     // Nothing direct here: the phone booking has no amount.
     expect(report.direct).toEqual({ count: 0, totalCents: 0 });
