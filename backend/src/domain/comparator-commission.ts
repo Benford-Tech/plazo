@@ -10,6 +10,11 @@ import { DATE_RE, localDate } from './time';
 export const MAX_RATE_BP = 10000;
 /** 1 000 € per booking at most. */
 export const MAX_FIXED_CENTS = 100000;
+/** 23/11/2026: VAT the comparator adds to its commission, 50 % at most (in basis points). */
+export const MAX_VAT_BP = 5000;
+
+/** The VAT on a commission excluding tax, rounded to the cent. */
+export const vatOn = (amountCents: number, vatBp: number): number => Math.round((amountCents * vatBp) / MAX_RATE_BP);
 
 /** The comparators of the client n°1, offered before their first mail arrives. */
 export const KNOWN_COMPARATORS = ['Allopark', 'Onepark', 'Parclick', 'ParkMundo', 'ParkVia', 'Park Hit'];
@@ -19,6 +24,8 @@ export interface CommissionRate {
   label: string;
   rateBp: number;
   fixedCents: number;
+  /** 23/11/2026 (« pour certain contract il y'a une TVA », choix A): VAT added to the commission, 0 = none. */
+  vatBp?: number;
   /** Local « YYYY-MM-DD ». */
   effectiveFrom: string;
 }
@@ -39,8 +46,11 @@ export interface Commission {
   source: 'override' | 'rate' | 'none';
   rateBp: number | null;
   fixedCents: number;
-  /** Null without a price. */
+  /** What the comparator takes, VAT included (the net is the price minus this); null without a price. */
   amountCents: number | null;
+  /** 23/11/2026: the VAT inside `amountCents` (recoverable for a parking liable to VAT), 0 when none. */
+  vatCents: number | null;
+  vatBp: number;
   netCents: number | null;
   /** The rate's first day, for « Taux du 1 oct. ». */
   effectiveFrom: string | null;
@@ -82,37 +92,57 @@ export function commissionOf(booking: CommissionBooking, rates: CommissionRate[]
   if (!key) return null;
   const comparator = booking.channelDetail!.replace(/\s+/g, ' ').trim();
   const price = booking.priceCents;
-  const net = (amount: number | null) => (price === null || amount === null ? null : price - amount);
-
-  if (booking.commissionOverrideCents !== null) {
-    const amount = price === null ? null : Math.min(price, booking.commissionOverrideCents);
-    return { comparator, source: 'override', rateBp: null, fixedCents: 0, amountCents: amount, netCents: net(amount), effectiveFrom: null };
-  }
-  if (booking.commissionOverrideBp !== null) {
-    const amount = price === null ? null : commissionAmount(price, booking.commissionOverrideBp, 0);
+  const rate = rateOn(rates, key, localDate(booking.createdAt, timeZone));
+  // The VAT is the comparator's (its row on the booking's day), also over a booking's own exception: the exception
+  // changes the commission, not the comparator's invoice.
+  const vatBp = rate?.vatBp ?? 0;
+  const done = (
+    source: Commission['source'],
+    excl: number | null,
+    extra: Pick<Commission, 'rateBp' | 'fixedCents' | 'effectiveFrom'>,
+  ): Commission => {
+    const vat = excl === null || price === null ? null : Math.min(vatOn(excl, vatBp), price - excl);
+    const amount = excl === null || vat === null ? null : excl + vat;
     return {
       comparator,
-      source: 'override',
+      source,
+      ...extra,
+      amountCents: amount,
+      vatCents: vat,
+      vatBp,
+      netCents: price === null || amount === null ? null : price - amount,
+    };
+  };
+
+  if (booking.commissionOverrideCents !== null)
+    return done('override', price === null ? null : Math.min(price, booking.commissionOverrideCents), {
+      rateBp: null,
+      fixedCents: 0,
+      effectiveFrom: null,
+    });
+  if (booking.commissionOverrideBp !== null)
+    return done('override', price === null ? null : commissionAmount(price, booking.commissionOverrideBp, 0), {
       rateBp: booking.commissionOverrideBp,
       fixedCents: 0,
-      amountCents: amount,
-      netCents: net(amount),
+      effectiveFrom: null,
+    });
+  if (!rate)
+    return {
+      comparator,
+      source: 'none',
+      rateBp: null,
+      fixedCents: 0,
+      amountCents: price === null ? null : 0,
+      vatCents: price === null ? null : 0,
+      vatBp: 0,
+      netCents: price,
       effectiveFrom: null,
     };
-  }
-  const rate = rateOn(rates, key, localDate(booking.createdAt, timeZone));
-  if (!rate)
-    return { comparator, source: 'none', rateBp: null, fixedCents: 0, amountCents: price === null ? null : 0, netCents: price, effectiveFrom: null };
-  const amount = price === null ? null : commissionAmount(price, rate.rateBp, rate.fixedCents);
-  return {
-    comparator,
-    source: 'rate',
+  return done('rate', price === null ? null : commissionAmount(price, rate.rateBp, rate.fixedCents), {
     rateBp: rate.rateBp,
     fixedCents: rate.fixedCents,
-    amountCents: amount,
-    netCents: net(amount),
     effectiveFrom: rate.effectiveFrom,
-  };
+  });
 }
 
 /** « 17,5 » or 17.5 (a percentage) → 1750 basis points; null when it is not one. */
@@ -123,13 +153,15 @@ export function percentToBp(value: unknown): number | null {
   return bp <= MAX_RATE_BP ? bp : null;
 }
 
-export type RateInput = { label: string; rateBp: number; fixedCents: number; effectiveFrom: string };
+/** `vatBp` null: not sent (the revenue page's rate field), the VAT in force that day stays. */
+export type RateInput = { label: string; rateBp: number; fixedCents: number; vatBp: number | null; effectiveFrom: string };
 
 /** A comparator's rate as sent by the pro space: `{ label, rateBp, fixedCents, effectiveFrom }`, errors by field. */
 export function validateRate(input: {
   label?: unknown;
   rateBp?: unknown;
   fixedCents?: unknown;
+  vatBp?: unknown;
   effectiveFrom?: unknown;
 }): { ok: true; value: RateInput } | { ok: false; fields: Record<string, string> } {
   const fields: Record<string, string> = {};
@@ -142,8 +174,13 @@ export function validateRate(input: {
   const fixedCents = input.fixedCents === undefined || input.fixedCents === null ? 0 : input.fixedCents;
   if (typeof fixedCents !== 'number' || !Number.isInteger(fixedCents)) fields.fixedCents = 'integer';
   else if (fixedCents < 0 || fixedCents > MAX_FIXED_CENTS) fields.fixedCents = 'fixed_range';
+  const vatBp = input.vatBp === undefined ? null : input.vatBp === null ? 0 : input.vatBp;
+  if (vatBp !== null) {
+    if (typeof vatBp !== 'number' || !Number.isInteger(vatBp)) fields.vatBp = 'integer';
+    else if (vatBp < 0 || vatBp > MAX_VAT_BP) fields.vatBp = 'vat_range';
+  }
   const effectiveFrom = typeof input.effectiveFrom === 'string' ? input.effectiveFrom : '';
   if (!DATE_RE.test(effectiveFrom) || Number.isNaN(Date.parse(`${effectiveFrom}T00:00:00Z`))) fields.effectiveFrom = 'invalid_date';
   if (Object.keys(fields).length) return { ok: false, fields };
-  return { ok: true, value: { label, rateBp: rateBp as number, fixedCents: fixedCents as number, effectiveFrom } };
+  return { ok: true, value: { label, rateBp: rateBp as number, fixedCents: fixedCents as number, vatBp: vatBp as number | null, effectiveFrom } };
 }

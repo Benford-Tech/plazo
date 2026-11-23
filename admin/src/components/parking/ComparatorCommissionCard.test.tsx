@@ -41,7 +41,7 @@ describe("Ce que chaque comparateur vous prend (19/10/2026)", () => {
     renderCard();
     expect(await screen.findByText("18 % depuis le 1 oct. 2026")).toBeInTheDocument();
     expect(screen.getByText("20 % à partir du 1 nov. 2026")).toBeInTheDocument();
-    expect(screen.getByText(/Réservation de 54,00 €/)).toHaveTextContent("vous gardez 44,28 €");
+    expect(screen.getByText(/Réservation de 60,00 €/)).toHaveTextContent("vous gardez 49,20 €");
     expect(screen.getByLabelText("Pourcentage de Allopark")).toHaveValue("18");
 
     const onepark = screen.getByLabelText("Pourcentage de Onepark");
@@ -53,7 +53,29 @@ describe("Ce que chaque comparateur vous prend (19/10/2026)", () => {
     await userEvent.type(screen.getByLabelText("Frais fixes par réservation de Onepark, en euros"), "1,50");
     await userEvent.click(screen.getAllByRole("button", { name: "Enregistrer" })[1]);
     await waitFor(() =>
-      expect(api.setComparatorCommission).toHaveBeenCalledWith({ label: "Onepark", rateBp: 2500, fixedCents: 150, effectiveFrom: "2026-10-19" }),
+      expect(api.setComparatorCommission).toHaveBeenCalledWith({ label: "Onepark", rateBp: 2500, fixedCents: 150, vatBp: 0, effectiveFrom: "2026-10-19" }),
+    );
+  });
+
+  it("TVA sur la commission (23/11/2026, choix A) : choisie avec le taux, l'exemple la montre", async () => {
+    api.getComparatorCommissions.mockResolvedValue({
+      today: "2026-11-23",
+      comparators: [
+        { key: "allopark", label: "Allopark", current: { ...rate(1800, "2026-10-01"), vatBp: 2000 }, upcoming: [], history: [], bookingsThisMonth: 3 },
+        { key: "onepark", label: "Onepark", current: rate(2000, "2026-10-01"), upcoming: [], history: [], bookingsThisMonth: 1 },
+      ],
+    });
+    api.setComparatorCommission.mockResolvedValue(rate(2000, "2026-11-23"));
+    renderCard();
+    expect(await screen.findByText("18 % + TVA 20 % depuis le 1 oct. 2026")).toBeInTheDocument();
+    expect(screen.getByText(/Allopark, réservation de 60,00 €/)).toHaveTextContent("10,80 € HT + TVA 20 % 2,16 € = 12,96 € TTC. Vous gardez 47,04 €");
+    const onepark = screen.getByTestId("vat-onepark");
+    expect(onepark.querySelector('[aria-pressed="true"]')).toHaveTextContent("Aucune");
+    await userEvent.click(screen.getAllByRole("button", { name: "Autre…" })[1]);
+    await userEvent.type(screen.getByLabelText("Taux de TVA sur la commission de Onepark"), "5,5");
+    await userEvent.click(screen.getAllByRole("button", { name: "Enregistrer" })[1]);
+    await waitFor(() =>
+      expect(api.setComparatorCommission).toHaveBeenCalledWith({ label: "Onepark", rateBp: 2000, fixedCents: 0, vatBp: 550, effectiveFrom: "2026-11-23" }),
     );
   });
 });

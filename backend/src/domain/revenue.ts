@@ -30,6 +30,8 @@ export interface RevenueBooking {
   paymentMethod?: PaymentMethod | null;
   /** What the comparator takes (19/10/2026), 0 when none: the service works it out (`commissionOf`). */
   commissionCents?: number | null;
+  /** 23/11/2026: the VAT inside `commissionCents` (recoverable by a parking liable to VAT), 0 or absent when none. */
+  commissionVatCents?: number | null;
 }
 
 /**
@@ -50,8 +52,10 @@ export interface RevenueChannel {
   detail: string | null;
   count: number;
   totalCents: number;
-  /** What the comparator took from these bookings, and what the operator keeps. */
+  /** What the comparator took from these bookings (VAT included), and what the operator keeps. */
   commissionCents: number;
+  /** 23/11/2026: the VAT inside `commissionCents`. */
+  commissionVatCents: number;
   netCents: number;
 }
 
@@ -62,6 +66,8 @@ export interface RevenueReport {
   totalCents: number;
   /** What the comparators took from the bookings counted (19/10/2026), and what the operator keeps. */
   commissionCents: number;
+  /** 23/11/2026 (« TVA sur commission », choix A): the VAT inside `commissionCents`, shown apart, never added to the net. */
+  commissionVatCents: number;
   netCents: number;
   /** Bookings with an amount. */
   count: number;
@@ -138,6 +144,8 @@ export function revenueReport(
   const totalCents = bookingsCents + extrasCents + surchargesCents;
   const fee = (b: RevenueBooking) => b.commissionCents ?? 0;
   const commissionCents = priced.reduce((sum, b) => sum + fee(b), 0);
+  const vat = (b: RevenueBooking) => b.commissionVatCents ?? 0;
+  const commissionVatCents = priced.reduce((sum, b) => sum + vat(b), 0);
 
   const channels = new Map<string, RevenueChannel>();
   for (const b of priced) {
@@ -148,11 +156,13 @@ export function revenueReport(
       count: 0,
       totalCents: 0,
       commissionCents: 0,
+      commissionVatCents: 0,
       netCents: 0,
     };
     line.count += 1;
     line.totalCents += b.priceCents;
     line.commissionCents += fee(b);
+    line.commissionVatCents += vat(b);
     line.netCents += b.priceCents - fee(b);
     channels.set(group.key, line);
   }
@@ -192,6 +202,7 @@ export function revenueReport(
     basis,
     totalCents,
     commissionCents,
+    commissionVatCents,
     netCents: totalCents - commissionCents,
     count: priced.length,
     averageCents: priced.length ? Math.round(bookingsCents / priced.length) : null,
@@ -285,6 +296,7 @@ export interface RevenueMonth {
   to: string;
   totalCents: number;
   commissionCents: number;
+  commissionVatCents: number;
   netCents: number;
   count: number;
   withoutAmount: number;
@@ -322,6 +334,7 @@ export function revenueByMonth(
       to: m.to,
       totalCents: r.totalCents,
       commissionCents: r.commissionCents,
+      commissionVatCents: r.commissionVatCents,
       netCents: r.netCents,
       count: r.count,
       withoutAmount: r.withoutAmount,
@@ -342,6 +355,7 @@ export interface ChannelProfit {
   count: number;
   totalCents: number;
   commissionCents: number;
+  commissionVatCents: number;
   netCents: number;
   netPerBookingCents: number | null;
   /** One net per month of `months`. */
@@ -372,6 +386,7 @@ export function channelProfits(
         count: 0,
         totalCents: 0,
         commissionCents: 0,
+        commissionVatCents: 0,
         netCents: 0,
         netPerBookingCents: null,
         monthlyNetCents: months.map(() => 0),
@@ -380,6 +395,7 @@ export function channelProfits(
     line.count += 1;
     line.totalCents += b.priceCents;
     line.commissionCents += fee;
+    line.commissionVatCents += b.commissionVatCents ?? 0;
     line.netCents += b.priceCents - fee;
     line.monthlyNetCents[index] += b.priceCents - fee;
     lines.set(group.key, line);

@@ -828,6 +828,19 @@ export const fr = {
     exampleLine: (price: string, rate: string, amount: string, net: string) =>
       `Réservation de ${price} − ${rate} = ${amount} : vous gardez ${net}`,
     invalidRate: "Pourcentage invalide (ex. 18 ou 17,5).",
+    // 23/11/2026 (« TVA sur commission », choix A).
+    vat: "TVA sur la commission",
+    vatNone: "Aucune",
+    vatOther: "Autre…",
+    vatLabel: (name: string) => `TVA sur la commission de ${name}`,
+    vatOtherLabel: (name: string) => `Taux de TVA sur la commission de ${name}`,
+    invalidVat: "Taux de TVA invalide (ex. 20 ou 5,5).",
+    plusVat: (rate: string) => `+ TVA ${rate}`,
+    ttc: "TTC",
+    exampleVatLine: (name: string, price: string, rate: string, excl: string, vatRate: string, vat: string, total: string, net: string) =>
+      `${name}, réservation de ${price} : commission ${rate} ${excl} HT + TVA ${vatRate} ${vat} = ${total} TTC. Vous gardez ${net}, TVA récupérable ${vat}.`,
+    vatFootnote:
+      "Comme le taux, la TVA vaut à partir du jour choisi : les réservations d'avant ne bougent pas. Prenez le chiffre de la facture du comparateur.",
     invalidFixed: "Montant invalide (ex. 1,50).",
     // The booking's sheet (C).
     line: (name: string) => `Commission ${name}`,
@@ -7209,13 +7222,25 @@ export const statsFr = {
     channel: "Canal",
     count: "Réservations",
     total: "Chiffre",
-    commission: "Commission",
+    commission: "Commission HT",
+    vat: "TVA",
     net: "Net",
     perBooking: "Net par résa",
     trend: "Net, mois par mois",
   },
   direct: "En direct",
   directNote: "téléphone, comptoir, site",
+  // 23/11/2026 (« TVA sur commission », choix A).
+  tiles: {
+    total: "Chiffre",
+    commissions: "Commissions TTC",
+    kept: "Vous gardez",
+    vat: "dont TVA récupérable",
+  },
+  vatRate: (rate: string) => `+ TVA ${rate}`,
+  noVat: "sans TVA",
+  vatNote:
+    "Net = chiffre − commission TTC. La TVA payée au comparateur se récupère si le parking est assujetti : elle est montrée à part, jamais ajoutée au net.",
   rateMissing: "taux à régler",
   setRate: "Régler la commission",
   empty: "Aucune réservation avec un prix sur ces 12 mois.",

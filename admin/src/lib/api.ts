@@ -911,6 +911,7 @@ export const adminApi = {
     label: string;
     rateBp: number;
     fixedCents: number;
+    vatBp?: number;
     effectiveFrom: string;
   }) =>
     apiRequest<CommissionRate>("/internal/comparators/commissions", {

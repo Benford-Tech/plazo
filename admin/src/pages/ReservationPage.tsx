@@ -236,8 +236,10 @@ function CommissionLine({ reservation: r }: { reservation: Reservation }) {
         : t.noneSet(c.comparator);
   const rateText =
     c.rateBp !== null
-      ? `${formatRate(c.rateBp)}${c.fixedCents ? ` + ${euros(c.fixedCents)}` : ""}`
-      : null;
+      ? `${formatRate(c.rateBp)}${c.fixedCents ? ` + ${euros(c.fixedCents)}` : ""}${c.vatBp ? ` ${t.plusVat(formatRate(c.vatBp))}` : ""}`
+      : c.vatBp
+        ? t.plusVat(formatRate(c.vatBp))
+        : null;
 
   return (
     <Info label={t.line(c.comparator)}>
@@ -247,6 +249,7 @@ function CommissionLine({ reservation: r }: { reservation: Reservation }) {
       >
         <span className="tabular font-mono text-[#B45309]">
           − {euros(c.amountCents ?? 0)}
+          {c.vatCents ? ` ${t.ttc}` : ""}
         </span>
         {rateText && (
           <span className="text-base text-muted-foreground">{rateText}</span>

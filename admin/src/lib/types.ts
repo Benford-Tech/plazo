@@ -1910,6 +1910,8 @@ export interface RevenueChannel {
   totalCents: number;
   /** What the comparator took, and what the operator keeps (19/10/2026). */
   commissionCents: number;
+  /** 23/11/2026: the VAT inside `commissionCents`; absent from an older API. */
+  commissionVatCents?: number;
   netCents: number;
   /** A comparator's key (« allopark ») and its rate in force today, edited in place; null for the other channels. */
   comparatorKey: string | null;
@@ -1923,6 +1925,8 @@ export interface CommissionRate {
   /** 1800 = 18 %. */
   rateBp: number;
   fixedCents: number;
+  /** 23/11/2026: VAT added to the commission (2000 = 20 %), 0 = none; absent from an older API. */
+  vatBp?: number;
   effectiveFrom: string;
 }
 
@@ -1941,7 +1945,11 @@ export interface ReservationCommission {
   source: "override" | "rate" | "none";
   rateBp: number | null;
   fixedCents: number;
+  /** VAT included (23/11/2026). */
   amountCents: number | null;
+  /** The VAT inside `amountCents`, 0 when none; absent from an older API. */
+  vatCents?: number | null;
+  vatBp?: number;
   netCents: number | null;
   effectiveFrom: string | null;
 }
@@ -1953,6 +1961,8 @@ export interface RevenueReport {
   timezone: string;
   totalCents: number;
   commissionCents: number;
+  /** 23/11/2026: the VAT inside `commissionCents` (recoverable), shown apart; absent from an older API. */
+  commissionVatCents?: number;
   netCents: number;
   count: number;
   averageCents: number | null;
@@ -2003,11 +2013,15 @@ export interface ChannelProfit {
   detail: string | null;
   comparatorKey: string | null;
   rateBp: number | null;
+  /** 23/11/2026: VAT on its commission today (2000 = 20 %); absent from an older API. */
+  vatBp?: number;
   /** A comparator with no rate set: its net is not known. */
   missingRate: boolean;
   count: number;
   totalCents: number;
   commissionCents: number;
+  /** The VAT inside `commissionCents`. */
+  commissionVatCents?: number;
   netCents: number;
   netPerBookingCents: number | null;
   /** One net per month, the oldest first. */

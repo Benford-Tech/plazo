@@ -2124,6 +2124,8 @@ model ComparatorCommission {
   label         String
   rateBp        Int
   fixedCents    Int      @default(0)
+  /// 23/11/2026: VAT the comparator adds to its commission, in basis points (2000 = 20 %), 0 = none.
+  vatBp         Int      @default(0)
   /// Local date « YYYY-MM-DD » of the parking.
   effectiveFrom String
   createdById   String?

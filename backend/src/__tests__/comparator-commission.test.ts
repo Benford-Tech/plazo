@@ -47,6 +47,8 @@ describe('la commission des comparateurs (domaine)', () => {
       rateBp: 1800,
       fixedCents: 0,
       amountCents: 972,
+      vatCents: 0,
+      vatBp: 0,
       netCents: 4428,
       effectiveFrom: '2026-10-01',
     });
@@ -72,6 +74,24 @@ describe('la commission des comparateurs (domaine)', () => {
     expect(commissionOf(booking({ channel: 'plazo', channelDetail: null }), [rate({})], TZ)).toBeNull();
   });
 
+  it('TVA sur la commission (23/11/2026, choix A) : ajoutée à la commission, le net la retire, aussi sur une exception', () => {
+    const rates = [rate({ vatBp: 2000 })];
+    // 60 € at 18 %: 10,80 € HT + 2,16 € VAT = 12,96 € TTC, the operator keeps 47,04 €.
+    expect(commissionOf(booking({ priceCents: 6000 }), rates, TZ)).toMatchObject({ amountCents: 1296, vatCents: 216, vatBp: 2000, netCents: 4704 });
+    expect(commissionOf(booking({ priceCents: 6000, commissionOverrideCents: 1000 }), rates, TZ)).toMatchObject({
+      amountCents: 1200,
+      vatCents: 200,
+      netCents: 4800,
+    });
+    // Never more than the price.
+    expect(commissionOf(booking({ priceCents: 1000, commissionOverrideCents: 1000 }), rates, TZ)).toMatchObject({ amountCents: 1000, netCents: 0 });
+    expect(commissionOf(booking({ priceCents: null }), rates, TZ)).toMatchObject({ amountCents: null, vatCents: null });
+    expect(validateRate({ label: 'Allopark', rateBp: 1800, vatBp: 6000, effectiveFrom: '2026-10-01' })).toEqual({
+      ok: false,
+      fields: { vatBp: 'vat_range' },
+    });
+  });
+
   it('lit un pourcentage, une clé, et refuse un taux mal formé', () => {
     expect(percentToBp('17,5')).toBe(1750);
     expect(percentToBp(18)).toBe(1800);
@@ -84,7 +104,7 @@ describe('la commission des comparateurs (domaine)', () => {
     });
     expect(validateRate({ label: 'Allopark', rateBp: 1800, effectiveFrom: '2026-10-01' })).toEqual({
       ok: true,
-      value: { label: 'Allopark', rateBp: 1800, fixedCents: 0, effectiveFrom: '2026-10-01' },
+      value: { label: 'Allopark', rateBp: 1800, fixedCents: 0, vatBp: null, effectiveFrom: '2026-10-01' },
     });
   });
 });
@@ -169,10 +189,24 @@ describe('la commission des comparateurs (API)', () => {
     expect((await api().get('/api/internal/comparators/commissions').set(auth(agent.token))).status).toBe(403);
     expect((await put({ label: 'Allopark', rateBp: 1, effectiveFrom: '2026-10-01' }, agent.token)).status).toBe(403);
 
+    // 23/11/2026: VAT on the commission; the revenue page's rate field (no vatBp) keeps it.
+    expect((await put({ label: 'Allopark', rateBp: 1800, vatBp: 2000, effectiveFrom: '2026-10-01' })).status).toBe(200);
+    expect((await put({ label: 'Allopark', rateBp: 1800, effectiveFrom: '2026-10-01' })).body.vatBp).toBe(2000);
+    const withVat = await api().get('/api/internal/revenue?from=2026-10-01&to=2026-10-31').set(auth(op.token));
+    expect(withVat.body).toMatchObject({ commissionCents: 1166, commissionVatCents: 194, netCents: 12400 - 1166 });
+    expect(withVat.body.byChannel.find((c: any) => c.detail === 'Allopark')).toMatchObject({ commissionCents: 1166, commissionVatCents: 194 });
+    expect((await api().get(`/api/internal/reservations/${allo.id}`).set(auth(op.token))).body.commission).toMatchObject({
+      amountCents: 1166,
+      vatCents: 194,
+      netCents: 4234,
+    });
+    const stats = await api().get('/api/internal/revenue/channels?to=2026-10').set(auth(op.token));
+    expect(stats.body.channels.find((c: any) => c.detail === 'Allopark')).toMatchObject({ commissionVatCents: 194 });
+
     // Taking out a rate set by mistake.
     expect((await api().delete('/api/internal/comparators/commissions/allopark/2026-11-01').set(auth(op.token))).status).toBe(204);
     expect((await api().delete('/api/internal/comparators/commissions/allopark/2026-11-01').set(auth(op.token))).status).toBe(404);
-    expect(await prisma.auditLog.count({ where: { action: { startsWith: 'comparator_commission.' } } })).toBe(3);
+    expect(await prisma.auditLog.count({ where: { action: { startsWith: 'comparator_commission.' } } })).toBe(5);
   });
 
   it('PUT /internal/reservations/:id/commission : une exception par réservation de comparateur, ou retour au taux', async () => {
