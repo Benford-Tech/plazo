@@ -34,6 +34,10 @@ MONTHS = int(os.environ.get("MONTHS", "").strip() or "12")
 RADIUS_KM = float(os.environ.get("RADIUS_KM", "").strip() or "15")
 AIRPORTS = os.environ.get("AIRPORTS", "").strip() or "LYS"
 SOURCE = (os.environ.get("SOURCE", "").strip().lower() or "tous")  # annuaire · bodacc · tous
+# 23/11/2026 (« les prospect ne sont pas des parkings d'aeroport avec navette !!! verifie avant ! »): the directory and the
+# BODACC only give candidates. Nothing is imported unless its name is in VERIFIED, the names checked by hand beforehand
+# (a website or a comparator listing shows an airport car park with a shuttle or a valet). The run without it lists them.
+VERIFIED_RAW = os.environ.get("VERIFIED", "")
 DIRECTORY = "https://recherche-entreprises.api.gouv.fr/near_point"
 ACTIVITY = "52.21Z"
 
@@ -298,6 +302,17 @@ def main():
     if target:
         with open(target, "a", encoding="utf-8") as fh:
             fh.write("\n".join(summary) + "\n\n")
+    if not found:
+        return
+    verified = {plain(n).strip() for n in VERIFIED_RAW.replace("\n", ";").split(";") if n.strip()}
+    found = [f for f in found if " ".join(plain(f["name"]).split()) in {" ".join(v.split()) for v in verified}]
+    if not verified:
+        print("::notice::Candidats seulement : rien n'est importé sans la liste « verifies » (noms vérifiés un par un "
+              "sur leur site ou un comparateur : parking d'aéroport avec navette ou voiturier).")
+        return
+    missing = len(verified) - len(found)
+    if missing > 0:
+        print(f"::warning::{missing} nom(s) vérifié(s) introuvable(s) parmi les candidats de ce passage")
     if not found:
         return
     rows = []
