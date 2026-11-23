@@ -112,7 +112,7 @@ describe("Mon site", () => {
     expect(screen.getByTestId("site-state")).toHaveTextContent("En ligne");
   });
 
-  it("nom de domaine : avec l'option, le gérant le pose, lit l'enregistrement à créer et suit son état", async () => {
+  it("nom de domaine : le gérant le pose, lit l'enregistrement à créer et suit son état", async () => {
     const user = userEvent.setup();
     const active = { active: true, requestedAt: null, priceCents: 2900 };
     const domain = {
@@ -140,11 +140,11 @@ describe("Mon site", () => {
     expect(within(section).getByTestId("site-domain-state")).toHaveTextContent("Enregistrement en place");
   });
 
-  it("nom de domaine : sans l'option, pas de champ", async () => {
+  it("nom de domaine : il ne fait pas partie de l'option, le champ est là sans elle", async () => {
     api.getSite.mockResolvedValue({ data: settings() });
     renderPage();
     const section = await screen.findByTestId("site-domain");
-    expect(within(section).queryByLabelText("Nom de domaine")).toBeNull();
-    expect(section).toHaveTextContent("Le nom de domaine fait partie de l'option.");
+    expect(within(section).getByLabelText("Nom de domaine")).toBeInTheDocument();
+    expect(section).not.toHaveTextContent("fait partie de l'option");
   });
 });
