@@ -195,7 +195,7 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
     expect(dnsState('www.x.fr', { cname: ['autre.exemple.net'], a: ['203.0.113.9'] })).toBe('dns_wrong');
   });
 
-  it('avec l’option : le gérant pose son domaine, Plazo suit les DNS, la plateforme le branche, le site y répond', async () => {
+  it('sans l’option aussi : le gérant pose son domaine, Plazo suit les DNS, la plateforme le branche, le site y répond', async () => {
     const op = await parkingWithListing();
     const admin = await setupOperator('Plazo (tests)');
     process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
@@ -203,9 +203,7 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
     const dns = jest.spyOn(hosts, 'dns').mockResolvedValue('dns_missing');
     await api().put('/api/internal/site').set(auth(op.token)).send({ slug: 'cedres' });
 
-    // Part of the paid option.
-    expect((await put('www.parking-des-cedres.fr')).body.fields).toEqual({ domain: 'addon_required' });
-    await api().put(`/api/internal/platform/operators/${op.operator.id}/site`).set(auth(admin.token)).send({ active: true });
+    // Not part of the paid option (23/11/2026): set before the option is on.
     expect((await put('plazo.fr')).body.fields).toEqual({ domain: 'invalid' });
 
     const set = await put('https://www.Parking-des-Cedres.fr/');
@@ -216,6 +214,8 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
       issue: 'dns_missing',
       automatic: false,
     });
+    // The site itself still needs the option to go online.
+    await api().put(`/api/internal/platform/operators/${op.operator.id}/site`).set(auth(admin.token)).send({ active: true });
     await api().put('/api/internal/site').set(auth(op.token)).send({ published: true });
     expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).status).toBe(404);
 

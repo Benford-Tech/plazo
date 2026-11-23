@@ -339,26 +339,22 @@ function DomainSection({ site, readOnly, onChange }: { site: SiteSettings; readO
       {!domain ? (
         <>
           <p className="text-sm text-muted-foreground">{d.intro}</p>
-          {site.addon.active ? (
-            <form
-              className="flex flex-col gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (value.trim()) set.mutate(value.trim());
-              }}
-            >
-              <label className="flex flex-col gap-1">
-                <span className={label}>{d.field}</span>
-                <input className={cn(input, "font-mono")} value={value} placeholder={d.placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setValue(e.target.value)} />
-              </label>
-              <p className="text-xs text-muted-foreground">{d.hint}</p>
-              <Button type="submit" className="h-11 self-start bg-lime font-bold text-lime-ink hover:bg-lime/90" disabled={readOnly || set.isPending || !value.trim()}>
-                {d.save}
-              </Button>
-            </form>
-          ) : (
-            <p className="text-sm font-semibold">{d.needsAddon}</p>
-          )}
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (value.trim()) set.mutate(value.trim());
+            }}
+          >
+            <label className="flex flex-col gap-1">
+              <span className={label}>{d.field}</span>
+              <input className={cn(input, "font-mono")} value={value} placeholder={d.placeholder} autoCapitalize="none" autoCorrect="off" spellCheck={false} onChange={(e) => setValue(e.target.value)} />
+            </label>
+            <p className="text-xs text-muted-foreground">{d.hint}</p>
+            <Button type="submit" className="h-11 self-start bg-lime font-bold text-lime-ink hover:bg-lime/90" disabled={readOnly || set.isPending || !value.trim()}>
+              {d.save}
+            </Button>
+          </form>
         </>
       ) : (
         <>

@@ -85,7 +85,9 @@ export class OperatorSiteService {
     };
   }
 
-  /** PUT /internal/site/domain { domain }: set the parking's own domain (null or empty removes it). Part of the paid option. */
+  /** PUT /internal/site/domain { domain }: set the parking's own domain (null or empty removes it). Not part of the paid
+   * option (23/11/2026, « le nom de domaine ne fait pas partie de l'option »): any manager sets it; it opens the site once
+   * the site is online, which still needs the option. */
   public async setDomain(actor: AuthenticatedStaff, value: unknown) {
     const { operator } = await this.state(actor.operatorId);
     const previous = operator.site?.domain ?? null;
@@ -102,14 +104,11 @@ export class OperatorSiteService {
     }
     const domain = readDomain(value);
     if (!domain) throw new ValidationException({ domain: 'invalid' });
-    if (!operator.site?.addonAt) throw new ValidationException({ domain: 'addon_required' });
     if (domain !== previous) {
       const taken = await prisma.operatorSite.findFirst({ where: { domain, NOT: { operatorId: actor.operatorId } }, select: { id: true } });
       if (taken) throw new ValidationException({ domain: 'taken' });
-      await prisma.operatorSite.update({
-        where: { operatorId: actor.operatorId },
-        data: { domain, domainSetAt: new Date(), domainActiveAt: null, domainCheckedAt: null, domainIssue: 'dns_missing' },
-      });
+      const data = { domain, domainSetAt: new Date(), domainActiveAt: null, domainCheckedAt: null, domainIssue: 'dns_missing' };
+      await prisma.operatorSite.upsert({ where: { operatorId: actor.operatorId }, create: { operatorId: actor.operatorId, ...data }, update: data });
       if (previous) await this.hosts.detach(previous);
       await this.audit.record(actor, { action: 'site.domain_set', entityType: 'operator', entityId: actor.operatorId });
     }
@@ -273,7 +272,7 @@ export class OperatorSiteService {
     await prisma.operatorSite.upsert({
       where: { operatorId },
       create: { operatorId, addonAt },
-      update: { addonAt, addonRequestedAt: active ? null : undefined, ...(active ? {} : { publishedAt: null, domainActiveAt: null }) },
+      update: { addonAt, addonRequestedAt: active ? null : undefined, ...(active ? {} : { publishedAt: null }) },
     });
     await this.audit.record(actor, { action: 'site.addon_set', entityType: 'operator', entityId: operatorId, details: { active } });
     return this.platformView(operatorId);

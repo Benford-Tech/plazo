@@ -2336,7 +2336,6 @@ export const fr = {
     domain: {
       title: "Votre nom de domaine",
       intro: "Votre site peut répondre sur votre propre adresse, par exemple www.parking-des-cedres.fr. Vous gardez votre nom de domaine chez votre fournisseur : il suffit d'y créer un enregistrement.",
-      needsAddon: "Le nom de domaine fait partie de l'option.",
       field: "Nom de domaine",
       placeholder: "www.votre-parking.fr",
       hint: "Conseil : utilisez l'adresse avec « www ». Elle se règle plus facilement chez tous les fournisseurs.",
