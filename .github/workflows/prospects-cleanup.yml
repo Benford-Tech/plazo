@@ -1,0 +1,46 @@
+name: Nettoyage des nouveaux parkings (prospection)
+
+# Removes from Plateforme › Prospection the prospects added by « Nouveaux parkings » that are not airport car parks with a
+# shuttle (23/11/2026, « les prospect ne sont pas des parkings d'aeroport avec navette !!! verifie avant ! »). Kept: the
+# names given in « garder » (checked by hand beforehand). Deleted: the others the workflow created that were never
+# contacted; a prospect listed before only loses its « Nouveau parking » marker. Preview by default, « appliquer » writes.
+# Secrets: PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD (a platform admin). By hand only (.github/scripts/prospects_cleanup.py).
+on:
+  workflow_dispatch:
+    inputs:
+      appliquer:
+        description: "Supprimer pour de bon (sinon un aperçu seulement)"
+        type: boolean
+        default: false
+      garder:
+        description: "Noms vérifiés à garder, séparés par « ; »"
+        type: string
+        default: ""
+      depuis:
+        description: "Créés par le workflow à partir du (AAAA-MM-JJ)"
+        type: string
+        default: "2026-11-22"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prospects-import
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Nettoyage
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          APPLY: ${{ inputs.appliquer }}
+          KEEP: ${{ inputs.garder }}
+          CREATED_SINCE: ${{ inputs.depuis }}
+        run: python3 .github/scripts/prospects_cleanup.py
