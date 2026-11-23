@@ -24,6 +24,7 @@ import { ForumWatchService } from '@/services/forum-watch.service';
 import { InboundWatchService } from '@/services/inbound-watch.service';
 import { ProspectingService } from '@/services/prospecting.service';
 import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
+import { TravellerInviteService } from '@/services/traveller-invite.service';
 import { TravellerCampaignService } from '@/services/traveller-campaign.service';
 import { ValetService } from '@/services/valet.service';
 import { ExtraService } from '@/services/extra.service';
@@ -60,6 +61,7 @@ export class CronController {
   public prospecting = Container.get(ProspectingService);
   public morning = Container.get(MorningEmailService);
   public welcome = Container.get(TravellerWelcomeService);
+  public invite = Container.get(TravellerInviteService);
   public campaigns = Container.get(TravellerCampaignService);
   public inboundWatch = Container.get(InboundWatchService);
   public forumWatch = Container.get(ForumWatchService);
@@ -150,6 +152,16 @@ export class CronController {
     }
   }
 
+  /** 23/11/2026: the WhatsApp invitation to install the app (no email known). Never throws. */
+  private async invitePass(): Promise<Awaited<ReturnType<TravellerInviteService['run']>> | { error: true }> {
+    try {
+      return await this.invite.run();
+    } catch (error) {
+      logger.error(`[Cron] Traveller invite pass failed: ${(error as Error).message}`);
+      return { error: true };
+    }
+  }
+
   /** 15/11/2026: the welcome email to the travellers of the other channels. Never throws. */
   private async welcomePass(): Promise<Awaited<ReturnType<TravellerWelcomeService['run']>> | { error: true }> {
     try {
@@ -230,13 +242,14 @@ export class CronController {
     const phone = await this.phonePass();
     const inbound = await this.inboundWatchPass();
     const welcome = await this.welcomePass();
+    const invite = await this.invitePass();
     const campaigns = await this.campaignPass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; SMS phone: ${JSON.stringify(phone)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}; inbound: ${JSON.stringify(inbound)}; welcome: ${JSON.stringify(welcome)}; campaigns: ${JSON.stringify(campaigns)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; SMS phone: ${JSON.stringify(phone)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}; valet: ${JSON.stringify(valet)}; WhatsApp: ${JSON.stringify(whatsapp)}; inbound: ${JSON.stringify(inbound)}; welcome: ${JSON.stringify(welcome)}; invite: ${JSON.stringify(invite)}; campaigns: ${JSON.stringify(campaigns)}`,
     );
     res
       .status(statusOf(result.sent + result.failed, result.failed))
-      .json({ ...result, sms, prospecting, morning, extras, valet, whatsapp, phone, inbound, welcome, campaigns });
+      .json({ ...result, sms, prospecting, morning, extras, valet, whatsapp, phone, inbound, welcome, invite, campaigns });
   });
 
   /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */

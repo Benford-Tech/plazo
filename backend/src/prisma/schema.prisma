@@ -710,6 +710,14 @@ model InboundEmail {
 
 /// 09/11/2026 (« un job qui parcourt les mails en continu »): the platform's morning report of the inbound emails, one
 /// row per Paris day it was sent (the row is taken before the email leaves: never twice the same day).
+/// 23/11/2026: a traveller who answered STOP to a WhatsApp message of Plazo (sha256 of the number's digits).
+model TravellerPhoneOptout {
+  phoneHash String   @id
+  createdAt DateTime @default(now())
+
+  @@map("traveller_phone_optouts")
+}
+
 /// 15/11/2026: a traveller who clicked « Ne plus recevoir ces messages » under the welcome email (sha256 of the address).
 model TravellerEmailOptout {
   emailHash String   @id
@@ -1038,6 +1046,10 @@ model Reservation {
   /// no_email, failed.
   welcomeEmailAt           DateTime?
   welcomeEmailOutcome      String?
+  /// 23/11/2026: the WhatsApp invitation to install the app, when the traveller's email is unknown: claimed at, and
+  /// its outcome (sent, repeat, opted_out, has_email, no_phone, off, failed).
+  appInviteAt              DateTime?
+  appInviteOutcome         String?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
   /// 03/11/2026: deleted by a manager (an input error, a duplicate, a test): hidden everywhere, restorable 45 days

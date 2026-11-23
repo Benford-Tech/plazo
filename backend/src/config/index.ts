@@ -403,6 +403,9 @@ export const whatsappConfig = () => ({
   businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID?.trim() || '',
 });
 
+// 23/11/2026: the approved template of the invitation to install the app (domain/traveller-invite.ts); empty: none sent.
+export const whatsappInviteTemplate = () => process.env.WHATSAPP_INVITE_TEMPLATE?.trim() || '';
+
 // 06/11/2026 (SEO local, M2): Google Search Console read every night. GOOGLE_SEARCH_CONSOLE_CREDENTIALS is the JSON key of a
 // service account added as a user of the property SEARCH_CONSOLE_PROPERTY (default the domain property of plazo.fr).
 export const searchConsoleConfig = () => ({

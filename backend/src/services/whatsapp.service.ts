@@ -193,7 +193,7 @@ export class WhatsappService {
   public async sendTemplate(
     e164: string,
     params: string[],
-    options: { name?: string; language?: string | null; image?: string | null; from?: string | null } = {},
+    options: { name?: string; language?: string | null; image?: string | null; from?: string | null; button?: string | null } = {},
   ): Promise<SendResult> {
     const { token, template, language, graphVersion } = this.config();
     // 14/11/2026: a parking's own number when it has an active one, else Plazo's.
@@ -202,6 +202,8 @@ export class WhatsappService {
     const components: unknown[] = [];
     if (options.image) components.push({ type: 'header', parameters: [{ type: 'image', image: { link: options.image } }] });
     components.push({ type: 'body', parameters: params.map(text => ({ type: 'text', text })) });
+    // 23/11/2026: the suffix of the template's first URL button (the invitation's short link).
+    if (options.button) components.push({ type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: options.button }] });
     try {
       const res = await fetch(`https://graph.facebook.com/${graphVersion}/${encodeURIComponent(phoneNumberId)}/messages`, {
         method: 'POST',
