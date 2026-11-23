@@ -6017,6 +6017,7 @@ export const travellerMessagesFr = {
     booking_confirmed: "Confirmation",
     booking_reminder: "Veille du dépôt",
     flight_landed: "Atterrissage",
+    app_invite: "Invitation à installer Plazo",
     signature_code: "Code de signature",
     staff_message: "Message de l'équipe",
   } as Record<string, string>,

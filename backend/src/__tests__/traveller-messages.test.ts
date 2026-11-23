@@ -209,6 +209,7 @@ describe('le fil de messages du voyageur (B)', () => {
       inbound: expect.objectContaining({ alerted: 0, operators: 0 }),
       // 15/11/2026: the welcome email to the travellers of the other channels (none here: a booking made on Plazo).
       welcome: { sent: 0, skipped: 0, failed: 0 },
+      invite: { sent: 0, skipped: 0, failed: 0 },
       // 15/11/2026: the platform's emails « Pensez à Plazo » (no campaign here).
       campaigns: { sent: 0, skipped: 0, failed: 0 },
     });

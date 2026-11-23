@@ -37,7 +37,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "13 novembre 2026";
 export const NOTICE_VERSION = "6 novembre 2026";
-export const PRIVACY_VERSION = "19 novembre 2026";
+export const PRIVACY_VERSION = "23 novembre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -378,6 +378,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Cloudflare (réception des e-mails de confirmation que les parkings nous transfèrent, relayés aussitôt vers notre serveur) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
             "selon le choix du parking, Meta (WhatsApp Business), qui transmet la confirmation, le rappel de la veille et le rendez-vous à l’atterrissage depuis le numéro WhatsApp de Plazo : votre numéro et le texte du message passent alors par WhatsApp ; si vous n’avez pas WhatsApp ou ne recevez pas le message, il part par SMS ;",
+            "lorsque votre réservation vient d’un autre canal et que nous n’avons pas votre e-mail, Plazo peut vous envoyer une fois, par WhatsApp, une invitation à installer l’application pour suivre votre réservation et votre navette ; répondez STOP à ce message pour ne plus en recevoir (seule une empreinte de votre numéro est alors gardée, pour ne plus vous écrire) ;",
             "OneSignal (notifications de l’application) ;",
             "Vercel Blob (stockage privé des photos de l’état des lieux, les vôtres comprises, qui ne sont montrées qu’à l’équipe du parking et à vous) ;",
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",

@@ -26,6 +26,8 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { PushService } from './push.service';
 import { lookupNumber } from './public-booking.service';
+import { isStop } from '@/domain/traveller-invite';
+import { TravellerInviteService } from './traveller-invite.service';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappNumberService } from './whatsapp-number.service';
 
@@ -98,7 +100,11 @@ export class WhatsappInboxService {
     let received = 0;
     for (const message of inboundMessagesOf(payload, now)) {
       try {
-        if (await this.store(message, now)) received++;
+        if (await this.store(message, now)) {
+          received++;
+          // 23/11/2026: STOP answered to a message of Plazo: no invitation to that number again.
+          if (isStop(message.text)) await Container.get(TravellerInviteService).optOut(message.from);
+        }
       } catch (error) {
         logger.warn(`[WhatsApp inbox] message not stored: ${error instanceof Error ? error.message : 'unknown error'}`);
       }

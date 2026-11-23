@@ -641,6 +641,17 @@ Mise en place, une fois pour toute la plateforme :
    **Depuis le 15/11/2026, le message de la veille part par SMS seulement** (le texte de ce modèle, rempli) : poser
    `WHATSAPP_REMINDER=on` pour le renvoyer d'abord par WhatsApp. La confirmation et l'atterrissage restent par WhatsApp.
 
+8. Facultatif (23/11/2026), **l'invitation à installer Plazo** pour les voyageurs dont on ne connaît pas l'e-mail : un modèle
+   **Marketing** `plazo_invitation`, langue Français. En-tête **Image** (exemple : `https://www.plazo.fr/whatsapp/plazo-invitation.jpg`) ;
+   corps, mot pour mot (`INVITE_BODY` de `backend/src/domain/traveller-invite.ts`) :
+   « Bonjour {{1}}, votre place au *{{2}}* est réservée {{3}}. » puis, après une ligne vide, « Avec l'app Plazo, gratuite : »
+   et les trois puces « • votre réservation toujours sous la main, sans chercher le mail ; », « • votre navette suivie en
+   direct, à l'aller comme au retour ; », « • votre voiture retrouvée dès l'atterrissage. » (exemples : Camille, Parking des
+   Cèdres, du 20 au 27 novembre) ; pied de page « Répondez STOP pour ne plus en recevoir. » ; un bouton **Visiter le site web**
+   « Installer Plazo », URL **dynamique** `https://www.plazo.fr/a/{{1}}` (exemple `R7KQ2M-x4f9k2ab`). Une fois validé, poser
+   `WHATSAPP_INVITE_TEMPLATE=plazo_invitation` sur Vercel et redéployer : rien ne part avant. Meta facture ce modèle au tarif
+   Marketing et demande l'accord du destinataire.
+
 **Modèle propre à un parking (09/11/2026)** : un parking peut avoir son propre modèle pour un message (par exemple
 `apl_rappel_veille`, le rappel de la veille d'APL Parking Lyon avec la photo de son entrée en en-tête). Le créer chez Meta
 (catégorie Utilitaire, en-tête **Image**, variables du corps dans l'ordre voulu), mettre la photo dans `site/public/whatsapp/`,
