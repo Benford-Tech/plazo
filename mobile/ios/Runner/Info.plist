@@ -69,9 +69,10 @@
 	<string>L'appareil photo sert à photographier le véhicule pour l'état des lieux, à prendre votre photo de profil dans l'application du parking et à scanner votre carte bancaire au paiement, si vous le choisissez.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Vos photos servent uniquement à joindre une photo du véhicule à l'état des lieux, ou à choisir votre photo de profil dans l'application du parking, si vous la choisissez dans votre galerie.</string>
+	<!-- Background location is added for Plazo Pro only, by the release pipelines (its driver shares the shuttle's
+	     position during a trip). Plazo has no persistent location feature: App Review, guideline 2.5.4, 24/11/2026. -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>location</string>
 		<string>remote-notification</string>
 	</array>
 	<!-- The booking links (https://<domain>/ma-reservation/..., /a/<code>) open the app: see Runner.entitlements. -->
