@@ -163,7 +163,17 @@ export class SmsGatewayClient {
       throw new GatewayError('sms_gateway_unreachable');
     }
     if (!res.ok) {
-      logger.warn(`[SMS gateway] ${method} ${path} failed: HTTP ${res.status}`);
+      // 24/11/2026: the gateway's own reason (a 400 said nothing), long digit runs masked so no phone number is logged.
+      const reason = await res
+        .text()
+        .then(t =>
+          t
+            .replace(/\d{4,}/g, '••••')
+            .replace(/\s+/g, ' ')
+            .slice(0, 200),
+        )
+        .catch(() => '');
+      logger.warn(`[SMS gateway] ${method} ${path} failed: HTTP ${res.status}${reason ? ` ${reason}` : ''}`);
       throw errorFor(res.status);
     }
     return res.json().catch(() => ({}));
