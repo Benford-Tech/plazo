@@ -14,6 +14,9 @@ export function sitePath(site: ParkingSiteInfo, page?: string | null, hash = "")
   return `${lp(`${base}${page ? `/${page}` : ""}` || "/")}${site.links?.query ?? ""}${hash}`;
 }
 
+/** Every look but the sober one: bands across the page, the booking brought up under the title. */
+export const isRich = (site: ParkingSiteInfo) => (site.theme ?? "simple") !== "simple";
+
 export const hasPages = (site: ParkingSiteInfo) => (site.pages?.length ?? 0) > 0;
 
 /** What a page name opens: a destination, a fixed page, or nothing (404). */

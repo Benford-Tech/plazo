@@ -115,8 +115,12 @@ export function blocksOf(stored: unknown): SiteBlock[] {
   return 'blocks' in read ? read.blocks : defaultBlocks();
 }
 
-/** The site's look: « simple » (the first one, sober) or « showcase » (24/11/2026: photo behind the title, two colours). */
-export const SITE_THEMES = ['simple', 'showcase'] as const;
+/**
+ * The site's look: « simple » (the first one, sober), « showcase » (24/11/2026: photo behind the title, two colours), and
+ * four more models (24/11/2026, « propose plusieurs modèles de sites »): « night » (dark, for a valet), « postcard » (the
+ * photo fills the first screen), « home » (warm, the phone in view) and « express » (the first price in large).
+ */
+export const SITE_THEMES = ['simple', 'showcase', 'night', 'postcard', 'home', 'express'] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number];
 export const readTheme = (value: unknown): SiteTheme | null => ((SITE_THEMES as readonly unknown[]).includes(value) ? (value as SiteTheme) : null);
 

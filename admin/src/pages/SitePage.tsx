@@ -398,20 +398,22 @@ function LookSection({
       </h2>
       <div className="flex flex-col gap-1">
         <span className={label}>{l.theme}</span>
-        <div role="group" aria-label={l.theme} className="flex gap-2">
-          {(["simple", "showcase"] as const).map((theme) => (
+        <div role="group" aria-label={l.theme} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(["simple", "showcase", "night", "postcard", "home", "express"] as const).map((theme) => (
             <button
               key={theme}
               type="button"
               aria-pressed={look.theme === theme}
               onClick={() => set({ theme })}
-              className={cn("min-h-11 flex-1 rounded-[10px] border px-3 font-semibold", look.theme === theme ? "border-lime-deep bg-[#F1F8E6] text-lime-deep" : "border-border bg-white")}
+              className={cn("min-h-11 rounded-[10px] border px-3 font-semibold", look.theme === theme ? "border-lime-deep bg-[#F1F8E6] text-lime-deep" : "border-border bg-white")}
             >
               {l.themes[theme]}
             </button>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">{l.themeHint}</span>
+        <span className="text-xs text-muted-foreground" data-testid="site-theme-hint">
+          {l.themeHints[look.theme]}
+        </span>
       </div>
 
       <div className="flex flex-col gap-1">

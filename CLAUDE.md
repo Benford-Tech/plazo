@@ -582,6 +582,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `operator-site.test.ts`, `ParkingSite.test.tsx`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore : un texte propre à chaque
      page de départ (le déroulement dit toujours « terminal »), la reprise d'un site existant (C), les pages dans le plan du site,
      Plazo Pro.
+   - **Six modèles de site (24/11/2026, « propose plusieurs model de sites » → « ok », maquettes
+     https://claude.ai/artifact/V7nFxazrt1xGtk8u7xGoCB)** : `OperatorSite.theme` accepte aussi `night` · `postcard` · `home` ·
+     `express` (`SITE_THEMES`, migration `operator_site_models`, CHECK) ; « Mon site » › Présentation : Sobre · Affiche (le
+     style « Vitrine », `showcase`) · Nuit · Carte postale · Maison · Express, une phrase par style (`themeHints`). Site
+     (`ParkingSite`, `isRich` de `lib/parking-site.ts` : tout sauf Sobre a les bandes et la réservation remontée sous le
+     titre) : **Nuit** fond sombre (les jetons de couleur `--color-*` redéfinis sur la racine du site, `TOKENS` : tous les
+     blocs et la réservation suivent ; les bandes prennent un ton de nuit, pas la deuxième couleur), photo assombrie
+     derrière le titre ; **Carte postale** la photo du bandeau sur tout le premier écran, titre au pied, réservation à
+     cheval ; **Maison** tons chauds, téléphone en bouton sous le titre, photo du bandeau à côté ; **Express** fond blanc,
+     premier prix de la grille en très gros (« dès 34,00 € 3 jours », page d'accueil seulement), arguments et note en
+     pastilles, sans photo. Tests `operator-site.test.ts`, `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : une
+     deuxième photo (l'équipe) pour Maison, des titres sans empattement pour Express, Plazo Pro.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

@@ -1,5 +1,8 @@
 import { fr } from "@/lib/fr";
-import { hasPages, PAGE_BLOCKS, pageOf, sitePath } from "@/lib/parking-site";
+import { trustTiles } from "@/lib/highlights";
+import { formatEuros } from "@/lib/money";
+import { priceRows } from "@/lib/parking-more";
+import { hasPages, isRich, PAGE_BLOCKS, pageOf, sitePath } from "@/lib/parking-site";
 import type { ParkingResponse, ParkingSiteInfo, SiteBlock, SiteBlockKind } from "@/lib/types";
 import { BAND_BLOCKS, BLOCKS, knownBlocks, menuEntry } from "./blocks";
 
@@ -13,6 +16,53 @@ const initials = (title: string) =>
     .join("") || title.slice(0, 1).toUpperCase();
 
 const container = "mx-auto w-full max-w-[1040px] px-4 md:px-8";
+
+type Look = NonNullable<ParkingSiteInfo["theme"]>;
+
+/**
+ * The models that have their own ground (24/11/2026): the page's colour tokens are redefined on the site's root, so
+ * every block, the booking included, follows without knowing the model.
+ */
+const TOKENS: Partial<Record<Look, Record<string, string>>> = {
+  night: {
+    "--color-ground": "#10141b",
+    "--color-paper": "#1a212c",
+    // `.card` boxes are drawn on white: in the dark they take the paper's tone.
+    "--color-white": "#1a212c",
+    "--color-tint": "#232c38",
+    "--color-line": "#2f3a49",
+    "--color-line-soft": "#232c38",
+    "--color-ink": "#f2eee6",
+    "--color-soft": "#a8b2be",
+    "--color-accent-dark": "#f0c98a",
+    "--color-ok": "#7fc8a2",
+    "--color-ok-bg": "#17322a",
+    "--color-warn": "#e6b662",
+    "--color-warn-bg": "#35290f",
+    "--color-danger": "#f09aa3",
+    "--color-danger-bg": "#3a1a1f",
+    "--color-danger-line": "#5c2a31",
+    colorScheme: "dark",
+  },
+  home: {
+    "--color-ground": "#fbf4e8",
+    "--color-paper": "#ffffff",
+    "--color-tint": "#f4e9d6",
+    "--color-line": "#eadcc6",
+    "--color-line-soft": "#f2e8d6",
+    "--color-ink": "#3b2a1e",
+    "--color-soft": "#75604f",
+  },
+  express: {
+    "--color-ground": "#ffffff",
+    "--color-paper": "#ffffff",
+    "--color-tint": "#f3f5f7",
+    "--color-line": "#dfe2e6",
+    "--color-line-soft": "#eceef1",
+    "--color-ink": "#0b0b0c",
+    "--color-soft": "#55595f",
+  },
+};
 
 interface Props {
   site: ParkingSiteInfo;
@@ -102,13 +152,18 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
   const opened = page ? pageOf(site, page) : null;
   const pageKind = opened ? (opened.kind === "destination" ? "destination" : opened.kind) : null;
   const blocks = blocksFor(site, pageKind);
-  const showcase = site.theme === "showcase";
+  const look: Look = site.theme ?? "simple";
+  const showcase = look === "showcase";
+  const rich = isRich(site);
   const accent2 = site.accent2 ?? site.accent;
   const colours = {
     "--ps-accent": site.accent,
     "--ps-ink": site.accentInk,
     "--ps-accent2": accent2,
     "--ps-ink2": site.accent2 ? (site.accent2Ink ?? site.accentInk) : site.accentInk,
+    ...TOKENS[look],
+    // One touch of colour in the dark: the bands take a tone of the night, not the second colour.
+    ...(look === "night" ? { "--ps-accent2": "#1a212c", "--ps-ink2": "#f2eee6" } : {}),
   } as React.CSSProperties;
   const destination = opened?.kind === "destination" ? opened.destination : null;
   const heading = destination
@@ -121,8 +176,14 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           ? t.legal
           : parking.title;
   const lead = destination ? t.nearIntro(parking.title, destination.name) : [airport.name, parking.address].filter(Boolean).join(" · ");
-  // In the showcase look the booking sits on the photo's edge, whatever its place in the list.
-  const booking = showcase ? blocks.find(b => b.kind === "booking") : undefined;
+  // In every look but the sober one the booking comes right under the title, whatever its place in the list.
+  const booking = rich ? blocks.find(b => b.kind === "booking") : undefined;
+  const photo = site.heroPhotoUrl ?? null;
+  const veiled = (veil: string) => ({ backgroundImage: `linear-gradient(${veil}), url("${photo}")` });
+  const firstPrice = priceRows(parking.pricing)[0] ?? null;
+  const chips = look === "express" ? trustTiles(parking, airport.code).map(tile => tile.title) : [];
+  const rating = site.rating && !pageKind ? site.rating : null;
+  const ratingText = rating ? rating.value.toFixed(1).replace(".", fr.money.decimal) : "";
   const rest = booking ? blocks.filter(b => b !== booking) : blocks;
   const draw = (block: SiteBlock) => {
     const Block = BLOCKS[block.kind as SiteBlockKind];
@@ -168,29 +229,115 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
         {hasPages(site) && <Menu site={site} blocks={blocks} narrow />}
       </header>
 
-      {showcase ? (
+      {look === "showcase" && (
         <div
           data-testid="site-hero"
           className="relative bg-[var(--ps-accent)] bg-cover bg-center text-white"
-          style={site.heroPhotoUrl ? { backgroundImage: `linear-gradient(rgba(10,20,35,.55), rgba(10,20,35,.55)), url("${site.heroPhotoUrl}")` } : { color: site.accentInk }}
+          style={photo ? veiled("rgba(10,20,35,.55), rgba(10,20,35,.55)") : { color: site.accentInk }}
         >
           <div className={`${container} flex flex-col items-center gap-3 pt-10 text-center md:pt-14 ${booking ? "pb-20" : "pb-10 md:pb-14"}`}>
             <h1 className="font-title text-[32px] leading-[1.1] md:text-[48px]">{heading}</h1>
             <p className="max-w-[60ch] text-[15px] font-medium md:text-[16.5px]">{lead}</p>
-            {site.rating && !pageKind && (
+            {rating && (
               <p data-testid="site-rating" className="flex items-center gap-3 rounded-[12px] bg-paper px-4 py-2 text-left text-ink">
-                <span className="text-[24px] font-bold tabular-nums">{site.rating.value.toFixed(1).replace(".", fr.money.decimal)}</span>
+                <span className="text-[24px] font-bold tabular-nums">{ratingText}</span>
                 <span className="flex flex-col text-[12.5px] leading-tight">
                   <span aria-hidden="true" className="tracking-[2px] text-[var(--ps-accent2)]">
                     ★★★★★
                   </span>
-                  <span className="text-soft">{t.reviews(site.rating.count)}</span>
+                  <span className="text-soft">{t.reviews(rating.count)}</span>
                 </span>
               </p>
             )}
           </div>
         </div>
-      ) : (
+      )}
+      {look === "postcard" && (
+        // The photo fills the first screen; the words sit at its foot.
+        <div
+          data-testid="site-hero"
+          className="relative flex min-h-[70vh] flex-col justify-end bg-dark bg-cover bg-center text-white md:min-h-[82vh]"
+          style={photo ? veiled("rgba(12,24,34,.15), rgba(12,24,34,.72)") : undefined}
+        >
+          <div className={`${container} flex flex-col items-start gap-3 pt-16 ${booking ? "pb-24" : "pb-12"}`}>
+            <h1 className="font-title text-[38px] leading-[1.05] md:text-[64px]">{heading}</h1>
+            <p className="max-w-[55ch] text-[16px] font-medium md:text-[18px]">{lead}</p>
+            {rating && (
+              <p data-testid="site-rating" className="text-[14.5px] font-semibold">
+                {ratingText} <span aria-hidden="true">★</span> · {t.reviews(rating.count)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {look === "night" && (
+        <div data-testid="site-hero" className="bg-ground bg-cover bg-center" style={photo ? veiled("rgba(16,20,27,.78), rgba(16,20,27,.96)") : undefined}>
+          <div className={`${container} flex flex-col items-start gap-3 pt-12 pb-4 md:pt-20 md:pb-8`}>
+            <p className="text-[12.5px] font-semibold tracking-[.18em] text-[var(--ps-accent)] uppercase">{airport.name}</p>
+            <h1 className="max-w-[18ch] font-title text-[36px] leading-[1.1] md:text-[58px]">{heading}</h1>
+            <p className="max-w-[55ch] text-[15.5px] text-soft md:text-[17px]">{destination ? lead : parking.address}</p>
+            {rating && (
+              <p data-testid="site-rating" className="text-[14px] text-soft">
+                <span className="font-semibold text-[var(--ps-accent)]">
+                  {ratingText} <span aria-hidden="true">★</span>
+                </span>{" "}
+                · {t.reviews(rating.count)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {look === "home" && (
+        <div data-testid="site-hero" className={`${container} grid items-center gap-6 pt-8 md:grid-cols-[1.15fr_1fr] md:pt-12`}>
+          <div className="flex flex-col items-start gap-3">
+            <h1 className="font-title text-[32px] leading-[1.12] md:text-[46px]">{heading}</h1>
+            <p className="max-w-[50ch] text-[16px] text-soft">{lead}</p>
+            {rating && (
+              <p data-testid="site-rating" className="text-[14.5px] font-semibold">
+                {ratingText} <span aria-hidden="true" className="text-[var(--ps-accent)]">★</span> · {t.reviews(rating.count)}
+              </p>
+            )}
+            {parking.phone && (
+              <a href={`tel:${parking.phone.replace(/\s/g, "")}`} className="rounded-full border border-line bg-paper px-5 py-2.5 text-[17px] font-bold text-ink tabular-nums no-underline">
+                {t.call} · {parking.phone}
+              </a>
+            )}
+          </div>
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="" className="aspect-[4/3] w-full rounded-[22px] border border-line object-cover" />
+          )}
+        </div>
+      )}
+      {look === "express" && (
+        <div data-testid="site-hero" className={`${container} flex flex-col items-start gap-3 pt-6 md:pt-10`}>
+          <h1 className="text-[30px] leading-[1.08] font-extrabold tracking-tight md:text-[46px]">{heading}</h1>
+          {firstPrice && !pageKind ? (
+            <p data-testid="site-price" className="flex flex-wrap items-baseline gap-x-2.5">
+              <span className="text-[15px] font-semibold text-soft">{fr.home.from}</span>
+              <span className="text-[46px] leading-none font-extrabold text-[var(--ps-accent)] tabular-nums md:text-[60px]">{formatEuros(firstPrice.priceCents)}</span>
+              <span className="text-[15px] font-semibold text-soft">{fr.parkingMore.days(firstPrice.days)}</span>
+            </p>
+          ) : (
+            <p className="max-w-[65ch] text-[15px] font-medium text-soft md:text-[16px]">{lead}</p>
+          )}
+          {(chips.length > 0 || rating) && (
+            <ul className="flex flex-wrap gap-2 text-[13.5px] font-semibold">
+              {chips.map(chip => (
+                <li key={chip} className="rounded-full border border-line px-3 py-1">
+                  {chip}
+                </li>
+              ))}
+              {rating && (
+                <li data-testid="site-rating" className="rounded-full border border-line px-3 py-1">
+                  {ratingText} <span aria-hidden="true">★</span> · {t.reviews(rating.count)}
+                </li>
+              )}
+            </ul>
+          )}
+        </div>
+      )}
+      {look === "simple" && (
         <div className={`${container} flex flex-col gap-2 pt-6 md:pt-10`}>
           <h1 className="font-title text-[30px] leading-[1.1] md:text-[44px]">{heading}</h1>
           <p className="max-w-[65ch] text-[15px] font-medium text-soft md:text-[16px]">{lead}</p>
@@ -198,11 +345,17 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
       )}
 
       <main className="flex flex-1 flex-col gap-8 pb-10 md:gap-10">
-        {booking && (
+        {booking && showcase && (
           <div className={`${container} relative z-10 -mt-12`}>
             <div className="rounded-[18px] bg-[var(--ps-accent2)] p-3 text-[var(--ps-ink2)] md:p-4">{draw(booking)}</div>
           </div>
         )}
+        {booking && look === "postcard" && (
+          <div className={`${container} relative z-10 -mt-16`}>
+            <div className="rounded-[18px] bg-ground p-3 shadow-[0_12px_40px_rgba(12,24,34,.25)] md:p-4">{draw(booking)}</div>
+          </div>
+        )}
+        {booking && !showcase && look !== "postcard" && <div className={`${container} mt-6`}>{draw(booking)}</div>}
         {!booking && <div aria-hidden="true" className="-mb-4" />}
         {destination?.instructions && (
           <section className={`${container} flex flex-col gap-2`}>
@@ -211,7 +364,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           </section>
         )}
         {rest.map(block =>
-          showcase && BAND_BLOCKS.includes(block.kind) ? (
+          rich && BAND_BLOCKS.includes(block.kind) ? (
             <div key={block.id} className="empty:hidden">
               {draw(block)}
             </div>
@@ -228,7 +381,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
         )}
       </main>
 
-      <footer className={showcase ? "bg-[var(--ps-accent)] text-[var(--ps-ink)]" : "border-t border-line bg-paper text-soft"}>
+      <footer className={showcase || look === "postcard" ? "bg-[var(--ps-accent)] text-[var(--ps-ink)]" : "border-t border-line bg-paper text-soft"}>
         <div className={`${container} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4 text-[13px]`}>
           <span>{[parking.title, parking.phone].filter(Boolean).join(" · ")}</span>
           {hasPages(site) && (

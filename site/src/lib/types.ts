@@ -268,7 +268,7 @@ export interface ParkingSiteInfo extends BookingPageInfo {
   /** The parking's own host once it serves the site (missing from an older API). */
   domain?: string | null;
   /** 24/11/2026, the showcase look and the pages (all missing from an older API). */
-  theme?: "simple" | "showcase";
+  theme?: "simple" | "showcase" | "night" | "postcard" | "home" | "express";
   accent2?: string | null;
   accent2Ink?: string | null;
   heroPhotoUrl?: string | null;

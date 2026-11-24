@@ -170,7 +170,9 @@ describe("Mon site", () => {
     expect(look.getByRole("button", { name: "Sobre" })).toHaveAttribute("aria-pressed", "true");
     // No logo yet: the page says where to add it.
     expect(look.getByRole("link", { name: "Parking › Réglages" })).toBeInTheDocument();
-    await user.click(look.getByRole("button", { name: "Vitrine" }));
+    await user.click(look.getByRole("button", { name: "Nuit" }));
+    expect(look.getByTestId("site-theme-hint")).toHaveTextContent("Fond sombre");
+    await user.click(look.getByRole("button", { name: "Affiche" }));
     await user.click(look.getByRole("checkbox"));
     await user.type(look.getByLabelText("Note sur 5"), "4,8");
     await user.type(look.getByLabelText("Nombre d'avis"), "193 avis");
