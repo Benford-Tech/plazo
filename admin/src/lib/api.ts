@@ -218,6 +218,8 @@ const VIEW_AS_KEY = "plazo_admin_view_as";
 export const DEV_VERIFICATION_KEY = "plazo_dev_verification_url";
 /** Fired when the view-as session stops working (expired or revoked). */
 export const VIEW_AS_ENDED_EVENT = "plazo:view-as-ended";
+/** localStorage key of the view-as session, watched by the other tabs. */
+export const VIEW_AS_STORAGE_KEY = VIEW_AS_KEY;
 
 /** API error with the backend's machine-readable code and per-field validation codes. */
 export type PlanId = "essentiel" | "operations" | "complet";
@@ -419,6 +421,12 @@ async function authorizedFetch(
 
   const viewAs = usesOwnSession(endpoint) ? null : getViewAs();
   let res = await send(viewAs?.token ?? getTokens()?.access?.token);
+  // The parking changed while this call was out (another parking opened, here or in another tab): its answer belongs
+  // to the previous parking and must never land in the cache of the new one (24/11/2026, GoPark showing the
+  // platform's own test parking).
+  if (!usesOwnSession(endpoint) && (getViewAs()?.token ?? null) !== (viewAs?.token ?? null)) {
+    throw new ApiError(409, "Parking changed during the call", "session_changed");
+  }
   if (res.status === 401 && viewAs) {
     // No refresh for a view-as session: back to the platform.
     clearViewAs();

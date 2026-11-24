@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { adminApi, ApiError, clearTokens, clearViewAs, getTokens, getViewAs, setTokens, setViewAs, VIEW_AS_ENDED_EVENT } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { adminApi, ApiError, clearTokens, clearViewAs, getTokens, getViewAs, setTokens, setViewAs, VIEW_AS_ENDED_EVENT, VIEW_AS_STORAGE_KEY } from "@/lib/api";
 import type { Staff, TokenData } from "@/lib/types";
 
 interface AuthContextType {
@@ -25,6 +26,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Staff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const fetchMe = useCallback(async () => {
     try {
@@ -51,6 +53,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener(VIEW_AS_ENDED_EVENT, ended);
     return () => window.removeEventListener(VIEW_AS_ENDED_EVENT, ended);
   }, []);
+
+  // The consultation is shared by every tab: another tab that opens another parking (or goes back to its own space)
+  // makes this one follow, with nothing cached from the parking it showed, instead of showing one parking's name
+  // over another parking's data.
+  useEffect(() => {
+    const changed = (e: StorageEvent) => {
+      if (e.key !== VIEW_AS_STORAGE_KEY && e.key !== null) return;
+      queryClient.clear();
+      void fetchMe();
+    };
+    window.addEventListener("storage", changed);
+    return () => window.removeEventListener("storage", changed);
+  }, [fetchMe, queryClient]);
 
   const login = async (email: string, password: string) => {
     const data = await adminApi.login(email, password);
@@ -85,9 +100,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const startViewAs = async (operatorId: string) => {
     const { access, operator } = await adminApi.startViewAs(operatorId);
-    // Going straight from one parking to another (10/11/2026): the previous consultation is closed first.
-    await endViewAsSession();
+    // Going straight from one parking to another (10/11/2026): the new consultation is in place before the previous
+    // one is closed, so no call goes out meanwhile with the person's own session (24/11/2026).
+    const previous = getViewAs();
     setViewAs({ token: access.token, expires: access.expires, operator });
+    if (previous) await adminApi.endViewAs(previous.token).catch(() => undefined);
     await fetchMe();
   };
 
