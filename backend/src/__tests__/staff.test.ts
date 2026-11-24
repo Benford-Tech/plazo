@@ -184,8 +184,13 @@ describe('invitation d’un membre (26/10/2026)', () => {
       const view = await api().post(`/api/internal/platform/operators/${op.operator.id}/view-as`).set(auth(admin.token));
       expect(view.status).toBe(201);
       const viewing = view.body.access.token as string;
-      // The rest of the team stays read-only in consultation.
-      expect((await api().patch(`/api/internal/staff/${member.id}`).set(auth(viewing)).send({ role: 'agent' })).status).toBe(403);
+      // 24/11/2026: the team is managed in consultation; a member's password stays out of reach.
+      expect((await api().patch(`/api/internal/staff/${member.id}`).set(auth(viewing)).send({ role: 'agent' })).status).toBe(200);
+      const password = await api()
+        .post(`/api/internal/staff/${member.id}/reset-password`)
+        .set(auth(viewing))
+        .send({ password: 'nouveau-mot-de-passe' });
+      expect([password.status, password.body.code]).toEqual([403, 'view_as_read_only']);
       const res = await api().post(`/api/internal/staff/${member.id}/invite`).set(auth(viewing));
       expect(res.status).toBe(200);
       expect(res.body.invitation).toEqual({ emailSent: false });

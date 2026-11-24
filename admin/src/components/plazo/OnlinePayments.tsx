@@ -107,7 +107,7 @@ export function OnlinePayments() {
         <h2 id="payout-schedule-title" className={kicker}>
           {t.scheduleTitle}
         </h2>
-        <ScheduleTiles value={current} readOnly={readOnly} onChange={value => value !== current && schedule.mutate(value)} />
+        <ScheduleTiles value={current} readOnly={!!user?.demo} onChange={value => value !== current && schedule.mutate(value)} />
         <p className="text-sm text-muted-foreground">{t.scheduleFootnote}</p>
       </section>
     </div>

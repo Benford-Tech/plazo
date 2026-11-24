@@ -150,7 +150,7 @@ function InviteButton({ member }: { member: Staff }) {
   );
 }
 
-function MemberActions({ member }: { member: Staff }) {
+function MemberActions({ member, noPassword = false }: { member: Staff; noPassword?: boolean }) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(member.role);
   const [password, setPassword] = useState("");
@@ -214,6 +214,7 @@ function MemberActions({ member }: { member: Staff }) {
         </Button>
       )}
       {member.isActive && <InviteButton member={member} />}
+      {!noPassword && (
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -241,6 +242,7 @@ function MemberActions({ member }: { member: Staff }) {
           OK
         </Button>
       </form>
+      )}
     </div>
   );
 }
@@ -367,8 +369,9 @@ function CreateStaffForm() {
 
 export default function TeamPage() {
   const { user } = useAuth();
-  // A platform admin viewing the operator's space: the team stays the operator's (read-only).
-  const readOnly = !!user?.viewAs && !user.viewAs.platformAccount;
+  // 24/11/2026 (« le superadmin peut faire tous les réglages »): a platform admin viewing the operator's space manages
+  // its team; only a member's password stays the member's (the invitation lets them choose it).
+  const consulting = !!user?.viewAs && !user.viewAs.platformAccount;
   const { data: team, isLoading } = useQuery({
     queryKey: ["team"],
     queryFn: adminApi.getTeam,
@@ -378,16 +381,12 @@ export default function TeamPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
-      {readOnly && (
-        <p className="border border-lime-deep p-3 text-base">
-          {fr.viewAs.readOnly} {t.readOnlyInvite}
-        </p>
-      )}
+      {consulting && <p className="border border-lime-deep p-3 text-base">{t.consultingNote}</p>}
       {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen (the code alone
           takes the row when nobody waits). */}
       <div className="grid gap-4 lg:items-start lg:has-[[data-testid=join-requests]]:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
         <JoinCodeCard />
-        <JoinRequestsCard readOnly={readOnly} />
+        <JoinRequestsCard readOnly={false} />
       </div>
       <Card>
         <CardContent className="pt-2">
@@ -455,21 +454,12 @@ export default function TeamPage() {
                   </div>
                 </div>
                 {m.id !== user?.id &&
-                  (readOnly ? (
-                    m.isActive && (
-                      <div className="w-full sm:w-72">
-                        <InviteButton member={m} />
-                      </div>
-                    )
-                  ) : (
-                    <MemberActions key={`${m.id}-${m.role}`} member={m} />
-                  ))}
+                  <MemberActions key={`${m.id}-${m.role}`} member={m} noPassword={consulting} />}
               </li>
             ))}
           </ul>
         </CardContent>
       </Card>
-      {!readOnly && (
         <Card>
           <CardHeader>
             <CardTitle>{t.add}</CardTitle>
@@ -478,7 +468,6 @@ export default function TeamPage() {
             <CreateStaffForm />
           </CardContent>
         </Card>
-      )}
     </>
   );
 }

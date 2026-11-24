@@ -601,13 +601,18 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
         .status,
     ).toBe(403);
 
-    // A client's team stays read-only.
+    // 24/11/2026: a client's team is managed in consultation too; a member's password is not.
     const client = await open(loueur.operator.id);
     expect((await api().get('/api/internal/staff/me').set(auth(client))).body.viewAs.platformAccount).toBe(false);
-    const refused = await api()
+    const added = await api()
       .post('/api/internal/staff')
       .set(auth(client))
-      .send({ firstName: 'Intrus', lastName: 'Inconnu', email: 'intrus@example.com', role: 'driver', password: PASSWORD });
+      .send({ firstName: 'Nadia', lastName: 'Benali', email: 'nadia@example.com', role: 'driver', password: PASSWORD });
+    expect(added.status).toBe(201);
+    const refused = await api()
+      .post(`/api/internal/staff/${loueur.manager.id}/reset-password`)
+      .set(auth(client))
+      .send({ password: 'nouveau-mot-de-passe' });
     expect(refused.status).toBe(403);
     expect(refused.body.code).toBe('view_as_read_only');
   });
@@ -639,17 +644,24 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     ).toBe(403);
   });
 
-  it('laisse l’équipe, les mots de passe et les réglages personnels en lecture seule', async () => {
+  it('24/11/2026 : gère l’équipe du loueur (ajout, nom), tracé en consultation', async () => {
+    const token = await viewAs();
+    const added = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Nadia', lastName: 'Benali', email: 'nadia@example.com', role: 'driver', password: PASSWORD });
+    expect(added.status).toBe(201);
+    const renamed = await api().patch(`/api/internal/staff/${added.body.data.id}`).set(auth(token)).send({ firstName: 'Nadine' });
+    expect(renamed.status).toBe(200);
+    expect(await prisma.staff.count({ where: { operatorId: loueur.operator.id } })).toBe(2);
+    expect(await prisma.auditLog.count({ where: { operatorId: loueur.operator.id, action: 'view_as.write' } })).toBe(2);
+  });
+
+  it('laisse les mots de passe et les réglages personnels en lecture seule', async () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);
     const attempts = [
-      api()
-        .post('/api/internal/staff')
-        .set(auth(token))
-        .send({ firstName: 'Intrus', lastName: 'Inconnu', email: 'intrus@example.com', role: 'manager', password: PASSWORD }),
-      api().patch(`/api/internal/staff/${loueur.manager.id}`).set(auth(token)).send({ firstName: 'Intrus' }),
       api().patch('/api/internal/staff/me').set(auth(token)).send({ firstName: 'Intrus', lastName: 'Inconnu' }),
-      api().patch(`/api/internal/staff/${loueur.manager.id}`).set(auth(token)).send({ isActive: false }),
       api().post(`/api/internal/staff/${loueur.manager.id}/reset-password`).set(auth(token)).send({ password: 'nouveau-mot-de-passe' }),
       api().patch('/api/internal/staff/me/password').set(auth(token)).send({ currentPassword: PASSWORD, newPassword: 'nouveau-mot-de-passe' }),
       api().post('/api/internal/auth/verify-email/resend').set(auth(token)),
@@ -665,7 +677,7 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect((await login(loueur.manager.email)).user.isActive).toBe(true);
   });
 
-  it('laisse le compte Stripe et le calendrier de reversement du loueur en lecture seule', async () => {
+  it('laisse le compte Stripe du loueur en lecture seule, règle son calendrier de reversement (24/11/2026)', async () => {
     process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
     const token = await viewAs();
     expect((await api().get('/api/internal/payments/status').set(auth(token))).status).toBe(200);
@@ -673,11 +685,11 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     const attempts = [
       api().post('/api/internal/payments/onboarding').set(auth(token)),
       api().post('/api/internal/payments/dashboard-link').set(auth(token)),
-      api().put('/api/internal/payments/settings').set(auth(token)).send({ payoutSchedule: 'WEEKLY' }),
     ];
     for (const res of await Promise.all(attempts)) expect([res.status, res.body.code]).toEqual([403, 'view_as_read_only']);
+    expect((await api().put('/api/internal/payments/settings').set(auth(token)).send({ payoutSchedule: 'WEEKLY' })).status).toBe(200);
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: loueur.operator.id } });
-    expect([operator.stripeAccountId, operator.payoutSchedule]).toEqual([null, 'AFTER_STAY']);
+    expect([operator.stripeAccountId, operator.payoutSchedule]).toEqual([null, 'WEEKLY']);
   });
 
   it('10/10/2026 : règle le suivi des navettes et les dessertes du loueur, tracés à son nom', async () => {

@@ -502,7 +502,7 @@ describe("Équipe : demandes en attente", () => {
     );
   });
 
-  it("en consultation d'un loueur, montre les demandes sans permettre d'y répondre", async () => {
+  it("en consultation d'un loueur, les demandes se traitent aussi (24/11/2026)", async () => {
     auth.user = {
       ...manager,
       viewAs: { operatorId: "o1", operatorName: "Parkair Lyon" },
@@ -511,10 +511,10 @@ describe("Équipe : demandes en attente", () => {
     const row = await requestRow("j1");
     expect(
       row.getByRole("button", { name: "Accepter Julie Martin" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(
       row.getByRole("button", { name: "Refuser Julie Martin" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
   });
 
   it("sur le compte de la plateforme en consultation, les demandes se traitent", async () => {
