@@ -99,7 +99,13 @@ export class SmsGatewayClient {
 
   /** Hands the SMS to the gateway; the phone sends it when online (within `ttlSeconds`). */
   public async send(credentials: GatewayCredentials, to: string, text: string, ttlSeconds: number): Promise<GatewayMessage> {
-    const data = await this.request(credentials, 'POST', '/messages', { textMessage: { text }, phoneNumbers: [to], ttl: ttlSeconds });
+    // 24/11/2026: the app's own number check refused real French mobiles (07 2x, « invalid phone number »); Plazo has
+    // already checked the number (smsRecipient), so the app is told not to check it again.
+    const data = await this.request(credentials, 'POST', '/messages?skipPhoneValidation=true', {
+      textMessage: { text },
+      phoneNumbers: [to],
+      ttl: ttlSeconds,
+    });
     if (typeof data?.id !== 'string') throw new GatewayError('sms_gateway_error');
     return { id: data.id, state: parseState(data.state) };
   }
