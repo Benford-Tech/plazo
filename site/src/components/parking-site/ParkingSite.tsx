@@ -29,7 +29,7 @@ function blocksFor(site: ParkingSiteInfo, kind: keyof typeof PAGE_BLOCKS | null)
   return PAGE_BLOCKS[kind].flatMap(k => blocks.filter(b => b.kind === k));
 }
 
-function Menu({ site, blocks }: { site: ParkingSiteInfo; blocks: SiteBlock[] }) {
+function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks: SiteBlock[]; narrow?: boolean }) {
   const t = fr.parkingSite;
   // One page: the menu jumps to the blocks. Several pages: it opens them.
   const entries = hasPages(site)
@@ -41,9 +41,16 @@ function Menu({ site, blocks }: { site: ParkingSiteInfo; blocks: SiteBlock[] }) 
       ]
     : blocks.map(menuEntry).filter(e => e !== null);
   return (
-    <nav aria-label={site.title} className="hidden min-w-0 items-center gap-5 text-[14px] font-medium text-soft lg:flex">
+    <nav
+      aria-label={site.title}
+      className={
+        narrow
+          ? `${container} flex gap-5 overflow-x-auto border-t border-line-soft py-2 text-[14px] font-medium whitespace-nowrap lg:hidden`
+          : "hidden min-w-0 items-center gap-5 text-[14px] font-medium text-soft lg:flex"
+      }
+    >
       {entries.map(entry => (
-        <a key={entry.href} href={entry.href} className="truncate text-soft no-underline hover:text-ink">
+        <a key={entry.href} href={entry.href} className={`${narrow ? "flex-none" : "truncate"} text-soft no-underline hover:text-ink`}>
           {entry.label}
         </a>
       ))}
@@ -157,6 +164,8 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
             {fr.bookingPage.meta}
           </a>
         </div>
+        {/* On a phone the pages of a site with several pages sit in a row that scrolls sideways. */}
+        {hasPages(site) && <Menu site={site} blocks={blocks} narrow />}
       </header>
 
       {showcase ? (

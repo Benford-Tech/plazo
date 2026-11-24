@@ -110,8 +110,8 @@ describe("le site du parking", () => {
     expect(headings()).toContain("D’où partez-vous ?");
     expect(screen.getByRole("link", { name: /En savoir plus ?: Gare TGV/ })).toHaveAttribute("href", "/s/cedres/gare-tgv");
     expect(screen.getByRole("link", { name: "Je réserve en ligne" })).toHaveAttribute("href", "/s/cedres#reserver");
-    const menu = screen.getByRole("navigation", { name: "Parking des Cèdres" });
-    expect(within(menu).getAllByRole("link").map(a => a.getAttribute("href"))).toEqual([
+    const [menu] = screen.getAllByRole("navigation", { name: "Parking des Cèdres" });
+    expect(within(menu!).getAllByRole("link").map(a => a.getAttribute("href"))).toEqual([
       "/s/cedres",
       "/s/cedres/aeroport",
       "/s/cedres/gare-tgv",

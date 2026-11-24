@@ -3095,7 +3095,7 @@ export interface ReservationConversation {
 /** « Site du parking » (19/11/2026, niveau 2 « l'extension WordPress Plazo »). `key` only right after it is created. */
 /** « Ma page de réservation » (Site du parking, niveau 3, 19/11/2026). */
 /** 22/11/2026: « Mon site », the parking's own site made of blocks (GET|PUT /internal/site). */
-export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text" | "destinations" | "cta";
 export interface SiteBlock {
   id: string;
   kind: SiteBlockKind;
@@ -3124,6 +3124,14 @@ export interface SiteSettings {
   saved: boolean;
   accent: string;
   blocks: SiteBlock[];
+  /** 24/11/2026: the look, a second colour, the photo behind the title, the logo, the Google rating typed, several pages. */
+  theme: "simple" | "showcase";
+  accent2: string | null;
+  heroPhotoUrl: string | null;
+  showLogo: boolean;
+  hasLogo: boolean;
+  rating: { value: number; count: number | null } | null;
+  pages: boolean;
   published: boolean;
   listingOnline: boolean;
   listingTitle: string | null;
