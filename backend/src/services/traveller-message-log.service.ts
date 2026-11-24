@@ -26,7 +26,7 @@ export class TravellerMessageLogService {
         select: { id: true, kind: true, status: true, waMessageId: true, errorCode: true, createdAt: true, updatedAt: true },
       }),
       prisma.smsOutbox.findMany({
-        where,
+        where: { ...where, ...teamVisibleKinds(isVerifiedPlatformAdmin(actor)) },
         orderBy: { createdAt: 'desc' },
         take: 100,
         select: { id: true, kind: true, status: true, createdAt: true, updatedAt: true },
