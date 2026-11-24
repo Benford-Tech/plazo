@@ -542,7 +542,7 @@ describe('consultation de la plateforme', () => {
     expect((await api().get('/api/internal/staff/join-code').set(auth(token))).body.code).toBe(await codeOf(loueur));
     expect((await api().get('/api/internal/staff/join-requests').set(auth(token))).body.data).toHaveLength(1);
     const accept = await api().post(`/api/internal/staff/join-requests/${requestId}/accept`).set(auth(token)).send({ role: 'driver' });
-    expect(accept.status).toBe(200);
+    expect(accept.status).toBe(201);
     // Its own account settings are out of reach there.
     expect((await api().post('/api/internal/staff/me/leave').set(auth(token))).status).toBe(403);
     expect((await api().delete('/api/internal/staff/me').set(auth(token)).send({ password: PASSWORD })).status).toBe(403);
