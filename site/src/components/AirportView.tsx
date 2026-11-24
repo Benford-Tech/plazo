@@ -73,7 +73,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
                     <source srcSet={`/images/step-${STEP_PHOTOS[i]}.webp`} type="image/webp" />
                     <img
                       src={`/images/step-${STEP_PHOTOS[i]}.jpg`}
-                      alt=""
+                      alt={title}
                       width={600}
                       height={400}
                       loading="lazy"

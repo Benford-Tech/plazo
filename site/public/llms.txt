@@ -1,0 +1,51 @@
+# Plazo
+
+> Plazo est une plateforme de réservation de parkings privés autour des aéroports, avec navette gratuite vers les terminaux (parfois voiturier). Premier aéroport : Lyon Saint-Exupéry. Les voyageurs comparent les parkings partenaires, voient le prix total pour leurs dates, réservent et paient en ligne, puis suivent la navette en direct le jour du départ et du retour. Plazo est une marque de Benford Tech (France).
+
+Plazo Pro (pro.plazo.fr) est le logiciel des parkings d'aéroport : réservations de tous les canaux (comparateurs, téléphone, site du parking) dans un seul planning, navette et vols retour suivis, plan du parking et clés, contrat et état des lieux signés, messages aux clients, chiffre d'affaires net de commissions.
+
+## Voyageurs : parkings à l'aéroport de Lyon Saint-Exupéry
+
+- [Parkings à l'aéroport de Lyon Saint-Exupéry](https://www.plazo.fr/): comparer les parkings partenaires, prix total pour vos dates, guide complet de l'aéroport et questions fréquentes
+- [Aéroport Parking Lyon](https://www.plazo.fr/lyon-saint-exupery/aeroport-parking-lyon): fiche d'un parking partenaire, tarifs, navette, services et conditions
+- [Parking pas cher](https://www.plazo.fr/lyon-saint-exupery/guide/parking-pas-cher)
+- [Parking longue durée](https://www.plazo.fr/lyon-saint-exupery/guide/parking-longue-duree)
+- [Parking avec voiturier](https://www.plazo.fr/lyon-saint-exupery/guide/parking-voiturier)
+- [Vol tôt le matin](https://www.plazo.fr/lyon-saint-exupery/guide/parking-vol-tot-le-matin)
+- [En famille](https://www.plazo.fr/lyon-saint-exupery/guide/parking-en-famille)
+- [Voiture électrique](https://www.plazo.fr/lyon-saint-exupery/guide/parking-voiture-electrique)
+- [Week-end](https://www.plazo.fr/lyon-saint-exupery/guide/parking-week-end)
+- [Voyage d'affaires](https://www.plazo.fr/lyon-saint-exupery/guide/parking-voyage-affaires)
+- [Gare TGV Lyon Saint-Exupéry](https://www.plazo.fr/lyon-saint-exupery/guide/parking-gare-tgv)
+
+## Voyageurs : venir à l'aéroport en voiture
+
+- [Depuis Grenoble](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-grenoble)
+- [Depuis Chambéry](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-chambery)
+- [Depuis Annecy](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-annecy)
+- [Depuis Saint-Étienne](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-saint-etienne)
+- [Depuis Bourgoin-Jallieu](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-bourgoin-jallieu)
+- [Depuis Vienne](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-vienne)
+- [Depuis Villefranche-sur-Saône](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-villefranche-sur-saone)
+- [Depuis Mâcon](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-macon)
+- [Depuis Bourg-en-Bresse](https://www.plazo.fr/lyon-saint-exupery/guide/depuis-bourg-en-bresse)
+
+## Plazo Pro : le logiciel des parkings d'aéroport
+
+- [Plazo Pro](https://pro.plazo.fr/): présentation du logiciel et questions fréquentes
+- [Tarifs](https://pro.plazo.fr/tarifs): formules, options et commission de la fiche sur Plazo
+- [Choisir un logiciel de parking d'aéroport](https://pro.plazo.fr/choisir-logiciel-parking-aeroport): guide d'achat en sept critères
+- [Logiciel ou Excel](https://pro.plazo.fr/logiciel-ou-excel)
+- [Navette](https://pro.plazo.fr/navette)
+- [Voiturier](https://pro.plazo.fr/voiturier)
+- [Comparateurs](https://pro.plazo.fr/comparateurs): réservations d'Allopark, Onepark, ParkVia, Park Hit, Parclick et ParkMundo importées dans le planning
+- [Contrat et état des lieux](https://pro.plazo.fr/contrat-etat-des-lieux)
+- [Planning des réservations](https://pro.plazo.fr/planning-reservations)
+- [Plan du parking](https://pro.plazo.fr/plan-du-parking)
+- [Messages aux clients](https://pro.plazo.fr/messages-clients)
+
+## Optional
+
+- [Conditions générales](https://www.plazo.fr/conditions)
+- [Mentions légales](https://www.plazo.fr/mentions-legales)
+- [Politique de confidentialité](https://www.plazo.fr/confidentialite)
