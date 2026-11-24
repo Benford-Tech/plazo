@@ -296,6 +296,28 @@ describe('abonnement Plazo Pro (API)', () => {
     expect((await prisma.operator.findUnique({ where: { id: operator.id } }))!.proAgreedMonthlyCents).toBeNull();
   });
 
+  it('cache la facturation à un loueur, sur décision de la plateforme', async () => {
+    const admin = await setupOperator('Plazo (tests)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const { token, operator } = await setupOperator('GoPark');
+    const url = `/api/internal/platform/operators/${operator.id}/pro-billing`;
+
+    expect((await api().put(url).set(auth(token)).send({ hidden: true })).status).toBe(403);
+    expect((await api().put(url).set(auth(admin.token)).send({ hidden: 'oui' })).body.fields).toMatchObject({ hidden: 'invalid' });
+    const set = await api().put(url).set(auth(admin.token)).send({ hidden: true });
+    expect(set.status).toBe(200);
+    expect(set.body.billingHidden).toBe(true);
+
+    expect((await api().get('/api/internal/staff/me').set(auth(token))).body.proBillingHidden).toBe(true);
+    expect((await api().get('/api/internal/subscription').set(auth(token))).body.hidden).toBe(true);
+    const refused = await api().post('/api/internal/subscription').set(auth(token)).send({ plan: 'essentiel' });
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('billing_hidden');
+
+    await api().put(url).set(auth(admin.token)).send({ hidden: false });
+    expect((await api().get('/api/internal/staff/me').set(auth(token))).body.proBillingHidden).toBe(false);
+  });
+
   it("n'offre pas l'annuel avec un prix convenu, et passe un abonnement annuel au mensuel", async () => {
     const admin = await setupOperator('Plazo (tests)');
     process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;

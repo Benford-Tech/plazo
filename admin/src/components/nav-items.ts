@@ -53,6 +53,8 @@ export type NavItem = {
   counter?: Counter;
   /** 13/11/2026: its own tab in the phone's tab bar instead of its section's. */
   ownTab?: boolean;
+  /** 24/11/2026: the Plazo Pro billing, hidden when the platform hides it from the operator (`proBillingHidden`). */
+  billing?: boolean;
 };
 const sub = fr.nav.sub;
 export const NAV: NavItem[] = [
@@ -135,7 +137,7 @@ export const NAV: NavItem[] = [
   { label: sub.signedContracts, to: "/contrats", icon: FileCheck, permission: "parking:manage", section: "manager" },
   { label: sub.plazoContract, to: "/mon-contrat", icon: FileSignature, permission: "parking:manage", section: "manager" },
   // 17/11/2026 (direction B): the Plazo Pro subscription, paid with Stripe.
-  { label: sub.subscription, to: "/abonnement", icon: CreditCard, permission: "parking:manage", section: "manager" },
+  { label: sub.subscription, to: "/abonnement", icon: CreditCard, permission: "parking:manage", section: "manager", billing: true },
 ];
 
 /** Whether the page shown belongs to the entry (its own path, its children's, its detail pages). */

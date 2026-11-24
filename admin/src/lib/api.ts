@@ -266,6 +266,8 @@ export interface AgreedProPrice {
 /** Plateforme › loueur › Paiements (24/11/2026, direction A « Prix négocié »). */
 export interface PlatformProPrice {
   agreed: AgreedProPrice | null;
+  /** 24/11/2026: the Plazo Pro billing hidden from the operator's team. */
+  billingHidden: boolean;
   gridSetupFeeCents: number;
   vatPercent: number;
   plans: { id: PlanId; name: string; gridMonthlyCents: number }[];
@@ -1473,6 +1475,11 @@ export const adminApi = {
     apiRequest<PlatformProPrice>(`/internal/platform/operators/${operatorId}/pro-price`, {
       method: "PUT",
       body: json(v),
+    }),
+  setOperatorBillingHidden: (operatorId: string, hidden: boolean) =>
+    apiRequest<PlatformProPrice>(`/internal/platform/operators/${operatorId}/pro-billing`, {
+      method: "PUT",
+      body: json({ hidden }),
     }),
   subscribe: (plan: PlanId, yearly: boolean) =>
     apiRequest<SubscribeResult>("/internal/subscription", { method: "POST", body: json({ plan, yearly }) }),

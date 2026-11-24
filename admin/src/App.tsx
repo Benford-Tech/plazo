@@ -107,6 +107,12 @@ function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
   return user?.isPlatformAdmin ? <>{children}</> : <Navigate to="/" replace />;
 }
 
+/** 24/11/2026: the Plazo Pro billing pages, gone when the platform hides the billing from the operator. */
+function RequireBillingShown({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return user?.proBillingHidden ? <Navigate to="/" replace /> : <>{children}</>;
+}
+
 function RequirePermission({
   permission,
   children,
@@ -339,7 +345,7 @@ const App = () => (
                 path="/abonnement"
                 element={
                   <RequirePermission permission="parking:manage">
-                    {lazyPage(<SubscriptionPage />)}
+                    <RequireBillingShown>{lazyPage(<SubscriptionPage />)}</RequireBillingShown>
                   </RequirePermission>
                 }
               />

@@ -47,6 +47,8 @@ export interface Staff {
   operatorName?: string;
   /** 02/11/2026: when the parking's logo was last set (null: none), shown next to the Plazo Pro sign. */
   operatorLogoUpdatedAt?: string | null;
+  /** 24/11/2026: the Plazo Pro billing hidden by the platform (no Abonnement, no plans in « Mon contrat »). */
+  proBillingHidden?: boolean;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
   isPlatformAdmin?: boolean;
   /** False until a self sign-up confirms its email (the listing cannot be sent for review before). */

@@ -37,7 +37,9 @@ export default function MorePage() {
   const navigate = useNavigate();
   if (!user) return null;
   const manager = flatPages(
-    NAV.filter((i) => i.section === "manager" && (!i.permission || can(user.role, i.permission))).map((i) => ({
+    NAV.filter(
+      (i) => i.section === "manager" && (!i.permission || can(user.role, i.permission)) && !(i.billing && user.proBillingHidden),
+    ).map((i) => ({
       ...i,
       children: i.children?.filter((c) => !c.permission || can(user.role, c.permission)),
     })),

@@ -40,6 +40,10 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  *   put:
  *     summary: Sets the agreed price ({ plan, monthlyCents | null, setupFeeCents | null, when now | renewal }); 400 fields.plan | monthlyCents | setupFeeCents | when, 404 not_found, 502 stripe_failed
  *     tags: [Subscription]
+ * /internal/platform/operators/{id}/pro-billing:
+ *   put:
+ *     summary: Hides or shows the Plazo Pro billing from the operator's team ({ hidden }); 400 fields.hidden, 404 not_found
+ *     tags: [Subscription]
  */
 export class ProSubscriptionRoute implements Routes {
   public router = Router();
@@ -61,5 +65,6 @@ export class ProSubscriptionRoute implements Routes {
     // 24/11/2026: the price the platform agreed with one operator (direction A « Prix négocié »).
     this.router.get('/internal/platform/operators/:id/pro-price', PlatformAdminMiddleware(), this.subscriptions.platformPrice);
     this.router.put('/internal/platform/operators/:id/pro-price', PlatformAdminMiddleware(), this.subscriptions.setPlatformPrice);
+    this.router.put('/internal/platform/operators/:id/pro-billing', PlatformAdminMiddleware(), this.subscriptions.setPlatformBilling);
   }
 }
