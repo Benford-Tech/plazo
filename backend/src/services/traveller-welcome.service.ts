@@ -21,6 +21,10 @@ const PER_PASS = 40;
 /** A mail the provider refused is tried again after this long, while the booking is still in its window. */
 export const WELCOME_RETRY_MS = 3600_000;
 
+/** « Renvoyer »: not twice within this time. */
+const RESEND_AFTER_MS = 120_000;
+const RESENDABLE: (WelcomeOutcome | 'in_progress')[] = ['sent', 'repeat', 'failed'];
+
 const REPORT_PERIODS = [7, 30, 90];
 /** The list shows at most this many handled bookings (the counts cover them all). */
 const REPORT_ROWS = 300;
@@ -39,6 +43,8 @@ export interface WelcomeReportRow {
   arrivalAt: string;
   handledAt: string;
   outcome: WelcomeOutcome | 'in_progress';
+  /** 24/11/2026: the platform can send it again (an address, a drop-off still to come, no opt-out known from the outcome). */
+  canResend: boolean;
 }
 
 export interface WelcomeReport {
@@ -136,6 +142,7 @@ export class TravellerWelcomeService {
       parking: { name: string; timezone: string; listing: { title: string } | null };
     },
     now: Date,
+    again = false,
   ): Promise<'sent' | 'repeat' | 'opted_out' | 'no_email' | 'failed'> {
     if (await isSilentOperator(r.operatorId)) return 'no_email';
     const email = travellerEmail(r.customerEmail);
@@ -151,7 +158,7 @@ export class TravellerWelcomeService {
         welcomeEmailAt: { gte: new Date(now.getTime() - WELCOME_REPEAT_MS) },
       },
     });
-    if (before) return 'repeat';
+    if (before && !again) return 'repeat';
     const link = this.notifications.appLinkUrl(r);
     const unsubscribeUrl = this.notifications.siteUrl(`/api/public/traveller-emails/unsubscribe/${this.unsubscribeToken(r.id)}`);
     if (!link || !unsubscribeUrl) return 'failed';
@@ -281,6 +288,8 @@ export class TravellerWelcomeService {
         arrivalAt: r.arrivalAt.toISOString(),
         handledAt: (r.welcomeEmailAt as Date).toISOString(),
         outcome: state.outcome,
+        canResend:
+          RESENDABLE.includes(state.outcome) && r.status === 'upcoming' && r.arrivalAt > now && !r.anonymizedAt && !!travellerEmail(r.customerEmail),
       });
     }
     handled.sort((a, b) => b.handledAt.localeCompare(a.handledAt));
@@ -297,6 +306,55 @@ export class TravellerWelcomeService {
       truncated: handled.length > REPORT_ROWS,
       operators: real,
     };
+  }
+
+  /**
+   * 24/11/2026 (« pouvoir renvoyer un mail déjà envoyé »): Plateforme › Mails d'accueil › « Renvoyer ». The same email to
+   * the same traveller, whatever was sent before to that address; never after the drop-off, to an address that opted out,
+   * from an operator who sends nothing, nor twice within two minutes (the claim is the lock).
+   */
+  public async resend(reservationId: string, now: Date = new Date()): Promise<{ emailSent: boolean }> {
+    if (!this.notifications.canSendEmail() || !this.secret()) throw new HttpException(409, 'Email is not configured', 'email_unavailable');
+    const r = await prisma.reservation.findFirst({
+      where: { id: reservationId, channel: { not: 'plazo' }, welcomeEmailAt: { not: null } },
+      select: {
+        id: true,
+        status: true,
+        anonymizedAt: true,
+        welcomeEmailAt: true,
+        welcomeEmailOutcome: true,
+        operatorId: true,
+        reference: true,
+        externalReference: true,
+        manageTokenVersion: true,
+        customerEmail: true,
+        customerFirstName: true,
+        arrivalAt: true,
+        returnAt: true,
+        parking: { select: { name: true, timezone: true, listing: { select: { title: true } } } },
+      },
+    });
+    if (!r || !r.parking.listing) throw new HttpException(404, 'Booking not found', 'not_found');
+    if (r.anonymizedAt || !travellerEmail(r.customerEmail)) throw new HttpException(409, 'No traveller email', 'no_email');
+    if (r.status !== 'upcoming' || r.arrivalAt <= now) throw new HttpException(409, 'The drop-off has passed', 'drop_off_passed');
+    if (await isSilentOperator(r.operatorId)) throw new HttpException(409, 'This operator sends nothing', 'operator_silent');
+    if ((r.welcomeEmailAt as Date).getTime() > now.getTime() - RESEND_AFTER_MS) throw new HttpException(409, 'Sent a moment ago', 'too_soon');
+    const claimed = await prisma.reservation.updateMany({ where: { id: r.id, welcomeEmailAt: r.welcomeEmailAt }, data: { welcomeEmailAt: now } });
+    if (!claimed.count) throw new HttpException(409, 'Sent a moment ago', 'too_soon');
+    const outcome = await this.handle(r, now, true);
+    if (outcome === 'opted_out' || outcome === 'no_email') {
+      // Nothing left: the row goes back to what it was.
+      await prisma.reservation.update({ where: { id: r.id }, data: { welcomeEmailAt: r.welcomeEmailAt } });
+      throw new HttpException(409, 'The address cannot be written to', outcome);
+    }
+    // A mail sent before stays « sent » when this one is refused.
+    const kept = outcome === 'failed' && r.welcomeEmailOutcome === 'sent';
+    await prisma.reservation.update({
+      where: { id: r.id },
+      data: kept ? { welcomeEmailAt: r.welcomeEmailAt } : { welcomeEmailOutcome: outcome },
+    });
+    logger.info(`[TravellerWelcome] Resent by the platform for reservation ${r.id}: ${outcome}`);
+    return { emailSent: outcome === 'sent' };
   }
 
   /**

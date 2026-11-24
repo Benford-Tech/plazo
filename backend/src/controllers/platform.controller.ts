@@ -73,6 +73,14 @@ export class PlatformController {
     res.json(await Container.get(TravellerWelcomeService).sendTest({ email: req.staff.email, firstName: req.staff.firstName ?? '' }, operatorId));
   });
 
+  /** POST /internal/platform/traveller-welcome/:id/resend (24/11/2026, « pouvoir renvoyer un mail déjà envoyé ») */
+  public travellerWelcomeResend = catchAsync(async (req: Request, res: Response) => {
+    const id = String(req.params.id ?? '');
+    if (!/^[a-z0-9]{10,40}$/i.test(id)) throw new ValidationException({ id: 'invalid' });
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerWelcomeService).resend(id));
+  });
+
   /** GET /internal/platform/traveller-welcome?days=7|30|90&operatorId= (18/11/2026: Plateforme › Mails d'accueil) */
   public travellerWelcomeReport = catchAsync(async (req: Request, res: Response) => {
     const operatorId = str(req.query.operatorId)?.trim() || null;

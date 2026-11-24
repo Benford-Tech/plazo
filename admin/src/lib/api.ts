@@ -1621,6 +1621,8 @@ export const adminApi = {
     apiRequest<{ emailSent: boolean }>(`/internal/platform/invitations/${encodeURIComponent(staffId)}/resend`, { method: "POST" }),
   getPlatformInvitations: (view: string) => apiRequest<PlatformInvitations>(`/internal/platform/invitations?view=${encodeURIComponent(view)}`),
   getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
+  resendWelcomeEmail: (reservationId: string) =>
+    apiRequest<{ emailSent: boolean }>(`/internal/platform/traveller-welcome/${encodeURIComponent(reservationId)}/resend`, { method: "POST" }),
   getWelcomeReport: (days: number, operatorId?: string | null) =>
     apiRequest<WelcomeReport>(
       `/internal/platform/traveller-welcome?days=${days}${operatorId ? `&operatorId=${encodeURIComponent(operatorId)}` : ""}`,
