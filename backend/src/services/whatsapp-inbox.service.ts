@@ -26,7 +26,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { PushService } from './push.service';
 import { lookupNumber } from './public-booking.service';
-import { isStop } from '@/domain/traveller-invite';
+import { isStop, teamVisibleKinds } from '@/domain/traveller-invite';
 import { TravellerInviteService } from './traveller-invite.service';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappNumberService } from './whatsapp-number.service';
@@ -407,7 +407,11 @@ export class WhatsappInboxService {
   }
 
   private sentWhere(actor: AuthenticatedStaff, now: Date): Prisma.WhatsappMessageWhereInput {
-    return { operatorId: actor.operatorId, createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) } };
+    return {
+      operatorId: actor.operatorId,
+      createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) },
+      ...teamVisibleKinds(this.platformAdmin(actor)),
+    };
   }
 
   /**
@@ -520,7 +524,7 @@ export class WhatsappInboxService {
       }),
       row.reservationId && row.operatorId
         ? prisma.whatsappMessage.findMany({
-            where: { reservationId: row.reservationId, operatorId: row.operatorId },
+            where: { reservationId: row.reservationId, operatorId: row.operatorId, ...teamVisibleKinds(this.platformAdmin(actor)) },
             orderBy: { createdAt: 'asc' },
             take: 50,
             select: { id: true, kind: true, status: true, body: true, createdAt: true },
@@ -715,7 +719,7 @@ export class WhatsappInboxService {
         include: { staff: { select: { firstName: true } } },
       }),
       prisma.whatsappMessage.findMany({
-        where: { reservationId: reservation.id, operatorId: reservation.operatorId, status: { not: 'failed' } },
+        where: { reservationId: reservation.id, operatorId: reservation.operatorId, status: { not: 'failed' }, ...teamVisibleKinds(false) },
         orderBy: { createdAt: 'asc' },
         take: 50,
         select: { id: true, kind: true, body: true, createdAt: true },

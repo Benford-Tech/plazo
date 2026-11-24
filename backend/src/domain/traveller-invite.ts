@@ -10,6 +10,14 @@ import { whatsappParam } from './whatsapp';
  */
 export const INVITE_KIND = 'app_invite';
 
+/**
+ * 24/11/2026 (« seul l'admin de la plateforme doit voir ces envois »): the invitations are Plazo's own marketing, not the
+ * parking's messages: they are left out of everything the parking's team or the traveller reads, and shown to a verified
+ * platform admin only (in consultation too).
+ */
+export const PLATFORM_ONLY_KINDS = [INVITE_KIND];
+export const teamVisibleKinds = (platformAdmin: boolean) => (platformAdmin ? {} : { kind: { notIn: PLATFORM_ONLY_KINDS } });
+
 /** One invitation per number and operator in this time. */
 export const INVITE_REPEAT_MS = 365 * 86400000;
 
