@@ -6,6 +6,7 @@ import { factsLine, trustTiles } from "@/lib/highlights";
 import { mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { parkingFaq, priceRows } from "@/lib/parking-more";
+import { hasPages, sitePath } from "@/lib/parking-site";
 import type { ParkingResponse, ParkingSiteInfo, SiteBlock, SiteBlockKind } from "@/lib/types";
 
 /**
@@ -256,6 +257,77 @@ function Text({ block }: BlockProps) {
   );
 }
 
+const ICONS: Record<string, string> = {
+  // A plane, a train, a pin: where the shuttle goes.
+  airport: "M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5Z",
+  station: "M12 2c-4 0-8 .5-8 4v9.5A3.5 3.5 0 0 0 7.5 19L6 20.5v.5h2l2-2h4l2 2h2v-.5L16.5 19a3.5 3.5 0 0 0 3.5-3.5V6c0-3.5-4-4-8-4ZM7.5 17a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3.5-7H6V6h5v4Zm2 0V6h5v4h-5Zm3.5 7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z",
+  other: "M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z",
+};
+
+/** « Vos départs » (24/11/2026): one card per place the parking takes its travellers to; each opens its page when the site has pages. */
+function Destinations({ site, block }: BlockProps) {
+  const t = fr.parkingSite;
+  const list = site.destinations ?? [];
+  if (list.length === 0) return null;
+  const band = site.theme === "showcase";
+  const cards = (
+    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {list.map(d => (
+        <li key={d.slug} className={`${card} flex flex-col items-center gap-2 p-5 text-center`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="size-8 fill-[var(--ps-accent)]">
+            <path d={ICONS[d.kind] ?? ICONS.other} />
+          </svg>
+          <h3 className="text-[15px] font-bold tracking-wide uppercase">{d.name}</h3>
+          <p className="text-[14px] leading-relaxed text-soft">{t.destinationText[d.kind] ?? t.destinationText.other}</p>
+          {hasPages(site) && (
+            <a href={sitePath(site, d.slug)} className="mt-auto rounded-[10px] bg-[var(--ps-accent)] px-4 py-2 text-[14px] font-semibold text-[var(--ps-ink)] no-underline">
+              {t.learnMore}
+              <span className="sr-only"> : {d.name}</span>
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+  const title = block.title ?? t.destinationsTitle;
+  if (!band) {
+    return (
+      <Section id="departs" title={title}>
+        {cards}
+      </Section>
+    );
+  }
+  return (
+    <section id="departs" aria-labelledby="departs-titre" className="scroll-mt-20 bg-[var(--ps-accent2)] py-10 text-[var(--ps-ink2)]">
+      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-5 px-4 md:px-8">
+        <h2 id="departs-titre" className={`${heading} text-center`}>
+          {title}
+        </h2>
+        <div className="text-ink">{cards}</div>
+      </div>
+    </section>
+  );
+}
+
+/** « Bande d'appel » (24/11/2026): one sentence and the button that leads to the booking. */
+function Cta({ site, block }: BlockProps) {
+  const t = fr.parkingSite;
+  const band = site.theme === "showcase";
+  return (
+    <section className={`bg-[var(--ps-accent)] text-[var(--ps-ink)] ${band ? "py-10" : "rounded-[16px] py-8"}`}>
+      <div className="mx-auto flex w-full max-w-[1040px] flex-col items-center gap-4 px-4 text-center md:px-8">
+        <h2 className={heading}>{block.title ?? t.ctaTitle}</h2>
+        <a href={sitePath(site, null, "#reserver")} className="rounded-[10px] bg-[var(--ps-accent2)] px-5 py-2.5 text-[15px] font-bold text-[var(--ps-ink2)] no-underline">
+          {t.ctaButton}
+        </a>
+      </div>
+    </section>
+  );
+}
+
+/** Blocks that span the whole width in the showcase look. */
+export const BAND_BLOCKS: readonly string[] = ["destinations", "cta"];
+
 export const BLOCKS: Record<SiteBlockKind, (props: BlockProps) => React.ReactNode> = {
   booking: Booking,
   highlights: Highlights,
@@ -268,6 +340,8 @@ export const BLOCKS: Record<SiteBlockKind, (props: BlockProps) => React.ReactNod
   faq: Faq,
   contact: Contact,
   text: Text,
+  destinations: Destinations,
+  cta: Cta,
 };
 
 /** The anchor and the menu label of a block; null: not in the menu. */
