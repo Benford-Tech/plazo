@@ -23,7 +23,7 @@ import {
 
 const TZ = 'Europe/Paris';
 const KEY = randomBytes(32).toString('base64');
-const GATEWAY_MESSAGES = `${SMS_GATEWAY_CLOUD_URL}/messages`;
+const GATEWAY_MESSAGES = `${SMS_GATEWAY_CLOUD_URL}/messages?skipPhoneValidation=true`;
 const BREVO_SMS_URL = 'https://api.brevo.com/v3/transactionalSMS/send';
 const auth = (value: string) => ({ Authorization: `Bearer ${value}` });
 const inDays = (days: number, time: string) => `${localDateTime(new Date(Date.now() + days * 86400000), TZ).slice(0, 10)}T${time}`;
@@ -275,7 +275,7 @@ describe('envoi par le téléphone du parking', () => {
       .set(auth(op.token))
       .send({ ...GATEWAY_FORM, baseUrl: 'https://sms.parking.example/api' });
     await sms.sendTravellerSms(op.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'test' });
-    expect(calls('https://sms.parking.example/api/messages')).toHaveLength(1);
+    expect(calls('https://sms.parking.example/api/messages?skipPhoneValidation=true')).toHaveLength(1);
     expect(calls(GATEWAY_MESSAGES)).toHaveLength(0);
   });
 
