@@ -34,7 +34,14 @@ function Slider(props: { id: string; label: string; value: number; min: number; 
  * plans at 149 / 299 / 399 € HT, a monthly or yearly price, a calculator on the operator's own numbers, and the listing on
  * Plazo. « Choisir cette formule » opens « Abonnement » with that plan (17/11/2026, paid with Stripe).
  */
-export function PlazoPlans({ operatorName }: { operatorName: string }) {
+export function PlazoPlans({
+  operatorName,
+  agreed = null,
+}: {
+  operatorName: string;
+  /** 24/11/2026: the price the platform agreed with this operator, shown instead of the grid's for its plan. */
+  agreed?: { plan: string | null; monthlyCents: number | null } | null;
+}) {
   const [yearly, setYearly] = useState(false);
   const [bookings, setBookings] = useState(400);
   const [minutes, setMinutes] = useState(3);
@@ -42,8 +49,15 @@ export function PlazoPlans({ operatorName }: { operatorName: string }) {
   const [hourly, setHourly] = useState(18);
   const [planId, setPlanId] = useState("operations");
   const plan = PLAZO_PLANS.find((p) => p.id === planId) ?? PLAZO_PLANS[1];
-  const price = (monthly: number) => (yearly ? yearlyMonthly(monthly) : monthly);
-  const s = savings({ bookingsPerMonth: bookings, minutesPerBooking: minutes, callsPerDay: calls, hourlyCost: hourly, planEuros: price(plan.monthlyEuros) });
+  const agreedFor = (id: string) => (agreed && agreed.plan === id && agreed.monthlyCents != null ? agreed.monthlyCents : null);
+  // The monthly price of a plan in euros, at the year's price when yearly: the agreed one for its plan, else the grid's.
+  const monthlyOf = (p: { id: string; monthlyEuros: number }, y = yearly) => {
+    const cents = agreedFor(p.id);
+    if (cents === null) return y ? yearlyMonthly(p.monthlyEuros) : p.monthlyEuros;
+    return y ? Math.round((cents * 90) / 100) / 100 : cents / 100;
+  };
+  const shown = (n: number) => n.toLocaleString("fr-FR", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 });
+  const s = savings({ bookingsPerMonth: bookings, minutesPerBooking: minutes, callsPerDay: calls, hourlyCost: hourly, planEuros: monthlyOf(plan) });
 
   return (
     <section className="flex flex-col gap-5" data-testid="plazo-plans" aria-labelledby="plazo-plans-title">
@@ -86,11 +100,16 @@ export function PlazoPlans({ operatorName }: { operatorName: string }) {
             <p className="text-sm text-muted-foreground">{p.pitch}</p>
             <p className="flex items-baseline gap-1.5">
               <span className="font-mono text-4xl font-bold tabular-nums" data-testid={`price-${p.id}`}>
-                {price(p.monthlyEuros)} €
+                {shown(monthlyOf(p))} €
               </span>
               <span className="text-[13px] text-muted-foreground">{t.perMonth}</span>
             </p>
-            {!yearly && <p className="-mt-2 text-[13px] font-semibold text-lime-deep">{t.yearlyLine(yearlyMonthly(p.monthlyEuros))}</p>}
+            {agreedFor(p.id) !== null && (
+              <p className="-mt-2 text-[13px] font-semibold text-lime-deep" data-testid={`agreed-${p.id}`}>
+                {t.agreed(shown(yearly ? yearlyMonthly(p.monthlyEuros) : p.monthlyEuros))}
+              </p>
+            )}
+            {!yearly && <p className="-mt-2 text-[13px] font-semibold text-lime-deep">{t.yearlyLine(shown(monthlyOf(p, true)))}</p>}
             <ul className="grid gap-2 text-sm">
               {p.features.map((f, i) => (
                 <li key={f} className={`flex gap-2 ${i === 0 && p.id !== "essentiel" ? "font-semibold text-lime-deep" : ""}`}>
@@ -124,7 +143,7 @@ export function PlazoPlans({ operatorName }: { operatorName: string }) {
             <select id="calc-plan" value={planId} onChange={(e) => setPlanId(e.target.value)} className="min-h-10 rounded-[10px] border border-border bg-card px-3 font-normal">
               {PLAZO_PLANS.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} · {price(p.monthlyEuros)} €
+                  {p.name} · {shown(monthlyOf(p))} €
                 </option>
               ))}
             </select>
@@ -140,7 +159,7 @@ export function PlazoPlans({ operatorName }: { operatorName: string }) {
             [
               [t.hours, `${Math.round(s.hours)} h`],
               [t.value, euros(s.value)],
-              [t.subscription, `− ${euros(price(plan.monthlyEuros))}`],
+              [t.subscription, `− ${euros(monthlyOf(plan))}`],
               [t.paidBack, s.paidBackInDays === null ? "—" : t.days(s.paidBackInDays)],
             ] as const
           ).map(([label, value]) => (

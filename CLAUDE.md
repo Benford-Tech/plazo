@@ -2956,7 +2956,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   abonnement de cette formule passe au nouveau prix (`always_invoice` ou `none`), celui d'une autre formule garde le sien ;
   l'abonnement du gérant, l'aperçu et le changement de formule prennent le prix convenu. Gérant › Abonnement : « Tarif convenu
   avec Plazo (grille 299,00 € HT / mois) » sur la formule et l'abonnement, « Mise en route offerte par Plazo ». Les conditions
-  d'utilisation disent « prix convenu avec Plazo au lieu du prix de la grille ». Tests `pro-subscription.test.ts`,
+  d'utilisation disent « prix convenu avec Plazo au lieu du prix de la grille » ; « Mon contrat » (`PlazoPlans`, prop `agreed` lue sur `GET /internal/subscription`) montre aussi le prix convenu sur sa formule, « Tarif convenu avec Plazo (grille 299 €) », et le calcul l'utilise (24/11/2026, « le prix doit se mettre à jour côté loueur »). Tests `pro-subscription.test.ts`,
   `OperatorProPriceCard.test.tsx`, `SubscriptionPage.test.tsx`.
 - **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
   permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
