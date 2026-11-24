@@ -3128,6 +3128,8 @@ export interface SiteSettings {
   theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express";
   accent2: string | null;
   heroPhotoUrl: string | null;
+  /** The photo of the team, for the « Maison » style. */
+  teamPhotoUrl: string | null;
   showLogo: boolean;
   hasLogo: boolean;
   rating: { value: number; count: number | null } | null;

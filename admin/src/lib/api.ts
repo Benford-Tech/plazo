@@ -1751,6 +1751,9 @@ export const adminApi = {
   setSiteHeroPhoto: (photo: Blob) =>
     apiRequest<{ data: SiteSettings }>("/internal/site/hero-photo", { method: "POST", body: photo, headers: { "Content-Type": photo.type || "image/jpeg" } }),
   removeSiteHeroPhoto: () => apiRequest<{ data: SiteSettings }>("/internal/site/hero-photo", { method: "DELETE" }),
+  setSiteTeamPhoto: (photo: Blob) =>
+    apiRequest<{ data: SiteSettings }>("/internal/site/team-photo", { method: "POST", body: photo, headers: { "Content-Type": photo.type || "image/jpeg" } }),
+  removeSiteTeamPhoto: () => apiRequest<{ data: SiteSettings }>("/internal/site/team-photo", { method: "DELETE" }),
   requestSite: () => apiRequest<{ data: SiteSettings }>("/internal/site/request", { method: "POST" }),
   setSiteDomain: (domain: string | null) => apiRequest<{ data: SiteSettings }>("/internal/site/domain", { method: "PUT", body: json({ domain }) }),
   checkSiteDomain: () => apiRequest<{ data: SiteSettings }>("/internal/site/domain/check", { method: "POST" }),

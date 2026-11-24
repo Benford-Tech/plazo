@@ -172,6 +172,10 @@ describe("Mon site", () => {
     expect(look.getByRole("link", { name: "Parking › Réglages" })).toBeInTheDocument();
     await user.click(look.getByRole("button", { name: "Nuit" }));
     expect(look.getByTestId("site-theme-hint")).toHaveTextContent("Fond sombre");
+    // The photo of the team is asked for in the « Maison » style only.
+    expect(look.queryByLabelText("Photo de l'équipe")).toBeNull();
+    await user.click(look.getByRole("button", { name: "Maison" }));
+    expect(look.getByLabelText("Photo de l'équipe")).toBeInTheDocument();
     await user.click(look.getByRole("button", { name: "Affiche" }));
     await user.click(look.getByRole("checkbox"));
     await user.type(look.getByLabelText("Note sur 5"), "4,8");

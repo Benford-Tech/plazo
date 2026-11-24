@@ -31,6 +31,10 @@ const DOMAIN_RECHECK_MS = 60_000;
 export const MAX_SITE_PHOTO_BYTES = 3 * 1024 * 1024;
 const SITE_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const SITE_PHOTO_FILE = /^[0-9a-f]{18}\.(jpeg|png|webp)$/;
+
+/** The site's own photos, each in its column. */
+export type SitePhotoKind = 'hero' | 'team';
+const PHOTO_COLUMNS = { hero: 'heroPhotoKey', team: 'teamPhotoKey' } as const;
 const fileOf = (key: string) => key.split('/').pop()!;
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Site not found', 'not_found');
@@ -78,7 +82,8 @@ export class OperatorSiteService {
       blocks: blocksOf(operator.site?.blocks),
       theme: readTheme(operator.site?.theme) ?? 'simple',
       accent2: operator.site?.accent2 ?? null,
-      heroPhotoUrl: operator.site?.heroPhotoKey && slug ? this.heroPath(slug, operator.site.heroPhotoKey) : null,
+      heroPhotoUrl: operator.site?.heroPhotoKey && slug ? this.photoPath(slug, 'hero', operator.site.heroPhotoKey) : null,
+      teamPhotoUrl: operator.site?.teamPhotoKey && slug ? this.photoPath(slug, 'team', operator.site.teamPhotoKey) : null,
       showLogo: !!operator.site?.showLogo,
       hasLogo: !!operator.logoUpdatedAt,
       rating: operator.site?.ratingTenths ? { value: operator.site.ratingTenths / 10, count: operator.site.ratingCount ?? null } : null,
@@ -98,45 +103,60 @@ export class OperatorSiteService {
     };
   }
 
-  private heroPath(slug: string, key: string) {
-    return `/api/public/sites/${slug}/hero/${fileOf(key)}`;
+  private photoPath(slug: string, kind: SitePhotoKind, key: string) {
+    return `/api/public/sites/${slug}/${kind}/${fileOf(key)}`;
   }
 
-  /** POST /internal/site/hero-photo (the image's bytes): the photo behind the title of the showcase look. */
-  public async setHeroPhoto(actor: AuthenticatedStaff, body: unknown) {
+  /**
+   * POST /internal/site/hero-photo · team-photo (the image's bytes): the photo behind the title, and (24/11/2026,
+   * « ajoute la photo de l'équipe pour Maison ») the photo of the team shown beside the title in the « home » look.
+   */
+  public async setPhoto(actor: AuthenticatedStaff, kind: SitePhotoKind, body: unknown) {
     if (!Buffer.isBuffer(body) || body.length === 0) throw new ValidationException({ photo: 'required' });
     if (body.length > MAX_SITE_PHOTO_BYTES) throw new ValidationException({ photo: 'too_large' });
     const contentType = sniffImage(body);
     if (!contentType || !SITE_PHOTO_TYPES.includes(contentType)) throw new ValidationException({ photo: 'not_an_image' });
-    const previous = await prisma.operatorSite.findUnique({ where: { operatorId: actor.operatorId }, select: { heroPhotoKey: true } });
-    const key = `operators/${actor.operatorId}/site-hero/${randomBytes(9).toString('hex')}.${contentType.split('/')[1]}`;
+    const column = PHOTO_COLUMNS[kind];
+    const previous = await prisma.operatorSite.findUnique({
+      where: { operatorId: actor.operatorId },
+      select: { heroPhotoKey: true, teamPhotoKey: true },
+    });
+    const key = `operators/${actor.operatorId}/site-${kind}/${randomBytes(9).toString('hex')}.${contentType.split('/')[1]}`;
     await this.storage.put(key, body, contentType);
     await prisma.operatorSite.upsert({
       where: { operatorId: actor.operatorId },
-      create: { operatorId: actor.operatorId, heroPhotoKey: key },
-      update: { heroPhotoKey: key },
+      create: { operatorId: actor.operatorId, [column]: key },
+      update: { [column]: key },
     });
-    if (previous?.heroPhotoKey) await this.storage.remove([previous.heroPhotoKey]);
-    await this.audit.record(actor, { action: 'site.hero_photo_set', entityType: 'operator', entityId: actor.operatorId });
+    if (previous?.[column]) await this.storage.remove([previous[column]]);
+    await this.audit.record(actor, { action: `site.${kind}_photo_set`, entityType: 'operator', entityId: actor.operatorId });
     return this.view(actor);
   }
 
-  /** DELETE /internal/site/hero-photo */
-  public async removeHeroPhoto(actor: AuthenticatedStaff) {
-    const current = await prisma.operatorSite.findUnique({ where: { operatorId: actor.operatorId }, select: { heroPhotoKey: true } });
-    if (current?.heroPhotoKey) {
-      await prisma.operatorSite.update({ where: { operatorId: actor.operatorId }, data: { heroPhotoKey: null } });
-      await this.storage.remove([current.heroPhotoKey]);
-      await this.audit.record(actor, { action: 'site.hero_photo_removed', entityType: 'operator', entityId: actor.operatorId });
+  /** DELETE /internal/site/hero-photo · team-photo */
+  public async removePhoto(actor: AuthenticatedStaff, kind: SitePhotoKind) {
+    const column = PHOTO_COLUMNS[kind];
+    const current = await prisma.operatorSite.findUnique({
+      where: { operatorId: actor.operatorId },
+      select: { heroPhotoKey: true, teamPhotoKey: true },
+    });
+    const key = current?.[column];
+    if (key) {
+      await prisma.operatorSite.update({ where: { operatorId: actor.operatorId }, data: { [column]: null } });
+      await this.storage.remove([key]);
+      await this.audit.record(actor, { action: `site.${kind}_photo_removed`, entityType: 'operator', entityId: actor.operatorId });
     }
     return this.view(actor);
   }
 
-  /** GET /public/sites/:slug/hero/:file — only the photo in use, by its own file name (a new name at each upload). */
-  public async heroPhoto(slug: string, file: string): Promise<StoredPhoto> {
+  /** GET /public/sites/:slug/hero|team/:file — only the photo in use, by its own file name (a new name at each upload). */
+  public async photo(slug: string, kind: SitePhotoKind, file: string): Promise<StoredPhoto> {
     if (!SITE_PHOTO_FILE.test(file)) throw notFound();
-    const operator = await prisma.operator.findUnique({ where: { bookingPageSlug: slug }, select: { site: { select: { heroPhotoKey: true } } } });
-    const key = operator?.site?.heroPhotoKey;
+    const operator = await prisma.operator.findUnique({
+      where: { bookingPageSlug: slug },
+      select: { site: { select: { heroPhotoKey: true, teamPhotoKey: true } } },
+    });
+    const key = operator?.site?.[PHOTO_COLUMNS[kind]];
     const photo = key && fileOf(key) === file ? await this.storage.get(key) : null;
     if (!photo) throw notFound();
     return photo;
@@ -155,8 +175,8 @@ export class OperatorSiteService {
 
   /** The site's photo, erased with the operator. */
   public async blobKeysOf(operatorId: string): Promise<string[]> {
-    const site = await prisma.operatorSite.findUnique({ where: { operatorId }, select: { heroPhotoKey: true } });
-    return site?.heroPhotoKey ? [site.heroPhotoKey] : [];
+    const site = await prisma.operatorSite.findUnique({ where: { operatorId }, select: { heroPhotoKey: true, teamPhotoKey: true } });
+    return [site?.heroPhotoKey, site?.teamPhotoKey].filter((key): key is string => !!key);
   }
 
   /** The parking's own domain: the record to create, and where it stands (waiting for its DNS, for its attachment, active). */
@@ -474,7 +494,8 @@ export class OperatorSiteService {
       theme: readTheme(site?.theme) ?? 'simple',
       accent2,
       accent2Ink: accent2 ? accentInk(accent2) : null,
-      heroPhotoUrl: site?.heroPhotoKey ? this.heroPath(clean, site.heroPhotoKey) : null,
+      heroPhotoUrl: site?.heroPhotoKey ? this.photoPath(clean, 'hero', site.heroPhotoKey) : null,
+      teamPhotoUrl: site?.teamPhotoKey ? this.photoPath(clean, 'team', site.teamPhotoKey) : null,
       logoUrl: site?.showLogo && operator.logoUpdatedAt ? `/api/public/sites/${clean}/logo?v=${operator.logoUpdatedAt.getTime()}` : null,
       rating: site?.ratingTenths ? { value: site.ratingTenths / 10, count: site.ratingCount ?? null } : null,
       destinations,

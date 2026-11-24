@@ -272,6 +272,8 @@ export interface ParkingSiteInfo extends BookingPageInfo {
   accent2?: string | null;
   accent2Ink?: string | null;
   heroPhotoUrl?: string | null;
+  /** The photo of the team, beside the title in the « home » look. */
+  teamPhotoUrl?: string | null;
   logoUrl?: string | null;
   /** The Google rating the manager typed. */
   rating?: { value: number; count: number | null } | null;

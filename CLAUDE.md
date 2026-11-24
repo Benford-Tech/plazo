@@ -592,8 +592,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      derrière le titre ; **Carte postale** la photo du bandeau sur tout le premier écran, titre au pied, réservation à
      cheval ; **Maison** tons chauds, téléphone en bouton sous le titre, photo du bandeau à côté ; **Express** fond blanc,
      premier prix de la grille en très gros (« dès 34,00 € 3 jours », page d'accueil seulement), arguments et note en
-     pastilles, sans photo. Tests `operator-site.test.ts`, `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : une
-     deuxième photo (l'équipe) pour Maison, des titres sans empattement pour Express, Plazo Pro.
+     pastilles, sans photo. Tests `operator-site.test.ts`, `ParkingSite.test.tsx`, `SitePage.test.tsx`. **Photo de l'équipe
+     (24/11/2026, « ajoute la photo de l'équipe pour Maison »)** : `OperatorSite.teamPhotoKey` (migration
+     `operator_site_team_photo`), `POST|DELETE /internal/site/team-photo` et `GET /public/sites/:slug/team/:file` (mêmes
+     règles que la photo du bandeau : `setPhoto` / `removePhoto` / `photo` par genre `hero` · `team`, tracés
+     `site.team_photo_set|removed`), `teamPhotoUrl` des vues ; champ « Photo de l'équipe » de la carte Présentation,
+     montré avec le style Maison seulement (`PhotoField`) ; à côté du titre de Maison, sinon la photo du bandeau.
+     Pas encore : des titres sans empattement pour Express, Plazo Pro.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

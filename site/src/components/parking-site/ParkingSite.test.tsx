@@ -168,4 +168,12 @@ describe("le site du parking", () => {
     render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "night" })} />);
     expect(screen.getByTestId("parking-site").style.getPropertyValue("--color-ground")).toBe("#10141b");
   });
+
+  it("modèle Maison : la photo de l’équipe à côté du titre, sinon celle du bandeau", () => {
+    const { unmount } = render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "home", heroPhotoUrl: "/hero.jpg", teamPhotoUrl: "/equipe.jpg" })} />);
+    expect(screen.getByTestId("site-team-photo")).toHaveAttribute("src", "/equipe.jpg");
+    unmount();
+    render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "home", heroPhotoUrl: "/hero.jpg" })} />);
+    expect(screen.getByTestId("site-team-photo")).toHaveAttribute("src", "/hero.jpg");
+  });
 });

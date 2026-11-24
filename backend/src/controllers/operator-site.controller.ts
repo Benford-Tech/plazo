@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
-import { OperatorSiteService } from '@/services/operator-site.service';
+import { OperatorSiteService, type SitePhotoKind } from '@/services/operator-site.service';
 import catchAsync from '@/utils/catchAsync';
 
 /** « Mon site » (22/11/2026): the parking's own site made of blocks. */
@@ -44,13 +44,15 @@ export class OperatorSiteController {
     res.json({ data: await this.service.setAddon(req.staff, req.params.id as string, req.body?.active) });
   });
 
-  public setHeroPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json({ data: await this.service.setHeroPhoto(req.staff, req.body) });
-  });
+  public setPhoto = (kind: SitePhotoKind) =>
+    catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+      res.json({ data: await this.service.setPhoto(req.staff, kind, req.body) });
+    });
 
-  public removeHeroPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json({ data: await this.service.removeHeroPhoto(req.staff) });
-  });
+  public removePhoto = (kind: SitePhotoKind) =>
+    catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+      res.json({ data: await this.service.removePhoto(req.staff, kind) });
+    });
 
   /** Public images of a site. They are shown on the parking's own host too: any site may display them. */
   private image = (res: Response, photo: { contentType: string; size?: number | null; stream: NodeJS.ReadableStream }, cache: string) => {
@@ -62,9 +64,10 @@ export class OperatorSiteController {
     photo.stream.pipe(res);
   };
 
-  public heroPhoto = catchAsync(async (req: Request, res: Response) => {
-    this.image(res, await this.service.heroPhoto(req.params.slug as string, req.params.file as string), 'public, max-age=604800, immutable');
-  });
+  public photo = (kind: SitePhotoKind) =>
+    catchAsync(async (req: Request, res: Response) => {
+      this.image(res, await this.service.photo(req.params.slug as string, kind, req.params.file as string), 'public, max-age=604800, immutable');
+    });
 
   public logo = catchAsync(async (req: Request, res: Response) => {
     this.image(res, await this.service.logo(req.params.slug as string), 'public, max-age=3600');

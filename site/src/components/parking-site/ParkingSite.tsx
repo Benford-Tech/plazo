@@ -303,9 +303,9 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
               </a>
             )}
           </div>
-          {photo && (
+          {(site.teamPhotoUrl ?? photo) && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="" className="aspect-[4/3] w-full rounded-[22px] border border-line object-cover" />
+            <img data-testid="site-team-photo" src={site.teamPhotoUrl ?? photo ?? undefined} alt="" className="aspect-[4/3] w-full rounded-[22px] border border-line object-cover" />
           )}
         </div>
       )}

@@ -35,6 +35,7 @@ export const STAFF_PHOTO_PATH = `${API_PREFIX}/internal/staff/me/photo`;
 export const OPERATOR_LOGO_PATH = `${API_PREFIX}/internal/operator/logo`;
 export const MEETING_PHOTO_PATH = `${API_PREFIX}/internal/parking/return-meeting-point/photo`;
 export const SITE_HERO_PHOTO_PATH = `${API_PREFIX}/internal/site/hero-photo`;
+export const SITE_TEAM_PHOTO_PATH = `${API_PREFIX}/internal/site/team-photo`;
 
 // The Plazo ↔ operator contract (20/10/2026): the PDF's bytes, 4 MB at most.
 export const PARTNER_CONTRACT_PATH = new RegExp(`^${API_PREFIX}/internal/platform/operators/[^/]+/contracts$`);
@@ -100,6 +101,7 @@ export class App {
     // 13/11/2026: the photo of the return meeting point, a JPEG resized by the pro space, 3 MB at most.
     this.app.post(MEETING_PHOTO_PATH, RawBodyMiddleware(MAX_MEETING_PHOTO_BYTES + 64 * 1024));
     this.app.post(SITE_HERO_PHOTO_PATH, RawBodyMiddleware(MAX_MEETING_PHOTO_BYTES + 64 * 1024));
+    this.app.post(SITE_TEAM_PHOTO_PATH, RawBodyMiddleware(MAX_MEETING_PHOTO_BYTES + 64 * 1024));
     this.app.post(PARTNER_CONTRACT_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     this.app.post(CONTRACT_TEMPLATE_PATH, RawBodyMiddleware(MAX_CONTRACT_BYTES + 64 * 1024));
     // A file of old bookings (28/10/2026): 2 000 rows at most, read under a larger limit than the other requests.
