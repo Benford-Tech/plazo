@@ -12,6 +12,8 @@ import { NotificationService } from './notification.service';
 import { WhatsappService } from './whatsapp.service';
 
 const PER_PASS = 40;
+/** Meta's answers for a template it has not approved yet, paused or disabled: not the traveller's fault, tried again. */
+const TEMPLATE_NOT_READY = new Set(['meta_132001', 'meta_132015', 'meta_132016']);
 
 export interface InviteRunReport {
   sent: number;
@@ -69,6 +71,11 @@ export class TravellerInviteService {
       if (!claimed.count) continue;
       handled++;
       const outcome = await this.handle(r, template, now);
+      if (outcome === 'not_ready') {
+        // Released, and the pass stops: every other booking would get the same answer.
+        await prisma.reservation.updateMany({ where: { id: r.id, appInviteAt: now }, data: { appInviteAt: null } });
+        break;
+      }
       await prisma.reservation.update({ where: { id: r.id }, data: { appInviteOutcome: outcome } });
       if (outcome === 'sent') report.sent++;
       else if (outcome === 'failed') report.failed++;
@@ -92,7 +99,7 @@ export class TravellerInviteService {
     },
     template: string,
     now: Date,
-  ): Promise<InviteOutcome> {
+  ): Promise<InviteOutcome | 'not_ready'> {
     // The welcome email is theirs.
     if (travellerEmail(r.customerEmail)) return 'has_email';
     if (await isSilentOperator(r.operatorId)) return 'off';
@@ -134,6 +141,11 @@ export class TravellerInviteService {
       button: appLinkCode(r, SECRET_KEY as string),
       from,
     });
+    // 24/11/2026: the template is still under Meta's review (or paused): the booking waits, nothing is recorded.
+    if (!result.ok && TEMPLATE_NOT_READY.has(result.code)) {
+      logger.warn(`[WhatsApp] ${INVITE_KIND} template not usable yet (${result.code}): invitations wait`);
+      return 'not_ready';
+    }
     await prisma.whatsappMessage.create({
       data: {
         operatorId: r.operatorId,

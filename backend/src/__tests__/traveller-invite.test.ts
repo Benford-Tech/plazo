@@ -185,4 +185,17 @@ describe('the pass', () => {
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 1 });
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
   });
+
+  it('waits while Meta still reviews the template', async () => {
+    const op = await setupOperator();
+    await withListing(op);
+    const b = await booking(op);
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: { code: 132001 } }), { status: 404 }));
+    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } });
+    expect(row.appInviteAt).toBeNull();
+    expect(await prisma.whatsappMessage.count({ where: { reservationId: b.id } })).toBe(0);
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ messages: [{ id: 'wamid.ok' }] }), { status: 200 }));
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+  });
 });
