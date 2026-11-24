@@ -44,8 +44,26 @@ class PaymentPage extends StatelessWidget implements AutoRouteWrapper {
   Widget build(BuildContext context) => const PaymentView();
 }
 
-class PaymentView extends StatelessWidget {
+class PaymentView extends StatefulWidget {
   const PaymentView({super.key});
+
+  @override
+  State<PaymentView> createState() => _PaymentViewState();
+}
+
+class _PaymentViewState extends State<PaymentView> {
+  // 24/11/2026 (« Impossible de payer »: on a phone, nothing showed under « Comment payer ? »). Stripe's native
+  // widgets (wallet button, card field) sit between two probes laid out in order: the first reached without the
+  // second means one of them could not be laid out, and the step falls back to Stripe's payment sheet.
+  bool _nativeStarted = false;
+  bool _nativeDone = false;
+  bool _nativeBroken = false;
+
+  void _checkNative() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _nativeStarted && !_nativeDone && !_nativeBroken) setState(() => _nativeBroken = true);
+    });
+  }
 
   void _onState(BuildContext context, PaymentState state) {
     if (state.status == PaymentStatus.paid) {
@@ -171,6 +189,9 @@ class PaymentView extends StatelessWidget {
         // 21/10/2026: the services asked with the booking are paid with it.
         final total = b.priceCents == null ? '' : formatEuros(b.priceCents! + b.extrasCents);
         final sheet = state.sheetAvailable(locator<PaymentSheetService>());
+        // Without the page's card field, the button opens Stripe's sheet.
+        final bySheet = sheet && _nativeBroken;
+        if (sheet && !_nativeBroken) _checkNative();
         final notice = switch (state.notice) {
           PaymentNotice.canceled => 'pay.canceled'.tr(),
           PaymentNotice.failed => state.message != null ? 'pay.failed'.tr(args: [state.message!]) : 'pay.failed_generic'.tr(),
@@ -332,68 +353,90 @@ class PaymentView extends StatelessWidget {
             const SizedBox(height: 16),
             Text('pay.how'.tr().toUpperCase(), style: AppText.label(size: 11.5)),
             const SizedBox(height: 8),
-            if (state.walletAvailable) ...[
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  IgnorePointer(
-                    ignoring: state.busy,
-                    child: Opacity(
-                      opacity: state.busy && state.payingWith != PaymentMethodChoice.wallet ? 0.5 : 1,
-                      child: locator<PaymentSheetService>().walletButton(onPressed: () => bloc.add(const PaymentWalletPressed())),
-                    ),
-                  ),
-                  if (state.payingWith == PaymentMethodChoice.wallet)
-                    const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: AppColors.line)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('pay.or_card'.tr(), style: AppText.muted(size: 13)),
-                  ),
-                  const Expanded(child: Divider(color: AppColors.line)),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            Container(
-              key: const Key('payment-card'),
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppRadius.card,
-                border: Border.all(color: state.cardComplete ? AppStatus.ok : AppColors.accentLight, width: 1.5),
-              ),
-              child: Column(
+            if (_nativeBroken)
+              Container(
+                key: const Key('payment-fallback'),
+                padding: const EdgeInsets.all(14),
+                decoration: const BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.card),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.credit_card_rounded, size: 20, color: AppColors.accentDeep),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text('pay.fallback_note'.tr(), style: AppText.body(size: 14))),
+                  ],
+                ),
+              )
+            else
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.credit_card_rounded, size: 20, color: AppColors.accentDeep),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text('pay.card'.tr(), style: AppText.strong(size: 15))),
-                      if (state.cardComplete)
-                        const Icon(Icons.check_circle_rounded, size: 20, color: AppStatus.ok, semanticLabel: 'OK')
-                      else
-                        const _CardBrands(),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
+                  _LayoutProbe(onLayout: () => _nativeStarted = true),
+                  if (state.walletAvailable) ...[
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        IgnorePointer(
+                          ignoring: state.busy,
+                          child: Opacity(
+                            opacity: state.busy && state.payingWith != PaymentMethodChoice.wallet ? 0.5 : 1,
+                            child: locator<PaymentSheetService>().walletButton(onPressed: () => bloc.add(const PaymentWalletPressed())),
+                          ),
+                        ),
+                        if (state.payingWith == PaymentMethodChoice.wallet)
+                          const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider(color: AppColors.line)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('pay.or_card'.tr(), style: AppText.muted(size: 13)),
+                        ),
+                        const Expanded(child: Divider(color: AppColors.line)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: const BoxDecoration(color: AppColors.canvas, borderRadius: AppRadius.field),
-                    child: locator<PaymentSheetService>().cardField(
-                      enabled: !state.busy,
-                      onComplete: (complete) => bloc.add(PaymentCardChanged(complete)),
+                    key: const Key('payment-card'),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppRadius.card,
+                      border: Border.all(color: state.cardComplete ? AppStatus.ok : AppColors.accentLight, width: 1.5),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.credit_card_rounded, size: 20, color: AppColors.accentDeep),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('pay.card'.tr(), style: AppText.strong(size: 15))),
+                            if (state.cardComplete)
+                              const Icon(Icons.check_circle_rounded, size: 20, color: AppStatus.ok, semanticLabel: 'OK')
+                            else
+                              const _CardBrands(),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: const BoxDecoration(color: AppColors.canvas, borderRadius: AppRadius.field),
+                          child: locator<PaymentSheetService>().cardField(
+                            enabled: !state.busy,
+                            onComplete: (complete) => bloc.add(PaymentCardChanged(complete)),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  _LayoutProbe(onLayout: () => _nativeDone = true),
                 ],
               ),
-            ),
           ],
           if (notice != null) ...[
             const SizedBox(height: 10),
@@ -420,8 +463,19 @@ class PaymentView extends StatelessWidget {
             icon: Icons.lock_rounded,
             busy: state.busy && (state.payingWith == PaymentMethodChoice.card || !sheet),
             // The card's button waits for a complete card (greyed until then); web builds go to Stripe Checkout.
-            onPressed: sheet && (!state.cardComplete || state.busy) ? null : () => bloc.add(const PaymentPayPressed()),
+            onPressed: bySheet
+                ? (state.busy ? null : () => bloc.add(const PaymentSheetPressed()))
+                : sheet && (!state.cardComplete || state.busy)
+                ? null
+                : () => bloc.add(const PaymentPayPressed()),
           ),
+          if (sheet && !bySheet)
+            TextButton(
+              key: const Key('payment-other-way'),
+              style: TextButton.styleFrom(minimumSize: const Size(48, 44)),
+              onPressed: state.busy ? null : () => bloc.add(const PaymentSheetPressed()),
+              child: Text('pay.other_way'.tr(), style: AppText.muted(size: 13.5)),
+            ),
           const SizedBox(height: 10),
           Text.rich(
             TextSpan(
@@ -441,6 +495,31 @@ class PaymentView extends StatelessWidget {
           ),
         ];
     }
+  }
+}
+
+/// Tells when the layout reaches it: nothing to see, no height.
+class _LayoutProbe extends LeafRenderObjectWidget {
+  const _LayoutProbe({required this.onLayout});
+
+  final VoidCallback onLayout;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderLayoutProbe(onLayout);
+
+  @override
+  void updateRenderObject(BuildContext context, covariant _RenderLayoutProbe renderObject) => renderObject.onLayout = onLayout;
+}
+
+class _RenderLayoutProbe extends RenderBox {
+  _RenderLayoutProbe(this.onLayout);
+
+  VoidCallback onLayout;
+
+  @override
+  void performLayout() {
+    size = constraints.constrain(Size.zero);
+    onLayout();
   }
 }
 

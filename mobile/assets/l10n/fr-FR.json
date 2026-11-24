@@ -1058,6 +1058,8 @@
     "button": "Payer {}",
     "how": "Comment payer ?",
     "or_card": "ou par carte",
+    "fallback_note": "Le formulaire de carte ne s'affiche pas sur ce téléphone : le bouton ci-dessous ouvre la fenêtre de paiement sécurisée de Stripe.",
+    "other_way": "Un souci avec ce formulaire ? Payer autrement",
     "card": "Carte bancaire",
     "secure": "Paiement sécurisé par Stripe : Plazo ne voit jamais votre carte.",
     "secure_web": "Vous allez être redirigé vers la page de paiement sécurisée Stripe.",

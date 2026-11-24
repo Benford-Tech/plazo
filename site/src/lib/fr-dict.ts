@@ -484,6 +484,16 @@ const frBase = {
     heroFind: "Votre parking à",
     heroNear: (airport: string) => `l’aéroport de ${airport}`,
     heroKicker: "Prêt à partir ?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `Parking aéroport ${a}`,
+    heroIntro: (a: string) => `Parkings privés avec navette autour de ${a}.`,
+    fromPerDay: (p: string) => `dès ${p} par jour`,
+    exactPrice: "prix exact selon vos dates",
+    sort: "Trier",
+    sorts: { cheapest: "Prix le plus bas", shortest: "Trajet le plus court", live: "Navette en direct", dearest: "Prix le plus haut" },
+    startingAt: "À partir de",
+    seePrice: "Voir le prix",
+    cheapest: "Le moins cher",
     mapAvailable: (n: number) =>
       n === 0
         ? "Aucune place à ces dates"

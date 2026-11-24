@@ -377,7 +377,8 @@ workflows:
       - *flutter_packages
       - *release_checks
       - *android_build
-      - name: Sign in with Apple (Plazo Pro) selon son profil App Store
+      - &ios_pro_apple_sign_in
+        name: Sign in with Apple (Plazo Pro) selon son profil App Store
         # 13/10/2026: Plazo Pro shows « Continuer avec Apple » only when its App Store profile (plazo_pro_app_store)
         # carries the « Sign in with Apple » capability. Then the entitlement is added to RunnerPro.entitlements for
         # this build only (never committed: signing with a profile that lacks it would fail) and the IPA gets
@@ -411,7 +412,8 @@ workflows:
           else
             echo "ATTENTION: le profil App Store de Plazo Pro ($IOS_BUNDLE_ID_PLAZO_PRO) n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple (activer la capacité sur l'App ID, régénérer le profil plazo_pro_app_store puis le recharger dans Codemagic sous le même nom)"
           fi
-      - name: Liens de la démo (Plazo Pro) selon son profil App Store
+      - &ios_pro_demo_links
+        name: Liens de la démo (Plazo Pro) selon son profil App Store
         # 19/11/2026 (« pouvoir lancer l'app mobile Plazo Pro en mode démo avec le lien »): https://pro.plazo.fr/pro/demo
         # and /pro/demo/<token> open Plazo Pro only when its App Store profile (plazo_pro_app_store) carries the
         # « Associated Domains » capability. Then applinks:pro.plazo.fr is added to RunnerPro.entitlements for this build
@@ -443,7 +445,8 @@ workflows:
           else
             echo "ATTENTION: le profil App Store de Plazo Pro ($IOS_BUNDLE_ID_PLAZO_PRO) n'a pas la capacité « Associated Domains » : le lien de la démo ouvre la démo web au lieu de l'app (activer la capacité sur l'App ID, régénérer le profil plazo_pro_app_store puis le recharger dans Codemagic sous le même nom)"
           fi
-      - name: Profils de signature dans le projet Xcode (les deux apps)
+      - &ios_profiles
+        name: Profils de signature dans le projet Xcode (les deux apps)
         # ios_signing has put the account's certificate and the two App Store profiles in the keychain; the App
         # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only); Sign in with Apple
         # on Plazo Pro is optional (previous step). One export options plist per app: each keeps only the profile
@@ -460,11 +463,13 @@ workflows:
           /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO_PRO" "$HOME/export_options_traveller.plist"
           cp "$PLIST" "$HOME/export_options_pro.plist"
           /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO" "$HOME/export_options_pro.plist"
-      - name: iOS — IPA des deux apps (release, signés, versionnés)
+      - &ios_build
+        name: iOS — IPA des deux apps (release, signés, versionnés)
         script: |
           set -e
           mkdir -p build/ios/dsym
-          for FLAVOR in traveller pro; do
+          # IOS_FLAVORS: the apps built (both unless a workflow says otherwise).
+          for FLAVOR in ${IOS_FLAVORS:-traveller pro}; do
             # Plazo Pro: « Continuer avec Apple » when the previous steps found the capability in its profile.
             case "$FLAVOR" in
               traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"; EXTRA="" ;;
@@ -503,7 +508,8 @@ workflows:
           done
           ls -1 build/ios/ipa/*.ipa
       - *play_upload
-      - name: App Store Connect — envoi des deux IPA (TestFlight puis revue App Store, notes de version)
+      - &ios_upload
+        name: App Store Connect — envoi des deux IPA (TestFlight puis revue App Store, notes de version)
         ignore_failure: true
         script: |
           # Codemagic caps a build at 120 min: both IPAs are uploaded first without waiting, so Apple processes them
@@ -549,6 +555,50 @@ workflows:
       - build/app/outputs/bundle/*/*.aab
       - build/app/outputs/flutter-apk/*.apk
       - build/app/outputs/mapping/*/mapping.txt
+      - build/ios/ipa/*.ipa
+      - build/ios/dsym/*/*.dSYM
+
+  mobile-ios-pro-testflight:
+    name: Plazo Pro — iOS seul avec Xcode 27 → TestFlight (essai, sans soumission)
+    # 24/11/2026 (Apple, ITMS-90725 on Plazo Pro 1.0.147: from April 2027 an upload must be built with the iOS 27
+    # SDK): a trial of Xcode 27 on one app, to TestFlight only, nothing for Google Play and no App Review. The other
+    # workflows stay on the pinned Xcode until this one passes. By hand only.
+    instance_type: mac_mini_m2
+    max_build_duration: 75
+    working_directory: mobile
+    integrations:
+      app_store_connect: lovenest-asc
+    environment:
+      <<: *env_versions
+      xcode: 27.1
+      ios_signing:
+        certificates:
+          - thempo-distribution
+        provisioning_profiles:
+          - plazo_app_store
+          - plazo_pro_app_store
+      groups:
+        - mobile_secrets
+      vars:
+        <<: *android_vars
+        IOS_BUNDLE_ID_PLAZO: com.benfordtech.plazo
+        IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.plazopro
+        APP_STORE_APP_ID_PLAZO: "6821635235"
+        APP_STORE_APP_ID_PLAZO_PRO: "6821635650"
+        IOS_FLAVORS: pro
+        APP_STORE_SUBMIT: "false"
+        APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
+    scripts:
+      - *release_version
+      - *flutter_packages
+      - *release_checks
+      - *ios_pro_apple_sign_in
+      - *ios_pro_demo_links
+      - *ios_profiles
+      - *ios_build
+      - *ios_upload
+      - *publish_summary
+    artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/dsym/*/*.dSYM
 

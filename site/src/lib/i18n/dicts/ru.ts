@@ -462,6 +462,16 @@ export const ru: Dict = {
     heroFind: "Ваша парковка",
     heroNear: (airport: string) => `у аэропорта ${airport}`,
     heroKicker: "Готовы в путь?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `Парковка аэропорт ${a}`,
+    heroIntro: (a: string) => `Частные парковки с трансфером рядом с ${a}.`,
+    fromPerDay: (p: string) => `от ${p} в день`,
+    exactPrice: "точная цена для ваших дат",
+    sort: "Сортировка",
+    sorts: { cheapest: "Самая низкая цена", shortest: "Самый короткий путь", live: "Трансфер онлайн", dearest: "Самая высокая цена" },
+    startingAt: "От",
+    seePrice: "Смотреть цену",
+    cheapest: "Самая дешёвая",
     mapAvailable: (n: number) =>
       n === 0
         ? "Нет мест на эти даты"

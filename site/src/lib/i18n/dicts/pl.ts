@@ -465,6 +465,16 @@ export const pl: Dict = {
     heroFind: "Parking przy",
     heroNear: (airport: string) => `lotnisku ${airport}`,
     heroKicker: "Gotowi do drogi?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `Parking lotnisko ${a}`,
+    heroIntro: (a: string) => `Prywatne parkingi z transferem wokół ${a}.`,
+    fromPerDay: (p: string) => `od ${p} za dzień`,
+    exactPrice: "dokładna cena dla Twoich dat",
+    sort: "Sortuj",
+    sorts: { cheapest: "Najniższa cena", shortest: "Najkrótszy dojazd", live: "Transfer na żywo", dearest: "Najwyższa cena" },
+    startingAt: "Od",
+    seePrice: "Zobacz cenę",
+    cheapest: "Najtańszy",
     mapAvailable: (n: number) =>
       n === 0
         ? "Brak miejsc w tych dniach"
