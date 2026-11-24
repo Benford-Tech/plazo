@@ -48,7 +48,8 @@ const RECONCILE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_RECONCILE_PER_RUN = 15;
 
 // 13/11/2026: 'staff_message', a message the team writes from Plazo Pro (« Écrire au client »).
-export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test', 'staff_message'] as const;
+// 24/11/2026: 'app_invite', the invitation to install the app, from the parking's own phone.
+export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test', 'staff_message', 'app_invite'] as const;
 export type SmsKind = (typeof SMS_KINDS)[number];
 
 export interface TravellerSms {
@@ -572,6 +573,7 @@ export class SmsService {
   private async renderBody(row: SmsOutbox): Promise<string | null> {
     if (row.kind === 'test') return this.testText();
     if (row.kind === 'signature_code') return null; // never stored, never resent: a new code is asked for instead
+    if (row.kind === 'app_invite') return row.body; // the text is kept with the row
     if (!row.reservationId) return null;
     const booking = await prisma.reservation.findUnique({ where: { id: row.reservationId }, include: WITH_LISTING });
     if (!booking || booking.status === 'cancelled') return null;

@@ -1,6 +1,7 @@
+import { randomBytes } from 'crypto';
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { inviteHour, isStop, phoneHash, stayLabel } from '@/domain/traveller-invite';
+import { inviteHour, inviteSms, isStop, phoneHash, stayLabel } from '@/domain/traveller-invite';
 import { NotificationService } from '@/services/notification.service';
 import { TravellerInviteService } from '@/services/traveller-invite.service';
 import { WhatsappService } from '@/services/whatsapp.service';
@@ -184,5 +185,108 @@ describe('the pass', () => {
     fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: { code: 131026 } }), { status: 400 }));
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 1 });
     expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+  });
+
+  it('waits while Meta still reviews the template', async () => {
+    const op = await setupOperator();
+    await withListing(op);
+    const b = await booking(op);
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ error: { code: 132001 } }), { status: 404 }));
+    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+    const row = await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } });
+    expect(row.appInviteAt).toBeNull();
+    expect(await prisma.whatsappMessage.count({ where: { reservationId: b.id } })).toBe(0);
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ messages: [{ id: 'wamid.ok' }] }), { status: 200 }));
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+  });
+
+  describe("by SMS from the parking's phone (24/11/2026, « A, le sms doit être envoyé avec le numéro du parking »)", () => {
+    const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+    const smsCalls = () => fetchMock.mock.calls.filter(([u]) => !String(u).includes('graph.facebook.com'));
+    async function linked(op: Op) {
+      process.env.SMS_GATEWAY_ENCRYPTION_KEY = randomBytes(32).toString('base64');
+      const res = await api()
+        .put('/api/internal/sms/settings')
+        .set(auth(op.token))
+        .send({ mode: 'gateway', login: 'AB12CD', password: 's3cret-from-the-app', senderPhone: '+33612345679' });
+      expect(res.status).toBe(200);
+      fetchMock.mockClear();
+    }
+    const reviewing = () =>
+      fetchMock.mockImplementation(async url =>
+        String(url).includes('graph.facebook.com')
+          ? new Response(JSON.stringify({ error: { code: 132001 } }), { status: 404 })
+          : new Response(JSON.stringify({ id: 'gw-1', state: 'Pending' }), { status: 202, headers: { 'Content-Type': 'application/json' } }),
+      );
+    const admins = process.env.PLATFORM_ADMIN_EMAILS;
+    afterEach(() => {
+      process.env.PLATFORM_ADMIN_EMAILS = admins;
+      delete process.env.SMS_GATEWAY_ENCRYPTION_KEY;
+    });
+
+    it('fits one SMS', () => {
+      const text = inviteSms({
+        firstName: 'Camille',
+        parking: 'Parking des Cèdres',
+        arrivalAt: new Date('2026-11-20T05:30:00Z'),
+        timeZone: 'Europe/Paris',
+        link: 'https://www.plazo.fr/a/R7KQ2M-x4f9k2ab',
+      });
+      expect(text).toBe(
+        'Bonjour Camille, votre place au Parking des Cèdres est réservée le 20/11. Suivez votre navette en direct avec Plazo : https://www.plazo.fr/a/R7KQ2M-x4f9k2ab',
+      );
+      expect(text.length).toBeLessThanOrEqual(160);
+    });
+
+    it("leaves from the parking's phone while Meta reviews the template, once", async () => {
+      const op = await setupOperator();
+      await withListing(op);
+      await linked(op);
+      reviewing();
+      const first = await booking(op);
+      await booking(op);
+      expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 1, failed: 0 });
+      const rows = await prisma.smsOutbox.findMany({ where: { operatorId: op.operator.id, kind: 'app_invite' } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ reservationId: first.id, provider: 'gateway', to: '+33612345678' });
+      expect(rows[0].body).toContain(`est réservée le 28/11. Suivez votre navette en direct avec Plazo : https://site.example/a/${first.reference}-`);
+      // Meta was asked once for the whole pass.
+      expect(fetchMock.mock.calls.filter(([u]) => String(u).includes('graph.facebook.com'))).toHaveLength(1);
+      expect(smsCalls().length).toBeGreaterThan(0);
+      expect(await prisma.whatsappMessage.count()).toBe(0);
+      // The platform's to see, like the WhatsApp one.
+      process.env.PLATFORM_ADMIN_EMAILS = 'someone-else@example.com';
+      const log = await api().get(`/api/internal/reservations/${first.id}/messages`).set(auth(op.token));
+      const list = await api().get('/api/internal/whatsapp/sent').set(auth(op.token));
+      expect([log.body.data, list.body.data]).toEqual([[], []]);
+    });
+
+    it('leaves by SMS where WhatsApp is off or has no template, never through Brevo', async () => {
+      const op = await setupOperator();
+      await withListing(op);
+      await linked(op);
+      reviewing();
+      service.template = () => '';
+      await booking(op);
+      expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+      // Another parking, whose SMS go through Plazo's Brevo account: it waits for the template.
+      const other = await setupOperator();
+      await withListing(other);
+      await prisma.operatorSmsSettings.create({ data: { operatorId: other.operator.id, mode: 'brevo' } });
+      const waiting = await booking(other, { customerPhone: '06 11 22 33 44' });
+      expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 0, failed: 0 });
+      expect((await prisma.reservation.findUniqueOrThrow({ where: { id: waiting.id } })).appInviteAt).toBeNull();
+      expect(await prisma.smsOutbox.count({ where: { operatorId: other.operator.id } })).toBe(0);
+    });
+
+    it('goes by WhatsApp once the template is approved', async () => {
+      const op = await setupOperator();
+      await withListing(op);
+      await linked(op);
+      await booking(op);
+      expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+      expect(sent()).toHaveLength(1);
+      expect(await prisma.smsOutbox.count({ where: { kind: 'app_invite' } })).toBe(0);
+    });
   });
 });

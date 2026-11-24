@@ -1692,11 +1692,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      après un STOP (`traveller_phone_optouts`, sha256 du numéro, posé par `WhatsappInboxService.receive` quand un message reçu commence
      par STOP, `isStop`) ; un refus de Meta n'est pas réessayé. `Reservation.appInviteAt/appInviteOutcome` (migration `app_invite`, qui
      marque les réservations d'avant), ligne `whatsapp_messages` de genre `app_invite` (« Invitation à installer Plazo » dans « Messages
-     au voyageur »). Politique de confidentialité (prestataires). Test `traveller-invite.test.ts`. **Modèle validé chez Meta et
-     `WHATSAPP_INVITE_TEMPLATE=plazo_invitation` posé sur Vercel le 24/11/2026.** **Vus par la plateforme seulement (24/11/2026, « seul
+     au voyageur »). Politique de confidentialité (prestataires). Test `traveller-invite.test.ts`. **Modèle `plazo_invitation` soumis à Meta le 24/11/2026, « En cours d'examen »** (capture de WhatsApp Manager ; `WHATSAPP_INVITE_TEMPLATE=plazo_invitation` posé sur Vercel) : tant que Meta répond que le modèle n'est pas utilisable (`meta_132001`, en pause `132015`, désactivé `132016`, `TEMPLATE_NOT_READY`), la réservation est rendue et attend, le passage s'arrête, rien n'est noté. **Vus par la plateforme seulement (24/11/2026, « seul
      l'admin de la plateforme doit voir ces envois »)** : `PLATFORM_ONLY_KINDS` / `teamVisibleKinds` de `domain/traveller-invite.ts` : ni
      « Messages au voyageur » de la fiche, ni « Envoyés » et la conversation de « Messages », ni le fil de l'app Plazo ne montrent
-     `app_invite`, sauf à un administrateur vérifié de la plateforme (consultation comprise). Pas encore : un suivi côté plateforme.
+     `app_invite`, sauf à un administrateur vérifié de la plateforme (consultation comprise). **Par SMS du téléphone du parking, version A (24/11/2026, « propose une maquette sms »,
+     maquettes https://claude.ai/artifact/C6gFvUpN9wZH8jFi849A5T, « A, le sms doit être envoyé avec le numéro du parking »)** : tant que
+     Meta ne rend pas le modèle utilisable (ou sans `WHATSAPP_INVITE_TEMPLATE`, ou WhatsApp éteint pour le parking), la même invitation
+     part en un SMS depuis le téléphone du parking (mode `gateway` seulement, jamais le Brevo de Plazo ; `sendSmsOnly`, genre
+     `app_invite`, texte gardé pour les nouveaux essais) : « Bonjour Camille, votre place au <parking> est réservée le 20/11. Suivez
+     votre navette en direct avec Plazo : <lien court> » (`inviteSms`, 156 caractères avec un nom de 18) ; mêmes règles (une fois par
+     numéro et par loueur sur 12 mois, 07:00–21:00, jamais un loueur muet) ; un parking sans téléphone relié attend le modèle
+     (WhatsApp allumé) ou n'envoie rien (`off`) ; Meta n'est interrogé qu'une fois par passage ; un STOP reçu par le téléphone du
+     parking (`receiveSms`) ferme aussi le numéro ; le SMS n'est montré qu'à la plateforme, comme le WhatsApp (`sentSmsWhere`,
+     « Messages au voyageur »). Une fois le modèle « Actif », WhatsApp reprend. Pas encore : un suivi côté plateforme.
    - **Lien d'avis Google, option B (22/11/2026, « Comment bombarder le référencement » → « Ok », maquettes
      https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : le gérant colle une fois le lien « Demander des avis » de la fiche Google
      de son parking dans « Ma fiche » (« Lien d'avis Google (facultatif) », `l-review` ; `Listing.googleReviewUrl`, migration

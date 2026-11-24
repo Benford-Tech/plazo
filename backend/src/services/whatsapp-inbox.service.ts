@@ -26,7 +26,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { PushService } from './push.service';
 import { lookupNumber } from './public-booking.service';
-import { isStop, teamVisibleKinds } from '@/domain/traveller-invite';
+import { isStop, PLATFORM_ONLY_KINDS, teamVisibleKinds } from '@/domain/traveller-invite';
 import { TravellerInviteService } from './traveller-invite.service';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappNumberService } from './whatsapp-number.service';
@@ -227,6 +227,8 @@ export class WhatsappInboxService {
       }
       throw error;
     }
+    // 24/11/2026: a STOP answered to the parking's phone closes the invitations to that number too.
+    if (isStop(sms.text)) await Container.get(TravellerInviteService).optOut(phone);
     const reservation = place.reservationId
       ? await prisma.reservation.findUnique({ where: { id: place.reservationId }, select: { customerName: true, reference: true } })
       : null;
@@ -401,7 +403,7 @@ export class WhatsappInboxService {
     ]);
     const [sentWhatsapp, sentSms] = await Promise.all([
       prisma.whatsappMessage.count({ where: this.sentWhere(actor, now) }),
-      prisma.smsOutbox.count({ where: this.sentSmsWhere(actor.operatorId, now) }),
+      prisma.smsOutbox.count({ where: this.sentSmsWhere(actor.operatorId, now, undefined, this.platformAdmin(actor)) }),
     ]);
     return { data: rows.map(row => this.view(row, now)), counts: { unread, all, handled, unknown, sent: sentWhatsapp + sentSms } };
   }
@@ -419,11 +421,12 @@ export class WhatsappInboxService {
    * these 30 days. Not the team's own messages (« Écrire au client », replies: already in their conversation), not the
    * tests to a member, never a signature code.
    */
-  private sentSmsWhere(operatorId: string | null, now: Date, reservationId?: string): Prisma.SmsOutboxWhereInput {
+  private sentSmsWhere(operatorId: string | null, now: Date, reservationId?: string, platformAdmin = false): Prisma.SmsOutboxWhereInput {
     return {
       operatorId: operatorId ?? '',
       ...(reservationId ? { reservationId } : {}),
-      kind: { notIn: ['staff_message', 'test', 'reminder_test', 'signature_code'] },
+      // 24/11/2026: the invitation to install the app is the platform's to see, by SMS as by WhatsApp.
+      kind: { notIn: ['staff_message', 'test', 'reminder_test', 'signature_code', ...(platformAdmin ? [] : PLATFORM_ONLY_KINDS)] },
       createdAt: { gte: new Date(now.getTime() - INBOX_RETENTION_DAYS * 86400000) },
     };
   }
@@ -435,7 +438,7 @@ export class WhatsappInboxService {
    */
   public async sent(actor: AuthenticatedStaff, now = new Date()) {
     const smsRows = await prisma.smsOutbox.findMany({
-      where: this.sentSmsWhere(actor.operatorId, now),
+      where: this.sentSmsWhere(actor.operatorId, now, undefined, this.platformAdmin(actor)),
       orderBy: { createdAt: 'desc' },
       take: 300,
       select: {
@@ -532,7 +535,7 @@ export class WhatsappInboxService {
         : Promise.resolve([]),
       row.reservationId && row.operatorId
         ? prisma.smsOutbox.findMany({
-            where: this.sentSmsWhere(row.operatorId, now, row.reservationId),
+            where: this.sentSmsWhere(row.operatorId, now, row.reservationId, this.platformAdmin(actor)),
             orderBy: { createdAt: 'asc' },
             take: 50,
             select: { id: true, kind: true, status: true, body: true, createdAt: true },
