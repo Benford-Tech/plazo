@@ -1692,8 +1692,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      après un STOP (`traveller_phone_optouts`, sha256 du numéro, posé par `WhatsappInboxService.receive` quand un message reçu commence
      par STOP, `isStop`) ; un refus de Meta n'est pas réessayé. `Reservation.appInviteAt/appInviteOutcome` (migration `app_invite`, qui
      marque les réservations d'avant), ligne `whatsapp_messages` de genre `app_invite` (« Invitation à installer Plazo » dans « Messages
-     au voyageur »). Politique de confidentialité (prestataires). Test `traveller-invite.test.ts`. **Modèle validé chez Meta et
-     `WHATSAPP_INVITE_TEMPLATE=plazo_invitation` posé sur Vercel le 24/11/2026.** **Vus par la plateforme seulement (24/11/2026, « seul
+     au voyageur »). Politique de confidentialité (prestataires). Test `traveller-invite.test.ts`. **Modèle `plazo_invitation` soumis à Meta le 24/11/2026, « En cours d'examen »** (capture de WhatsApp Manager ; `WHATSAPP_INVITE_TEMPLATE=plazo_invitation` posé sur Vercel) : tant que Meta répond que le modèle n'est pas utilisable (`meta_132001`, en pause `132015`, désactivé `132016`, `TEMPLATE_NOT_READY`), la réservation est rendue et attend, le passage s'arrête, rien n'est noté. **Vus par la plateforme seulement (24/11/2026, « seul
      l'admin de la plateforme doit voir ces envois »)** : `PLATFORM_ONLY_KINDS` / `teamVisibleKinds` de `domain/traveller-invite.ts` : ni
      « Messages au voyageur » de la fiche, ni « Envoyés » et la conversation de « Messages », ni le fil de l'app Plazo ne montrent
      `app_invite`, sauf à un administrateur vérifié de la plateforme (consultation comprise). Pas encore : un suivi côté plateforme.
