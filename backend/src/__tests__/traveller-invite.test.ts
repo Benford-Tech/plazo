@@ -94,7 +94,7 @@ describe('the wording', () => {
   });
 });
 
-describe('who sees them (24/11/2026, « seul l\'admin de la plateforme doit voir ces envois »)', () => {
+describe("who sees them (24/11/2026, « seul l'admin de la plateforme doit voir ces envois »)", () => {
   const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
   const savedAdmins = process.env.PLATFORM_ADMIN_EMAILS;
   afterEach(() => {
