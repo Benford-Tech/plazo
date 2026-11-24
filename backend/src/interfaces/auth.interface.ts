@@ -25,6 +25,8 @@ export type AuthenticatedStaff = Staff & {
   operatorName: string;
   /** 02/11/2026: when the operator's logo was last set (null: none), for the logo next to the Plazo Pro sign. */
   operatorLogoUpdatedAt?: Date | null;
+  /** 24/11/2026: the Plazo Pro billing hidden from the operator's team (read by /staff/me). */
+  proBillingHidden?: boolean;
   actingAs?: ActingAs;
   demo?: boolean;
 };

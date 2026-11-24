@@ -47,6 +47,8 @@ export interface ProSubscriptionView {
   plans: { id: ProPlanId; name: string; monthlyCents: number; yearlyCents: number; gridMonthlyCents: number; agreed: boolean }[];
   /** A price agreed with Plazo is billed monthly only: no yearly billing is offered. */
   monthlyOnly: boolean;
+  /** 24/11/2026: the platform hides the Plazo Pro billing from this operator (no page, no plans, no subscribing). */
+  hidden: boolean;
   /** The price the platform agreed with this operator, when there is one. */
   agreed: { plan: ProPlanId | null; monthlyCents: number | null; gridMonthlyCents: number | null; setupFeeCents: number | null } | null;
   subscription: {
@@ -117,7 +119,15 @@ export class ProSubscriptionService {
     return null;
   }
 
+  private async billingHidden(operatorId: string): Promise<boolean> {
+    const o = await prisma.operator.findUnique({ where: { id: operatorId }, select: { proBillingHidden: true } });
+    return !!o?.proBillingHidden;
+  }
+
   private async assertAvailable(operatorId: string) {
+    if (await this.billingHidden(operatorId)) {
+      throw new HttpException(httpStatus.CONFLICT, 'The Plazo Pro billing is handled by the platform', 'billing_hidden');
+    }
     const refusal = await this.refusalFor(operatorId);
     if (refusal === 'unavailable') throw new HttpException(httpStatus.CONFLICT, 'Subscriptions are not available', 'subscriptions_unavailable');
     if (refusal) throw new HttpException(httpStatus.CONFLICT, 'A test operator pays nothing with live keys', 'test_operator');
@@ -224,6 +234,7 @@ export class ProSubscriptionService {
       setupFeeCents,
       setupFeeDue: !row?.setupFeePaidAt && setupFeeCents > 0,
       monthlyOnly: agreed.monthlyCents !== null,
+      hidden: await this.billingHidden(operatorId),
       plans: (Object.keys(PRO_PLANS) as ProPlanId[]).map(id => ({
         id,
         name: PRO_PLANS[id].name,
@@ -526,6 +537,7 @@ export class ProSubscriptionService {
     const view = await this.view(operatorId);
     return {
       agreed: view.agreed,
+      billingHidden: view.hidden,
       gridSetupFeeCents: SETUP_FEE_CENTS,
       vatPercent: VAT_PERCENT,
       plans: view.plans.map(p => ({ id: p.id, name: p.name, gridMonthlyCents: p.gridMonthlyCents })),
@@ -607,6 +619,19 @@ export class ProSubscriptionService {
       },
     );
     return { ...(await this.platformView(operatorId)), applied };
+  }
+
+  /** PUT /internal/platform/operators/:id/pro-billing { hidden }: hides (or shows) the Plazo Pro billing from its team. */
+  public async setBillingHidden(actor: AuthenticatedStaff, operatorId: string, body: { hidden?: unknown }) {
+    if (typeof body.hidden !== 'boolean') throw new ValidationException({ hidden: 'invalid' });
+    const exists = await prisma.operator.findUnique({ where: { id: operatorId }, select: { id: true } });
+    if (!exists) throw new HttpException(httpStatus.NOT_FOUND, 'Operator not found', 'not_found');
+    await prisma.operator.update({ where: { id: operatorId }, data: { proBillingHidden: body.hidden } });
+    await this.audit.record(
+      { id: actor.id, operatorId: actor.actingAs?.realOperatorId ?? actor.operatorId },
+      { action: 'operator.pro_billing_hidden', entityType: 'operator', entityId: operatorId, details: { hidden: body.hidden } },
+    );
+    return this.platformView(operatorId);
   }
 
   // ---- Stripe's side ---------------------------------------------------------------------------

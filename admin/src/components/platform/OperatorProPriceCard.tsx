@@ -65,6 +65,15 @@ export function OperatorProPriceCard({ operatorId }: { operatorId: string }) {
     onError: (err: Error) => toast.error(describeError(err, t.errors)),
   });
 
+  const hide = useMutation({
+    mutationFn: (hidden: boolean) => adminApi.setOperatorBillingHidden(operatorId, hidden),
+    onSuccess: (data: PlatformProPrice) => {
+      queryClient.setQueryData(key, data);
+      toast.success(data.billingHidden ? t.billingHidden : t.billingShown);
+    },
+    onError: (err: Error) => toast.error(describeError(err, t.errors)),
+  });
+
   if (query.isLoading) return <Skeleton className="h-48 rounded-[14px]" />;
   if (!query.data) return null;
   const d = query.data;
@@ -108,6 +117,21 @@ export function OperatorProPriceCard({ operatorId }: { operatorId: string }) {
         <h2 className="text-lg font-extrabold">{t.title}</h2>
         <p className="text-sm text-muted-foreground">{t.intro}</p>
       </div>
+
+      <label className="flex items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          data-testid="pro-billing-hidden"
+          checked={d.billingHidden}
+          disabled={hide.isPending}
+          onChange={(e) => hide.mutate(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-[#1E5E2E]"
+        />
+        <span className="flex flex-col">
+          <span className="font-semibold">{t.hideBilling}</span>
+          <span className="text-muted-foreground">{t.hideBillingHint}</span>
+        </span>
+      </label>
 
       <p className="text-sm" data-testid="pro-price-current">
         {sub ? (

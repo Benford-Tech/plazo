@@ -7517,6 +7517,10 @@ export const proPriceFr = {
   billedAt: (price: string) => `Facturé ${price}`,
   agreedBadge: "Tarif convenu",
   invalid: "Montant invalide (ex. 199 ou 199,50).",
+  hideBilling: "Cacher la facturation",
+  hideBillingHint: "Le gérant ne voit plus la page Abonnement ni les formules de « Mon contrat ». Rien n'est résilié.",
+  billingHidden: "Facturation cachée à ce loueur.",
+  billingShown: "Facturation de nouveau visible.",
   errors: {
     stripe_failed: "Stripe a refusé le nouveau prix : rien n'a changé sur l'abonnement en cours.",
     not_found: "Loueur introuvable.",

@@ -59,4 +59,8 @@ export class ProSubscriptionController {
   public setPlatformPrice = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.subscriptions.setAgreedPrice(req.staff, req.params.id as string, req.body ?? {}));
   });
+
+  public setPlatformBilling = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.subscriptions.setBillingHidden(req.staff, req.params.id as string, req.body ?? {}));
+  });
 }

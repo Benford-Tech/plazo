@@ -69,6 +69,8 @@ export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfT
     ...rest,
     vehicle: staff.vehicle ?? null,
     operatorLogoUpdatedAt: staff.operatorLogoUpdatedAt ? staff.operatorLogoUpdatedAt.toISOString() : null,
+    // 24/11/2026: the Plazo Pro billing hidden by the platform (no Abonnement page, no plans in « Mon contrat »).
+    proBillingHidden: !!staff.proBillingHidden,
     // 13/10/2026: whether the person has a password of their own, and the Apple / Google identities linked to them.
     hasPassword: !!staff.passwordSetAt,
     identities: [...identities]
@@ -176,7 +178,7 @@ export class StaffService {
     });
     const timezone = await this.timezone(actor);
     // 02/11/2026: the logo of the operator in view (the consulted one for a platform admin), read fresh after a change.
-    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { logoUpdatedAt: true } });
+    const operator = await prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { logoUpdatedAt: true, proBillingHidden: true } });
     const vehicle = fresh?.vehicle && holdsVehicleToday(fresh, timezone) ? vehicleOfTheDay(fresh.vehicle) : null;
     return toSessionUser(
       {
@@ -185,6 +187,7 @@ export class StaffService {
         vehicleSetAt: fresh?.vehicleSetAt ?? null,
         passwordSetAt: fresh ? fresh.passwordSetAt : actor.passwordSetAt,
         operatorLogoUpdatedAt: operator?.logoUpdatedAt ?? null,
+        proBillingHidden: operator?.proBillingHidden ?? false,
         vehicle,
       },
       fresh?.identities ?? [],

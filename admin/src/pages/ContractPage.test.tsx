@@ -5,7 +5,9 @@ import { MemoryRouter } from "react-router-dom";
 import type { PartnerContract } from "@/lib/types";
 import ContractPage from "./ContractPage";
 
-const auth = vi.hoisted(() => ({ user: { name: "Malik Dubois", operatorName: "Parking Alpha", role: "manager" as const } }));
+const auth = vi.hoisted(() => ({
+  user: { name: "Malik Dubois", operatorName: "Parking Alpha", role: "manager" as const, proBillingHidden: false },
+}));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
 const api = vi.hoisted(() => ({ getMyContract: vi.fn(), signMyContract: vi.fn(), myContractFile: vi.fn(), getAgreements: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
@@ -102,6 +104,15 @@ describe("Mon contrat", () => {
     renderPage();
     await waitFor(() => expect(api.getMyContract).toHaveBeenCalled());
     expect(screen.queryByText("Contrat particulier")).not.toBeInTheDocument();
+  });
+
+  it("24/11/2026 : sans formules quand la plateforme cache la facturation", async () => {
+    auth.user.proBillingHidden = true;
+    api.getMyContract.mockResolvedValue({ current: null, history: [], canSign: true });
+    renderPage();
+    await waitFor(() => expect(api.getMyContract).toHaveBeenCalled());
+    expect(screen.queryByTestId("plazo-plans")).not.toBeInTheDocument();
+    auth.user.proBillingHidden = false;
   });
 
   it("13/11/2026 : montre les formules à 149, 299 et 399 €, l'annuel et le calcul sur ses chiffres", async () => {

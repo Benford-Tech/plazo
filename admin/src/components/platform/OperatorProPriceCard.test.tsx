@@ -5,7 +5,11 @@ import type { PlatformProPrice } from "@/lib/api";
 import { OperatorProPriceCard } from "./OperatorProPriceCard";
 
 // 24/11/2026, « appliquer un tarif au plan mensuel d'un parking », direction A « Prix négocié ».
-const api = vi.hoisted(() => ({ getOperatorProPrice: vi.fn(), setOperatorProPrice: vi.fn() }));
+const api = vi.hoisted(() => ({
+  getOperatorProPrice: vi.fn(),
+  setOperatorProPrice: vi.fn(),
+  setOperatorBillingHidden: vi.fn(),
+}));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
@@ -13,6 +17,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
 
 const base: PlatformProPrice = {
   agreed: null,
+  billingHidden: false,
   gridSetupFeeCents: 29000,
   vatPercent: 20,
   plans: [
@@ -87,5 +92,16 @@ describe("OperatorProPriceCard", () => {
       setupFeeCents: null,
       when: "renewal",
     });
+  });
+
+  it("cache la facturation au loueur d'une case", async () => {
+    api.getOperatorProPrice.mockResolvedValue(base);
+    api.setOperatorBillingHidden.mockResolvedValue({ ...base, billingHidden: true });
+    renderCard();
+    const box = await screen.findByTestId("pro-billing-hidden");
+    expect(box).not.toBeChecked();
+    await userEvent.click(box);
+    expect(api.setOperatorBillingHidden).toHaveBeenCalledWith("op_1", true);
+    await waitFor(() => expect(screen.getByTestId("pro-billing-hidden")).toBeChecked());
   });
 });

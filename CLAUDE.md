@@ -2974,6 +2974,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   avec Plazo (grille 299,00 € HT / mois) » sur la formule et l'abonnement, « Mise en route offerte par Plazo ». Les conditions
   d'utilisation disent « prix convenu avec Plazo au lieu du prix de la grille » ; « Mon contrat » (`PlazoPlans`, prop `agreed` lue sur `GET /internal/subscription`) montre aussi le prix convenu sur sa formule, « Tarif convenu avec Plazo (grille 299 €) », et le calcul l'utilise (24/11/2026, « le prix doit se mettre à jour côté loueur »). Tests `pro-subscription.test.ts`,
   `OperatorProPriceCard.test.tsx`, `SubscriptionPage.test.tsx`.
+- **Facturation cachée à un loueur (24/11/2026, « cache la partie facturation pour gopark60000 », choix « Interrupteur par loueur »)** :
+  case « Cacher la facturation » de la carte « Abonnement Plazo Pro » (Plateforme › loueur › Paiements, `pro-billing-hidden`) →
+  `PUT /internal/platform/operators/:id/pro-billing { hidden }` (`PlatformAdminMiddleware`, 400 `hidden`, tracé
+  `operator.pro_billing_hidden`) ; `Operator.proBillingHidden` (migration `pro_billing_hidden`, qui la pose pour gopark60000 : adresse
+  de réception ou e-mail d'un membre `gopark60000@…`) ; `/staff/me` › `proBillingHidden` : ni l'entrée « Abonnement » du menu
+  (`NavItem.billing`) ni sa page (renvoi au tableau de bord), ni les formules de « Mon contrat » ; `GET /internal/subscription` ›
+  `hidden`, s'abonner ou changer de formule 409 `billing_hidden` ; rien n'est résilié. Tests `pro-subscription.test.ts`,
+  `OperatorProPriceCard.test.tsx`, `ContractPage.test.tsx`.
 - **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
   permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
   "Partez léger, revenez sans attendre." », « QR vers la page du parking »)** : Gérant › Sur Plazo › « Flyer »

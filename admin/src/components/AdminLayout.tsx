@@ -35,7 +35,7 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const allowed = (permission?: Permission) => !permission || can(user?.role, permission);
-  const items = NAV.filter((i) => allowed(i.permission)).map((i) => ({
+  const items = NAV.filter((i) => allowed(i.permission) && !(i.billing && user?.proBillingHidden)).map((i) => ({
     ...i,
     children: i.children?.filter((c) => allowed(c.permission)),
   }));
