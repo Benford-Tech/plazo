@@ -4,7 +4,7 @@ import { inviteHour, isStop, phoneHash, stayLabel } from '@/domain/traveller-inv
 import { NotificationService } from '@/services/notification.service';
 import { TravellerInviteService } from '@/services/traveller-invite.service';
 import { WhatsappService } from '@/services/whatsapp.service';
-import { resetDatabase, setupOperator } from './utils/helpers';
+import { api, resetDatabase, setupOperator } from './utils/helpers';
 
 // 23/11/2026 (« envoyer des messages WhatsApp pour inviter à utiliser Plazo lorsqu'on ne connaît pas le mail »). Meta is mocked.
 
@@ -91,6 +91,34 @@ describe('the wording', () => {
     expect(inviteHour(new Date('2026-11-23T10:00:00Z'), 'Europe/Paris')).toBe(true);
     expect(inviteHour(new Date('2026-11-23T22:30:00Z'), 'Europe/Paris')).toBe(false);
     expect(inviteHour(new Date('2026-11-23T05:30:00Z'), 'Europe/Paris')).toBe(false);
+  });
+});
+
+describe('who sees them (24/11/2026, « seul l\'admin de la plateforme doit voir ces envois »)', () => {
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+  const savedAdmins = process.env.PLATFORM_ADMIN_EMAILS;
+  afterEach(() => {
+    process.env.PLATFORM_ADMIN_EMAILS = savedAdmins;
+  });
+
+  it('hides the invitation from the parking, and shows it to the platform admin', async () => {
+    const op = await setupOperator();
+    await withListing(op);
+    const b = await booking(op);
+    expect((await service.run(NOW)).sent).toBe(1);
+    process.env.PLATFORM_ADMIN_EMAILS = 'someone-else@example.com';
+    const kinds = async () => {
+      const log = await api().get(`/api/internal/reservations/${b.id}/messages`).set(auth(op.token));
+      const sentList = await api().get('/api/internal/whatsapp/sent').set(auth(op.token));
+      return {
+        log: log.body.data.map((m: { kind: string }) => m.kind),
+        sent: sentList.body.data.map((m: { kind: string }) => m.kind),
+      };
+    };
+    expect(await kinds()).toEqual({ log: [], sent: [] });
+    process.env.PLATFORM_ADMIN_EMAILS = op.manager.email;
+    await prisma.staff.update({ where: { id: op.manager.id }, data: { emailVerifiedAt: new Date() } });
+    expect(await kinds()).toEqual({ log: ['app_invite'], sent: ['app_invite'] });
   });
 });
 

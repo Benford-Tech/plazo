@@ -1,6 +1,8 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
+import { isVerifiedPlatformAdmin } from '@/config';
 import prisma from '@/database';
+import { teamVisibleKinds } from '@/domain/traveller-invite';
 import { TravellerMessage, travellerMessages } from '@/domain/traveller-message-log';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -18,7 +20,7 @@ export class TravellerMessageLogService {
     const where = { operatorId: actor.operatorId, reservationId: id };
     const [whatsapp, sms] = await Promise.all([
       prisma.whatsappMessage.findMany({
-        where,
+        where: { ...where, ...teamVisibleKinds(isVerifiedPlatformAdmin(actor)) },
         orderBy: { createdAt: 'desc' },
         take: 100,
         select: { id: true, kind: true, status: true, waMessageId: true, errorCode: true, createdAt: true, updatedAt: true },
