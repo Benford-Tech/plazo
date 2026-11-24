@@ -471,6 +471,16 @@ export const en: Dict = {
     heroFind: "Your car park at",
     heroNear: (airport: string) => `${airport} airport`,
     heroKicker: "Ready to go?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `${a} airport parking`,
+    heroIntro: (a: string) => `Private car parks with a shuttle around ${a}.`,
+    fromPerDay: (p: string) => `from ${p} a day`,
+    exactPrice: "exact price for your dates",
+    sort: "Sort",
+    sorts: { cheapest: "Lowest price", shortest: "Shortest transfer", live: "Live shuttle", dearest: "Highest price" },
+    startingAt: "From",
+    seePrice: "See the price",
+    cheapest: "Cheapest",
     mapAvailable: (n: number) =>
       n === 0 ? "No spaces for these dates" : n === 1 ? "1 car park available" : `${n} car parks available`,
     mapDistance: (km: string | null, shuttle: number | null) =>

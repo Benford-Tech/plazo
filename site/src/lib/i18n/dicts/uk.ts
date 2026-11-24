@@ -478,6 +478,16 @@ export const uk: Dict = {
     heroFind: "Ваш паркінг",
     heroNear: (airport: string) => `в аеропорту ${airport}`,
     heroKicker: "Готові вирушати?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `Парковка аеропорт ${a}`,
+    heroIntro: (a: string) => `Приватні парковки з трансфером поруч із ${a}.`,
+    fromPerDay: (p: string) => `від ${p} на день`,
+    exactPrice: "точна ціна для ваших дат",
+    sort: "Сортування",
+    sorts: { cheapest: "Найнижча ціна", shortest: "Найкоротший шлях", live: "Трансфер наживо", dearest: "Найвища ціна" },
+    startingAt: "Від",
+    seePrice: "Переглянути ціну",
+    cheapest: "Найдешевша",
     mapAvailable: (n: number) =>
       n === 0
         ? "На ці дати місць немає"

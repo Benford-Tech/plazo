@@ -463,6 +463,16 @@ export const ro: Dict = {
     heroFind: "Parcarea dumneavoastră la",
     heroNear: (airport: string) => `aeroportul ${airport}`,
     heroKicker: "Gata de plecare?",
+    // The airport page's dark band and its list (24/11/2026).
+    heroKeyword: (a: string) => `Parcare aeroport ${a}`,
+    heroIntro: (a: string) => `Parcări private cu transfer în jurul ${a}.`,
+    fromPerDay: (p: string) => `de la ${p} pe zi`,
+    exactPrice: "preț exact pentru datele dvs.",
+    sort: "Sortare",
+    sorts: { cheapest: "Cel mai mic preț", shortest: "Cel mai scurt traseu", live: "Transfer în direct", dearest: "Cel mai mare preț" },
+    startingAt: "De la",
+    seePrice: "Vezi prețul",
+    cheapest: "Cel mai ieftin",
     mapAvailable: (n: number) =>
       n === 0
         ? "Niciun loc la aceste date"

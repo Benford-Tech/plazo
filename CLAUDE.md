@@ -2557,6 +2557,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   au-delà ; lettre chez Brevo, double confirmation, gardée jusqu'à la désinscription en un clic, puis marquée désinscrite chez
   Brevo) et conditions générales (le
   formulaire à côté de l'adresse du service client, dès qu'elle est réelle) mises à jour.
+- **Page aéroport refaite, direction A « Bandeau sombre » (24/11/2026, capture de la page Lyon d'un comparateur, maquettes
+  https://claude.ai/artifact/HG6LBWvZjnovj3DSctzvY3, « A »)** : `HomeHero` devient une bande espresso (`bg-dark`, jetons de texte
+  redéfinis sur les mots seuls, `ON_DARK`) : titre mot-clé « Parking aéroport <aéroport> » (`fr.home.heroKeyword`), une phrase
+  (`heroIntro`) et le prix d'une journée sur une pastille orange, « dès 7,75 € par jour pour 8 jours, prix exact selon vos dates »
+  (`fromPerDayCents` : l'offre la moins chère d'un vrai parking pour le séjour par défaut, divisée par ses jours ; rien sans vrai
+  parking), la recherche en une barre sur toute la largeur (sous les mots sur téléphone), la carte du séjour gardée à côté. Sous la
+  bande : les parkings d'abord (`PartnerList`, composant client : tris en pastilles Prix le plus bas · Trajet le plus court ·
+  Navette en direct · Prix le plus haut, `sortsFor` ne montre que ceux qui départagent, `sortPartners` ; « Le moins cher » sur la
+  photo, colonne de prix « À partir de » à droite de chaque carte, bouton orange « Voir le prix ») et « Comment ça marche » dans
+  une colonne à droite (sous la liste sur téléphone ; les photos des étapes ne sont plus affichées). Textes dans les neuf langues.
+  Pas repris de la capture : la note en étoiles et le cœur. Test `PartnerList.test.tsx`.
 - **Fiche parking enrichie, choix B (17/11/2026, « ameliore le SEO », audit : sitemap de 6 adresses, fiche de ~490 mots ; maquettes
   https://claude.ai/artifact/UAEy1nUtQ2RYBiHffuFmFA, « B »)** : sous la présentation de la fiche parking du site, « Tarifs » (la grille
   `priceRows`, plus courte d'abord, et le jour en plus ; la grille revient sur la fiche, le prix des dates restant celui de la carte),
@@ -2805,6 +2816,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   détail dans `mobile/publier-sur-les-stores.md`.
   **Soumettre sans reconstruire (29/10/2026, Plazo Pro 1.0.123 « KO App Store » : l'IPA était sur TestFlight, mais Apple annulait encore l'ancienne soumission, 409 « pre-release build could not be added »)** : workflow Codemagic `mobile-submit-app-store` (à la main, `SUBMIT_APPS` = `plazo-pro` par défaut, ou `plazo plazo-pro`) : dernier build TestFlight de chaque app soumis à la revue (`builds submit-to-app-store`, version `MAJEUR.MINEUR.<numéro>`, notes de version, trois essais à 3 min d'écart), sans rien construire ; lancé par `codemagic-build.yml` › `start`. Le numéro ne monte qu'à un nouveau build : relancer le bilan d'un build ne le change pas.
   **Tout sauf Plazo Pro sur l'App Store (15/11/2026, « un pipeline qui deploy et soumet tout sauf plazo pro sur apple store »)** : workflow Codemagic `mobile-release-submit` (à la main, par `codemagic-build.yml` › `start`) : les AAB des deux apps sur Google Play (piste production, notes de version), puis Plazo seul sur iOS (Apple Pay selon son profil, IPA → TestFlight puis soumis à la revue, sortie dès l'accord, `--cancel-previous-submissions`, deux essais) ; Plazo Pro n'est ni construit ni envoyé pour iOS, sa version en revue n'est pas touchée ; seul le profil `plazo_app_store` est demandé.
+  **Essai de Xcode 27 (24/11/2026, avertissement d'Apple ITMS-90725 sur Plazo Pro 1.0.147 : à partir d'avril 2027, un envoi doit être construit avec le SDK iOS 27)** : workflow Codemagic `mobile-ios-pro-testflight` (à la main, par `codemagic-build.yml` › `start`) : Plazo Pro iOS seul avec `xcode: 27.1`, vers TestFlight sans soumission, rien pour Google Play ; les étapes iOS de `mobile-release` sont des ancres (`ios_pro_apple_sign_in`, `ios_pro_demo_links`, `ios_profiles`, `ios_build` avec `IOS_FLAVORS`, `ios_upload`) ; les autres workflows restent sur Xcode 26.5 et GitHub Actions sur 26.6 tant que l'essai n'est pas passé.
   **Position en arrière-plan pour Plazo Pro seulement (24/11/2026, rejet d'Apple 2.5.4 sur la 1.0.139 : « we are unable to locate any features that require persistent location »)** : `UIBackgroundModes` de l'Info.plist partagé ne garde que `remote-notification` ; `location` est ajouté par `mobile-release` (Codemagic et GitHub Actions, PlistBuddy) au seul build de Plazo Pro, dont le chauffeur partage la position pendant un trajet, Plazo étant construit d'abord ; dans Plazo sur iPhone, « Je suis en route » partage la position tant que l'app est ouverte (geolocator n'allume l'arrière-plan que si l'Info.plist le déclare) ; Android inchangé (service de premier plan).
   **Apple Pay dans Plazo (31/10/2026, « ajoute le paiement apple »)** : la feuille Stripe de l'app le gérait déjà
   (`STRIPE_MERCHANT_ID`) ; l'étape « Apple Pay (Plazo) selon son profil App Store » de `mobile-release.yml` lit les Merchant
