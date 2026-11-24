@@ -615,6 +615,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      plus, Reply-To le visiteur, `contactEmail`). `hasNoNumber` (`app:` ou `site:`) : ni appel, ni SMS, ni WhatsApp ; « Messages »
      web : pastille « Site du parking », « répondez par e-mail ou par téléphone ». Les avis clients ne sont pas montrés (seulement
      la note tapée). Tests `operator-site.test.ts`, `ParkingSite.test.tsx`. Pas encore : la pastille dans Plazo Pro.
+   - **Aperçu en direct dans « Mon site », choix A côte à côte (24/11/2026, « Il faut un aperçu du site en cours d'édition »)** :
+     dès `xl`, le site à droite du formulaire (`components/site/SitePreview.tsx`) : la page du site avec la clé d'aperçu
+     (`previewUrl`) dans un cadre, dessinée à 1 280 px (Ordinateur) ou 390 px (Téléphone) puis réduite, bouton Recharger ; chaque
+     changement du formulaire (style, couleurs, blocs, textes, note, pages, photos) lui part par `postMessage`
+     (`plazo-site-draft`, à l'origine du site seulement), avant « Enregistrer » ; plus étroit, bouton « Aperçu » qui l'ouvre en
+     plein écran (Échap ferme). Site : une page `/s/…` avec la clé rend `LivePreview` (`components/parking-site/LivePreview.tsx` :
+     écoute les seules origines de l'espace pro, `withDraft` n'applique que l'aspect et les blocs, couleur et photos vérifiées,
+     annonce `plazo-site-ready`) ; `next.config.ts` : `/s/…?apercu=` sans `X-Frame-Options`, `frame-ancestors 'self'
+     https://pro.plazo.fr https://www.plazo.fr`, `noindex` ; sans la clé, jamais dans un cadre. Les pages d'un site à plusieurs pages
+     allumé mais pas enregistré ne s'ouvrent pas encore dans l'aperçu. Tests `SitePreview.test.tsx`, `LivePreview.test.ts`.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

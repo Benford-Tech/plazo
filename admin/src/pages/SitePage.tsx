@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Copy, ExternalLink, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, ExternalLink, Eye, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
+import { SitePreview, type SiteDraft } from "@/components/site/SitePreview";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +64,7 @@ export default function SitePage() {
   const [accent, setAccent] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const [look, setLook] = useState<Look | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // The form follows the server until the manager touches it.
   useEffect(() => {
@@ -140,6 +142,18 @@ export default function SitePage() {
     setOpen(id);
   };
   const name = (b: SiteBlock) => (b.kind === "text" && b.title ? b.title : t.kinds[b.kind] ?? b.kind);
+  const ratingValue = Number(look.rating.trim().replace(",", "."));
+  const draft: SiteDraft = {
+    theme: look.theme,
+    accent,
+    accent2: look.accent2,
+    blocks: blocks.map(({ id, kind, enabled, title, text }) => ({ id, kind, enabled, title, text })),
+    showLogo: look.showLogo,
+    rating: look.rating.trim() && ratingValue >= 1 && ratingValue <= 5 ? { value: ratingValue, count: Number(look.ratingCount) || null } : null,
+    pages: look.pages,
+    heroPhotoUrl: site.heroPhotoUrl,
+    teamPhotoUrl: site.teamPhotoUrl,
+  };
 
   return (
     <>
@@ -159,7 +173,8 @@ export default function SitePage() {
         {readOnly && <p className="text-sm text-muted-foreground">{t.demo}</p>}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)]">
         <section className={card} aria-labelledby="site-blocks">
           <div>
             <h2 id="site-blocks" className="font-narrow text-xl font-bold">
@@ -313,6 +328,31 @@ export default function SitePage() {
           </section>
         </div>
       </div>
+      {/* The site beside the form, as it is typed (24/11/2026, choix A côte à côte, en direct). */}
+      <aside className="hidden xl:block">
+        <div className="sticky top-4 flex h-[calc(100vh-7rem)] flex-col">
+          {site.previewUrl ? <SitePreview url={site.previewUrl} draft={draft} /> : <p className={cn(card, "text-sm text-muted-foreground")}>{t.previewNeeds}</p>}
+        </div>
+      </aside>
+      </div>
+      {site.previewUrl && (
+        <>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            data-testid="site-live-open"
+            className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 inline-flex min-h-12 items-center gap-2 rounded-full bg-lime px-5 font-bold text-lime-ink shadow-lg lg:bottom-6 xl:hidden"
+          >
+            <Eye className="h-5 w-5" aria-hidden />
+            {t.live.open}
+          </button>
+          {previewOpen && (
+            <div role="dialog" aria-modal="true" aria-label={t.live.title} className="fixed inset-0 z-50 flex flex-col bg-background p-3 pt-[max(0.75rem,env(safe-area-inset-top))] xl:hidden">
+              <SitePreview url={site.previewUrl} draft={draft} onClose={() => setPreviewOpen(false)} />
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 }
