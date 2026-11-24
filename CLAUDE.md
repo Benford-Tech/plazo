@@ -2113,6 +2113,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (`samePageIn` : une réservation donne la liste, un contrat les Réglages, la Plateforme le tableau de bord), toutes les requêtes sont
   relues (`resetQueries`, `<main key={operatorId}>`). `/staff/me` › `viewAs.realOperatorId/realOperatorName` donne son propre espace.
   Les règles de la consultation ne changent pas. Tests `ParkingSwitcher.test.tsx`, `platform-space.test.ts`.
+  **Plus de décalage entre le parking choisi et les données (24/11/2026, « souvent un décalage entre le parking sélectionné et le parking affiché » : bandeau GoPark 60000, chiffres du parking de test)** : la consultation est partagée par les onglets (`localStorage`) ; un autre onglet qui change de parking ou revient à son espace fait suivre celui-ci (`storage`, cache vidé, `/staff/me` relu, `AuthContext`) ; en passant d'un parking à l'autre, la nouvelle consultation est posée avant de fermer l'ancienne (plus d'appel avec la session propre entre les deux) ; une réponse arrivée après un changement de parking est écartée (`session_changed` d'`authorizedFetch`). Test `view-as-switch.test.ts`.
   **Espace super admin, A + la page loueur de C (11/11/2026, « redesign la partie super admin », maquettes
   https://claude.ai/artifact/J9vfWx7FuFYrdHgGKaJT7L, « A avec la page loueur de C »)** : `PlatformLayout` devient un rail à gauche
   comme l'espace du loueur (sur téléphone une rangée en haut), en trois groupes Pilotage (Vue d'ensemble, Loueurs, Annonces avec le
