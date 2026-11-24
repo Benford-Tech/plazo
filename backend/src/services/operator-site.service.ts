@@ -1,18 +1,37 @@
+import { randomBytes } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { PUBLIC_SITE_URL, SECRET_KEY } from '@/config';
 import prisma from '@/database';
 import { accentInk, DEFAULT_BOOKING_PAGE_ACCENT, isReservedSlug, readAccent, readSlug, slugFrom } from '@/domain/booking-page';
-import { blocksOf, readBlocks, SITE_ADDON_PRICE_CENTS, sitePreviewKey, siteUrl } from '@/domain/operator-site';
+import { sniffImage } from '@/domain/inspection';
+import {
+  blocksOf,
+  FIXED_SITE_PAGES,
+  readBlocks,
+  readRating,
+  readTheme,
+  SITE_ADDON_PRICE_CENTS,
+  siteDestinations,
+  sitePreviewKey,
+  siteUrl,
+} from '@/domain/operator-site';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { dnsRecordFor, readDomain } from '@/domain/site-domain';
 import { AuditService } from './audit.service';
+import { PhotoStorageService, StoredPhoto } from './photo-storage.service';
 import { SiteDomainHostService } from './site-domain-host.service';
 
 /** A pending domain is checked again when the page is read, at most this often. */
 const DOMAIN_RECHECK_MS = 60_000;
+
+/** The photo behind the site's title: the pro space sends a JPEG of 1 600 px at most. */
+export const MAX_SITE_PHOTO_BYTES = 3 * 1024 * 1024;
+const SITE_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const SITE_PHOTO_FILE = /^[0-9a-f]{18}\.(jpeg|png|webp)$/;
+const fileOf = (key: string) => key.split('/').pop()!;
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Site not found', 'not_found');
 
@@ -25,6 +44,7 @@ const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Site not found',
 export class OperatorSiteService {
   public audit = Container.get(AuditService);
   public hosts = Container.get(SiteDomainHostService);
+  public storage = Container.get(PhotoStorageService);
   public settings = { siteUrl: PUBLIC_SITE_URL, secret: SECRET_KEY ?? '' };
 
   private async listingOf(operatorId: string) {
@@ -39,7 +59,7 @@ export class OperatorSiteService {
     const [operator, listing] = await Promise.all([
       prisma.operator.findUniqueOrThrow({
         where: { id: operatorId },
-        select: { name: true, bookingPageSlug: true, bookingPageAccent: true, bookingPageEnabledAt: true, site: true },
+        select: { name: true, bookingPageSlug: true, bookingPageAccent: true, bookingPageEnabledAt: true, logoUpdatedAt: true, site: true },
       }),
       this.listingOf(operatorId),
     ]);
@@ -56,6 +76,13 @@ export class OperatorSiteService {
       saved: !!operator.bookingPageSlug,
       accent: operator.bookingPageAccent ?? DEFAULT_BOOKING_PAGE_ACCENT,
       blocks: blocksOf(operator.site?.blocks),
+      theme: readTheme(operator.site?.theme) ?? 'simple',
+      accent2: operator.site?.accent2 ?? null,
+      heroPhotoUrl: operator.site?.heroPhotoKey && slug ? this.heroPath(slug, operator.site.heroPhotoKey) : null,
+      showLogo: !!operator.site?.showLogo,
+      hasLogo: !!operator.logoUpdatedAt,
+      rating: operator.site?.ratingTenths ? { value: operator.site.ratingTenths / 10, count: operator.site.ratingCount ?? null } : null,
+      pages: !!operator.site?.pages,
       published: !!operator.site?.publishedAt,
       listingOnline,
       listingTitle: listing?.title ?? null,
@@ -69,6 +96,67 @@ export class OperatorSiteService {
       },
       domain: this.domainView(operator.site),
     };
+  }
+
+  private heroPath(slug: string, key: string) {
+    return `/api/public/sites/${slug}/hero/${fileOf(key)}`;
+  }
+
+  /** POST /internal/site/hero-photo (the image's bytes): the photo behind the title of the showcase look. */
+  public async setHeroPhoto(actor: AuthenticatedStaff, body: unknown) {
+    if (!Buffer.isBuffer(body) || body.length === 0) throw new ValidationException({ photo: 'required' });
+    if (body.length > MAX_SITE_PHOTO_BYTES) throw new ValidationException({ photo: 'too_large' });
+    const contentType = sniffImage(body);
+    if (!contentType || !SITE_PHOTO_TYPES.includes(contentType)) throw new ValidationException({ photo: 'not_an_image' });
+    const previous = await prisma.operatorSite.findUnique({ where: { operatorId: actor.operatorId }, select: { heroPhotoKey: true } });
+    const key = `operators/${actor.operatorId}/site-hero/${randomBytes(9).toString('hex')}.${contentType.split('/')[1]}`;
+    await this.storage.put(key, body, contentType);
+    await prisma.operatorSite.upsert({
+      where: { operatorId: actor.operatorId },
+      create: { operatorId: actor.operatorId, heroPhotoKey: key },
+      update: { heroPhotoKey: key },
+    });
+    if (previous?.heroPhotoKey) await this.storage.remove([previous.heroPhotoKey]);
+    await this.audit.record(actor, { action: 'site.hero_photo_set', entityType: 'operator', entityId: actor.operatorId });
+    return this.view(actor);
+  }
+
+  /** DELETE /internal/site/hero-photo */
+  public async removeHeroPhoto(actor: AuthenticatedStaff) {
+    const current = await prisma.operatorSite.findUnique({ where: { operatorId: actor.operatorId }, select: { heroPhotoKey: true } });
+    if (current?.heroPhotoKey) {
+      await prisma.operatorSite.update({ where: { operatorId: actor.operatorId }, data: { heroPhotoKey: null } });
+      await this.storage.remove([current.heroPhotoKey]);
+      await this.audit.record(actor, { action: 'site.hero_photo_removed', entityType: 'operator', entityId: actor.operatorId });
+    }
+    return this.view(actor);
+  }
+
+  /** GET /public/sites/:slug/hero/:file — only the photo in use, by its own file name (a new name at each upload). */
+  public async heroPhoto(slug: string, file: string): Promise<StoredPhoto> {
+    if (!SITE_PHOTO_FILE.test(file)) throw notFound();
+    const operator = await prisma.operator.findUnique({ where: { bookingPageSlug: slug }, select: { site: { select: { heroPhotoKey: true } } } });
+    const key = operator?.site?.heroPhotoKey;
+    const photo = key && fileOf(key) === file ? await this.storage.get(key) : null;
+    if (!photo) throw notFound();
+    return photo;
+  }
+
+  /** GET /public/sites/:slug/logo — the parking's logo, only for a site that chose to show it. */
+  public async logo(slug: string): Promise<StoredPhoto> {
+    const operator = await prisma.operator.findUnique({
+      where: { bookingPageSlug: slug },
+      select: { logoKey: true, site: { select: { showLogo: true } } },
+    });
+    const logo = operator?.logoKey && operator.site?.showLogo ? await this.storage.get(operator.logoKey) : null;
+    if (!logo) throw notFound();
+    return logo;
+  }
+
+  /** The site's photo, erased with the operator. */
+  public async blobKeysOf(operatorId: string): Promise<string[]> {
+    const site = await prisma.operatorSite.findUnique({ where: { operatorId }, select: { heroPhotoKey: true } });
+    return site?.heroPhotoKey ? [site.heroPhotoKey] : [];
   }
 
   /** The parking's own domain: the record to create, and where it stands (waiting for its DNS, for its attachment, active). */
@@ -169,7 +257,13 @@ export class OperatorSiteService {
     if (!domain) throw notFound();
     const site = await prisma.operatorSite.findUnique({
       where: { domain },
-      select: { domainActiveAt: true, publishedAt: true, operator: { select: { bookingPageSlug: true, status: true, archivedAt: true } } },
+      select: {
+        domainActiveAt: true,
+        publishedAt: true,
+        pages: true,
+        operatorId: true,
+        operator: { select: { bookingPageSlug: true, status: true, archivedAt: true } },
+      },
     });
     if (
       !site?.domainActiveAt ||
@@ -180,7 +274,8 @@ export class OperatorSiteService {
     ) {
       throw notFound();
     }
-    return { slug: site.operator.bookingPageSlug };
+    // The pages the host answers besides its home page; every other path is Plazo's own.
+    return { slug: site.operator.bookingPageSlug, pages: site.pages ? await this.pageSlugs(site.operatorId) : [] };
   }
 
   public async view(actor: AuthenticatedStaff) {
@@ -194,8 +289,24 @@ export class OperatorSiteService {
     return this.toView(actor.operatorId, state);
   }
 
-  /** PUT /internal/site { blocks?, slug?, accent?, published? }: absent fields unchanged. */
-  public async update(actor: AuthenticatedStaff, body: { blocks?: unknown; slug?: unknown; accent?: unknown; published?: unknown }) {
+  /**
+   * PUT /internal/site { blocks?, slug?, accent?, published?, theme?, accent2?, showLogo?, rating?, pages? }: absent
+   * fields unchanged; accent2 and rating null clear them.
+   */
+  public async update(
+    actor: AuthenticatedStaff,
+    body: {
+      blocks?: unknown;
+      slug?: unknown;
+      accent?: unknown;
+      published?: unknown;
+      theme?: unknown;
+      accent2?: unknown;
+      showLogo?: unknown;
+      rating?: unknown;
+      pages?: unknown;
+    },
+  ) {
     const state = await this.state(actor.operatorId);
     const current = this.toView(actor.operatorId, state);
     const fields: Record<string, string> = {};
@@ -206,6 +317,23 @@ export class OperatorSiteService {
     if (!accent) fields.accent = 'invalid';
     const read = body.blocks === undefined ? { blocks: current.blocks } : readBlocks(body.blocks);
     if ('error' in read) fields.blocks = read.error;
+    const theme = body.theme === undefined ? current.theme : readTheme(body.theme);
+    if (!theme) fields.theme = 'invalid';
+    const accent2 = body.accent2 === undefined ? current.accent2 : body.accent2 === null || body.accent2 === '' ? null : readAccent(body.accent2);
+    if (body.accent2 && !accent2) fields.accent2 = 'invalid';
+    const rating =
+      body.rating === undefined
+        ? { tenths: state.operator.site?.ratingTenths ?? null, count: state.operator.site?.ratingCount ?? null }
+        : readRating(body.rating);
+    if ('error' in rating) fields[rating.error] = 'invalid';
+    const look = {
+      theme: theme ?? 'simple',
+      accent2,
+      showLogo: body.showLogo === undefined ? current.showLogo : body.showLogo === true,
+      ratingTenths: 'error' in rating ? null : rating.tenths,
+      ratingCount: 'error' in rating ? null : rating.count,
+      pages: body.pages === undefined ? current.pages : body.pages === true,
+    };
     const published = body.published === undefined ? current.published : body.published === true;
     if (published && !current.addon.active) fields.published = 'addon_required';
     else if (published && !current.listingOnline) fields.published = 'listing_offline';
@@ -227,8 +355,8 @@ export class OperatorSiteService {
       }),
       prisma.operatorSite.upsert({
         where: { operatorId: actor.operatorId },
-        create: { operatorId: actor.operatorId, blocks: blocks as object[] },
-        update: { blocks: blocks as object[] },
+        create: { operatorId: actor.operatorId, blocks: blocks as object[], ...look },
+        update: { blocks: blocks as object[], ...look },
       }),
       // Apart from the upsert: Postgres checks « online needs the extra » on the row an upsert would insert, even when
       // the row exists and is only updated.
@@ -238,7 +366,7 @@ export class OperatorSiteService {
       action: 'site.updated',
       entityType: 'operator',
       entityId: actor.operatorId,
-      details: { slug, accent, published, blocks: blocks.filter(b => b.enabled).map(b => b.kind) },
+      details: { slug, accent, published, theme: look.theme, pages: look.pages, blocks: blocks.filter(b => b.enabled).map(b => b.kind) },
     });
     return this.view(actor);
   }
@@ -278,6 +406,25 @@ export class OperatorSiteService {
     return this.platformView(operatorId);
   }
 
+  private async destinationsOf(parkingId: string, airportName: string) {
+    const stops = await prisma.shuttleStop.findMany({
+      where: { parkingId },
+      select: { name: true, kind: true, instructions: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    return siteDestinations(airportName, stops);
+  }
+
+  private async pageSlugs(operatorId: string): Promise<string[]> {
+    const listing = await prisma.listing.findFirst({
+      where: { status: 'published', parking: { operatorId } },
+      orderBy: { createdAt: 'asc' },
+      select: { parkingId: true, airport: { select: { name: true } } },
+    });
+    if (!listing) return [];
+    return [...(await this.destinationsOf(listing.parkingId, listing.airport.name)).map(d => d.slug), ...FIXED_SITE_PAGES];
+  }
+
   /**
    * What a slug opens for the site: the listing it shows and its enabled blocks. Offline, only the manager's preview
    * key opens it. 404 for anything else (unknown slug, operator not active, listing not published).
@@ -287,7 +434,19 @@ export class OperatorSiteService {
     if (!clean || clean !== slug) throw notFound();
     const operator = await prisma.operator.findUnique({
       where: { bookingPageSlug: clean },
-      select: { id: true, bookingPageAccent: true, bookingPageEnabledAt: true, status: true, archivedAt: true, site: true },
+      select: {
+        id: true,
+        bookingPageAccent: true,
+        bookingPageEnabledAt: true,
+        status: true,
+        archivedAt: true,
+        logoUpdatedAt: true,
+        billingLegalName: true,
+        billingAddress: true,
+        billingSiret: true,
+        billingVatNumber: true,
+        site: true,
+      },
     });
     if (!operator || operator.status !== 'active' || operator.archivedAt) throw notFound();
     const online = !!operator.site?.publishedAt;
@@ -296,10 +455,13 @@ export class OperatorSiteService {
     const listing = await prisma.listing.findFirst({
       where: { status: 'published', parking: { operatorId: operator.id } },
       orderBy: { createdAt: 'asc' },
-      select: { slug: true, title: true, airport: { select: { slug: true, name: true } } },
+      select: { slug: true, title: true, parkingId: true, airport: { select: { slug: true, name: true } } },
     });
     if (!listing) throw notFound();
     const accent = operator.bookingPageAccent ?? DEFAULT_BOOKING_PAGE_ACCENT;
+    const site = operator.site;
+    const destinations = await this.destinationsOf(listing.parkingId, listing.airport.name);
+    const accent2 = site?.accent2 ?? null;
     return {
       slug: clean,
       title: listing.title,
@@ -309,6 +471,22 @@ export class OperatorSiteService {
       accent,
       accentInk: accentInk(accent),
       blocks: blocksOf(operator.site?.blocks).filter(b => b.enabled),
+      theme: readTheme(site?.theme) ?? 'simple',
+      accent2,
+      accent2Ink: accent2 ? accentInk(accent2) : null,
+      heroPhotoUrl: site?.heroPhotoKey ? this.heroPath(clean, site.heroPhotoKey) : null,
+      logoUrl: site?.showLogo && operator.logoUpdatedAt ? `/api/public/sites/${clean}/logo?v=${operator.logoUpdatedAt.getTime()}` : null,
+      rating: site?.ratingTenths ? { value: site.ratingTenths / 10, count: site.ratingCount ?? null } : null,
+      destinations,
+      // Several pages: one per destination, then the questions, the contact and the legal notice.
+      pages: site?.pages ? [...destinations.map(d => d.slug), ...FIXED_SITE_PAGES] : [],
+      // Who runs the site, for its legal notice: what the parking typed for its invoices.
+      legal: {
+        name: operator.billingLegalName,
+        address: operator.billingAddress,
+        siret: operator.billingSiret,
+        vatNumber: operator.billingVatNumber,
+      },
       // The booking block takes bookings only once the booking page is open (always, for a site online).
       bookable: !!operator.bookingPageEnabledAt,
       preview,

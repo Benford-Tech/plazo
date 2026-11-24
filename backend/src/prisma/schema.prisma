@@ -2548,6 +2548,16 @@ model OperatorSite {
   addonRequestedAt DateTime?
   addonAt          DateTime?
   publishedAt      DateTime?
+  /// 24/11/2026 (« je veux pouvoir faire des sites comme celui-ci », choix B): the look (simple · showcase), a second
+  /// colour, the photo behind the title (private store, served by Plazo under its own file name), the parking's logo
+  /// shown or not, its Google rating as the manager typed it (tenths, 10 to 50) and whether the site has several pages.
+  theme            String    @default("simple")
+  accent2          String?
+  heroPhotoKey     String?
+  showLogo         Boolean   @default(false)
+  ratingTenths     Int?
+  ratingCount      Int?
+  pages            Boolean   @default(false)
   /// 22/11/2026 (« le nom de domaine du parking »): the parking's own host name, « www.parking-des-cedres.fr », lower
   /// case; the site answers on it once its DNS points to Plazo and the host is attached (`domainActiveAt`).
   domain           String?   @unique

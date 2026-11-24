@@ -33,6 +33,7 @@ import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
 import { MeetingPhotoService } from './meeting-photo.service';
+import { OperatorSiteService } from './operator-site.service';
 import { OperatorLogoService } from './operator-logo.service';
 import { StaffPhotoService } from './staff-photo.service';
 import { StaffService } from './staff.service';
@@ -621,6 +622,7 @@ export class PlatformService {
       ...(await Container.get(StaffPhotoService).blobKeysOf(operatorId)),
       ...(await Container.get(OperatorLogoService).blobKeysOf(operatorId)),
       ...(await Container.get(MeetingPhotoService).blobKeysOf(operatorId)),
+      ...(await Container.get(OperatorSiteService).blobKeysOf(operatorId)),
     ];
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.

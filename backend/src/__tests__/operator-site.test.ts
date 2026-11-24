@@ -1,6 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { blocksOf, defaultBlocks, readBlocks } from '@/domain/operator-site';
+import { blocksOf, defaultBlocks, readBlocks, readRating, siteDestinations } from '@/domain/operator-site';
 import { dnsRecordFor, dnsState, isApex, readDomain } from '@/domain/site-domain';
 import { OperatorSiteService } from '@/services/operator-site.service';
 import { SiteDomainHostService } from '@/services/site-domain-host.service';
@@ -47,7 +47,15 @@ describe('les blocs', () => {
       'conditions',
       'faq',
       'contact',
+      'destinations',
+      'cta',
     ]);
+    // The showcase blocks wait for the manager: no site changes by itself.
+    expect(
+      blocksOf(null)
+        .filter(b => !b.enabled)
+        .map(b => b.kind),
+    ).toEqual(['destinations', 'cta']);
     expect(blocksOf('n’importe quoi')).toEqual(defaultBlocks());
   });
 
@@ -163,6 +171,98 @@ describe('Mon site', () => {
   });
 });
 
+describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
+  const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(64, 1)]);
+
+  it('lit la note Google tapée et nomme les pages des destinations', () => {
+    expect(readRating({ value: '4,8', count: 193 })).toEqual({ tenths: 48, count: 193 });
+    expect(readRating({ value: 4.9 })).toEqual({ tenths: 49, count: null });
+    expect(readRating(null)).toEqual({ tenths: null, count: null });
+    expect(readRating({ value: 5.4 })).toEqual({ error: 'rating' });
+    expect(readRating({ value: '', count: 12 })).toEqual({ error: 'rating' });
+    expect(readRating({ value: 4, count: 0 })).toEqual({ error: 'ratingCount' });
+    expect(
+      siteDestinations('Lyon Saint-Exupéry', [
+        { name: 'Gare TGV Saint-Exupéry', kind: 'station', instructions: ' Sortie Est ' },
+        { name: 'Contact', kind: 'other' },
+        { name: 'Gare TGV Saint-Exupéry', kind: 'station' },
+      ]),
+    ).toEqual([
+      { slug: 'aeroport', kind: 'airport', name: 'Lyon Saint-Exupéry', instructions: null },
+      { slug: 'gare-tgv-saint-exupery', kind: 'station', name: 'Gare TGV Saint-Exupéry', instructions: 'Sortie Est' },
+    ]);
+  });
+
+  it('présentation, deuxième couleur, note, photo du bandeau et pages : le site public les rend', async () => {
+    const op = await parkingWithListing();
+    await api()
+      .post('/api/internal/shuttle/stops')
+      .set(auth(op.token))
+      .send({ name: 'Gare TGV', kind: 'station', lat: 45.72, lng: 5.08, instructions: 'Devant le hall' });
+    const refused = await api()
+      .put('/api/internal/site')
+      .set(auth(op.token))
+      .send({ theme: 'neon', accent2: 'jaune', rating: { value: 9 } });
+    expect(refused.status).toBe(400);
+    expect(refused.body.fields).toEqual({ theme: 'invalid', accent2: 'invalid', rating: 'invalid' });
+
+    const saved = await api()
+      .put('/api/internal/site')
+      .set(auth(op.token))
+      .send({ slug: 'cedres', theme: 'showcase', accent2: '#f2b705', rating: { value: '4,8', count: 193 }, pages: true, showLogo: true });
+    expect(saved.status).toBe(200);
+    expect(saved.body.data).toMatchObject({
+      theme: 'showcase',
+      accent2: '#F2B705',
+      rating: { value: 4.8, count: 193 },
+      pages: true,
+      showLogo: true,
+      hasLogo: false,
+      heroPhotoUrl: null,
+    });
+
+    expect(
+      (await api().post('/api/internal/site/hero-photo').set(auth(op.token)).set('Content-Type', 'image/jpeg').send(Buffer.from('texte'))).body
+        .fields,
+    ).toEqual({
+      photo: 'not_an_image',
+    });
+    const photo = await api().post('/api/internal/site/hero-photo').set(auth(op.token)).set('Content-Type', 'image/jpeg').send(JPEG);
+    expect(photo.status).toBe(200);
+    const heroUrl: string = photo.body.data.heroPhotoUrl;
+    expect(heroUrl).toMatch(/^\/api\/public\/sites\/cedres\/hero\/[0-9a-f]{18}\.jpeg$/);
+    const served = await api().get(heroUrl);
+    expect(served.status).toBe(200);
+    expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect((await api().get('/api/public/sites/cedres/hero/000000000000000000.jpeg')).status).toBe(404);
+    // No logo uploaded: nothing to show, even switched on.
+    expect((await api().get('/api/public/sites/cedres/logo')).status).toBe(404);
+
+    const key = new URL(photo.body.data.previewUrl).searchParams.get('apercu')!;
+    const site = (await api().get(`/api/public/sites/cedres?apercu=${key}`)).body;
+    expect(site).toMatchObject({
+      theme: 'showcase',
+      accent2: '#F2B705',
+      accent2Ink: '#1A1D1A',
+      heroPhotoUrl: heroUrl,
+      logoUrl: null,
+      rating: { value: 4.8, count: 193 },
+      pages: ['aeroport', 'gare-tgv', 'questions', 'contact', 'mentions-legales'],
+    });
+    expect(site.destinations).toEqual([
+      { slug: 'aeroport', kind: 'airport', name: expect.any(String), instructions: null },
+      { slug: 'gare-tgv', kind: 'station', name: 'Gare TGV', instructions: 'Devant le hall' },
+    ]);
+
+    // Cleared again: null takes the second colour and the rating away, the photo is removed.
+    const cleared = await api().put('/api/internal/site').set(auth(op.token)).send({ accent2: null, rating: null, pages: false });
+    expect(cleared.body.data).toMatchObject({ accent2: null, rating: null, pages: false, theme: 'showcase' });
+    expect((await api().delete('/api/internal/site/hero-photo').set(auth(op.token))).body.data.heroPhotoUrl).toBeNull();
+    expect((await api().get(heroUrl)).status).toBe(404);
+    expect((await api().get(`/api/public/sites/cedres?apercu=${key}`)).body.pages).toEqual([]);
+  });
+});
+
 describe('le nom de domaine du parking (22/11/2026)', () => {
   const hosts = Container.get(SiteDomainHostService);
   afterEach(() => jest.restoreAllMocks());
@@ -228,7 +328,7 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
     const marked = await api().put(`/api/internal/platform/operators/${op.operator.id}/site/domain`).set(auth(admin.token)).send({ active: true });
     expect(marked.body.data.domain).toMatchObject({ active: true, issue: null });
 
-    expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).body).toEqual({ slug: 'cedres' });
+    expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).body).toEqual({ slug: 'cedres', pages: [] });
     expect((await api().get('/api/public/sites/cedres')).body.domain).toBe('www.parking-des-cedres.fr');
 
     // Another parking cannot take it; removing it closes the host.

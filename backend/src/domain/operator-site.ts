@@ -12,10 +12,12 @@ export const PLAZO_BLOCK_KINDS = [
   'booking',
   'highlights',
   'steps',
+  'destinations',
   'pricing',
   'photos',
   'access',
   'services',
+  'cta',
   'conditions',
   'faq',
   'contact',
@@ -45,7 +47,17 @@ export const SITE_ADDON_PRICE_CENTS = 2900;
 const isKind = (value: unknown): value is SiteBlockKind => (SITE_BLOCK_KINDS as readonly string[]).includes(value as string);
 const isFree = (kind: SiteBlockKind) => (FREE_BLOCK_KINDS as readonly string[]).includes(kind);
 
-export const defaultBlocks = (): SiteBlock[] => PLAZO_BLOCK_KINDS.map(kind => ({ id: kind, kind, enabled: true, title: null, text: null }));
+/** Blocks of the showcase look (24/11/2026): off until the manager switches them on, so that no site changes by itself. */
+const OFF_BY_DEFAULT: readonly SiteBlockKind[] = ['destinations', 'cta'];
+
+export const defaultBlocks = (): SiteBlock[] =>
+  [...PLAZO_BLOCK_KINDS.filter(k => !OFF_BY_DEFAULT.includes(k)), ...OFF_BY_DEFAULT].map(kind => ({
+    id: kind,
+    kind,
+    enabled: !OFF_BY_DEFAULT.includes(kind),
+    title: null,
+    text: null,
+  }));
 
 const oneLine = (value: unknown, max: number): string | null => {
   if (typeof value !== 'string') return null;
@@ -101,6 +113,69 @@ export function blocksOf(stored: unknown): SiteBlock[] {
   if (stored === null || stored === undefined) return defaultBlocks();
   const read = readBlocks(stored);
   return 'blocks' in read ? read.blocks : defaultBlocks();
+}
+
+/** The site's look: « simple » (the first one, sober) or « showcase » (24/11/2026: photo behind the title, two colours). */
+export const SITE_THEMES = ['simple', 'showcase'] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number];
+export const readTheme = (value: unknown): SiteTheme | null => ((SITE_THEMES as readonly unknown[]).includes(value) ? (value as SiteTheme) : null);
+
+/**
+ * The Google rating as the manager typed it (« 4,8 », 193 reviews): Plazo does not read it at Google. Null clears it;
+ * a count needs a rating. Returns the tenths (10 to 50) and the count, or the field refused.
+ */
+export function readRating(value: unknown): { tenths: number | null; count: number | null } | { error: 'rating' | 'ratingCount' } {
+  if (value === null || value === undefined) return { tenths: null, count: null };
+  if (typeof value !== 'object') return { error: 'rating' };
+  const { value: note, count } = value as Record<string, unknown>;
+  if (note === null || note === undefined || note === '') {
+    return count === null || count === undefined || count === '' ? { tenths: null, count: null } : { error: 'rating' };
+  }
+  const number = typeof note === 'number' ? note : typeof note === 'string' ? Number(note.replace(',', '.')) : NaN;
+  const tenths = Math.round(number * 10);
+  if (!Number.isFinite(number) || tenths < 10 || tenths > 50) return { error: 'rating' };
+  if (count === null || count === undefined || count === '') return { tenths, count: null };
+  const reviews = typeof count === 'number' ? count : Number(count);
+  if (!Number.isInteger(reviews) || reviews < 1 || reviews > 1_000_000) return { error: 'ratingCount' };
+  return { tenths, count: reviews };
+}
+
+/** Where the parking takes its travellers: the airport first, then each stop of its shuttle. */
+export interface SiteDestination {
+  slug: string;
+  kind: 'airport' | 'station' | 'other';
+  name: string;
+  instructions: string | null;
+}
+
+/** Page names the site keeps for itself. */
+export const FIXED_SITE_PAGES = ['questions', 'contact', 'mentions-legales'] as const;
+
+const pageSlug = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+
+/** The airport and the shuttle's stops as destinations, each with the page name it gets (unique, never a fixed page). */
+export function siteDestinations(airportName: string, stops: { name: string; kind: string; instructions?: string | null }[]): SiteDestination[] {
+  const taken = new Set<string>(FIXED_SITE_PAGES);
+  const list: SiteDestination[] = [];
+  const add = (name: string, kind: SiteDestination['kind'], wanted: string, instructions: string | null) => {
+    const slug = pageSlug(wanted);
+    if (!slug || taken.has(slug)) return;
+    taken.add(slug);
+    list.push({ slug, kind, name, instructions });
+  };
+  add(airportName, 'airport', 'aeroport', null);
+  for (const stop of stops.slice(0, 8)) {
+    const kind = stop.kind === 'station' ? 'station' : stop.kind === 'airport' ? 'airport' : 'other';
+    add(stop.name, kind, stop.name, stop.instructions?.trim() || null);
+  }
+  return list;
 }
 
 export const siteUrl = (site: string, slug: string) => `${site.replace(/\/+$/, '')}/s/${slug}`;
