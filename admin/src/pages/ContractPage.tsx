@@ -189,6 +189,8 @@ export default function ContractPage() {
   const download = useDownload();
   const current = contract.data?.current ?? null;
   const operatorName = user?.operatorName ?? "";
+  // The plans show the price agreed with Plazo (24/11/2026); the subscription view carries it.
+  const subscription = useQuery({ queryKey: ["subscription"], queryFn: () => adminApi.getSubscription(), retry: false });
 
   return (
     <>
@@ -243,7 +245,7 @@ export default function ContractPage() {
         </section>
       )}
 
-      <PlazoPlans operatorName={operatorName} />
+      <PlazoPlans operatorName={operatorName} agreed={subscription.data?.agreed ?? null} />
     </>
   );
 }

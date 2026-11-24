@@ -7289,6 +7289,7 @@ export const statsFr = {
 
 // « Mon contrat Plazo » › les formules (13/11/2026, « intègre-le à Plazo Pro dans l'onglet Mon contrat Plazo »)
 export const plansFr = {
+  agreed: (grid: string) => `Tarif convenu avec Plazo (grille ${grid} €)`,
   title: `Les formules ${PRODUCT.name} Pro`,
   intro:
     "Les formules s'empilent : Opérations contient tout Essentiel, Complet contient tout Opérations.",
@@ -7296,7 +7297,7 @@ export const plansFr = {
   yearly: "Annuel −10 %",
   billing: "Facturation",
   perMonth: "HT / mois",
-  yearlyLine: (euros: number) => `${euros} € par mois en annuel`,
+  yearlyLine: (euros: number | string) => `${euros} € par mois en annuel`,
   recommended: "Le plus choisi",
   ask: "Choisir cette formule",
   askSubject: (plan: string, operator: string) =>
