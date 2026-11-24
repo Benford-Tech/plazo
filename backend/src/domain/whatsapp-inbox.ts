@@ -135,12 +135,18 @@ export function previewOf(message: { type: string; text: string | null }): strin
  * 14/11/2026: an SMS to the parking's phone (`lastSmsAt`) is answered by SMS from that phone when it is the traveller's
  * latest message, or when nothing else is open (no WhatsApp window, never wrote from the app).
  */
+/**
+ * A conversation keyed without a phone number: `app:<booking>` (a message from the Plazo app) or `site:<key>` (24/11/2026,
+ * the contact form of the parking's own site): no call, no SMS, no WhatsApp from it.
+ */
+export const hasNoNumber = (phone: string) => phone.startsWith('app:') || phone.startsWith('site:');
+
 export function replyChannelOf(
   row: { phone: string; lastInboundAt: Date | null; lastAppAt: Date | null; lastSmsAt?: Date | null },
   now = new Date(),
 ): 'app' | 'whatsapp' | 'sms' | null {
-  const whatsappOpen = !row.phone.startsWith('app:') && replyUntil(row.lastInboundAt, now) !== null;
-  const sms = row.phone.startsWith('app:') ? null : (row.lastSmsAt ?? null);
+  const whatsappOpen = !hasNoNumber(row.phone) && replyUntil(row.lastInboundAt, now) !== null;
+  const sms = hasNoNumber(row.phone) ? null : (row.lastSmsAt ?? null);
   const app = row.lastAppAt;
   const whatsapp = whatsappOpen ? row.lastInboundAt : null;
   if (sms && (!app || sms >= app) && (!whatsapp || sms >= whatsapp)) return 'sms';

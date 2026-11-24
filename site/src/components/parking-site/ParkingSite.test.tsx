@@ -176,4 +176,52 @@ describe("le site du parking", () => {
     render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "home", heroPhotoUrl: "/hero.jpg" })} />);
     expect(screen.getByTestId("site-team-photo")).toHaveAttribute("src", "/hero.jpg");
   });
+
+  it("« Parc » et « Voiturier » (24/11/2026) : étapes numérotées, atouts cochés, prix par jour, formulaire et barre fixe", () => {
+    const grid: ParkingResponse = {
+      ...data,
+      parking: {
+        ...data.parking,
+        pricing: {
+          tiers: [
+            { days: 1, priceCents: 2500 },
+            { days: 3, priceCents: 3500 },
+            { days: 7, priceCents: 5500 },
+            { days: 14, priceCents: 10000 },
+          ],
+          extraDayPriceCents: 500,
+        },
+      },
+    };
+    const blocks = [block("booking"), block("highlights"), block("steps"), block("pricing"), block("contact")];
+    const { unmount } = render(<ParkingSite idempotencyKey="k" data={grid} site={site(blocks, { theme: "park" })} />);
+    expect(screen.getByTestId("parking-site")).toHaveAttribute("data-theme-look", "park");
+    expect(within(screen.getByTestId("site-steps")).getAllByRole("listitem")).toHaveLength(3);
+    expect(screen.getByTestId("site-strengths")).toBeInTheDocument();
+    const cards = within(screen.getByTestId("site-price-cards")).getAllByRole("listitem");
+    expect(cards.map(c => c.textContent?.replace(/\s/g, " "))).toEqual([
+      "3 jours35,00 €soit 11,67 € par jour",
+      "7 jours55,00 €soit 7,86 € par jour",
+      "14 jours100,00 €soit 7,14 € par jour",
+    ]);
+    expect(screen.getByText("Voir toute la grille")).toBeInTheDocument();
+    expect(screen.getByTestId("site-contact-form")).toBeInTheDocument();
+    expect(screen.getByText("Ma réservation")).toBeInTheDocument();
+    const bar = screen.getByTestId("site-sticky-bar");
+    expect(within(bar).getByText("Appeler").closest("a")).toHaveAttribute("href", "tel:0472000000");
+    expect(within(bar).getByText("Écrire").closest("a")).toHaveAttribute("href", "/s/cedres#contact");
+    unmount();
+
+    render(<ParkingSite idempotencyKey="k" data={grid} site={site(blocks, { theme: "valet" })} />);
+    expect(within(screen.getByTestId("site-steps")).getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByTestId("site-strengths")).toBeNull();
+    expect(screen.queryByText("Ma réservation")).toBeNull();
+  });
+
+  it("le style sobre garde son tableau, sans formulaire ni barre fixe", () => {
+    render(<ParkingSite idempotencyKey="k" data={data} site={site([block("booking"), block("pricing"), block("contact")])} />);
+    expect(screen.queryByTestId("site-price-cards")).toBeNull();
+    expect(screen.queryByTestId("site-contact-form")).toBeNull();
+    expect(screen.queryByTestId("site-sticky-bar")).toBeNull();
+  });
 });

@@ -5,7 +5,7 @@ import type { ParkingSiteInfo, SiteDestination } from "@/lib/types";
  * A parking's site with several pages (24/11/2026, choix B): one page per destination (the airport, each stop of the
  * shuttle), then the questions, the contact and the legal notice. The home page is the page with no name.
  */
-export const FIXED_PAGES = ["questions", "contact", "mentions-legales"] as const;
+export const FIXED_PAGES = ["tarifs", "questions", "contact", "mentions-legales"] as const;
 export type FixedPage = (typeof FIXED_PAGES)[number];
 
 /** The address of one of the site's pages (the home page without a name), in the visitor's language. */
@@ -13,6 +13,9 @@ export function sitePath(site: ParkingSiteInfo, page?: string | null, hash = "")
   const base = site.links?.base ?? `/s/${site.slug}`;
   return `${lp(`${base}${page ? `/${page}` : ""}` || "/")}${site.links?.query ?? ""}${hash}`;
 }
+
+/** The preview key the site's links carry, for the contact form of a preview. */
+export const previewKeyOf = (site: ParkingSiteInfo) => new URLSearchParams(site.links?.query ?? "").get("apercu");
 
 /** Every look but the sober one: bands across the page, the booking brought up under the title. */
 export const isRich = (site: ParkingSiteInfo) => (site.theme ?? "simple") !== "simple";
@@ -30,6 +33,7 @@ export function pageOf(site: ParkingSiteInfo, name: string): { kind: "destinatio
 /** The block kinds each page shows, in its own order; the home page shows the manager's order. */
 export const PAGE_BLOCKS = {
   destination: ["booking", "steps", "pricing", "faq", "contact"],
+  tarifs: ["pricing", "booking", "services", "conditions"],
   questions: ["faq", "contact"],
   contact: ["contact", "access"],
   "mentions-legales": [],

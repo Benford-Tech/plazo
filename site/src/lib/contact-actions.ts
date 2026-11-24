@@ -67,6 +67,41 @@ export async function contactAction(_previous: FormState, formData: FormData): P
 }
 
 /**
+ * The contact form of a parking's own site (24/11/2026, « tout »): the same checks as /contact, a phone the visitor may
+ * leave, sent to the parking (its « Messages » and its managers' e-mail). Bound to the site and its preview key.
+ */
+export async function siteContactAction(slug: string, preview: string | null, _previous: FormState, formData: FormData): Promise<FormState> {
+  const values = {
+    name: text(formData, "name"),
+    email: text(formData, "email"),
+    phone: text(formData, "phone"),
+    reference: text(formData, "reference").toUpperCase(),
+    message: text(formData, "message"),
+  };
+  const fields: Record<string, string> = {};
+  for (const name of ["name", "email", "message"] as const) if (!values[name]) fields[name] = "required";
+  for (const name of ["name", "reference", "message"] as const) {
+    if (!fields[name] && values[name].length > CONTACT_LIMITS[name]) fields[name] = "too_long";
+  }
+  if (values.phone.length > 30) fields.phone = "too_long";
+  if (!fields.message && values.message.length < MESSAGE_MIN) fields.message = "too_short";
+  if (Object.keys(fields).length) return { values, fields: fieldCodes(fields), error: "validation_failed" };
+  try {
+    await api.siteContact(slug, preview, {
+      name: values.name,
+      email: values.email,
+      phone: values.phone || undefined,
+      reference: values.reference || undefined,
+      message: values.message,
+      website: text(formData, "website"),
+    });
+  } catch (error) {
+    return failure(values, error);
+  }
+  return { values: {}, fields: {}, error: null, notice: "contact_sent" };
+}
+
+/**
  * « S'inscrire »: the form says that subscribing means agreeing to receive the letter (its only use), so submitting it is
  * the consent; Brevo then asks the reader to confirm by e-mail (double opt-in) before the first letter.
  */

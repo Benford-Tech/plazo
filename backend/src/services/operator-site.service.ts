@@ -20,7 +20,13 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { dnsRecordFor, readDomain } from '@/domain/site-domain';
+import { contactEmail } from '@/domain/contact';
+import { SiteContactDto } from '@/dtos/contact.dto';
+import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { replyToName } from './contact.service';
+import { NotificationService } from './notification.service';
+import { WhatsappInboxService } from './whatsapp-inbox.service';
 import { PhotoStorageService, StoredPhoto } from './photo-storage.service';
 import { SiteDomainHostService } from './site-domain-host.service';
 
@@ -49,6 +55,8 @@ export class OperatorSiteService {
   public audit = Container.get(AuditService);
   public hosts = Container.get(SiteDomainHostService);
   public storage = Container.get(PhotoStorageService);
+  public notifications = Container.get(NotificationService);
+  public inbox = Container.get(WhatsappInboxService);
   public settings = { siteUrl: PUBLIC_SITE_URL, secret: SECRET_KEY ?? '' };
 
   private async listingOf(operatorId: string) {
@@ -514,5 +522,58 @@ export class OperatorSiteService {
       // The parking's own host, once it serves the site: the site's one address (plazo.fr/s/<slug> sends there).
       domain: online && operator.site?.domainActiveAt ? operator.site.domain : null,
     };
+  }
+
+  /**
+   * POST /public/sites/:slug/contact (24/11/2026, « tout »): the contact form of the parking's own site. The message goes
+   * into « Messages » (a `site:` conversation, pushed to the team) and by e-mail to the managers, Reply-To the visitor.
+   * Only a site online, or its preview with the manager's key. The honeypot answers the same and keeps nothing.
+   */
+  public async contact(slug: string, data: SiteContactDto, previewKey?: string, now = new Date()) {
+    const clean = slug.trim().toLowerCase();
+    const operator = await prisma.operator.findUnique({
+      where: { bookingPageSlug: clean },
+      select: { id: true, status: true, archivedAt: true, site: { select: { publishedAt: true } } },
+    });
+    if (!operator || operator.status !== 'active' || operator.archivedAt) throw notFound();
+    const online = !!operator.site?.publishedAt;
+    const preview = !!previewKey && previewKey === sitePreviewKey(operator.id, this.settings.secret);
+    if (!online && !preview) throw notFound();
+    if (data.website?.trim()) return { ok: true as const };
+    const listing = await prisma.listing.findFirst({
+      where: { parking: { operatorId: operator.id } },
+      orderBy: { createdAt: 'asc' },
+      select: { title: true },
+    });
+    const visitor = { name: data.name, email: data.email, phone: data.phone ?? null, reference: data.reference ?? null, message: data.message };
+    await this.inbox.siteWrite(operator.id, visitor, now);
+    const managers = await prisma.staff.findMany({
+      where: { operatorId: operator.id, role: 'manager', isActive: true, NOT: { email: { endsWith: '.invalid' } } },
+      select: { email: true },
+      take: 5,
+    });
+    const id = `site contact ${randomBytes(4).toString('hex')}`;
+    const message = contactEmail(
+      listing?.title ?? 'votre parking',
+      {
+        name: data.name,
+        email: data.email,
+        reference: data.reference,
+        message: data.phone ? `Téléphone : ${data.phone}\n\n${data.message}` : data.message,
+      },
+      id,
+      now,
+    );
+    for (const manager of managers) {
+      const sent = await this.notifications.emailSupport(
+        manager.email,
+        { email: data.email, name: replyToName(data.name) },
+        'site_contact',
+        id,
+        message,
+      );
+      if (!sent) logger.warn(`[Site] ${id}: e-mail to a manager not sent`);
+    }
+    return { ok: true as const };
   }
 }

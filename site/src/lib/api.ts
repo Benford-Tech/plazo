@@ -320,6 +320,13 @@ export const api = {
       body: input,
     }),
 
+  /** The contact form of a parking's own site (24/11/2026): into the parking's « Messages » and to its managers by e-mail. */
+  siteContact: (slug: string, preview: string | null, input: ContactInput & { phone?: string }) =>
+    apiRequest<{ ok: true }>(`/api/public/sites/${seg(slug)}/contact${query({ apercu: preview })}`, {
+      method: "POST",
+      body: input,
+    }),
+
   /** « La lettre Plazo »: 202 once Brevo has the double opt-in request. */
   newsletter: (input: NewsletterInput) =>
     apiRequest<{ ok: true }>("/api/public/newsletter", {

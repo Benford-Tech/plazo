@@ -205,6 +205,14 @@ function Bubble({ item, onDelete }: { item: ChatItem; onDelete?: () => void }) {
           {t.appBadge}
         </span>
       )}
+      {m.channel === "site" && (
+        <span
+          data-testid="wa-site-badge"
+          className="mb-0.5 inline-block rounded-full bg-[#FEF3C7] px-1.5 text-[10px] font-semibold text-[#92400E]"
+        >
+          {t.siteBadge}
+        </span>
+      )}
       {m.channel === "sms" && (
         <span
           data-testid="wa-sms-badge"
@@ -574,6 +582,10 @@ export function Thread({
             data-testid="wa-window-sms"
           >
             {t.replyBySms}
+          </span>
+        ) : !replyBy && detail.messages.some((m) => m.channel === "site") ? (
+          <span className="text-xs font-semibold text-lime-deep" data-testid="wa-window-site">
+            {t.replyBySite}
           </span>
         ) : c.replyUntil ? (
           <span

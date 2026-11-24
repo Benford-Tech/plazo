@@ -1,3 +1,4 @@
+import httpStatus from 'http-status';
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
@@ -71,6 +72,11 @@ export class OperatorSiteController {
 
   public logo = catchAsync(async (req: Request, res: Response) => {
     this.image(res, await this.service.logo(req.params.slug as string), 'public, max-age=3600');
+  });
+
+  public contact = catchAsync(async (req: Request, res: Response) => {
+    const key = typeof req.query.apercu === 'string' ? req.query.apercu : undefined;
+    res.status(httpStatus.ACCEPTED).json(await this.service.contact(req.params.slug as string, req.body, key));
   });
 
   public publicSite = catchAsync(async (req: Request, res: Response) => {

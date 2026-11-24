@@ -40,7 +40,9 @@ export async function generateMetadata({ params, searchParams }: { params: Param
         ? t.questions
         : opened.kind === "contact"
           ? t.contact
-          : t.legal;
+          : opened.kind === "tarifs"
+            ? t.prices
+            : t.legal;
   const title = `${name} · ${data.parking.title}`;
   const description = opened.kind === "destination" ? t.nearIntro(data.parking.title, opened.destination.name) : parkingMetaDescription(data);
   const path = site.domain ? `https://${site.domain}/${page}` : lp(`/s/${site.slug}/${page}`);

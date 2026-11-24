@@ -3,7 +3,7 @@ import { Container, Service } from 'typedi';
 import prisma from '@/database';
 import { smsRecipient } from '@/domain/phone';
 import { whatsappParam } from '@/domain/whatsapp';
-import { appConversationPhone, phoneTail, REPLY_MAX_LENGTH, replyUntil } from '@/domain/whatsapp-inbox';
+import { appConversationPhone, hasNoNumber, phoneTail, REPLY_MAX_LENGTH, replyUntil } from '@/domain/whatsapp-inbox';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -47,7 +47,7 @@ export class StaffMessageService {
 
   private async channels(actor: AuthenticatedStaff, r: Awaited<ReturnType<StaffMessageService['load']>>, now: Date) {
     const phone = appConversationPhone(r.customerPhone, r.id);
-    const hasPhone = !phone.startsWith('app:');
+    const hasPhone = !hasNoNumber(phone);
     const demo = await isSilentOperator(actor.operatorId);
     const whatsappOn = hasPhone && !demo && (await this.whatsapp.enabledFor(actor.operatorId));
     const conversation = hasPhone

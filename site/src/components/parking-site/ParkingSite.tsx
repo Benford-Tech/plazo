@@ -1,5 +1,7 @@
 import { fr } from "@/lib/fr";
+import { lp } from "@/lib/i18n/runtime";
 import { trustTiles } from "@/lib/highlights";
+import { mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { priceRows } from "@/lib/parking-more";
 import { hasPages, isRich, PAGE_BLOCKS, pageOf, sitePath } from "@/lib/parking-site";
@@ -86,6 +88,7 @@ function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks:
     ? [
         { href: sitePath(site), label: t.home },
         ...(site.destinations ?? []).slice(0, 3).map(d => ({ href: sitePath(site, d.slug), label: d.name })),
+        ...(site.pages?.includes("tarifs") ? [{ href: sitePath(site, "tarifs"), label: t.prices }] : []),
         { href: sitePath(site, "questions"), label: t.questions },
         { href: sitePath(site, "contact"), label: t.contact },
       ]
@@ -154,6 +157,8 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
   const blocks = blocksFor(site, pageKind);
   const look: Look = site.theme ?? "simple";
   const showcase = look === "showcase";
+  const park = look === "park";
+  const valet = look === "valet";
   const rich = isRich(site);
   const accent2 = site.accent2 ?? site.accent;
   const colours = {
@@ -161,6 +166,8 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
     "--ps-ink": site.accentInk,
     "--ps-accent2": accent2,
     "--ps-ink2": site.accent2 ? (site.accent2Ink ?? site.accentInk) : site.accentInk,
+    // « Parc »: a deep blue for its contact bar, its title band and its foot.
+    "--ps-dark": "#0e2238",
     ...TOKENS[look],
     // One touch of colour in the dark: the bands take a tone of the night, not the second colour.
     ...(look === "night" ? { "--ps-accent2": "#1a212c", "--ps-ink2": "#f2eee6" } : {}),
@@ -172,6 +179,8 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
       ? fr.parkingMore.faqTitle(parking.title)
       : pageKind === "contact"
         ? t.contact
+        : pageKind === "tarifs"
+          ? t.prices
         : pageKind === "mentions-legales"
           ? t.legal
           : parking.title;
@@ -206,8 +215,11 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           {t.preview}
         </p>
       )}
-      {showcase && (parking.phone || parking.openingHours) && (
-        <p data-testid="site-topbar" className="bg-[var(--ps-accent)] text-[13px] text-[var(--ps-ink)]">
+      {(showcase || park || valet) && (parking.phone || parking.openingHours) && (
+        <p
+          data-testid="site-topbar"
+          className={park ? "bg-[var(--ps-dark)] text-[13px] text-white" : valet ? "bg-tint text-[13px] text-ink" : "bg-[var(--ps-accent)] text-[13px] text-[var(--ps-ink)]"}
+        >
           <span className={`${container} flex flex-wrap gap-x-4 gap-y-0.5 py-1.5`}>
             {parking.phone && <span className="font-semibold tabular-nums">{parking.phone}</span>}
             {parking.openingHours && <span>{parking.openingHours}</span>}
@@ -221,6 +233,11 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
             <span className="min-w-0 truncate text-[16px] font-bold">{parking.title}</span>
           </a>
           <Menu site={site} blocks={blocks} />
+          {park && (
+            <a href={lp("/ma-reservation")} className="hidden flex-none rounded-[10px] border border-line px-3 py-2 text-[14px] font-semibold text-ink no-underline sm:block">
+              {t.myBooking}
+            </a>
+          )}
           <a href={reserve} className="flex-none rounded-[10px] bg-[var(--ps-accent)] px-4 py-2 text-[14px] font-semibold text-[var(--ps-ink)]">
             {fr.bookingPage.meta}
           </a>
@@ -337,6 +354,52 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           )}
         </div>
       )}
+      {park && (
+        // « Parc » (24/11/2026): the title in capitals over the photo darkened from the left, the booking across its foot.
+        <div
+          data-testid="site-hero"
+          className="bg-[var(--ps-dark)] bg-cover bg-center text-white"
+          style={photo ? veiled("90deg, rgba(14,34,56,.94) 35%, rgba(14,34,56,.35)") : undefined}
+        >
+          <div className={`${container} flex flex-col items-start gap-3 pt-10 md:pt-16 ${booking ? "pb-24" : "pb-12"}`}>
+            <h1 className="max-w-[18ch] text-[34px] leading-[1.02] font-extrabold tracking-tight uppercase md:text-[54px]">{heading}</h1>
+            <p className="max-w-[52ch] text-[15.5px] font-medium text-white/85 md:text-[17px]">{lead}</p>
+            {rating && (
+              <p data-testid="site-rating" className="rounded-full bg-white/15 px-3 py-1 text-[14px] font-semibold">
+                <span aria-hidden="true" className="tracking-[1px] text-[var(--ps-accent)]">
+                  ★★★★★
+                </span>{" "}
+                {ratingText} · {t.reviews(rating.count)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      {valet && (
+        // « Voiturier » (24/11/2026): the title beside the photo, the valet's meeting point laid on it.
+        <div data-testid="site-hero" className={`${container} grid items-stretch gap-6 pt-8 md:grid-cols-[1.1fr_1fr] md:pt-12`}>
+          <div className="flex flex-col items-start justify-center gap-3">
+            <h1 className="font-title text-[34px] leading-[1.06] md:text-[50px]">{heading}</h1>
+            <p className="max-w-[48ch] text-[16px] text-soft">{lead}</p>
+            {rating && (
+              <p data-testid="site-rating" className="text-[14.5px] font-semibold">
+                <span aria-hidden="true" className="text-[var(--ps-accent)]">
+                  ★★★★★
+                </span>{" "}
+                {ratingText} · {t.reviews(rating.count)}
+              </p>
+            )}
+          </div>
+          <div className="relative min-h-[200px] overflow-hidden rounded-[22px] bg-dark bg-cover bg-center" style={photo ? { backgroundImage: `url("${photo}")` } : undefined}>
+            {data.details?.meetingPoint && (
+              <p className="absolute bottom-3 left-3 max-w-[80%] rounded-[12px] bg-paper px-3 py-2 text-[13.5px] text-ink">
+                <span className="block font-bold">{t.meeting}</span>
+                {data.details.meetingPoint}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       {look === "simple" && (
         <div className={`${container} flex flex-col gap-2 pt-6 md:pt-10`}>
           <h1 className="font-title text-[30px] leading-[1.1] md:text-[44px]">{heading}</h1>
@@ -355,7 +418,17 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
             <div className="rounded-[18px] bg-ground p-3 shadow-[0_12px_40px_rgba(12,24,34,.25)] md:p-4">{draw(booking)}</div>
           </div>
         )}
-        {booking && !showcase && look !== "postcard" && <div className={`${container} mt-6`}>{draw(booking)}</div>}
+        {booking && park && (
+          <div className={`${container} relative z-10 -mt-16`}>
+            <div className="rounded-[18px] bg-paper p-3 shadow-[0_12px_40px_rgba(14,34,56,.22)] md:p-4">{draw(booking)}</div>
+          </div>
+        )}
+        {booking && valet && (
+          <div className={`${container} mt-6`}>
+            <div className="rounded-[18px] border border-line bg-paper p-3 shadow-[0_12px_32px_rgba(0,0,0,.08)] md:p-4">{draw(booking)}</div>
+          </div>
+        )}
+        {booking && !showcase && !park && !valet && look !== "postcard" && <div className={`${container} mt-6`}>{draw(booking)}</div>}
         {!booking && <div aria-hidden="true" className="-mb-4" />}
         {destination?.instructions && (
           <section className={`${container} flex flex-col gap-2`}>
@@ -381,7 +454,15 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
         )}
       </main>
 
-      <footer className={showcase || look === "postcard" ? "bg-[var(--ps-accent)] text-[var(--ps-ink)]" : "border-t border-line bg-paper text-soft"}>
+      <footer
+        className={
+          park
+            ? "bg-[var(--ps-dark)] text-white/80"
+            : showcase || look === "postcard"
+              ? "bg-[var(--ps-accent)] text-[var(--ps-ink)]"
+              : "border-t border-line bg-paper text-soft"
+        }
+      >
         <div className={`${container} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4 text-[13px]`}>
           <span>{[parking.title, parking.phone].filter(Boolean).join(" · ")}</span>
           {hasPages(site) && (
@@ -392,6 +473,46 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           <span>{fr.bookingPage.by}</span>
         </div>
       </footer>
+      {rich && <StickyBar site={site} data={data} reserve={reserve} />}
     </div>
+  );
+}
+
+/**
+ * On a phone, every look but the sober one (24/11/2026, « tout »): a bar fixed at the bottom with call, directions, write
+ * and book. The page keeps room for it at its foot.
+ */
+function StickyBar({ site, data, reserve }: { site: ParkingSiteInfo; data: ParkingResponse; reserve: string }) {
+  const t = fr.parkingSite;
+  const { parking, airport } = data;
+  const write = hasPages(site) ? sitePath(site, "contact") : sitePath(site, null, "#contact");
+  const item = "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[12px] font-semibold no-underline";
+  return (
+    <>
+      <div aria-hidden="true" className="h-16 md:hidden" />
+      <nav
+        data-testid="site-sticky-bar"
+        aria-label={site.title}
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        {parking.phone && (
+          <a href={`tel:${parking.phone.replace(/[^+\d]/g, "")}`} className={`${item} text-ink`}>
+            <span aria-hidden="true">☎</span>
+            {t.call}
+          </a>
+        )}
+        <a href={mapsUrl(parking.address ?? `${parking.title}, ${airport.name}`)} target="_blank" rel="noopener noreferrer" className={`${item} text-ink`}>
+          <span aria-hidden="true">➤</span>
+          {t.directions}
+        </a>
+        <a href={write} className={`${item} text-ink`}>
+          <span aria-hidden="true">✉</span>
+          {t.write}
+        </a>
+        <a href={reserve} className={`${item} bg-[var(--ps-accent)] text-[var(--ps-ink)]`}>
+          {t.book}
+        </a>
+      </nav>
+    </>
   );
 }

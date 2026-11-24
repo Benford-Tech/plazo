@@ -84,3 +84,15 @@ export class NewsletterDto {
   @MaxLength(500)
   public website?: string;
 }
+
+/**
+ * A message of the contact form of a parking's own site (24/11/2026, « tout »): the same fields as Plazo's form, and a
+ * phone the visitor may leave for a call back.
+ */
+export class SiteContactDto extends ContactDto {
+  @Transform(optionalOneLine)
+  @IsOptional()
+  @MaxLength(30, { message: 'too_long' })
+  @IsString({ message: 'too_long' })
+  public phone?: string;
+}

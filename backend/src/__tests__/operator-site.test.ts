@@ -207,7 +207,7 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     expect(refused.body.fields).toEqual({ theme: 'invalid', accent2: 'invalid', rating: 'invalid' });
 
     // 24/11/2026: the four other models are stored as they are.
-    for (const theme of ['night', 'postcard', 'home', 'express']) {
+    for (const theme of ['night', 'postcard', 'home', 'express', 'park', 'valet']) {
       const model = await api().put('/api/internal/site').set(auth(op.token)).send({ theme });
       expect(model.status).toBe(200);
       expect(model.body.data.theme).toBe(theme);
@@ -254,7 +254,7 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
       heroPhotoUrl: heroUrl,
       logoUrl: null,
       rating: { value: 4.8, count: 193 },
-      pages: ['aeroport', 'gare-tgv', 'questions', 'contact', 'mentions-legales'],
+      pages: ['aeroport', 'gare-tgv', 'tarifs', 'questions', 'contact', 'mentions-legales'],
     });
     expect(site.destinations).toEqual([
       { slug: 'aeroport', kind: 'airport', name: expect.any(String), instructions: null },
@@ -278,6 +278,57 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     expect((await api().delete('/api/internal/site/hero-photo').set(auth(op.token))).body.data.heroPhotoUrl).toBeNull();
     expect((await api().get(heroUrl)).status).toBe(404);
     expect((await api().get(`/api/public/sites/cedres?apercu=${key}`)).body.pages).toEqual([]);
+  });
+});
+
+describe('le formulaire de contact du site (24/11/2026)', () => {
+  it('range le message dans « Messages », l’envoie aux gérants, et seulement pour un site en ligne ou son aperçu', async () => {
+    const op = await parkingWithListing();
+    const saved = await api().put('/api/internal/site').set(auth(op.token)).send({ slug: 'cedres', theme: 'park', pages: true });
+    expect(saved.status).toBe(200);
+    const key = new URL(saved.body.data.previewUrl).searchParams.get('apercu')!;
+    const sent: string[] = [];
+    const notifications = service.notifications;
+    const before = notifications.emailSupport;
+    notifications.emailSupport = async (to: string) => {
+      sent.push(to);
+      return true;
+    };
+    try {
+      const message = { name: 'Camille Martin', email: 'camille@exemple.fr', phone: '06 12 34 56 78', message: 'Avez-vous une place couverte ?' };
+      expect((await api().post('/api/public/sites/cedres/contact').send(message)).status).toBe(404);
+      expect(
+        (
+          await api()
+            .post('/api/public/sites/cedres/contact')
+            .send({ ...message, email: 'pas une adresse' })
+        ).status,
+      ).toBe(400);
+      const ok = await api().post(`/api/public/sites/cedres/contact?apercu=${key}`).send(message);
+      expect(ok.status).toBe(202);
+      const again = await api()
+        .post(`/api/public/sites/cedres/contact?apercu=${key}`)
+        .send({ ...message, message: 'Et un siège bébé ?' });
+      expect(again.status).toBe(202);
+      // The honeypot keeps nothing.
+      await api()
+        .post(`/api/public/sites/cedres/contact?apercu=${key}`)
+        .send({ ...message, website: 'spam' });
+
+      const conversations = await prisma.whatsappConversation.findMany({ where: { operatorId: op.operator.id }, include: { messages: true } });
+      expect(conversations).toHaveLength(1);
+      expect(conversations[0]).toMatchObject({ profileName: 'Camille Martin', unread: 2 });
+      expect(conversations[0].phone).toMatch(/^site:[0-9a-f]{24}$/);
+      expect(conversations[0].messages.map(m => m.channel)).toEqual(['site', 'site']);
+      expect(conversations[0].messages[0].text).toContain('E-mail : camille@exemple.fr');
+      expect(conversations[0].messages[0].text).toContain('Téléphone : 06 12 34 56 78');
+      expect(sent).toEqual([op.manager.email, op.manager.email]);
+
+      const inbox = await api().get('/api/internal/whatsapp/inbox?view=all').set(auth(op.token));
+      expect(inbox.body.data[0]).toMatchObject({ phone: '', name: 'Camille Martin', replyBy: null });
+    } finally {
+      notifications.emailSupport = before;
+    }
   });
 });
 
