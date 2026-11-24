@@ -237,18 +237,47 @@ export interface SubscriptionView {
   vatPercent: number;
   setupFeeCents: number;
   setupFeeDue: boolean;
-  plans: { id: PlanId; name: string; monthlyCents: number; yearlyCents: number }[];
+  plans: { id: PlanId; name: string; monthlyCents: number; yearlyCents: number; gridMonthlyCents?: number; agreed?: boolean }[];
+  /** 24/11/2026: the price the platform agreed with this operator. */
+  agreed?: AgreedProPrice | null;
   subscription: {
     status: string;
     running: boolean;
     plan: PlanId;
     yearly: boolean;
     priceCents: number;
+    agreed?: boolean;
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
     paymentMethod: SubscriptionPaymentMethod | null;
     lastPaymentError: string | null;
   } | null;
+}
+
+export interface AgreedProPrice {
+  plan: PlanId | null;
+  monthlyCents: number | null;
+  gridMonthlyCents: number | null;
+  setupFeeCents: number | null;
+}
+
+/** Plateforme › loueur › Paiements (24/11/2026, direction A « Prix négocié »). */
+export interface PlatformProPrice {
+  agreed: AgreedProPrice | null;
+  gridSetupFeeCents: number;
+  vatPercent: number;
+  plans: { id: PlanId; name: string; gridMonthlyCents: number }[];
+  subscription: {
+    status: string;
+    running: boolean;
+    plan: PlanId;
+    yearly: boolean;
+    priceCents: number;
+    agreed: boolean;
+    currentPeriodEnd: string | null;
+  } | null;
+  setupFeePaid: boolean;
+  applied?: boolean;
 }
 
 export interface SubscribeResult {
@@ -1433,6 +1462,16 @@ export const adminApi = {
   getAgreements: () => apiRequest<Agreements>("/internal/agreements"),
   // 17/11/2026 (direction B): the Plazo Pro subscription, paid with Stripe.
   getSubscription: () => apiRequest<SubscriptionView>("/internal/subscription"),
+  getOperatorProPrice: (operatorId: string) =>
+    apiRequest<PlatformProPrice>(`/internal/platform/operators/${operatorId}/pro-price`),
+  setOperatorProPrice: (
+    operatorId: string,
+    v: { plan: PlanId | null; monthlyCents: number | null; setupFeeCents: number | null; when: "now" | "renewal" },
+  ) =>
+    apiRequest<PlatformProPrice>(`/internal/platform/operators/${operatorId}/pro-price`, {
+      method: "PUT",
+      body: json(v),
+    }),
   subscribe: (plan: PlanId, yearly: boolean) =>
     apiRequest<SubscribeResult>("/internal/subscription", { method: "POST", body: json({ plan, yearly }) }),
   syncSubscription: () => apiRequest<SubscriptionView>("/internal/subscription/sync", { method: "POST" }),

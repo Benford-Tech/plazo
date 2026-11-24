@@ -27,6 +27,7 @@ import {
   RowActions,
 } from "./OperatorsPage";
 import { KindPill, OperatorStatePill } from "./operator-bits";
+import { OperatorProPriceCard } from "@/components/platform/OperatorProPriceCard";
 import { OperatorWhatsappPanel } from "@/components/platform/OperatorWhatsappPanel";
 
 const t = fr.platform.operatorPage;
@@ -385,6 +386,7 @@ export default function PlatformOperatorPage() {
       )}
 
       {tab === "paiements" && (
+        <div className="flex flex-col gap-4">
         <section className={cn(card, "space-y-3 px-5 py-4")}>
           <p className="text-sm text-muted-foreground">{t.paymentsIntro}</p>
           <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[14rem_1fr]">
@@ -406,6 +408,8 @@ export default function PlatformOperatorPage() {
             {t.seePayments}
           </Link>
         </section>
+        <OperatorProPriceCard operatorId={o.id} />
+        </div>
       )}
 
       {tab === "contrat" && (

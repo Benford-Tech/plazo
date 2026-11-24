@@ -50,4 +50,13 @@ export class ProSubscriptionController {
   public resume = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.subscriptions.setCancelAtPeriodEnd(req.staff, false));
   });
+
+  public platformPrice = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.subscriptions.platformView(req.params.id as string));
+  });
+
+  public setPlatformPrice = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.subscriptions.setAgreedPrice(req.staff, req.params.id as string, req.body ?? {}));
+  });
 }

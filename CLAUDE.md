@@ -2935,6 +2935,21 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `setup_not_confirmed` ; tracés `subscription.*`. Réglages Stripe à faire : README (évènements du webhook, SEPA, relances). Pas encore :
   la vue des abonnements dans la Plateforme, les options de la page Tarifs (SMS, page de réservation), Plazo Pro. Tests
   `pro-subscription.test.ts`, `SubscriptionPage.test.tsx`.
+- **Prix convenu avec un parking, direction A « Prix négocié » (24/11/2026, « appliquer un tarif au plan mensuel d'un parking »,
+  mise en route « réglable aussi »)** : Plateforme › loueur › Paiements, carte « Abonnement Plazo Pro » (`OperatorProPriceCard`) :
+  formule, grille, « Prix convenu » en € HT par mois, mise en route Grille (290 €) · Offerte · Autre montant, « À partir de »
+  Maintenant (au prorata) · Prochain prélèvement quand un abonnement tourne, « Appliquer », « Revenir à la grille ».
+  `Operator.proAgreedPlan` / `proAgreedMonthlyCents` (1 € à 10 000 €) / `proAgreedSetupFeeCents` (0 = offerte ; migration
+  `pro_agreed_price`, CHECK) ; `domain/pro-subscription.ts` : `AgreedPrice`, `readAgreedPrice`, `planPriceCents(plan, yearly,
+  agreed)` (l'annuel garde sa remise de 10 % sur le prix convenu), `setupFeeCentsOf`, clé Stripe du montant
+  (`plazo_pro_<formule>_<monthly|yearly>_<centimes>`, `setupLookupKey`, prix créé à la première fois par `priceId`) ;
+  `GET|PUT /internal/platform/operators/:id/pro-price` (`PlatformAdminMiddleware` ; `{ plan, monthlyCents | null,
+  setupFeeCents | null, when: now | renewal }`, 400 par champ, 502 `stripe_failed`, tracé `operator.pro_price_set`) : un
+  abonnement de cette formule passe au nouveau prix (`always_invoice` ou `none`), celui d'une autre formule garde le sien ;
+  l'abonnement du gérant, l'aperçu et le changement de formule prennent le prix convenu. Gérant › Abonnement : « Tarif convenu
+  avec Plazo (grille 299,00 € HT / mois) » sur la formule et l'abonnement, « Mise en route offerte par Plazo ». Les conditions
+  d'utilisation disent « prix convenu avec Plazo au lieu du prix de la grille ». Tests `pro-subscription.test.ts`,
+  `OperatorProPriceCard.test.tsx`, `SubscriptionPage.test.tsx`.
 - **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
   permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
   "Partez léger, revenez sans attendre." », « QR vers la page du parking »)** : Gérant › Sur Plazo › « Flyer »

@@ -40,6 +40,9 @@ describe('les contrats Plazo (domaine)', () => {
       '269 € HT par mois (remise de 10 % sur le prix mensuel de 299 € HT), soit 3 228 € HT par an',
     );
     expect(agreementText(agreementDocument('pro_terms', facts({ plan: null })))).toContain('ceux du devis accepté');
+    expect(agreementText(agreementDocument('pro_terms', facts({ plan: { id: 'operations', yearly: false, agreedMonthlyCents: 19900 } })))).toContain(
+      'au mois : 199 € HT par mois, prix convenu avec Plazo au lieu du prix de la grille (299 € HT)',
+    );
 
     const listing = agreementText(agreementDocument('listing', facts({ commissionBps: 1250, payoutSchedule: 'WEEKLY' })));
     expect(listing).toContain('commission de 12,5 % du montant payé');
@@ -108,7 +111,7 @@ describe('les contrats Plazo (API)', () => {
       .set(auth(admin.token))
       .send({ plan: 'complet', yearly: true });
     expect(planned.status).toBe(200);
-    expect(planned.body.plan).toEqual({ id: 'complet', yearly: true });
+    expect(planned.body.plan).toMatchObject({ id: 'complet', yearly: true });
 
     let view = await api().get('/api/internal/agreements').set(auth(op.token));
     expect(view.status).toBe(200);

@@ -177,6 +177,11 @@ export default function SubscriptionPage() {
             <p className="text-sm">
               {euros(sub.priceCents)} {sub.yearly ? t.perYear : t.perMonth} · {t.ttc(euros(withVat(sub.priceCents, vat)))}
             </p>
+            {sub.agreed && planInfo(sub.plan).gridMonthlyCents && (
+              <p className="text-sm font-semibold text-lime-deep" data-testid="subscription-agreed">
+                {t.agreed(`${euros(planInfo(sub.plan).gridMonthlyCents!)} ${t.perMonth}`)}
+              </p>
+            )}
             {running && (
               <p className="text-sm text-muted-foreground">
                 {sub.cancelAtPeriodEnd ? t.endsOn(day(sub.currentPeriodEnd)) : t.nextCharge(day(sub.currentPeriodEnd))} · {methodLabel(sub.paymentMethod)}
@@ -225,6 +230,11 @@ export default function SubscriptionPage() {
                     {euros(yearly ? p.yearlyCents : p.monthlyCents)}{" "}
                     <span className="text-sm font-medium text-muted-foreground">{yearly ? t.perYear : t.perMonth}</span>
                   </p>
+                  {p.agreed && p.gridMonthlyCents && (
+                    <p className="text-xs font-semibold text-lime-deep" data-testid={`plan-agreed-${p.id}`}>
+                      {t.agreed(`${euros(p.gridMonthlyCents)} ${t.perMonth}`)}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">{pitch(p.id)}</p>
                   {current ? (
                     <span className="mt-auto flex min-h-11 items-center justify-center rounded-full bg-muted font-bold">{t.yourPlan}</span>
@@ -265,6 +275,12 @@ export default function SubscriptionPage() {
                       <dt>{t.planLine(planInfo(target).name, yearly)}</dt>
                       <dd className="font-mono">{euros(plan)} HT</dd>
                     </div>
+                    {setup === 0 && d.agreed?.setupFeeCents === 0 && (
+                      <div className="flex justify-between gap-3 text-lime-deep">
+                        <dt>{t.setupOffered}</dt>
+                        <dd className="font-mono">0 € HT</dd>
+                      </div>
+                    )}
                     {setup > 0 && (
                       <div className="flex justify-between gap-3">
                         <dt>{t.setupLine}</dt>
