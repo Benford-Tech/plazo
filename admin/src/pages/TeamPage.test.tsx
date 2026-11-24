@@ -187,16 +187,16 @@ describe("Équipe : modifier le nom", () => {
     ).toBeInTheDocument();
   });
 
-  it("cache le bouton pendant la consultation de l'espace d'un loueur", async () => {
+  it("en consultation, l'équipe se gère, sans le mot de passe des membres (24/11/2026)", async () => {
     auth.user = {
       ...manager,
       viewAs: { operatorId: "o1", operatorName: "Allo Park" },
     };
     renderPage();
-    await rowOf("Paul Durand");
-    expect(
-      screen.queryByRole("button", { name: "Modifier le nom" }),
-    ).not.toBeInTheDocument();
+    const paul = within(await rowOf("Paul Durand"));
+    expect(paul.getByRole("button", { name: "Modifier le nom" })).toBeInTheDocument();
+    expect(paul.queryByPlaceholderText("Nouveau mot de passe")).not.toBeInTheDocument();
+    expect(screen.getByText(/En consultation : vous gérez l'équipe/)).toBeInTheDocument();
     // 26/10/2026: the platform admin can still resend a member's invitation.
     api.inviteStaff.mockResolvedValueOnce({ invitation: { emailSent: true } });
     await userEvent.click(

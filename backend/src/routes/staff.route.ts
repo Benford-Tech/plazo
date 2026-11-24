@@ -249,8 +249,11 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(SetVehicleDto),
       this.staff.setVehicle,
     );
-    // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only); the team of
-    // the platform's own account (« Plazo (tests) ») stays manageable (RefuseInViewAsOutsidePlatformAccount, 12/10/2026).
+    // One's own password: never in a platform admin's consultation (RefuseInViewAs: 403 view_as_read_only).
+    // 24/11/2026 (« le superadmin peut faire tous les réglages »): the team is managed in consultation too (members added,
+    // renamed, roles, deactivated, join requests answered; traced view_as.write). Only a member's password stays out of
+    // reach outside the platform's own account (RefuseInViewAsOutsidePlatformAccount): « Renvoyer l'invitation » lets the
+    // member choose it.
     this.router.patch(
       '/internal/staff/me/password',
       StaffAuthMiddleware(),
@@ -264,17 +267,11 @@ export class StaffRoute implements Routes {
     this.router.get('/internal/staff/:id/photo', StaffAuthMiddleware(), this.staff.photo);
     this.router.get('/internal/nav/counts', StaffAuthMiddleware('reservations:view'), this.staff.navCounts);
     this.router.get('/internal/staff', StaffAuthMiddleware('team:manage'), this.staff.list);
-    this.router.post(
-      '/internal/staff',
-      StaffAuthMiddleware('team:manage'),
-      RefuseInViewAsOutsidePlatformAccount(),
-      ValidationMiddleware(CreateStaffDto),
-      this.staff.create,
-    );
+    this.router.post('/internal/staff', StaffAuthMiddleware('team:manage'), RefuseInDemo(), ValidationMiddleware(CreateStaffDto), this.staff.create);
     this.router.patch(
       '/internal/staff/:id',
       StaffAuthMiddleware('team:manage'),
-      RefuseInViewAsOutsidePlatformAccount(),
+      RefuseInDemo(),
       ValidationMiddleware(UpdateStaffDto),
       this.staff.update,
     );
@@ -290,23 +287,18 @@ export class StaffRoute implements Routes {
     // view_as.write; the prospects' demo stays refused.
     this.router.post('/internal/staff/:id/invite', StaffAuthMiddleware('team:manage'), RefuseInDemo(), this.staff.invite);
 
-    // « Rejoindre un parking » (13/10/2026). The code and the requests are read in consultation too; accepting and
-    // refusing are team writes (read-only in consultation, except in the platform's own account).
+    // « Rejoindre un parking » (13/10/2026). The code and the requests are read in consultation too, and answered there
+    // since 24/11/2026.
     this.router.get('/internal/staff/join-code', StaffAuthMiddleware('team:manage'), this.staff.joinCode);
     this.router.get('/internal/staff/join-requests', StaffAuthMiddleware('team:manage'), this.staff.listJoinRequests);
     this.router.post(
       '/internal/staff/join-requests/:id/accept',
       StaffAuthMiddleware('team:manage'),
-      RefuseInViewAsOutsidePlatformAccount(),
+      RefuseInDemo(),
       ValidationMiddleware(AcceptJoinRequestDto),
       this.staff.acceptJoinRequest,
     );
-    this.router.post(
-      '/internal/staff/join-requests/:id/refuse',
-      StaffAuthMiddleware('team:manage'),
-      RefuseInViewAsOutsidePlatformAccount(),
-      this.staff.refuseJoinRequest,
-    );
+    this.router.post('/internal/staff/join-requests/:id/refuse', StaffAuthMiddleware('team:manage'), RefuseInDemo(), this.staff.refuseJoinRequest);
 
     // One's own account (Mon compte): never in a platform admin's consultation.
     this.router.post(

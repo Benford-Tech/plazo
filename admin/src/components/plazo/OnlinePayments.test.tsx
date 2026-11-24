@@ -173,7 +173,7 @@ describe("Paiements en ligne", () => {
     expect(api.getPaymentStatus).not.toHaveBeenCalled();
   });
 
-  it("consultation par la plateforme : lecture seule, sans bouton ni changement de calendrier", async () => {
+  it("consultation par la plateforme : pas de bouton Stripe, le calendrier se règle (24/11/2026)", async () => {
     auth.user = {
       role: "manager",
       viewAs: { operatorId: "o1", operatorName: "Loueur" },
@@ -183,10 +183,9 @@ describe("Paiements en ligne", () => {
     expect(within(box).queryByRole("button")).not.toBeInTheDocument();
     expect(box).toHaveTextContent("Consultation : seul le loueur");
     const group = screen.getByRole("radiogroup");
-    expect(group).toHaveAttribute("aria-readonly", "true");
+    expect(group).not.toHaveAttribute("aria-readonly");
     await userEvent.click(within(group).getByRole("radio", { name: /Chaque mois/ }));
-    expect(api.updatePayoutSettings).not.toHaveBeenCalled();
-    expect(within(group).getByRole("radio", { name: /Fin du séjour/ })).toHaveAttribute("aria-checked", "true");
+    expect(api.updatePayoutSettings).toHaveBeenCalled();
   });
 
   it("consultation, paiements actifs : pas de lien vers le tableau de bord du loueur", async () => {

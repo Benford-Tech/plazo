@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PaymentController } from '@/controllers/payment.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { UpdatePayoutSettingsDto } from '@/dtos/payment.dto';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInDemo, RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -97,7 +97,8 @@ export class PaymentRoute implements Routes {
     this.router.put(
       '/internal/payments/settings',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
+      // 24/11/2026: the payout calendar is a setting, changed in consultation too; the Stripe account stays the operator's.
+      RefuseInDemo(),
       ValidationMiddleware(UpdatePayoutSettingsDto),
       this.payments.updateSettings,
     );

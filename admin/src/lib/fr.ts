@@ -285,7 +285,7 @@ export const fr = {
     invalid_link: "Ce lien n'est plus valable : il a expiré ou a déjà servi.",
     account_suspended: `Ce compte est suspendu. Contactez l'équipe ${PRODUCT.name}.`,
     view_as_read_only:
-      "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
+      "En consultation, les mots de passe, le compte Stripe, l'abonnement et la signature des contrats restent au loueur.",
     view_as_not_driver:
       "En consultation, vous ne conduisez pas la navette : démarrez le trajet depuis le compte d'un chauffeur.",
     view_as_ended: "La consultation de l'espace du loueur est terminée.",
@@ -577,7 +577,7 @@ export const fr = {
     note: "Vos modifications sont tracées dans le journal à votre nom.",
     back: "Revenir à la plateforme",
     readOnly:
-      "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
+      "En consultation, les mots de passe, le compte Stripe, l'abonnement et la signature des contrats restent au loueur.",
   },
   nav: {
     planning: "Planning",
@@ -1385,6 +1385,8 @@ export const fr = {
     passwordReset: "Mot de passe réinitialisé. Ses sessions ont été fermées.",
     // 26/10/2026: the member chooses their own password from an invitation email.
     invite: "Renvoyer l'invitation",
+    consultingNote:
+      "En consultation : vous gérez l'équipe de ce parking (ajout, rôle, nom, désactivation, demandes). Le mot de passe d'un membre reste le sien : renvoyez-lui l'invitation pour qu'il le choisisse.",
     readOnlyInvite:
       "Vous pouvez seulement renvoyer l'invitation d'un membre qui n'a pas reçu son e-mail.",
     invited:
@@ -2040,7 +2042,7 @@ export const fr = {
     manage: "Gérer sur Stripe ›",
     disabled: `Paiements en ligne : pas encore ouverts sur ${PRODUCT.name}. Les voyageurs réservent et paient au parking.`,
     readOnly:
-      "Consultation : seul le loueur peut activer ses paiements et choisir quand recevoir son argent.",
+      "Consultation : seul le loueur peut activer ses paiements et ouvrir son compte Stripe.",
     returned: "Dossier envoyé à Stripe",
     expired: "Lien expiré, recommencez",
     scheduleTitle: "Quand recevoir votre argent ?",

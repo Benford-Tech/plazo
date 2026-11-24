@@ -290,6 +290,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `config/passport.ts`), `RefuseInViewAsOutsidePlatformAccount` sur l'ajout, la modification et le nouveau mot de passe d'un membre,
      `viewAs.platformAccount` de `/staff/me` pour la page Équipe ; écritures tracées `view_as.write` ; mots de passe et réglages personnels
      restent refusés, et l'équipe d'un client reste en lecture seule.
+     **Le super admin fait les réglages du loueur en consultation (24/11/2026, « le superadmin peut faire tous les réglages »)** :
+     l'équipe d'un client se gère en consultation (ajout d'un membre, nom, rôle, désactivation, demandes de « Rejoindre un parking »
+     acceptées ou refusées : `RefuseInDemo` à la place de `RefuseInViewAsOutsidePlatformAccount`, tracé `view_as.write`) et le
+     calendrier de reversement se règle (`PUT /internal/payments/settings`). Restent au loueur (403) : le mot de passe d'un membre
+     (`reset-password`, « Renvoyer l'invitation » le lui fait choisir), le compte Stripe (inscription, tableau de bord), l'abonnement
+     Plazo Pro (`view_as_payments`), la signature des contrats (`view_as_cannot_sign`) et les réglages personnels de qui est connecté
+     (Mon compte, photo, poste, appareils, notifications). Web : page Équipe entière en consultation, sans le champ « Nouveau mot de
+     passe » (`MemberActions.noPassword`, note `consultingNote`), calendrier de reversement cliquable. Tests `platform-space.test.ts`,
+     `staff.test.ts`, `join-parking.test.ts`, `TeamPage.test.tsx`, `TeamPage.join.test.tsx`, `OnlinePayments.test.tsx`.
      **Modifications Allopark appliquées par Plazo (10/10/2026, « C'est une modification » → choix « Appliquer seul »)** :
      un mail Allopark qui annonce une modification faite (objet « Modification… », « modifiée », « changement » ; texte
      « réservation … modifiée », « Vos nouvelles dates : »… ; ou lu par Claude comme modification ; une annulation l'emporte
