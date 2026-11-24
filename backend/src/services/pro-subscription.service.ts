@@ -5,16 +5,22 @@ import { isLiveStripeKey, paymentsEnabled, stripePublishableKey, stripeSecretKey
 import prisma, { Prisma } from '@/database';
 import { isProPlan, PRO_PLANS, ProPlanId } from '@/domain/plazo-agreements';
 import {
+  AgreedPrice,
+  agreedMonthlyFor,
   chargedNow,
+  gridMonthlyCents,
   isRunning,
+  NO_AGREED_PRICE,
   PAYMENT_METHOD_TYPES,
   paymentMethodSummary,
   PaymentMethodSummary,
   planLookupKey,
   planOfLookupKey,
   planPriceCents,
+  readAgreedPrice,
+  setupFeeCentsOf,
   SETUP_FEE_CENTS,
-  SETUP_LOOKUP_KEY,
+  setupLookupKey,
   VAT_PERCENT,
   withVat,
 } from '@/domain/pro-subscription';
@@ -38,13 +44,17 @@ export interface ProSubscriptionView {
   setupFeeCents: number;
   /** The setup fee is still due (never paid): it goes on the first invoice. */
   setupFeeDue: boolean;
-  plans: { id: ProPlanId; name: string; monthlyCents: number; yearlyCents: number }[];
+  plans: { id: ProPlanId; name: string; monthlyCents: number; yearlyCents: number; gridMonthlyCents: number; agreed: boolean }[];
+  /** The price the platform agreed with this operator, when there is one. */
+  agreed: { plan: ProPlanId | null; monthlyCents: number | null; gridMonthlyCents: number | null; setupFeeCents: number | null } | null;
   subscription: {
     status: string;
     running: boolean;
     plan: ProPlanId;
     yearly: boolean;
     priceCents: number;
+    /** Billed at the price agreed with Plazo (not the grid). */
+    agreed: boolean;
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
     paymentMethod: PaymentMethodSummary | null;
@@ -80,7 +90,7 @@ function errorCode(error: unknown): string {
 export class ProSubscriptionService {
   public stripe = Container.get(StripeService);
   public audit = Container.get(AuditService);
-  private catalog: { key: string; prices: Map<string, string>; taxRate: string } | null = null;
+  private catalog: { key: string; prices: Map<string, string>; products: Map<string, string>; taxRate: string } | null = null;
 
   private live(): boolean {
     return isLiveStripeKey(stripeSecretKey());
@@ -113,44 +123,11 @@ export class ProSubscriptionService {
 
   // ---- Catalog ---------------------------------------------------------------------------------
 
-  /** The plans' prices and the setup fee (found by lookup key, created once), and the VAT rate. Cached per key. */
-  private async ensureCatalog(): Promise<{ prices: Map<string, string>; taxRate: string }> {
+  /** The VAT rate, and a cache of the prices found or created (by lookup key) for the keys in use. */
+  private async ensureCatalog(): Promise<{ prices: Map<string, string>; products: Map<string, string>; taxRate: string }> {
     const key = stripeSecretKey();
     if (this.catalog?.key === key) return this.catalog;
     const api = this.api();
-    const wanted: { lookupKey: string; name: string; cents: number; interval: 'month' | 'year' | null }[] = [
-      { lookupKey: SETUP_LOOKUP_KEY, name: 'Plazo Pro · Mise en route', cents: SETUP_FEE_CENTS, interval: null },
-    ];
-    for (const plan of Object.keys(PRO_PLANS) as ProPlanId[]) {
-      for (const yearly of [false, true]) {
-        wanted.push({
-          lookupKey: planLookupKey(plan, yearly),
-          name: `Plazo Pro · ${PRO_PLANS[plan].name}`,
-          cents: planPriceCents(plan, yearly),
-          interval: yearly ? 'year' : 'month',
-        });
-      }
-    }
-    const found = await api.prices.list({ lookup_keys: wanted.map(w => w.lookupKey), active: true, limit: 100 });
-    const prices = new Map(found.data.map(p => [p.lookup_key ?? '', p.id]));
-    const products = new Map<string, string>();
-    for (const w of wanted) {
-      if (prices.has(w.lookupKey)) continue;
-      let product = products.get(w.name);
-      if (!product) {
-        product = (await api.products.create({ name: w.name, metadata: { plazo: 'pro' } })).id;
-        products.set(w.name, product);
-      }
-      const price = await api.prices.create({
-        product,
-        currency: 'eur',
-        unit_amount: w.cents,
-        tax_behavior: 'exclusive',
-        lookup_key: w.lookupKey,
-        ...(w.interval ? { recurring: { interval: w.interval } } : {}),
-      });
-      prices.set(w.lookupKey, price.id);
-    }
     const rates = await api.taxRates.list({ active: true, limit: 100 });
     let taxRate = rates.data.find(r => r.metadata?.plazo === 'vat20' && r.percentage === VAT_PERCENT && !r.inclusive)?.id;
     if (!taxRate) {
@@ -165,8 +142,67 @@ export class ProSubscriptionService {
         })
       ).id;
     }
-    this.catalog = { key, prices, taxRate };
+    this.catalog = { key, prices: new Map(), products: new Map(), taxRate };
     return this.catalog;
+  }
+
+  /**
+   * The Stripe price of a lookup key (its amount is in the key: a plan at a grid or agreed price, or a setup fee): found
+   * among the active prices, else created once, with one product per name.
+   */
+  private async priceId(w: { lookupKey: string; name: string; cents: number; interval: 'month' | 'year' | null }): Promise<string> {
+    const catalog = await this.ensureCatalog();
+    const known = catalog.prices.get(w.lookupKey);
+    if (known) return known;
+    const api = this.api();
+    const found = await api.prices.list({ lookup_keys: [w.lookupKey], active: true, limit: 1 });
+    let id = found.data.find(p => p.lookup_key === w.lookupKey)?.id;
+    if (!id) {
+      let product = catalog.products.get(w.name);
+      if (!product) {
+        product = (await api.products.create({ name: w.name, metadata: { plazo: 'pro' } })).id;
+        catalog.products.set(w.name, product);
+      }
+      id = (
+        await api.prices.create({
+          product,
+          currency: 'eur',
+          unit_amount: w.cents,
+          tax_behavior: 'exclusive',
+          lookup_key: w.lookupKey,
+          ...(w.interval ? { recurring: { interval: w.interval } } : {}),
+        })
+      ).id;
+    }
+    catalog.prices.set(w.lookupKey, id);
+    return id;
+  }
+
+  private planPrice(plan: ProPlanId, yearly: boolean, agreed: AgreedPrice) {
+    return this.priceId({
+      lookupKey: planLookupKey(plan, yearly, agreed),
+      name: `Plazo Pro · ${PRO_PLANS[plan].name}`,
+      cents: planPriceCents(plan, yearly, agreed),
+      interval: yearly ? 'year' : 'month',
+    });
+  }
+
+  private setupPrice(cents: number) {
+    return this.priceId({ lookupKey: setupLookupKey(cents), name: 'Plazo Pro · Mise en route', cents, interval: null });
+  }
+
+  /** The price agreed with the operator (the grid when there is none). */
+  private async agreedOf(operatorId: string): Promise<AgreedPrice> {
+    const o = await prisma.operator.findUnique({
+      where: { id: operatorId },
+      select: { proAgreedPlan: true, proAgreedMonthlyCents: true, proAgreedSetupFeeCents: true },
+    });
+    if (!o) return NO_AGREED_PRICE;
+    return {
+      plan: isProPlan(o.proAgreedPlan) ? o.proAgreedPlan : null,
+      monthlyCents: isProPlan(o.proAgreedPlan) ? o.proAgreedMonthlyCents : null,
+      setupFeeCents: o.proAgreedSetupFeeCents,
+    };
   }
 
   // ---- Reading ---------------------------------------------------------------------------------
@@ -175,27 +211,41 @@ export class ProSubscriptionService {
   public async view(operatorId: string): Promise<ProSubscriptionView> {
     const refusal = await this.refusalFor(operatorId);
     const row = await this.rowOf(operatorId);
+    const agreed = await this.agreedOf(operatorId);
+    const setupFeeCents = setupFeeCentsOf(agreed);
     const shown = row && row.subscriptionId && row.status !== 'incomplete_expired' && isProPlan(row.plan);
     return {
       available: refusal === null,
       refusal,
       publishableKey: refusal === null ? stripePublishableKey() : null,
       vatPercent: VAT_PERCENT,
-      setupFeeCents: SETUP_FEE_CENTS,
-      setupFeeDue: !row?.setupFeePaidAt,
+      setupFeeCents,
+      setupFeeDue: !row?.setupFeePaidAt && setupFeeCents > 0,
       plans: (Object.keys(PRO_PLANS) as ProPlanId[]).map(id => ({
         id,
         name: PRO_PLANS[id].name,
-        monthlyCents: planPriceCents(id, false),
-        yearlyCents: planPriceCents(id, true),
+        monthlyCents: planPriceCents(id, false, agreed),
+        yearlyCents: planPriceCents(id, true, agreed),
+        gridMonthlyCents: gridMonthlyCents(id),
+        agreed: agreedMonthlyFor(id, agreed) !== null,
       })),
+      agreed:
+        agreed.monthlyCents !== null || agreed.setupFeeCents !== null
+          ? {
+              plan: agreed.plan,
+              monthlyCents: agreed.monthlyCents,
+              gridMonthlyCents: agreed.plan ? gridMonthlyCents(agreed.plan) : null,
+              setupFeeCents: agreed.setupFeeCents,
+            }
+          : null,
       subscription: shown
         ? {
             status: row.status,
             running: isRunning(row.status),
             plan: row.plan as ProPlanId,
             yearly: row.yearly,
-            priceCents: planPriceCents(row.plan as ProPlanId, row.yearly),
+            priceCents: planPriceCents(row.plan as ProPlanId, row.yearly, agreed),
+            agreed: agreedMonthlyFor(row.plan as ProPlanId, agreed) !== null,
             currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
             cancelAtPeriodEnd: row.cancelAtPeriodEnd,
             paymentMethod: (row.paymentMethod as unknown as PaymentMethodSummary | null) ?? null,
@@ -263,15 +313,17 @@ export class ProSubscriptionService {
         .cancel(row.subscriptionId)
         .catch(error => logger.warn(`[Subscription] Could not cancel ${row.subscriptionId}: ${errorCode(error)}`));
     }
-    const { prices, taxRate } = await this.ensureCatalog();
+    const { taxRate } = await this.ensureCatalog();
+    const agreed = await this.agreedOf(staff.operatorId);
     const customerId = await this.customerFor(staff, row);
-    // Paid once per operator (in the keys' mode: a test payment is not one).
-    const setupFee = !row?.setupFeePaidAt;
+    // Paid once per operator (in the keys' mode: a test payment is not one); none when the platform offered it.
+    const setupFeeCents = setupFeeCentsOf(agreed);
+    const setupFee = !row?.setupFeePaidAt && setupFeeCents > 0;
     const sub = await api.subscriptions.create({
       customer: customerId,
-      items: [{ price: prices.get(planLookupKey(plan, yearly))! }],
+      items: [{ price: await this.planPrice(plan, yearly, agreed) }],
       default_tax_rates: [taxRate],
-      ...(setupFee ? { add_invoice_items: [{ price: prices.get(SETUP_LOOKUP_KEY)! }] } : {}),
+      ...(setupFee ? { add_invoice_items: [{ price: await this.setupPrice(setupFeeCents) }] } : {}),
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription', payment_method_types: [...PAYMENT_METHOD_TYPES] },
       metadata: { operatorId: staff.operatorId, plan, yearly: String(yearly) },
@@ -300,15 +352,16 @@ export class ProSubscriptionService {
       action: 'subscription.started',
       entityType: 'operator',
       entityId: staff.operatorId,
-      details: { plan, yearly, setupFee },
+      details: { plan, yearly, setupFee, agreed: agreedMonthlyFor(plan, agreed) !== null },
     });
-    const totalCents = invoice?.total ?? withVat(planPriceCents(plan, yearly) + (setupFee ? SETUP_FEE_CENTS : 0));
-    const excludingTax = invoice?.total_excluding_tax ?? planPriceCents(plan, yearly) + (setupFee ? SETUP_FEE_CENTS : 0);
+    const due = planPriceCents(plan, yearly, agreed) + (setupFee ? setupFeeCents : 0);
+    const totalCents = invoice?.total ?? withVat(due);
+    const excludingTax = invoice?.total_excluding_tax ?? due;
     return {
       clientSecret,
       totalCents,
       taxCents: totalCents - excludingTax,
-      setupFeeCents: setupFee ? SETUP_FEE_CENTS : 0,
+      setupFeeCents: setupFee ? setupFeeCents : 0,
       subscription: (await this.view(staff.operatorId)).subscription,
     };
   }
@@ -338,18 +391,18 @@ export class ProSubscriptionService {
     const row = await this.running(operatorId);
     const from = { plan: row.plan as ProPlanId, yearly: row.yearly };
     if (from.plan === to.plan && from.yearly === to.yearly) throw new HttpException(httpStatus.CONFLICT, 'Same plan', 'same_plan');
-    const nextCents = withVat(planPriceCents(to.plan, to.yearly));
-    if (!chargedNow(from, to)) {
+    const agreed = await this.agreedOf(operatorId);
+    const nextCents = withVat(planPriceCents(to.plan, to.yearly, agreed));
+    if (!chargedNow(from, to, agreed)) {
       return { chargedNow: false, dueNowCents: 0, nextCents, effectiveAt: row.currentPeriodEnd?.toISOString() ?? null };
     }
     const api = this.api();
-    const { prices } = await this.ensureCatalog();
     const sub = await api.subscriptions.retrieve(row.subscriptionId);
     const preview = await api.invoices.createPreview({
       customer: row.customerId,
       subscription: row.subscriptionId,
       subscription_details: {
-        items: [{ id: sub.items.data[0].id, price: prices.get(planLookupKey(to.plan, to.yearly))! }],
+        items: [{ id: sub.items.data[0].id, price: await this.planPrice(to.plan, to.yearly, agreed) }],
         proration_behavior: 'always_invoice',
       },
     });
@@ -364,13 +417,14 @@ export class ProSubscriptionService {
     const from = { plan: row.plan as ProPlanId, yearly: row.yearly };
     if (from.plan === to.plan && from.yearly === to.yearly) throw new HttpException(httpStatus.CONFLICT, 'Same plan', 'same_plan');
     const api = this.api();
-    const { prices } = await this.ensureCatalog();
+    const agreed = await this.agreedOf(staff.operatorId);
     const sub = await api.subscriptions.retrieve(row.subscriptionId);
-    const now = chargedNow(from, to);
+    const now = chargedNow(from, to, agreed);
+    const price = await this.planPrice(to.plan, to.yearly, agreed);
     let updated: Stripe.Subscription;
     try {
       updated = await api.subscriptions.update(row.subscriptionId, {
-        items: [{ id: sub.items.data[0].id, price: prices.get(planLookupKey(to.plan, to.yearly))! }],
+        items: [{ id: sub.items.data[0].id, price }],
         proration_behavior: now ? 'always_invoice' : 'none',
         ...(now ? { payment_behavior: 'error_if_incomplete' as const } : {}),
         cancel_at_period_end: false,
@@ -450,6 +504,95 @@ export class ProSubscriptionService {
       entityId: staff.operatorId,
     });
     return this.view(staff.operatorId);
+  }
+
+  // ---- The platform's agreed price (24/11/2026, direction A « Prix négocié ») -------------------------------------
+
+  /** GET /internal/platform/operators/:id/pro-price: the agreed price, the grid and the operator's subscription. */
+  public async platformView(operatorId: string) {
+    const exists = await prisma.operator.findUnique({ where: { id: operatorId }, select: { id: true } });
+    if (!exists) throw new HttpException(httpStatus.NOT_FOUND, 'Operator not found', 'not_found');
+    const view = await this.view(operatorId);
+    return {
+      agreed: view.agreed,
+      gridSetupFeeCents: SETUP_FEE_CENTS,
+      vatPercent: VAT_PERCENT,
+      plans: view.plans.map(p => ({ id: p.id, name: p.name, gridMonthlyCents: p.gridMonthlyCents })),
+      subscription: view.subscription
+        ? {
+            status: view.subscription.status,
+            running: view.subscription.running,
+            plan: view.subscription.plan,
+            yearly: view.subscription.yearly,
+            priceCents: view.subscription.priceCents,
+            agreed: view.subscription.agreed,
+            currentPeriodEnd: view.subscription.currentPeriodEnd,
+          }
+        : null,
+      setupFeePaid: view.subscription !== null && !view.setupFeeDue,
+    };
+  }
+
+  /**
+   * PUT /internal/platform/operators/:id/pro-price { plan, monthlyCents | null, setupFeeCents | null, when: now | renewal }:
+   * keeps the agreed price, then moves a running subscription of that plan to the Stripe price of the new amount: billed at
+   * once with the proration (`now`), or from the next renewal with nothing due now (`renewal`). A running subscription of
+   * another plan keeps its price (`applied: false`); the next plan change, or a new subscription, takes the agreed one.
+   */
+  public async setAgreedPrice(
+    actor: AuthenticatedStaff,
+    operatorId: string,
+    body: { plan?: unknown; monthlyCents?: unknown; setupFeeCents?: unknown; when?: unknown },
+  ) {
+    let agreed: AgreedPrice;
+    try {
+      agreed = readAgreedPrice(body);
+    } catch (error) {
+      throw new ValidationException((error as { fields: Record<string, string> }).fields);
+    }
+    const when = body.when === undefined ? 'renewal' : body.when;
+    if (when !== 'now' && when !== 'renewal') throw new ValidationException({ when: 'invalid' });
+    const exists = await prisma.operator.findUnique({ where: { id: operatorId }, select: { id: true } });
+    if (!exists) throw new HttpException(httpStatus.NOT_FOUND, 'Operator not found', 'not_found');
+    const before = await this.agreedOf(operatorId);
+    await prisma.operator.update({
+      where: { id: operatorId },
+      data: { proAgreedPlan: agreed.plan, proAgreedMonthlyCents: agreed.monthlyCents, proAgreedSetupFeeCents: agreed.setupFeeCents },
+    });
+
+    let applied = false;
+    const row = await this.rowOf(operatorId);
+    if (row?.subscriptionId && isRunning(row.status) && isProPlan(row.plan) && (await this.refusalFor(operatorId)) === null) {
+      const plan = row.plan;
+      const changed = planPriceCents(plan, row.yearly, before) !== planPriceCents(plan, row.yearly, agreed);
+      if (changed) {
+        const api = this.api();
+        const sub = await api.subscriptions.retrieve(row.subscriptionId);
+        try {
+          const updated = await api.subscriptions.update(row.subscriptionId, {
+            items: [{ id: sub.items.data[0].id, price: await this.planPrice(plan, row.yearly, agreed) }],
+            proration_behavior: when === 'now' ? 'always_invoice' : 'none',
+            metadata: { operatorId, plan, yearly: String(row.yearly) },
+            expand: ['default_payment_method'],
+          });
+          await this.sync(updated);
+          applied = true;
+        } catch (error) {
+          logger.warn(`[Subscription] Agreed price not applied to ${row.subscriptionId}: ${errorCode(error)}`);
+          throw new HttpException(httpStatus.BAD_GATEWAY, 'Stripe refused the new price', 'stripe_failed');
+        }
+      }
+    }
+    await this.audit.record(
+      { id: actor.id, operatorId: actor.actingAs?.realOperatorId ?? actor.operatorId },
+      {
+        action: 'operator.pro_price_set',
+        entityType: 'operator',
+        entityId: operatorId,
+        details: { ...agreed, when, applied },
+      },
+    );
+    return { ...(await this.platformView(operatorId)), applied };
   }
 
   // ---- Stripe's side ---------------------------------------------------------------------------

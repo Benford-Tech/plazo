@@ -90,6 +90,25 @@ describe("SubscriptionPage", () => {
     expect(await screen.findByTestId("stripe-form")).toHaveTextContent("Payer 706,80 € et m'abonner");
   });
 
+  it("montre le tarif convenu avec Plazo et la mise en route offerte", async () => {
+    const agreedPlans = plans.map((p) =>
+      p.id === "operations" ? { ...p, monthlyCents: 19900, yearlyCents: 214800, gridMonthlyCents: 29900, agreed: true } : p,
+    );
+    api.getSubscription.mockResolvedValue(
+      view({
+        plans: agreedPlans,
+        setupFeeCents: 0,
+        setupFeeDue: false,
+        agreed: { plan: "operations", monthlyCents: 19900, gridMonthlyCents: 29900, setupFeeCents: 0 },
+      }),
+    );
+    renderPage("/abonnement?formule=operations");
+    expect(await screen.findByTestId("plan-agreed-operations")).toHaveTextContent("Tarif convenu avec Plazo (grille 299,00 € HT / mois)");
+    const checkout = await screen.findByTestId("subscription-checkout");
+    expect(checkout).toHaveTextContent("Mise en route offerte par Plazo");
+    expect(screen.getByTestId("checkout-total")).toHaveTextContent("238,80 €");
+  });
+
   it("change de formule avec l'aperçu du prorata, et résilie", async () => {
     api.getSubscription.mockResolvedValue(running());
     api.previewSubscriptionChange.mockResolvedValue({ chargedNow: true, dueNowCents: 24000, nextCents: 47880, effectiveAt: null });

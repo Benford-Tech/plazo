@@ -2747,6 +2747,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   détail dans `mobile/publier-sur-les-stores.md`.
   **Soumettre sans reconstruire (29/10/2026, Plazo Pro 1.0.123 « KO App Store » : l'IPA était sur TestFlight, mais Apple annulait encore l'ancienne soumission, 409 « pre-release build could not be added »)** : workflow Codemagic `mobile-submit-app-store` (à la main, `SUBMIT_APPS` = `plazo-pro` par défaut, ou `plazo plazo-pro`) : dernier build TestFlight de chaque app soumis à la revue (`builds submit-to-app-store`, version `MAJEUR.MINEUR.<numéro>`, notes de version, trois essais à 3 min d'écart), sans rien construire ; lancé par `codemagic-build.yml` › `start`. Le numéro ne monte qu'à un nouveau build : relancer le bilan d'un build ne le change pas.
   **Tout sauf Plazo Pro sur l'App Store (15/11/2026, « un pipeline qui deploy et soumet tout sauf plazo pro sur apple store »)** : workflow Codemagic `mobile-release-submit` (à la main, par `codemagic-build.yml` › `start`) : les AAB des deux apps sur Google Play (piste production, notes de version), puis Plazo seul sur iOS (Apple Pay selon son profil, IPA → TestFlight puis soumis à la revue, sortie dès l'accord, `--cancel-previous-submissions`, deux essais) ; Plazo Pro n'est ni construit ni envoyé pour iOS, sa version en revue n'est pas touchée ; seul le profil `plazo_app_store` est demandé.
+  **Position en arrière-plan pour Plazo Pro seulement (24/11/2026, rejet d'Apple 2.5.4 sur la 1.0.139 : « we are unable to locate any features that require persistent location »)** : `UIBackgroundModes` de l'Info.plist partagé ne garde que `remote-notification` ; `location` est ajouté par `mobile-release` (Codemagic et GitHub Actions, PlistBuddy) au seul build de Plazo Pro, dont le chauffeur partage la position pendant un trajet, Plazo étant construit d'abord ; dans Plazo sur iPhone, « Je suis en route » partage la position tant que l'app est ouverte (geolocator n'allume l'arrière-plan que si l'Info.plist le déclare) ; Android inchangé (service de premier plan).
   **Apple Pay dans Plazo (31/10/2026, « ajoute le paiement apple »)** : la feuille Stripe de l'app le gérait déjà
   (`STRIPE_MERCHANT_ID`) ; l'étape « Apple Pay (Plazo) selon son profil App Store » de `mobile-release.yml` lit les Merchant
   IDs du profil App Store de `com.benfordtech.plazo` et, s'il y en a, ajoute `com.apple.developer.in-app-payments` à
@@ -2942,6 +2943,21 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `setup_not_confirmed` ; tracés `subscription.*`. Réglages Stripe à faire : README (évènements du webhook, SEPA, relances). Pas encore :
   la vue des abonnements dans la Plateforme, les options de la page Tarifs (SMS, page de réservation), Plazo Pro. Tests
   `pro-subscription.test.ts`, `SubscriptionPage.test.tsx`.
+- **Prix convenu avec un parking, direction A « Prix négocié » (24/11/2026, « appliquer un tarif au plan mensuel d'un parking »,
+  mise en route « réglable aussi »)** : Plateforme › loueur › Paiements, carte « Abonnement Plazo Pro » (`OperatorProPriceCard`) :
+  formule, grille, « Prix convenu » en € HT par mois, mise en route Grille (290 €) · Offerte · Autre montant, « À partir de »
+  Maintenant (au prorata) · Prochain prélèvement quand un abonnement tourne, « Appliquer », « Revenir à la grille ».
+  `Operator.proAgreedPlan` / `proAgreedMonthlyCents` (1 € à 10 000 €) / `proAgreedSetupFeeCents` (0 = offerte ; migration
+  `pro_agreed_price`, CHECK) ; `domain/pro-subscription.ts` : `AgreedPrice`, `readAgreedPrice`, `planPriceCents(plan, yearly,
+  agreed)` (l'annuel garde sa remise de 10 % sur le prix convenu), `setupFeeCentsOf`, clé Stripe du montant
+  (`plazo_pro_<formule>_<monthly|yearly>_<centimes>`, `setupLookupKey`, prix créé à la première fois par `priceId`) ;
+  `GET|PUT /internal/platform/operators/:id/pro-price` (`PlatformAdminMiddleware` ; `{ plan, monthlyCents | null,
+  setupFeeCents | null, when: now | renewal }`, 400 par champ, 502 `stripe_failed`, tracé `operator.pro_price_set`) : un
+  abonnement de cette formule passe au nouveau prix (`always_invoice` ou `none`), celui d'une autre formule garde le sien ;
+  l'abonnement du gérant, l'aperçu et le changement de formule prennent le prix convenu. Gérant › Abonnement : « Tarif convenu
+  avec Plazo (grille 299,00 € HT / mois) » sur la formule et l'abonnement, « Mise en route offerte par Plazo ». Les conditions
+  d'utilisation disent « prix convenu avec Plazo au lieu du prix de la grille ». Tests `pro-subscription.test.ts`,
+  `OperatorProPriceCard.test.tsx`, `SubscriptionPage.test.tsx`.
 - **Flyer pour les voyageurs, direction C (17/11/2026, « Dans chaque flyer on peut rajouter le logo et nom du parking et
   permettre à chacun de générer son flyer », maquettes https://claude.ai/artifact/D5zLBnEXAFDoGSA64bEHbN, « C avec ce message
   "Partez léger, revenez sans attendre." », « QR vers la page du parking »)** : Gérant › Sur Plazo › « Flyer »

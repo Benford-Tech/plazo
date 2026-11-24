@@ -55,7 +55,7 @@ export interface AgreementsView {
   /** What the banner asks for: the terms of use, and the listing contract once the operator sells on Plazo. */
   toSign: AgreementKind[];
   canSign: boolean;
-  plan: { id: ProPlanId; yearly: boolean } | null;
+  plan: { id: ProPlanId; yearly: boolean; agreedMonthlyCents?: number | null } | null;
 }
 
 export interface AgreementFile {
@@ -88,11 +88,19 @@ export class PlazoAgreementService {
         payoutSchedule: true,
         proPlan: true,
         proPlanYearly: true,
+        proAgreedPlan: true,
+        proAgreedMonthlyCents: true,
         parkings: { select: { address: true, listing: { select: { status: true } } }, orderBy: { createdAt: 'asc' } },
       },
     });
     if (!o) throw new HttpException(httpStatus.NOT_FOUND, 'Operator not found', 'not_found');
-    const plan = isProPlan(o.proPlan) ? { id: o.proPlan, yearly: o.proPlanYearly } : null;
+    const plan = isProPlan(o.proPlan)
+      ? {
+          id: o.proPlan,
+          yearly: o.proPlanYearly,
+          agreedMonthlyCents: o.proAgreedPlan === o.proPlan ? o.proAgreedMonthlyCents : null,
+        }
+      : null;
     return {
       plan,
       sellsOnPlazo: o.parkings.some(p => p.listing && p.listing.status !== 'draft'),

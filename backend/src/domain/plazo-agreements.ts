@@ -52,7 +52,8 @@ export interface AgreementFacts {
   /** Basis points (1500 = 15 %). */
   commissionBps: number;
   payoutSchedule: PayoutScheduleId;
-  plan: { id: ProPlanId; yearly: boolean } | null;
+  /** `agreedMonthlyCents`: the monthly price excluding VAT agreed with the platform (24/11/2026), instead of the grid's. */
+  plan: { id: ProPlanId; yearly: boolean; agreedMonthlyCents?: number | null } | null;
 }
 
 export interface AgreementArticle {
@@ -118,13 +119,16 @@ function planText(f: AgreementFacts): string[] {
     ];
   }
   const plan = PRO_PLANS[f.plan.id];
+  const agreed = f.plan.agreedMonthlyCents ?? null;
+  const base = agreed !== null ? agreed / 100 : plan.monthlyEuros;
+  const agreedNote = agreed !== null ? `, prix convenu avec ${f.productName} au lieu du prix de la grille (${euros(plan.monthlyEuros)} HT)` : '';
   if (f.plan.yearly) {
-    const monthly = yearlyMonthly(plan.monthlyEuros);
+    const monthly = agreed !== null ? Math.round((agreed * (100 - YEARLY_DISCOUNT_PERCENT)) / 100) / 100 : yearlyMonthly(plan.monthlyEuros);
     return [
-      `Le Loueur a choisi la formule ${plan.name}, à l'année : ${euros(monthly)} HT par mois (remise de ${YEARLY_DISCOUNT_PERCENT} % sur le prix mensuel de ${euros(plan.monthlyEuros)} HT), soit ${euros(monthly * 12)} HT par an.`,
+      `Le Loueur a choisi la formule ${plan.name}, à l'année : ${euros(monthly)} HT par mois (remise de ${YEARLY_DISCOUNT_PERCENT} % sur le prix mensuel de ${euros(base)} HT${agreedNote}), soit ${euros(Math.round(monthly * 1200) / 100)} HT par an.`,
     ];
   }
-  return [`Le Loueur a choisi la formule ${plan.name}, au mois : ${euros(plan.monthlyEuros)} HT par mois.`];
+  return [`Le Loueur a choisi la formule ${plan.name}, au mois : ${euros(base)} HT par mois${agreedNote}.`];
 }
 
 function proTerms(f: AgreementFacts): AgreementArticle[] {

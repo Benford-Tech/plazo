@@ -1,3 +1,4 @@
+import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware';
 import { Router } from 'express';
 import { ProSubscriptionController } from '@/controllers/pro-subscription.controller';
 import { Routes } from '@/interfaces/routes.interface';
@@ -32,6 +33,13 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  *   post: { tags: [Subscription], summary: Stop at the end of the paid period }
  * /internal/subscription/resume:
  *   post: { tags: [Subscription], summary: Keep the subscription going }
+ * /internal/platform/operators/{id}/pro-price:
+ *   get:
+ *     summary: The price agreed with the operator, the grid and its subscription (platform)
+ *     tags: [Subscription]
+ *   put:
+ *     summary: Sets the agreed price ({ plan, monthlyCents | null, setupFeeCents | null, when now | renewal }); 400 fields.plan | monthlyCents | setupFeeCents | when, 404 not_found, 502 stripe_failed
+ *     tags: [Subscription]
  */
 export class ProSubscriptionRoute implements Routes {
   public router = Router();
@@ -50,5 +58,8 @@ export class ProSubscriptionRoute implements Routes {
     this.router.post('/internal/subscription/payment-method/confirm', ...write, this.subscriptions.paymentMethodConfirm);
     this.router.post('/internal/subscription/cancel', ...write, this.subscriptions.cancel);
     this.router.post('/internal/subscription/resume', ...write, this.subscriptions.resume);
+    // 24/11/2026: the price the platform agreed with one operator (direction A « Prix négocié »).
+    this.router.get('/internal/platform/operators/:id/pro-price', PlatformAdminMiddleware(), this.subscriptions.platformPrice);
+    this.router.put('/internal/platform/operators/:id/pro-price', PlatformAdminMiddleware(), this.subscriptions.setPlatformPrice);
   }
 }

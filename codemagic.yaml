@@ -485,6 +485,11 @@ workflows:
                 echo "ATTENTION: GOOGLE_SERVER_CLIENT_ID ou GOOGLE_IOS_CLIENT_ID absent : Plazo Pro iPhone sans « Continuer avec Google »"
               fi
             fi
+            if [ "$FLAVOR" = "pro" ]; then
+              # The driver shares the shuttle's position during a trip, app in the background (Plazo has no such feature:
+              # Info.plist leaves it out, guideline 2.5.4).
+              /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string location" ios/Runner/Info.plist
+            fi
             DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
             echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
             flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES \

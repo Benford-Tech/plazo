@@ -241,4 +241,55 @@ describe('abonnement Plazo Pro (API)', () => {
     expect(off.body).toMatchObject({ available: false, refusal: 'unavailable', publishableKey: null });
     expect((await api().post('/api/internal/subscription').set(auth(token)).send({ plan: 'essentiel' })).body.code).toBe('subscriptions_unavailable');
   });
+
+  it('applique un prix convenu par la plateforme, mise en route offerte', async () => {
+    const admin = await setupOperator('Plazo (tests)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const { token, operator } = await setupOperator('APL Parking');
+    const url = `/api/internal/platform/operators/${operator.id}/pro-price`;
+
+    // Only the platform, and only sound amounts.
+    expect((await api().put(url).set(auth(token)).send({ plan: 'operations', monthlyCents: 19900 })).status).toBe(403);
+    const bad = await api().put(url).set(auth(admin.token)).send({ monthlyCents: 50, setupFeeCents: -1 });
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toMatchObject({ monthlyCents: 'range', setupFeeCents: 'range', plan: 'required' });
+
+    const set = await api().put(url).set(auth(admin.token)).send({ plan: 'operations', monthlyCents: 19900, setupFeeCents: 0 });
+    expect(set.status).toBe(200);
+    expect(set.body).toMatchObject({
+      applied: false,
+      agreed: { plan: 'operations', monthlyCents: 19900, gridMonthlyCents: 29900, setupFeeCents: 0 },
+    });
+
+    // The manager sees the agreed price and no setup fee, and subscribes at it.
+    const view = await api().get('/api/internal/subscription').set(auth(token));
+    expect(view.body.setupFeeDue).toBe(false);
+    expect(view.body.plans.find((p: { id: string }) => p.id === 'operations')).toMatchObject({
+      monthlyCents: 19900,
+      yearlyCents: Math.round(19900 * 0.9) * 12,
+      gridMonthlyCents: 29900,
+      agreed: true,
+    });
+    expect(view.body.plans.find((p: { id: string }) => p.id === 'complet')).toMatchObject({ monthlyCents: 39900, agreed: false });
+    await api().post('/api/internal/subscription').set(auth(token)).send({ plan: 'operations', yearly: false });
+    expect(calls.createSub[0].add_invoice_items).toBeUndefined();
+    expect(prices.has('plazo_pro_operations_monthly_19900')).toBe(true);
+    const sub = [...subs.values()][0];
+    sub.status = 'active';
+    await webhook('customer.subscription.updated', sub);
+    const running = await api().get('/api/internal/subscription').set(auth(token));
+    expect(running.body.subscription).toMatchObject({ plan: 'operations', priceCents: 19900, agreed: true });
+
+    // A new agreed price moves the running subscription: at once with the proration, or from the renewal.
+    const now = await api().put(url).set(auth(admin.token)).send({ plan: 'operations', monthlyCents: 14900, when: 'now' });
+    expect(now.body).toMatchObject({ applied: true, subscription: { priceCents: 14900, agreed: true } });
+    expect(calls.updateSub.at(-1)).toMatchObject({ proration_behavior: 'always_invoice' });
+    expect(sub.items.data[0].price.lookup_key).toBe('plazo_pro_operations_monthly_14900');
+
+    // Back to the grid, from the renewal.
+    const grid = await api().put(url).set(auth(admin.token)).send({ plan: null, monthlyCents: null, setupFeeCents: null });
+    expect(grid.body).toMatchObject({ applied: true, agreed: null, subscription: { priceCents: 29900, agreed: false } });
+    expect(calls.updateSub.at(-1)).toMatchObject({ proration_behavior: 'none' });
+    expect((await prisma.operator.findUnique({ where: { id: operator.id } }))!.proAgreedMonthlyCents).toBeNull();
+  });
 });
