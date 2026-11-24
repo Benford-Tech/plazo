@@ -240,6 +240,8 @@ export interface SubscriptionView {
   plans: { id: PlanId; name: string; monthlyCents: number; yearlyCents: number; gridMonthlyCents?: number; agreed?: boolean }[];
   /** 24/11/2026: the price the platform agreed with this operator. */
   agreed?: AgreedProPrice | null;
+  /** A price agreed with Plazo is billed monthly only. */
+  monthlyOnly?: boolean;
   subscription: {
     status: string;
     running: boolean;

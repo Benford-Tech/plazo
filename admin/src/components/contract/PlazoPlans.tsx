@@ -49,6 +49,8 @@ export function PlazoPlans({
   const [hourly, setHourly] = useState(18);
   const [planId, setPlanId] = useState("operations");
   const plan = PLAZO_PLANS.find((p) => p.id === planId) ?? PLAZO_PLANS[1];
+  // A price agreed with Plazo is monthly only (24/11/2026): no yearly billing is offered then.
+  const monthlyOnly = agreed?.monthlyCents != null;
   const agreedFor = (id: string) => (agreed && agreed.plan === id && agreed.monthlyCents != null ? agreed.monthlyCents : null);
   // The monthly price of a plan in euros, at the year's price when yearly: the agreed one for its plan, else the grid's.
   const monthlyOf = (p: { id: string; monthlyEuros: number }, y = yearly) => {
@@ -68,6 +70,7 @@ export function PlazoPlans({
           </h2>
           <p className="text-sm text-muted-foreground">{t.intro}</p>
         </div>
+        {!monthlyOnly && (
         <div role="group" aria-label={t.billing} className="flex rounded-full border border-border bg-card p-1 text-sm font-semibold">
           {[false, true].map((y) => (
             <button
@@ -82,6 +85,7 @@ export function PlazoPlans({
             </button>
           ))}
         </div>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -109,7 +113,7 @@ export function PlazoPlans({
                 {t.agreed(shown(yearly ? yearlyMonthly(p.monthlyEuros) : p.monthlyEuros))}
               </p>
             )}
-            {!yearly && <p className="-mt-2 text-[13px] font-semibold text-lime-deep">{t.yearlyLine(shown(monthlyOf(p, true)))}</p>}
+            {!yearly && !monthlyOnly && <p className="-mt-2 text-[13px] font-semibold text-lime-deep">{t.yearlyLine(shown(monthlyOf(p, true)))}</p>}
             <ul className="grid gap-2 text-sm">
               {p.features.map((f, i) => (
                 <li key={f} className={`flex gap-2 ${i === 0 && p.id !== "essentiel" ? "font-semibold text-lime-deep" : ""}`}>

@@ -49,6 +49,11 @@ export default function SubscriptionPage() {
     enabled: !!view.data?.subscription,
   });
   const [yearly, setYearly] = useState(params.get("annuel") === "1");
+  // A price agreed with Plazo is monthly only (24/11/2026): no yearly billing then.
+  const monthlyOnly = view.data?.monthlyOnly === true;
+  useEffect(() => {
+    if (monthlyOnly) setYearly(false);
+  }, [monthlyOnly]);
   const [chosen, setChosen] = useState<PlanId | null>(isPlan(params.get("formule")) ? (params.get("formule") as PlanId) : null);
   const [checkout, setCheckout] = useState<{ clientSecret: string; totalCents: number } | null>(null);
   const [setupSecret, setSetupSecret] = useState<string | null>(null);
@@ -198,6 +203,11 @@ export default function SubscriptionPage() {
             <h2 id="sub-plans" className="text-lg font-extrabold">
               {running ? t.changeTitle : t.plansTitle}
             </h2>
+            {monthlyOnly ? (
+              <span className="rounded-full bg-muted px-3 py-1.5 text-sm font-semibold" data-testid="subscription-monthly-only">
+                {t.monthlyOnly}
+              </span>
+            ) : (
             <div role="group" aria-label={t.billing} className="flex rounded-full border border-border bg-card p-1 text-sm font-semibold">
               {[false, true].map((y) => (
                 <button
@@ -214,6 +224,7 @@ export default function SubscriptionPage() {
                 </button>
               ))}
             </div>
+            )}
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {d.plans.map((p) => {

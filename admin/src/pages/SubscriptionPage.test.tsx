@@ -100,13 +100,17 @@ describe("SubscriptionPage", () => {
         setupFeeCents: 0,
         setupFeeDue: false,
         agreed: { plan: "operations", monthlyCents: 19900, gridMonthlyCents: 29900, setupFeeCents: 0 },
+        monthlyOnly: true,
       }),
     );
-    renderPage("/abonnement?formule=operations");
+    renderPage("/abonnement?formule=operations&annuel=1");
     expect(await screen.findByTestId("plan-agreed-operations")).toHaveTextContent("Tarif convenu avec Plazo (grille 299,00 € HT / mois)");
     const checkout = await screen.findByTestId("subscription-checkout");
     expect(checkout).toHaveTextContent("Mise en route offerte par Plazo");
     expect(screen.getByTestId("checkout-total")).toHaveTextContent("238,80 €");
+    // Monthly only: no yearly toggle, even when the link asked for it.
+    expect(screen.getByTestId("subscription-monthly-only")).toHaveTextContent("Tarif convenu : au mois");
+    expect(screen.queryByRole("group", { name: "Facturation" })).not.toBeInTheDocument();
   });
 
   it("change de formule avec l'aperçu du prorata, et résilie", async () => {

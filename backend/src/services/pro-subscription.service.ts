@@ -45,6 +45,8 @@ export interface ProSubscriptionView {
   /** The setup fee is still due (never paid): it goes on the first invoice. */
   setupFeeDue: boolean;
   plans: { id: ProPlanId; name: string; monthlyCents: number; yearlyCents: number; gridMonthlyCents: number; agreed: boolean }[];
+  /** A price agreed with Plazo is billed monthly only: no yearly billing is offered. */
+  monthlyOnly: boolean;
   /** The price the platform agreed with this operator, when there is one. */
   agreed: { plan: ProPlanId | null; monthlyCents: number | null; gridMonthlyCents: number | null; setupFeeCents: number | null } | null;
   subscription: {
@@ -221,6 +223,7 @@ export class ProSubscriptionService {
       vatPercent: VAT_PERCENT,
       setupFeeCents,
       setupFeeDue: !row?.setupFeePaidAt && setupFeeCents > 0,
+      monthlyOnly: agreed.monthlyCents !== null,
       plans: (Object.keys(PRO_PLANS) as ProPlanId[]).map(id => ({
         id,
         name: PRO_PLANS[id].name,
@@ -283,6 +286,11 @@ export class ProSubscriptionService {
     return { plan: body.plan, yearly: body.yearly === true };
   }
 
+  /** A price agreed with Plazo is monthly only (24/11/2026, « pas de tarif annuel quand c'est un tarif convenu »). */
+  private assertYearlyAllowed(yearly: boolean, agreed: AgreedPrice) {
+    if (yearly && agreed.monthlyCents !== null) throw new ValidationException({ yearly: 'agreed_monthly' });
+  }
+
   private async customerFor(staff: AuthenticatedStaff, row: Row | null): Promise<string> {
     if (row?.customerId) return row.customerId;
     const o = await prisma.operator.findUniqueOrThrow({ where: { id: staff.operatorId }, select: { name: true, billingLegalName: true } });
@@ -313,8 +321,9 @@ export class ProSubscriptionService {
         .cancel(row.subscriptionId)
         .catch(error => logger.warn(`[Subscription] Could not cancel ${row.subscriptionId}: ${errorCode(error)}`));
     }
-    const { taxRate } = await this.ensureCatalog();
     const agreed = await this.agreedOf(staff.operatorId);
+    this.assertYearlyAllowed(yearly, agreed);
+    const { taxRate } = await this.ensureCatalog();
     const customerId = await this.customerFor(staff, row);
     // Paid once per operator (in the keys' mode: a test payment is not one); none when the platform offered it.
     const setupFeeCents = setupFeeCentsOf(agreed);
@@ -392,6 +401,7 @@ export class ProSubscriptionService {
     const from = { plan: row.plan as ProPlanId, yearly: row.yearly };
     if (from.plan === to.plan && from.yearly === to.yearly) throw new HttpException(httpStatus.CONFLICT, 'Same plan', 'same_plan');
     const agreed = await this.agreedOf(operatorId);
+    this.assertYearlyAllowed(to.yearly, agreed);
     const nextCents = withVat(planPriceCents(to.plan, to.yearly, agreed));
     if (!chargedNow(from, to, agreed)) {
       return { chargedNow: false, dueNowCents: 0, nextCents, effectiveAt: row.currentPeriodEnd?.toISOString() ?? null };
@@ -418,6 +428,7 @@ export class ProSubscriptionService {
     if (from.plan === to.plan && from.yearly === to.yearly) throw new HttpException(httpStatus.CONFLICT, 'Same plan', 'same_plan');
     const api = this.api();
     const agreed = await this.agreedOf(staff.operatorId);
+    this.assertYearlyAllowed(to.yearly, agreed);
     const sub = await api.subscriptions.retrieve(row.subscriptionId);
     const now = chargedNow(from, to, agreed);
     const price = await this.planPrice(to.plan, to.yearly, agreed);
@@ -564,15 +575,18 @@ export class ProSubscriptionService {
     const row = await this.rowOf(operatorId);
     if (row?.subscriptionId && isRunning(row.status) && isProPlan(row.plan) && (await this.refusalFor(operatorId)) === null) {
       const plan = row.plan;
-      const changed = planPriceCents(plan, row.yearly, before) !== planPriceCents(plan, row.yearly, agreed);
+      // An agreed price is monthly only: a yearly subscription moves to it at once, the unused part of its year credited.
+      const toMonthly = row.yearly && agreed.monthlyCents !== null;
+      const yearly = row.yearly && !toMonthly;
+      const changed = toMonthly || planPriceCents(plan, row.yearly, before) !== planPriceCents(plan, yearly, agreed);
       if (changed) {
         const api = this.api();
         const sub = await api.subscriptions.retrieve(row.subscriptionId);
         try {
           const updated = await api.subscriptions.update(row.subscriptionId, {
-            items: [{ id: sub.items.data[0].id, price: await this.planPrice(plan, row.yearly, agreed) }],
-            proration_behavior: when === 'now' ? 'always_invoice' : 'none',
-            metadata: { operatorId, plan, yearly: String(row.yearly) },
+            items: [{ id: sub.items.data[0].id, price: await this.planPrice(plan, yearly, agreed) }],
+            proration_behavior: when === 'now' || toMonthly ? 'always_invoice' : 'none',
+            metadata: { operatorId, plan, yearly: String(yearly) },
             expand: ['default_payment_method'],
           });
           await this.sync(updated);

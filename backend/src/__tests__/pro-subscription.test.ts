@@ -1,6 +1,7 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { chargedNow, planLookupKey, planOfLookupKey, planPriceCents, paymentMethodSummary } from '@/domain/pro-subscription';
+import { ProSubscriptionService } from '@/services/pro-subscription.service';
 import { StripeApi, StripeService } from '@/services/stripe.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -130,6 +131,8 @@ beforeEach(async () => {
   process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
   process.env.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET;
   installFake();
+  // Each test has its own fake Stripe: forget the prices found by the previous one.
+  (Container.get(ProSubscriptionService) as unknown as { catalog: unknown }).catalog = null;
 });
 afterEach(() => {
   process.env = { ...savedEnv };
@@ -291,5 +294,27 @@ describe('abonnement Plazo Pro (API)', () => {
     expect(grid.body).toMatchObject({ applied: true, agreed: null, subscription: { priceCents: 29900, agreed: false } });
     expect(calls.updateSub.at(-1)).toMatchObject({ proration_behavior: 'none' });
     expect((await prisma.operator.findUnique({ where: { id: operator.id } }))!.proAgreedMonthlyCents).toBeNull();
+  });
+
+  it("n'offre pas l'annuel avec un prix convenu, et passe un abonnement annuel au mensuel", async () => {
+    const admin = await setupOperator('Plazo (tests)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const { token, operator } = await setupOperator('APL Parking');
+    await api().post('/api/internal/subscription').set(auth(token)).send({ plan: 'operations', yearly: true });
+    const sub = [...subs.values()][0];
+    sub.status = 'active';
+    await webhook('customer.subscription.updated', sub);
+
+    const url = `/api/internal/platform/operators/${operator.id}/pro-price`;
+    const set = await api().put(url).set(auth(admin.token)).send({ plan: 'operations', monthlyCents: 19900, when: 'renewal' });
+    expect(set.body).toMatchObject({ applied: true, subscription: { yearly: false, priceCents: 19900, agreed: true } });
+    expect(calls.updateSub.at(-1)).toMatchObject({ proration_behavior: 'always_invoice' });
+    expect(sub.items.data[0].price.lookup_key).toBe('plazo_pro_operations_monthly_19900');
+
+    const view = await api().get('/api/internal/subscription').set(auth(token));
+    expect(view.body.monthlyOnly).toBe(true);
+    const yearly = await api().get('/api/internal/subscription/preview?plan=complet&yearly=true').set(auth(token));
+    expect(yearly.status).toBe(400);
+    expect(yearly.body.fields).toEqual({ yearly: 'agreed_monthly' });
   });
 });
