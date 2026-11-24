@@ -7413,6 +7413,7 @@ export const subscriptionFr = {
   ttc: (amount: string) => `${amount} TTC`,
   agreed: (grid: string) => `Tarif convenu avec Plazo (grille ${grid})`,
   setupOffered: "Mise en route offerte par Plazo",
+  monthlyOnly: "Tarif convenu : au mois",
   nextCharge: (date: string) => `Prochain prélèvement le ${date}`,
   endsOn: (date: string) => `S'arrête le ${date}, à la fin de la période payée`,
   card: (brand: string, last4: string) => `${brand} •••• ${last4}`,
@@ -7477,7 +7478,7 @@ export const subscriptionFr = {
 /** Plateforme › loueur › Paiements: the Plazo Pro price agreed with the operator (24/11/2026, direction A « Prix négocié »). */
 export const proPriceFr = {
   title: "Abonnement Plazo Pro",
-  intro: "Un prix propre à ce parking, à la place de la grille. Il vaut pour la formule choisie, au mois (l'annuel garde sa remise de 10 %).",
+  intro: "Un prix propre à ce parking, à la place de la grille, pour la formule choisie. Il est facturé au mois seulement : un abonnement annuel passe au mois, au prorata.",
   current: "Abonnement en cours",
   none: "Pas encore d'abonnement : le prix convenu servira quand le gérant s'abonnera.",
   plan: "Formule",

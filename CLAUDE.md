@@ -2945,11 +2945,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `pro-subscription.test.ts`, `SubscriptionPage.test.tsx`.
 - **Prix convenu avec un parking, direction A « Prix négocié » (24/11/2026, « appliquer un tarif au plan mensuel d'un parking »,
   mise en route « réglable aussi »)** : Plateforme › loueur › Paiements, carte « Abonnement Plazo Pro » (`OperatorProPriceCard`) :
-  formule, grille, « Prix convenu » en € HT par mois, mise en route Grille (290 €) · Offerte · Autre montant, « À partir de »
+  formule, grille, « Prix convenu » en € HT par mois (**au mois seulement**, 24/11/2026, « pas de tarif annuel quand c'est un tarif convenu » : `monthlyOnly` de `GET /internal/subscription`, ni bascule Annuel sur Abonnement et « Mon contrat », 400 `yearly` `agreed_monthly` à l'abonnement, l'aperçu et au changement ; un abonnement annuel de la formule passe au mois, au prorata, quand le prix est posé), mise en route Grille (290 €) · Offerte · Autre montant, « À partir de »
   Maintenant (au prorata) · Prochain prélèvement quand un abonnement tourne, « Appliquer », « Revenir à la grille ».
   `Operator.proAgreedPlan` / `proAgreedMonthlyCents` (1 € à 10 000 €) / `proAgreedSetupFeeCents` (0 = offerte ; migration
   `pro_agreed_price`, CHECK) ; `domain/pro-subscription.ts` : `AgreedPrice`, `readAgreedPrice`, `planPriceCents(plan, yearly,
-  agreed)` (l'annuel garde sa remise de 10 % sur le prix convenu), `setupFeeCentsOf`, clé Stripe du montant
+  agreed)`, `setupFeeCentsOf`, clé Stripe du montant
   (`plazo_pro_<formule>_<monthly|yearly>_<centimes>`, `setupLookupKey`, prix créé à la première fois par `priceId`) ;
   `GET|PUT /internal/platform/operators/:id/pro-price` (`PlatformAdminMiddleware` ; `{ plan, monthlyCents | null,
   setupFeeCents | null, when: now | renewal }`, 400 par champ, 502 `stripe_failed`, tracé `operator.pro_price_set`) : un

@@ -122,10 +122,11 @@ function planText(f: AgreementFacts): string[] {
   const agreed = f.plan.agreedMonthlyCents ?? null;
   const base = agreed !== null ? agreed / 100 : plan.monthlyEuros;
   const agreedNote = agreed !== null ? `, prix convenu avec ${f.productName} au lieu du prix de la grille (${euros(plan.monthlyEuros)} HT)` : '';
-  if (f.plan.yearly) {
-    const monthly = agreed !== null ? Math.round((agreed * (100 - YEARLY_DISCOUNT_PERCENT)) / 100) / 100 : yearlyMonthly(plan.monthlyEuros);
+  // A price agreed with Plazo is monthly only (24/11/2026).
+  if (f.plan.yearly && agreed === null) {
+    const monthly = yearlyMonthly(plan.monthlyEuros);
     return [
-      `Le Loueur a choisi la formule ${plan.name}, à l'année : ${euros(monthly)} HT par mois (remise de ${YEARLY_DISCOUNT_PERCENT} % sur le prix mensuel de ${euros(base)} HT${agreedNote}), soit ${euros(Math.round(monthly * 1200) / 100)} HT par an.`,
+      `Le Loueur a choisi la formule ${plan.name}, à l'année : ${euros(monthly)} HT par mois (remise de ${YEARLY_DISCOUNT_PERCENT} % sur le prix mensuel de ${euros(plan.monthlyEuros)} HT), soit ${euros(monthly * 12)} HT par an.`,
     ];
   }
   return [`Le Loueur a choisi la formule ${plan.name}, au mois : ${euros(base)} HT par mois${agreedNote}.`];
