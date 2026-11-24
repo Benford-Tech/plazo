@@ -1059,6 +1059,8 @@
     "button": "Pagar {}",
     "how": "¿Cómo quiere pagar?",
     "or_card": "o con tarjeta",
+    "fallback_note": "El formulario de tarjeta no se muestra en este teléfono: el botón de abajo abre la ventana de pago segura de Stripe.",
+    "other_way": "¿Algún problema con este formulario? Pagar de otra forma",
     "card": "Tarjeta bancaria",
     "secure": "Pago seguro con Stripe: Plazo nunca ve su tarjeta.",
     "secure_web": "Te vamos a redirigir a la página de pago segura de Stripe.",

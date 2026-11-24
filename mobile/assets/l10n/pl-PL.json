@@ -1060,6 +1060,8 @@
     "button": "Zapłać {}",
     "how": "Jak chcesz zapłacić?",
     "or_card": "lub kartą",
+    "fallback_note": "Formularz karty nie wyświetla się na tym telefonie: przycisk poniżej otwiera bezpieczne okno płatności Stripe.",
+    "other_way": "Problem z tym formularzem? Zapłać inaczej",
     "card": "Karta płatnicza",
     "secure": "Bezpieczna płatność przez Stripe: Plazo nigdy nie widzi Twojej karty.",
     "secure_web": "Przekierujemy Cię na bezpieczną stronę płatności Stripe.",

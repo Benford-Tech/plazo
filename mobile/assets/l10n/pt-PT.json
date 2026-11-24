@@ -1059,6 +1059,8 @@
     "button": "Pagar {}",
     "how": "Como quer pagar?",
     "or_card": "ou com cartão",
+    "fallback_note": "O formulário do cartão não aparece neste telemóvel: o botão abaixo abre a janela de pagamento segura da Stripe.",
+    "other_way": "Algum problema com este formulário? Pagar de outra forma",
     "card": "Cartão bancário",
     "secure": "Pagamento seguro pela Stripe: a Plazo nunca vê o seu cartão.",
     "secure_web": "Vai ser redirecionado para a página de pagamento segura da Stripe.",

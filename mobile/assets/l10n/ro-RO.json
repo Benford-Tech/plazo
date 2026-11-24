@@ -1059,6 +1059,8 @@
     "button": "Plătiți {}",
     "how": "Cum doriți să plătiți?",
     "or_card": "sau cu cardul",
+    "fallback_note": "Formularul de card nu se afișează pe acest telefon: butonul de mai jos deschide fereastra de plată securizată Stripe.",
+    "other_way": "O problemă cu acest formular? Plătiți altfel",
     "card": "Card bancar",
     "secure": "Plată securizată prin Stripe: Plazo nu vă vede niciodată cardul.",
     "secure_web": "Veți fi redirecționat către pagina de plată securizată Stripe.",

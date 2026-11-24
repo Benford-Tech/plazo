@@ -73,6 +73,12 @@ class PaymentWalletPressed extends PaymentEvent {
   const PaymentWalletPressed();
 }
 
+/// 24/11/2026 (« Impossible de payer »: nothing showed under « Comment payer ? »): Stripe's own payment sheet, when
+/// the card field of the page cannot be drawn on this phone, or when the traveller asks for another way.
+class PaymentSheetPressed extends PaymentEvent {
+  const PaymentSheetPressed();
+}
+
 /// The card field: number, expiry and CVC complete or not.
 class PaymentCardChanged extends PaymentEvent {
   const PaymentCardChanged(this.complete);
@@ -142,6 +148,7 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<PaymentTicked>(_onTicked);
     on<PaymentPayPressed>(_onPay);
     on<PaymentWalletPressed>(_onWallet);
+    on<PaymentSheetPressed>(_onSheet);
     on<PaymentCardChanged>((e, emit) => emit(state.copyWith(cardComplete: e.complete)));
     on<PaymentRefreshRequested>(_onRefresh);
     on<PaymentEditPressed>(_onEdit);
@@ -249,6 +256,21 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
         amountCents: intent.amountCents ?? ((b.priceCents ?? 0) + b.extrasCents),
       );
     });
+  }
+
+  Future<void> _onSheet(PaymentSheetPressed event, Emitter<PaymentState> emit) async {
+    if (state.status != PaymentStatus.ready || state.busy || !state.sheetAvailable(_sheet)) return;
+    await _payNative(
+      PaymentMethodChoice.card,
+      emit,
+      (config, intent) => _sheet.present(
+        publishableKey: config.publishableKey!,
+        clientSecret: intent.clientSecret!,
+        merchantDisplayName: config.merchantDisplayName,
+        merchantCountryCode: config.merchantCountryCode,
+        currency: config.currency,
+      ),
+    );
   }
 
   /// Creates (or reads back) the PaymentIntent, then confirms it on the phone with the card or the wallet.
