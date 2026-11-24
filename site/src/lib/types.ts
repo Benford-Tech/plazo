@@ -248,7 +248,7 @@ export interface BookingPageInfo {
 }
 
 /** 22/11/2026: one block of a parking's own site (/s/<slug>), in the order the manager chose. */
-export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text";
+export type SiteBlockKind = "booking" | "highlights" | "steps" | "pricing" | "photos" | "access" | "services" | "conditions" | "faq" | "contact" | "text" | "destinations" | "cta";
 export interface SiteBlock {
   id: string;
   /** A kind this site does not know yet is skipped. */
@@ -267,6 +267,27 @@ export interface ParkingSiteInfo extends BookingPageInfo {
   preview: boolean;
   /** The parking's own host once it serves the site (missing from an older API). */
   domain?: string | null;
+  /** 24/11/2026, the showcase look and the pages (all missing from an older API). */
+  theme?: "simple" | "showcase";
+  accent2?: string | null;
+  accent2Ink?: string | null;
+  heroPhotoUrl?: string | null;
+  logoUrl?: string | null;
+  /** The Google rating the manager typed. */
+  rating?: { value: number; count: number | null } | null;
+  /** Where the parking takes its travellers: the airport, then its shuttle's stops. */
+  destinations?: SiteDestination[];
+  /** The page names of a site with several pages; empty for a one-page site. */
+  pages?: string[];
+  legal?: { name: string | null; address: string | null; siret: string | null; vatNumber: string | null };
+  /** Set by the page that renders the site: where its links start (« /s/<slug> », or nothing on its own host) and the preview key to keep. */
+  links?: { base: string; query: string };
+}
+export interface SiteDestination {
+  slug: string;
+  kind: "airport" | "station" | "other";
+  name: string;
+  instructions: string | null;
 }
 
 export interface PublicBooking {

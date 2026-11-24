@@ -44,6 +44,32 @@ export class OperatorSiteController {
     res.json({ data: await this.service.setAddon(req.staff, req.params.id as string, req.body?.active) });
   });
 
+  public setHeroPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.service.setHeroPhoto(req.staff, req.body) });
+  });
+
+  public removeHeroPhoto = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.service.removeHeroPhoto(req.staff) });
+  });
+
+  /** Public images of a site. They are shown on the parking's own host too: any site may display them. */
+  private image = (res: Response, photo: { contentType: string; size?: number | null; stream: NodeJS.ReadableStream }, cache: string) => {
+    res.set('Content-Type', photo.contentType);
+    res.set('Cache-Control', cache);
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (photo.size != null) res.set('Content-Length', String(photo.size));
+    photo.stream.pipe(res);
+  };
+
+  public heroPhoto = catchAsync(async (req: Request, res: Response) => {
+    this.image(res, await this.service.heroPhoto(req.params.slug as string, req.params.file as string), 'public, max-age=604800, immutable');
+  });
+
+  public logo = catchAsync(async (req: Request, res: Response) => {
+    this.image(res, await this.service.logo(req.params.slug as string), 'public, max-age=3600');
+  });
+
   public publicSite = catchAsync(async (req: Request, res: Response) => {
     const key = typeof req.query.apercu === 'string' ? req.query.apercu : undefined;
     const site = await this.service.publicSite(req.params.slug as string, key);

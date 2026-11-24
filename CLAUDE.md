@@ -558,6 +558,30 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      l'option, « Mettre mon site en ligne ») ; Plateforme › loueur : `OperatorSiteCard`. Tests `operator-site.test.ts`,
      `ParkingSite.test.tsx`, `SitePage.test.tsx`. Pas encore : variantes de présentation par bloc, blocs image / bouton / annonce,
      plusieurs pages, logo du parking, `nom.plazo.fr` ou le nom de domaine du parking, paiement de l'option par Stripe, Plazo Pro.
+   - **Site vitrine à plusieurs pages, choix B (24/11/2026, « je veux pouvoir faire des sites comme celui-ci » d'après le site
+     d'un parking de Marseille, maquettes https://claude.ai/artifact/CjywM2iy1w8shz95Z1hPhB, « B, note tapée par le gérant, photo
+     choisie exprès »)** : `OperatorSite.theme` (`simple` · `showcase`), `accent2`, `heroPhotoKey`, `showLogo`, `ratingTenths` /
+     `ratingCount`, `pages` (migration `operator_site_showcase`, CHECK) ; `domain/operator-site.ts` : `readTheme`, `readRating`
+     (« 4,8 » et un nombre d'avis, tapés par le gérant, jamais lus chez Google), `siteDestinations` (l'aéroport `aeroport`, puis
+     chaque desserte de la navette, nom de page tiré de son nom), `FIXED_SITE_PAGES` (`questions`, `contact`, `mentions-legales`),
+     deux blocs de plus `destinations` (« Vos départs », une carte par destination) et `cta` (« Bande d'appel »), éteints d'office
+     (aucun site existant ne change seul). `PUT /internal/site` accepte `theme`, `accent2` (nul = retirée), `showLogo`, `rating`
+     `{ value, count }` (nul = retirée), `pages` (400 `theme` · `accent2` · `rating` · `ratingCount` invalid) ;
+     `POST|DELETE /internal/site/hero-photo` (octets bruts, 3 Mo, `RefuseInDemo`, tracés `site.hero_photo_set|removed`) ;
+     `GET /public/sites/:slug/hero/:file` et `…/logo` (le logo du parking seulement si le site l'affiche ; `cross-origin`) ;
+     `GET /public/sites/:slug` rend `theme`, `accent2`, `accent2Ink`, `heroPhotoUrl`, `logoUrl`, `rating`, `destinations`, `pages`,
+     `legal` (raison sociale, adresse, SIRET, TVA des « Informations de facturation ») ; `GET /public/site-domains/:host` rend aussi
+     `pages`. Site : style **Vitrine** de `ParkingSite` (barre de contact, bandeau avec la photo, la note Google, la réservation à
+     cheval sur le bandeau dans la deuxième couleur, bandes « Vos départs » et d'appel, pied de page en couleur) ; pages
+     `/s/<slug>/<page>` (`app/[lang]/s/[slug]/[page]`, `lib/parking-site.ts` : `pageOf`, `sitePath`, `PAGE_BLOCKS` ;
+     `lib/parking-site-load.ts`) : « Parking proche de <destination> » (consignes de la desserte, réservation, déroulement, tarifs,
+     questions, contact), Questions (balisée `FAQPage`), Contact, Mentions légales (non indexée) ; menu en pages (rangée défilante
+     sur téléphone) ; sur le nom de domaine du parking, `proxy.ts` sert `/<page>` (`siteOfHost`), tout autre chemin part toujours
+     vers plazo.fr ; textes dans les neuf langues. Espace pro : carte « Présentation » de « Mon site » (`LookSection` : Sobre ·
+     Vitrine, deuxième couleur, photo du bandeau envoyée tout de suite, logo, note Google, « Plusieurs pages »). Tests
+     `operator-site.test.ts`, `ParkingSite.test.tsx`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore : un texte propre à chaque
+     page de départ (le déroulement dit toujours « terminal »), la reprise d'un site existant (C), les pages dans le plan du site,
+     Plazo Pro.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

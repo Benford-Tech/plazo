@@ -1736,8 +1736,21 @@ export const adminApi = {
   // Site du parking, niveau 3 (19/11/2026): the parking's own Plazo booking page.
   /** 22/11/2026: « Mon site ». */
   getSite: () => apiRequest<{ data: SiteSettings }>("/internal/site"),
-  updateSite: (input: { blocks?: Pick<SiteBlock, "kind" | "enabled" | "title" | "text">[]; slug?: string; accent?: string; published?: boolean }) =>
-    apiRequest<{ data: SiteSettings }>("/internal/site", { method: "PUT", body: json(input) }),
+  updateSite: (input: {
+    blocks?: Pick<SiteBlock, "kind" | "enabled" | "title" | "text">[];
+    slug?: string;
+    accent?: string;
+    published?: boolean;
+    theme?: SiteSettings["theme"];
+    accent2?: string | null;
+    showLogo?: boolean;
+    rating?: { value: string; count: string } | null;
+    pages?: boolean;
+  }) => apiRequest<{ data: SiteSettings }>("/internal/site", { method: "PUT", body: json(input) }),
+  // 24/11/2026: the photo behind the title of the showcase look.
+  setSiteHeroPhoto: (photo: Blob) =>
+    apiRequest<{ data: SiteSettings }>("/internal/site/hero-photo", { method: "POST", body: photo, headers: { "Content-Type": photo.type || "image/jpeg" } }),
+  removeSiteHeroPhoto: () => apiRequest<{ data: SiteSettings }>("/internal/site/hero-photo", { method: "DELETE" }),
   requestSite: () => apiRequest<{ data: SiteSettings }>("/internal/site/request", { method: "POST" }),
   setSiteDomain: (domain: string | null) => apiRequest<{ data: SiteSettings }>("/internal/site/domain", { method: "PUT", body: json({ domain }) }),
   checkSiteDomain: () => apiRequest<{ data: SiteSettings }>("/internal/site/domain/check", { method: "POST" }),

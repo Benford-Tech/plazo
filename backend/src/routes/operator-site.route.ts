@@ -55,6 +55,10 @@ export class OperatorSiteRoute implements Routes {
     this.router.put('/internal/site/domain', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.setDomain);
     this.router.post('/internal/site/domain/check', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.checkDomain);
     this.router.put('/internal/platform/operators/:id/site/domain', PlatformAdminMiddleware(), this.controller.setDomainActive);
+    this.router.post('/internal/site/hero-photo', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.setHeroPhoto);
+    this.router.delete('/internal/site/hero-photo', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.removeHeroPhoto);
+    this.router.get('/public/sites/:slug/hero/:file', this.controller.heroPhoto);
+    this.router.get('/public/sites/:slug/logo', this.controller.logo);
     this.router.get('/public/sites/:slug', this.controller.publicSite);
     this.router.get('/public/site-domains/:host', this.controller.byDomain);
   }

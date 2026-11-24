@@ -23,6 +23,13 @@ const settings = (over: Partial<SiteSettings> = {}): SiteSettings => ({
   saved: true,
   accent: "#0E5FA8",
   blocks: [block("booking"), block("pricing"), block("faq", { enabled: false })],
+  theme: "simple",
+  accent2: null,
+  heroPhotoUrl: null,
+  showLogo: false,
+  hasLogo: false,
+  rating: null,
+  pages: false,
   published: false,
   listingOnline: true,
   listingTitle: "Parking des Cèdres",
@@ -81,6 +88,11 @@ describe("Mon site", () => {
         { kind: "faq", enabled: true, title: null, text: null },
         { kind: "text", enabled: true, title: null, text: "Bienvenue." },
       ],
+      theme: "simple",
+      accent2: null,
+      showLogo: false,
+      pages: false,
+      rating: null,
     });
     expect(toast.success).toHaveBeenCalledWith("Site enregistré.");
   });
@@ -146,5 +158,27 @@ describe("Mon site", () => {
     const section = await screen.findByTestId("site-domain");
     expect(within(section).getByLabelText("Nom de domaine")).toBeInTheDocument();
     expect(section).not.toHaveTextContent("fait partie de l'option");
+  });
+
+  // 24/11/2026 (« je veux pouvoir faire des sites comme celui-ci », choix B).
+  it("présentation : style Vitrine, deuxième couleur, note Google tapée et plusieurs pages partent avec « Enregistrer »", async () => {
+    const user = userEvent.setup();
+    api.getSite.mockResolvedValue({ data: settings() });
+    api.updateSite.mockResolvedValue({ data: settings({ theme: "showcase", accent2: "#F2B705", rating: { value: 4.8, count: 193 }, pages: true }) });
+    renderPage();
+    const look = within(await screen.findByTestId("site-look"));
+    expect(look.getByRole("button", { name: "Sobre" })).toHaveAttribute("aria-pressed", "true");
+    // No logo yet: the page says where to add it.
+    expect(look.getByRole("link", { name: "Parking › Réglages" })).toBeInTheDocument();
+    await user.click(look.getByRole("button", { name: "Vitrine" }));
+    await user.click(look.getByRole("checkbox"));
+    await user.type(look.getByLabelText("Note sur 5"), "4,8");
+    await user.type(look.getByLabelText("Nombre d'avis"), "193 avis");
+    await user.click(look.getByRole("switch", { name: "Plusieurs pages" }));
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(api.updateSite).toHaveBeenCalledWith(
+      expect.objectContaining({ theme: "showcase", accent2: "#F2B705", showLogo: false, pages: true, rating: { value: "4,8", count: "193" } }),
+    );
+    expect(toast.success).toHaveBeenCalledWith("Site enregistré.");
   });
 });

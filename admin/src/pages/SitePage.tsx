@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Copy, ExternalLink, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
+import { MAX_PHOTO_BYTES, shrinkPhoto } from "@/lib/shrink-photo";
 import type { SiteBlock, SiteSettings } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +62,7 @@ export default function SitePage() {
   const [slug, setSlug] = useState("");
   const [accent, setAccent] = useState("");
   const [open, setOpen] = useState<string | null>(null);
+  const [look, setLook] = useState<Look | null>(null);
 
   // The form follows the server until the manager touches it.
   useEffect(() => {
@@ -68,12 +70,26 @@ export default function SitePage() {
     setBlocks(site.blocks);
     setSlug(site.slug);
     setAccent(site.accent);
+    setLook(lookOf(site));
   }, [site]);
 
   const store = (data: SiteSettings) => queryClient.setQueryData(["site"], { data });
   const save = useMutation({
     mutationFn: () =>
-      adminApi.updateSite({ blocks: (blocks ?? []).map(({ kind, enabled, title, text }) => ({ kind, enabled, title, text })), slug, accent }),
+      adminApi.updateSite({
+        blocks: (blocks ?? []).map(({ kind, enabled, title, text }) => ({ kind, enabled, title, text })),
+        slug,
+        accent,
+        ...(look
+          ? {
+              theme: look.theme,
+              accent2: look.accent2,
+              showLogo: look.showLogo,
+              pages: look.pages,
+              rating: look.rating.trim() ? { value: look.rating.trim(), count: look.ratingCount.trim() } : null,
+            }
+          : {}),
+      }),
     onSuccess: (res) => {
       store(res.data);
       toast.success(t.saved);
@@ -97,7 +113,7 @@ export default function SitePage() {
     onError: (err) => toast.error(describeError(err)),
   });
 
-  if (query.isLoading || !site || !blocks) {
+  if (query.isLoading || !site || !blocks || !look) {
     return (
       <>
         <PlazoTabs />
@@ -106,7 +122,11 @@ export default function SitePage() {
     );
   }
 
-  const dirty = slug !== site.slug || accent !== site.accent || JSON.stringify(blocks) !== JSON.stringify(site.blocks);
+  const dirty =
+    slug !== site.slug ||
+    accent !== site.accent ||
+    JSON.stringify(blocks) !== JSON.stringify(site.blocks) ||
+    JSON.stringify(look) !== JSON.stringify(lookOf(site));
   const change = (id: string, patch: Partial<SiteBlock>) => setBlocks(blocks.map((b) => (b.id === id ? { ...b, ...patch } : b)));
   const move = (index: number, by: number) => {
     const next = [...blocks];
@@ -272,6 +292,8 @@ export default function SitePage() {
 
           <DomainSection site={site} readOnly={readOnly} onChange={store} />
 
+          <LookSection site={site} look={look} accent={accent} readOnly={readOnly} onChange={setLook} onPhoto={store} />
+
           <section className={card} aria-labelledby="site-settings">
             <h2 id="site-settings" className="font-narrow text-xl font-bold">
               {t.settingsTitle}
@@ -292,6 +314,173 @@ export default function SitePage() {
         </div>
       </div>
     </>
+  );
+}
+
+/** What the manager sets for the look, as the form holds it. */
+interface Look {
+  theme: SiteSettings["theme"];
+  accent2: string | null;
+  showLogo: boolean;
+  pages: boolean;
+  rating: string;
+  ratingCount: string;
+}
+const lookOf = (site: SiteSettings): Look => ({
+  theme: site.theme ?? "simple",
+  accent2: site.accent2 ?? null,
+  showLogo: !!site.showLogo,
+  pages: !!site.pages,
+  rating: site.rating ? String(site.rating.value).replace(".", ",") : "",
+  ratingCount: site.rating?.count ? String(site.rating.count) : "",
+});
+
+/**
+ * « Présentation » (24/11/2026, « je veux pouvoir faire des sites comme celui-ci », choix B): the style, a second colour,
+ * the photo behind the title, the logo, the Google rating the manager types, and several pages. The photo is sent at
+ * once; the rest is saved with the page.
+ */
+function LookSection({
+  site,
+  look,
+  accent,
+  readOnly,
+  onChange,
+  onPhoto,
+}: {
+  site: SiteSettings;
+  look: Look;
+  accent: string;
+  readOnly: boolean;
+  onChange: (look: Look) => void;
+  onPhoto: (data: SiteSettings) => void;
+}) {
+  const l = t.look;
+  const file = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const set = (patch: Partial<Look>) => onChange({ ...look, ...patch });
+  const send = async (picked: File | undefined) => {
+    if (!picked || busy) return;
+    setBusy(true);
+    try {
+      const photo = await shrinkPhoto(picked);
+      if (!photo) return void toast.error(l.photoUnreadable);
+      if (photo.size > MAX_PHOTO_BYTES) return void toast.error(l.photoTooLarge);
+      onPhoto((await adminApi.setSiteHeroPhoto(photo)).data);
+      toast.success(l.photoSaved);
+    } catch (err) {
+      const fields = err instanceof ApiError ? err.fields : undefined;
+      if (fields?.photo === "too_large") toast.error(l.photoTooLarge);
+      else if (fields?.photo) toast.error(l.photoUnreadable);
+      else if (err instanceof ApiError && err.code === "photos_unavailable") toast.error(l.photoUnavailable);
+      else toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+      if (file.current) file.current.value = "";
+    }
+  };
+  const removePhoto = async () => {
+    setBusy(true);
+    try {
+      onPhoto((await adminApi.removeSiteHeroPhoto()).data);
+      toast.success(l.photoRemoved);
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className={card} aria-labelledby="site-look" data-testid="site-look">
+      <h2 id="site-look" className="font-narrow text-xl font-bold">
+        {l.title}
+      </h2>
+      <div className="flex flex-col gap-1">
+        <span className={label}>{l.theme}</span>
+        <div role="group" aria-label={l.theme} className="flex gap-2">
+          {(["simple", "showcase"] as const).map((theme) => (
+            <button
+              key={theme}
+              type="button"
+              aria-pressed={look.theme === theme}
+              onClick={() => set({ theme })}
+              className={cn("min-h-11 flex-1 rounded-[10px] border px-3 font-semibold", look.theme === theme ? "border-lime-deep bg-[#F1F8E6] text-lime-deep" : "border-border bg-white")}
+            >
+              {l.themes[theme]}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-muted-foreground">{l.themeHint}</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-3">
+          <input type="checkbox" className="h-5 w-5" checked={look.accent2 !== null} onChange={(e) => set({ accent2: e.target.checked ? "#F2B705" : null })} />
+          <span className="font-semibold">{l.accent2}</span>
+          {look.accent2 !== null && (
+            <input type="color" aria-label={l.accent2} value={look.accent2} onChange={(e) => set({ accent2: e.target.value.toUpperCase() })} className="h-11 w-16 rounded-[10px] border border-border bg-white p-1" />
+          )}
+          <span aria-hidden className="ml-auto flex gap-1">
+            <span className="h-5 w-5 rounded-full border border-border" style={{ background: accent }} />
+            {look.accent2 && <span className="h-5 w-5 rounded-full border border-border" style={{ background: look.accent2 }} />}
+          </span>
+        </label>
+        <span className="text-xs text-muted-foreground">{l.accent2Hint}</span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span className={label}>{l.photo}</span>
+        {site.heroPhotoUrl && <img src={site.heroPhotoUrl} alt={l.photoAlt} className="h-28 w-full rounded-[10px] border border-border object-cover" />}
+        <input ref={file} type="file" accept="image/*" className="sr-only" aria-label={l.photo} disabled={readOnly || busy} onChange={(e) => send(e.target.files?.[0])} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" className="h-11 font-semibold" disabled={readOnly || busy} onClick={() => file.current?.click()}>
+            {site.heroPhotoUrl ? l.photoChange : l.photoAdd}
+          </Button>
+          {site.heroPhotoUrl && (
+            <button type="button" disabled={readOnly || busy} onClick={removePhoto} className="min-h-11 px-2 text-sm font-semibold text-destructive disabled:opacity-50">
+              {l.photoRemove}
+            </button>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{l.photoHint}</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold">{l.logo}</span>
+          <Switch checked={look.showLogo} label={l.logo} onChange={(on) => set({ showLogo: on })} />
+        </div>
+        {!site.hasLogo && (
+          <span className="text-xs text-muted-foreground">
+            {l.logoMissing} <Link to="/parking/reglages" className="font-semibold underline">{l.logoLink}</Link>.
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className={label}>{l.rating}</span>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="flex flex-col gap-1 text-sm">
+            {l.ratingValue}
+            <input className={input} inputMode="decimal" placeholder="4,8" value={look.rating} onChange={(e) => set({ rating: e.target.value })} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            {l.ratingCount}
+            <input className={input} inputMode="numeric" placeholder="193" value={look.ratingCount} onChange={(e) => set({ ratingCount: e.target.value.replace(/\D/g, "") })} />
+          </label>
+        </div>
+        <span className="text-xs text-muted-foreground">{l.ratingHint}</span>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-semibold">{l.pages}</span>
+          <Switch checked={look.pages} label={l.pages} onChange={(on) => set({ pages: on })} />
+        </div>
+        <span className="text-xs text-muted-foreground">{l.pagesHint}</span>
+      </div>
+    </section>
   );
 }
 

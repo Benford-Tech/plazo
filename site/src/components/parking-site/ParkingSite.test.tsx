@@ -82,4 +82,65 @@ describe("le site du parking", () => {
     expect(screen.getByText("La réservation en ligne ouvrira avec la mise en ligne du site.")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Aperçu");
   });
+
+  // 24/11/2026 (« je veux pouvoir faire des sites comme celui-ci », choix B).
+  const showcase = (over: Partial<ParkingSiteInfo> = {}) =>
+    site([block("highlights"), block("destinations"), block("cta"), block("booking"), block("faq"), block("contact")], {
+      theme: "showcase",
+      accent2: "#F2B705",
+      accent2Ink: "#1A1D1A",
+      rating: { value: 4.8, count: 193 },
+      destinations: [
+        { slug: "aeroport", kind: "airport", name: "Lyon Saint-Exupéry", instructions: null },
+        { slug: "gare-tgv", kind: "station", name: "Gare TGV", instructions: "Devant le hall, quai des navettes." },
+      ],
+      pages: ["aeroport", "gare-tgv", "questions", "contact", "mentions-legales"],
+      legal: { name: "Cèdres SAS", address: "12 rue des Cèdres", siret: "12345678900012", vatNumber: null },
+      ...over,
+    });
+
+  it("présentation vitrine : barre de contact, bandeau avec la note, réservation en tête, cartes des départs vers leurs pages", () => {
+    render(<ParkingSite idempotencyKey="k" data={data} site={showcase()} />);
+    expect(screen.getByTestId("site-topbar")).toHaveTextContent("04 72 00 00 00");
+    expect(within(screen.getByTestId("site-hero")).getByRole("heading", { level: 1 })).toHaveTextContent("Parking des Cèdres");
+    expect(screen.getByTestId("site-rating")).toHaveTextContent("4,8");
+    expect(screen.getByTestId("site-rating")).toHaveTextContent("193 avis Google");
+    // The booking comes first, whatever its place in the manager's list.
+    expect(headings()[0]).toBe("Réserver");
+    expect(headings()).toContain("D’où partez-vous ?");
+    expect(screen.getByRole("link", { name: /En savoir plus ?: Gare TGV/ })).toHaveAttribute("href", "/s/cedres/gare-tgv");
+    expect(screen.getByRole("link", { name: "Je réserve en ligne" })).toHaveAttribute("href", "/s/cedres#reserver");
+    const [menu] = screen.getAllByRole("navigation", { name: "Parking des Cèdres" });
+    expect(within(menu!).getAllByRole("link").map(a => a.getAttribute("href"))).toEqual([
+      "/s/cedres",
+      "/s/cedres/aeroport",
+      "/s/cedres/gare-tgv",
+      "/s/cedres/questions",
+      "/s/cedres/contact",
+    ]);
+    expect(screen.getByRole("link", { name: "Mentions légales" })).toHaveAttribute("href", "/s/cedres/mentions-legales");
+  });
+
+  it("la page d’un départ : son titre, ses consignes, la réservation ; sur le domaine du parking les liens partent de la racine", () => {
+    render(<ParkingSite idempotencyKey="k" data={data} page="gare-tgv" site={showcase({ links: { base: "", query: "" } })} />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Parking proche de Gare TGV");
+    expect(screen.getByText("Devant le hall, quai des navettes.")).toBeInTheDocument();
+    expect(screen.getByTestId("module")).toBeInTheDocument();
+    expect(screen.queryByTestId("site-rating")).toBeNull();
+    expect(screen.queryByText("D’où partez-vous ?")).toBeNull();
+    expect(screen.getByRole("link", { name: "Mentions légales" })).toHaveAttribute("href", "/mentions-legales");
+  });
+
+  it("les mentions légales nomment l’éditeur ; une page inconnue ne montre rien de plus que l’accueil", () => {
+    const { unmount } = render(<ParkingSite idempotencyKey="k" data={data} page="mentions-legales" site={showcase()} />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Mentions légales");
+    expect(screen.getByText("Cèdres SAS")).toBeInTheDocument();
+    expect(screen.getByText("SIRET 12345678900012")).toBeInTheDocument();
+    expect(screen.queryByTestId("module")).toBeNull();
+    unmount();
+    render(<ParkingSite idempotencyKey="k" data={data} site={site([block("booking"), block("destinations"), block("cta")])} />);
+    // The first look, one page: no card, no link to a page that does not exist.
+    expect(screen.queryByRole("link", { name: /En savoir plus/ })).toBeNull();
+    expect(screen.queryByTestId("site-hero")).toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { DEFAULT_LOCALE, LOCALE_HEADER, localizedPath, splitLocale } from "@/lib/i18n/locales";
 import { isManageToken, manageCookie, managePath, REFERENCE_RE, secureCookies } from "@/lib/manage-access";
-import { foreignHost, siteSlugOfHost } from "@/lib/parking-site-host";
+import { foreignHost, siteOfHost } from "@/lib/parking-site-host";
 import { siteUrl } from "@/lib/site";
 
 /**
@@ -15,18 +15,20 @@ import { siteUrl } from "@/lib/site";
 const backendUrl = () => (process.env.BACKEND_URL || "http://localhost:3005").replace(/\/+$/, "");
 
 /**
- * A parking's own domain name (22/11/2026): its home page is the parking's site (/s/<slug>, in the visitor's language);
+ * A parking's own domain name (22/11/2026): its home page is the parking's site (/s/<slug>, in the visitor's language), and so are the site's own pages;
  * every other page is Plazo's and goes to its address on the main site. A host that opens no site goes there too.
  */
 async function parkingSiteHost(request: NextRequest, host: string) {
   const url = request.nextUrl;
   const { locale, path } = splitLocale(url.pathname);
-  const slug = await siteSlugOfHost(host, backendUrl());
-  if (slug && path === "/") {
+  const { slug, pages } = await siteOfHost(host, backendUrl());
+  // The home page, or one of the site's own pages (24/11/2026): « /aeroport », « /questions »…
+  const page = path === "/" ? "" : pages.includes(path.slice(1)) ? path : null;
+  if (slug && page !== null) {
     const headers = new Headers(request.headers);
     headers.set(LOCALE_HEADER, locale);
     const target = url.clone();
-    target.pathname = `/${locale}/s/${slug}`;
+    target.pathname = `/${locale}/s/${slug}${page}`;
     return NextResponse.rewrite(target, { request: { headers } });
   }
   return NextResponse.redirect(new URL(`${url.pathname}${url.search}`, siteUrl()), slug ? 308 : 307);

@@ -1,14 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
 import { ParkingSite } from "@/components/parking-site/ParkingSite";
-import { api, ApiError } from "@/lib/api";
 import { fr } from "@/lib/fr";
 import { enterLocaleFrom } from "@/lib/i18n/server";
 import { lp } from "@/lib/i18n/runtime";
 import { parkingFaq } from "@/lib/parking-more";
+import { loadSite, previewOf, requestHost, type SiteSearch } from "@/lib/parking-site-load";
 import { openGraph, parkingMetaDescription } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import { faqLd, parkingLd } from "@/lib/structured-data";
@@ -18,23 +17,8 @@ import { faqLd, parkingLd } from "@/lib/structured-data";
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ lang?: string; slug: string }>;
-type Search = Promise<Record<string, string | string[] | undefined>>;
-
-async function load(slug: string, preview: string | null) {
-  try {
-    const site = await api.parkingSite(slug, preview);
-    const data = await api.parking(site.airport, site.parking);
-    return { site, data };
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return null;
-    throw error;
-  }
-}
-
-const previewOf = async (searchParams: Search) => {
-  const key = (await searchParams).apercu;
-  return typeof key === "string" && /^[a-f0-9]{10,64}$/.test(key) ? key : null;
-};
+type Search = SiteSearch;
+const load = loadSite;
 
 export async function generateMetadata({ params, searchParams }: { params: Params; searchParams: Search }): Promise<Metadata> {
   await enterLocaleFrom(params);
@@ -65,7 +49,7 @@ export default async function ParkingSitePage({ params, searchParams }: { params
   const { site, data } = loaded;
   // The parking's own domain is the site's address: plazo.fr/s/<slug> sends there (one address for search engines).
   if (site.domain && !site.preview) {
-    const host = ((await headers()).get("host") ?? "").toLowerCase().replace(/:\d+$/, "");
+    const host = await requestHost();
     if (host && host !== site.domain) redirect(`https://${site.domain}/`);
   }
   return (

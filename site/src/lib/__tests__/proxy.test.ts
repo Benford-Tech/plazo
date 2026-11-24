@@ -65,11 +65,11 @@ describe("languages (proxy, 13/11/2026)", () => {
 
 // 22/11/2026 (« le nom de domaine du parking »): on a parking's own host, the home page is its site.
 describe("le nom de domaine d'un parking", () => {
-  const onHost = async (url: string, host: string, slug: string | null) => {
+  const onHost = async (url: string, host: string, slug: string | null, pages: string[] = []) => {
     const { vi } = await import("vitest");
     const { forgetSiteHosts } = await import("../parking-site-host");
     forgetSiteHosts();
-    vi.stubGlobal("fetch", async () => (slug ? { ok: true, status: 200, json: async () => ({ slug }) } : { ok: false, status: 404, json: async () => ({}) }));
+    vi.stubGlobal("fetch", async () => (slug ? { ok: true, status: 200, json: async () => ({ slug, pages }) } : { ok: false, status: 404, json: async () => ({}) }));
     try {
       return await proxy(new NextRequest(new URL(url), { headers: { host } }));
     } finally {
@@ -82,6 +82,14 @@ describe("le nom de domaine d'un parking", () => {
     expect(home.headers.get("x-middleware-rewrite")).toBe("https://www.cedres.example/fr/s/cedres");
     const english = await onHost("https://www.cedres.example/en", "www.cedres.example", "cedres");
     expect(english.headers.get("x-middleware-rewrite")).toBe("https://www.cedres.example/en/s/cedres");
+  });
+
+  it("sert aussi les pages du site (24/11/2026), et seulement elles", async () => {
+    const pages = ["aeroport", "questions"];
+    const page = await onHost("https://www.cedres.example/en/aeroport", "www.cedres.example", "cedres", pages);
+    expect(page.headers.get("x-middleware-rewrite")).toBe("https://www.cedres.example/en/s/cedres/aeroport");
+    const plazo = await onHost("https://www.cedres.example/contact", "www.cedres.example", "cedres", pages);
+    expect(plazo.status).toBe(308);
   });
 
   it("renvoie toute autre page, et un hôte sans site, vers le site de Plazo", async () => {
