@@ -1,4 +1,5 @@
 import { BookingPageModule } from "@/components/booking-page/BookingPageModule";
+import { SiteContactForm } from "./SiteContactForm";
 import { TrustBand } from "@/components/Highlights";
 import { Photo } from "@/components/Photo";
 import { fr } from "@/lib/fr";
@@ -6,7 +7,8 @@ import { factsLine, trustTiles } from "@/lib/highlights";
 import { mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { parkingFaq, priceRows } from "@/lib/parking-more";
-import { hasPages, isRich, sitePath } from "@/lib/parking-site";
+import { siteContactAction } from "@/lib/contact-actions";
+import { hasPages, isRich, previewKeyOf, sitePath } from "@/lib/parking-site";
 import type { ParkingResponse, ParkingSiteInfo, SiteBlock, SiteBlockKind } from "@/lib/types";
 
 /**
@@ -50,25 +52,61 @@ function Booking({ site, block, idempotencyKey }: BlockProps) {
   );
 }
 
-function Highlights({ data, block }: BlockProps) {
+function Highlights({ site, data, block }: BlockProps) {
   const tiles = trustTiles(data.parking, data.airport.code);
   const facts = factsLine(data.parking);
   if (tiles.length === 0 && !facts && !data.parking.description) return null;
   return (
     <Section id="essentiel" title={block.title ?? fr.highlights.bandLabel}>
       {data.parking.description && <p className="text-[15.5px] leading-relaxed whitespace-pre-line">{data.parking.description}</p>}
-      <TrustBand tiles={tiles} />
+      {site.theme === "park" ? (
+        // « Parc » (24/11/2026): the strengths as ticked tiles.
+        <ul data-testid="site-strengths" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {tiles.map(tile => (
+            <li key={tile.kind} className={`${card} flex gap-3 p-4`}>
+              <span aria-hidden="true" className="flex size-6 flex-none items-center justify-center rounded-full bg-[var(--ps-accent)] text-[13px] font-bold text-[var(--ps-ink)]">
+                ✓
+              </span>
+              <span className="flex flex-col">
+                <span className="text-[14px] font-bold tracking-wide uppercase">{tile.title}</span>
+                <span className="text-[14px] text-soft">{tile.text}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <TrustBand tiles={tiles} />
+      )}
       {facts && <p className="text-[14px] font-medium text-soft">{facts}</p>}
     </Section>
   );
 }
 
-function Steps({ data, block }: BlockProps) {
+/** « Parc » and « Voiturier » (24/11/2026): the stay told in numbered steps before the details. */
+function NumberedSteps({ steps }: { steps: [string, string][] }) {
+  return (
+    <ol data-testid="site-steps" className={`grid gap-3 ${steps.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
+      {steps.map(([title, text], i) => (
+        <li key={title} className="flex flex-col gap-1.5 border-t-2 border-[var(--ps-accent)] pt-3">
+          <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-full bg-[var(--ps-accent)] text-[15px] font-bold text-[var(--ps-ink)]">
+            {i + 1}
+          </span>
+          <span className="text-[15.5px] font-bold">{title}</span>
+          <span className="text-[14.5px] leading-relaxed text-soft">{text}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function Steps({ site, data, block }: BlockProps) {
   const { parking, details, airport } = data;
   const more = fr.parkingMore;
   const shuttle = parking.services.includes("shuttle") && parking.shuttleMinutes;
+  const numbered = site.theme === "park" ? fr.parkingSite.parkSteps : site.theme === "valet" ? fr.parkingSite.valetSteps : null;
   return (
     <Section id="deroulement" title={block.title ?? fr.parking.howItGoes}>
+      {numbered && <NumberedSteps steps={numbered} />}
       <dl className={`${card} divide-y divide-line-soft`}>
         <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
           <dt className="eyebrow sm:pt-[5px]">{fr.parking.outbound}</dt>
@@ -100,13 +138,12 @@ function Steps({ data, block }: BlockProps) {
   );
 }
 
-function Pricing({ data, block }: BlockProps) {
+function Pricing({ site, data, block }: BlockProps) {
   const more = fr.parkingMore;
   const rows = priceRows(data.parking.pricing);
   if (rows.length === 0) return null;
   const extraDay = data.parking.pricing.extraDayPriceCents;
-  return (
-    <Section id="tarifs" title={block.title ?? more.prices}>
+  const table = (
       <div className={`${card} overflow-x-auto`}>
         <table className="w-full min-w-[300px] border-collapse text-[15px]">
           <thead>
@@ -135,9 +172,43 @@ function Pricing({ data, block }: BlockProps) {
           </tbody>
         </table>
       </div>
+  );
+  const cards = isRich(site) ? priceCards(rows) : [];
+  return (
+    <Section id="tarifs" title={block.title ?? more.prices}>
+      {cards.length > 0 ? (
+        <>
+          <ul data-testid="site-price-cards" className="grid gap-3 sm:grid-cols-3">
+            {cards.map(row => (
+              <li
+                key={row.days}
+                className={`${card} flex flex-col items-center gap-1 p-5 text-center ${row.days === 7 ? "border-2 border-[var(--ps-accent)]" : ""}`}
+              >
+                <span className="eyebrow">{more.days(row.days)}</span>
+                <span className="text-[32px] leading-none font-extrabold tabular-nums">{formatEuros(row.priceCents)}</span>
+                <span className="text-[13.5px] text-soft tabular-nums">{fr.parkingSite.perDay(formatEuros(Math.round(row.priceCents / row.days)))}</span>
+              </li>
+            ))}
+          </ul>
+          <details className="group">
+            <summary className="cursor-pointer text-[15px] font-semibold">{fr.parkingSite.fullGrid}</summary>
+            <div className="mt-3">{table}</div>
+          </details>
+        </>
+      ) : (
+        table
+      )}
       <p className="text-[13.5px] text-soft">{more.pricesNote}</p>
     </Section>
   );
+}
+
+/** The three prices to show first (24/11/2026): 3 days, a week and two weeks when the grid has them, else three of its rows. */
+export function priceCards<T extends { days: number }>(rows: T[]): T[] {
+  const wanted = [3, 7, 14].map(days => rows.find(r => r.days === days)).filter((r): r is T => !!r);
+  if (wanted.length === 3) return wanted;
+  if (rows.length <= 3) return rows;
+  return [rows[0]!, rows[Math.floor(rows.length / 2)]!, rows[rows.length - 1]!];
 }
 
 function Photos({ data, block }: BlockProps) {
@@ -224,11 +295,12 @@ function Faq({ data, block }: BlockProps) {
   );
 }
 
-function Contact({ data, block }: BlockProps) {
+function Contact({ site, data, block }: BlockProps) {
   const { parking } = data;
-  if (!parking.phone && !parking.address && !parking.openingHours) return null;
-  return (
-    <Section id="contact" title={block.title ?? fr.parkingSite.contact}>
+  const withForm = isRich(site);
+  const known = !!(parking.phone || parking.address || parking.openingHours);
+  if (!known && !withForm) return null;
+  const details = known && (
       <div className={`${card} flex flex-col gap-2 p-4 text-[15px] md:px-5`}>
         {parking.phone && (
           <p className="flex flex-wrap items-center gap-3">
@@ -241,6 +313,20 @@ function Contact({ data, block }: BlockProps) {
         {parking.address && <p>{parking.address}</p>}
         {parking.openingHours && <p className="text-soft">{parking.openingHours}</p>}
       </div>
+  );
+  return (
+    <Section id="contact" title={block.title ?? fr.parkingSite.contact}>
+      {withForm ? (
+        <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
+          <div className={`${card} flex flex-col gap-3 p-4 md:p-5`}>
+            <h3 className="text-[17px] font-bold">{fr.parkingSite.form.title}</h3>
+            <SiteContactForm action={siteContactAction.bind(null, site.slug, previewKeyOf(site))} />
+          </div>
+          {details}
+        </div>
+      ) : (
+        details
+      )}
     </Section>
   );
 }

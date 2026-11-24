@@ -599,6 +599,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `site.team_photo_set|removed`), `teamPhotoUrl` des vues ; champ « Photo de l'équipe » de la carte Présentation,
      montré avec le style Maison seulement (`PhotoField`) ; à côté du titre de Maison, sinon la photo du bandeau.
      Pas encore : des titres sans empattement pour Express, Plazo Pro.
+   - **Modèles « Parc » et « Voiturier », page Tarifs, formulaire de contact et barre fixe (24/11/2026, d'après aerpark.fr et
+     onevalet.fr, maquettes https://claude.ai/artifact/V16Pp5k24hsKcQxrjQMoc8, « tout »)** : `SITE_THEMES` + `park` · `valet`
+     (migration `site_park_valet`, CHECK) ; **Parc** : barre de contact bleu nuit (`--ps-dark`), « Ma réservation » à côté de
+     « Réserver », titre en capitales sur la photo, réservation à cheval, trois étapes numérotées (`parkSteps`) et atouts cochés
+     (`site-strengths`, tuiles de `trustTiles`), pied de page sombre ; **Voiturier** : titre et photo côte à côte avec le point de
+     rendez-vous posé dessus, parcours en quatre temps (`valetSteps`). Pour tous les styles sauf Sobre (`isRich`) : tarifs en
+     trois cartes 3 jours · 1 semaine · 2 semaines avec le prix par jour (`priceCards`, sinon trois lignes de la grille) et la
+     grille repliée « Voir toute la grille » ; formulaire de contact dans le bloc Contact (`SiteContactForm`, `siteContactAction`
+     lié au site et à sa clé d'aperçu) ; barre fixe sur téléphone Appeler · Itinéraire · Écrire · Réserver (`StickyBar`). Page
+     `tarifs` dans `FIXED_SITE_PAGES` (avant Questions ; tarifs, réservation, services, conditions). `POST /public/sites/:slug/contact`
+     (`SiteContactDto` = `ContactDto` + `phone` ; `contactLimiter` ; site en ligne ou `?apercu=` ; champ piège) →
+     `WhatsappInboxService.siteWrite` : conversation `site:<sha256 de l'e-mail>` (jamais celle du numéro tapé), message
+     `channel: 'site'` avec les coordonnées en tête, non lu, push « Message · <nom> » ; et e-mail à chaque gérant actif (5 au
+     plus, Reply-To le visiteur, `contactEmail`). `hasNoNumber` (`app:` ou `site:`) : ni appel, ni SMS, ni WhatsApp ; « Messages »
+     web : pastille « Site du parking », « répondez par e-mail ou par téléphone ». Les avis clients ne sont pas montrés (seulement
+     la note tapée). Tests `operator-site.test.ts`, `ParkingSite.test.tsx`. Pas encore : la pastille dans Plazo Pro.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isVerifiedPlatformAdmin } from '@/config';
@@ -7,6 +8,7 @@ import { nextWhatsappStatus, WhatsappStatus, WhatsappStatusUpdate } from '@/doma
 import { ReceivedSms } from '@/domain/sms-webhook';
 import {
   appConversationPhone,
+  hasNoNumber,
   INBOX_RETENTION_DAYS,
   inboundMessagesOf,
   InboundWhatsapp,
@@ -179,7 +181,7 @@ export class WhatsappInboxService {
    */
   public async receiveSms(operatorId: string, sms: ReceivedSms): Promise<boolean> {
     const phone = appConversationPhone(sms.from, '');
-    if (phone.startsWith('app:') || phoneTail(phone).length < 9) return false;
+    if (hasNoNumber(phone) || phoneTail(phone).length < 9) return false;
     const key = `sms:${operatorId}:${sms.messageId}`;
     if (await prisma.whatsappInboxMessage.findUnique({ where: { waMessageId: key }, select: { id: true } })) return false;
     const [place, existing] = await Promise.all([
@@ -369,7 +371,7 @@ export class WhatsappInboxService {
     const last = row.messages[0];
     return {
       id: row.id,
-      phone: row.phone.startsWith('app:') ? '' : displayPhone(row.phone),
+      phone: hasNoNumber(row.phone) ? '' : displayPhone(row.phone),
       name: row.reservation?.customerName || row.profileName || null,
       profileName: row.profileName,
       reservation: row.reservation,
@@ -378,7 +380,7 @@ export class WhatsappInboxService {
       unread: row.unread,
       handledAt: row.handledAt,
       preview: last ? { direction: last.direction, text: previewOf(last) } : null,
-      replyUntil: row.phone.startsWith('app:') ? null : replyUntil(row.lastInboundAt, now),
+      replyUntil: hasNoNumber(row.phone) ? null : replyUntil(row.lastInboundAt, now),
       replyBy: replyChannelOf(row, now),
       unknown: row.operatorId === null,
     };
@@ -800,6 +802,52 @@ export class WhatsappInboxService {
     );
     logger.info(`[WhatsApp inbox] app message received for operator ${reservation.operatorId}`);
     return { id: message.id, from: 'me', text, at: message.createdAt, by: null };
+  }
+
+  /**
+   * A message of the contact form of the parking's own site (24/11/2026, « tout »): one `site:<key>` conversation per
+   * address that writes (never the WhatsApp conversation of the phone the visitor typed: anyone can type any number), the
+   * visitor's details at the head of the text so that the team answers by e-mail or by phone, unread, pushed to the team.
+   */
+  public async siteWrite(
+    operatorId: string,
+    visitor: { name: string; email: string; phone?: string | null; reference?: string | null; message: string },
+    now = new Date(),
+  ) {
+    const key = `site:${createHash('sha256').update(visitor.email.trim().toLowerCase()).digest('hex').slice(0, 24)}`;
+    const lines = [
+      'Message envoyé depuis le site du parking',
+      `E-mail : ${visitor.email}`,
+      ...(visitor.phone ? [`Téléphone : ${visitor.phone}`] : []),
+      ...(visitor.reference ? [`Réservation : ${visitor.reference}`] : []),
+      '',
+      visitor.message,
+    ];
+    const text = lines.join('\n').slice(0, 4096);
+    const existing = await prisma.whatsappConversation.findFirst({ where: { operatorId, phone: key } });
+    const conversation = existing
+      ? await prisma.whatsappConversation.update({
+          where: { id: existing.id },
+          data: { profileName: visitor.name, lastMessageAt: now, unread: { increment: 1 }, handledAt: null },
+        })
+      : await prisma.whatsappConversation.create({
+          data: { operatorId, phone: key, profileName: visitor.name, lastMessageAt: now, unread: 1 },
+        });
+    await prisma.whatsappInboxMessage.create({
+      data: { conversationId: conversation.id, direction: 'in', type: 'text', text, channel: 'site', createdAt: now },
+    });
+    const said = visitor.message.replace(/\s+/g, ' ');
+    await this.push.notifyStaff(
+      operatorId,
+      'whatsapp',
+      {
+        title: `Message · ${visitor.name}`,
+        body: `Site du parking · « ${said.length > 110 ? `${said.slice(0, 109)}…` : said} »`,
+      },
+      { data: { type: 'whatsapp', conversationId: conversation.id }, collapseId: `whatsapp-${conversation.id}`, ttl: 6 * 3600 },
+    );
+    logger.info(`[WhatsApp inbox] site message received for operator ${operatorId}`);
+    return { conversationId: conversation.id };
   }
 
   /** POST /internal/whatsapp/inbox/:id/handle | unhandle */

@@ -118,9 +118,12 @@ export function blocksOf(stored: unknown): SiteBlock[] {
 /**
  * The site's look: « simple » (the first one, sober), « showcase » (24/11/2026: photo behind the title, two colours), and
  * four more models (24/11/2026, « propose plusieurs modèles de sites »): « night » (dark, for a valet), « postcard » (the
- * photo fills the first screen), « home » (warm, the phone in view) and « express » (the first price in large).
+ * photo fills the first screen), « home » (warm, the phone in view) and « express » (the first price in large); then two
+ * after the sites the manager showed (24/11/2026, aerpark.fr and onevalet.fr, « tout »): « park » (a shuttle car park:
+ * contact bar, two buttons, numbered steps, ticked strengths) and « valet » (title and photo side by side, the journey in
+ * four steps, the services with their price).
  */
-export const SITE_THEMES = ['simple', 'showcase', 'night', 'postcard', 'home', 'express'] as const;
+export const SITE_THEMES = ['simple', 'showcase', 'night', 'postcard', 'home', 'express', 'park', 'valet'] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number];
 export const readTheme = (value: unknown): SiteTheme | null => ((SITE_THEMES as readonly unknown[]).includes(value) ? (value as SiteTheme) : null);
 
@@ -153,7 +156,7 @@ export interface SiteDestination {
 }
 
 /** Page names the site keeps for itself. */
-export const FIXED_SITE_PAGES = ['questions', 'contact', 'mentions-legales'] as const;
+export const FIXED_SITE_PAGES = ['tarifs', 'questions', 'contact', 'mentions-legales'] as const;
 
 const pageSlug = (value: string) =>
   value

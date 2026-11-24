@@ -2518,6 +2518,7 @@ model WhatsappInboxMessage {
   staffId        String?
   /// 12/11/2026 (« Écrire au parking » de l'app Plazo): whatsapp, or app (written or answered in the Plazo app);
   /// 14/11/2026: sms (written to, or answered from, the parking's own phone through the SMS app).
+  /// 24/11/2026: site (the contact form of the parking's own site).
   channel        String   @default("whatsapp")
   /// The booking an app message is about: the traveller sees only those of their booking.
   reservationId  String?

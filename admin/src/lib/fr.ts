@@ -2316,7 +2316,7 @@ export const fr = {
     look: {
       title: "Présentation",
       theme: "Style",
-      themes: { simple: "Sobre", showcase: "Affiche", night: "Nuit", postcard: "Carte postale", home: "Maison", express: "Express" } as Record<string, string>,
+      themes: { simple: "Sobre", showcase: "Affiche", night: "Nuit", postcard: "Carte postale", home: "Maison", express: "Express", park: "Parc", valet: "Voiturier" } as Record<string, string>,
       themeHints: {
         simple: "Le titre, puis vos blocs. Rien de plus.",
         showcase: "Barre de contact, photo derrière le titre, bandes de couleur. Pour être vu.",
@@ -2324,6 +2324,8 @@ export const fr = {
         postcard: "Votre photo remplit tout le premier écran. À choisir avec une belle photo.",
         home: "Tons chauds, votre téléphone bien en vue, la photo à côté du titre. Pour un parking de proximité.",
         express: "Votre premier prix en très gros et la réservation tout de suite. Sans photo.",
+        park: "Barre de contact, titre sur la photo, étapes numérotées et atouts cochés. Pour un parking avec navette.",
+        valet: "Titre et photo côte à côte, le rendez-vous posé dessus, le parcours en quatre temps. Pour un voiturier.",
       } as Record<string, string>,
       accent2: "Deuxième couleur",
       accent2Hint: "Pour les bandes et le cadre de la réservation.",
@@ -2349,7 +2351,7 @@ export const fr = {
       ratingCount: "Nombre d'avis",
       ratingHint: "Recopiez la note de votre fiche Google. Plazo ne la lit pas chez Google : mettez-la à jour vous-même.",
       pages: "Plusieurs pages",
-      pagesHint: "Une page par départ (aéroport, chaque desserte), une page Questions, une page Contact et les mentions légales.",
+      pagesHint: "Une page par départ (aéroport, chaque desserte), une page Tarifs, une page Questions, une page Contact et les mentions légales.",
     },
     up: (name: string) => `Monter « ${name} »`,
     down: (name: string) => `Descendre « ${name} »`,
@@ -7241,6 +7243,9 @@ export const whatsappInboxFr = {
     "Le client vous a écrit depuis l'app Plazo : votre réponse s'affiche dans sa réservation, avec une notification.",
   appBadge: "App Plazo",
   smsBadge: "SMS",
+  siteBadge: "Site du parking",
+  replyBySite:
+    "Message du formulaire de votre site : répondez par e-mail ou par téléphone, avec les coordonnées laissées dans le message.",
   replyBySms:
     "Le client a écrit au téléphone du parking : votre réponse part par SMS depuis ce téléphone.",
   windowClosed:

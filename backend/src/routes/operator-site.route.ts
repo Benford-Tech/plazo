@@ -1,3 +1,6 @@
+import { SiteContactDto } from '@/dtos/contact.dto';
+import { contactLimiter } from '@/middlewares/rateLimiter';
+import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 import { Router } from 'express';
 import { OperatorSiteController } from '@/controllers/operator-site.controller';
 import { Routes } from '@/interfaces/routes.interface';
@@ -37,6 +40,12 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *   get:
  *     tags: [Site du parking]
  *     summary: The site a parking's own host opens (404 unless online and the name active)
+ * /public/sites/{slug}/contact:
+ *   post:
+ *     tags: [Site du parking]
+ *     summary: >
+ *       The contact form of the parking's site (name, email, phone?, reference?, message, website honeypot): into
+ *       « Messages » and by e-mail to the managers; 404 while offline (unless ?apercu=<key>); 5 per hour per visitor
  * /public/sites/{slug}:
  *   get:
  *     tags: [Site du parking]
@@ -62,6 +71,7 @@ export class OperatorSiteRoute implements Routes {
     }
     this.router.get('/public/sites/:slug/logo', this.controller.logo);
     this.router.get('/public/sites/:slug', this.controller.publicSite);
+    this.router.post('/public/sites/:slug/contact', contactLimiter, ValidationMiddleware(SiteContactDto), this.controller.contact);
     this.router.get('/public/site-domains/:host', this.controller.byDomain);
   }
 }

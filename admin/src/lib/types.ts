@@ -3074,7 +3074,7 @@ export interface WhatsappInboxMessage {
   mediaMime: string | null;
   status: string | null;
   /** whatsapp, or app (« Écrire au parking » of the Plazo app). */
-  channel?: "whatsapp" | "app" | "sms";
+  channel?: "whatsapp" | "app" | "sms" | "site";
   at: string;
   by: { firstName: string } | null;
 }
@@ -3125,7 +3125,7 @@ export interface SiteSettings {
   accent: string;
   blocks: SiteBlock[];
   /** 24/11/2026: the look, a second colour, the photo behind the title, the logo, the Google rating typed, several pages. */
-  theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express";
+  theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express" | "park" | "valet";
   accent2: string | null;
   heroPhotoUrl: string | null;
   /** The photo of the team, for the « Maison » style. */
