@@ -346,6 +346,21 @@ describe('paiement en ligne : place tenue pendant le paiement', () => {
     }
   });
 
+  it('le compte de test de la plateforme (« Plazo (tests) ») encaisse en réel, pour essayer le paiement (24/11/2026)', async () => {
+    const { operator } = await publishedParking();
+    await prisma.operator.update({ where: { id: operator.id }, data: { name: 'Plazo (tests)' } });
+    const key = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = 'sk_live_fake';
+    process.env.STRIPE_ALLOW_LIVE = 'true';
+    try {
+      const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
+      expect(page.body.parking).toMatchObject({ payment: 'online', isDemo: true });
+    } finally {
+      process.env.STRIPE_SECRET_KEY = key;
+      delete process.env.STRIPE_ALLOW_LIVE;
+    }
+  });
+
   it('sans commission configurée non plus', async () => {
     await publishedParking({ commissionBps: null });
     expect((await api().get('/api/public/airports/lyon-saint-exupery')).body.listings[0].payment).toBe('unavailable');

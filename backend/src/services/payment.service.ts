@@ -32,7 +32,7 @@ import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
-import { isTestOperatorName } from '@/domain/test-feed';
+import { isLivePaymentTestOperatorName, isTestOperatorName } from '@/domain/test-feed';
 
 type Client = Prisma.TransactionClient | typeof prisma;
 // stripeRefundId null: a test payment cancelled once the keys are live (nothing to refund at Stripe).
@@ -193,7 +193,9 @@ export class PaymentService {
     if (!this.enabled()) return 'unavailable';
     // Demo parkings: bookable with test keys only (end-to-end trials), never with real money.
     // 01/11/2026: so are the test accounts (« … (tests) »), shown as demos on Plazo: a fictitious car park never takes real money.
-    if ((operator.isDemo || isTestOperatorName(operator.name)) && isLiveStripeKey(stripeSecretKey())) return 'unavailable';
+    // 24/11/2026: except the platform's own test account, to try a real payment (then cancelled and refunded).
+    const testAccount = isTestOperatorName(operator.name) && !isLivePaymentTestOperatorName(operator.name);
+    if ((operator.isDemo || testAccount) && isLiveStripeKey(stripeSecretKey())) return 'unavailable';
     return this.commissionBps(operator) !== null ? 'online' : 'unavailable';
   }
 
