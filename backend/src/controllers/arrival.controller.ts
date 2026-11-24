@@ -119,6 +119,9 @@ export class ArrivalController {
     // A new upload is a new file name: the address never changes content.
     res.set('Cache-Control', 'public, max-age=604800, immutable');
     res.set('X-Content-Type-Options', 'nosniff');
+    // The espace pro lives on another host (pro.) than the address stored for the photo (www.):
+    // helmet's default "same-origin" made the browser drop the image there.
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
     if (photo.size != null) res.set('Content-Length', String(photo.size));
     photo.stream.pipe(res);
   });

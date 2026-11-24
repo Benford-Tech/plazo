@@ -30,6 +30,7 @@ describe('Meeting point photo', () => {
     expect(served.status).toBe(200);
     expect(served.headers['content-type']).toBe('image/jpeg');
     expect(served.headers['cache-control']).toContain('public');
+    expect(served.headers['cross-origin-resource-policy']).toBe('cross-origin');
     expect(Buffer.compare(served.body, jpeg(1))).toBe(0);
 
     // Replaced: a new address, the old file and address gone.

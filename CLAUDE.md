@@ -1436,7 +1436,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      pose `returnMeetingPhotoUrl` = adresse publique de Plazo `/api/public/parkings/:id/meeting-photo/<nom>` (servie avec un cache public
      d'une semaine, un nouveau nom à chaque envoi ; lue par la page du voyageur et l'en-tête WhatsApp du message de la veille), `DELETE …`
      la retire ; une adresse collée ou un point supprimé efface la photo envoyée (`MeetingPhotoService.forgetUnused`), effacée aussi avec
-     le loueur. Tests `meeting-photo.test.ts`, `ReturnMeetingPointForm.test.tsx`.
+     le loueur. **Aperçu cassé dans l'espace pro (24/11/2026, capture de l'image brisée)** : la photo est à une adresse de www.plazo.fr et l'espace pro est sur pro.plazo.fr depuis le 17/11 ; l'en-tête `Cross-Origin-Resource-Policy: same-origin` de helmet la faisait rejeter par le navigateur : la route de la photo répond `cross-origin`. Tests `meeting-photo.test.ts`, `ReturnMeetingPointForm.test.tsx`.
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app
