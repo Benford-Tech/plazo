@@ -86,7 +86,19 @@ const nextConfig: NextConfig = {
       // Every page refuses to be framed, but a parking's booking page (Site du parking, niveau 3, 19/11/2026): its site
       // shows it in a frame (/r/embed.js). Only https sites may; the payment page itself opens in the whole window.
       { source: "/", headers: securityHeaders },
-      { source: `/:path((?!(?:${OTHER_LANGS}/)?r/).+)`, headers: securityHeaders },
+      // A parking's site (/s/…) with the manager's preview key (24/11/2026, « Il faut un aperçu du site en cours
+      // d'édition »): « Mon site » frames it beside the form. Only the pro space may; without the key, framed by no one.
+      { source: `/:path((?!(?:${OTHER_LANGS}/)?(?:r|s)/).+)`, headers: securityHeaders },
+      { source: `/:path((?:${OTHER_LANGS}/)?s/.+)`, missing: [{ type: "query", key: "apercu" }], headers: securityHeaders },
+      {
+        source: `/:path((?:${OTHER_LANGS}/)?s/.+)`,
+        has: [{ type: "query", key: "apercu" }],
+        headers: [
+          ...securityHeaders.filter(h => h.key !== "X-Frame-Options"),
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://pro.plazo.fr https://www.plazo.fr" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
       {
         source: `/:path((?:${OTHER_LANGS}/)?r/.+)`,
         headers: [

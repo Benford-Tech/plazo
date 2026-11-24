@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { JsonLd } from "@/components/JsonLd";
+import { LivePreview } from "@/components/parking-site/LivePreview";
 import { ParkingSite } from "@/components/parking-site/ParkingSite";
 import { fr } from "@/lib/fr";
 import { enterLocaleFrom } from "@/lib/i18n/server";
@@ -69,7 +70,12 @@ export default async function ParkingSiteSubPage({ params, searchParams }: { par
   return (
     <>
       {withFaq && <JsonLd data={[faqLd(parkingFaq(data))]} />}
-      <ParkingSite site={site} data={data} idempotencyKey={randomUUID()} page={page} />
+      {/* A preview follows the pro space's form as it is typed (24/11/2026). */}
+      {site.preview ? (
+        <LivePreview site={site} data={data} idempotencyKey={randomUUID()} page={page} />
+      ) : (
+        <ParkingSite site={site} data={data} idempotencyKey={randomUUID()} page={page} />
+      )}
     </>
   );
 }
