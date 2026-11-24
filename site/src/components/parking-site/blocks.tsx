@@ -6,7 +6,7 @@ import { factsLine, trustTiles } from "@/lib/highlights";
 import { mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { parkingFaq, priceRows } from "@/lib/parking-more";
-import { hasPages, sitePath } from "@/lib/parking-site";
+import { hasPages, isRich, sitePath } from "@/lib/parking-site";
 import type { ParkingResponse, ParkingSiteInfo, SiteBlock, SiteBlockKind } from "@/lib/types";
 
 /**
@@ -269,7 +269,7 @@ function Destinations({ site, block }: BlockProps) {
   const t = fr.parkingSite;
   const list = site.destinations ?? [];
   if (list.length === 0) return null;
-  const band = site.theme === "showcase";
+  const band = isRich(site);
   const cards = (
     <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {list.map(d => (
@@ -312,7 +312,7 @@ function Destinations({ site, block }: BlockProps) {
 /** « Bande d'appel » (24/11/2026): one sentence and the button that leads to the booking. */
 function Cta({ site, block }: BlockProps) {
   const t = fr.parkingSite;
-  const band = site.theme === "showcase";
+  const band = isRich(site);
   return (
     <section className={`bg-[var(--ps-accent)] text-[var(--ps-ink)] ${band ? "py-10" : "rounded-[16px] py-8"}`}>
       <div className="mx-auto flex w-full max-w-[1040px] flex-col items-center gap-4 px-4 text-center md:px-8">
@@ -325,7 +325,7 @@ function Cta({ site, block }: BlockProps) {
   );
 }
 
-/** Blocks that span the whole width in the showcase look. */
+/** Blocks that span the whole width in every look but the sober one. */
 export const BAND_BLOCKS: readonly string[] = ["destinations", "cta"];
 
 export const BLOCKS: Record<SiteBlockKind, (props: BlockProps) => React.ReactNode> = {

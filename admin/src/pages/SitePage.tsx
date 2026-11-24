@@ -335,6 +335,80 @@ const lookOf = (site: SiteSettings): Look => ({
   ratingCount: site.rating?.count ? String(site.rating.count) : "",
 });
 
+/** One photo of the site: shown, sent as soon as it is picked, changed or removed. */
+function PhotoField({
+  title,
+  hint,
+  alt,
+  url,
+  readOnly,
+  send,
+  remove,
+  onPhoto,
+}: {
+  title: string;
+  hint: string;
+  alt: string;
+  url: string | null;
+  readOnly: boolean;
+  send: (photo: Blob) => Promise<{ data: SiteSettings }>;
+  remove: () => Promise<{ data: SiteSettings }>;
+  onPhoto: (data: SiteSettings) => void;
+}) {
+  const l = t.look;
+  const file = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const pick = async (picked: File | undefined) => {
+    if (!picked || busy) return;
+    setBusy(true);
+    try {
+      const photo = await shrinkPhoto(picked);
+      if (!photo) return void toast.error(l.photoUnreadable);
+      if (photo.size > MAX_PHOTO_BYTES) return void toast.error(l.photoTooLarge);
+      onPhoto((await send(photo)).data);
+      toast.success(l.photoSaved);
+    } catch (err) {
+      const fields = err instanceof ApiError ? err.fields : undefined;
+      if (fields?.photo === "too_large") toast.error(l.photoTooLarge);
+      else if (fields?.photo) toast.error(l.photoUnreadable);
+      else if (err instanceof ApiError && err.code === "photos_unavailable") toast.error(l.photoUnavailable);
+      else toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+      if (file.current) file.current.value = "";
+    }
+  };
+  const drop = async () => {
+    setBusy(true);
+    try {
+      onPhoto((await remove()).data);
+      toast.success(l.photoRemoved);
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <span className={label}>{title}</span>
+      {url && <img src={url} alt={alt} className="h-28 w-full rounded-[10px] border border-border object-cover" />}
+      <input ref={file} type="file" accept="image/*" className="sr-only" aria-label={title} disabled={readOnly || busy} onChange={(e) => pick(e.target.files?.[0])} />
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" className="h-11 font-semibold" disabled={readOnly || busy} onClick={() => file.current?.click()}>
+          {url ? l.photoChange : l.photoAdd}
+        </Button>
+        {url && (
+          <button type="button" disabled={readOnly || busy} onClick={drop} className="min-h-11 px-2 text-sm font-semibold text-destructive disabled:opacity-50">
+            {l.photoRemove}
+          </button>
+        )}
+      </div>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </div>
+  );
+}
+
 /**
  * « Présentation » (24/11/2026, « je veux pouvoir faire des sites comme celui-ci », choix B): the style, a second colour,
  * the photo behind the title, the logo, the Google rating the manager types, and several pages. The photo is sent at
@@ -356,40 +430,7 @@ function LookSection({
   onPhoto: (data: SiteSettings) => void;
 }) {
   const l = t.look;
-  const file = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
   const set = (patch: Partial<Look>) => onChange({ ...look, ...patch });
-  const send = async (picked: File | undefined) => {
-    if (!picked || busy) return;
-    setBusy(true);
-    try {
-      const photo = await shrinkPhoto(picked);
-      if (!photo) return void toast.error(l.photoUnreadable);
-      if (photo.size > MAX_PHOTO_BYTES) return void toast.error(l.photoTooLarge);
-      onPhoto((await adminApi.setSiteHeroPhoto(photo)).data);
-      toast.success(l.photoSaved);
-    } catch (err) {
-      const fields = err instanceof ApiError ? err.fields : undefined;
-      if (fields?.photo === "too_large") toast.error(l.photoTooLarge);
-      else if (fields?.photo) toast.error(l.photoUnreadable);
-      else if (err instanceof ApiError && err.code === "photos_unavailable") toast.error(l.photoUnavailable);
-      else toast.error(describeError(err));
-    } finally {
-      setBusy(false);
-      if (file.current) file.current.value = "";
-    }
-  };
-  const removePhoto = async () => {
-    setBusy(true);
-    try {
-      onPhoto((await adminApi.removeSiteHeroPhoto()).data);
-      toast.success(l.photoRemoved);
-    } catch (err) {
-      toast.error(describeError(err));
-    } finally {
-      setBusy(false);
-    }
-  };
 
   return (
     <section className={card} aria-labelledby="site-look" data-testid="site-look">
@@ -398,20 +439,22 @@ function LookSection({
       </h2>
       <div className="flex flex-col gap-1">
         <span className={label}>{l.theme}</span>
-        <div role="group" aria-label={l.theme} className="flex gap-2">
-          {(["simple", "showcase"] as const).map((theme) => (
+        <div role="group" aria-label={l.theme} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(["simple", "showcase", "night", "postcard", "home", "express"] as const).map((theme) => (
             <button
               key={theme}
               type="button"
               aria-pressed={look.theme === theme}
               onClick={() => set({ theme })}
-              className={cn("min-h-11 flex-1 rounded-[10px] border px-3 font-semibold", look.theme === theme ? "border-lime-deep bg-[#F1F8E6] text-lime-deep" : "border-border bg-white")}
+              className={cn("min-h-11 rounded-[10px] border px-3 font-semibold", look.theme === theme ? "border-lime-deep bg-[#F1F8E6] text-lime-deep" : "border-border bg-white")}
             >
               {l.themes[theme]}
             </button>
           ))}
         </div>
-        <span className="text-xs text-muted-foreground">{l.themeHint}</span>
+        <span className="text-xs text-muted-foreground" data-testid="site-theme-hint">
+          {l.themeHints[look.theme]}
+        </span>
       </div>
 
       <div className="flex flex-col gap-1">
@@ -429,22 +472,28 @@ function LookSection({
         <span className="text-xs text-muted-foreground">{l.accent2Hint}</span>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <span className={label}>{l.photo}</span>
-        {site.heroPhotoUrl && <img src={site.heroPhotoUrl} alt={l.photoAlt} className="h-28 w-full rounded-[10px] border border-border object-cover" />}
-        <input ref={file} type="file" accept="image/*" className="sr-only" aria-label={l.photo} disabled={readOnly || busy} onChange={(e) => send(e.target.files?.[0])} />
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="h-11 font-semibold" disabled={readOnly || busy} onClick={() => file.current?.click()}>
-            {site.heroPhotoUrl ? l.photoChange : l.photoAdd}
-          </Button>
-          {site.heroPhotoUrl && (
-            <button type="button" disabled={readOnly || busy} onClick={removePhoto} className="min-h-11 px-2 text-sm font-semibold text-destructive disabled:opacity-50">
-              {l.photoRemove}
-            </button>
-          )}
-        </div>
-        <span className="text-xs text-muted-foreground">{l.photoHint}</span>
-      </div>
+      <PhotoField
+        title={l.photo}
+        hint={l.photoHint}
+        alt={l.photoAlt}
+        url={site.heroPhotoUrl}
+        readOnly={readOnly}
+        send={adminApi.setSiteHeroPhoto}
+        remove={adminApi.removeSiteHeroPhoto}
+        onPhoto={onPhoto}
+      />
+      {look.theme === "home" && (
+        <PhotoField
+          title={l.teamPhoto}
+          hint={l.teamPhotoHint}
+          alt={l.teamPhotoAlt}
+          url={site.teamPhotoUrl}
+          readOnly={readOnly}
+          send={adminApi.setSiteTeamPhoto}
+          remove={adminApi.removeSiteTeamPhoto}
+          onPhoto={onPhoto}
+        />
+      )}
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">

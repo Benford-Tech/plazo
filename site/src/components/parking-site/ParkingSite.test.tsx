@@ -143,4 +143,37 @@ describe("le site du parking", () => {
     expect(screen.queryByRole("link", { name: /En savoir plus/ })).toBeNull();
     expect(screen.queryByTestId("site-hero")).toBeNull();
   });
+
+  // 24/11/2026 (« propose plusieurs modèles de sites » → « ok »).
+  it.each(["night", "postcard", "home", "express"] as const)("modèle %s : le titre, la note, la réservation remontée sous le titre et les bandes", look => {
+    render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: look })} />);
+    expect(screen.getByTestId("parking-site")).toHaveAttribute("data-theme-look", look);
+    expect(screen.getByTestId("site-hero")).toHaveTextContent(look === "express" ? /./ : "Parking des Cèdres");
+    expect(screen.getByTestId("site-rating")).toHaveTextContent("4,8");
+    expect(screen.queryByTestId("site-topbar")).toBeNull();
+    expect(headings()[0]).toBe("Réserver");
+    expect(document.getElementById("departs")).not.toBeNull();
+  });
+
+  it("modèle Express : le premier prix de la grille en grand, pas sur les autres pages", () => {
+    const priced = { ...data, parking: { ...data.parking, pricing: { ...data.parking.pricing, tiers: [{ days: 8, priceCents: 6200 }, { days: 3, priceCents: 3400 }] } } };
+    const { unmount } = render(<ParkingSite idempotencyKey="k" data={priced} site={showcase({ theme: "express" })} />);
+    expect(screen.getByTestId("site-price")).toHaveTextContent(/dès\s*34,00\s€\s*3 jours/);
+    unmount();
+    render(<ParkingSite idempotencyKey="k" data={priced} page="contact" site={showcase({ theme: "express" })} />);
+    expect(screen.queryByTestId("site-price")).toBeNull();
+  });
+
+  it("modèle Nuit : le fond sombre vient des jetons de couleur posés sur le site", () => {
+    render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "night" })} />);
+    expect(screen.getByTestId("parking-site").style.getPropertyValue("--color-ground")).toBe("#10141b");
+  });
+
+  it("modèle Maison : la photo de l’équipe à côté du titre, sinon celle du bandeau", () => {
+    const { unmount } = render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "home", heroPhotoUrl: "/hero.jpg", teamPhotoUrl: "/equipe.jpg" })} />);
+    expect(screen.getByTestId("site-team-photo")).toHaveAttribute("src", "/equipe.jpg");
+    unmount();
+    render(<ParkingSite idempotencyKey="k" data={data} site={showcase({ theme: "home", heroPhotoUrl: "/hero.jpg" })} />);
+    expect(screen.getByTestId("site-team-photo")).toHaveAttribute("src", "/hero.jpg");
+  });
 });

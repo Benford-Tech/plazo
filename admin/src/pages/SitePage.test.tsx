@@ -26,6 +26,7 @@ const settings = (over: Partial<SiteSettings> = {}): SiteSettings => ({
   theme: "simple",
   accent2: null,
   heroPhotoUrl: null,
+  teamPhotoUrl: null,
   showLogo: false,
   hasLogo: false,
   rating: null,
@@ -170,7 +171,13 @@ describe("Mon site", () => {
     expect(look.getByRole("button", { name: "Sobre" })).toHaveAttribute("aria-pressed", "true");
     // No logo yet: the page says where to add it.
     expect(look.getByRole("link", { name: "Parking › Réglages" })).toBeInTheDocument();
-    await user.click(look.getByRole("button", { name: "Vitrine" }));
+    await user.click(look.getByRole("button", { name: "Nuit" }));
+    expect(look.getByTestId("site-theme-hint")).toHaveTextContent("Fond sombre");
+    // The photo of the team is asked for in the « Maison » style only.
+    expect(look.queryByLabelText("Photo de l'équipe")).toBeNull();
+    await user.click(look.getByRole("button", { name: "Maison" }));
+    expect(look.getByLabelText("Photo de l'équipe")).toBeInTheDocument();
+    await user.click(look.getByRole("button", { name: "Affiche" }));
     await user.click(look.getByRole("checkbox"));
     await user.type(look.getByLabelText("Note sur 5"), "4,8");
     await user.type(look.getByLabelText("Nombre d'avis"), "193 avis");

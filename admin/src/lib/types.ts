@@ -3125,9 +3125,11 @@ export interface SiteSettings {
   accent: string;
   blocks: SiteBlock[];
   /** 24/11/2026: the look, a second colour, the photo behind the title, the logo, the Google rating typed, several pages. */
-  theme: "simple" | "showcase";
+  theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express";
   accent2: string | null;
   heroPhotoUrl: string | null;
+  /** The photo of the team, for the « Maison » style. */
+  teamPhotoUrl: string | null;
   showLogo: boolean;
   hasLogo: boolean;
   rating: { value: number; count: number | null } | null;

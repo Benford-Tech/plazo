@@ -2554,6 +2554,8 @@ model OperatorSite {
   theme            String    @default("simple")
   accent2          String?
   heroPhotoKey     String?
+  /// The photo of the team, beside the title in the « home » look (24/11/2026).
+  teamPhotoKey     String?
   showLogo         Boolean   @default(false)
   ratingTenths     Int?
   ratingCount      Int?

@@ -206,6 +206,13 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     expect(refused.status).toBe(400);
     expect(refused.body.fields).toEqual({ theme: 'invalid', accent2: 'invalid', rating: 'invalid' });
 
+    // 24/11/2026: the four other models are stored as they are.
+    for (const theme of ['night', 'postcard', 'home', 'express']) {
+      const model = await api().put('/api/internal/site').set(auth(op.token)).send({ theme });
+      expect(model.status).toBe(200);
+      expect(model.body.data.theme).toBe(theme);
+    }
+
     const saved = await api()
       .put('/api/internal/site')
       .set(auth(op.token))
@@ -257,6 +264,17 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     // Cleared again: null takes the second colour and the rating away, the photo is removed.
     const cleared = await api().put('/api/internal/site').set(auth(op.token)).send({ accent2: null, rating: null, pages: false });
     expect(cleared.body.data).toMatchObject({ accent2: null, rating: null, pages: false, theme: 'showcase' });
+    // 24/11/2026: the photo of the team, for the « Maison » look, at its own address.
+    const team = await api().post('/api/internal/site/team-photo').set(auth(op.token)).set('Content-Type', 'image/jpeg').send(JPEG);
+    const teamUrl: string = team.body.data.teamPhotoUrl;
+    expect(teamUrl).toMatch(/^\/api\/public\/sites\/cedres\/team\/[0-9a-f]{18}\.jpeg$/);
+    expect(team.body.data.heroPhotoUrl).toBe(heroUrl);
+    expect((await api().get(teamUrl)).status).toBe(200);
+    expect((await api().get(teamUrl.replace('/team/', '/hero/'))).status).toBe(404);
+    expect((await api().get(`/api/public/sites/cedres?apercu=${key}`)).body.teamPhotoUrl).toBe(teamUrl);
+    expect((await api().delete('/api/internal/site/team-photo').set(auth(op.token))).body.data.teamPhotoUrl).toBeNull();
+    expect((await api().get(teamUrl)).status).toBe(404);
+
     expect((await api().delete('/api/internal/site/hero-photo').set(auth(op.token))).body.data.heroPhotoUrl).toBeNull();
     expect((await api().get(heroUrl)).status).toBe(404);
     expect((await api().get(`/api/public/sites/cedres?apercu=${key}`)).body.pages).toEqual([]);
