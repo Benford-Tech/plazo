@@ -214,6 +214,7 @@ export class ProspectingRoute implements Routes {
     this.router.post(`${base}/:id/status`, PlatformAdminMiddleware(), this.prospecting.setStatus);
     this.router.put(`${base}/:id/note`, PlatformAdminMiddleware(), this.prospecting.setNote);
     this.router.post(`${base}/:id/stop`, PlatformAdminMiddleware(), this.prospecting.stop);
+    this.router.post(`${base}/:id/resend`, PlatformAdminMiddleware(), this.prospecting.resend);
     this.router.get('/public/prospecting/unsubscribe/:token', this.prospecting.unsubscribePage);
     this.router.post('/public/prospecting/unsubscribe/:token', this.prospecting.unsubscribe);
   }

@@ -2312,6 +2312,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `{ updated, skipped }`, désinscrits laissés, tracé `prospect.statuses_changed`) ; la note du pourquoi sous l'état (« + Note »,
   `StatusNote`, `Prospect.statusNote` 300 caractères, migration `prospect_status_note`, `PUT …/prospects/:id/note`, vide = retirée,
   aussi `note` du changement d'état). Tests `prospecting.test.ts`, `ProspectingPage.test.tsx`.
+  **« Renvoyer le dernier mail » (24/11/2026, « pouvoir renvoyer aussi les mails de prospection »)** : dans le menu « ⋯ » d'un
+  prospect qui a reçu au moins un mail (avec e-mail, pas « Pas intéressé »), confirmé par `useConfirm` →
+  `POST /internal/platform/prospects/:id/resend` (`ProspectingService.resend`, `deliver` partagé avec `sendOne`) : le dernier mail
+  reçu (`Prospect.step`), avec le texte actuel de cette étape, part tout de suite, hors fenêtre comprise ; la séquence ne bouge pas
+  (la relance garde sa date), ligne `prospect_messages` de plus, compté dans le plafond du jour → `{ emailSent, step, data }` ; 409
+  `never_sent` · `too_soon` (deux minutes) · `unsubscribed` · `closed` · `no_email` · `cap_reached` · `step_gone` ; tracé
+  `prospect.resent`. Test `prospecting.test.ts`.
   **Chaque pays dans sa langue (15/11/2026, « Les mails sont à envoyer dans la langue du pays »)** : plus d'anglais par défaut ;
   espagnol, italien, portugais, néerlandais, polonais, roumain, suédois, danois, norvégien (`nb`), finnois, hongrois, tchèque,
   estonien et grec rejoignent le français, l'allemand et l'anglais (`PROSPECT_LANGUAGES`, `COUNTRY_LANGUAGES` de

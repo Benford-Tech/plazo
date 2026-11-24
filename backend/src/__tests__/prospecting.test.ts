@@ -359,6 +359,34 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     expect(list.body.data.find((p: any) => p.id === a.id)).toMatchObject({ status: 'contacted', step: 1, nextStep: 2 });
   });
 
+  it('« Renvoyer le dernier mail » : le même mail, la relance garde sa date ; jamais deux fois de suite ni à un désinscrit (24/11/2026)', async () => {
+    const a = await create(1);
+    const never = await api().post(`${P}/${a.id}/resend`).set(auth(admin.token));
+    expect(never.body.code).toBe('never_sent');
+    await api()
+      .post(`${P}/send`)
+      .set(auth(admin.token))
+      .send({ ids: [a.id] });
+    expect((await api().post(`${P}/${a.id}/resend`).set(auth(admin.token))).body.code).toBe('too_soon');
+    const before = await prisma.prospect.update({ where: { id: a.id }, data: { lastContactedAt: new Date(Date.now() - 600_000) } });
+    const res = await api().post(`${P}/${a.id}/resend`).set(auth(admin.token));
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ emailSent: true, step: 1 });
+    const sent = emails();
+    expect(sent).toHaveLength(2);
+    expect(sent[1].subject).toBe(sent[0].subject);
+    const row = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
+    expect(row).toMatchObject({ step: 1, status: 'contacted', sendingAt: null });
+    expect(row.nextSendAt).toEqual(before.nextSendAt);
+    expect(await prisma.prospectMessage.count({ where: { prospectId: a.id, step: 1, status: 'sent' } })).toBe(2);
+    await prisma.prospect.update({
+      where: { id: a.id },
+      data: { lastContactedAt: new Date(Date.now() - 600_000), status: 'unsubscribed', nextSendAt: null },
+    });
+    expect((await api().post(`${P}/${a.id}/resend`).set(auth(admin.token))).body.code).toBe('unsubscribed');
+    expect(emails()).toHaveLength(2);
+  });
+
   it('PROSPECTING_SENDER_* et PROSPECTING_REPLY_TO remplacent l’expéditeur et la réponse', async () => {
     process.env.PROSPECTING_SENDER_EMAIL = 'joanny@plazo.test';
     process.env.PROSPECTING_SENDER_NAME = 'Joanny de Plazo';

@@ -75,6 +75,8 @@ import { NotificationService, parseSender } from './notification.service';
 const PASS_LIMIT = 25;
 /** A claim older than this is considered abandoned (the function stopped mid-pass). */
 const CLAIM_TIMEOUT_MINUTES = 10;
+/** « Renvoyer le dernier mail »: not twice within this time. */
+const RESEND_AFTER_MS = 120_000;
 const OPEN_STATUSES: ProspectStatus[] = ['to_contact', 'contacted'];
 const LIST_LIMIT = 2000;
 const TAG = 'prospecting';
@@ -729,6 +731,89 @@ export class ProspectingService {
     return { 'List-Unsubscribe': `<${url}>${mailto}`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' };
   }
 
+  /** One step's email to one prospect, in its language, with its own demo link and unsubscribe link. */
+  private async deliver(prospect: Prospect & { email: string }, step: SequenceStep, language: ProspectLanguage) {
+    const id = prospect.id;
+    const sender = this.sender()!;
+    const names = await this.airportNames([prospect.airportCode]);
+    const replyTo = await this.replyToFor(prospect);
+    // 21/10/2026: the prospect's own demo link, made (or kept) when the step says {lien_demo}.
+    const demoUrl = usesDemoLink(step) ? (await this.demo.linkFor(prospect.id, prospect.enrolledById)).url : '';
+    const message = prospectEmail({
+      productName: PRODUCT_NAME,
+      language,
+      company: PRODUCT_COMPANY,
+      senderName: sender.name,
+      senderPhone: prospectingSettings().phone,
+      step,
+      values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
+      unsubscribeUrl: this.unsubscribeUrl(id),
+      stores: this.stores(),
+      travellerStores: { playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL },
+      screens: step.step === 1,
+    });
+    const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
+    const result = await this.notifications.emailProspect({ email: prospect.email, ...(name ? { name } : {}) }, message, {
+      sender,
+      replyTo,
+      headers: this.headers(id, replyTo, language),
+      tag: `${TAG}_step${step.step}`,
+      about: `prospect ${id}`,
+    });
+    return { message, result };
+  }
+
+  /**
+   * 24/11/2026 (« pouvoir renvoyer aussi les mails de prospection »): « Renvoyer le dernier mail ». The last step this
+   * prospect received, with today's text of that step, again to the same address. The sequence does not move (the
+   * follow-up keeps its date). Never to an address that opted out or a prospect marked not interested, nor twice within
+   * two minutes; counted in the day's cap.
+   */
+  public async resend(actor: AuthenticatedStaff, id: string, now = new Date()) {
+    this.assertConfigured();
+    const found = await this.getOrThrow(id);
+    if (!found.email) throw new HttpException(httpStatus.CONFLICT, 'No email address', 'no_email');
+    if (found.status === 'unsubscribed' || (await this.isSuppressed(found.email)))
+      throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
+    if (found.status === 'not_interested') throw new HttpException(httpStatus.CONFLICT, 'Prospect not interested', 'closed');
+    if (found.step < 1) throw new HttpException(httpStatus.CONFLICT, 'Nothing was sent yet', 'never_sent');
+    if (found.lastContactedAt && found.lastContactedAt.getTime() > now.getTime() - RESEND_AFTER_MS)
+      throw new HttpException(httpStatus.CONFLICT, 'Sent a moment ago', 'too_soon');
+    const settings = await this.loadSettings();
+    if ((await this.sentToday(now)) >= settings.dailyCap) throw new HttpException(httpStatus.CONFLICT, 'Daily cap reached', 'cap_reached');
+    const language = prospectLanguage(found);
+    const step = settings.sequences[language].find(s => s.step === found.step);
+    if (!step) throw new HttpException(httpStatus.CONFLICT, 'This step no longer exists', 'step_gone');
+    // Claimed like a pass: the 15-minute run and a second click leave it alone.
+    const claimed = await prisma.prospect.updateMany({
+      where: { id, OR: [{ sendingAt: null }, { sendingAt: { lt: new Date(now.getTime() - CLAIM_TIMEOUT_MINUTES * 60000) } }] },
+      data: { sendingAt: now },
+    });
+    if (!claimed.count) throw new HttpException(httpStatus.CONFLICT, 'Being sent', 'too_soon');
+    try {
+      const { message, result } = await this.deliver({ ...found, email: found.email }, step, language);
+      await prisma.$transaction([
+        prisma.prospectMessage.create({
+          data: {
+            prospectId: id,
+            step: step.step,
+            subject: message.subject.slice(0, 300),
+            sentAt: now,
+            ...(result.ok
+              ? { providerMessageId: result.messageId, status: 'sent' as const }
+              : { status: 'failed' as const, error: result.status ? `http_${result.status}` : 'no_answer' }),
+          },
+        }),
+        prisma.prospect.updateMany({ where: { id, sendingAt: now }, data: { sendingAt: null, ...(result.ok ? { lastContactedAt: now } : {}) } }),
+      ]);
+      await this.record(actor, 'prospect.resent', 'prospect', id, { step: step.step, sent: result.ok });
+      return { emailSent: result.ok, step: step.step, data: await this.viewOf(await this.getOrThrow(id)) };
+    } catch (error) {
+      await prisma.prospect.updateMany({ where: { id, sendingAt: now }, data: { sendingAt: null } });
+      throw error;
+    }
+  }
+
   /**
    * Sends the next step to one claimed prospect, in its language (13/11/2026), records it and schedules the following one.
    * A prospect whose email was removed meanwhile leaves the sequence.
@@ -756,32 +841,7 @@ export class ProspectingService {
       await prisma.prospect.update({ where: { id }, data: { nextSendAt: null, sendingAt: null } });
       return 'finished';
     }
-    const sender = this.sender()!;
-    const names = await this.airportNames([prospect.airportCode]);
-    const replyTo = await this.replyToFor(prospect);
-    // 21/10/2026: the prospect's own demo link, made (or kept) when the step says {lien_demo}.
-    const demoUrl = usesDemoLink(step) ? (await this.demo.linkFor(prospect.id, prospect.enrolledById)).url : '';
-    const message = prospectEmail({
-      productName: PRODUCT_NAME,
-      language,
-      company: PRODUCT_COMPANY,
-      senderName: sender.name,
-      senderPhone: prospectingSettings().phone,
-      step,
-      values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
-      unsubscribeUrl: this.unsubscribeUrl(id),
-      stores: this.stores(),
-      travellerStores: { playStoreUrl: PLAZO_PLAY_STORE_URL, appStoreUrl: PLAZO_APP_STORE_URL },
-      screens: step.step === 1,
-    });
-    const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
-    const result = await this.notifications.emailProspect({ email: prospect.email, ...(name ? { name } : {}) }, message, {
-      sender,
-      replyTo,
-      headers: this.headers(id, replyTo, language),
-      tag: `${TAG}_step${step.step}`,
-      about: `prospect ${id}`,
-    });
+    const { message, result } = await this.deliver(prospect, step, language);
 
     if (result.ok) {
       const firstContactedAt = prospect.firstContactedAt ?? now;

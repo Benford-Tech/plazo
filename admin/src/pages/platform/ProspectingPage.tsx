@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import {
   filterProspects,
@@ -310,6 +310,7 @@ function RowActions({
       | "unsubscribed"
       | "reopen"
       | "stop"
+      | "resend"
       | "remove",
   ) => {
     setOpen(false);
@@ -321,6 +322,18 @@ function RowActions({
       }))
     )
       return;
+    if (action === "resend") {
+      if (!(await confirm(t.resendConfirm(name, prospect.step), { confirmLabel: t.resend }))) return;
+      try {
+        const r = await adminApi.resendProspect(prospect.id);
+        if (r.emailSent) toast.success(t.resent(name));
+        else toast.error(t.resendFailed);
+      } catch (err) {
+        toast.error((err instanceof ApiError && err.code && t.resendErrors[err.code]) || describeError(err as Error));
+      }
+      refresh();
+      return;
+    }
     if (
       action === "stop" &&
       !(await confirm(t.stopConfirm(name), { confirmLabel: t.stop }))
@@ -407,6 +420,11 @@ function RowActions({
                   onClick={() => run("stop")}
                 >
                   {t.stop}
+                </button>
+              )}
+              {prospect.step >= 1 && prospect.email && prospect.status !== "not_interested" && (
+                <button role="menuitem" className={item} onClick={() => run("resend")}>
+                  {t.resend}
                 </button>
               )}
             </>

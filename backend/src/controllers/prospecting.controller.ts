@@ -79,6 +79,11 @@ export class ProspectingController {
     res.json({ data: await this.prospecting.stop(req.staff, req.params.id as string) });
   });
 
+  /** POST /internal/platform/prospects/:id/resend (24/11/2026) */
+  public resend = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.prospecting.resend(req.staff, req.params.id as string));
+  });
+
   /** POST /internal/platform/prospects/send */
   public send = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.prospecting.sendNow(req.staff, req.body?.ids));

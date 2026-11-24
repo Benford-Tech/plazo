@@ -1704,6 +1704,11 @@ export const adminApi = {
       `/internal/platform/prospects/${encodeURIComponent(id)}/note`,
       { method: "PUT", body: json({ note }) },
     ),
+  resendProspect: (id: string) =>
+    apiRequest<{ emailSent: boolean; step: number; data: Prospect }>(
+      `/internal/platform/prospects/${encodeURIComponent(id)}/resend`,
+      { method: "POST" },
+    ),
   stopProspect: (id: string) =>
     apiRequest<{ data: Prospect }>(
       `/internal/platform/prospects/${encodeURIComponent(id)}/stop`,
