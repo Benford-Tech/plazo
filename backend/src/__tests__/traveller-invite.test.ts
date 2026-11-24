@@ -261,6 +261,24 @@ describe('the pass', () => {
       expect([log.body.data, list.body.data]).toEqual([[], []]);
     });
 
+    it("sends the platform admin a test from a parking's phone (24/11/2026)", async () => {
+      const admin = await setupOperator('Plazo (tests)');
+      process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+      const url = '/api/internal/platform/traveller-invite/test';
+      expect((await api().post(url).set(auth(admin.token)).send({ phone: '0612345670' })).body.code).toBe('no_gateway');
+      const op = await setupOperator();
+      await withListing(op);
+      await linked(op);
+      reviewing();
+      expect((await api().post(url).set(auth(op.token)).send({ phone: '0612345670' })).status).toBe(403);
+      const res = await api().post(url).set(auth(admin.token)).send({ phone: '0612345670', operatorId: op.operator.id });
+      expect(res.status).toBe(200);
+      expect(res.body.text).toContain('Suivez votre navette en direct avec Plazo : https://site.example/ma-reservation');
+      const rows = await prisma.smsOutbox.findMany({ where: { operatorId: op.operator.id, kind: 'test' } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ reservationId: null, provider: 'gateway', to: '+33612345670' });
+    });
+
     it('leaves by SMS where WhatsApp is off or has no template, never through Brevo', async () => {
       const op = await setupOperator();
       await withListing(op);

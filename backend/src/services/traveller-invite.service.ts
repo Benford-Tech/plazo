@@ -1,5 +1,5 @@
 import { Container, Service } from 'typedi';
-import { SECRET_KEY, whatsappInviteTemplate } from '@/config';
+import { prospectingSettings, SECRET_KEY, whatsappInviteTemplate } from '@/config';
 import prisma from '@/database';
 import { appLinkCode } from '@/domain/app-link';
 import { smsRecipient } from '@/domain/phone';
@@ -16,6 +16,7 @@ import {
   stayLabel,
 } from '@/domain/traveller-invite';
 import { whatsappImage } from '@/domain/whatsapp';
+import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { isSilentOperator } from './demo-guard';
 import { NotificationService } from './notification.service';
@@ -185,6 +186,44 @@ export class TravellerInviteService {
       text: inviteSms({ firstName, parking, arrivalAt: r.arrivalAt, timeZone: r.parking.timezone, link }),
     });
     return outcome === 'sent' || outcome === 'queued' ? 'sent' : 'failed';
+  }
+
+  /**
+   * 24/11/2026 (« essaie de m'envoyer un sms avec le modèle en cours de validation »): the invitation SMS of an example booking
+   * in 5 days, sent to the admin's phone (PROSPECTING_PHONE, or `phone`) from the parking's own phone (the operator chosen,
+   * else the first one sending its SMS from its phone). Nothing is recorded on a booking; the WhatsApp template itself can
+   * only be tried once Meta approves it.
+   */
+  public async sendTest(firstName: string, body: { operatorId?: unknown; phone?: unknown }) {
+    const phone = (typeof body.phone === 'string' && body.phone.trim()) || prospectingSettings().phone;
+    if (!phone || !smsRecipient(phone)) throw new HttpException(409, 'No mobile number to send the test to', 'no_test_phone');
+    const operatorId = typeof body.operatorId === 'string' && body.operatorId.trim() ? body.operatorId.trim() : null;
+    const settings = await prisma.operatorSmsSettings.findFirst({
+      where: {
+        mode: 'gateway',
+        ...(operatorId ? { operatorId } : { operator: { status: 'active', archivedAt: null, isDemo: false, prospectDemo: false } }),
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { operatorId: true },
+    });
+    if (!settings) throw new HttpException(409, 'No parking sends its SMS from its own phone', 'no_gateway');
+    const parking = await prisma.parking.findFirst({
+      where: { operatorId: settings.operatorId },
+      orderBy: { createdAt: 'asc' },
+      select: { name: true, timezone: true, listing: { select: { title: true } } },
+    });
+    const name = parking?.listing?.title || parking?.name || 'Parking';
+    const link = this.notifications.siteUrl('/ma-reservation') ?? 'https://www.plazo.fr/ma-reservation';
+    const text = inviteSms({
+      firstName,
+      parking: name,
+      arrivalAt: new Date(Date.now() + 5 * 24 * 3600 * 1000),
+      timeZone: parking?.timezone ?? 'Europe/Paris',
+      link,
+    });
+    const outcome = await this.sms.sendSmsOnly(settings.operatorId, { reservationId: null, kind: 'test', to: phone, text });
+    if (outcome !== 'sent' && outcome !== 'queued') throw new HttpException(409, `The test SMS was not sent (${outcome})`, 'sms_failed');
+    return { outcome, parking: name, text };
   }
 
   /** A traveller answered STOP to Plazo's number: no invitation to that number again. */

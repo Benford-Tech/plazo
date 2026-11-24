@@ -8,6 +8,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { CapacityStudyService } from '@/services/capacity-study.service';
 import { GeoService, MAX_BBOX_SPAN } from '@/services/geo.service';
 import { PlatformService } from '@/services/platform.service';
+import { TravellerInviteService } from '@/services/traveller-invite.service';
 import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
 import { TravellerCampaignService } from '@/services/traveller-campaign.service';
 import catchAsync from '@/utils/catchAsync';
@@ -66,6 +67,11 @@ export class PlatformController {
   });
 
   /** POST /internal/platform/traveller-welcome/test { operatorId? } */
+  public travellerInviteTest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await Container.get(TravellerInviteService).sendTest(req.staff.firstName ?? '', req.body ?? {}));
+  });
+
   public travellerWelcomeTest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const operatorId = str(req.body?.operatorId)?.trim() || null;
     if (operatorId && operatorId.length > 40) throw new ValidationException({ operatorId: 'invalid' });

@@ -1,0 +1,35 @@
+name: Test du SMS d'invitation à Plazo
+
+# Sends the platform admin the invitation SMS (version A, the one that leaves while Meta reviews plazo_invitation) of an
+# example booking, from a parking's own phone, to PROSPECTING_PHONE or the number given (24/11/2026). By hand only.
+# Secrets: PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD (a platform admin).
+on:
+  workflow_dispatch:
+    inputs:
+      telephone:
+        description: "Numéro qui reçoit le test (vide = PROSPECTING_PHONE)"
+        type: string
+        default: ""
+      loueur:
+        description: "Id du loueur dont le téléphone envoie (vide = le premier relié)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Envoi du test
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          PHONE: ${{ inputs.telephone }}
+          OPERATOR_ID: ${{ inputs.loueur }}
+        run: python3 .github/scripts/invite_sms_test.py
