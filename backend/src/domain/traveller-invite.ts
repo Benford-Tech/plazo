@@ -66,3 +66,14 @@ export function inviteHour(now: Date, timeZone: string): boolean {
   const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', hourCycle: 'h23' }).format(now));
   return hour >= 7 && hour < 21;
 }
+
+/**
+ * 24/11/2026 (« propose une maquette sms » → « A, le sms doit être envoyé avec le numéro du parking »): the same
+ * invitation as one short SMS from the parking's own phone, while Meta has not approved the WhatsApp template or where
+ * WhatsApp is off. One reason only, to fit 160 characters with an ordinary parking name.
+ */
+export function inviteSms(fields: { firstName: string; parking: string; arrivalAt: Date; timeZone: string; link: string }): string {
+  const iso = localDate(fields.arrivalAt, fields.timeZone);
+  const hello = fields.firstName.trim() ? `Bonjour ${fields.firstName.trim()}, votre` : 'Bonjour, votre';
+  return `${hello} place au ${fields.parking.trim()} est réservée le ${iso.slice(8, 10)}/${iso.slice(5, 7)}. Suivez votre navette en direct avec Plazo : ${fields.link}`;
+}
