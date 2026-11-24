@@ -26,6 +26,7 @@ const settings = (over: Partial<SiteSettings> = {}): SiteSettings => ({
   theme: "simple",
   accent2: null,
   heroPhotoUrl: null,
+  teamPhotoUrl: null,
   showLogo: false,
   hasLogo: false,
   rating: null,
