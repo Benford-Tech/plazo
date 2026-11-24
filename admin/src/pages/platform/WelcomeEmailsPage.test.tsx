@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WelcomeReport } from "@/lib/types";
 import WelcomeEmailsPage from "./WelcomeEmailsPage";
 
-const api = vi.hoisted(() => ({ getWelcomeReport: vi.fn() }));
+const api = vi.hoisted(() => ({ getWelcomeReport: vi.fn(), resendWelcomeEmail: vi.fn() }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
-  return { ...actual, adminApi: { ...actual.adminApi, getWelcomeReport: (d: number, o?: string | null) => api.getWelcomeReport(d, o) } };
+  return { ...actual, adminApi: { ...actual.adminApi, getWelcomeReport: (d: number, o?: string | null) => api.getWelcomeReport(d, o), resendWelcomeEmail: (id: string) => api.resendWelcomeEmail(id) } };
 });
 
 const row = (over: Partial<WelcomeReport["rows"][number]>) => ({
@@ -77,5 +77,19 @@ describe("Plateforme › Mails d'accueil (18/11/2026)", () => {
     await userEvent.selectOptions(screen.getByTestId("welcome-operator"), "op1");
     await userEvent.click(screen.getByTestId("welcome-period-7"));
     expect(api.getWelcomeReport).toHaveBeenLastCalledWith(7, "op1");
+  });
+
+  it("renvoie un mail déjà envoyé, après confirmation (24/11/2026)", async () => {
+    api.getWelcomeReport.mockResolvedValue({ ...report, rows: [row({ canResend: true }), row({ id: "r3", traveller: "Lina P.", canResend: false })] });
+    api.resendWelcomeEmail.mockResolvedValue({ emailSent: true });
+    const ask = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValue(true);
+    show();
+    await screen.findByText("Camille M.");
+    expect(screen.queryByTestId("welcome-resend-r3")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("welcome-resend-r1"));
+    expect(api.resendWelcomeEmail).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByTestId("welcome-resend-r1"));
+    expect(api.resendWelcomeEmail).toHaveBeenCalledWith("r1");
+    ask.mockRestore();
   });
 });

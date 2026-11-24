@@ -285,4 +285,37 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
     const refused = await api().get('/api/internal/platform/traveller-welcome').set('Authorization', `Bearer ${op.token}`);
     expect(refused.status).toBe(403);
   });
+
+  it('« Renvoyer » : le même mail au même voyageur, jamais deux fois de suite ni après le dépôt (24/11/2026)', async () => {
+    const admin = await setupOperator('Plazo');
+    const op = await setupOperator('Parking Fictif');
+    await withListing(op);
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    const b = await booking(op);
+    expect((await service.run(NOW)).sent).toBe(1);
+    const post = (id: string, token = admin.token) =>
+      api().post(`/api/internal/platform/traveller-welcome/${id}/resend`).set('Authorization', `Bearer ${token}`);
+    expect((await post(b.id, op.token)).status).toBe(403);
+    // Just sent: not again within two minutes.
+    await prisma.reservation.update({ where: { id: b.id }, data: { welcomeEmailAt: new Date(), arrivalAt: new Date(Date.now() + 86400_000) } });
+    expect((await post(b.id)).body.code).toBe('too_soon');
+    await prisma.reservation.update({
+      where: { id: b.id },
+      data: { welcomeEmailAt: new Date(Date.now() - 600_000), arrivalAt: new Date(Date.now() + 86400_000) },
+    });
+    const before = emails().length;
+    const res = await post(b.id);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ emailSent: true });
+    expect(emails().length).toBe(before + 1);
+    const list = await api().get('/api/internal/platform/traveller-welcome?days=30').set('Authorization', `Bearer ${admin.token}`);
+    expect(list.body.rows[0]).toMatchObject({ outcome: 'sent', canResend: true });
+    // The drop-off has passed.
+    await prisma.reservation.update({
+      where: { id: b.id },
+      data: { welcomeEmailAt: new Date(Date.now() - 600_000), arrivalAt: new Date(Date.now() - 60_000) },
+    });
+    expect((await post(b.id)).body.code).toBe('drop_off_passed');
+    expect((await post('cunknownbooking1234')).status).toBe(404);
+  });
 });

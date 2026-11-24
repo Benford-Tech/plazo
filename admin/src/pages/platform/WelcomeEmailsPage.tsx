@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import type { WelcomeOutcome, WelcomeReport, WelcomeReportRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -181,6 +183,7 @@ function List({ r, tab, setTab }: { r: WelcomeReport; tab: "sent" | "other"; set
                   <td className="py-2">
                     <span className={cn("inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold", TONE[x.outcome])}>{t.outcomes[x.outcome]}</span>
                     {t.outcomeHelp[x.outcome] && <div className="mt-1 text-xs text-muted-foreground">{t.outcomeHelp[x.outcome]}</div>}
+                    {x.canResend && <ResendButton row={x} />}
                   </td>
                 </tr>
               ))}
@@ -190,6 +193,35 @@ function List({ r, tab, setTab }: { r: WelcomeReport; tab: "sent" | "other"; set
       )}
       {r.truncated && <p className="text-xs text-muted-foreground">{t.truncated(r.rows.length)}</p>}
     </section>
+  );
+}
+
+/** 24/11/2026 (« pouvoir renvoyer un mail déjà envoyé »): the same email again, after a confirmation. */
+function ResendButton({ row }: { row: WelcomeReportRow }) {
+  const confirm = useConfirm();
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => adminApi.resendWelcomeEmail(row.id),
+    onSuccess: (r) => {
+      if (r.emailSent) toast.success(t.resent(row.traveller));
+      else toast.error(t.resentFailed);
+      void queryClient.invalidateQueries({ queryKey: ["platform", "welcome"] });
+    },
+    onError: (error) => toast.error((error instanceof ApiError && error.code && t.resendErrors[error.code]) || t.resendError),
+  });
+  return (
+    <button
+      type="button"
+      data-testid={`welcome-resend-${row.id}`}
+      disabled={mutation.isPending}
+      onClick={async () => {
+        const yes = await confirm(t.resendConfirm.body, { title: t.resendConfirm.title(row.traveller), confirmLabel: t.resendConfirm.confirm });
+        if (yes) mutation.mutate();
+      }}
+      className="mt-1.5 block rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-semibold text-lime-deep hover:bg-accent disabled:opacity-60"
+    >
+      {mutation.isPending ? t.resending : t.resend}
+    </button>
   );
 }
 

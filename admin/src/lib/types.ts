@@ -2865,6 +2865,8 @@ export interface WelcomeReportRow {
   arrivalAt: string;
   handledAt: string;
   outcome: WelcomeOutcome;
+  /** 24/11/2026: « Renvoyer » is offered (absent from an older API). */
+  canResend?: boolean;
 }
 
 export interface WelcomeReport {

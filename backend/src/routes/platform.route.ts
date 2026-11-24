@@ -380,6 +380,7 @@ export class PlatformRoute implements Routes {
     );
     this.router.get(`${base}/traveller-welcome`, PlatformAdminMiddleware(), this.platform.travellerWelcomeReport);
     this.router.post(`${base}/traveller-welcome/test`, PlatformAdminMiddleware(), this.platform.travellerWelcomeTest);
+    this.router.post(`${base}/traveller-welcome/:id/resend`, PlatformAdminMiddleware(), this.platform.travellerWelcomeResend);
     this.router.get(`${base}/traveller-campaigns`, PlatformAdminMiddleware(), this.platform.travellerCampaigns);
     this.router.post(`${base}/traveller-campaigns/preview`, PlatformAdminMiddleware(), this.platform.travellerCampaignPreview);
     this.router.post(`${base}/traveller-campaigns/test`, PlatformAdminMiddleware(), this.platform.travellerCampaignTest);
