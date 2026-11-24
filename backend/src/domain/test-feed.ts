@@ -69,6 +69,15 @@ export function isTestOperatorName(name: string | null | undefined): boolean {
   return /\(tests\)\s*$/.test(name ?? '');
 }
 
+/**
+ * The platform's own test account (« Plazo (tests) »), the one test account allowed to take real payments under live keys
+ * (24/11/2026, « je veux tester le paiement sur le parking de test », choice « Argent réel puis remboursé »): the platform pays
+ * with its own card, then cancels to be refunded. Other test accounts (« Parking Revue (tests) ») stay unbookable.
+ */
+export function isLivePaymentTestOperatorName(name: string | null | undefined): boolean {
+  return /^\s*plazo\s*\(tests\)\s*$/i.test(name ?? '');
+}
+
 // ---------------------------------------------------------------- the pool's fictional people
 
 const FIRST = [
