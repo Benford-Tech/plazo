@@ -1713,7 +1713,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      numéro et par loueur sur 12 mois, 07:00–21:00, jamais un loueur muet) ; un parking sans téléphone relié attend le modèle
      (WhatsApp allumé) ou n'envoie rien (`off`) ; Meta n'est interrogé qu'une fois par passage ; un STOP reçu par le téléphone du
      parking (`receiveSms`) ferme aussi le numéro ; le SMS n'est montré qu'à la plateforme, comme le WhatsApp (`sentSmsWhere`,
-     « Messages au voyageur »). Une fois le modèle « Actif », WhatsApp reprend. Pas encore : un suivi côté plateforme.
+     « Messages au voyageur »). Une fois le modèle « Actif », WhatsApp reprend. Pas encore : un suivi côté plateforme. **Test (24/11/2026, « essaie de m'envoyer un sms avec le modèle en cours de validation »)** : `POST /internal/platform/traveller-invite/test { operatorId?, phone? }` (`TravellerInviteService.sendTest`, `PlatformAdminMiddleware`) : le SMS d'une réservation d'exemple dans 5 jours, lien vers « Ma réservation », envoyé depuis le téléphone d'un parking (celui donné, sinon le premier relié) à `PROSPECTING_PHONE` ou au numéro donné, genre `test`, rien d'enregistré sur une réservation ; 409 `no_test_phone` · `no_gateway` · `sms_failed` ; workflow « Test du SMS d'invitation à Plazo » (`invite-sms-test.yml`, `.github/scripts/invite_sms_test.py`). Le modèle WhatsApp lui-même ne s'essaie qu'une fois approuvé par Meta.
    - **Lien d'avis Google, option B (22/11/2026, « Comment bombarder le référencement » → « Ok », maquettes
      https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : le gérant colle une fois le lien « Demander des avis » de la fiche Google
      de son parking dans « Ma fiche » (« Lien d'avis Google (facultatif) », `l-review` ; `Listing.googleReviewUrl`, migration

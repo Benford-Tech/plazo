@@ -161,6 +161,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       the period (no demo, no test operator): counts, the handled ones newest first (300 at most, traveller's first name,
  *       masked address, outcome) and, for the others, the first reason they never were candidates.
  *     tags: [Platform]
+ * /internal/platform/traveller-invite/test:
+ *   post:
+ *     summary: "24/11/2026 — the app invitation SMS of an example booking, to PROSPECTING_PHONE (or phone) from a parking's own phone (operatorId, else the first one with its phone linked); 409 no_test_phone · no_gateway · sms_failed"
+ *     tags: [Platform]
  * /internal/platform/traveller-welcome/test:
  *   post:
  *     summary: 15/11/2026 — the welcome email to travellers, for an example booking of the operator chosen (operatorId, else an example parking), sent to the admin from the service client's address
@@ -379,6 +383,7 @@ export class PlatformRoute implements Routes {
       this.platform.sendNotification,
     );
     this.router.get(`${base}/traveller-welcome`, PlatformAdminMiddleware(), this.platform.travellerWelcomeReport);
+    this.router.post(`${base}/traveller-invite/test`, PlatformAdminMiddleware(), this.platform.travellerInviteTest);
     this.router.post(`${base}/traveller-welcome/test`, PlatformAdminMiddleware(), this.platform.travellerWelcomeTest);
     this.router.post(`${base}/traveller-welcome/:id/resend`, PlatformAdminMiddleware(), this.platform.travellerWelcomeResend);
     this.router.get(`${base}/traveller-campaigns`, PlatformAdminMiddleware(), this.platform.travellerCampaigns);
