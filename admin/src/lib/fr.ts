@@ -2464,6 +2464,7 @@ export const fr = {
       online: "Site en ligne",
       offline: "Site hors ligne",
       activate: "Activer l'option",
+      build: "Construire le site",
       deactivate: "Éteindre l'option",
       deactivateConfirm: "Éteindre l'option retire le site de ce parking. Ses blocs sont gardés.",
       done: "Option mise à jour.",

@@ -7,9 +7,9 @@ import SitePage from "./SitePage";
 
 /** 22/11/2026 (« pouvoir créer un site dédié au parking », « le plus modulaire possible », « le site est en supplément »). */
 
-const auth = vi.hoisted(() => ({ user: { demo: null as unknown } }));
+const auth = vi.hoisted(() => ({ user: { demo: null as unknown } as Record<string, unknown> }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
-const api = vi.hoisted(() => ({ getSite: vi.fn(), updateSite: vi.fn(), requestSite: vi.fn(), setSiteDomain: vi.fn(), checkSiteDomain: vi.fn() }));
+const api = vi.hoisted(() => ({ getSite: vi.fn(), updateSite: vi.fn(), requestSite: vi.fn(), setPlatformSite: vi.fn(), setSiteDomain: vi.fn(), checkSiteDomain: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
@@ -109,6 +109,19 @@ describe("Mon site", () => {
     expect(screen.queryByRole("button", { name: "Mettre mon site en ligne" })).toBeNull();
     await user.click(within(addon).getByRole("button", { name: "Demander l'option" }));
     expect(await within(screen.getByTestId("site-addon")).findByText(/Demandée le 22 novembre/)).toBeInTheDocument();
+  });
+
+  it("super admin en consultation : il active l'option lui-même au lieu de la demander (25/11/2026)", async () => {
+    const user = userEvent.setup();
+    auth.user = { demo: null, isPlatformAdmin: true, viewAs: { operatorId: "op-1", operatorName: "GoPark" } };
+    api.getSite.mockResolvedValue({ data: settings() });
+    api.setPlatformSite.mockResolvedValue({ data: {} });
+    renderPage();
+    const addon = await screen.findByTestId("site-addon");
+    expect(within(addon).queryByRole("button", { name: "Demander l'option" })).toBeNull();
+    await user.click(within(addon).getByTestId("site-addon-activate"));
+    expect(api.setPlatformSite).toHaveBeenCalledWith("op-1", true);
+    expect(api.requestSite).not.toHaveBeenCalled();
   });
 
   it("avec l'option : mise en ligne, puis le lien du site", async () => {
