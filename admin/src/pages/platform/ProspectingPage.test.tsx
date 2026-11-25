@@ -825,6 +825,19 @@ describe("Plateforme › Prospection", () => {
     expect(sent.steps).toEqual(settings.steps);
   });
 
+  it("« Appels » (25/11/2026, direction A) : la file des prospects qui ont un téléphone, à côté de la liste", async () => {
+    const user = userEvent.setup();
+    renderIn();
+    const tab = await screen.findByTestId("prospects-view-calls");
+    await waitFor(() => expect(tab).toHaveTextContent(/^Appels · \d+$/));
+    expect(screen.queryByTestId("calls-view")).toBeNull();
+    await user.click(tab);
+    expect(screen.getByTestId("calls-view")).toBeInTheDocument();
+    expect(tab).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByTestId("prospects-view-list"));
+    expect(screen.queryByTestId("calls-view")).toBeNull();
+  });
+
   it("téléphone (22/11/2026, direction A) : liste serrée, filtres derrière un bouton, envoi dans une feuille", async () => {
     const user = userEvent.setup();
     const desktop = window.matchMedia;

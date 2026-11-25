@@ -542,3 +542,89 @@ export function smsCandidates(rows: Prospect[], now = Date.now()): Prospect[] {
       !(p.lastSmsAt && now - new Date(p.lastSmsAt).getTime() < SMS_GAP_MS),
   );
 }
+
+// ---- Appels (25/11/2026, « A · File d'appels ») ----------------------------------------------------------------------
+
+export type CallGroup = "callback" | "interested" | "demo" | "contacted" | "new";
+export const CALL_GROUPS: CallGroup[] = ["callback", "interested", "demo", "contacted", "new"];
+/** Calls in a row nobody answered after which a prospect leaves the queue (the API's MAX_MISSED_CALLS). */
+export const MAX_MISSED_CALLS = 3;
+
+export interface CallQueueItem {
+  group: CallGroup;
+  prospect: Prospect;
+}
+
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const endOfDay = (now: Date) => new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+const time = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : 0);
+
+/** Whether a number is French (the queue's « France » filter): written the French way, or with +33. */
+export function isFrenchPhone(phone: string | null): boolean {
+  if (!phone) return false;
+  const digits = phone.replace(/[\s.()-]/g, "");
+  return /^0[1-9]\d{8}$/.test(digits) || /^(\+|00)33/.test(digits);
+}
+
+/**
+ * Who to call, in order: the callbacks due today, the interested ones, those who opened their demo, those written to
+ * without an answer, then the ones never contacted. Never a prospect without a number, opted out, not interested, with a
+ * wrong number, already called today, or after three calls in a row nobody answered; a callback set for a later day waits.
+ */
+export function callQueue(prospects: Prospect[], now = new Date()): CallQueueItem[] {
+  const items: CallQueueItem[] = [];
+  for (const p of prospects) {
+    if (!p.phone || p.status === "unsubscribed" || p.status === "not_interested") continue;
+    const calls = p.calls;
+    if (calls?.wrongNumber) continue;
+    if (calls?.callbackAt) {
+      if (new Date(calls.callbackAt) <= endOfDay(now)) items.push({ group: "callback", prospect: p });
+      continue;
+    }
+    if (calls?.lastAt && sameDay(new Date(calls.lastAt), now)) continue;
+    if ((calls?.missed ?? 0) >= MAX_MISSED_CALLS) continue;
+    const group: CallGroup =
+      p.status === "interested" || p.status === "replied"
+        ? "interested"
+        : (p.demo?.opens ?? 0) > 0
+          ? "demo"
+          : p.status === "contacted"
+            ? "contacted"
+            : "new";
+    items.push({ group, prospect: p });
+  }
+  const order = (item: CallQueueItem): number => {
+    const p = item.prospect;
+    switch (item.group) {
+      case "callback":
+        return time(p.calls?.callbackAt);
+      case "demo":
+        return -time(p.demo?.lastOpenedAt);
+      case "contacted":
+        // The ones who got the most mails first, then the oldest last contact.
+        return -p.step * 1e14 + time(p.lastContactedAt);
+      case "new":
+        return (p.origin ? 0 : 1e14) - time(p.createdAt) / 1e3;
+      default:
+        return -time(p.lastContactedAt);
+    }
+  };
+  return items.sort(
+    (a, b) =>
+      CALL_GROUPS.indexOf(a.group) - CALL_GROUPS.indexOf(b.group) ||
+      order(a) - order(b) ||
+      a.prospect.companyName.localeCompare(b.prospect.companyName, "fr"),
+  );
+}
+
+/** A number as the phone's dialler takes it. */
+export const telHref = (phone: string) => `tel:${phone.replace(/\(0\)/g, "").replace(/[^+\d]/g, "")}`;
+
+/** « Demain 10:00 » as a datetime-local value: the default of « Rappeler le… » (a Saturday or Sunday moves to Monday). */
+export function defaultCallback(now = new Date()): string {
+  const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 10, 0);
+  while (at.getDay() === 0 || at.getDay() === 6) at.setDate(at.getDate() + 1);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`;
+}

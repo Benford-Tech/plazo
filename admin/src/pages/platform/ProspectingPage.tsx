@@ -41,6 +41,7 @@ import {
   renderText,
   sequenceFor,
   smsCandidates,
+  callQueue,
   sortProspects,
   stepFor,
   toolOptions,
@@ -55,6 +56,7 @@ import type {
   ProspectStatus,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { CallsView } from "./prospecting/CallsView";
 import { ImportDialog } from "./prospecting/ImportDialog";
 import { SmsDialog } from "./prospecting/SmsDialog";
 import { ProspectForm } from "./prospecting/ProspectForm";
@@ -690,6 +692,16 @@ export default function ProspectingPage() {
     queryFn: adminApi.getProspectingSettings,
   });
   const all = useMemo(() => list.data?.data ?? [], [list.data]);
+  // 25/11/2026 (« A · File d'appels »): the calls' queue reads every prospect, whatever the list's filters (the same
+  // request as the unfiltered list, so one answer serves both).
+  const [view, setView] = useState<"list" | "calls">(() =>
+    new URLSearchParams(window.location.search).get("vue") === "appels" ? "calls" : "list",
+  );
+  const everyone = useQuery({
+    queryKey: ["platform", "prospects", null, "", ""],
+    queryFn: () => adminApi.getProspects({ status: null, airport: null, region: null }),
+  });
+  const toCall = useMemo(() => (everyone.data ? callQueue(everyone.data.data).length : null), [everyone.data]);
   // 16/11/2026 (direction A): the page's own filters and the column sort, on what the server sent.
   const rows = useMemo(
     () => sortProspects(filterProspects(all, filters), sort),
@@ -924,7 +936,33 @@ export default function ProspectingPage() {
         </p>
       )}
 
-      <div className="flex flex-col gap-2 md:gap-6">
+      <div role="group" aria-label={t.calls.views} className="flex gap-2">
+        {(["list", "calls"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={view === v}
+            data-testid={`prospects-view-${v}`}
+            onClick={() => setView(v)}
+            className={cn(
+              "h-10 rounded-full border px-4 text-sm font-semibold",
+              view === v ? "border-lime-deep bg-lime-deep text-white" : "border-panel-line bg-white",
+            )}
+          >
+            {v === "list" ? t.calls.viewList : t.calls.viewCalls(toCall)}
+          </button>
+        ))}
+      </div>
+
+      {view === "calls" && (
+        <CallsView
+          prospects={everyone.data?.data ?? []}
+          loading={everyone.isLoading}
+          callerName={settings.data?.data.sender?.name?.trim().split(/\s+/)[0] ?? null}
+        />
+      )}
+
+      <div className={cn("flex flex-col gap-2 md:gap-6", view === "calls" && "hidden")}>
       <div className="flex flex-wrap items-center gap-2">
         <div
           role="group"

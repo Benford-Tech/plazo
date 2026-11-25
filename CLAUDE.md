@@ -2412,6 +2412,29 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   France (toutes ses régions, `region=france` de `GET …/prospects`, `FRANCE` de `domain/prospect-regions.ts`), chaque autre pays qui a
   des prospects, « Sans pays » ; « Toutes les régions » n'apparaît qu'avec France choisie et ne liste que ses régions. Tests
   `prospecting.test.ts`, `ProspectingPage.test.tsx`.
+- **Appels de prospection, direction A « File d'appels » (25/11/2026, « Analyse toutes les prospect pour préparer les appel de
+  pospection », maquettes https://claude.ai/artifact/4AsVGCziZ2DZ75zjf1vvRS, « A · File d'appels »)** : pilules « Liste · Appels · N »
+  en tête de la Prospection (`prospects-view-list|calls`, `?vue=appels`) ; « Appels » (`pages/platform/prospecting/CallsView.tsx`) :
+  à gauche la file (`callQueue` de `lib/prospecting.ts`, faite par la page sur tous les prospects : À rappeler aujourd'hui ·
+  Intéressés · Démo ouverte · Contactés sans réponse · Jamais contactés ; jamais un prospect sans téléphone, désinscrit, pas
+  intéressé, au mauvais numéro, déjà appelé aujourd'hui, ni après 3 appels de suite sans réponse, `MAX_MISSED_CALLS` ; un rappel posé
+  pour un autre jour attend), filtres « Pays du numéro » (France · Étranger, `isFrenchPhone`) et aéroport ; à droite la fiche : numéro
+  en grand, « Appeler » (`tel:`), « Copier », « Site », tuiles Mails · Démo · Outil détecté · Appels, notes, « À dire » selon le groupe
+  (`t.calls.scripts`, au prénom de l'expéditeur des mails), puis le résultat en un clic (Pas de réponse · Messagerie · Rappeler le…
+  avec sa date, demain 10:00 ouvré par défaut · Intéressé · Pas intéressé · Mauvais numéro), une note facultative, les appels
+  précédents, « Précédent » / « Passer » ; un résultat passe au suivant ; sur téléphone la fiche seule et « Ensuite ». Serveur :
+  table `prospect_calls` (résultat, note ≤ 300, `callbackAt`, `calledById`) et `Prospect.lastCallAt/lastCallOutcome/callCount/
+  missedCalls/callbackAt/phoneWrong` (migration `prospect_calls`, CHECK) ; `domain/prospect-calls.ts` (`readCall`, `callCounters`) ;
+  `POST /internal/platform/prospects/:id/calls { outcome, note?, callbackAt? }` (`ProspectingService.logCall`,
+  `PlatformAdminMiddleware` ; intéressé / pas intéressé marquent le prospect comme les pouces et arrêtent les relances, la note
+  devient sa note ; 400 `outcome` invalid, `note` too_long, `callbackAt` required · past · too_far ; 409 `no_phone` · `unsubscribed` ;
+  tracé `prospect.call_logged`), `GET …/:id/calls` (20 derniers, qui a appelé) ; `calls { count, missed, lastAt, lastOutcome,
+  callbackAt, wrongNumber }` sur chaque prospect ; un téléphone changé remet le prospect dans la file. Politique de confidentialité
+  (section 11). Tests `prospect-calls.test.ts`, `CallsView.test.tsx`, `ProspectingPage.test.tsx`. **Téléphones relevés sur les
+  sites (25/11/2026)** : 33 prospects complétés par l'import avec `completer` (numéro publié sur leur page d'accueil ou de contact).
+  Workflow « Export chiffré des prospects » (`prospects-export.yml`, `.github/scripts/prospects_export.py`, à la main) : la liste
+  chiffrée avec une clé publique donnée (RSA + AES), artefact d'un jour, jamais en clair dans un dépôt public. Pas encore : B (une
+  colonne « Appel » dans le tableau), les scripts dans les autres langues, Plazo Pro.
 - **Prospection sur téléphone, direction A (19/11/2026, « Optimise pour les téléphones » d'après une capture, maquettes
   https://claude.ai/artifact/UwLgoBeRNaDmmjVokCycHp)** : sous 768 px (`useNarrow` de `ProspectingPage.tsx`), le tableau laisse la place
   à une carte par prospect (`ProspectCard`, `prospect-card` : case à cocher, nom, contact et ville, aéroport, e-mail entier ou « à

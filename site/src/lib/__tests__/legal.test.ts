@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("23 novembre 2026"); // the WhatsApp invitation to install the app (23/11/2026), prospecting SMS (19/11/2026), the contracts Plazo writes for the operators (17/11/2026), the welcome email and the sent SMS text in « Messages » (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("25 novembre 2026"); // the prospecting calls (25/11/2026), the WhatsApp invitation to install the app (23/11/2026), prospecting SMS (19/11/2026), the contracts Plazo writes for the operators (17/11/2026), the welcome email and the sent SMS text in « Messages » (15/11/2026), SMS to the parking's phone (14/11/2026), WhatsApp inbox (12/11/2026), the parking's invoices (07/11/2026), the audience cookie (06/11/2026), WhatsApp (03/11/2026), four optional photos (30/10/2026), the parking's own contract and the signed PDF (26/10/2026), contact@plazo.fr (22/10/2026), the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
   });
 
   it("tells about the welcome email to the travellers of the other channels and its opt-out (15/11/2026)", () => {
@@ -142,7 +142,7 @@ describe("privacy policy", () => {
   });
 
   it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, then on 22/10/2026 with the support address contact@plazo.fr, the terms and the privacy policy again on 26/10/2026 with the parking's own contract", () => {
-    expect(privacyDoc().version).toBe("23 novembre 2026");
+    expect(privacyDoc().version).toBe("25 novembre 2026");
     expect(termsDoc().version).toBe("13 novembre 2026");
     expect(legalNoticeDoc().version).toBe("6 novembre 2026");
   });
