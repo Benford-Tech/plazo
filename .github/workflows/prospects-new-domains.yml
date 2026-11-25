@@ -1,0 +1,33 @@
+name: Nouveaux parkings (noms de domaine)
+
+# Lists the .fr domain names registered lately that look like an airport car park (25/11/2026, « Les noms de domaines »):
+# the AFNIC's daily open-data list, filtered by name, each candidate's site opened once for its title. Candidates only:
+# nothing is written to Plazo, no secret is used. By hand only (.github/scripts/new_domains.py).
+on:
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Nombre de jours à relire (1 à 365)"
+        type: string
+        default: "30"
+      sites:
+        description: "Ouvrir chaque site pour lire son titre"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  domains:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Noms de domaine
+        env:
+          DAYS: ${{ inputs.jours }}
+          CHECK_SITES: ${{ inputs.sites }}
+        run: python3 .github/scripts/new_domains.py
