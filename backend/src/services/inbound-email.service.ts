@@ -10,6 +10,7 @@ import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, allopar
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
 import { withAttachments, withoutAttachments } from '@/domain/inbound-attachments';
 import { oneparkImporter, parseOneparkSummary } from '@/domain/importers/onepark';
+import { parkmundoImporter } from '@/domain/importers/parkmundo';
 import { SUBJECT_CANCELLATION } from '@/domain/importers/common';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
 import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
@@ -547,6 +548,8 @@ export class InboundEmailService {
     if (type.rule === 'onepark.cancellation' && type.reference) return this.comparatorCancellation(input, 'Onepark', type.reference, rules);
     // 09/11/2026: Onepark's change notice (the whole booking in it) is applied like Allopark's.
     if (type.rule === 'onepark.change' && type.reference) return this.oneparkChange(input, type.reference, rules);
+    // 25/11/2026: ParkMundo's « Modification - PM… » (a whole confirmation) the same way.
+    if (type.rule === 'parkmundo.modification' && type.reference) return this.oneparkChange(input, type.reference, rules, 'ParkMundo');
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
@@ -877,16 +880,22 @@ export class InboundEmailService {
    * as it now is (no page to open): it is applied like Allopark's change, to the booking of this number, or to the one
    * typed by hand without it, or creates the booking Plazo does not have.
    */
-  private async oneparkChange(input: AnalysisInput, reference: string, reading: ReadingMeta | null): Promise<Analysis> {
+  private async oneparkChange(
+    input: AnalysisInput,
+    reference: string,
+    reading: ReadingMeta | null,
+    provider: 'Onepark' | 'ParkMundo' = 'Onepark',
+  ): Promise<Analysis> {
     const ref = reference.trim().toUpperCase();
-    const label = `[Onepark] ${ref}`;
-    const read = input.text ? oneparkImporter.parse(withoutAttachments(input.text)) : null;
+    const label = `[${provider}] ${ref}`;
+    const importer = provider === 'ParkMundo' ? parkmundoImporter : oneparkImporter;
+    const read = input.text ? importer.parse(withoutAttachments(input.text)) : null;
     if (!read?.arrivalAt || !read.returnAt) {
       logger.info(`${label}: change announced, its dates not read: nothing changed`);
       return { provider: null, status: 'unrecognised', parsed: null, missing: [], reading, reservationId: null, pageLookup: null, change: null };
     }
-    const booking: ParsedBooking = { ...read, provider: 'Onepark', externalReference: ref };
-    const withPage = { provider: 'Onepark', pageLookup: null, change: null, parsed: booking, reading };
+    const booking: ParsedBooking = { ...read, provider, externalReference: ref };
+    const withPage = { provider, pageLookup: null, change: null, parsed: booking, reading };
     // A change read after the traveller cancelled (its cancellation received before Plazo had the booking): never a
     // booking of a cancelled stay.
     const known = await prisma.reservation.findUnique({

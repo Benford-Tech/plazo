@@ -322,6 +322,32 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     });
   });
 
+  it("la modification ParkMundo (25/11/2026, « Modification - PM… ») crée la réservation voiturier que Plazo n'avait pas, puis ne fait plus rien", async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const change = item(op.address, fixture('parkmundo-confirmation-valet.txt'), {
+      From: { Name: 'ParkMundo', Address: 'info@parkmundo.fr' },
+      Subject: 'Modification - PM8645081277 -  ParkMundo',
+    });
+    await post([change]);
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', reading: { kind: 'modification', provider: 'ParkMundo', rule: 'parkmundo.modification' } });
+    const booking = await prisma.reservation.findUniqueOrThrow({ where: { id: row.reservationId! } });
+    expect(booking).toMatchObject({
+      externalReference: 'PM8645081277',
+      channelDetail: 'ParkMundo',
+      handover: 'valet',
+      plate: 'GZ-029-NL',
+      customerPhone: '+33639980101',
+      priceCents: 7000,
+    });
+
+    // The same notice again: one booking, a duplicate linked to it.
+    await post([{ ...change, Uuid: ['u2'] }]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+  });
+
   it("l'avis de modification Onepark (09/11/2026) est appliqué à la réservation de ce numéro", async () => {
     const op = await connected();
     claudeIs('absent');

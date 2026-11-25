@@ -59,6 +59,17 @@ def state(booking):
             f"plaque {'présente' if booking.get('plate') else 'absente'}")
 
 
+def describe(mail):
+    """What Plazo made of an inbox email, without its text nor anything personal."""
+    reading = mail.get("reading") or {}
+    change = mail.get("change") or {}
+    return (f"  · reçu {mail.get('receivedAt')} · {mail.get('status')} · arrivé « {mail.get('delivery')} » · "
+            f"objet « {mail.get('subject')} » · lecture {reading.get('source')}/{reading.get('kind')}/"
+            f"{reading.get('provider')}/{reading.get('rule')} · manque {mail.get('missing')} · "
+            f"changement {change.get('kind')}/{change.get('reason')} · texte {'gardé' if mail.get('text') or mail.get('body') else 'absent ?'} · "
+            f"clés {sorted(k for k, v in mail.items() if v not in (None, [], ''))}")
+
+
 def main():
     if not ADMIN_EMAIL or not ADMIN_PASSWORD:
         fail("PLAZO_ADMIN_EMAIL and PLAZO_ADMIN_PASSWORD are required (repository secrets)")
@@ -92,12 +103,15 @@ def main():
                 print("::warning::Aucun mail « À traiter » ne nomme ce numéro : rien à faire ici.")
                 return
             print(f"{len(waiting)} mail(s) « À traiter » nomment ce numéro.")
+            for mail in waiting:
+                print(describe(mail))
             if not APPLY:
                 print("Aperçu : relancer avec « appliquer » pour relancer leur analyse.")
                 return
             for mail in waiting:
                 result = call("POST", f"/internal/inbound/emails/{mail['id']}/reanalyse", token=view)
                 print(f"Analyse relancée : {result.get('outcome')}")
+                print(describe(result.get("email") or {}))
             return
         if len(bookings) > 1:
             fail(f"{len(bookings)} bookings carry {REFERENCE}: to settle by hand")

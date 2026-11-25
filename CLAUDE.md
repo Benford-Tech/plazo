@@ -472,6 +472,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (« Voiturier - Extérieur ») : `ParsedBooking.handover` `valet`, que `createFromImport` enregistre (réservation voiturier :
      courses au terminal, message de la veille des voituriers, jamais dans les listes de la navette). Premier import en voiturier ;
      une modification n'y touche pas. Fixture `parkmundo-confirmation-valet.txt`, tests `import-comparators.test.ts`, `valet.test.ts`.
+     **Modifications ParkMundo appliquées (25/11/2026, les deux mails « Modification - PM8645081277 - ParkMundo » restés « Non
+     reconnu » en production, aucune réservation créée)** : l'objet « Modification - PM… » sur le corps entier d'une confirmation
+     (`isParkMundoChange`, règle `parkmundo.modification` ; ses seuls mots : `parkmundo.change`, rien d'appliqué) est appliqué comme
+     une modification Onepark (`oneparkChange(…, 'ParkMundo')` → `applyEmailChange` : réservation du numéro, sinon celle saisie sans
+     lui, sinon créée ; source `parkmundo_change`) ; les mails en attente de 7 jours sont relus seuls (`rereadWithNewRules`). Test
+     `inbound-rules.test.ts`.
      Workflow « Corriger une réservation importée » (`reservation-fix.yml`, `.github/scripts/reservation_fix.py`, à la main, aperçu
      par défaut) : en consultation d'administrateur, pose la plaque (jamais à la place d'une autre) et la prise en charge d'une
      réservation retrouvée par son numéro de comparateur, ou relance l'analyse de son mail resté « À traiter » ; aucun nom dans le résumé.

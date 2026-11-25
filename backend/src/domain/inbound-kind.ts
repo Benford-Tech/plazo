@@ -355,6 +355,19 @@ export function isOneparkChange(subject: string, text: string): boolean {
 }
 
 /**
+ * ParkMundo's change notice (25/11/2026, « Modification - PM8645081277 - ParkMundo » left « Non reconnu »): the subject
+ * says « Modification - PM… » and the body is, word for word, a confirmation of the booking as it now is.
+ */
+export function isParkMundoChange(subject: string, text: string): boolean {
+  const importer = EMAIL_IMPORTERS.find(i => i.provider === 'ParkMundo');
+  return (
+    /^\s*(?:(?:tr|fwd?|tr\.)\s*:\s*)*modification\s*[-–:]\s*PM\d{6,}/i.test(subject) &&
+    !!importer?.detect(text) &&
+    /merci pour votre r[ée]servation/i.test(text)
+  );
+}
+
+/**
  * Onepark's cancellation notice to the parking (25/10/2026, « mail pas compris »): « Annulation de la réservation #5900003 »
  * as subject or heading, and « Une réservation Onepark a été annulée sur votre parking » in its own text (a text/plain copy
  * puts *emphasis* around « annulée »: the marks are ignored).
@@ -394,6 +407,10 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
     if (provider === 'Onepark') {
       const sure = !!reference && !changeIn(notes) && isOneparkChange(subject, text);
       return type(provider, 'change', reference, sure ? 'onepark.change' : 'onepark.change-wording', sure);
+    }
+    // 25/11/2026: ParkMundo's own change notice (a whole confirmation under « Modification - PM… ») is applied too.
+    if (provider === 'ParkMundo' && reference && !changeIn(notes) && isParkMundoChange(subject, text)) {
+      return type(provider, 'change', reference, 'parkmundo.modification', true);
     }
     return type(provider, 'change', reference, `${name}.change`, true);
   }
