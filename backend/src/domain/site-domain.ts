@@ -1,3 +1,5 @@
+import { domainToASCII } from 'node:url';
+
 /**
  * The parking's own domain name for its site (22/11/2026, « le nom de domaine du parking »): what the manager types,
  * the DNS records to create at his registrar, and what a DNS answer says about them.
@@ -14,19 +16,28 @@ const FORBIDDEN = [/(^|\.)plazo\.fr$/, /(^|\.)vercel\.app$/, /(^|\.)vercel-dns\.
 const TWO_LABEL_SUFFIXES = new Set(['co.uk', 'org.uk', 'com.br', 'com.au', 'co.nz', 'com.pl', 'com.es', 'com.pt', 'co.at']);
 
 /**
- * « https://www.Parking-Cèdres.fr/accueil » → « www.parking-cedres.fr »? No: an accented name is refused (the manager
- * types the host as his registrar shows it). Scheme, path, port and a final dot are dropped; null when it is not a
- * public host name a parking may use.
+ * « https://WWW.Parking-des-Cedres.fr/accueil » → « www.parking-des-cedres.fr ». Scheme, path, port and a final dot are
+ * dropped; null when it is not a public host name a parking may use. 25/11/2026 (« Ce nom de domaine n'est pas valable »
+ * on a real name): what a copy-paste brings along is dropped too (invisible characters, quotes, brackets, a final comma),
+ * an e-mail address gives its domain, and an accented name is read in its registry form (« parking-cèdres.fr » →
+ * « xn--parking-cdres-4gb.fr »), the one the DNS and the hosting know.
  */
 export function readDomain(value: unknown): string | null {
   if (typeof value !== 'string') return null;
-  const host = value
+  const typed = value
+    .replace(/[\u00a0\u200b-\u200d\u2060\ufeff]/g, ' ')
+    .trim()
+    .replace(/^[<«"'“‘(\[]+|[>»"'”’)\],;]+$/g, '')
     .trim()
     .toLowerCase()
+    .replace(/^mailto:/, '')
     .replace(/^[a-z]+:\/\//, '')
     .replace(/[/?#].*$/, '')
+    .replace(/^[^@\s]*@/, '')
     .replace(/:\d+$/, '')
     .replace(/\.$/, '');
+  // Only a name with letters outside ASCII goes through the IDN conversion (it would also "repair" other typos).
+  const host = /[^\x00-\x7f]/.test(typed) && !/\s/.test(typed) ? domainToASCII(typed) : typed;
   if (!host || host.length > 253) return null;
   const labels = host.split('.');
   if (labels.length < 2 || !labels.every(l => LABEL.test(l))) return null;

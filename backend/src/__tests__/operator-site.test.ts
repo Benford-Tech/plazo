@@ -339,6 +339,10 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
   it('lit un nom de domaine, donne l’enregistrement à créer et juge la réponse du DNS', () => {
     expect(readDomain(' https://WWW.Parking-des-Cedres.fr/accueil?x=1 ')).toBe('www.parking-des-cedres.fr');
     expect(readDomain('parking-des-cedres.fr.')).toBe('parking-des-cedres.fr');
+    // 25/11/2026: what a copy-paste brings along, an e-mail address, an accented name.
+    expect(readDomain('\u200b« www.parking-des-cedres.fr »,\u00a0')).toBe('www.parking-des-cedres.fr');
+    expect(readDomain('contact@parking-des-cedres.fr')).toBe('parking-des-cedres.fr');
+    expect(readDomain('Parking-Cèdres.fr')).toBe('xn--parking-cdres-4gb.fr');
     for (const bad of [
       'cedres',
       'www.plazo.fr',
@@ -347,7 +351,7 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
       '192.168.1.1',
       'parking des cedres.fr',
       '-x.fr',
-      'parking-cèdres.fr',
+      'parking cèdres.fr',
       42,
     ]) {
       expect(readDomain(bad)).toBeNull();
