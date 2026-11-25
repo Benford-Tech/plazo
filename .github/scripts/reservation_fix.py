@@ -21,6 +21,7 @@ OPERATOR = os.environ.get("OPERATOR", "").strip()
 REFERENCE = os.environ.get("REFERENCE", "").strip().upper()
 PLATE = os.environ.get("PLATE", "").strip().upper()
 HANDOVER = os.environ.get("HANDOVER", "").strip().lower()
+RETURN_AT = os.environ.get("RETURN_AT", "").strip()  # the parking's local time, « 2026-12-06T19:10 »
 APPLY = os.environ.get("APPLY", "").strip().lower() == "true"
 
 
@@ -56,7 +57,9 @@ def call(method, path, body=None, token=None):
 
 def state(booking):
     return (f"{booking.get('reference')} · {booking.get('status')} · prise en charge {booking.get('handover')} · "
-            f"plaque {'présente' if booking.get('plate') else 'absente'}")
+            f"plaque {'présente' if booking.get('plate') else 'absente'} · arrivée {booking.get('arrivalAt')} · "
+            f"retour {booking.get('returnAt')} · prix {booking.get('priceCents')} · vols {booking.get('departureFlight')} / "
+            f"{booking.get('returnFlight')} · passagers {booking.get('passengers')}")
 
 
 def describe(mail):
@@ -93,7 +96,7 @@ def main():
         view = call("POST", f"/internal/platform/operators/{operator['id']}/view-as", token=admin)["access"]["token"]
 
         found = call("GET", f"/internal/reservations?q={urllib.parse.quote(REFERENCE)}", token=view)
-        bookings = [b for b in found.get("data") or [] if (b.get("externalReference") or "").upper() == REFERENCE]
+        bookings = [b for b in found.get("docs") or found.get("data") or [] if (b.get("externalReference") or "").upper() == REFERENCE]
         if not bookings:
             print(f"Aucune réservation ne porte le numéro {REFERENCE}.")
             inbox = call("GET", "/internal/inbound/emails?view=todo", token=view)
@@ -126,6 +129,8 @@ def main():
             patch["plate"] = PLATE
         elif PLATE and (booking.get("plate") or "").replace("-", "") != PLATE.replace("-", ""):
             print("::warning::La réservation a déjà une autre plaque : elle n'est pas remplacée.")
+        if RETURN_AT:
+            patch["returnAt"] = RETURN_AT
         if not patch:
             print("Rien à changer.")
             return

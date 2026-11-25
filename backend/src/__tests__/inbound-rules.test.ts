@@ -346,6 +346,24 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     await post([{ ...change, Uuid: ['u2'] }]);
     expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+
+    // An older notice (another return hour) analysed again after the newer one never puts the older state back.
+    const older = item(op.address, fixture('parkmundo-confirmation-valet.txt').replace(/06\/12\/2026 19:10/g, '06/12/2026 17:00'), {
+      From: { Name: 'ParkMundo', Address: 'info@parkmundo.fr' },
+      Subject: 'Modification - PM8645081277 -  ParkMundo',
+      Uuid: ['u0'],
+    });
+    await post([older]);
+    const olderRow = await latest(op.operator.id);
+    await prisma.inboundEmail.update({
+      where: { id: olderRow.id },
+      data: { receivedAt: new Date(Date.now() - 4 * 86_400_000), status: 'unrecognised', reservationId: null, analysedAt: null },
+    });
+    await prisma.reservation.update({ where: { id: booking.id }, data: { returnAt: booking.returnAt } });
+    const manager = await api().post(`/api/internal/inbound/emails/${olderRow.id}/reanalyse`).set(auth(op.token));
+    expect(manager.status).toBe(200);
+    expect(manager.body.outcome).toBe('duplicate');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).returnAt).toEqual(booking.returnAt);
   });
 
   it("l'avis de modification Onepark (09/11/2026) est appliqué à la réservation de ce numéro", async () => {

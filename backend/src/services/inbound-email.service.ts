@@ -906,7 +906,31 @@ export class InboundEmailService {
       logger.info(`${label}: change of a booking Plazo does not have, cancelled by another email: left to the staff`);
       return { ...withPage, status: 'unrecognised', missing: [], reservationId: null };
     }
+    // 25/11/2026: two notices of the same booking analysed again out of order (the older one last) put the older
+    // state back: a notice older than one already applied to the booking is only linked to it.
+    if (known && (await this.newerChangeApplied(input, known.id))) {
+      logger.info(`${label}: a later notice was already applied to the booking: this one is only linked`);
+      return { ...withPage, status: 'duplicate', missing: [], reservationId: known.id };
+    }
     return this.applyEmailChange(input, ref, booking, withPage, false, label);
+  }
+
+  /** Whether an email received after this one, a change too, was already applied to the booking. */
+  private async newerChangeApplied(input: AnalysisInput, reservationId: string): Promise<boolean> {
+    const mine = input.emailId ? await prisma.inboundEmail.findUnique({ where: { id: input.emailId }, select: { receivedAt: true } }) : null;
+    if (!mine) return false;
+    const newer = await prisma.inboundEmail.findFirst({
+      where: {
+        operatorId: input.operatorId,
+        id: { not: input.emailId },
+        reservationId,
+        status: { in: ['imported', 'duplicate'] },
+        receivedAt: { gt: mine.receivedAt },
+        reading: { path: ['kind'], equals: 'modification' },
+      },
+      select: { id: true },
+    });
+    return !!newer;
   }
 
   /** Whether another email of the operator, these 90 days, is a cancellation naming this comparator number. */
