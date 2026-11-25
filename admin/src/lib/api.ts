@@ -97,7 +97,9 @@ import type {
   DemoLink,
   MorningEmailPreference,
   DemoRole,
+  CallOutcome,
   Prospect,
+  ProspectCall,
   ProspectImportReport,
   ProspectInput,
   ProspectingSettings,
@@ -1710,6 +1712,14 @@ export const adminApi = {
       `/internal/platform/prospects/${encodeURIComponent(id)}/status`,
       { method: "POST", body: json({ status }) },
     ),
+  // 25/11/2026 (« A · File d'appels »): the result of a phone call, and the prospect's last calls.
+  logProspectCall: (id: string, input: { outcome: CallOutcome; note?: string | null; callbackAt?: string | null }) =>
+    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}/calls`, {
+      method: "POST",
+      body: json(input),
+    }),
+  getProspectCalls: (id: string) =>
+    apiRequest<{ data: ProspectCall[] }>(`/internal/platform/prospects/${encodeURIComponent(id)}/calls`),
   // 17/11/2026: several ticked prospects at once, and the note on why.
   setProspectStatuses: (ids: string[], status: "interested" | "not_interested") =>
     apiRequest<{ updated: number; skipped: number }>("/internal/platform/prospects/status", {

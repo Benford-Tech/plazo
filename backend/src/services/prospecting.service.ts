@@ -1,3 +1,4 @@
+import { callCounters, readCall } from '@/domain/prospect-calls';
 import { ProspectDemoService } from './prospect-demo.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
@@ -292,6 +293,15 @@ export class ProspectingService {
       failedAttempts: p.failedAttempts,
       lastError: p.failedAttempts > 0 ? (errors.get(p.id) ?? null) : null,
       lastSmsAt: p.lastSmsAt?.toISOString() ?? null,
+      // 25/11/2026 (« A · File d'appels »): what the calls' queue reads.
+      calls: {
+        count: p.callCount,
+        missed: p.missedCalls,
+        lastAt: p.lastCallAt?.toISOString() ?? null,
+        lastOutcome: p.lastCallOutcome,
+        callbackAt: p.callbackAt?.toISOString() ?? null,
+        wrongNumber: p.phoneWrong,
+      },
       createdAt: p.createdAt.toISOString(),
     };
   }
@@ -446,7 +456,12 @@ export class ProspectingService {
       if (current.status === 'unsubscribed') throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
       if (value.email) await this.assertAddressFree(value.email, id);
     }
-    const prospect = await prisma.prospect.update({ where: { id }, data: value });
+    // A new number is worth calling again.
+    const phoneChanged = value.phone !== undefined && value.phone !== current.phone;
+    const prospect = await prisma.prospect.update({
+      where: { id },
+      data: { ...value, ...(phoneChanged ? { phoneWrong: false, missedCalls: 0 } : {}) },
+    });
     await this.record(actor, 'prospect.updated', 'prospect', id, { fields: Object.keys(value) });
     return this.viewOf(prospect);
   }
@@ -595,6 +610,55 @@ export class ProspectingService {
     const prospect = await prisma.prospect.update({ where: { id }, data: { statusNote } });
     await this.record(actor, 'prospect.note_set', 'prospect', id, { removed: statusNote === null });
     return this.viewOf(prospect);
+  }
+
+  /**
+   * The result of a phone call (25/11/2026, « A · File d'appels »): kept in the prospect's calls; « Intéressé » and « Pas
+   * intéressé » mark the prospect as the thumbs do (follow-ups stopped, the note becomes its note), « Rappeler le… » sets
+   * when it comes back at the head of the queue, « Mauvais numéro » takes it out until its number changes.
+   */
+  public async logCall(actor: AuthenticatedStaff, id: string, input: { outcome?: unknown; note?: unknown; callbackAt?: unknown }, now = new Date()) {
+    const checked = readCall(input ?? {}, now);
+    if (!checked.ok) throw new ValidationException(checked.fields);
+    const call = checked.value;
+    const current = await this.getOrThrow(id);
+    if (current.status === 'unsubscribed') throw new HttpException(httpStatus.CONFLICT, 'Unsubscribed prospect', 'unsubscribed');
+    if (!current.phone) throw new HttpException(httpStatus.CONFLICT, 'No phone number', 'no_phone');
+    const marks = call.outcome === 'interested' || call.outcome === 'not_interested';
+    const [, prospect] = await prisma.$transaction([
+      prisma.prospectCall.create({
+        data: { prospectId: id, outcome: call.outcome, note: call.note, callbackAt: call.callbackAt, calledById: actor.id },
+      }),
+      prisma.prospect.update({
+        where: { id },
+        data: {
+          ...(marks ? statusChange(current, call.outcome as SettableStatus, now) : {}),
+          ...(marks && call.note ? { statusNote: call.note } : {}),
+          ...callCounters(current, call, now),
+        },
+      }),
+    ]);
+    await this.record(actor, 'prospect.call_logged', 'prospect', id, { outcome: call.outcome });
+    return this.viewOf(prospect);
+  }
+
+  /** The prospect's last calls, the most recent first (the sheet of the queue). */
+  public async calls(id: string) {
+    await this.getOrThrow(id);
+    const rows = await prisma.prospectCall.findMany({ where: { prospectId: id }, orderBy: { createdAt: 'desc' }, take: 20 });
+    const staff = await prisma.staff.findMany({
+      where: { id: { in: [...new Set(rows.map(r => r.calledById).filter((v): v is string => !!v))] } },
+      select: { id: true, firstName: true },
+    });
+    const names = new Map(staff.map(m => [m.id, m.firstName]));
+    return rows.map(r => ({
+      id: r.id,
+      outcome: r.outcome,
+      note: r.note,
+      callbackAt: r.callbackAt?.toISOString() ?? null,
+      at: r.createdAt.toISOString(),
+      by: r.calledById ? (names.get(r.calledById) ?? null) : null,
+    }));
   }
 
   /** « Arrêter les relances »: nothing more is sent; the state stays. */

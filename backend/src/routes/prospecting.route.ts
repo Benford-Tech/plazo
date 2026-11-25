@@ -166,6 +166,22 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *     responses:
  *       200: { description: "{ sentTo }" }
  *       409: { description: "no_test_phone, sms_failed, prospecting_sms_unavailable" }
+ * /internal/platform/prospects/{id}/calls:
+ *   get:
+ *     summary: The prospect's last 20 phone calls, the most recent first (outcome, note, callbackAt, at, by)
+ *     tags: [Prospection]
+ *   post:
+ *     summary: « A · File d'appels » (25/11/2026) — the result of a phone call; interested / not_interested mark the prospect and stop the follow-ups, callback sets when to call back, wrong_number takes it out of the queue until its number changes
+ *     tags: [Prospection]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [outcome], properties: { outcome: { type: string, enum: [no_answer, voicemail, callback, interested, not_interested, wrong_number] }, note: { type: string, maxLength: 300 }, callbackAt: { type: string, format: date-time } } }
+ *     responses:
+ *       200: { description: "{ data: the prospect, with calls { count, missed, lastAt, lastOutcome, callbackAt, wrongNumber } }" }
+ *       400: { description: "outcome: invalid; note: invalid, too_long; callbackAt: required, past, too_far" }
+ *       409: { description: "unsubscribed, no_phone" }
  * /internal/platform/prospects/settings:
  *   get:
  *     summary: The sequence (3 steps), the daily cap, the sender, the Reply-To and the sending window
@@ -213,6 +229,8 @@ export class ProspectingRoute implements Routes {
     this.router.delete(`${base}/:id`, PlatformAdminMiddleware(), this.prospecting.remove);
     this.router.post(`${base}/:id/status`, PlatformAdminMiddleware(), this.prospecting.setStatus);
     this.router.put(`${base}/:id/note`, PlatformAdminMiddleware(), this.prospecting.setNote);
+    this.router.get(`${base}/:id/calls`, PlatformAdminMiddleware(), this.prospecting.calls);
+    this.router.post(`${base}/:id/calls`, PlatformAdminMiddleware(), this.prospecting.logCall);
     this.router.post(`${base}/:id/stop`, PlatformAdminMiddleware(), this.prospecting.stop);
     this.router.post(`${base}/:id/resend`, PlatformAdminMiddleware(), this.prospecting.resend);
     this.router.get('/public/prospecting/unsubscribe/:token', this.prospecting.unsubscribePage);

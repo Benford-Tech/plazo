@@ -1884,6 +1884,14 @@ model Prospect {
   failedAttempts   Int            @default(0)
   // 19/11/2026 (« pouvoir envoyer un sms de prospection », choix C): the last prospecting SMS that left.
   lastSmsAt        DateTime?
+  // 25/11/2026 (« A · File d'appels »): the calls made to the prospect. `missedCalls`: calls in a row nobody answered
+  // (3: out of the queue); `callbackAt`: when to call back; `phoneWrong`: the number is not theirs (until it changes).
+  lastCallAt       DateTime?
+  lastCallOutcome  String?
+  callCount        Int            @default(0)
+  missedCalls      Int            @default(0)
+  callbackAt       DateTime?
+  phoneWrong       Boolean        @default(false)
   // The platform admin who enrolled the prospect: the replies go to them unless PROSPECTING_REPLY_TO is set.
   enrolledById     String?
   createdAt        DateTime       @default(now())
@@ -1891,6 +1899,7 @@ model Prospect {
   demoLink         DemoLink?
 
   messages ProspectMessage[]
+  calls    ProspectCall[]
 
   @@index([status])
   @@index([nextSendAt])
@@ -1917,6 +1926,23 @@ model ProspectMessage {
   @@index([sentAt])
   @@index([channel, sentAt])
   @@map("prospect_messages")
+}
+
+// One phone call to a prospect (25/11/2026): how it went, the caller's note, when to call back.
+model ProspectCall {
+  id         String    @id @default(cuid())
+  prospectId String
+  // no_answer, voicemail, callback, interested, not_interested, wrong_number (CHECK in the migration).
+  outcome    String
+  note       String?
+  callbackAt DateTime?
+  calledById String?
+  createdAt  DateTime  @default(now())
+
+  prospect Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([prospectId, createdAt])
+  @@map("prospect_calls")
 }
 
 // The sequence (3 steps: subject, body, delay, on/off) and the daily cap. One row (id "default"); none: Plazo's texts.

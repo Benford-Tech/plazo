@@ -65,6 +65,14 @@ export class ProspectingController {
   });
 
   /** POST /internal/platform/prospects/status */
+  public logCall = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.prospecting.logCall(req.staff, req.params.id as string, req.body ?? {}) });
+  });
+
+  public calls = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.prospecting.calls(req.params.id as string) });
+  });
+
   public setStatuses = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.prospecting.setStatuses(req.staff, req.body?.ids, req.body?.status));
   });

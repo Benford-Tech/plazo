@@ -2131,9 +2131,33 @@ export interface Prospect {
   lastError: string | null;
   /** 19/11/2026: the last prospecting SMS that left. */
   lastSmsAt?: string | null;
+  /** 25/11/2026 (« A · File d'appels »): the calls made to the prospect. */
+  calls?: ProspectCalls;
   createdAt: string;
   /** 21/10/2026 (C): the prospect's demo link, its opens and its expiry; null until « Créer un lien de démo ». */
   demo?: DemoLink | null;
+}
+
+export const CALL_OUTCOMES = ["no_answer", "voicemail", "callback", "interested", "not_interested", "wrong_number"] as const;
+export type CallOutcome = (typeof CALL_OUTCOMES)[number];
+
+export interface ProspectCalls {
+  count: number;
+  /** Calls in a row nobody answered (3: out of the queue). */
+  missed: number;
+  lastAt: string | null;
+  lastOutcome: CallOutcome | null;
+  callbackAt: string | null;
+  wrongNumber: boolean;
+}
+
+export interface ProspectCall {
+  id: string;
+  outcome: CallOutcome;
+  note: string | null;
+  callbackAt: string | null;
+  at: string;
+  by: string | null;
 }
 
 export interface DemoLink {
