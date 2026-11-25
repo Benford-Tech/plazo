@@ -1805,7 +1805,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - **Invitation WhatsApp à installer Plazo, message 1 (23/11/2026, « envoyer des messages WhatsApp pour inviter à utiliser plazo
      lorsqu'on ne connaît pas le mail », maquettes https://claude.ai/artifact/9YmGUNcKp9ajzCnhjYxpag, « la 1, envoyé à la réservation »)** :
      au passage de 15 minutes (`remind-tomorrow` › `invite`, `TravellerInviteService.run`, 40 par passage), une réservation hors Plazo,
-     « Attendu », dépôt à venir, sans e-mail du voyageur (`travellerEmail` nul ; les autres ont le mail d'accueil, `has_email`) reçoit
+     « Attendu », dépôt à venir, avec ou sans e-mail du voyageur (25/11/2026, « envoi aussi les sms de téléchargement de l'application » : celles qui ont un e-mail ont aussi le mail d'accueil ; migration `app_invite_with_email` qui rend au passage les réservations à venir écartées en `has_email`) reçoit
      par WhatsApp le modèle Marketing `WHATSAPP_INVITE_TEMPLATE` (rien ne part tant que la variable est vide ; README, WhatsApp étape 8) :
      bandeau `site/public/whatsapp/plazo-invitation.jpg`, corps `INVITE_BODY` de `domain/traveller-invite.ts` ({{1}} prénom, {{2}} parking,
      {{3}} séjour « du 20 au 27 novembre », `stayLabel`), pied « Répondez STOP pour ne plus en recevoir. », bouton « Installer Plazo » vers

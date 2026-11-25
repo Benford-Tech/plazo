@@ -3,7 +3,6 @@ import { prospectingSettings, SECRET_KEY, whatsappInviteTemplate } from '@/confi
 import prisma from '@/database';
 import { appLinkCode } from '@/domain/app-link';
 import { smsRecipient } from '@/domain/phone';
-import { travellerEmail } from '@/domain/traveller-email';
 import {
   INVITE_KIND,
   INVITE_REPEAT_MS,
@@ -114,8 +113,7 @@ export class TravellerInviteService {
     meta: { template: string },
     now: Date,
   ): Promise<InviteOutcome | 'not_ready'> {
-    // The welcome email is theirs.
-    if (travellerEmail(r.customerEmail)) return 'has_email';
+    // 25/11/2026: travellers with an email get the invite too (on top of the welcome email).
     if (await isSilentOperator(r.operatorId)) return 'off';
     const recipient = smsRecipient(r.customerPhone ?? '');
     if (!recipient) return 'no_phone';
