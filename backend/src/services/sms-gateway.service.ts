@@ -73,7 +73,11 @@ const PROGRESS: GatewayState[] = ['Pending', 'Processed', 'Sent', 'Delivered'];
  */
 export function messageState(data: any): GatewayState {
   const seen: GatewayState[] = [parseState(data?.state)];
-  if (Array.isArray(data?.recipients)) for (const r of data.recipients) seen.push(parseState(r?.state));
+  const recipients: GatewayState[] = Array.isArray(data?.recipients) ? data.recipients.map((r: any) => parseState(r?.state)) : [];
+  seen.push(...recipients);
+  // 25/11/2026 (« les sms n'ont pas été reçu », shown « envoyé »): a recipient Failed after the phone sent it is the
+  // network refusing delivery; it wins over « Sent », never over « Delivered ».
+  if (recipients.includes('Failed') && !recipients.includes('Delivered') && parseState(data?.state) !== 'Delivered') return 'Failed';
   if (data?.states && typeof data.states === 'object') for (const key of Object.keys(data.states)) seen.push(parseState(key));
   const best = seen.reduce((a, b) => (PROGRESS.indexOf(b) > PROGRESS.indexOf(a) ? b : a), 'Pending' as GatewayState);
   if (best === 'Sent' || best === 'Delivered') return best;

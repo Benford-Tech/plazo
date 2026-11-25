@@ -634,6 +634,7 @@
     "sms_encryption_key_missing": "Text message encryption isn't configured on the server.",
     "sms_encryption_key_invalid": "The text message encryption key on the server is invalid.",
     "sms_gateway_failed": "The phone couldn't send the text.",
+    "sms_not_delivered": "The phone sent the SMS, but the network did not deliver it.",
     "sms_gateway_offline": "The phone is offline.",
     "sms_body_unavailable": "The text of the message is no longer available.",
     "invalid_key_hook": "Hook: 12 characters max, letters, numbers, spaces or hyphens.",

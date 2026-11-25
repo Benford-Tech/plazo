@@ -367,6 +367,44 @@ describe('envoi par le téléphone du parking', () => {
     expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('delivered');
   });
 
+  it('un SMS envoyé dont l’accusé de réception s’est perdu passe « remis » quand la passerelle le dit (25/11/2026)', async () => {
+    const op = await linkedOperator();
+    fetchMock.mockImplementation(async () => json({ id: 'gw-40', state: 'Sent' }, 202));
+    await sms.sendTravellerSms(op.operator.id, { reservationId: null, kind: 'test', to: '0612345678', text: 'v' });
+    const row = await prisma.smsOutbox.findFirstOrThrow({ where: { providerMessageId: 'gw-40' } });
+    await prisma.smsOutbox.update({ where: { id: row.id }, data: { status: 'sent', createdAt: hoursAgo(1) } });
+    const before = await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } });
+
+    // Still only sent at the gateway: nothing changes.
+    fetchMock.mockImplementation(async () => json({ id: 'gw-40', state: 'Sent' }));
+    expect(await sms.refreshQueue(op.operator.id, { force: true })).toEqual({ checked: 0, sent: 0, abandoned: 0 });
+    expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('sent');
+
+    // The network gave it: « remis », counted once (it was already sent).
+    fetchMock.mockImplementation(async () => json({ id: 'gw-40', state: 'Sent', recipients: [{ state: 'Delivered' }] }));
+    expect(await sms.refreshAll()).toMatchObject({ operators: 1, sent: 0 });
+    expect((await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('delivered');
+    expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).monthSent).toBe(before.monthSent);
+
+    // The network refused it: « non remis », counted failed, never resent on its own.
+    await prisma.smsOutbox.update({ where: { id: row.id }, data: { status: 'sent' } });
+    fetchMock.mockImplementation(async () =>
+      json({ id: 'gw-40', state: 'Sent', recipients: [{ state: 'Failed', error: 'RESULT_ERROR_GENERIC_FAILURE' }] }),
+    );
+    await sms.refreshQueue(op.operator.id, { force: true });
+    expect(await prisma.smsOutbox.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({
+      status: 'abandoned',
+      lastError: 'sms_not_delivered',
+    });
+    expect((await prisma.operatorSmsSettings.findUniqueOrThrow({ where: { operatorId: op.operator.id } })).monthFailed).toBe(before.monthFailed + 1);
+
+    // Older than a day: no longer read.
+    fetchMock.mockClear();
+    await prisma.smsOutbox.update({ where: { id: row.id }, data: { status: 'sent', createdAt: hoursAgo(25) } });
+    await sms.refreshQueue(op.operator.id, { force: true });
+    expect(calls(/\/messages\/gw-40$/)).toHaveLength(0);
+  });
+
   it('l’appli SMS prévient Plazo : adresse secrète inscrite à la liaison, état relu chez la passerelle (09/11/2026)', async () => {
     sms.siteUrl = 'https://www.plazo.test';
     try {

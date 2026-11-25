@@ -46,6 +46,13 @@ const MAX_ATTEMPTS = 6;
 /** Abandoned or failed SMS are read again at the gateway for this long (09/11/2026). */
 const RECONCILE_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_RECONCILE_PER_RUN = 15;
+/**
+ * 25/11/2026 (« SMS envoyé · pas de confirmation » next to « remis » ones of the same evening): an SMS the phone sent
+ * but whose delivery report never reached Plazo (the `sms:delivered` webhook lost, or no pass at that moment) is read
+ * again at the gateway for a day, from 10 minutes after it was handed over, so its « remis » shows when the network gave it.
+ */
+const DELIVERY_RECHECK_AFTER_MS = 10 * 60 * 1000;
+const DELIVERY_RECHECK_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 // 13/11/2026: 'staff_message', a message the team writes from Plazo Pro (« Écrire au client »).
 // 24/11/2026: 'app_invite', the invitation to install the app, from the parking's own phone.
@@ -420,7 +427,8 @@ export class SmsService {
 
   /**
    * The SMS about to be abandoned (queued more than 2 h ago with a gateway id) and those abandoned or failed in the
-   * last 48 h are read again at the gateway: one the phone did send becomes « sent » (the month counts follow).
+   * last 48 h are read again at the gateway: one the phone did send becomes « sent » (the month counts follow). Those
+   * sent in the last day without a delivery report are read again too: a delivered one becomes « delivered ».
    */
   private async reconcile(settings: OperatorSmsSettings, now: Date, result: { sent: number }): Promise<void> {
     const rows = await prisma.smsOutbox.findMany({
@@ -436,12 +444,28 @@ export class SmsService {
       orderBy: { createdAt: 'desc' },
       take: MAX_RECONCILE_PER_RUN,
     });
-    for (const row of rows) {
+    // Sent without a delivery report yet: their own budget, so that they never crowd out the ones about to be abandoned.
+    const unconfirmed = await prisma.smsOutbox.findMany({
+      where: {
+        operatorId: settings.operatorId,
+        provider: 'gateway',
+        providerMessageId: { not: null },
+        status: 'sent',
+        createdAt: { gte: new Date(now.getTime() - DELIVERY_RECHECK_WINDOW_MS), lt: new Date(now.getTime() - DELIVERY_RECHECK_AFTER_MS) },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: MAX_RECONCILE_PER_RUN,
+    });
+    for (const row of [...rows, ...unconfirmed]) {
       let state: GatewayState;
       try {
         state = (await this.gateway.state(this.credentials(settings), row.providerMessageId!)).state;
       } catch {
         return; // the gateway does not answer: nothing is changed, the next pass tries again
+      }
+      if (state === 'Failed' && row.status === 'sent') {
+        await this.settle(settings, row, state);
+        continue;
       }
       if (state !== 'Sent' && state !== 'Delivered') continue;
       if ((await this.settle(settings, row, state)) === 'sent') result.sent += 1;
@@ -465,6 +489,7 @@ export class SmsService {
       logger.info(`[SMS] ${row.kind} outbox ${row.id} found ${state} at the gateway (was ${row.status})`);
       return 'sent';
     }
+    if (status === 'failed' && row.status === 'sent') return (await this.markUndelivered(settings, row)) ? 'failed' : null;
     if (status === 'failed' && row.status === 'queued') {
       const { count } = await prisma.smsOutbox.updateMany({
         where: { id: row.id, status: 'queued' },
@@ -475,6 +500,25 @@ export class SmsService {
       return 'failed';
     }
     return null;
+  }
+
+  /**
+   * 25/11/2026: the phone sent the SMS but the network did not deliver it: the row is abandoned (never resent on its
+   * own: the same refusal would come back), counted failed instead of sent, with `sms_not_delivered`.
+   */
+  private async markUndelivered(settings: OperatorSmsSettings, row: SmsOutbox): Promise<boolean> {
+    const { count } = await prisma.smsOutbox.updateMany({
+      where: { id: row.id, status: 'sent' },
+      data: { status: 'abandoned', lastError: 'sms_not_delivered' },
+    });
+    if (!count) return false;
+    await prisma.operatorSmsSettings.updateMany({ where: { id: settings.id, monthSent: { gt: 0 } }, data: { monthSent: { decrement: 1 } } });
+    await prisma.operatorSmsSettings.update({
+      where: { id: settings.id },
+      data: { monthFailed: { increment: 1 }, lastError: 'sms_not_delivered', lastErrorAt: new Date() },
+    });
+    logger.warn(`[SMS] ${row.kind} outbox ${row.id} not delivered by the network`);
+    return true;
   }
 
   /** The site's public address (the API is under /api); a property so that tests can set it. */
@@ -689,6 +733,12 @@ export class SmsService {
           { status: { in: ['queued', 'failed'] } },
           // Recently abandoned: read again at the gateway (reconcile), in case the phone did send them.
           { status: 'abandoned', providerMessageId: { not: null }, createdAt: { gte: new Date(Date.now() - RECONCILE_WINDOW_MS) } },
+          // Sent without a delivery report yet (25/11/2026): read again in case the report was lost.
+          {
+            status: 'sent',
+            providerMessageId: { not: null },
+            createdAt: { gte: new Date(Date.now() - DELIVERY_RECHECK_WINDOW_MS), lt: new Date(Date.now() - DELIVERY_RECHECK_AFTER_MS) },
+          },
         ],
       },
       distinct: ['operatorId'],

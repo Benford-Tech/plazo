@@ -635,6 +635,7 @@
     "sms_encryption_key_missing": "A encriptação dos SMS não está configurada no servidor.",
     "sms_encryption_key_invalid": "A chave de encriptação dos SMS é inválida no servidor.",
     "sms_gateway_failed": "O telemóvel não conseguiu enviar o SMS.",
+    "sms_not_delivered": "O telefone enviou o SMS, mas a rede não o entregou.",
     "sms_gateway_offline": "O telemóvel está offline.",
     "sms_body_unavailable": "O texto do SMS já não está disponível.",
     "invalid_key_hook": "Gancho: 12 caracteres no máximo, letras, algarismos, espaço ou hífen.",
