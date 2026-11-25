@@ -1,0 +1,40 @@
+name: Export chiffré des prospects
+
+# Exports the prospects of Plateforme › Prospection to prepare the calls (25/11/2026). The repository is public, so the
+# list is never printed and the artifact is encrypted with the RSA public key given (only its private key reads it);
+# kept one day. Read-only. Secrets: PLAZO_ADMIN_EMAIL / PLAZO_ADMIN_PASSWORD. By hand only (.github/scripts/prospects_export.py).
+on:
+  workflow_dispatch:
+    inputs:
+      cle_publique:
+        description: "Clé publique RSA (PEM) qui chiffre l'export"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prospects-import
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Export
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          PUBLIC_KEY: ${{ inputs.cle_publique }}
+          OUT_DIR: export
+        run: python3 .github/scripts/prospects_export.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospects-chiffres
+          path: export/
+          retention-days: 1
