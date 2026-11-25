@@ -87,6 +87,10 @@ export class OperatorSiteController {
     res.status(httpStatus.ACCEPTED).json(await this.service.contact(req.params.slug as string, req.body, key));
   });
 
+  public listOnline = catchAsync(async (_req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=300').json({ sites: await this.service.listOnline() });
+  });
+
   public publicSite = catchAsync(async (req: Request, res: Response) => {
     const key = typeof req.query.apercu === 'string' ? req.query.apercu : undefined;
     const site = await this.service.publicSite(req.params.slug as string, key);

@@ -417,6 +417,10 @@ describe('le nom de domaine du parking (22/11/2026)', () => {
 
     expect((await api().get('/api/public/site-domains/www.parking-des-cedres.fr')).body).toEqual({ slug: 'cedres', pages: [] });
     expect((await api().get('/api/public/sites/cedres')).body.domain).toBe('www.parking-des-cedres.fr');
+    // 25/11/2026: the sitemaps list the sites online, this one under its own domain.
+    expect((await api().get('/api/public/sites')).body.sites).toEqual([
+      expect.objectContaining({ slug: 'cedres', domain: 'www.parking-des-cedres.fr', pages: [] }),
+    ]);
 
     // Another parking cannot take it; removing it closes the host.
     const other = await parkingWithListing('Autre Parking', 'autre');

@@ -206,6 +206,10 @@ function query(params: Record<string, string | null | undefined>): string {
 
 export const api = {
   /** Airport page: published parkings with their lowest package price. Shared by every visitor, deduplicated per request. */
+  /** The parkings' sites online (25/11/2026), for the sitemaps: own domain when it serves the site, page names. */
+  onlineSites: cache(() =>
+    sharedRead<{ sites: { slug: string; domain: string | null; pages: string[]; updatedAt: string }[] }>(`/api/public/sites`),
+  ),
   airport: cache((slug: string) =>
     sharedRead<AirportResponse>(`/api/public/airports/${seg(slug)}`),
   ),

@@ -69,6 +69,7 @@ export class OperatorSiteRoute implements Routes {
       this.router.delete(`/internal/site/${kind}-photo`, StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.removePhoto(kind));
       this.router.get(`/public/sites/:slug/${kind}/:file`, this.controller.photo(kind));
     }
+    this.router.get('/public/sites', this.controller.listOnline);
     this.router.get('/public/sites/:slug/logo', this.controller.logo);
     this.router.get('/public/sites/:slug/icon', this.controller.icon);
     this.router.get('/public/sites/:slug', this.controller.publicSite);
