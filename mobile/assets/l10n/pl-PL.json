@@ -636,6 +636,7 @@
     "sms_encryption_key_missing": "Szyfrowanie SMS nie jest skonfigurowane na serwerze.",
     "sms_encryption_key_invalid": "Klucz szyfrowania SMS na serwerze jest nieprawidłowy.",
     "sms_gateway_failed": "Telefon nie zdołał wysłać SMS-a.",
+    "sms_not_delivered": "Telefon wysłał SMS, ale sieć go nie dostarczyła.",
     "sms_gateway_offline": "Telefon jest offline.",
     "sms_body_unavailable": "Treść SMS-a nie jest już dostępna.",
     "invalid_key_hook": "Hak: maks. 12 znaków, litery, cyfry, spacja lub łącznik.",

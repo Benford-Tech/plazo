@@ -636,6 +636,7 @@
     "sms_encryption_key_missing": "Шифрування SMS не налаштовано на сервері.",
     "sms_encryption_key_invalid": "Ключ шифрування SMS на сервері недійсний.",
     "sms_gateway_failed": "Телефон не зміг надіслати SMS.",
+    "sms_not_delivered": "Телефон надіслав SMS, але мережа його не доставила.",
     "sms_gateway_offline": "Телефон не в мережі.",
     "sms_body_unavailable": "Текст SMS більше недоступний.",
     "invalid_key_hook": "Гачок: до 12 символів, літери, цифри, пробіл або дефіс.",

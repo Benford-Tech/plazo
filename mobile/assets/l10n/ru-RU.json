@@ -636,6 +636,7 @@
     "sms_encryption_key_missing": "Шифрование SMS не настроено на сервере.",
     "sms_encryption_key_invalid": "Ключ шифрования SMS на сервере недействителен.",
     "sms_gateway_failed": "Телефону не удалось отправить SMS.",
+    "sms_not_delivered": "Телефон отправил SMS, но сеть его не доставила.",
     "sms_gateway_offline": "Телефон не в сети.",
     "sms_body_unavailable": "Текст SMS больше недоступен.",
     "invalid_key_hook": "Крючок: не более 12 символов, буквы, цифры, пробел или дефис.",

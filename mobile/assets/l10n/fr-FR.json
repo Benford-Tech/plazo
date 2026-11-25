@@ -634,6 +634,7 @@
     "sms_encryption_key_missing": "Le chiffrement des SMS n'est pas configuré sur le serveur.",
     "sms_encryption_key_invalid": "La clé de chiffrement des SMS est invalide sur le serveur.",
     "sms_gateway_failed": "Le téléphone n'a pas pu envoyer le SMS.",
+    "sms_not_delivered": "Le téléphone a envoyé le SMS, mais le réseau ne l'a pas remis.",
     "sms_gateway_offline": "Le téléphone est hors ligne.",
     "sms_body_unavailable": "Le texte du SMS n'est plus disponible.",
     "invalid_key_hook": "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",

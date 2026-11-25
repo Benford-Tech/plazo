@@ -251,6 +251,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      SMS envoyé ou remis devient « Envoyé » et ne compte plus en échec du mois ; l'état est le plus avancé entre `state`, celui de chaque
      destinataire et les clés de `states` (`messageState` de `sms-gateway.service.ts`) ; `refreshAll` passe aussi chez les loueurs qui n'ont
      que des abandons récents. Test `sms.test.ts`.
+     **Accusés perdus et SMS non remis (25/11/2026, « SMS envoyé · pas de confirmation » puis « les sms n'ont pas été reçu »)** : un SMS
+     « Envoyé » sans accusé est relu chez la passerelle de 10 min à 24 h après l'envoi (`DELIVERY_RECHECK_*`, 15 par passage, `refreshAll`
+     compris) : remis → « Remis » ; un destinataire `Failed` sans `Delivered` l'emporte sur `Sent` (`messageState` : le réseau a refusé la
+     remise) → abandonné, `lastError` `sms_not_delivered`, compté en échec du mois, jamais renvoyé seul (`markUndelivered`, aussi par le
+     webhook `sms:failed`). Test `sms.test.ts`.
      **L'appli SMS prévient Plazo (09/11/2026, « faudrait communiquer avec sms gateway »)** : à la liaison du téléphone et au
      premier relevé de chaque identifiant, Plazo inscrit chez la passerelle trois webhooks (`POST /webhooks`, ids `plazo-sent`,
      `plazo-delivered`, `plazo-failed` ; `SmsService.ensureWebhooks`, `phoneWebhooksSetAt`, migration `sms_gateway_webhooks`, remis à

@@ -635,6 +635,7 @@
     "sms_encryption_key_missing": "Criptarea SMS-urilor nu este configurată pe server.",
     "sms_encryption_key_invalid": "Cheia de criptare a SMS-urilor este invalidă pe server.",
     "sms_gateway_failed": "Telefonul nu a putut trimite SMS-ul.",
+    "sms_not_delivered": "Telefonul a trimis SMS-ul, dar rețeaua nu l-a livrat.",
     "sms_gateway_offline": "Telefonul este offline.",
     "sms_body_unavailable": "Textul SMS-ului nu mai este disponibil.",
     "invalid_key_hook": "Cârlig: max. 12 caractere, litere, cifre, spațiu sau cratimă.",

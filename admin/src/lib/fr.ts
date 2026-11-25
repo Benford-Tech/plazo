@@ -352,6 +352,8 @@ export const fr = {
     sms_gateway_error: "L'appli SMS a renvoyé une erreur. Réessayez.",
     sms_gateway_failed:
       "Le téléphone n'a pas pu envoyer le SMS (réseau ou forfait).",
+    sms_not_delivered:
+      "Le téléphone a envoyé le SMS, mais le réseau ne l'a pas remis au client (numéro, filtre anti-spam ou forfait).",
     booking_refunded:
       "Réservation remboursée : elle ne peut plus être rouverte.",
     refund_failed: "Le remboursement a échoué. Réessayez.",
