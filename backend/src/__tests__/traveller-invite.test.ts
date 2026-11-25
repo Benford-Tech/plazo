@@ -151,19 +151,26 @@ describe('the pass', () => {
   it('leaves the travellers it must not write to', async () => {
     const op = await setupOperator();
     await withListing(op);
-    const withEmail = await booking(op, { customerEmail: 'camille@example.org' });
     const landline = await booking(op, { customerPhone: '04 72 00 00 00' });
     const stopped = await booking(op, { customerPhone: '07 11 22 33 44' });
     await booking(op, { channel: 'plazo' });
     await booking(op, { arrivalAt: new Date(NOW.getTime() - 3600_000) });
     await service.optOut('+33711223344');
     expect(await prisma.travellerPhoneOptout.findUnique({ where: { phoneHash: phoneHash('+33711223344') } })).not.toBeNull();
-    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 3, failed: 0 });
+    expect(await service.run(NOW)).toEqual({ sent: 0, skipped: 2, failed: 0 });
     expect(sent()).toHaveLength(0);
     const outcome = async (id: string) => (await prisma.reservation.findUniqueOrThrow({ where: { id } })).appInviteOutcome;
-    expect(await outcome(withEmail.id)).toBe('has_email');
     expect(await outcome(landline.id)).toBe('no_phone');
     expect(await outcome(stopped.id)).toBe('opted_out');
+  });
+
+  it('invites travellers who have an email too (25/11/2026)', async () => {
+    const op = await setupOperator();
+    await withListing(op);
+    const withEmail = await booking(op, { customerEmail: 'camille@example.org' });
+    expect(await service.run(NOW)).toEqual({ sent: 1, skipped: 0, failed: 0 });
+    expect(sent()).toHaveLength(1);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: withEmail.id } })).appInviteOutcome).toBe('sent');
   });
 
   it('waits for the morning, and for the template', async () => {
