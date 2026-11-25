@@ -134,8 +134,8 @@ describe("le site du parking", () => {
   it("les mentions légales nomment l’éditeur ; une page inconnue ne montre rien de plus que l’accueil", () => {
     const { unmount } = render(<ParkingSite idempotencyKey="k" data={data} page="mentions-legales" site={showcase()} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Mentions légales");
-    expect(screen.getByText("Cèdres SAS")).toBeInTheDocument();
-    expect(screen.getByText("SIRET 12345678900012")).toBeInTheDocument();
+    expect(within(screen.getByRole("main")).getByText("Cèdres SAS")).toBeInTheDocument();
+    expect(within(screen.getByRole("main")).getByText("SIRET 12345678900012")).toBeInTheDocument();
     expect(screen.queryByTestId("module")).toBeNull();
     unmount();
     render(<ParkingSite idempotencyKey="k" data={data} site={site([block("booking"), block("destinations"), block("cta")])} />);
@@ -216,6 +216,28 @@ describe("le site du parking", () => {
     expect(within(screen.getByTestId("site-steps")).getAllByRole("listitem")).toHaveLength(4);
     expect(screen.queryByTestId("site-strengths")).toBeNull();
     expect(screen.queryByText("Ma réservation")).toBeNull();
+  });
+
+  it("pied de page « Plan d'accès » (25/11/2026) : plan, adresse, horaires, appel, itinéraire, liens et société", () => {
+    const withHours = { ...data, parking: { ...data.parking, openingHours: "Ouvert 24h/24" } };
+    render(
+      <ParkingSite
+        idempotencyKey="k"
+        data={withHours}
+        site={site([block("booking"), block("pricing")], { legal: { name: "Cèdres SAS", address: null, siret: "12345678900012", vatNumber: "FR12123456789" } })}
+      />,
+    );
+    const foot = within(screen.getByTestId("site-footer"));
+    expect(foot.getByTestId("site-footer-plan")).toHaveTextContent("Lyon Saint-Exupéry · 8 min");
+    expect(foot.getByText("12 rue des Cèdres, Colombier-Saugnieu")).toBeInTheDocument();
+    expect(foot.getByText(/Ouvert 24h\/24/)).toBeInTheDocument();
+    expect(foot.getByRole("link", { name: "Appeler" })).toHaveAttribute("href", "tel:0472000000");
+    expect(foot.getByRole("link", { name: "Itinéraire" }).getAttribute("href")).toContain("12%20rue%20des%20C");
+    expect(foot.getByRole("navigation", { name: "Liens du site" })).toHaveTextContent("Tarifs");
+    expect(foot.getByText(/© \d{4} Cèdres SAS/)).toBeInTheDocument();
+    expect(foot.getByText("SIRET 12345678900012")).toBeInTheDocument();
+    expect(foot.getByText("N° de TVA FR12123456789")).toBeInTheDocument();
+    expect(foot.getByText(/sécurisés par Plazo/)).toBeInTheDocument();
   });
 
   it("le style sobre garde son tableau, sans formulaire ni barre fixe", () => {

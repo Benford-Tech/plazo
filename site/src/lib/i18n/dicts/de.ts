@@ -1271,6 +1271,8 @@ export const de: Dict = {
     publisher: "Herausgeber der Website",
     legalMissing: "Dieser Parkplatz hat seine Angaben noch nicht hinterlegt.",
     vat: "USt-IdNr.",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} Min.`,
+    footerLinks: "Links der Website",
     hosting: "Website und Online-Buchung von Plazo (Benford Tech), gehostet bei Vercel.",
     privacy: "Ihre Buchungsdaten werden von Plazo verarbeitet: Datenschutzerklärung",
     prices: "Preise",
