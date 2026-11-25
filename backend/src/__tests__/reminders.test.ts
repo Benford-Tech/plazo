@@ -317,7 +317,7 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect((await reminders.dispatchDue(at('2027-06-15T19:05'))).sent).toBe(1);
   });
 
-  it('le texte voiturier (15/11/2026) : seulement pour les réservations voiturier, par SMS seul, tel quel', async () => {
+  it('le texte voiturier (15/11/2026, générique le 25/11/2026) : seulement pour les réservations voiturier, par SMS seul, tel quel', async () => {
     const op = await setupOperator();
     await useBrevoSms(op.operator.id);
     const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token));
@@ -330,11 +330,20 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(bad.status).toBe(400);
     expect(bad.body.fields).toEqual({ valetTemplate: 'unknown_variable' });
 
-    // Without a valet text, a valet booking gets the usual message.
+    // 25/11/2026: without its own valet text, a valet booking gets Plazo's generic valet text, never the usual message.
+    expect(board.body.valet.suggested).toContain('📍 Point de rendez-vous : ');
+    expect(board.body.valet.suggested).toContain('Cordialement,\n{parking}');
     const early = await booking(op, '2027-06-15T07:00', { name: 'Paul Roux', valet: true });
     const reminders = Container.get(ReminderService);
     await reminders.dispatchDue(at('2027-06-14T18:05'));
-    expect(smsSent()[0].content).toContain('à demain');
+    const generic = smsSent()[0].content;
+    expect(generic).toContain('Bonjour Paul,\nNous vous confirmons votre service voiturier prévu le 15/06/2027 à 07:00.');
+    expect(generic).toContain('🔑 Restitution du véhicule');
+    expect(generic).not.toContain('à demain');
+    expect(generic).not.toMatch(/\{[^}]+\}/);
+    // Nothing the parking has not set: neither conditions nor services.
+    expect(generic).not.toContain('Conditions :');
+    expect(generic).not.toContain('Services sur demande');
     fetchMock.mockClear();
 
     const saved = await api()
@@ -361,7 +370,7 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(test.status).toBe(200);
     expect(smsSent().map(s => [s.tag, s.content.startsWith('🚨 Bonjour')])).toEqual([['reminder_test', true]]);
 
-    // Emptied: back to the usual message.
+    // Emptied: back to Plazo's generic valet text.
     const cleared = await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ valetTemplate: '' });
     expect(cleared.body.valet.template).toBeNull();
   });

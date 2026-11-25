@@ -5963,16 +5963,16 @@ export const remindersFr = {
     title: "Le message des réservations voiturier",
     intro:
       "Envoyé la veille, à la même heure, aux réservations « Voiturier au terminal », à la place du message habituel. Il part par SMS, depuis le téléphone du parking : la réponse du client arrive dans Messages.",
-    none: "Pas encore de texte voiturier : ces réservations reçoivent le message habituel.",
-    useSuggested: "Partir du texte proposé",
+    none: "Ces réservations reçoivent le message voiturier de Plazo, rempli avec les informations de votre parking.",
+    useSuggested: "Le personnaliser",
     label: "Texte du SMS voiturier",
     save: "Enregistrer",
     saved: "Texte voiturier enregistré.",
     remove: "Retirer le texte voiturier",
     removeConfirm:
-      "Les réservations voiturier recevront de nouveau le message habituel.",
+      "Les réservations voiturier recevront de nouveau le message voiturier de Plazo.",
     removed:
-      "Texte voiturier retiré : les réservations voiturier reçoivent le message habituel.",
+      "Texte voiturier retiré : les réservations voiturier reçoivent le message voiturier de Plazo.",
     updated: (when: string) => `Enregistré le ${when}`,
     perClient: (characters: number) =>
       `par client · ${characters.toLocaleString("fr-FR")} caractères · SMS seul, sans WhatsApp`,

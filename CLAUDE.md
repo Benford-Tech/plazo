@@ -910,6 +910,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `POST …/reminders/test` `{ valet: true }` (SMS seul), board `valet { template, suggested, updatedAt }`, `rows[].valet`. Web : pilules
      « Navette · Voiturier » au-dessus du message (`KindTabs`, `ValetMessageSection` : « Partir du texte proposé », variables, compte de
      SMS, aperçu, enregistrer, retirer, test), pastille « Voiturier » sur les départs. Tests `reminders.test.ts`, `RemindersPage.test.tsx`.
+     **Générique pour tous les parkings (25/11/2026, « À rendre générique, et à envoyer pour les résa voiturier »)** : sans texte
+     propre, une réservation voiturier ne reçoit plus le message habituel mais le message voiturier de Plazo
+     (`valetDefaultTemplate` de `domain/day-before-sms.ts`, le message d'APL sans ce qui lui est propre : `{prénom}`, `{date}`,
+     `{heure}`, le rendez-vous du voiturier du parking `valetMeetingPointOf`, « Restitution du véhicule », puis seulement ce que le
+     parking a réglé : « ⏱️ Conditions : {conditions} », « Services sur demande : {services} », « Pour toute modification… » (réponse au
+     SMS avec le téléphone du parking, sinon `{téléphone}`), « Cordialement, {parking} ») ; `SmsService.valetDefault`,
+     `valetReminderText` ne rend nul que pour une réservation navette ; toujours par SMS seul ; `board.valet.suggested` = ce texte.
+     Web : l'onglet « Voiturier » le montre rempli avec l'exemple (« Ces réservations reçoivent le message voiturier de Plazo… »,
+     « Le personnaliser », test) au lieu d'un onglet vide. APL garde son propre texte.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec

@@ -136,23 +136,49 @@ export function defaultTemplate(ctx: TemplateContext): string {
 }
 
 /**
- * 15/11/2026 (« voici le message à envoyer pour les réservations de type voiturier », APL Parking): the text a parking starts
- * from for its valet bookings (« Voiturier au terminal »). Nothing leaves with it until the parking saves its own: without a
- * valet text, a valet booking gets the usual message.
+ * The valet bookings' day-before text (« Voiturier au terminal »), by SMS. 15/11/2026: APL Parking's own text; 25/11/2026
+ * (« À rendre générique, et à envoyer pour les résa voiturier »): the same message made generic, sent to every parking's
+ * valet bookings until the parking writes its own. Only what a parking has set is named: its valet meeting point, its
+ * supplements and conditions ({conditions}), its services ({services}), its phone.
  */
-export function valetSuggestedTemplate(ctx: TemplateContext, meetingPoint: string): string {
+export interface ValetTemplateOptions {
+  /** « Terminal 1 · dépose-minute », or the parking's own. */
+  meetingPoint: string;
+  conditions: boolean;
+  services: boolean;
+  phone: boolean;
+  /** The traveller can answer the SMS (it leaves from the parking's own phone). */
+  repliesReachParking: boolean;
+}
+
+const RULE = '⸻';
+
+export function valetDefaultTemplate(options: ValetTemplateOptions): string {
+  const terms = [options.conditions ? '⏱️ Conditions : {conditions}' : null, options.services ? 'Services sur demande : {services}' : null].filter(
+    Boolean,
+  );
   return [
+    '(Merci de lire attentivement les informations ci-dessous)',
     'Bonjour {prénom},',
     'Nous vous confirmons votre service voiturier prévu le {date} à {heure}.',
-    'Merci de nous prévenir 10 minutes avant votre arrivée.',
-    `Point de rendez-vous : ${meetingPoint}. Une fois sur place, le voiturier vous contactera directement.`,
-    "Au retour, envoyez-nous un message à votre atterrissage, puis une fois sorti de l'aéroport.",
-    ctx.repliesReachParking
-      ? 'Pour toute modification, répondez directement à ce SMS.'
-      : ctx.phone
-        ? `Pour toute modification : ${ctx.phone}.`
+    '🚨 Merci de nous prévenir 10 minutes avant votre arrivée.',
+    `📍 Point de rendez-vous : ${options.meetingPoint}`,
+    'Une fois sur place, le voiturier vous contactera directement.',
+    RULE,
+    '🔑 Restitution du véhicule',
+    "Afin d'assurer une restitution rapide, merci de nous envoyer deux messages :",
+    'À votre atterrissage',
+    "Une fois sorti de l'aéroport",
+    "👉 Cela permet d'éviter tout frais au dépose-minute.",
+    ...(terms.length ? [RULE, ...terms] : []),
+    RULE,
+    options.repliesReachParking
+      ? 'Pour toute modification, vous pouvez répondre directement par SMS à ce numéro.'
+      : options.phone
+        ? 'Pour toute modification : {téléphone}.'
         : null,
-    `Cordialement,\n${ctx.parkingName}`,
+    'Cordialement,',
+    '{parking}',
   ]
     .filter(Boolean)
     .join('\n');

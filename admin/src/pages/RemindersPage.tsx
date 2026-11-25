@@ -537,7 +537,6 @@ function KindTabs({
       )}
     >
       {label}
-      {value === "valet" && !board.valet?.template && <span className="h-1.5 w-1.5 rounded-full bg-warn" aria-hidden="true" />}
     </button>
   );
   return (
@@ -564,7 +563,9 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
   const [typed, setTyped] = useState<string | null>(null);
   const draft = typed ?? saved;
   const values = board.sample.values;
-  const preview = useMemo(() => renderTemplate(draft, values), [draft, values]);
+  // 25/11/2026: without its own text, the parking's valet bookings get Plazo's generic one, shown here as it leaves.
+  const shown = draft.trim() ? draft : valet.suggested;
+  const preview = useMemo(() => renderTemplate(shown, values), [shown, values]);
   const length = smsLength(preview);
   const unknown = unknownVariables(draft);
   const dirty = draft.trim() !== saved.trim();
@@ -603,7 +604,7 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
       </div>
       <p className="text-[13px] text-muted-foreground">{v.intro}</p>
       {!valet.template && !typed && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#F5D08A] bg-[#FFFBEB] px-3 py-2.5 text-sm text-[#78350F]">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-panel-line bg-panel-2 px-3 py-2.5 text-sm">
           <span>{v.none}</span>
           {board.can.edit && (
             <button type="button" data-testid="reminder-valet-suggested" onClick={() => setTyped(valet.suggested)} className={cn(BUTTON, "h-9")}>
@@ -687,7 +688,7 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
             </div>
           )}
         </div>
-        {draft.trim() && (
+        {shown.trim() && (
           <div className="flex min-w-0 flex-col gap-2">
             <p className="text-[13px] text-muted-foreground">{t.preview.for(board.sample.customerName, values.date, values.heure)}</p>
             <div className="rounded-2xl bg-panel-2 p-3">
@@ -698,7 +699,7 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
           </div>
         )}
       </div>
-      {board.can.edit && draft.trim() && <TestForm board={board} draft={draft} onDone={() => undefined} compact valet />}
+      {board.can.edit && shown.trim() && <TestForm board={board} draft={shown} onDone={() => undefined} compact valet />}
     </section>
   );
 }

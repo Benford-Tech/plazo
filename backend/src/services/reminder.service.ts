@@ -25,10 +25,8 @@ import {
   templateContextOf,
   TemplateValues,
   unknownVariables,
-  valetSuggestedTemplate,
   valuesOf,
 } from '@/domain/day-before-sms';
-import { valetMeetingPointOf } from '@/domain/valet';
 import { greetingName } from '@/domain/customer-name';
 import { smsRecipient } from '@/domain/phone';
 import { can } from '@/domain/roles';
@@ -186,7 +184,7 @@ export interface UpdateReminderSettingsInput {
   enabled?: boolean;
   sendTime?: string;
   template?: string | null;
-  /** 15/11/2026: the valet text; null or empty: none (valet bookings get the usual message). */
+  /** 15/11/2026: the valet text; null or empty: none (valet bookings get Plazo's generic valet text). */
   valetTemplate?: string | null;
 }
 
@@ -425,8 +423,8 @@ export class ReminderService {
       resend: !!r.reminderSentAt,
       canSend: !refusal,
       refusal,
-      // 15/11/2026: a valet booking with the parking's valet text leaves by SMS alone.
-      whatsapp: whatsapp && !(r.handover === 'valet' && !!usualRow?.valetTemplate),
+      // A valet booking's text (the parking's, else Plazo's generic one) leaves by SMS alone.
+      whatsapp: whatsapp && r.handover !== 'valet',
       delivery: deliveries.get(r.id) ?? null,
       excludedReason: status === 'excluded' && awaitsImportedTime(r) ? 'import_time' : null,
       timezone: tz,
@@ -612,7 +610,8 @@ export class ReminderService {
       defaults,
       valet: {
         template: usual.valetTemplate,
-        suggested: valetSuggestedTemplate(context, valetMeetingPointOf(parking, parking.listing?.airport?.code ?? null)),
+        // 25/11/2026: Plazo's generic valet text, sent as long as the parking has not written its own.
+        suggested: await this.sms.valetDefault(parking.operatorId, parkingId, parkingValues ?? null),
         updatedAt: usualRow?.valetTemplate ? usualRow.updatedAt.toISOString() : null,
       },
       sendTimes: SEND_TIMES,
