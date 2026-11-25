@@ -650,6 +650,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      loueur (`startViewAs`) directement sur « Mon site » ; en consultation, l'encart de l'option propose « Activer l'option » (`site-addon-activate`,
      `PUT /internal/platform/operators/:id/site`) au lieu de « Demander l'option » ; blocs, présentation, photos, nom de domaine et mise en ligne
      y étaient déjà permis (`RefuseInDemo`, tracés `view_as.write`). Test `SitePage.test.tsx`.
+   - **Pied de page « Plan d'accès », choix C (25/11/2026, « fais un pied de page avec les infos du parking », maquettes
+     https://claude.ai/artifact/XrAGs7k6TSJHB43zpAcX9J)** : `SiteFooter` de `ParkingSite.tsx` (`site-footer`), dans la couleur du parking (bleu nuit
+     `--ps-dark` en Parc) : un petit plan dessiné en SVG (le parking épinglé « P », « ✈ <aéroport> · 8 min » d'après `shuttleMinutes`), lien
+     d'itinéraire ; logo ou initiales, nom, adresse, horaires et téléphone, « Itinéraire » et « Appeler » ; les liens du menu (`menuEntries`) ;
+     ligne du bas « © année <raison sociale> », SIRET, TVA (`site.legal`), « Mentions légales » (site à plusieurs pages) et « Réservation par
+     Plazo » ; ce que le parking n'a pas donné est omis. Textes `footerAirport`, `footerLinks` dans les neuf langues. Test `ParkingSite.test.tsx`.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

@@ -1350,6 +1350,8 @@ export const ro: Dict = {
     publisher: "Editorul site-ului",
     legalMissing: "Această parcare nu și-a completat încă datele.",
     vat: "Cod de TVA",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} min`,
+    footerLinks: "Linkurile site-ului",
     hosting: "Site și rezervare online furnizate de Plazo (Benford Tech), găzduite de Vercel.",
     privacy: "Datele rezervării sunt prelucrate de Plazo: politica de confidențialitate",
     prices: "Tarife",

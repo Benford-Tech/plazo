@@ -81,10 +81,10 @@ function blocksFor(site: ParkingSiteInfo, kind: keyof typeof PAGE_BLOCKS | null)
   return PAGE_BLOCKS[kind].flatMap(k => blocks.filter(b => b.kind === k));
 }
 
-function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks: SiteBlock[]; narrow?: boolean }) {
+/** One page: the menu jumps to the blocks. Several pages: it opens them. */
+function menuEntries(site: ParkingSiteInfo, blocks: SiteBlock[]): { href: string; label: string }[] {
   const t = fr.parkingSite;
-  // One page: the menu jumps to the blocks. Several pages: it opens them.
-  const entries = hasPages(site)
+  return hasPages(site)
     ? [
         { href: sitePath(site), label: t.home },
         ...(site.destinations ?? []).slice(0, 3).map(d => ({ href: sitePath(site, d.slug), label: d.name })),
@@ -93,6 +93,10 @@ function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks:
         { href: sitePath(site, "contact"), label: t.contact },
       ]
     : blocks.map(menuEntry).filter(e => e !== null);
+}
+
+function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks: SiteBlock[]; narrow?: boolean }) {
+  const entries = menuEntries(site, blocks);
   return (
     <nav
       aria-label={site.title}
@@ -454,25 +458,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
         )}
       </main>
 
-      <footer
-        className={
-          park
-            ? "bg-[var(--ps-dark)] text-white/80"
-            : showcase || look === "postcard"
-              ? "bg-[var(--ps-accent)] text-[var(--ps-ink)]"
-              : "border-t border-line bg-paper text-soft"
-        }
-      >
-        <div className={`${container} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4 text-[13px]`}>
-          <span>{[parking.title, parking.phone].filter(Boolean).join(" · ")}</span>
-          {hasPages(site) && (
-            <a href={sitePath(site, "mentions-legales")} className="text-inherit underline">
-              {t.legal}
-            </a>
-          )}
-          <span>{fr.bookingPage.by}</span>
-        </div>
-      </footer>
+      <SiteFooter site={site} data={data} blocks={blocks} dark={park} logo={site.logoUrl ?? null} />
       {rich && <StickyBar site={site} data={data} reserve={reserve} />}
     </div>
   );
@@ -482,6 +468,120 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
  * On a phone, every look but the sober one (24/11/2026, « tout »): a bar fixed at the bottom with call, directions, write
  * and book. The page keeps room for it at its foot.
  */
+/**
+ * The foot of every page (25/11/2026, « fais un pied de page avec les infos du parking », choix C « Plan d'accès »): in the
+ * parking's colour (its deep blue in « Parc »), a small drawn plan with the parking pinned and the airport beside it, then
+ * the name, the address, the hours and the phone with « Itinéraire » and « Appeler », the site's links, and a last line
+ * with the company (name, SIRET, VAT from its billing details), the legal notice and « Réservation par Plazo ». Anything
+ * the parking has not given is left out.
+ */
+function SiteFooter({ site, data, blocks, dark, logo }: { site: ParkingSiteInfo; data: ParkingResponse; blocks: SiteBlock[]; dark: boolean; logo: string | null }) {
+  const t = fr.parkingSite;
+  const { parking, airport } = data;
+  const legal = site.legal;
+  const links = menuEntries(site, blocks);
+  const where = parking.address ?? `${parking.title}, ${airport.name}`;
+  const company = legal?.name ?? parking.title;
+  const button = "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[10px] px-4 text-[14px] font-semibold no-underline";
+  return (
+    <footer
+      data-testid="site-footer"
+      className={dark ? "bg-[var(--ps-dark)] text-white" : "bg-[var(--ps-accent)] text-[var(--ps-ink)]"}
+    >
+      <div className={`${container} grid gap-6 py-8 md:grid-cols-2 md:items-center md:py-10`}>
+        <a
+          href={mapsUrl(where)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${t.directions} · ${parking.title}`}
+          data-testid="site-footer-plan"
+          className="relative block min-h-[150px] overflow-hidden rounded-[14px] bg-[#e6ecf3] md:min-h-[190px]"
+        >
+          <svg aria-hidden="true" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 size-full">
+            <rect width="400" height="200" fill="#e6ecf3" />
+            <path d="M-10 150 L150 95 L420 40" stroke="#ffffff" strokeWidth="14" fill="none" strokeLinecap="round" />
+            <path d="M60 -10 L130 210" stroke="#ffffff" strokeWidth="8" fill="none" opacity="0.8" />
+            <path d="M260 210 L330 -10" stroke="#ffffff" strokeWidth="6" fill="none" opacity="0.6" />
+            <path d="M175 92 C 230 75, 280 70, 320 58" stroke="var(--ps-accent)" strokeWidth="3" strokeDasharray="6 6" fill="none" />
+          </svg>
+          <span className="absolute top-[38%] left-[40%] flex size-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-white bg-[var(--ps-accent)] text-[13px] font-bold text-[var(--ps-ink)] shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+            P
+          </span>
+          <span className="absolute right-[6%] top-[14%] rounded-full bg-white px-2.5 py-1 text-[12px] font-semibold text-[#1b2430] shadow-[0_1px_4px_rgba(0,0,0,0.15)]">
+            ✈ {parking.shuttleMinutes ? t.footerAirport(airport.name, parking.shuttleMinutes) : airport.name}
+          </span>
+        </a>
+        <div className="flex min-w-0 flex-col gap-3">
+          <div className="flex items-center gap-3">
+            {logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logo} alt="" className="size-10 flex-none rounded-[10px] bg-white object-contain p-0.5" />
+            ) : (
+              <span aria-hidden="true" className="flex size-10 flex-none items-center justify-center rounded-[10px] bg-white text-[14px] font-bold text-[var(--ps-accent)]">
+                {initials(parking.title)}
+              </span>
+            )}
+            <p className="min-w-0 text-[19px] leading-tight font-bold">{parking.title}</p>
+          </div>
+          <div className="text-[15px] leading-relaxed">
+            {parking.address && <p>{parking.address}</p>}
+            {(parking.openingHours || parking.phone) && (
+              <p>
+                {[parking.openingHours, parking.phone].filter(Boolean).map((part, i) => (
+                  <span key={i} className={i ? "tabular-nums" : undefined}>
+                    {i ? " · " : ""}
+                    {part}
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a href={mapsUrl(where)} target="_blank" rel="noopener noreferrer" className={`${button} bg-white text-[#1b2430]`}>
+              {t.directions}
+            </a>
+            {parking.phone && (
+              <a href={`tel:${parking.phone.replace(/[^+\d]/g, "")}`} className={`${button} border border-current text-inherit`}>
+                {t.call}
+              </a>
+            )}
+          </div>
+          {links.length > 0 && (
+            <nav aria-label={t.footerLinks} className="flex flex-wrap gap-x-4 gap-y-1 text-[14px] opacity-90">
+              {links.map(link => (
+                <a key={link.href} href={link.href} className="text-inherit underline-offset-2 hover:underline">
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          )}
+        </div>
+      </div>
+      <div className="bg-black/15">
+        <div className={`${container} flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 py-3 text-[12.5px]`}>
+          <p className="flex flex-wrap gap-x-3 gap-y-0.5">
+            <span>
+              © {new Date().getFullYear()} {company}
+            </span>
+            {legal?.siret && <span>SIRET {legal.siret}</span>}
+            {legal?.vatNumber && (
+              <span>
+                {t.vat} {legal.vatNumber}
+              </span>
+            )}
+            {hasPages(site) && (
+              <a href={sitePath(site, "mentions-legales")} className="text-inherit underline">
+                {t.legal}
+              </a>
+            )}
+          </p>
+          <span className="font-semibold">{fr.bookingPage.by}</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 function StickyBar({ site, data, reserve }: { site: ParkingSiteInfo; data: ParkingResponse; reserve: string }) {
   const t = fr.parkingSite;
   const { parking, airport } = data;

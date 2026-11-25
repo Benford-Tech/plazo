@@ -1413,6 +1413,8 @@ const frBase = {
     publisher: "Éditeur du site",
     legalMissing: "Ce parking n’a pas encore renseigné son identité.",
     vat: "N° de TVA",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} min`,
+    footerLinks: "Liens du site",
     hosting: "Site et réservation en ligne fournis par Plazo (Benford Tech), hébergés par Vercel.",
     privacy: "Vos données de réservation sont traitées par Plazo : politique de confidentialité",
     prices: "Tarifs",

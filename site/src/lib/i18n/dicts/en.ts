@@ -1273,6 +1273,8 @@ export const en: Dict = {
     publisher: "Site publisher",
     legalMissing: "This car park has not entered its details yet.",
     vat: "VAT number",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} min`,
+    footerLinks: "Site links",
     hosting: "Site and online booking provided by Plazo (Benford Tech), hosted by Vercel.",
     privacy: "Your booking data is processed by Plazo: privacy policy",
     prices: "Prices",

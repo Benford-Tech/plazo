@@ -1280,6 +1280,8 @@ export const pl: Dict = {
     publisher: "Wydawca strony",
     legalMissing: "Ten parking nie podał jeszcze swoich danych.",
     vat: "Numer VAT",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} min`,
+    footerLinks: "Linki strony",
     hosting: "Stronę i rezerwację online zapewnia Plazo (Benford Tech), hosting: Vercel.",
     privacy: "Dane rezerwacji przetwarza Plazo: polityka prywatności",
     prices: "Cennik",

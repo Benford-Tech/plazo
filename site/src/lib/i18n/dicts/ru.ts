@@ -1281,6 +1281,8 @@ export const ru: Dict = {
     publisher: "Владелец сайта",
     legalMissing: "Эта парковка ещё не указала свои данные.",
     vat: "Номер НДС",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} мин`,
+    footerLinks: "Ссылки сайта",
     hosting: "Сайт и онлайн-бронирование предоставлены Plazo (Benford Tech), хостинг Vercel.",
     privacy: "Данные бронирования обрабатывает Plazo: политика конфиденциальности",
     prices: "Тарифы",

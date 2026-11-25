@@ -1348,6 +1348,8 @@ export const es: Dict = {
     publisher: "Editor del sitio",
     legalMissing: "Este aparcamiento aún no ha indicado sus datos.",
     vat: "N.º de IVA",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} min`,
+    footerLinks: "Enlaces del sitio",
     hosting: "Sitio y reserva en línea proporcionados por Plazo (Benford Tech), alojados en Vercel.",
     privacy: "Sus datos de reserva son tratados por Plazo: política de privacidad",
     prices: "Tarifas",

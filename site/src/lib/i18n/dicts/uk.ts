@@ -1292,6 +1292,8 @@ export const uk: Dict = {
     publisher: "Власник сайту",
     legalMissing: "Цей паркінг ще не вказав свої дані.",
     vat: "Номер ПДВ",
+    footerAirport: (name: string, minutes: number) => `${name} · ${minutes} хв`,
+    footerLinks: "Посилання сайту",
     hosting: "Сайт і онлайн-бронювання надає Plazo (Benford Tech), хостинг Vercel.",
     privacy: "Дані бронювання обробляє Plazo: політика конфіденційності",
     prices: "Тарифи",
