@@ -64,7 +64,7 @@ def describe(mail):
     reading = mail.get("reading") or {}
     change = mail.get("change") or {}
     return (f"  · reçu {mail.get('receivedAt')} · {mail.get('status')} · arrivé « {mail.get('delivery')} » · "
-            f"objet {len(mail.get('subject') or '')} car. · lecture {reading.get('source')}/{reading.get('kind')}/"
+            f"objet « {mail.get('subject')} » · lecture {reading.get('source')}/{reading.get('kind')}/"
             f"{reading.get('provider')}/{reading.get('rule')} · manque {mail.get('missing')} · "
             f"changement {change.get('kind')}/{change.get('reason')} · texte {'gardé' if mail.get('text') or mail.get('body') else 'absent ?'} · "
             f"clés {sorted(k for k, v in mail.items() if v not in (None, [], ''))}")
