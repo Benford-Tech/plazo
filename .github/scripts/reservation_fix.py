@@ -95,7 +95,7 @@ def main():
         view = call("POST", f"/internal/platform/operators/{operator['id']}/view-as", token=admin)["access"]["token"]
 
         found = call("GET", f"/internal/reservations?q={urllib.parse.quote(REFERENCE)}", token=view)
-        bookings = [b for b in found.get("data") or [] if (b.get("externalReference") or "").upper() == REFERENCE]
+        bookings = [b for b in found.get("docs") or found.get("data") or [] if (b.get("externalReference") or "").upper() == REFERENCE]
         if not bookings:
             print(f"Aucune réservation ne porte le numéro {REFERENCE}.")
             inbox = call("GET", "/internal/inbound/emails?view=todo", token=view)
