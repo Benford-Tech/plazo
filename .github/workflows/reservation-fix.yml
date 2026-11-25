@@ -1,0 +1,56 @@
+name: Corriger une réservation importée
+
+# Sets the plate and / or the handover (valet, shuttle) of one imported booking, found by its comparator number, as a
+# platform admin in consultation (25/11/2026). A booking that does not exist yet but whose email waits in the inbox is
+# analysed again instead. Preview by default; « appliquer » writes. Prints no personal data. By hand only
+# (.github/scripts/reservation_fix.py).
+on:
+  workflow_dispatch:
+    inputs:
+      loueur:
+        description: "Nom du loueur (ou une partie qui n'en désigne qu'un)"
+        type: string
+        required: true
+      numero:
+        description: "Numéro du comparateur (PM…, AL-…, PC…)"
+        type: string
+        required: true
+      plaque:
+        description: "Plaque à poser si la réservation n'en a pas"
+        type: string
+        default: ""
+      prise_en_charge:
+        description: "Prise en charge"
+        type: choice
+        options: ["", "valet", "shuttle"]
+        default: ""
+      appliquer:
+        description: "Écrire (sinon aperçu seulement)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reservation-fix
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Corriger la réservation
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          OPERATOR: ${{ inputs.loueur }}
+          REFERENCE: ${{ inputs.numero }}
+          PLATE: ${{ inputs.plaque }}
+          HANDOVER: ${{ inputs.prise_en_charge }}
+          APPLY: ${{ inputs.appliquer }}
+        run: python3 .github/scripts/reservation_fix.py

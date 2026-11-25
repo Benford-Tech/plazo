@@ -472,6 +472,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (« Voiturier - Extérieur ») : `ParsedBooking.handover` `valet`, que `createFromImport` enregistre (réservation voiturier :
      courses au terminal, message de la veille des voituriers, jamais dans les listes de la navette). Premier import en voiturier ;
      une modification n'y touche pas. Fixture `parkmundo-confirmation-valet.txt`, tests `import-comparators.test.ts`, `valet.test.ts`.
+     Workflow « Corriger une réservation importée » (`reservation-fix.yml`, `.github/scripts/reservation_fix.py`, à la main, aperçu
+     par défaut) : en consultation d'administrateur, pose la plaque (jamais à la place d'une autre) et la prise en charge d'une
+     réservation retrouvée par son numéro de comparateur, ou relance l'analyse de son mail resté « À traiter » ; aucun nom dans le résumé.
    - **Surveillance des mails entrants (09/11/2026, « faut un job qui parcourt les mails en continu pour voir si tout est ok »,
      choix « Relire avec les règles du jour · Alerte aux gérants · Rapport pour la plateforme »)** : **relecture** : à chaque passage
      du relais (`POST /public/inbound/retry`, réponse `newRules`), un mail « À traiter » des 7 derniers jours lu par les règles dont
@@ -651,7 +654,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /public/site-domains/:host` → `{ slug }` (404 tant que le site n'est pas en ligne et le nom actif). Site : `proxy.ts`
      reconnaît un hôte étranger (`lib/parking-site-host.ts`, réponse gardée une minute) : sa racine sert `/s/<slug>` dans la langue
      demandée, toute autre page part en 308 vers plazo.fr ; `plazo.fr/s/<slug>` renvoie vers le nom de domaine, qui devient
-     l'adresse canonique. Éteindre l'option (le site n'est plus en ligne) ou retirer le nom ferme l'hôte. Tests `operator-site.test.ts`,
+     l'adresse canonique. Éteindre l'option (le site n'est plus en ligne) ou retirer le nom ferme l'hôte. **Lecture plus tolérante (25/11/2026, « Ce nom de domaine n'est pas valable »)** : `readDomain` retire ce qu'un copier-coller apporte (caractères invisibles, guillemets, crochets, virgule finale), prend le domaine d'une adresse e-mail et lit un nom accentué dans sa forme de registre (`domainToASCII`, « xn--… »). Tests `operator-site.test.ts`,
      `parking-site-host.test.ts`, `proxy.test.ts`, `SitePage.test.tsx`. Pas encore essayé avec un vrai nom de domaine ; l'offre
      Hobby de Vercel limite le nombre de domaines par projet ; `robots.txt` et le plan du site sur le nom du parking restent ceux de Plazo.
    - **« Coller un mail », direction A (29/10/2026, « pouvoir importer en collant le contenu du mail », maquettes
