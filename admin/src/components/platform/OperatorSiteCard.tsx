@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-context";
+import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
@@ -13,6 +15,18 @@ const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
 export function OperatorSiteCard({ operatorId }: { operatorId: string }) {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
+  const navigate = useNavigate();
+  const { startViewAs } = useAuth();
+  // 25/11/2026 (« en tant que super admin je veux pouvoir construire le site du client »): opens the parking's space
+  // straight on « Mon site », where the platform builds and publishes it.
+  const build = useMutation({
+    mutationFn: () => startViewAs(operatorId),
+    onSuccess: () => {
+      queryClient.clear();
+      navigate("/plazo/site");
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
   const key = ["platform", "operator", operatorId, "site"];
   const query = useQuery({ queryKey: key, queryFn: () => adminApi.getPlatformSite(operatorId) });
   const set = useMutation({
@@ -65,6 +79,9 @@ export function OperatorSiteCard({ operatorId }: { operatorId: string }) {
           </div>
         )}
       </div>
+      <Button type="button" variant="outline" className="h-11 font-bold" data-testid="operator-site-build" disabled={build.isPending} onClick={() => build.mutate()}>
+        {t.build}
+      </Button>
       <Button
         type="button"
         variant={site.addon.active ? "outline" : "default"}

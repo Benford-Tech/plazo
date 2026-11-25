@@ -115,6 +115,19 @@ export default function SitePage() {
     onError: (err) => toast.error(describeError(err)),
   });
 
+  // 25/11/2026 (« en tant que super admin je veux pouvoir construire le site du client »): in consultation, the platform
+  // admin switches the option on here instead of asking for it.
+  const consultedId = user?.isPlatformAdmin ? (user.viewAs?.operatorId ?? null) : null;
+  const activate = useMutation({
+    mutationFn: () => adminApi.setPlatformSite(consultedId!, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site"] });
+      queryClient.invalidateQueries({ queryKey: ["platform"] });
+      toast.success(fr.site.platform.done);
+    },
+    onError: (err) => toast.error(describeError(err)),
+  });
+
   if (query.isLoading || !site || !blocks || !look) {
     return (
       <>
@@ -295,7 +308,17 @@ export default function SitePage() {
               </h2>
               <p className="font-semibold">{t.addonPrice(euros(site.addon.priceCents))}</p>
               <p className="text-sm">{t.addonFree}</p>
-              {site.addon.requestedAt ? (
+              {consultedId ? (
+                <Button
+                  type="button"
+                  data-testid="site-addon-activate"
+                  className="h-11 self-start bg-lime font-bold text-lime-ink hover:bg-lime/90"
+                  disabled={activate.isPending}
+                  onClick={() => activate.mutate()}
+                >
+                  {fr.site.platform.activate}
+                </Button>
+              ) : site.addon.requestedAt ? (
                 <p className="text-sm font-semibold text-lime-deep">{t.addonRequested(day.format(new Date(site.addon.requestedAt)))}</p>
               ) : (
                 <Button type="button" className="h-11 self-start bg-lime font-bold text-lime-ink hover:bg-lime/90" disabled={readOnly || request.isPending} onClick={() => request.mutate()}>

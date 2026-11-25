@@ -645,6 +645,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      annonce `plazo-site-ready`) ; `next.config.ts` : `/s/…?apercu=` sans `X-Frame-Options`, `frame-ancestors 'self'
      https://pro.plazo.fr https://www.plazo.fr`, `noindex` ; sans la clé, jamais dans un cadre. Les pages d'un site à plusieurs pages
      allumé mais pas enregistré ne s'ouvrent pas encore dans l'aperçu. Tests `SitePreview.test.tsx`, `LivePreview.test.ts`.
+   - **Le super admin construit le site du client (25/11/2026, « en tant que super admin je veux pouvoir construire le site du client »)** :
+     « Construire le site » de la carte « Site dédié (option) » (Plateforme › loueur, `OperatorSiteCard`, `operator-site-build`) ouvre l'espace du
+     loueur (`startViewAs`) directement sur « Mon site » ; en consultation, l'encart de l'option propose « Activer l'option » (`site-addon-activate`,
+     `PUT /internal/platform/operators/:id/site`) au lieu de « Demander l'option » ; blocs, présentation, photos, nom de domaine et mise en ligne
+     y étaient déjà permis (`RefuseInDemo`, tracés `view_as.write`). Test `SitePage.test.tsx`.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son
