@@ -282,6 +282,52 @@ describe("Plateforme › Prospection", () => {
     expect(names()[0]).toContain("Zeta Parken");
   });
 
+  it("tri par ouvertures de la démo (25/11/2026) : la plus ouverte d'abord, sans lien en dernier", async () => {
+    const user = userEvent.setup();
+    const link = (opens: number) => ({
+      url: "https://pro.plazo.fr/pro/demo/AbCd2345EfGh",
+      expiresAt: "2026-12-09T10:00:00.000Z",
+      expired: false,
+      opens,
+      lastOpenedAt: opens ? "2026-11-24T10:00:00.000Z" : null,
+    });
+    api.getProspects.mockResolvedValue({
+      data: [
+        { ...base, id: "a", companyName: "Zeta Parken", demo: null },
+        { ...base, id: "b", companyName: "Alpha Valet", demo: link(2) },
+        { ...base, id: "c", companyName: "Gamma Parking", demo: link(7) },
+      ],
+      counts: { ...counts, all: 3 },
+      airports: [],
+      regions,
+      regionCounts: { "auvergne-rhone-alpes": 3, none: 0 },
+      today: { sent: 0, cap: 50, remaining: 50 },
+      window: { open: true, nextOpening: null },
+      configured: true,
+    });
+    renderIn();
+    await screen.findByText("Zeta Parken");
+    const names = () =>
+      screen
+        .getAllByRole("row")
+        .map((r) => r.textContent ?? "")
+        .filter((t) => /Parken|Valet|Gamma/.test(t))
+        .map((t) => /Zeta|Alpha|Gamma/.exec(t)?.[0]);
+
+    await user.selectOptions(
+      screen.getByLabelText("Trier les prospects"),
+      "opens",
+    );
+    expect(names()).toEqual(["Gamma", "Alpha", "Zeta"]);
+    await user.selectOptions(screen.getByLabelText("Trier les prospects"), "");
+    expect(names()).toEqual(["Zeta", "Alpha", "Gamma"]);
+
+    // The column itself starts with the most opened too.
+    await user.click(screen.getByRole("button", { name: "Démo" }));
+    expect(names()).toEqual(["Gamma", "Alpha", "Zeta"]);
+    expect(screen.getByLabelText("Trier les prospects")).toHaveValue("opens");
+  });
+
   it("aperçu pour le premier choisi, confirmation, envoi des seuls prospects à contacter", async () => {
     const user = userEvent.setup();
     api.sendProspects.mockResolvedValue({

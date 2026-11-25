@@ -2386,6 +2386,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   décroissant, puis l'ordre de la liste ; les vides en dernier ; trié, la liste est à plat, « Tous, triés », au lieu des blocs par
   région) ; la sélection et « Tout choisir » ne portent que sur les prospects affichés. Tests `prospecting.test.ts`,
   `ProspectingPage.test.tsx`.
+  **Tri par ouvertures de la démo (25/11/2026, « ordonner les prospect par nombre d'ouverture »)** : liste « Trier les prospects »
+  de la barre de filtres (Ordre de la liste · Démo la plus ouverte d'abord ; `MOST_OPENED` de `lib/prospecting.ts`, aussi sur
+  téléphone derrière « Filtres ») et le titre de colonne « Démo » commence par la plus ouverte (`nextSort` : décroissant, croissant,
+  puis l'ordre de la liste) ; prospects sans lien en dernier. Les ouvertures comptées sont celles du lien de démo
+  (`demo_links.opens`) ; l'ouverture des mails de prospection n'est pas mesurée. Tests `prospecting.test.ts`, `ProspectingPage.test.tsx`.
   **Intéressé ou non en un clic, choix « les quatre » (17/11/2026, « pouvoir marquer des prospects comme intéressés ou non »)** :
   sur chaque ligne, à côté de l'état, 👍 / 👎 (`StateMarks`, `aria-pressed`) : un clic marque « Intéressé » / « Pas intéressé », un
   clic sur celui qui est allumé remet le prospect (`reopen` de `POST …/prospects/:id/status` : « Contacté » quand un mail est

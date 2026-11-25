@@ -32,6 +32,7 @@ import {
   NO_FILTERS,
   FRANCE,
   NO_REGION,
+  MOST_OPENED,
   nextSort,
   type ProspectFilters,
   type ProspectSort,
@@ -1123,6 +1124,18 @@ export default function ProspectingPage() {
               {t.filterLastMailOptions[k]}
             </option>
           ))}
+        </FilterSelect>
+        <FilterSelect
+          label={t.sortChoice}
+          value={
+            sort?.key === MOST_OPENED.key && sort.dir === MOST_OPENED.dir
+              ? "opens"
+              : ""
+          }
+          onChange={(v) => setSort(v === "opens" ? MOST_OPENED : null)}
+        >
+          <option value="">{t.sortListOrder}</option>
+          <option value="opens">{t.sortMostOpened}</option>
         </FilterSelect>
           </div>
         )}

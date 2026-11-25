@@ -496,13 +496,21 @@ export function sortProspects(
     .map((x) => x.p);
 }
 
-/** A click on a column: sort by it ascending, then descending, then back to the list's own order. */
+/** « Les plus ouvertes » (25/11/2026): the prospects by number of openings of their demo, the most opened first. */
+export const MOST_OPENED: ProspectSort = { key: "demo", dir: "desc" };
+
+/**
+ * A click on a column: sort by it, the other way, then back to the list's own order. Ascending first, except the
+ * demo column, whose point is the most opened first.
+ */
 export function nextSort(
   current: ProspectSort | null,
   key: ProspectSortKey,
 ): ProspectSort | null {
-  if (!current || current.key !== key) return { key, dir: "asc" };
-  return current.dir === "asc" ? { key, dir: "desc" } : null;
+  const first = key === "demo" ? "desc" : "asc";
+  if (!current || current.key !== key) return { key, dir: first };
+  if (current.dir !== first) return null;
+  return { key, dir: first === "asc" ? "desc" : "asc" };
 }
 
 // ---- SMS (19/11/2026, « pouvoir envoyer un sms de prospection », choix C) --------------------------------------------

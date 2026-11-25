@@ -245,5 +245,10 @@ describe("filtres et tri des prospects (16/11/2026)", () => {
     const s1 = nextSort(null, "tool");
     expect(s1).toEqual({ key: "tool", dir: "asc" });
     expect(nextSort(nextSort(s1, "tool"), "tool")).toBeNull();
+    // The demo column starts with the most opened.
+    const d1 = nextSort(null, "demo");
+    expect(d1).toEqual({ key: "demo", dir: "desc" });
+    expect(nextSort(d1, "demo")).toEqual({ key: "demo", dir: "asc" });
+    expect(nextSort(nextSort(d1, "demo"), "demo")).toBeNull();
   });
 });
