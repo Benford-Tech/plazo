@@ -151,28 +151,32 @@ describe("meta description of a parking page", () => {
 
 describe("sitemap", () => {
   const airportMock = vi.fn();
+  const sitesMock = vi.fn();
+  let host = "www.plazo.test";
   beforeEach(() => {
     vi.resetModules();
-    vi.doMock("@/lib/api", () => ({ api: { airport: airportMock } }));
+    host = "www.plazo.test";
+    sitesMock.mockResolvedValue({ sites: [] });
+    vi.doMock("@/lib/api", () => ({ api: { airport: airportMock, onlineSites: sitesMock } }));
+    vi.doMock("next/headers", () => ({ headers: async () => new Headers({ host }) }));
     vi.stubEnv("PUBLIC_SITE_URL", BASE);
   });
   afterEach(() => {
     vi.doUnmock("@/lib/api");
+    vi.doUnmock("next/headers");
     vi.unstubAllEnvs();
   });
 
   const guides = GUIDE_TOPICS.map(t => `${BASE}/lyon-saint-exupery/guide/${t.slug}`);
 
-  // 13/10/2026: the account deletion page of Plazo Pro, asked by the stores.
-  const deletion = `${BASE}/suppression-compte`;
   // 27/10/2026: Plazo Pro's home page and pricing page, for the operators.
   const pro = [`${BASE}/loueurs`, `${BASE}/loueurs/tarifs`];
 
-  it("lists the home page, the account deletion page, the topic guides and the real parkings, never the demo ones", async () => {
+  it("lists the home page, the topic guides and the real parkings, never the demo ones", async () => {
     airportMock.mockResolvedValue({ airport, listings: [listing({ slug: "demo", isDemo: true }), listing({})] });
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
-    expect(entries.map(entry => entry.url)).toEqual([`${BASE}/`, deletion, ...pro, ...guides, `${BASE}/lyon-saint-exupery/parkair`]);
+    expect(entries.map(entry => entry.url)).toEqual([`${BASE}/`, ...pro, ...guides, `${BASE}/lyon-saint-exupery/parkair`]);
     // C (09/10/2026): each guide carries the day its facts were last checked.
     for (const entry of entries.filter(e => guides.includes(e.url))) expect(entry.lastModified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
@@ -180,7 +184,23 @@ describe("sitemap", () => {
   it("still serves the home page and the guides when the API does not answer", async () => {
     airportMock.mockRejectedValue(new Error("down"));
     const { default: sitemap } = await import("@/app/sitemap");
-    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, deletion, ...pro, ...guides]);
+    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, ...pro, ...guides]);
+  });
+
+  it("lists the parkings' sites online, and on a parking's own domain only its site (25/11/2026)", async () => {
+    airportMock.mockResolvedValue({ airport, listings: [] });
+    sitesMock.mockResolvedValue({
+      sites: [
+        { slug: "cedres", domain: null, pages: ["aeroport", "questions"], updatedAt: "2026-11-25T10:00:00.000Z" },
+        { slug: "pins", domain: "www.parking-des-pins.fr", pages: ["tarifs"], updatedAt: "2026-11-25T10:00:00.000Z" },
+      ],
+    });
+    const { default: sitemap } = await import("@/app/sitemap");
+    const urls = (await sitemap()).map(entry => entry.url);
+    expect(urls).toEqual(expect.arrayContaining([`${BASE}/s/cedres`, `${BASE}/s/cedres/aeroport`, `${BASE}/s/cedres/questions`]));
+    expect(urls.some(u => u.includes("/s/pins"))).toBe(false);
+    host = "www.parking-des-pins.fr";
+    expect((await sitemap()).map(entry => entry.url)).toEqual(["https://www.parking-des-pins.fr/", "https://www.parking-des-pins.fr/tarifs"]);
   });
 });
 

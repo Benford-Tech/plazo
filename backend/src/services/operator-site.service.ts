@@ -23,6 +23,7 @@ import { dnsRecordFor, readDomain } from '@/domain/site-domain';
 import { contactEmail } from '@/domain/contact';
 import { SiteContactDto } from '@/dtos/contact.dto';
 import { logger } from '@/utils/logger';
+import { isTestOperatorName } from '@/domain/test-feed';
 import { AuditService } from './audit.service';
 import { replyToName } from './contact.service';
 import { NotificationService } from './notification.service';
@@ -313,6 +314,43 @@ export class OperatorSiteService {
     }
     // The pages the host answers besides its home page; every other path is Plazo's own.
     return { slug: site.operator.bookingPageSlug, pages: site.pages ? await this.pageSlugs(site.operatorId) : [] };
+  }
+
+  /**
+   * GET /public/sites (25/11/2026, SEO « A »): the sites online, for the sitemaps. A site with its own domain is listed
+   * with it (plazo.fr/s/<slug> sends there); demo and test operators stay out (their pages are not indexed).
+   */
+  public async listOnline() {
+    const sites = await prisma.operatorSite.findMany({
+      where: {
+        publishedAt: { not: null },
+        operator: { status: 'active', archivedAt: null, isDemo: false, prospectDemo: false, bookingPageSlug: { not: null } },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        operatorId: true,
+        pages: true,
+        domain: true,
+        domainActiveAt: true,
+        updatedAt: true,
+        operator: { select: { name: true, bookingPageSlug: true } },
+      },
+    });
+    const out: { slug: string; domain: string | null; pages: string[]; updatedAt: Date }[] = [];
+    for (const site of sites) {
+      if (isTestOperatorName(site.operator.name)) continue;
+      // The site shows nothing without a published listing.
+      const listed = await prisma.listing.count({ where: { status: 'published', parking: { operatorId: site.operatorId } } });
+      if (!listed) continue;
+      out.push({
+        slug: site.operator.bookingPageSlug!,
+        domain: site.domainActiveAt ? site.domain : null,
+        // The legal notice is not indexed.
+        pages: site.pages ? (await this.pageSlugs(site.operatorId)).filter(p => p !== 'mentions-legales') : [],
+        updatedAt: site.updatedAt,
+      });
+    }
+    return out;
   }
 
   public async view(actor: AuthenticatedStaff) {
