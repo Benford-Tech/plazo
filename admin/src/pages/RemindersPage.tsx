@@ -560,15 +560,16 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
   const valet = board.valet!;
   const confirm = useConfirm();
   const saved = valet.template ?? "";
+  // 25/11/2026 (« même texte pour le SMS »): without its own text, the field holds Plazo's generic one, the text that leaves.
+  const base = saved || valet.suggested;
   const [typed, setTyped] = useState<string | null>(null);
-  const draft = typed ?? saved;
+  const draft = typed ?? base;
   const values = board.sample.values;
-  // 25/11/2026: without its own text, the parking's valet bookings get Plazo's generic one, shown here as it leaves.
   const shown = draft.trim() ? draft : valet.suggested;
   const preview = useMemo(() => renderTemplate(shown, values), [shown, values]);
   const length = smsLength(preview);
   const unknown = unknownVariables(draft);
-  const dirty = draft.trim() !== saved.trim();
+  const dirty = draft.trim() !== base.trim();
   const textarea = useRef<HTMLTextAreaElement>(null);
 
   const save = useMutation({
@@ -603,15 +604,10 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
         <span className="rounded-full bg-panel-2 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{v.smsOnly}</span>
       </div>
       <p className="text-[13px] text-muted-foreground">{v.intro}</p>
-      {!valet.template && !typed && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-panel-line bg-panel-2 px-3 py-2.5 text-sm">
-          <span>{v.none}</span>
-          {board.can.edit && (
-            <button type="button" data-testid="reminder-valet-suggested" onClick={() => setTyped(valet.suggested)} className={cn(BUTTON, "h-9")}>
-              {v.useSuggested}
-            </button>
-          )}
-        </div>
+      {!valet.template && (
+        <p data-testid="reminder-valet-generic" className="rounded-lg border border-panel-line bg-panel-2 px-3 py-2.5 text-sm">
+          {v.none}
+        </p>
       )}
       {valet.template && valet.updatedAt && (
         <p className="text-[13px] text-muted-foreground">
@@ -629,7 +625,7 @@ function ValetMessageSection({ board, onSaved, compact = false }: { board: Remin
             rows={compact ? 10 : 16}
             value={draft}
             readOnly={!board.can.edit}
-            onChange={e => setTyped(e.target.value === saved ? null : e.target.value)}
+            onChange={e => setTyped(e.target.value === base ? null : e.target.value)}
             className="w-full resize-y rounded-lg border border-panel-line bg-panel p-3 text-sm leading-relaxed"
           />
           {board.can.edit ? (
