@@ -5963,8 +5963,7 @@ export const remindersFr = {
     title: "Le message des réservations voiturier",
     intro:
       "Envoyé la veille, à la même heure, aux réservations « Voiturier au terminal », à la place du message habituel. Il part par SMS, depuis le téléphone du parking : la réponse du client arrive dans Messages.",
-    none: "Ces réservations reçoivent le message voiturier de Plazo, rempli avec les informations de votre parking.",
-    useSuggested: "Le personnaliser",
+    none: "Le texte ci-dessous est le message voiturier de Plazo, rempli avec les informations de votre parking : c'est lui qui part tant que vous ne le modifiez pas.",
     label: "Texte du SMS voiturier",
     save: "Enregistrer",
     saved: "Texte voiturier enregistré.",

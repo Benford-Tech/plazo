@@ -923,8 +923,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      parking a réglé : « ⏱️ Conditions : {conditions} », « Services sur demande : {services} », « Pour toute modification… » (réponse au
      SMS avec le téléphone du parking, sinon `{téléphone}`), « Cordialement, {parking} ») ; `SmsService.valetDefault`,
      `valetReminderText` ne rend nul que pour une réservation navette ; toujours par SMS seul ; `board.valet.suggested` = ce texte.
-     Web : l'onglet « Voiturier » le montre rempli avec l'exemple (« Ces réservations reçoivent le message voiturier de Plazo… »,
-     « Le personnaliser », test) au lieu d'un onglet vide. APL garde son propre texte.
+     Web : l'onglet « Voiturier » a ce texte dans le champ « Texte du SMS voiturier » (« même texte pour le SMS ») et son aperçu ;
+     « Enregistrer » n'est actif qu'une fois le texte modifié, qui devient alors celui du parking. APL garde son propre texte.
      **Pour une réservation donnée, choix A (30/10/2026, « pouvoir envoyer un sms de la veille à une réservation donnée »)** : bloc
      « SMS de la veille » de la fiche réservation web (`BookingReminderCard`, `reservations:manage` : « Prévu ce soir à 18:00 »,
      « Envoyé demain à 10:00 », ou l'état de la page SMS de la veille ; « Envoyer maintenant », puis « Renvoyer le SMS » avec
