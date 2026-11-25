@@ -21,6 +21,7 @@ OPERATOR = os.environ.get("OPERATOR", "").strip()
 REFERENCE = os.environ.get("REFERENCE", "").strip().upper()
 PLATE = os.environ.get("PLATE", "").strip().upper()
 HANDOVER = os.environ.get("HANDOVER", "").strip().lower()
+RETURN_AT = os.environ.get("RETURN_AT", "").strip()  # the parking's local time, « 2026-12-06T19:10 »
 APPLY = os.environ.get("APPLY", "").strip().lower() == "true"
 
 
@@ -128,6 +129,8 @@ def main():
             patch["plate"] = PLATE
         elif PLATE and (booking.get("plate") or "").replace("-", "") != PLATE.replace("-", ""):
             print("::warning::La réservation a déjà une autre plaque : elle n'est pas remplacée.")
+        if RETURN_AT:
+            patch["returnAt"] = RETURN_AT
         if not patch:
             print("Rien à changer.")
             return

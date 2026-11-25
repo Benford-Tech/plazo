@@ -476,7 +476,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      reconnu » en production, aucune réservation créée)** : l'objet « Modification - PM… » sur le corps entier d'une confirmation
      (`isParkMundoChange`, règle `parkmundo.modification` ; ses seuls mots : `parkmundo.change`, rien d'appliqué) est appliqué comme
      une modification Onepark (`oneparkChange(…, 'ParkMundo')` → `applyEmailChange` : réservation du numéro, sinon celle saisie sans
-     lui, sinon créée ; source `parkmundo_change`) ; les mails en attente de 7 jours sont relus seuls (`rereadWithNewRules`). Test
+     lui, sinon créée ; source `parkmundo_change`) ; les mails en attente de 7 jours sont relus seuls (`rereadWithNewRules`) ; un avis plus ancien qu'un avis déjà appliqué à la réservation n'y est que rattaché (`newerChangeApplied` : deux avis relus dans le désordre remettaient l'ancien retour). Test
      `inbound-rules.test.ts`.
      Workflow « Corriger une réservation importée » (`reservation-fix.yml`, `.github/scripts/reservation_fix.py`, à la main, aperçu
      par défaut) : en consultation d'administrateur, pose la plaque (jamais à la place d'une autre) et la prise en charge d'une

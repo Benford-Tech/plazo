@@ -24,6 +24,10 @@ on:
         type: choice
         options: ["", "valet", "shuttle"]
         default: ""
+      retour:
+        description: "Nouveau retour, heure du parking (2026-12-06T19:10)"
+        type: string
+        default: ""
       appliquer:
         description: "Écrire (sinon aperçu seulement)"
         type: boolean
@@ -52,5 +56,6 @@ jobs:
           REFERENCE: ${{ inputs.numero }}
           PLATE: ${{ inputs.plaque }}
           HANDOVER: ${{ inputs.prise_en_charge }}
+          RETURN_AT: ${{ inputs.retour }}
           APPLY: ${{ inputs.appliquer }}
         run: python3 .github/scripts/reservation_fix.py
