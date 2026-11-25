@@ -4173,6 +4173,9 @@ export const fr = {
         none: "Pas de lien de démo",
       },
       filterOrigin: "Filtrer par origine",
+      sortChoice: "Trier les prospects",
+      sortListOrder: "Ordre de la liste",
+      sortMostOpened: "Démo la plus ouverte d'abord",
       filterOriginOptions: {
         "": "Origine : toutes",
         new: "Nouveaux parkings (BODACC + annuaire)",
