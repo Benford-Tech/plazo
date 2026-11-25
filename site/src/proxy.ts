@@ -36,7 +36,15 @@ async function parkingSiteHost(request: NextRequest, host: string) {
 
 export function proxy(request: NextRequest): NextResponse | Promise<NextResponse> {
   const host = foreignHost(request.headers.get("host"));
+  // 25/11/2026 (« le favicon prend le logo du client »): on a parking's domain, the browser's own request for the tab icon.
+  if (request.nextUrl.pathname === "/favicon.ico") return host ? parkingIcon(host) : NextResponse.next();
   return host ? parkingSiteHost(request, host) : ownHost(request);
+}
+
+/** The parking's logo (the API sends Plazo's icon when it has none); Plazo's icon for a host that opens no site. */
+async function parkingIcon(host: string): Promise<NextResponse> {
+  const { slug } = await siteOfHost(host, backendUrl());
+  return NextResponse.redirect(slug ? `https://${host}/api/public/sites/${encodeURIComponent(slug)}/icon` : `${siteUrl()}/favicon.ico`, 307);
 }
 
 function ownHost(request: NextRequest): NextResponse {
@@ -83,5 +91,5 @@ function keepManageKey(request: NextRequest, locale: ReturnType<typeof splitLoca
 
 export const config = {
   // Pages only: not the files (a dot in the last segment), Next's own, the API and the pro space (other services).
-  matcher: ["/((?!_next/|api/|pro/|pro$|\\.well-known/|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!_next/|api/|pro/|pro$|\\.well-known/|.*\\.[a-zA-Z0-9]+$).*)", "/favicon.ico"],
 };

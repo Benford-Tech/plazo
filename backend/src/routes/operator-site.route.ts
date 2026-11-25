@@ -70,6 +70,7 @@ export class OperatorSiteRoute implements Routes {
       this.router.get(`/public/sites/:slug/${kind}/:file`, this.controller.photo(kind));
     }
     this.router.get('/public/sites/:slug/logo', this.controller.logo);
+    this.router.get('/public/sites/:slug/icon', this.controller.icon);
     this.router.get('/public/sites/:slug', this.controller.publicSite);
     this.router.post('/public/sites/:slug/contact', contactLimiter, ValidationMiddleware(SiteContactDto), this.controller.contact);
     this.router.get('/public/site-domains/:host', this.controller.byDomain);

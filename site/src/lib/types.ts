@@ -275,6 +275,8 @@ export interface ParkingSiteInfo extends BookingPageInfo {
   /** The photo of the team, beside the title in the « home » look. */
   teamPhotoUrl?: string | null;
   logoUrl?: string | null;
+  /** 25/11/2026: the browser tab's icon, the parking's logo; null: Plazo's. */
+  iconUrl?: string | null;
   /** The Google rating the manager typed. */
   rating?: { value: number; count: number | null } | null;
   /** Where the parking takes its travellers: the airport, then its shuttle's stops. */

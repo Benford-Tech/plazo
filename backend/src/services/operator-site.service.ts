@@ -181,6 +181,15 @@ export class OperatorSiteService {
     return logo;
   }
 
+  /**
+   * GET /public/sites/:slug/icon — the browser tab's icon of the parking's site (25/11/2026, « le favicon prend le logo du
+   * client »): the parking's logo, whether or not the site shows it in its header; null without a logo.
+   */
+  public async icon(slug: string): Promise<StoredPhoto | null> {
+    const operator = await prisma.operator.findUnique({ where: { bookingPageSlug: slug }, select: { logoKey: true } });
+    return operator?.logoKey ? await this.storage.get(operator.logoKey) : null;
+  }
+
   /** The site's photo, erased with the operator. */
   public async blobKeysOf(operatorId: string): Promise<string[]> {
     const site = await prisma.operatorSite.findUnique({ where: { operatorId }, select: { heroPhotoKey: true, teamPhotoKey: true } });
@@ -505,6 +514,8 @@ export class OperatorSiteService {
       heroPhotoUrl: site?.heroPhotoKey ? this.photoPath(clean, 'hero', site.heroPhotoKey) : null,
       teamPhotoUrl: site?.teamPhotoKey ? this.photoPath(clean, 'team', site.teamPhotoKey) : null,
       logoUrl: site?.showLogo && operator.logoUpdatedAt ? `/api/public/sites/${clean}/logo?v=${operator.logoUpdatedAt.getTime()}` : null,
+      // 25/11/2026: the tab's icon is the parking's logo when it has one (Plazo's otherwise).
+      iconUrl: operator.logoUpdatedAt ? `/api/public/sites/${clean}/icon?v=${operator.logoUpdatedAt.getTime()}` : null,
       rating: site?.ratingTenths ? { value: site.ratingTenths / 10, count: site.ratingCount ?? null } : null,
       destinations,
       // Several pages: one per destination, then the questions, the contact and the legal notice.

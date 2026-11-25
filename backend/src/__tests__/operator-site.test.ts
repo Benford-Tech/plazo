@@ -244,6 +244,10 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     expect((await api().get('/api/public/sites/cedres/hero/000000000000000000.jpeg')).status).toBe(404);
     // No logo uploaded: nothing to show, even switched on.
     expect((await api().get('/api/public/sites/cedres/logo')).status).toBe(404);
+    // 25/11/2026 (« le favicon prend le logo du client »): without a logo, the tab's icon is Plazo's.
+    const noIcon = await api().get('/api/public/sites/cedres/icon');
+    expect(noIcon.status).toBe(302);
+    expect(noIcon.headers.location).toMatch(/\/favicon\.ico$/);
 
     const key = new URL(photo.body.data.previewUrl).searchParams.get('apercu')!;
     const site = (await api().get(`/api/public/sites/cedres?apercu=${key}`)).body;
@@ -253,9 +257,19 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
       accent2Ink: '#1A1D1A',
       heroPhotoUrl: heroUrl,
       logoUrl: null,
+      iconUrl: null,
       rating: { value: 4.8, count: 193 },
       pages: ['aeroport', 'gare-tgv', 'tarifs', 'questions', 'contact', 'mentions-legales'],
     });
+    // With a logo, it becomes the tab's icon, whether or not the site shows it.
+    await api().put('/api/internal/site').set(auth(op.token)).send({ showLogo: false });
+    expect((await api().post('/api/internal/operator/logo').set(auth(op.token)).set('Content-Type', 'image/jpeg').send(JPEG)).status).toBe(200);
+    const withLogo = (await api().get(`/api/public/sites/cedres?apercu=${key}`)).body;
+    expect(withLogo.logoUrl).toBeNull();
+    expect(withLogo.iconUrl).toMatch(/^\/api\/public\/sites\/cedres\/icon\?v=\d+$/);
+    const icon = await api().get(withLogo.iconUrl);
+    expect(icon.status).toBe(200);
+    expect(icon.headers['content-type']).toBe('image/jpeg');
     expect(site.destinations).toEqual([
       { slug: 'aeroport', kind: 'airport', name: expect.any(String), instructions: null },
       { slug: 'gare-tgv', kind: 'station', name: 'Gare TGV', instructions: 'Devant le hall' },

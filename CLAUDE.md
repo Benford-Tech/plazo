@@ -619,6 +619,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `site.team_photo_set|removed`), `teamPhotoUrl` des vues ; champ « Photo de l'équipe » de la carte Présentation,
      montré avec le style Maison seulement (`PhotoField`) ; à côté du titre de Maison, sinon la photo du bandeau.
      Pas encore : des titres sans empattement pour Express, Plazo Pro.
+   - **Icône de l'onglet = logo du parking (25/11/2026, « le favicon prend le logo du client »)** : le site du parking (`/s/<slug>`, ses
+     pages et son nom de domaine) prend le logo du parking (Parking › Réglages) comme icône de l'onglet, que le site affiche le logo
+     ou non : `iconUrl` des vues publiques (`/api/public/sites/<slug>/icon?v=`), posé en `icons` par `generateMetadata` ;
+     `GET /public/sites/:slug/icon` (`OperatorSiteService.icon`) sert le logo, sinon 302 vers l'icône de Plazo ; sur le nom de
+     domaine du parking, `proxy.ts` renvoie `/favicon.ico` vers ce logo (`parkingIcon`, `/favicon.ico` ajouté au `matcher`).
+     Tests `operator-site.test.ts`, `proxy.test.ts`.
    - **Modèles « Parc » et « Voiturier », page Tarifs, formulaire de contact et barre fixe (24/11/2026, d'après aerpark.fr et
      onevalet.fr, maquettes https://claude.ai/artifact/V16Pp5k24hsKcQxrjQMoc8, « tout »)** : `SITE_THEMES` + `park` · `valet`
      (migration `site_park_valet`, CHECK) ; **Parc** : barre de contact bleu nuit (`--ps-dark`), « Ma réservation » à côté de

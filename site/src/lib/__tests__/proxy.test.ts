@@ -100,4 +100,16 @@ describe("le nom de domaine d'un parking", () => {
     const unknown = await onHost("https://inconnu.example/", "inconnu.example", null);
     expect(unknown.status).toBe(307);
   });
+
+  it("donne le logo du parking comme icône de l'onglet (25/11/2026), l'icône de Plazo sinon", async () => {
+    const icon = await onHost("https://www.cedres.example/favicon.ico", "www.cedres.example", "cedres");
+    expect(icon.status).toBe(307);
+    expect(icon.headers.get("location")).toBe("https://www.cedres.example/api/public/sites/cedres/icon");
+    const unknown = await onHost("https://inconnu.example/favicon.ico", "inconnu.example", null);
+    expect(new URL(unknown.headers.get("location")!).pathname).toBe("/favicon.ico");
+    // On Plazo's own domain, its own icon, untouched.
+    const own = await proxy(new NextRequest(new URL("https://www.plazo.fr/favicon.ico"), { headers: { host: "www.plazo.fr" } }));
+    expect(own.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(own.headers.get("location")).toBeNull();
+  });
 });

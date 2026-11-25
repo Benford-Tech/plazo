@@ -39,6 +39,8 @@ export async function generateMetadata({ params, searchParams }: { params: Param
     // A preview and a demo parking are never offered to search engines.
     ...(site.preview || data.parking.isDemo ? { robots: { index: false, follow: false } } : {}),
     openGraph: openGraph({ title, description, url: path, ...(data.parking.photos[0] ? { images: [data.parking.photos[0]] } : {}) }),
+    // 25/11/2026 (« le favicon prend le logo du client »): the parking's logo in the browser tab.
+    ...(site.iconUrl ? { icons: { icon: site.iconUrl, apple: site.iconUrl } } : {}),
   };
 }
 

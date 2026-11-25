@@ -4,6 +4,7 @@ import { Container } from 'typedi';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { OperatorSiteService, type SitePhotoKind } from '@/services/operator-site.service';
 import catchAsync from '@/utils/catchAsync';
+import { PUBLIC_SITE_URL } from '@/config';
 
 /** « Mon site » (22/11/2026): the parking's own site made of blocks. */
 export class OperatorSiteController {
@@ -69,6 +70,13 @@ export class OperatorSiteController {
     catchAsync(async (req: Request, res: Response) => {
       this.image(res, await this.service.photo(req.params.slug as string, kind, req.params.file as string), 'public, max-age=604800, immutable');
     });
+
+  /** The parking's logo as the tab's icon; Plazo's own icon when it has none. */
+  public icon = catchAsync(async (req: Request, res: Response) => {
+    const icon = await this.service.icon(req.params.slug as string);
+    if (!icon) return res.redirect(302, `${PUBLIC_SITE_URL || 'https://www.plazo.fr'}/favicon.ico`);
+    this.image(res, icon, 'public, max-age=3600');
+  });
 
   public logo = catchAsync(async (req: Request, res: Response) => {
     this.image(res, await this.service.logo(req.params.slug as string), 'public, max-age=3600');
