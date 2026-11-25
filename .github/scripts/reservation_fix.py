@@ -56,7 +56,9 @@ def call(method, path, body=None, token=None):
 
 def state(booking):
     return (f"{booking.get('reference')} · {booking.get('status')} · prise en charge {booking.get('handover')} · "
-            f"plaque {'présente' if booking.get('plate') else 'absente'}")
+            f"plaque {'présente' if booking.get('plate') else 'absente'} · arrivée {booking.get('arrivalAt')} · "
+            f"retour {booking.get('returnAt')} · prix {booking.get('priceCents')} · vols {booking.get('departureFlight')} / "
+            f"{booking.get('returnFlight')} · passagers {booking.get('passengers')}")
 
 
 def describe(mail):
