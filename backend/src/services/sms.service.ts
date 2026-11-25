@@ -7,7 +7,16 @@ import { PRODUCT_NAME, PUBLIC_SITE_URL, SMS_DAILY_LIMIT, smsGatewayEncryptionKey
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { confirmationSms } from '@/domain/booking-messages';
 import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { defaultTemplate, renderTemplate, TemplateValues, templateContextOf, valuesOf } from '@/domain/day-before-sms';
+import {
+  defaultTemplate,
+  ParkingValues,
+  renderTemplate,
+  TemplateValues,
+  templateContextOf,
+  valetDefaultTemplate,
+  valuesOf,
+} from '@/domain/day-before-sms';
+import { valetMeetingPointOf } from '@/domain/valet';
 import { loadParkingValues } from './parking-values';
 import { reminderImage, reminderTemplateParams, reminderTemplateText } from '@/domain/whatsapp';
 import { smsRecipient } from '@/domain/phone';
@@ -691,15 +700,37 @@ export class SmsService {
   }
 
   /**
-   * 15/11/2026 (APL Parking): a valet booking's day-before text, when its parking has written one; null otherwise (the usual
-   * message). Sent by SMS alone, as written: its own conditions, nothing added.
+   * A valet booking's day-before text; null for any other booking (the usual message). Sent by SMS alone, as written:
+   * its own conditions, nothing added. 15/11/2026: the parking's own valet text; 25/11/2026 (« À rendre générique, et à
+   * envoyer pour les résa voiturier »): without one, Plazo's generic valet text, for every parking.
    */
   public async valetReminderText(booking: BookingRecord, link: string | null): Promise<string | null> {
     if (booking.handover !== 'valet') return null;
-    const settings = await prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { valetTemplate: true } });
-    if (!settings?.valetTemplate) return null;
-    const parking = (await loadParkingValues(booking.parkingId, booking.stopId)) ?? undefined;
-    return renderTemplate(settings.valetTemplate, valuesOf(booking, booking.parking.timezone, link, parking));
+    const [settings, values] = await Promise.all([
+      prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { valetTemplate: true } }),
+      loadParkingValues(booking.parkingId, booking.stopId),
+    ]);
+    const template = settings?.valetTemplate ?? (await this.valetDefault(booking.operatorId, booking.parkingId, values));
+    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link, values ?? undefined));
+  }
+
+  /** Plazo's generic valet text for a parking: its valet meeting point, and only the details it has set. */
+  public async valetDefault(operatorId: string, parkingId: string, values?: ParkingValues | null): Promise<string> {
+    const [parking, sms, known] = await Promise.all([
+      prisma.parking.findUnique({
+        where: { id: parkingId },
+        select: { valetMeetingPoint: true, listing: { select: { airport: { select: { code: true } } } } },
+      }),
+      prisma.operatorSmsSettings.findUnique({ where: { operatorId }, select: { mode: true } }),
+      values === undefined ? loadParkingValues(parkingId) : values,
+    ]);
+    return valetDefaultTemplate({
+      meetingPoint: valetMeetingPointOf({ valetMeetingPoint: parking?.valetMeetingPoint ?? null }, parking?.listing?.airport?.code ?? null),
+      conditions: !!known?.conditions,
+      services: !!known?.services.length,
+      phone: !!known?.phone,
+      repliesReachParking: sms?.mode === 'gateway',
+    });
   }
 
   public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {

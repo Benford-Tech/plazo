@@ -243,7 +243,9 @@ describe("RemindersPage (S-A + S-B)", () => {
     const [first] = await screen.findAllByTestId("reminder-row");
     expect(within(first).getByText("Voiturier")).toBeInTheDocument();
     await userEvent.click(screen.getByTestId("reminder-kind-valet"));
-    expect(screen.getByTestId("reminder-valet")).toHaveTextContent("ces réservations reçoivent le message habituel");
+    // 25/11/2026: without its own text, Plazo's generic valet text is what leaves, and is shown.
+    expect(screen.getByTestId("reminder-valet")).toHaveTextContent("Ces réservations reçoivent le message voiturier de Plazo");
+    expect(screen.getByTestId("reminder-valet-preview")).toHaveTextContent("service voiturier prévu le 07/10/2026 à 05:45");
     await userEvent.click(screen.getByTestId("reminder-valet-suggested"));
     expect(screen.getByLabelText("Texte du SMS voiturier")).toHaveValue(valet.suggested);
     expect(screen.getByTestId("reminder-valet-preview")).toHaveTextContent("service voiturier prévu le 07/10/2026 à 05:45");
