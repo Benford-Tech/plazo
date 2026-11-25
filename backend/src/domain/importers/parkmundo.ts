@@ -15,7 +15,8 @@ export const parkmundoImporter: EmailImporter = {
   detect: text => /\bPM\d{8,}\b/.test(text) && /parkmundo|d[ée]tails du voyage|pack produit|co[ûu]t de r[ée]servation/i.test(text),
 
   parse(text) {
-    const flat = flatten(text);
+    // 25/11/2026: the plain part keeps an entity in its labels (« Numéro d&apos;immatriculation »): the plate was missed.
+    const flat = flatten(text.replace(/&#0*39;|&apos;|&#x0*27;|&rsquo;|’/gi, "'"));
     const booking: ParsedBooking = { provider: 'ParkMundo' };
     booking.externalReference = /\b(PM\d{6,})\b/.exec(flat)?.[1];
     booking.customerName = new RegExp(
@@ -25,6 +26,8 @@ export const parkmundoImporter: EmailImporter = {
       .exec(flat)?.[1]
       ?.trim();
     booking.customerPhone = new RegExp(String.raw`(?:Num[ée]ro de )?t[ée]l[ée]phone\s*:?\s*(${PHONE.source})`, 'i').exec(flat)?.[1]?.trim();
+    // ParkMundo keeps the national 0 after the country code (« +330612345678 »).
+    if (booking.customerPhone) booking.customerPhone = booking.customerPhone.replace(/^\+33\s*0(?=\d)/, '+33');
     booking.customerEmail = travellerEmailIn(flat);
 
     // The trip: the first two « date time [flight] » after « Détails du voyage » (else anywhere), drop-off then pick-up.
@@ -45,6 +48,8 @@ export const parkmundoImporter: EmailImporter = {
     const passengers = Number(/Nombre de passagers\s*:?\s*(\d{1,2})\b/i.exec(flat)?.[1]);
     if (Number.isInteger(passengers) && passengers > 0) booking.passengers = passengers;
     booking.priceCents = amountAfter(flat, /Prix du parking/i) ?? amountAfter(flat, /Sous-total/i) ?? amountAfter(flat, /\bTotal\b/i);
+    // The service sold, under the parking's name: « Voiturier - Extérieur » (a shuttle parking reads « Navette - … »).
+    if (/\bVoiturier\s*[-–]\s*(?:Ext[ée]rieur|Int[ée]rieur|Couvert|Souterrain)/i.test(flat)) booking.handover = 'valet';
     return booking;
   },
 };

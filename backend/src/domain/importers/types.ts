@@ -23,6 +23,8 @@ export interface ParsedBooking {
   vehicleColour?: string;
   /** 25/10/2026: lines for the booking's notes (a flight typed without its airline, the customer's comment). */
   notes?: string;
+  /** 25/11/2026: the comparator sold a valet service (ParkMundo's « Voiturier - Extérieur »): a valet booking, no shuttle. */
+  handover?: 'valet';
 }
 
 export interface EmailImporter {

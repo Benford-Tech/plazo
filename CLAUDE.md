@@ -466,6 +466,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      mots de condition avant, « gratuite » / « possible » après, question) : « Pour toute annulation de votre réservation… »,
      « Toute réservation annulée… », « Si vous avez annulé », « Free cancellation… » (mots de condition dans les six mots avant, un deux-points ouvrant la nouvelle : « Aucune action n'est requise : votre réservation a été annulée » reste une annulation) ne font plus d'une confirmation une
      annulation ou une modification ; tests `inbound-reread.test.ts`, `inbound-kind.test.ts` (`confirmation-conditions.txt`).
+   - **ParkMundo, service voiturier (25/11/2026, confirmation `PM…` d'Aéroport Parking Lyon collée par Joanny)** : la partie texte
+     écrit « Numéro d&apos;immatriculation » (entité gardée) : la plaque n'était pas lue ; `parkmundo.ts` lit les apostrophes en
+     entité, retire le 0 gardé après l'indicatif (« +330612… » → « +33612… ») et reconnaît le service vendu sous le nom du parking
+     (« Voiturier - Extérieur ») : `ParsedBooking.handover` `valet`, que `createFromImport` enregistre (réservation voiturier :
+     courses au terminal, message de la veille des voituriers, jamais dans les listes de la navette). Premier import en voiturier ;
+     une modification n'y touche pas. Fixture `parkmundo-confirmation-valet.txt`, tests `import-comparators.test.ts`, `valet.test.ts`.
    - **Surveillance des mails entrants (09/11/2026, « faut un job qui parcourt les mails en continu pour voir si tout est ok »,
      choix « Relire avec les règles du jour · Alerte aux gérants · Rapport pour la plateforme »)** : **relecture** : à chaque passage
      du relais (`POST /public/inbound/retry`, réponse `newRules`), un mail « À traiter » des 7 derniers jours lu par les règles dont

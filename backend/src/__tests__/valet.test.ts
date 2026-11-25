@@ -2,6 +2,7 @@ import { Container } from 'typedi';
 import prisma from '@/database';
 import { landedSms } from '@/domain/return-messages';
 import { runNoticeDue, valetMeetingPointOf } from '@/domain/valet';
+import { ReservationService } from '@/services/reservation.service';
 import { runPush, ValetService } from '@/services/valet.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
@@ -106,6 +107,25 @@ describe('courses du voiturier', () => {
     expect(back.body.data).toMatchObject({ state: 'done', status: 'returned' });
     const history = await prisma.auditLog.findMany({ where: { entityId: id }, select: { action: true } });
     expect(history.map(h => h.action)).toEqual(expect.arrayContaining(['reservation.valet_run_taken', 'reservation.valet_run_released']));
+  });
+
+  it('25/11/2026 : un mail de comparateur qui vend le service voiturier crée une réservation voiturier, avec sa course', async () => {
+    const op = await setupOperator();
+    const valet = await addStaff(op.token, 'valet');
+    const { reservation } = await Container.get(ReservationService).createFromImport(op.operator.id, {
+      provider: 'ParkMundo',
+      externalReference: 'PM8645081277',
+      arrivalAt: '2027-03-04T06:30',
+      returnAt: '2027-03-07T15:05',
+      customerName: 'Camille MARTINET',
+      customerPhone: '+33639980101',
+      plate: 'GZ-029-NL',
+      handover: 'valet',
+    });
+    expect(reservation.handover).toBe('valet');
+    await prisma.reservation.update({ where: { id: reservation.id }, data: { arrivalAt: hoursFromNow(1), returnAt: hoursFromNow(48) } });
+    const list = await api().get('/api/internal/valet/runs').set(auth(valet.token));
+    expect(list.body.runs).toEqual([expect.objectContaining({ reservationId: reservation.id, kind: 'arrival' })]);
   });
 
   it('refuse une réservation navette et une réservation d’un autre loueur', async () => {
