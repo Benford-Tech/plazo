@@ -328,6 +328,8 @@ export class ReservationService {
           plateKey: key,
           returnFlight,
           departureFlight,
+          // 25/11/2026: a valet service sold by the comparator is a valet booking (terminal runs, the valet's message).
+          handover: parsed.handover ?? 'shuttle',
           notes,
           externalReference,
           priceCents: parsed.priceCents ?? null,

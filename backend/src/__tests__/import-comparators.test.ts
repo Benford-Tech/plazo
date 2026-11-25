@@ -275,6 +275,33 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     });
   });
 
+  it('ParkMundo, service voiturier (25/11/2026) : plaque sous « d&apos;immatriculation », +330… et prise en charge voiturier', () => {
+    const text = readFileSync(join(__dirname, 'fixtures', 'parkmundo-confirmation-valet.txt'), 'utf8');
+    expect(parseConfirmationEmail(text)).toEqual({
+      provider: 'ParkMundo',
+      externalReference: 'PM8645081277',
+      customerName: 'Camille MARTINET',
+      customerPhone: '+33639980101',
+      customerEmail: 'camille.martinet@example.com',
+      arrivalAt: '2026-11-30T08:35',
+      departureFlight: 'TU589',
+      returnAt: '2026-12-06T19:10',
+      returnFlight: 'TU588',
+      plate: 'GZ-029-NL',
+      vehicleModel: 'C3',
+      vehicleColour: 'Blanc',
+      passengers: 1,
+      priceCents: 7000,
+      handover: 'valet',
+    });
+    expect(classifyMail({ subject: 'Confirmation', from: 'ParkMundo <info@parkmundo.fr>', text })).toMatchObject({
+      provider: 'ParkMundo',
+      kind: 'booking',
+    });
+    // The shuttle confirmation stays a shuttle booking.
+    expect(read('parkmundo-confirmation.html')).not.toHaveProperty('handover');
+  });
+
   it('Parclick : arrivée, sortie et référence ; ce que le mail ne dit pas reste à compléter', () => {
     const booking = read('parclick-confirmation.html');
     expect(booking).toMatchObject({
