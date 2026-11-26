@@ -130,11 +130,12 @@ function Menu({ site, blocks, narrow = false }: { site: ParkingSiteInfo; blocks:
       className={
         narrow
           ? `${container} flex gap-5 overflow-x-auto border-t border-line-soft py-2 text-[14px] font-medium whitespace-nowrap lg:hidden`
-          : "hidden min-w-0 items-center gap-5 text-[14px] font-medium text-soft lg:flex"
+          : // One line only: an entry that does not fit wraps out of sight instead of squeezing the parking's name.
+            "hidden h-6 min-w-0 flex-1 flex-wrap items-center justify-end gap-x-5 overflow-hidden text-[14px] leading-6 font-medium text-soft lg:flex"
       }
     >
       {entries.map(entry => (
-        <a key={entry.href} href={entry.href} className={`${narrow ? "flex-none" : "truncate"} text-soft no-underline hover:text-ink`}>
+        <a key={entry.href} href={entry.href} className="flex-none text-soft no-underline hover:text-ink">
           {entry.label}
         </a>
       ))}
@@ -261,9 +262,9 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
       )}
       <header className="sticky top-0 z-20 border-b border-line bg-paper text-ink" style={prestige ? DARK_HEADER : undefined}>
         <div className={`${container} flex items-center gap-3 py-2.5`}>
-          <a href={sitePath(site)} className="flex min-w-0 flex-1 items-center gap-3 text-ink no-underline">
+          <a href={sitePath(site)} className="flex min-w-0 flex-1 items-center gap-3 text-ink no-underline lg:max-w-[45%] lg:flex-none">
             {logo}
-            <span className="min-w-0 truncate text-[16px] font-bold">{parking.title}</span>
+            <span data-testid="site-name" className="line-clamp-2 min-w-0 text-[16px] leading-tight font-bold">{parking.title}</span>
           </a>
           <Menu site={site} blocks={blocks} />
           {park && (
