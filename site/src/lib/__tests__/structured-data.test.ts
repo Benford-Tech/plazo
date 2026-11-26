@@ -152,12 +152,14 @@ describe("meta description of a parking page", () => {
 describe("sitemap", () => {
   const airportMock = vi.fn();
   const sitesMock = vi.fn();
+  const blogMock = vi.fn();
   let host = "www.plazo.test";
   beforeEach(() => {
     vi.resetModules();
     host = "www.plazo.test";
     sitesMock.mockResolvedValue({ sites: [] });
-    vi.doMock("@/lib/api", () => ({ api: { airport: airportMock, onlineSites: sitesMock } }));
+    blogMock.mockResolvedValue({ articles: [] });
+    vi.doMock("@/lib/api", () => ({ api: { airport: airportMock, onlineSites: sitesMock, blog: blogMock } }));
     vi.doMock("next/headers", () => ({ headers: async () => new Headers({ host }) }));
     vi.stubEnv("PUBLIC_SITE_URL", BASE);
   });
@@ -201,6 +203,30 @@ describe("sitemap", () => {
     expect(urls.some(u => u.includes("/s/pins"))).toBe(false);
     host = "www.parking-des-pins.fr";
     expect((await sitemap()).map(entry => entry.url)).toEqual(["https://www.parking-des-pins.fr/", "https://www.parking-des-pins.fr/tarifs"]);
+  });
+});
+
+describe("blog (26/11/2026)", () => {
+  it("lists the blog and its published articles in the sitemap", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/api", () => ({
+      api: {
+        airport: vi.fn().mockRejectedValue(new Error("down")),
+        onlineSites: vi.fn().mockResolvedValue({ sites: [] }),
+        blog: vi.fn().mockResolvedValue({
+          articles: [{ slug: "vacances-fevrier", title: "T", publishedAt: "2026-11-27T07:00:00.000Z", updatedAt: "2026-11-27T08:00:00.000Z" }],
+        }),
+      },
+    }));
+    vi.doMock("next/headers", () => ({ headers: async () => new Headers({ host: "www.plazo.test" }) }));
+    vi.stubEnv("PUBLIC_SITE_URL", BASE);
+    const { default: sitemap } = await import("@/app/sitemap");
+    const entries = await sitemap();
+    expect(entries.find(e => e.url === `${BASE}/blog`)?.lastModified).toBe("2026-11-27T07:00:00.000Z");
+    expect(entries.find(e => e.url === `${BASE}/blog/vacances-fevrier`)?.lastModified).toBe("2026-11-27T08:00:00.000Z");
+    vi.doUnmock("@/lib/api");
+    vi.doUnmock("next/headers");
+    vi.unstubAllEnvs();
   });
 });
 

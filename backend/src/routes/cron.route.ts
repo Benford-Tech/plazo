@@ -25,6 +25,10 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned }, prospecting: { configured, window, sent, failed, finished, remaining } | { error: true } }"
+ * /internal/cron/blog:
+ *   get:
+ *     summary: The blog's night job (26/11/2026): ?step=plan plans the coming week's topics; otherwise tomorrow's article is written and the platform admins mailed. Nothing is published.
+ *     tags: [Cron]
  * /internal/cron/forum-watch:
  *   get:
  *     summary: Daily forum watch (new discussions mailed to the platform's administrators, nothing posted)
@@ -134,5 +138,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/prospecting', CronAuthMiddleware(), this.cron.prospectingDue);
     this.router.get('/internal/cron/morning-email', CronAuthMiddleware(), this.cron.morningEmail);
     this.router.get('/internal/cron/forum-watch', CronAuthMiddleware(), this.cron.forumWatchRun);
+    this.router.get('/internal/cron/blog', CronAuthMiddleware(), this.cron.blogRun);
   }
 }

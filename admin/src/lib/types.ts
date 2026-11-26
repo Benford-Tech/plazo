@@ -3195,3 +3195,42 @@ export interface WebsiteIntegration {
   pluginVersion: string;
   key?: string;
 }
+
+/** 26/11/2026: Plateforme › Articles (the blog's daily SEO article, B « Le calendrier de la semaine »). */
+export type BlogArticleStatus = "planned" | "draft" | "published" | "rejected" | "failed";
+
+export interface BlogArticle {
+  id: string;
+  dueOn: string;
+  status: BlogArticleStatus;
+  topic: string;
+  query: string | null;
+  slug: string | null;
+  title: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  intro: string | null;
+  body: string | null;
+  related: string[];
+  sources: string[];
+  warnings: string[];
+  wordCount: number;
+  model: string | null;
+  error: string | null;
+  writtenAt: string | null;
+  publishedAt: string | null;
+  rejectedAt: string | null;
+  clicks: number | null;
+}
+
+export interface BlogWeek {
+  today: string;
+  monday: string;
+  configured: boolean;
+  counts: { published: number; toReview: number; clicks: number };
+  days: { day: string; article: BlogArticle | null }[];
+}
+
+export type BlogArticleEdit = Partial<
+  Pick<BlogArticle, "topic" | "query" | "slug" | "title" | "metaTitle" | "metaDescription" | "intro" | "body" | "related">
+>;

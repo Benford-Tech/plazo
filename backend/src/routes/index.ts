@@ -6,6 +6,7 @@ import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
 import { AppUsageRoute } from './app-usage.route';
 import { SeoRoute } from './seo.route';
+import { BlogRoute } from './blog.route';
 import { AppDeviceRoute } from './app-device.route';
 import { ContactRoute } from './contact.route';
 import { CronRoute } from './cron.route';
@@ -86,6 +87,7 @@ const AppRoutes = [
   new AppLinkRoute(),
   new ContactRoute(),
   new SeoRoute(),
+  new BlogRoute(),
   new AppUsageRoute(),
   new AppDeviceRoute(),
   new ArrivalRoute(),

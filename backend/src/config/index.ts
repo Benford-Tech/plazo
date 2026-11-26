@@ -57,6 +57,7 @@ export const listingDescriptionModel = (): string => (process.env.LISTING_DESCRI
 /** The forum watch's searches: a cheap model is enough to run a web search (18/11/2026). */
 export const forumSearchModel = (): string => (process.env.FORUM_SEARCH_MODEL || '').trim() || 'claude-haiku-5-5';
 export const forumReplyModel = (): string => (process.env.FORUM_REPLY_MODEL || '').trim() || 'claude-opus-5-5';
+export const blogArticleModel = (): string => (process.env.BLOG_ARTICLE_MODEL || '').trim() || 'claude-sonnet-5-5';
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
