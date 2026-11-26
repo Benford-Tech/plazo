@@ -670,7 +670,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `--ps-dark` en Parc) : un petit plan dessiné en SVG (le parking épinglé « P », « ✈ <aéroport> · 8 min » d'après `shuttleMinutes`), lien
      d'itinéraire ; logo ou initiales, nom, adresse, horaires et téléphone, « Itinéraire » et « Appeler » ; les liens du menu (`menuEntries`) ;
      ligne du bas « © année <raison sociale> », SIRET, TVA (`site.legal`), « Mentions légales » (site à plusieurs pages) et « Réservation par
-     Plazo » ; ce que le parking n'a pas donné est omis. Textes `footerAirport`, `footerLinks` dans les neuf langues. Test `ParkingSite.test.tsx`.
+     Plazo » ; ce que le parking n'a pas donné est omis. Textes `footerAirport`, `footerLinks` dans les neuf langues. Test `ParkingSite.test.tsx`. **Lien vers Plazo (26/11/2026, « fais le lien Réservation par Plazo »)** : « Réservation et paiement sécurisés par Plazo » du pied de page est un lien suivi vers la page d'accueil de www.plazo.fr dans la langue du site (`siteUrl()` + `lp("/")`), un lien de plus vers Plazo depuis le nom de domaine de chaque parking.
    - **Nom de domaine du parking pour son site (22/11/2026, « le nom de domaine du parking »)** : le gérant tape son
      nom de domaine (**hors de l'option depuis le 23/11/2026**, « le nom de domaine ne fait pas partie de l'option » : posé sans elle,
      il ouvre le site dès que le site est en ligne, ce qui demande toujours l'option ; éteindre l'option ne le débranche plus) dans « Mon site » (`DomainSection`, `site-domain`) ; Plazo lui donne le seul enregistrement à créer chez son

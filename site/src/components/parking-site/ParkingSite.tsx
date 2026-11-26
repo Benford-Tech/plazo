@@ -4,6 +4,7 @@ import { trustTiles } from "@/lib/highlights";
 import { mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { priceRows } from "@/lib/parking-more";
+import { siteUrl } from "@/lib/site";
 import { hasPages, isRich, PAGE_BLOCKS, pageOf, sitePath } from "@/lib/parking-site";
 import type { ParkingResponse, ParkingSiteInfo, SiteBlock, SiteBlockKind } from "@/lib/types";
 import { BAND_BLOCKS, BLOCKS, knownBlocks, menuEntry } from "./blocks";
@@ -639,7 +640,9 @@ function SiteFooter({ site, data, blocks, dark, logo }: { site: ParkingSiteInfo;
               </a>
             )}
           </p>
-          <span className="font-semibold">{fr.bookingPage.by}</span>
+          <a href={`${siteUrl()}${lp("/")}`} className="font-semibold text-inherit underline-offset-2 hover:underline">
+            {fr.bookingPage.by}
+          </a>
         </div>
       </div>
     </footer>
