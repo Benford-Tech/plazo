@@ -1,0 +1,36 @@
+name: Nouveaux parkings (offres d'emploi)
+
+# Lists the companies hiring shuttle drivers or valets for an airport car park in the last days (26/11/2026, « où trouver les
+# futurs ouvreurs de parking ? »): France Travail's « Offres d'emploi v2 » API, filtered by words, grouped by company.
+# Candidates only: nothing is written to Plazo. Needs the secrets FRANCE_TRAVAIL_CLIENT_ID and FRANCE_TRAVAIL_CLIENT_SECRET
+# (an application on francetravail.io). By hand only (.github/scripts/new_jobs.py).
+on:
+  workflow_dispatch:
+    inputs:
+      aeroports:
+        description: "Codes des aéroports (LYS, CDG…) ou « tous »"
+        type: string
+        default: "LYS"
+      jours:
+        description: "Offres publiées depuis N jours (1 à 90)"
+        type: string
+        default: "30"
+
+permissions:
+  contents: read
+
+jobs:
+  jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Offres d'emploi
+        env:
+          AIRPORTS: ${{ inputs.aeroports }}
+          DAYS: ${{ inputs.jours }}
+          FRANCE_TRAVAIL_CLIENT_ID: ${{ secrets.FRANCE_TRAVAIL_CLIENT_ID }}
+          FRANCE_TRAVAIL_CLIENT_SECRET: ${{ secrets.FRANCE_TRAVAIL_CLIENT_SECRET }}
+        run: python3 .github/scripts/new_jobs.py
