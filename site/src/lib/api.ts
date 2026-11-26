@@ -245,6 +245,9 @@ export const api = {
 
   /** Site du parking, niveau 3 (19/11/2026): what a parking's own booking page opens. */
   bookingPage: cache((slug: string) => apiRequest<BookingPageInfo>(`/api/public/booking-pages/${seg(slug)}`)),
+  /** 26/11/2026: the full nights of a month on the page's parking, for its calendar. */
+  bookingPageNights: (slug: string, month: string) =>
+    apiRequest<{ month: string; today: string; full: string[] }>(`/api/public/booking-pages/${seg(slug)}/nights${query({ month })}`),
 
   /** 22/11/2026: a parking's own site (its blocks); `preview` is the manager's key while it is offline. */
   parkingSite: cache((slug: string, preview?: string | null) =>

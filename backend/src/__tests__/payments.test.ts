@@ -1482,6 +1482,25 @@ describe('Ma page de réservation (Site du parking, niveau 3, 19/11/2026)', () =
     expect((await page(other.token, { slug: 'parking-des-cedres' })).body.fields).toEqual({ slug: 'taken' });
   });
 
+  it('le calendrier de la page lit les nuits complètes du mois (26/11/2026)', async () => {
+    const op = await publishedParking();
+    expect((await api().get('/api/public/booking-pages/cedres/nights')).status).toBe(404);
+    await page(op.token, { enabled: true, slug: 'cedres' });
+    const open = await api().get('/api/public/booking-pages/cedres/nights');
+    expect(open.status).toBe(200);
+    expect(open.body).toMatchObject({ month: open.body.today.slice(0, 7), full: [] });
+    expect((await api().get('/api/public/booking-pages/cedres/nights?month=2020-01')).body.fields).toEqual({ month: 'invalid' });
+    expect((await api().get('/api/public/booking-pages/cedres/nights?month=demain')).status).toBe(400);
+    // No bookable room (1 place, 50 % kept back): every night of next month is full.
+    await prisma.parking.update({ where: { id: op.parking.id }, data: { totalCapacity: 1, safetyMarginPct: 50 } });
+    const next = new Date(`${open.body.month}-01T00:00:00Z`);
+    next.setUTCMonth(next.getUTCMonth() + 1);
+    const month = next.toISOString().slice(0, 7);
+    const full = await api().get(`/api/public/booking-pages/cedres/nights?month=${month}`);
+    expect(full.body.full[0]).toBe(`${month}-01`);
+    expect(full.body.full.length).toBeGreaterThanOrEqual(28);
+  });
+
   it('une réservation de la page : payée en ligne, sans commission, et le retour du paiement porte la clé', async () => {
     const op = await publishedParking();
     await page(op.token, { enabled: true, slug: 'cedres' });

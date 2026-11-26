@@ -556,6 +556,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      suit sa hauteur. Tests `payments.test.ts` (« Ma page de réservation »), `booking-page-actions.test.ts`, `BookingPageCard.test.tsx`.
      Pas encore : le canal affiché « Site du parking » sur la fiche et dans les chiffres (la réservation reste « Plazo », commission 0),
      les sièges auto, les services et le vol aller dans le module, Plazo Pro.
+     **Widget en trois étapes, direction B (26/11/2026, « y'a mieux à faire pour le widget de résa », maquettes
+     https://claude.ai/artifact/VQ2Drk4uJi7GA8Tgj2nrsd, « B »)** : `BookingPageModule` (page `/r/<slug>` et bloc « Réserver » du site du
+     parking) passe en étapes 1 Dates · 2 Vous · 3 Paiement (`bp-steps`) : un calendrier d'un mois (‹ ›, du mois en cours à 12 mois,
+     lundi d'abord ; `lib/booking-calendar.ts` : `monthGrid`, `pick` (premier toucher = dépôt, second = retour, un jour d'avant
+     recommence), `selectable` (jours passés, dépôt sur une nuit complète, retour qui traverse une nuit complète barrés)) ; heures en
+     pastilles (06:00 · 08:00 · 10:00 · 14:00, 12:00 · 18:00 · 21:00 · 23:00) et « Autre heure » à la demi-heure ; le prix lu seul dès les
+     deux jours choisis (250 ms après un changement) et gardé dans une barre sombre « 12 déc. → 20 déc. · 8 jours · 72,00 € ·
+     Continuer » ; l'étape 2 rappelle le séjour (« Modifier »), passagers en − + ; « Continuer vers le paiement » puis l'étape 3 (Stripe
+     dans toute la fenêtre, comme avant). Nuits complètes : `GET /public/booking-pages/:slug/nights?month=AAAA-MM` → `{ month, today,
+     full }` (`BookingPageService.fullNights`, du mois en cours à 13 mois, 400 `month` invalid, 404 comme la page ; seulement complet ou
+     non, ce que la recherche dit déjà), action `nightsOnBookingPage` (rien de barré si Plazo ne répond pas). Textes dans les neuf
+     langues. Tests `payments.test.ts` (« calendrier de la page »), `booking-calendar.test.ts`, `BookingPageModule.test.tsx`.
    - **Site dédié du parking, en blocs, étape 1 (22/11/2026, « pouvoir créer une site dédié au parking », « le plus modulaire
      possible », « le site est en supplément », maquettes https://claude.ai/artifact/96WZPaPofiyzbePTDDzpxD)** : chaque parking a son
      site `plazo.fr/s/<slug>` (l'adresse et la couleur sont celles de sa page de réservation, `Operator.bookingPageSlug/Accent`),

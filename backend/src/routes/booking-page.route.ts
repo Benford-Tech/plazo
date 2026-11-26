@@ -25,6 +25,12 @@ import { RefuseInDemo, StaffAuthMiddleware } from '@/middlewares/staff-auth.midd
  *     tags: [Page de réservation]
  *     responses:
  *       404: { description: not_found (unknown, off, listing offline, operator inactive) }
+ * /public/booking-pages/{slug}/nights:
+ *   get:
+ *     summary: "?month=YYYY-MM → { month, today, full: [dates] }: the full nights of the month, for the calendar"
+ *     tags: [Page de réservation]
+ *     responses:
+ *       400: { description: "month: invalid (before this month or more than 13 months ahead)" }
  */
 export class BookingPageRoute implements Routes {
   public router = Router();
@@ -34,5 +40,6 @@ export class BookingPageRoute implements Routes {
     this.router.get('/internal/booking-page', StaffAuthMiddleware('parking:manage'), this.controller.view);
     this.router.put('/internal/booking-page', StaffAuthMiddleware('parking:manage'), RefuseInDemo(), this.controller.update);
     this.router.get('/public/booking-pages/:slug', this.controller.publicPage);
+    this.router.get('/public/booking-pages/:slug/nights', this.controller.fullNights);
   }
 }
