@@ -1,0 +1,30 @@
+name: Rapport de référencement
+
+# Prints Plateforme › Référencement (26/11/2026): the Google searches that show Plazo, their position, clicks and
+# impressions, and the pages Google shows. Read only; search words only. By hand (.github/scripts/seo_report.py).
+on:
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Période"
+        type: choice
+        options: ["90", "30", "7"]
+        default: "90"
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Lire le rapport
+        env:
+          PLAZO_ADMIN_EMAIL: ${{ secrets.PLAZO_ADMIN_EMAIL }}
+          PLAZO_ADMIN_PASSWORD: ${{ secrets.PLAZO_ADMIN_PASSWORD }}
+          DAYS: ${{ inputs.jours }}
+        run: python3 .github/scripts/seo_report.py
