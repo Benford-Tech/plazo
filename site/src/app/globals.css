@@ -721,3 +721,9 @@ body:has([data-pro-site]) [data-traveller-chrome] {
 body:has([data-pro-site]) {
   background: var(--color-pro-ground);
 }
+
+/* « Prestige » (26/11/2026): its titles in the text face, bold (Manrope is loaded from 500). */
+[data-theme-look="prestige"] .font-title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}

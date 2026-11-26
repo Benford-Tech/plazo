@@ -99,14 +99,40 @@ function NumberedSteps({ steps }: { steps: [string, string][] }) {
   );
 }
 
+/**
+ * « Prestige » (26/11/2026): each step on a grey card, a round badge astride its top edge. The shuttle's three steps, or
+ * the valet's four when the parking hands over the keys.
+ */
+function GreyCardSteps({ steps }: { steps: [string, string][] }) {
+  return (
+    <ol data-testid="site-steps" className={`mt-8 grid gap-x-3 gap-y-10 ${steps.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
+      {steps.map(([title, text], i) => (
+        <li key={title} className="relative flex flex-col items-center gap-1.5 bg-tint px-4 pt-10 pb-5 text-center outline outline-4 outline-white">
+          <span
+            aria-hidden="true"
+            className="absolute -top-7 left-1/2 flex size-14 -translate-x-1/2 items-center justify-center rounded-full border-[3px] border-[#7a7a7a] bg-white text-[18px] font-bold text-soft"
+          >
+            {i + 1}
+          </span>
+          <span className="text-[15px] font-bold tracking-wide text-soft uppercase">{title}</span>
+          <span className="text-[14.5px] leading-relaxed text-soft">{text}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function Steps({ site, data, block }: BlockProps) {
   const { parking, details, airport } = data;
   const more = fr.parkingMore;
   const shuttle = parking.services.includes("shuttle") && parking.shuttleMinutes;
+  const prestige = site.theme === "prestige";
   const numbered = site.theme === "park" ? fr.parkingSite.parkSteps : site.theme === "valet" ? fr.parkingSite.valetSteps : null;
+  const greyCards = prestige ? (parking.services.includes("valet") ? fr.parkingSite.valetSteps : fr.parkingSite.parkSteps) : null;
   return (
     <Section id="deroulement" title={block.title ?? fr.parking.howItGoes}>
       {numbered && <NumberedSteps steps={numbered} />}
+      {greyCards && <GreyCardSteps steps={greyCards} />}
       <dl className={`${card} divide-y divide-line-soft`}>
         <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
           <dt className="eyebrow sm:pt-[5px]">{fr.parking.outbound}</dt>
@@ -174,6 +200,8 @@ function Pricing({ site, data, block }: BlockProps) {
       </div>
   );
   const cards = isRich(site) ? priceCards(rows) : [];
+  // « Prestige »: the three prices on dark tiles.
+  const dark = site.theme === "prestige";
   return (
     <Section id="tarifs" title={block.title ?? more.prices}>
       {cards.length > 0 ? (
@@ -182,11 +210,15 @@ function Pricing({ site, data, block }: BlockProps) {
             {cards.map(row => (
               <li
                 key={row.days}
-                className={`${card} flex flex-col items-center gap-1 p-5 text-center ${row.days === 7 ? "border-2 border-[var(--ps-accent)]" : ""}`}
+                className={
+                  dark
+                    ? "flex flex-col items-center gap-2 rounded-[4px] bg-gradient-to-br from-[#101216] to-[#3a3f48] px-5 py-8 text-center text-white"
+                    : `${card} flex flex-col items-center gap-1 p-5 text-center ${row.days === 7 ? "border-2 border-[var(--ps-accent)]" : ""}`
+                }
               >
-                <span className="eyebrow">{more.days(row.days)}</span>
-                <span className="text-[32px] leading-none font-extrabold tabular-nums">{formatEuros(row.priceCents)}</span>
-                <span className="text-[13.5px] text-soft tabular-nums">{fr.parkingSite.perDay(formatEuros(Math.round(row.priceCents / row.days)))}</span>
+                <span className={dark ? "text-[17px] font-bold" : "eyebrow"}>{more.days(row.days)}</span>
+                <span className={`leading-none tabular-nums ${dark ? "text-[30px] font-medium" : "text-[32px] font-extrabold"}`}>{formatEuros(row.priceCents)}</span>
+                <span className={`text-[13.5px] tabular-nums ${dark ? "text-white/75" : "text-soft"}`}>{fr.parkingSite.perDay(formatEuros(Math.round(row.priceCents / row.days)))}</span>
               </li>
             ))}
           </ul>
@@ -331,9 +363,54 @@ function Contact({ site, data, block }: BlockProps) {
   );
 }
 
-function Text({ block }: BlockProps) {
+/**
+ * « Prestige » (26/11/2026): the manager's n-th text takes the listing's n-th photo, on the left then on the right, one
+ * text in two. Without a photo left, the text stands alone.
+ */
+function photoBeside(site: ParkingSiteInfo, data: BlockContext["data"], block: SiteBlock): { url: string; left: boolean } | null {
+  if (site.theme !== "prestige") return null;
+  const index = knownBlocks(site.blocks)
+    .filter(b => b.kind === "text" && b.text)
+    .findIndex(b => b.id === block.id);
+  const url = index >= 0 ? data.parking.photos[index] : undefined;
+  return url ? { url, left: index % 2 === 0 } : null;
+}
+
+function Text({ site, data, block }: BlockProps) {
   if (!block.text) return null;
   const body = <p className="text-[15.5px] leading-relaxed whitespace-pre-line">{block.text}</p>;
+  const beside = photoBeside(site, data, block);
+  if (beside) {
+    const image = (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={beside.url} alt="" className="aspect-square w-full max-w-full rounded-[3px] object-cover" loading="lazy" />
+    );
+    const words = (
+      <div className="flex min-w-0 flex-col gap-3">
+        {block.title && (
+          <h2 id={`${block.id}-titre`} className={heading}>
+            {block.title}
+          </h2>
+        )}
+        {body}
+      </div>
+    );
+    return (
+      <section id={block.id} aria-labelledby={block.title ? `${block.id}-titre` : undefined} data-testid="site-text-photo" className="grid scroll-mt-20 items-center gap-6 md:grid-cols-2 md:gap-10">
+        {beside.left ? (
+          <>
+            {image}
+            {words}
+          </>
+        ) : (
+          <>
+            <div className="md:order-2">{image}</div>
+            <div className="md:order-1">{words}</div>
+          </>
+        )}
+      </section>
+    );
+  }
   return block.title ? (
     <Section id={block.id} title={block.title}>
       {body}

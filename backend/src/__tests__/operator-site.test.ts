@@ -207,7 +207,7 @@ describe('le site vitrine à plusieurs pages (24/11/2026)', () => {
     expect(refused.body.fields).toEqual({ theme: 'invalid', accent2: 'invalid', rating: 'invalid' });
 
     // 24/11/2026: the four other models are stored as they are.
-    for (const theme of ['night', 'postcard', 'home', 'express', 'park', 'valet']) {
+    for (const theme of ['night', 'postcard', 'home', 'express', 'park', 'valet', 'prestige']) {
       const model = await api().put('/api/internal/site').set(auth(op.token)).send({ theme });
       expect(model.status).toBe(200);
       expect(model.body.data.theme).toBe(theme);

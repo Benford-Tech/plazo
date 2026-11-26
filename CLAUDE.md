@@ -641,6 +641,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      plus, Reply-To le visiteur, `contactEmail`). `hasNoNumber` (`app:` ou `site:`) : ni appel, ni SMS, ni WhatsApp ; « Messages »
      web : pastille « Site du parking », « répondez par e-mail ou par téléphone ». Les avis clients ne sont pas montrés (seulement
      la note tapée). Tests `operator-site.test.ts`, `ParkingSite.test.tsx`. Pas encore : la pastille dans Plazo Pro.
+   - **Modèle « Prestige » (26/11/2026, « https://www.yourvaletbrothers.com/ model » → « 1 », maquette
+     https://claude.ai/artifact/1W9vYciDEQt3Hko9ipoM1w)** : `SITE_THEMES` + `prestige` (migration `site_prestige`, CHECK) ; noir et
+     blanc imposés, les couleurs du parking n'y servent pas (`PRESTIGE_COLOURS`, jetons `TOKENS.prestige`, titres dans la police du
+     texte en gras) : barre blanche (téléphone, horaires), en-tête noir (`DARK_HEADER`) avec « Réserver » blanc, photo du bandeau
+     passée en gris (`grayscale`) derrière un titre centré, note Google sur une carte blanche, réservation à cheval ; étapes sur des
+     cartes grises avec un rond numéroté à cheval (`GreyCardSteps` : les trois de la navette, les quatre du voiturier quand le
+     parking a le service `valet`) ; prix sur trois tuiles sombres ; le n-ième bloc texte prend la n-ième photo de la fiche, à
+     gauche puis à droite (`photoBeside`, `site-text-photo`), seul sans photo ; pied de page noir. Les photos de la fiche restent en
+     couleur. Espace pro : « Prestige » dans Présentation. Test `ParkingSite.test.tsx`, `operator-site.test.ts`.
    - **Aperçu en direct dans « Mon site », choix A côte à côte (24/11/2026, « Il faut un aperçu du site en cours d'édition »)** :
      dès `xl`, le site à droite du formulaire (`components/site/SitePreview.tsx`) : la page du site avec la clé d'aperçu
      (`previewUrl`) dans un cadre, dessinée à 1 280 px (Ordinateur) ou 390 px (Téléphone) puis réduite, bouton Recharger ; chaque

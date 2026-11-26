@@ -121,9 +121,10 @@ export function blocksOf(stored: unknown): SiteBlock[] {
  * photo fills the first screen), « home » (warm, the phone in view) and « express » (the first price in large); then two
  * after the sites the manager showed (24/11/2026, aerpark.fr and onevalet.fr, « tout »): « park » (a shuttle car park:
  * contact bar, two buttons, numbered steps, ticked strengths) and « valet » (title and photo side by side, the journey in
- * four steps, the services with their price).
+ * four steps, the services with their price); then « prestige » (26/11/2026, d'après yourvaletbrothers.com): black and white, a white contact bar, a black header, the
+ * banner photo in greys, the steps on grey cards, the prices on dark tiles and the manager's texts beside the listing's photos.
  */
-export const SITE_THEMES = ['simple', 'showcase', 'night', 'postcard', 'home', 'express', 'park', 'valet'] as const;
+export const SITE_THEMES = ['simple', 'showcase', 'night', 'postcard', 'home', 'express', 'park', 'valet', 'prestige'] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number];
 export const readTheme = (value: unknown): SiteTheme | null => ((SITE_THEMES as readonly unknown[]).includes(value) ? (value as SiteTheme) : null);
 
