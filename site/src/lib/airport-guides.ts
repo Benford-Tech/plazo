@@ -523,6 +523,10 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         `L’aéroport a deux terminaux, le Terminal 1 et le Terminal 2, reliés entre eux et voisins de la gare TGV. Depuis le ${o.t2Closed}, le Terminal 2 est fermé pour travaux et tous les vols partent du Terminal 1, où la navette du parking vous conduit.`,
       ],
       [
+        "Satolas et Saint-Exupéry, est-ce le même aéroport ?",
+        "Oui. L’aéroport a ouvert en 1975 sous le nom de Lyon-Satolas, du nom de la commune voisine de Satolas-et-Bonce, et s’appelle Lyon Saint-Exupéry depuis 2000, année du centenaire de la naissance d’Antoine de Saint-Exupéry. Chercher un parking à Satolas, c’est donc chercher un parking pour l’aéroport de Lyon Saint-Exupéry, comme ceux de cette page.",
+      ],
+      [
         "Quel est le parking le moins cher à l’aéroport de Lyon ?",
         `Selon l’aéroport, le moins cher de ses parkings officiels est le P7, mais il n’ouvre qu’en période d’affluence et se réserve en ligne seulement. Sur la grille 2026 sans réservation, le moins cher est le P5, le parking économique desservi par navette : ${o.week.p5} la semaine, moins en ligne à l’avance. Les parkings privés avec navette sont souvent au même niveau ou en dessous : indiquez vos dates en haut de la page, et les partenaires s’affichent du moins cher au plus cher d’après le prix total.`,
       ],
