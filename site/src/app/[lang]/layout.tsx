@@ -36,6 +36,16 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
     applicationName: PRODUCT_NAME,
     openGraph: openGraph({}),
     formatDetection: { telephone: false, email: false, address: false },
+    // 26/11/2026 (« le favicon n'est toujours pas le bon »): declared here, not as app/favicon.ico, icon.svg and
+    // apple-icon.png, which Next adds to every page before a page's own icons: a parking's site (its logo) and the Plazo Pro
+    // pages (lime) set `icons` and now replace these instead of coming second.
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+        { url: "/icon.svg", type: "image/svg+xml" },
+      ],
+      apple: "/apple-icon.png",
+    },
   };
 }
 

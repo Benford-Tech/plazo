@@ -636,7 +636,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      ou non : `iconUrl` des vues publiques (`/api/public/sites/<slug>/icon?v=`), posé en `icons` par `generateMetadata` ;
      `GET /public/sites/:slug/icon` (`OperatorSiteService.icon`) sert le logo, sinon 302 vers l'icône de Plazo ; sur le nom de
      domaine du parking, `proxy.ts` renvoie `/favicon.ico` vers ce logo (`parkingIcon`, `/favicon.ico` ajouté au `matcher`).
-     Tests `operator-site.test.ts`, `proxy.test.ts`.
+     Tests `operator-site.test.ts`, `proxy.test.ts`. **Le logo l'emporte enfin (26/11/2026, « le favicon n'est toujours pas le bon »)** :
+     l'icône de Plazo était déclarée par les fichiers `app/favicon.ico`, `icon.svg` et `apple-icon.png`, que Next met en tête de chaque page,
+     avant l'icône propre à la page ; ils passent dans `site/public/` et sont déclarés par `icons` du layout racine, que les pages du site
+     du parking (et de Plazo Pro) remplacent.
    - **Modèles « Parc » et « Voiturier », page Tarifs, formulaire de contact et barre fixe (24/11/2026, d'après aerpark.fr et
      onevalet.fr, maquettes https://claude.ai/artifact/V16Pp5k24hsKcQxrjQMoc8, « tout »)** : `SITE_THEMES` + `park` · `valet`
      (migration `site_park_valet`, CHECK) ; **Parc** : barre de contact bleu nuit (`--ps-dark`), « Ma réservation » à côté de
