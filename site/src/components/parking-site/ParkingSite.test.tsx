@@ -48,6 +48,14 @@ const site = (blocks: SiteBlock[], over: Partial<ParkingSiteInfo> = {}): Parking
 const headings = () => screen.getAllByRole("heading", { level: 2 }).map(h => h.textContent);
 
 describe("le site du parking", () => {
+  it("le nom du parking n’est jamais coupé à une lettre par le menu (26/11/2026, « le nom est tronqué »)", () => {
+    render(<ParkingSite idempotencyKey="k" data={data} site={site([block("booking"), block("pricing")])} />);
+    const name = screen.getByTestId("site-name");
+    expect(name.className).not.toMatch(/\btruncate\b/);
+    expect(name.className).toMatch(/line-clamp-2/);
+    expect(name.textContent).toBe(data.parking.title);
+  });
+
   it("montre les blocs dans l’ordre du gérant, avec ses titres ; un genre inconnu est sauté", () => {
     render(
       <ParkingSite

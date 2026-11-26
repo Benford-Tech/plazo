@@ -631,6 +631,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `site.team_photo_set|removed`), `teamPhotoUrl` des vues ; champ « Photo de l'équipe » de la carte Présentation,
      montré avec le style Maison seulement (`PhotoField`) ; à côté du titre de Maison, sinon la photo du bandeau.
      Pas encore : des titres sans empattement pour Express, Plazo Pro.
+   - **Nom du parking en entier dans l'en-tête (26/11/2026, « le nom est tronqué » : « Aér… » à côté du menu)** : le nom passe sur deux
+     lignes au plus (`line-clamp-2`, `site-name`) au lieu d'être coupé ; dès `lg` il garde jusqu'à 45 % de la ligne et le menu prend le
+     reste sur une ligne, une entrée qui n'y tient pas passe hors de vue au lieu d'écraser le nom (pages toujours dans le pied de page).
+     Test `ParkingSite.test.tsx`.
    - **Icône de l'onglet = logo du parking (25/11/2026, « le favicon prend le logo du client »)** : le site du parking (`/s/<slug>`, ses
      pages et son nom de domaine) prend le logo du parking (Parking › Réglages) comme icône de l'onglet, que le site affiche le logo
      ou non : `iconUrl` des vues publiques (`/api/public/sites/<slug>/icon?v=`), posé en `icons` par `generateMetadata` ;
