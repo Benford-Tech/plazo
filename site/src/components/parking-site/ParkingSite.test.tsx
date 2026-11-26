@@ -218,6 +218,48 @@ describe("le site du parking", () => {
     expect(screen.queryByText("Ma réservation")).toBeNull();
   });
 
+  it("modèle « Prestige » (26/11/2026) : noir et blanc, photo du bandeau en gris, étapes en cartes, textes à côté des photos", () => {
+    const withPhotos = {
+      ...data,
+      parking: {
+        ...data.parking,
+        photos: ["https://example.test/a.jpg", "https://example.test/b.jpg"],
+        pricing: { tiers: [{ days: 3, priceCents: 3500 }, { days: 7, priceCents: 5500 }, { days: 14, priceCents: 10000 }], extraDayPriceCents: null },
+      },
+    };
+    const blocks = [
+      block("booking"),
+      block("steps"),
+      block("pricing"),
+      block("text", { id: "t1", title: "Le départ", text: "Premier texte." }),
+      block("text", { id: "t2", title: "Le parking", text: "Deuxième texte." }),
+      block("text", { id: "t3", title: "Encore", text: "Troisième texte." }),
+    ];
+    render(
+      <ParkingSite
+        idempotencyKey="k"
+        data={withPhotos}
+        site={site(blocks, { theme: "prestige", heroPhotoUrl: "https://example.test/hero.jpg", rating: { value: 4.8, count: 212 } })}
+      />,
+    );
+    const root = screen.getByTestId("parking-site");
+    expect(root).toHaveAttribute("data-theme-look", "prestige");
+    // The parking's blue gives way to black.
+    expect(root.style.getPropertyValue("--ps-accent")).toBe("#0d0d0d");
+    expect(screen.getByTestId("site-topbar")).toHaveTextContent("04 72 00 00 00");
+    expect(screen.getByTestId("site-hero").querySelector("img")).toHaveClass("grayscale");
+    expect(screen.getByTestId("site-rating")).toHaveTextContent("4,8");
+    // A shuttle car park: the three shuttle steps.
+    expect(within(screen.getByTestId("site-steps")).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(screen.getByTestId("site-price-cards")).getAllByRole("listitem")).toHaveLength(3);
+    // Two photos for three texts: the third stands alone.
+    const sided = screen.getAllByTestId("site-text-photo");
+    expect(sided).toHaveLength(2);
+    expect(sided[0]!.querySelector("img")).toHaveAttribute("src", "https://example.test/a.jpg");
+    expect(sided[1]!.querySelector("img")).toHaveAttribute("src", "https://example.test/b.jpg");
+    expect(screen.getByText("Troisième texte.").closest("[data-testid=site-text-photo]")).toBeNull();
+  });
+
   it("pied de page « Plan d'accès » (25/11/2026) : plan, adresse, horaires, appel, itinéraire, liens et société", () => {
     const withHours = { ...data, parking: { ...data.parking, openingHours: "Ouvert 24h/24" } };
     render(

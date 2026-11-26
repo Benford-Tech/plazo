@@ -503,7 +503,7 @@ function LookSection({
       <div className="flex flex-col gap-1">
         <span className={label}>{l.theme}</span>
         <div role="group" aria-label={l.theme} className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {(["simple", "showcase", "night", "postcard", "home", "express", "park", "valet"] as const).map((theme) => (
+          {(["simple", "showcase", "night", "postcard", "home", "express", "park", "valet", "prestige"] as const).map((theme) => (
             <button
               key={theme}
               type="button"

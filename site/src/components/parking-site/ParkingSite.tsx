@@ -64,7 +64,33 @@ const TOKENS: Partial<Record<Look, Record<string, string>>> = {
     "--color-ink": "#0b0b0c",
     "--color-soft": "#55595f",
   },
+  // « Prestige » (26/11/2026): white and greys, titles in the text face, black for the action.
+  prestige: {
+    "--color-ground": "#ffffff",
+    "--color-paper": "#ffffff",
+    "--color-tint": "#f3f3f3",
+    "--color-line": "#dfe3e8",
+    "--color-line-soft": "#ececec",
+    "--color-ink": "#0d0d0d",
+    "--color-soft": "#4a5568",
+    "--color-accent-dark": "#0d0d0d",
+    "--font-display": "var(--font-sans)",
+  },
 };
+
+/** « Prestige »: its header is black, so the header's own tokens turn white. */
+const DARK_HEADER = {
+  "--color-paper": "#0d0d0d",
+  "--color-ink": "#ffffff",
+  "--color-soft": "rgba(255,255,255,.82)",
+  "--color-line": "#2c2c2c",
+  "--color-line-soft": "#2c2c2c",
+  "--ps-accent": "#ffffff",
+  "--ps-ink": "#0d0d0d",
+} as React.CSSProperties;
+
+/** « Prestige » keeps to black and white whatever the parking's colours. */
+const PRESTIGE_COLOURS = { "--ps-accent": "#0d0d0d", "--ps-ink": "#ffffff", "--ps-accent2": "#ffffff", "--ps-ink2": "#0d0d0d", "--ps-dark": "#0d0d0d" };
 
 interface Props {
   site: ParkingSiteInfo;
@@ -163,6 +189,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
   const showcase = look === "showcase";
   const park = look === "park";
   const valet = look === "valet";
+  const prestige = look === "prestige";
   const rich = isRich(site);
   const accent2 = site.accent2 ?? site.accent;
   const colours = {
@@ -175,6 +202,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
     ...TOKENS[look],
     // One touch of colour in the dark: the bands take a tone of the night, not the second colour.
     ...(look === "night" ? { "--ps-accent2": "#1a212c", "--ps-ink2": "#f2eee6" } : {}),
+    ...(prestige ? PRESTIGE_COLOURS : {}),
   } as React.CSSProperties;
   const destination = opened?.kind === "destination" ? opened.destination : null;
   const heading = destination
@@ -219,10 +247,10 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           {t.preview}
         </p>
       )}
-      {(showcase || park || valet) && (parking.phone || parking.openingHours) && (
+      {(showcase || park || valet || prestige) && (parking.phone || parking.openingHours) && (
         <p
           data-testid="site-topbar"
-          className={park ? "bg-[var(--ps-dark)] text-[13px] text-white" : valet ? "bg-tint text-[13px] text-ink" : "bg-[var(--ps-accent)] text-[13px] text-[var(--ps-ink)]"}
+          className={park ? "bg-[var(--ps-dark)] text-[13px] text-white" : valet || prestige ? `${prestige ? "bg-paper" : "bg-tint"} text-[13px] text-ink` : "bg-[var(--ps-accent)] text-[13px] text-[var(--ps-ink)]"}
         >
           <span className={`${container} flex flex-wrap gap-x-4 gap-y-0.5 py-1.5`}>
             {parking.phone && <span className="font-semibold tabular-nums">{parking.phone}</span>}
@@ -230,7 +258,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           </span>
         </p>
       )}
-      <header className="sticky top-0 z-20 border-b border-line bg-paper">
+      <header className="sticky top-0 z-20 border-b border-line bg-paper text-ink" style={prestige ? DARK_HEADER : undefined}>
         <div className={`${container} flex items-center gap-3 py-2.5`}>
           <a href={sitePath(site)} className="flex min-w-0 flex-1 items-center gap-3 text-ink no-underline">
             {logo}
@@ -242,7 +270,10 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
               {t.myBooking}
             </a>
           )}
-          <a href={reserve} className="flex-none rounded-[10px] bg-[var(--ps-accent)] px-4 py-2 text-[14px] font-semibold text-[var(--ps-ink)]">
+          <a
+            href={reserve}
+            className={prestige ? "flex-none rounded-[4px] bg-white px-4 py-2 text-[14px] font-semibold text-[#0d0d0d]" : "flex-none rounded-[10px] bg-[var(--ps-accent)] px-4 py-2 text-[14px] font-semibold text-[var(--ps-ink)]"}
+          >
             {fr.bookingPage.meta}
           </a>
         </div>
@@ -404,6 +435,34 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
           </div>
         </div>
       )}
+      {prestige && (
+        // « Prestige » (26/11/2026): the banner photo in greys behind a centred title, the rating on a white card.
+        <div
+          data-testid="site-hero"
+          className="relative overflow-hidden bg-[#3a3a3a] text-white"
+        >
+          {photo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="" aria-hidden="true" className="absolute inset-0 size-full object-cover grayscale" />
+          )}
+          <div aria-hidden="true" className="absolute inset-0 bg-black/45" />
+          <div className={`${container} relative flex flex-col items-center gap-3 pt-12 text-center md:pt-20 ${booking ? "pb-24" : "pb-12 md:pb-16"}`}>
+            <h1 className="max-w-[22ch] text-[30px] leading-[1.12] font-bold md:text-[46px]">{heading}</h1>
+            <p className="max-w-[60ch] text-[15px] md:text-[16.5px]">{lead}</p>
+            {rating && (
+              <p data-testid="site-rating" className="mt-1 flex items-center gap-3 rounded-[10px] bg-white px-4 py-2 text-left text-[#0d0d0d]">
+                <span className="text-[26px] font-bold tabular-nums">{ratingText}</span>
+                <span className="flex flex-col border-l border-line pl-3 text-[12.5px] leading-tight">
+                  <span aria-hidden="true" className="tracking-[2px] text-[#f2a93b]">
+                    ★★★★★
+                  </span>
+                  <span className="text-soft">{t.reviews(rating.count)}</span>
+                </span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       {look === "simple" && (
         <div className={`${container} flex flex-col gap-2 pt-6 md:pt-10`}>
           <h1 className="font-title text-[30px] leading-[1.1] md:text-[44px]">{heading}</h1>
@@ -432,7 +491,12 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
             <div className="rounded-[18px] border border-line bg-paper p-3 shadow-[0_12px_32px_rgba(0,0,0,.08)] md:p-4">{draw(booking)}</div>
           </div>
         )}
-        {booking && !showcase && !park && !valet && look !== "postcard" && <div className={`${container} mt-6`}>{draw(booking)}</div>}
+        {booking && prestige && (
+          <div className={`${container} relative z-10 -mt-16`}>
+            <div className="rounded-[8px] border border-line bg-paper p-3 shadow-[0_12px_40px_rgba(0,0,0,.18)] md:p-4">{draw(booking)}</div>
+          </div>
+        )}
+        {booking && !showcase && !park && !valet && !prestige && look !== "postcard" && <div className={`${container} mt-6`}>{draw(booking)}</div>}
         {!booking && <div aria-hidden="true" className="-mb-4" />}
         {destination?.instructions && (
           <section className={`${container} flex flex-col gap-2`}>
@@ -458,7 +522,7 @@ export function ParkingSite({ site, data, idempotencyKey, page = null }: Props) 
         )}
       </main>
 
-      <SiteFooter site={site} data={data} blocks={blocks} dark={park} logo={site.logoUrl ?? null} />
+      <SiteFooter site={site} data={data} blocks={blocks} dark={park || prestige} logo={site.logoUrl ?? null} />
       {rich && <StickyBar site={site} data={data} reserve={reserve} />}
     </div>
   );

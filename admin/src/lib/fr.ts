@@ -2318,7 +2318,7 @@ export const fr = {
     look: {
       title: "Présentation",
       theme: "Style",
-      themes: { simple: "Sobre", showcase: "Affiche", night: "Nuit", postcard: "Carte postale", home: "Maison", express: "Express", park: "Parc", valet: "Voiturier" } as Record<string, string>,
+      themes: { simple: "Sobre", showcase: "Affiche", night: "Nuit", postcard: "Carte postale", home: "Maison", express: "Express", park: "Parc", valet: "Voiturier", prestige: "Prestige" } as Record<string, string>,
       themeHints: {
         simple: "Le titre, puis vos blocs. Rien de plus.",
         showcase: "Barre de contact, photo derrière le titre, bandes de couleur. Pour être vu.",
@@ -2328,6 +2328,7 @@ export const fr = {
         express: "Votre premier prix en très gros et la réservation tout de suite. Sans photo.",
         park: "Barre de contact, titre sur la photo, étapes numérotées et atouts cochés. Pour un parking avec navette.",
         valet: "Titre et photo côte à côte, le rendez-vous posé dessus, le parcours en quatre temps. Pour un voiturier.",
+        prestige: "Noir et blanc : photo du bandeau en gris, étapes sur des cartes grises, prix sur des tuiles sombres, vos textes à côté des photos de votre fiche. Vos couleurs n'y servent pas.",
       } as Record<string, string>,
       accent2: "Deuxième couleur",
       accent2Hint: "Pour les bandes et le cadre de la réservation.",

@@ -3149,7 +3149,7 @@ export interface SiteSettings {
   accent: string;
   blocks: SiteBlock[];
   /** 24/11/2026: the look, a second colour, the photo behind the title, the logo, the Google rating typed, several pages. */
-  theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express" | "park" | "valet";
+  theme: "simple" | "showcase" | "night" | "postcard" | "home" | "express" | "park" | "valet" | "prestige";
   accent2: string | null;
   heroPhotoUrl: string | null;
   /** The photo of the team, for the « Maison » style. */
