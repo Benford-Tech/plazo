@@ -1383,6 +1383,21 @@ const frBase = {
     notFound: "Cette page de réservation n’est pas ouverte.",
     yourDetails: "Vos informations",
     nightFee: "Frais de nuit",
+    // 26/11/2026, widget B « Calendrier et trois étapes ».
+    steps: ["Dates", "Vous", "Paiement"],
+    prevMonth: "Mois précédent",
+    nextMonth: "Mois suivant",
+    pickArrival: "Touchez le jour du dépôt.",
+    pickReturn: "Touchez maintenant le jour du retour.",
+    fullDays: "Jours barrés : complet.",
+    dropTime: "Heure de dépôt",
+    returnTime: "Heure de retour",
+    otherTime: "Autre heure",
+    continue: "Continuer",
+    edit: "Modifier",
+    toPayment: "Continuer vers le paiement",
+    passengerLess: "Un passager de moins",
+    passengerMore: "Un passager de plus",
   },
   // 22/11/2026: a parking's own site, /s/<slug>.
   parkingSite: {

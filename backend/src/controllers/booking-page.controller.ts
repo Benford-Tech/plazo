@@ -19,4 +19,8 @@ export class BookingPageController {
   public publicPage = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'public, max-age=60').json(await this.service.publicPage(req.params.slug as string));
   });
+
+  public fullNights = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=60').json(await this.service.fullNights(req.params.slug as string, req.query.month));
+  });
 }

@@ -27,6 +27,16 @@ export async function quoteOnBookingPage(slug: string, arrivalAt: string, return
   }
 }
 
+/** 26/11/2026: the full nights of a month (« AAAA-MM »), which the calendar bars; nothing barred when Plazo cannot say. */
+export async function nightsOnBookingPage(slug: string, month: string): Promise<{ today: string | null; full: string[] }> {
+  try {
+    const res = await api.bookingPageNights(slug, month);
+    return { today: res.today, full: res.full };
+  } catch {
+    return { today: null, full: [] };
+  }
+}
+
 export interface PageBookingState {
   values: Record<string, string>;
   fields: Record<string, string>;

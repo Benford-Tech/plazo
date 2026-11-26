@@ -6,7 +6,9 @@ import { accentInk, bookingPageUrls, DEFAULT_BOOKING_PAGE_ACCENT, isReservedSlug
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
+import { addDays, localDate } from '@/domain/time';
 import { AuditService } from './audit.service';
+import { CapacityService } from './capacity.service';
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Booking page not found', 'not_found');
 
@@ -80,6 +82,39 @@ export class BookingPageService {
   }
 
   /** What a slug opens for the site: the listing it books (published, operator active), and the page's colour. */
+  /**
+   * 26/11/2026 (widget B, « Calendrier et trois étapes »): the nights of a month that are full on the page's parking, so its
+   * calendar bars them. Only « full or not » per night, what the search already tells; from today to 13 months ahead.
+   */
+  public async fullNights(slug: string, month: unknown) {
+    const clean = readSlug(slug);
+    if (!clean || clean !== slug) throw notFound();
+    const operator = await prisma.operator.findUnique({
+      where: { bookingPageSlug: clean },
+      select: { id: true, bookingPageEnabledAt: true, status: true, archivedAt: true },
+    });
+    if (!operator?.bookingPageEnabledAt || operator.status !== 'active' || operator.archivedAt) throw notFound();
+    const listing = await prisma.listing.findFirst({
+      where: { status: 'published', parking: { operatorId: operator.id } },
+      orderBy: { createdAt: 'asc' },
+      select: { parking: { select: { id: true, timezone: true, totalCapacity: true, safetyMarginPct: true } } },
+    });
+    if (!listing) throw notFound();
+    const parking = listing.parking;
+    const today = localDate(new Date(), parking.timezone);
+    const value = typeof month === 'string' ? month : today.slice(0, 7);
+    const limit = addDays(today, 400).slice(0, 7);
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(value) || value < today.slice(0, 7) || value > limit) {
+      throw new ValidationException({ month: 'invalid' });
+    }
+    const first = value === today.slice(0, 7) ? today : `${value}-01`;
+    const next = new Date(`${value}-01T00:00:00Z`);
+    next.setUTCMonth(next.getUTCMonth() + 1);
+    const last = addDays(next.toISOString().slice(0, 10), -1);
+    const nights = await Container.get(CapacityService).nights(parking, first, last);
+    return { month: value, today, full: nights.filter(n => n.count + 1 > n.bookable).map(n => n.date) };
+  }
+
   public async publicPage(slug: string) {
     const clean = readSlug(slug);
     if (!clean || clean !== slug) throw notFound();
