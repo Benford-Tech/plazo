@@ -280,6 +280,9 @@ describe("le site du parking", () => {
     expect(foot.getByText("SIRET 12345678900012")).toBeInTheDocument();
     expect(foot.getByText("N° de TVA FR12123456789")).toBeInTheDocument();
     expect(foot.getByText(/sécurisés par Plazo/)).toBeInTheDocument();
+    const by = foot.getByRole("link", { name: /sécurisés par Plazo/ });
+    expect(by.getAttribute("href")).toMatch(/^https?:\/\/[^/]+\/$/);
+    expect(by).not.toHaveAttribute("rel");
   });
 
   it("le style sobre garde son tableau, sans formulaire ni barre fixe", () => {
