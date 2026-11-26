@@ -21,6 +21,7 @@ import { WhatsappService } from '@/services/whatsapp.service';
 import { PaymentService } from '@/services/payment.service';
 import { MorningEmailService } from '@/services/morning-email.service';
 import { ForumWatchService } from '@/services/forum-watch.service';
+import { BlogService } from '@/services/blog.service';
 import { InboundWatchService } from '@/services/inbound-watch.service';
 import { ProspectingService } from '@/services/prospecting.service';
 import { TravellerWelcomeService } from '@/services/traveller-welcome.service';
@@ -65,6 +66,7 @@ export class CronController {
   public campaigns = Container.get(TravellerCampaignService);
   public inboundWatch = Container.get(InboundWatchService);
   public forumWatch = Container.get(ForumWatchService);
+  public blog = Container.get(BlogService);
   public valet = Container.get(ValetService);
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
@@ -267,6 +269,13 @@ export class CronController {
     const result = await this.forumWatch.run(new Date(), { force: req.query.force === '1' });
     logger.info(`[Cron] Forum watch: ${JSON.stringify(result)}`);
     res.status(result.status === 'not_sent' ? 500 : 200).json(result);
+  });
+
+  /** GET /internal/cron/blog (26/11/2026): `?step=plan` plans the week's topics, otherwise writes tomorrow's article (never publishes). */
+  public blogRun = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.blog.run(new Date(), { step: req.query.step as string | undefined, day: req.query.day as string | undefined });
+    logger.info(`[Cron] Blog: ${JSON.stringify(result)}`);
+    res.status(result.status === 'failed' ? 500 : 200).json(result);
   });
 
   /** GET /internal/cron/prospecting: the prospecting emails due now, for a dedicated job (also run by remind-tomorrow). */

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 import { api } from "@/lib/api";
 import { topicFacts } from "@/lib/airport-guides";
+import { BLOG_PATH, blogPath } from "@/lib/blog";
 import { topicGuide, topicLinks } from "@/lib/guides";
 import { LOCALE_TAGS, LOCALES, localizedPath } from "@/lib/i18n/locales";
 import { foreignHost } from "@/lib/parking-site-host";
@@ -74,6 +75,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       for (const page of site.pages) {
         entries.push({ url: `${base}/s/${site.slug}/${page}`, lastModified, changeFrequency: "monthly", priority: 0.5, ...inEveryLanguage(base, `/s/${site.slug}/${page}`) });
       }
+    }
+  } catch {
+    // API unavailable: the rest is still worth serving.
+  }
+  // The blog (26/11/2026): its index and each published article, in French only.
+  try {
+    const { articles } = await api.blog();
+    if (articles.length) {
+      entries.push({ url: `${base}${BLOG_PATH}`, lastModified: articles[0].publishedAt, changeFrequency: "daily", priority: 0.6 });
+      for (const a of articles) entries.push({ url: `${base}${blogPath(a.slug)}`, lastModified: a.updatedAt, changeFrequency: "monthly", priority: 0.6 });
     }
   } catch {
     // API unavailable: the rest is still worth serving.

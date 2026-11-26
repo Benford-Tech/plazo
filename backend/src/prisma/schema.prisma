@@ -2711,3 +2711,51 @@ model WebsiteIntegration {
 
   @@map("website_integrations")
 }
+
+/// 26/11/2026 (« Un par jour, je valide chaque article » → B): the SEO article of a Paris day, written by Claude the night
+/// before from Plazo's real facts, published on www.plazo.fr/blog only once a platform admin validates it.
+enum BlogArticleStatus {
+  planned
+  draft
+  published
+  rejected
+  failed
+}
+
+model BlogArticle {
+  id              String            @id @default(cuid())
+  /// The Paris day it is for, « YYYY-MM-DD »; one article per day.
+  dueOn           String            @unique
+  status          BlogArticleStatus @default(planned)
+  /// The subject planned for the day and the Google query it aims at.
+  topic           String
+  query           String?
+  slug            String?           @unique
+  title           String?
+  metaTitle       String?
+  metaDescription String?
+  intro           String?
+  /// Paragraphs separated by a blank line, « ## » headings, « - » lists; no link, no HTML.
+  body            String?
+  /// Guide slugs the article points to (« À lire aussi »).
+  related         Json?
+  /// Where the facts come from, as shown under the article.
+  sources         Json?
+  /// What the admin should check (« à vérifier »), recomputed at each save.
+  warnings        Json?
+  /// The facts handed to Claude, kept to check an edited text against them.
+  facts           Json?
+  wordCount       Int               @default(0)
+  model           String?
+  error           String?
+  writtenAt       DateTime?
+  publishedAt     DateTime?
+  publishedById   String?
+  rejectedAt      DateTime?
+  mailedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("blog_articles")
+}

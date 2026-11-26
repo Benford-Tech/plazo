@@ -59,6 +59,9 @@ import type {
   PlatformApps,
   WelcomeReport,
   PlatformSeo,
+  BlogArticle,
+  BlogArticleEdit,
+  BlogWeek,
   WhatsappSettings,
   WhatsappNumber,
   PlatformWhatsappNumber,
@@ -1640,6 +1643,19 @@ export const adminApi = {
     apiRequest<{ emailSent: boolean }>(`/internal/platform/invitations/${encodeURIComponent(staffId)}/resend`, { method: "POST" }),
   getPlatformInvitations: (view: string) => apiRequest<PlatformInvitations>(`/internal/platform/invitations?view=${encodeURIComponent(view)}`),
   getPlatformSeo: (days: number) => apiRequest<PlatformSeo>(`/internal/platform/seo?days=${days}`),
+  getBlogWeek: (monday: string | null) =>
+    apiRequest<BlogWeek>(`/internal/platform/blog${monday ? `?semaine=${encodeURIComponent(monday)}` : ""}`),
+  updateBlogArticle: (id: string, input: BlogArticleEdit) =>
+    apiRequest<{ data: BlogArticle }>(`/internal/platform/blog/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(input) }),
+  blogArticleAction: (id: string, action: "publish" | "unpublish" | "reject") =>
+    apiRequest<{ data: BlogArticle }>(`/internal/platform/blog/${encodeURIComponent(id)}/${action}`, { method: "POST" }),
+  rewriteBlogArticle: (id: string, instruction: string) =>
+    apiRequest<{ data: BlogArticle }>(`/internal/platform/blog/${encodeURIComponent(id)}/rewrite`, {
+      method: "POST",
+      body: JSON.stringify({ instruction }),
+    }),
+  writeBlogDay: (day: string) =>
+    apiRequest<{ data: BlogArticle }>(`/internal/platform/blog/write`, { method: "POST", body: JSON.stringify({ day }) }),
   resendWelcomeEmail: (reservationId: string) =>
     apiRequest<{ emailSent: boolean }>(`/internal/platform/traveller-welcome/${encodeURIComponent(reservationId)}/resend`, { method: "POST" }),
   getWelcomeReport: (days: number, operatorId?: string | null) =>

@@ -1,6 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { cache } from "react";
+import type { BlogArticle, BlogSummary } from "./blog";
 import type {
   AirportResponse,
   AppLinkTarget,
@@ -207,6 +208,9 @@ function query(params: Record<string, string | null | undefined>): string {
 export const api = {
   /** Airport page: published parkings with their lowest package price. Shared by every visitor, deduplicated per request. */
   /** The parkings' sites online (25/11/2026), for the sitemaps: own domain when it serves the site, page names. */
+  /** The blog (26/11/2026): published articles, newest first. */
+  blog: cache(() => sharedRead<{ articles: BlogSummary[] }>(`/api/public/blog`)),
+  blogArticle: cache((slug: string) => sharedRead<{ article: BlogArticle }>(`/api/public/blog/${seg(slug)}`)),
   onlineSites: cache(() =>
     sharedRead<{ sites: { slug: string; domain: string | null; pages: string[]; updatedAt: string }[] }>(`/api/public/sites`),
   ),

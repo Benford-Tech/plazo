@@ -2537,6 +2537,34 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   partie de son équipe, aucun prix ni chiffre, `checkForumReply` écarte un prix, une durée ou le Terminal 2) et envoie un mail aux
   administrateurs de `PLATFORM_ADMIN_EMAILS` (`forumWatchEmail` : titre, lien, extrait, réponse proposée) ; **rien n'est jamais
   posté**, l'administrateur relit et poste lui-même ; rien sans clé ni nouveauté. Test `forum-watch.test.ts`.
+- **Articles du blog, direction B « Le calendrier de la semaine » (26/11/2026, « Pour le SEO », « Un par jour, je valide chaque
+  article », maquettes https://claude.ai/artifact/XpLKzf3Ur3MftvFbHmExzH, « B » ; pas d'échange de liens automatique)** : un article par
+  jour de Paris sur www.plazo.fr/blog, écrit par Claude la veille au soir, **jamais publié sans le clic d'un administrateur de la
+  plateforme**. Table `blog_articles` (`BlogArticle`, migration `blog_articles` : `dueOn` unique « AAAA-MM-JJ », `status` planned · draft ·
+  published · rejected · failed, sujet, requête visée, `slug` unique, titre, titre et description pour Google, chapeau, `body` en texte
+  limité (paragraphes, « ## » intertitres, « - » puces ; ni lien ni HTML, `cleanBody`), guides liés, sources, `warnings`, `facts` (les
+  faits donnés à Claude, pour relire un texte corrigé), CHECK). `domain/blog.ts` : faits = Plazo (`PLAZO_FACTS`), les vrais parkings
+  partenaires de Lyon et leurs prix de 8 jours et d'un jour (`partnerFacts`, `quoteCents` ; ni démo ni « … (tests) »), les chiffres de
+  l'aéroport (`LYON_AIRPORT_FACTS`, copie de `LYON_OFFICIAL` du site : changer les deux ensemble) ; `BLOG_GUIDES` (copie des guides du
+  site) ; consignes en français (900 à 1 300 mots, chiffres des faits seulement, ni Terminal 2, ni paiement sur place, ni superlatif) ;
+  `articleWarnings` : chiffres absents des faits « à vérifier » (`numbersIn`, `spelledNumbersIn`), Terminal 2 et paiement sur place (qui
+  bloquent la publication, 409 `forbidden_mention`), texte court, titre ou description pour Google manquants ou trop longs. `BlogService`
+  (`BLOG_ARTICLE_MODEL`, Sonnet 5.5 par défaut, 50 s) : `plan` prévoit les sujets des 7 jours à venir d'après la Search Console des
+  28 derniers jours (sans « plazo ») et les sujets déjà pris ; `run` écrit l'article du lendemain et l'envoie aux administrateurs de
+  `PLATFORM_ADMIN_EMAILS` (« Article du jour à valider », `blogReviewEmail`) ; deux Vercel Cron : `/internal/cron/blog?step=plan` à
+  19:40 UTC et `/internal/cron/blog` à 20:10 UTC (`?day=` pour un autre jour) ; un article non écrit reste « Non écrit » (« Écrire
+  maintenant »). Routes (`PlatformAdminMiddleware`) : `GET /internal/platform/blog?semaine=` (`counts { published, toReview, clicks }`,
+  clics Google des pages `/blog/` sur 28 jours), `GET|PUT …/blog/:id` (400 par champ ; l'adresse d'un article publié ne change plus,
+  `slug: published`), `POST …/:id/rewrite { instruction? }` (502 `ai_failed` sans rien perdre), `…/publish`, `…/unpublish`, `…/reject`,
+  `POST …/blog/write { day }` ; tracés `blog.*`. Publics : `GET /public/blog`, `GET /public/blog/:slug` (publiés seulement, avec trois
+  autres). Espace pro : Plateforme › Croissance › « Articles » (`/pro/plateforme/articles`, `ArticlesPage` : semaine ‹ ›, publiés, à
+  valider, clics ; sept jours avec la pastille Publié · À valider · Écarté · Prévu · Non écrit ; tiroir : requête, mots, « À vérifier »,
+  aperçu Google, texte, Publier · Modifier le texte · Réécrire avec une consigne… · Écarter · Retirer du site ; `?semaine=&article=`, lien
+  du mail). Site : `/blog` et `/blog/<slug>` (`components/blog/BlogArticleView.tsx`, `lib/blog.ts`, français seulement, ISR 300 s) :
+  article en style Boutique, encart des vrais partenaires (8 jours dès…, navette, nombre) et « Voir les parkings pour mes dates », « À
+  lire aussi » vers les guides, derniers articles ; JSON-LD `Article` et `BreadcrumbList` ; plan du site. Tests `blog.test.ts`
+  (serveur et site), `ArticlesPage.test.tsx`, `BlogArticleView.test.tsx`, `structured-data.test.ts`. Pas encore : lien « Blog » du pied
+  de page (neuf langues), images.
 - **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
   Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
   (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur

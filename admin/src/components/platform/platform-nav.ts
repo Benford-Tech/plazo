@@ -24,6 +24,7 @@ export const PLATFORM_GROUPS: { label: string; items: Item[] }[] = [
     items: [
       { to: "/plateforme/prospection", label: fr.platform.tabs.prospecting },
       { to: "/plateforme/referencement", label: fr.platform.tabs.seo },
+      { to: "/plateforme/articles", label: fr.platform.tabs.articles },
       { to: "/plateforme/applications", label: fr.platform.tabs.apps },
       { to: "/plateforme/mails-accueil", label: fr.platform.tabs.welcome },
       {
