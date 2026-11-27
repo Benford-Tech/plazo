@@ -3956,7 +3956,7 @@ export const fr = {
       rewritten: "Nouvelle version écrite.",
       errors: {
         ai_unavailable: "Sans clé Anthropic, Claude ne peut pas écrire.",
-        ai_failed: "Claude n'a pas répondu à temps : réessayez.",
+        ai_failed: "Claude n'a pas pu écrire l'article : réessayez dans un instant.",
         forbidden_mention: "Le texte parle du Terminal 2 ou d'un paiement sur place : corrigez-le avant de publier.",
         not_written: "L'article n'est pas encore écrit.",
         already_published: "Cet article est déjà publié.",

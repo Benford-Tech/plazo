@@ -232,6 +232,13 @@ describe('the night job and the review', () => {
     expect(failed.status).toBe(502);
     expect((await prisma.blogArticle.findUniqueOrThrow({ where: { id } })).status).toBe('draft');
 
+    // 27/11/2026: Anthropic refusing the blog's model (404) falls back once on the model the other writings use.
+    const Anthropic = (await import('@anthropic-ai/sdk')).default;
+    create.mockRejectedValueOnce(new Anthropic.NotFoundError(404, { type: 'error' }, 'model: claude-sonnet-5-5', new Headers()));
+    const retried = await api().post(`/api/internal/platform/blog/${id}/rewrite`).set(auth(admin.token)).send({});
+    expect(retried.status).toBe(200);
+    expect(create.mock.calls.at(-1)[0].model).toBe('claude-opus-5-5');
+
     delete process.env.ANTHROPIC_API_KEY;
     expect((await api().post(`/api/internal/platform/blog/${id}/rewrite`).set(auth(admin.token)).send({})).body.code).toBe('ai_unavailable');
     expect((await service().run(NIGHT)).status).toBe('not_configured');

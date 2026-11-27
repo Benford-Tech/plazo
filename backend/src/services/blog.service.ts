@@ -42,6 +42,14 @@ import { NotificationService } from './notification.service';
 const WRITE_TIMEOUT_MS = 50000;
 const PLAN_TIMEOUT_MS = 30000;
 const CLICKS_DAYS = 28;
+/** The model the other writings of Plazo use, tried when the blog's model is refused. */
+const BLOG_FALLBACK_MODEL = 'claude-opus-5-5';
+
+/** Why a call failed, for the logs: Anthropic's status and message (the prompts hold no personal data). */
+function failureOf(error: unknown): string {
+  if (error instanceof Anthropic.APIError) return `${error.status ?? '?'} ${(error.message ?? '').replace(/\s+/g, ' ').slice(0, 200)}`;
+  return error instanceof Error ? `${error.name} ${error.message.slice(0, 200)}` : 'unknown error';
+}
 
 export interface BlogRunResult {
   status: 'written' | 'planned' | 'nothing_to_do' | 'not_configured' | 'failed';
@@ -75,6 +83,27 @@ export class BlogService {
   private anthropic(): Anthropic {
     this.client ??= new Anthropic({ apiKey: anthropicApiKey(), maxRetries: 0 });
     return this.client;
+  }
+
+  /**
+   * One call to Claude with the blog's model; when Anthropic refuses the call itself (400 or 404: a model or a setting it
+   * does not take), once more with the model the other writings of Plazo use (27/11/2026: « Écrire maintenant » failed in
+   * 20 ms, the reason never logged).
+   */
+  private async ask(
+    params: Omit<Anthropic.MessageCreateParamsNonStreaming, 'model'>,
+    timeout: number,
+  ): Promise<{ response: Anthropic.Message; model: string }> {
+    const first = blogArticleModel();
+    try {
+      return { response: await this.anthropic().messages.create({ ...params, model: first }, { timeout }), model: first };
+    } catch (error) {
+      const status = error instanceof Anthropic.APIError ? error.status : undefined;
+      logger.warn(`[Blog] ${first} refused: ${failureOf(error)}`);
+      if ((status !== 400 && status !== 404) || first === BLOG_FALLBACK_MODEL) throw error;
+      const response = await this.anthropic().messages.create({ ...params, model: BLOG_FALLBACK_MODEL }, { timeout });
+      return { response, model: BLOG_FALLBACK_MODEL };
+    }
   }
 
   // ---- Facts ---------------------------------------------------------------------------------------------------------
@@ -149,15 +178,14 @@ export class BlogService {
     if (!free.length) return 0;
     const [taken, queries] = await Promise.all([this.takenTitles(), this.queries(now)]);
     try {
-      const response = await this.anthropic().messages.create(
+      const { response } = await this.ask(
         {
-          model: blogArticleModel(),
           max_tokens: 2000,
           system: blogTopicsPrompt(PRODUCT_NAME),
           output_config: { effort: 'low', format: { type: 'json_schema', schema: BLOG_TOPICS_SCHEMA } },
           messages: [{ role: 'user', content: blogTopicsInput({ days: free, taken, queries }) }],
         },
-        { timeout: PLAN_TIMEOUT_MS },
+        PLAN_TIMEOUT_MS,
       );
       if (response.stop_reason !== 'end_turn') return 0;
       const topics = readTopics(JSON.parse(textOf(response)), free.length);
@@ -168,7 +196,7 @@ export class BlogService {
       logger.info(`[Blog] ${count} topics planned`);
       return count;
     } catch (error) {
-      logger.warn(`[Blog] topics not planned: ${error instanceof Error ? error.name : 'unknown error'}`);
+      logger.warn(`[Blog] topics not planned: ${failureOf(error)}`);
       return 0;
     }
   }
@@ -178,13 +206,12 @@ export class BlogService {
     const facts = await this.facts(now);
     const taken = await this.takenTitles(article.id);
     const previous = article.body && article.title ? { title: article.title, intro: article.intro ?? '', body: article.body } : null;
-    const model = blogArticleModel();
+    let model = blogArticleModel();
     let draft: ReturnType<typeof readArticle> = null;
     let failure = 'no_answer';
     try {
-      const response = await this.anthropic().messages.create(
+      const answer = await this.ask(
         {
-          model,
           max_tokens: 8000,
           system: blogArticlePrompt(PRODUCT_NAME),
           output_config: { effort: 'low', format: { type: 'json_schema', schema: BLOG_ARTICLE_SCHEMA } },
@@ -195,12 +222,14 @@ export class BlogService {
             },
           ],
         },
-        { timeout: WRITE_TIMEOUT_MS },
+        WRITE_TIMEOUT_MS,
       );
+      const response = answer.response;
+      model = answer.model;
       if (response.stop_reason === 'end_turn') draft = readArticle(JSON.parse(textOf(response)), article.topic);
       else failure = response.stop_reason ?? 'no_answer';
     } catch (error) {
-      failure = error instanceof Error ? error.name : 'unknown error';
+      failure = failureOf(error);
     }
     if (!draft) {
       logger.warn(`[Blog] article of ${article.dueOn} not written: ${failure}`);

@@ -315,7 +315,9 @@ function reviewBlockText(booking: PublicBooking): string[] {
 /** After the handover: thanks, the stay's summary, the amount paid. */
 export function closingEmail(productName: string, booking: PublicBooking, returnedAtLocal: string): EmailMessage {
   const subject = `Merci, et à bientôt · ${booking.parking.title}`;
-  const total = booking.priceCents !== null ? formatEuros(totalCents(booking)!) : null;
+  // 27/11/2026: only a booking paid on Plazo says « payé en ligne par carte »; one paid at a comparator, by phone or at the
+  // counter tells nothing about the money (Plazo does not know what the traveller paid, nor how).
+  const total = booking.priceCents !== null && paidOnline(booking) ? formatEuros(totalCents(booking)!) : null;
   const html = layout(
     productName,
     subject,

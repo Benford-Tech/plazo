@@ -52,7 +52,9 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
   const listing = parking.listing!;
   const tz = parking.timezone;
   const policy = bookingPolicy(reservation);
-  const until = cancellableUntil(reservation.arrivalAt, policy);
+  // 27/11/2026: only a booking made on Plazo is cancelled online (`PublicBookingService.cancel`); one from a comparator, the
+  // phone or the counter shows no « Annulation gratuite jusqu'au … » (its terms are the comparator's or the parking's).
+  const until = reservation.channel === 'plazo' ? cancellableUntil(reservation.arrivalAt, policy) : null;
   const pending = reservation.status === 'pending_payment' && reservation.holdExpiresAt !== null;
   return {
     reference: reservation.reference,

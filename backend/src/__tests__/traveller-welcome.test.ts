@@ -296,6 +296,8 @@ describe('Plateforme › Mails d’accueil (18/11/2026)', () => {
     const post = (id: string, token = admin.token) =>
       api().post(`/api/internal/platform/traveller-welcome/${id}/resend`).set('Authorization', `Bearer ${token}`);
     expect((await post(b.id, op.token)).status).toBe(403);
+    // Arrival moves to tomorrow: the return follows it (fixed dates went stale on 27/11/2026, reservations_dates_order).
+    await prisma.reservation.update({ where: { id: b.id }, data: { returnAt: new Date(Date.now() + 8 * 86400_000) } });
     // Just sent: not again within two minutes.
     await prisma.reservation.update({ where: { id: b.id }, data: { welcomeEmailAt: new Date(), arrivalAt: new Date(Date.now() + 86400_000) } });
     expect((await post(b.id)).body.code).toBe('too_soon');
