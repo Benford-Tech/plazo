@@ -1863,7 +1863,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      défaut d'affichage dans l'app Plazo »)** : Ma réservation de l'app Plazo écrivait « À payer sur place » sous le prix de toute
      réservation sans paiement Plazo (comparateur, téléphone, comptoir, import), alors que tout se paie à l'avance : elle dit
      « Payé », comme le site (`manage.to_pay_on_site` dans les neuf langues) ; le mail de clôture ne dit « Total : …, payé en ligne
-     par carte » que pour une réservation payée sur Plazo (`closingEmail`), rien sur l'argent sinon. Test `traveller-messages.test.ts`.
+     par carte » que pour une réservation payée sur Plazo (`closingEmail`), rien sur l'argent sinon ; une réservation qui ne vient pas
+     de Plazo n'annonce plus « Annulation gratuite jusqu'au … » (`toPublicBooking` : `cancellableUntil` nul et `canCancel` faux hors
+     canal `plazo`, comme le refusait déjà `cancel`) : le site et l'app disent « Non annulable en ligne » et donnent le contact du
+     parking. Test `traveller-messages.test.ts`.
    - **Lien d'avis Google, option B (22/11/2026, « Comment bombarder le référencement » → « Ok », maquettes
      https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : le gérant colle une fois le lien « Demander des avis » de la fiche Google
      de son parking dans « Ma fiche » (« Lien d'avis Google (facultatif) », `l-review` ; `Listing.googleReviewUrl`, migration

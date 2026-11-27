@@ -281,6 +281,14 @@ describe('le fil de messages du voyageur (B)', () => {
     expect(message.text).not.toContain('Total');
   });
 
+  it('réservation d’un comparateur (27/11/2026) : ni « Annulation gratuite jusqu’au … » ni annulation en ligne', async () => {
+    const { reference } = await setup();
+    const record = await prisma.reservation.findUniqueOrThrow({ where: { reference }, include: WITH_LISTING });
+    const comparator = toPublicBooking({ ...record, channel: 'aggregator', paymentStatus: null });
+    expect(comparator.canCancel).toBe(false);
+    expect(comparator.cancellableUntil).toBeNull();
+  });
+
   it('lien d’avis Google (22/11/2026) : dans le mail de clôture et la réservation, une fois la voiture rendue', async () => {
     const { op, reservation, reference } = await setup();
     const url = 'https://g.page/r/CbX1234/review';
