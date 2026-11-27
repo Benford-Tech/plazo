@@ -256,6 +256,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      compris) : remis → « Remis » ; un destinataire `Failed` sans `Delivered` l'emporte sur `Sent` (`messageState` : le réseau a refusé la
      remise) → abandonné, `lastError` `sms_not_delivered`, compté en échec du mois, jamais renvoyé seul (`markUndelivered`, aussi par le
      webhook `sms:failed`). Test `sms.test.ts`.
+     **Numéros refusés par l'appli et raison du refus (24/11/2026)** : l'appli SMS refusait de vrais mobiles français (« 07 2x »,
+     « invalid phone number ») ; Plazo ayant déjà contrôlé le numéro (`smsRecipient`), l'envoi demande `POST /messages?skipPhoneValidation=true`
+     (`SmsGatewayClient`) ; un refus de la passerelle est journalisé avec sa raison (200 caractères, toute suite de 4 chiffres ou plus
+     masquée « •••• » : jamais un numéro dans les journaux). Test `sms.test.ts`.
      **L'appli SMS prévient Plazo (09/11/2026, « faudrait communiquer avec sms gateway »)** : à la liaison du téléphone et au
      premier relevé de chaque identifiant, Plazo inscrit chez la passerelle trois webhooks (`POST /webhooks`, ids `plazo-sent`,
      `plazo-delivered`, `plazo-failed` ; `SmsService.ensureWebhooks`, `phoneWebhooksSetAt`, migration `sms_gateway_webhooks`, remis à
@@ -2724,6 +2728,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   photo, colonne de prix « À partir de » à droite de chaque carte, bouton orange « Voir le prix ») et « Comment ça marche » dans
   une colonne à droite (sous la liste sur téléphone ; les photos des étapes ne sont plus affichées). Textes dans les neuf langues.
   Pas repris de la capture : la note en étoiles et le cœur. Test `PartnerList.test.tsx`.
+- **`llms.txt` (24/11/2026)** : `site/public/llms.txt` résume Plazo et Plazo Pro pour les moteurs à base de modèles de langue
+  (pages voyageurs, guides, pages de pro.plazo.fr), à tenir à jour quand une page publique s'ajoute ; les photos de la page
+  d'accueil ont leur texte alternatif (le nom du parking, `AirportView`).
 - **Fiche parking enrichie, choix B (17/11/2026, « ameliore le SEO », audit : sitemap de 6 adresses, fiche de ~490 mots ; maquettes
   https://claude.ai/artifact/UAEy1nUtQ2RYBiHffuFmFA, « B »)** : sous la présentation de la fiche parking du site, « Tarifs » (la grille
   `priceRows`, plus courte d'abord, et le jour en plus ; la grille revient sur la fiche, le prix des dates restant celui de la carte),
