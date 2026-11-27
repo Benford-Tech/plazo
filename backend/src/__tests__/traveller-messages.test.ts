@@ -268,6 +268,19 @@ describe('le fil de messages du voyageur (B)', () => {
     expect(email.htmlContent).not.toContain('Laisser un avis');
   });
 
+  it('mail de clôture (27/11/2026) : « payé en ligne par carte » seulement pour une réservation payée sur Plazo', async () => {
+    const { reference } = await setup();
+    const record = await prisma.reservation.findUniqueOrThrow({ where: { reference }, include: WITH_LISTING });
+    const online = toPublicBooking({ ...record, priceCents: 5400, paymentStatus: 'paid' });
+    expect(closingEmail('Plazo', online, '2027-03-03T15:40').text).toContain('54,00 €, payé en ligne par carte.');
+    // Booked at a comparator, by phone or at the counter: nothing about the money.
+    const elsewhere = toPublicBooking({ ...record, priceCents: 5400, paymentStatus: null });
+    const message = closingEmail('Plazo', elsewhere, '2027-03-03T15:40');
+    expect(message.text).not.toContain('payé');
+    expect(message.html).not.toContain('payé');
+    expect(message.text).not.toContain('Total');
+  });
+
   it('lien d’avis Google (22/11/2026) : dans le mail de clôture et la réservation, une fois la voiture rendue', async () => {
     const { op, reservation, reference } = await setup();
     const url = 'https://g.page/r/CbX1234/review';

@@ -1859,6 +1859,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (WhatsApp allumé) ou n'envoie rien (`off`) ; Meta n'est interrogé qu'une fois par passage ; un STOP reçu par le téléphone du
      parking (`receiveSms`) ferme aussi le numéro ; le SMS n'est montré qu'à la plateforme, comme le WhatsApp (`sentSmsWhere`,
      « Messages au voyageur »). Une fois le modèle « Actif », WhatsApp reprend. Pas encore : un suivi côté plateforme. **Test (24/11/2026, « essaie de m'envoyer un sms avec le modèle en cours de validation »)** : `POST /internal/platform/traveller-invite/test { operatorId?, phone? }` (`TravellerInviteService.sendTest`, `PlatformAdminMiddleware`) : le SMS d'une réservation d'exemple dans 5 jours, lien vers « Ma réservation », envoyé depuis le téléphone d'un parking (celui donné, sinon le premier relié) à `PROSPECTING_PHONE` ou au numéro donné, genre `test`, rien d'enregistré sur une réservation ; 409 `no_test_phone` · `no_gateway` · `sms_failed` ; workflow « Test du SMS d'invitation à Plazo » (`invite-sms-test.yml`, `.github/scripts/invite_sms_test.py`). Le modèle WhatsApp lui-même ne s'essaie qu'une fois approuvé par Meta.
+   - **Plus de « À payer sur place » pour une réservation d'un comparateur (27/11/2026, « un message lui demande payé », « peut-être un
+     défaut d'affichage dans l'app Plazo »)** : Ma réservation de l'app Plazo écrivait « À payer sur place » sous le prix de toute
+     réservation sans paiement Plazo (comparateur, téléphone, comptoir, import), alors que tout se paie à l'avance : elle dit
+     « Payé », comme le site (`manage.to_pay_on_site` dans les neuf langues) ; le mail de clôture ne dit « Total : …, payé en ligne
+     par carte » que pour une réservation payée sur Plazo (`closingEmail`), rien sur l'argent sinon. Test `traveller-messages.test.ts`.
    - **Lien d'avis Google, option B (22/11/2026, « Comment bombarder le référencement » → « Ok », maquettes
      https://claude.ai/artifact/4byTkwogNhQXsj1gHUrpRu)** : le gérant colle une fois le lien « Demander des avis » de la fiche Google
      de son parking dans « Ma fiche » (« Lien d'avis Google (facultatif) », `l-review` ; `Listing.googleReviewUrl`, migration
