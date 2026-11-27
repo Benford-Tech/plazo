@@ -2597,6 +2597,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   lire aussi » vers les guides, derniers articles ; JSON-LD `Article` et `BreadcrumbList` ; plan du site. Tests `blog.test.ts`
   (serveur et site), `ArticlesPage.test.tsx`, `BlogArticleView.test.tsx`, `structured-data.test.ts`. Pas encore : lien « Blog » du pied
   de page (neuf langues), images.
+  **Repli de modèle (27/11/2026, « Claude n'a pas répondu à temps » sur « Écrire maintenant » : l'appel échouait en 20 ms, la raison
+  jamais journalisée)** : un refus d'Anthropic de l'appel lui-même (400 ou 404 : modèle ou réglage refusé) est retenté une fois avec
+  `claude-opus-5-5`, le modèle des autres rédactions (`BlogService.ask`) ; le journal donne le statut et le message d'Anthropic
+  (`failureOf`) ; l'erreur `ai_failed` dit « Claude n'a pas pu écrire l'article ». Test `blog.test.ts`.
 - **Applications, choix « Mesuré par Plazo » (15/11/2026, « Suivre le nombre de téléchargements et d'utilisation de plazo »)** :
   Plateforme › Applications (`/pro/plateforme/applications`, `AppsPage`, rail Croissance) : Plazo (voyageurs) : nouvelles installations
   (premières ouvertures, `traveller_app_devices.createdAt`) et leur évolution sur la période d'avant, téléphones actifs aujourd'hui, sur
